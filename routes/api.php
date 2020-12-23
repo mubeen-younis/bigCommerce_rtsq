@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ConnectionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -17,3 +18,21 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+Route::get('/get_carriers',[\App\Http\Controllers\CarrierController::class,'index']);//CarrierController@index
+Route::get('/get_conn_settings',[ConnectionController::class,'index']);
+Route::post('/submit_connection_settings',[ConnectionController::class,'store']);
+Route::get('/get_qoute_settings','QouteController@index');
+Route::post('/save_qoute_settings','QouteController@store');
+Route::get('/get_location','LocationsController@index');
+Route::get('/get_warehouse','LocationsController@warehouse');
+Route::get('/get_dropships','LocationsController@dropships');
+Route::post('/save_location','LocationsController@store');
+Route::put('/location/update/{locations}','LocationsController@update');
+Route::delete('warehouse/delete/{id}','LocationsController@delete_warehouse');
+Route::delete('dropship/delete/{id}','LocationsController@delete_dropships');
+Route::post('/save_csv','CsvController@store');
+Route::post('/save_boxsize','BoxSizeController@store');
+Route::get('/get_boxsize','BoxSizeController@index');
+Route::delete('boxsize/delete/{id}','BoxSizeController@destroy');
+Route::get('/getDetails/{zip_code}','AdressController@googleApiCurl');

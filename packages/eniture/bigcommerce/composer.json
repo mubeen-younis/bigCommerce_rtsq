@@ -1,0 +1,20 @@
+{
+    "name": "eniture/bigcommerce",
+    "description": "This package is for bigcommerce by Eniture Technology",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Eniture",
+            "email": "info@eniture.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Eniture\\Bigcommerce\\": "packages/eniture/bigcommerce/src"
+        }
+    },
+    "require": {}
+}

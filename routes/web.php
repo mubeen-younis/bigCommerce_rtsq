@@ -16,3 +16,31 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::group(['prefix' => 'auth'], function () {
+    Route::get('install', 'MainController@install');
+
+    Route::get('load', 'MainController@load');
+
+    Route::get('uninstall', function () {
+        echo 'uninstall';
+        return app()->version();
+    });
+
+    Route::get('remove-user', function () {
+        echo 'remove-user';
+        return app()->version();
+    });
+
+});
+
+Route::get('get-dom','MainController@getDom');
+
+Route::get('getQoutes','MainController@getQoutes');
+
+//    Route::any('/rate', 'MainController@rate');
+
+Route::any('/bc-api/{endpoint}', 'MainController@proxyBigCommerceAPIRequest')
+    ->where('endpoint', 'v2\/.*|v3\/.*');
+
+Route::get('/getProducts','MainController@getProducts');
