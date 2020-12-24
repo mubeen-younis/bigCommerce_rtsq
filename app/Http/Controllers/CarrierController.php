@@ -85,4 +85,9 @@ class CarrierController extends Controller
     {
         //
     }
+
+    public function getCarrierDetails(Request $request)
+    {
+        return response()->json([], 200);
+    }
 }

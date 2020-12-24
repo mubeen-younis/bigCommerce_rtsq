@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\CarrierController;
 use App\Http\Controllers\ConnectionController;
+use App\Http\Controllers\LocationsController;
+use App\Http\Controllers\QuoteSettingsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -19,12 +22,12 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::get('/get_carriers',[\App\Http\Controllers\CarrierController::class,'index']);//CarrierController@index
+Route::get('/get_carriers',[CarrierController::class,'index']);
 Route::get('/get_conn_settings',[ConnectionController::class,'index']);
 Route::post('/submit_connection_settings',[ConnectionController::class,'store']);
-Route::get('/get_qoute_settings','QouteController@index');
+Route::get('/get_qoute_settings',[QuoteSettingsController::class,'getSettings']);
 Route::post('/save_qoute_settings','QouteController@store');
-Route::get('/get_location','LocationsController@index');
+Route::get('/get_locations',[LocationsController::class,'index']);
 Route::get('/get_warehouse','LocationsController@warehouse');
 Route::get('/get_dropships','LocationsController@dropships');
 Route::post('/save_location','LocationsController@store');
@@ -36,3 +39,7 @@ Route::post('/save_boxsize','BoxSizeController@store');
 Route::get('/get_boxsize','BoxSizeController@index');
 Route::delete('boxsize/delete/{id}','BoxSizeController@destroy');
 Route::get('/getDetails/{zip_code}','AdressController@googleApiCurl');
+
+//=============Carrier Route
+Route::get('get_carrier_info', [CarrierController::class, 'getCarrierDetails']);
+
