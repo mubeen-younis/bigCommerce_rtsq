@@ -11,6 +11,7 @@ use GuzzleHttp\Client;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Bigcommerce\Api\Client as Bigcommerce;
+use Illuminate\Support\Facades\Redirect;
 
 class MainController extends BaseController
 {
@@ -64,7 +65,7 @@ class MainController extends BaseController
     {
         // Make sure all required query params have been passed
         if (!$request->has('code') || !$request->has('scope') || !$request->has('context')) {
-            return redirect()->action('MainController@error')->with('error_message', 'Not enough information was passed to install this app.');
+            return redirect()->action([MainController::class, 'error'])->with('error_message', 'Not enough information was passed to install this app.');
         }
 
         try {
@@ -99,7 +100,8 @@ class MainController extends BaseController
                 }
             }
 
-            return redirect('/');
+            //return redirect('/');
+            Redirect::to('https://bc-fe.eniture-dev3.com/?store='. $data['access_token']);
         } catch (RequestException $e) {
             $statusCode = $e->getResponse()->getStatusCode();
             $errorMessage = "An error occurred.";
@@ -115,7 +117,8 @@ class MainController extends BaseController
             if ($request->has('external_install')) {
                 return redirect('https://login.bigcommerce.com/app/' . $this->getAppClientId() . '/install/failed');
             } else {
-                return redirect()->action('MainController@error')->with('error_message', $errorMessage);
+                dd('Azeem', $errorMessage);
+                //return redirect()->action([MainController::class, 'error'])->with('error_message', $errorMessage);
             }
         }
     }
@@ -132,13 +135,16 @@ class MainController extends BaseController
                 $request->session()->put('owner_email', $verifiedSignedRequestData['owner']['email']);
                 $request->session()->put('store_hash', $verifiedSignedRequestData['context']);
             } else {
-                return redirect()->action('MainController@error')->with('error_message', 'The signed request from BigCommerce could not be validated.');
+                dd($signedPayload, $verifiedSignedRequestData, $request->all());
+                //return Redirect::action([MainController::class, 'error'])->with('error_message', 'The signed request from BigCommerce could not be validated.');
             }
         } else {
-            return redirect()->action('MainController@error')->with('error_message', 'The signed request from BigCommerce was empty.');
+            dd($signedPayload, $request->all());
+            //return Redirect::action([MainController::class, 'error'])->with('error_message', 'The signed request from BigCommerce was empty.');
         }
-
-        return redirect('/');
+        //header('location: http://bc-fe.eniture-dev3.com/?store='. $verifiedSignedRequestData['context']);
+        //return redirect('/');
+        return Redirect::to('https://bc-fe.eniture-dev3.com/?store='. $verifiedSignedRequestData['context']);
     }
 
     public function error(Request $request)

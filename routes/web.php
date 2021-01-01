@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\MainController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -18,9 +19,9 @@ Route::get('/', function () {
 });
 
 Route::group(['prefix' => 'auth'], function () {
-    Route::get('install', 'MainController@install');
+    Route::get('install', [MainController::class, 'install']);
 
-    Route::get('load', 'MainController@load');
+    Route::get('load', [MainController::class, 'load']);
 
     Route::get('uninstall', function () {
         echo 'uninstall';
@@ -34,7 +35,7 @@ Route::group(['prefix' => 'auth'], function () {
 
 });
 
-Route::get('get-dom','MainController@getDom');
+Route::get('get-dom',[MainController::class, 'getDom']);
 
 Route::get('getQoutes','MainController@getQoutes');
 

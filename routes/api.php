@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\AdditionalCarrierTabSettingController;
 use App\Http\Controllers\CarrierController;
+use App\Http\Controllers\CarrierTabController;
 use App\Http\Controllers\ConnectionController;
 use App\Http\Controllers\LocationsController;
 use App\Http\Controllers\QuoteSettingsController;
@@ -26,11 +28,18 @@ Route::get('/get_carriers',[CarrierController::class,'index']);
 Route::get('/get_conn_settings',[ConnectionController::class,'index']);
 Route::post('/submit_connection_settings',[ConnectionController::class,'store']);
 Route::get('/get_qoute_settings',[QuoteSettingsController::class,'getSettings']);
-Route::post('/save_qoute_settings','QouteController@store');
+Route::post('/submit_quote_settings',[QuoteSettingsController::class,'saveSettings']);
 Route::get('/get_locations',[LocationsController::class,'index']);
+
+/*------Services tab-------*/
+Route::post('/submit_carriers',[AdditionalCarrierTabSettingController::class,'store']);
+Route::get('/get_carrier_services',[AdditionalCarrierTabSettingController::class,'index']);
+
 Route::get('/get_warehouse','LocationsController@warehouse');
 Route::get('/get_dropships','LocationsController@dropships');
-Route::post('/save_location','LocationsController@store');
+Route::post('/submit_location',[LocationsController::class,'store']);
+
+
 Route::put('/location/update/{locations}','LocationsController@update');
 Route::delete('warehouse/delete/{id}','LocationsController@delete_warehouse');
 Route::delete('dropship/delete/{id}','LocationsController@delete_dropships');

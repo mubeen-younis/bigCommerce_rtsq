@@ -35,7 +35,7 @@ class CarrierTabController extends Controller
      */
     public function store(Request $request)
     {
-        //
+
     }
 
     /**

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Connection;
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 
 
@@ -16,7 +18,8 @@ class ConnectionController extends Controller
      */
     public function index()
     {
-        return response()->json(Connection::get(), 200);
+        $con = Connection::where('installed_carrier_id', 1)->first();
+        return response()->json(["error" => false,"data" => $con]);
     }
 
     /**
@@ -35,12 +38,7 @@ class ConnectionController extends Controller
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
-
-    {
-
-        dd($request->all());
-
+    public function store(Request $request){
         $rules = [
             'billing_account_no' => 'required',
             'meter_number' => 'required',
@@ -48,22 +46,62 @@ class ConnectionController extends Controller
             'auth_key' => 'required',
             'shipper_account_no' => 'required',
             'billing_address' => 'required',
-            'city' => 'required',
-            'state' => 'required',
-            'zip_code' => 'required',
-            'country' => 'required',
-            'physical_address' => 'required',
         ];
-        $validator = Validator::make($request->all(), $rules);
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 400);
+//        $validator = Validator::make($request->all(), $rules);
+//        if ($validator->fails()) {
+//            return response()->json($validator->errors(), 400);
+//        }
+        if (!empty($request->testType)){
+            return $this->testConnection($request);
         }
-
-        $con = new Connection;
+        $con = Connection::where('installed_carrier_id', 1)->first();
         $con->value = json_encode($request->all());
+        $con->installed_carrier_id = 1;
         $con->save();
-        return response()->json(['message' => "Form Submitted Successfully!"]);
+        return response()->json(["error" => false,'message' => "Connection settings has been saved.", "data" => $con]);
 
+    }
+
+    public function testConnection($data)
+    {
+        $response = [
+            'error' => true,
+            'message' => 'Something went wrong!'
+        ];
+        $url = 'https://eniture.com/sfws/quote-speedfreight-shipment.php';
+        $params = [
+            'platform' => 'bigcommerce',
+            'speed_freight_username' => $data->username,
+            'speed_freight_password' => $data->password,
+            'authentication_key' => $data->authentication_key,
+            'world_wide_express_account_number' => $data->account_number,
+            'plugin_domain_name' => 'wpqa2.eniture-qa.com',
+            'plugin_licence_key' => $data->license_key,
+        ];
+
+        $query_string = http_build_query($params);
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 1000);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $query_string);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Expect:'));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        $output = curl_exec($ch);
+        curl_close($ch);
+        $output = \GuzzleHttp\json_decode($output, true);
+        if (isset($output['error']) && isset($output['error_desc'])){
+            $response = [
+                'error' => true,
+                'message' => $output['error_desc']
+            ];
+        }elseif (isset($output['success'])){
+            $response = [
+                'error' => false,
+                'message' => 'Test connection successful.'
+            ];
+        }
+        return response()->json($response);
     }
 
     /**

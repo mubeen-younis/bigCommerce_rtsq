@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use DB;
 use App\Models\Locations;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -14,27 +13,26 @@ class LocationsController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
+    public $googleURL = 'https://eniture.com/ws/addon/google-location.php';
+
     public function index()
-
     {
-
-        return response()->json(Locations::get(), 200);
-
+        $locations = Locations::where('store_id', 1)->get();
+        return response()->json(['error' => false, 'data' => $locations], 200);
     }
 
     public function warehouse()
-
     {
         return response()->json(Locations::where('type', '=', '1')->get(), 200);
     }
 
-
     public function dropships()
-
     {
-
-
         return response()->json(Locations::where('type', '=', '2')->get(), 200);
+    }
+
+    public function getGoogleLocation(Request $request)
+    {
 
     }
 
@@ -63,14 +61,12 @@ class LocationsController extends Controller
             'zip_code' => 'required',
             'country' => 'required',
         ];
-        $validator = Validator::make($request->all(), $rules);
+        /*$validator = Validator::make($request->all(), $rules);
         if ($validator->fails()) {
             return response()->json($validator->errors(), 400);
-        }
-        $data = $request->all();
-        //   $data['store_id'] = $request['store_id'];
-        $location = Locations::create($data);
-        $location->save();
+        }*/
+        //$data = $request->all();
+        $location = new Locations();
         return response()->json(['message' => "Form Submitted Successfully!"]);
         // return response()->json($connection, 201);
     }
