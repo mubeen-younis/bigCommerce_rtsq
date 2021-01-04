@@ -14,9 +14,11 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
+/*Route::get('/', function () {
     return view('welcome');
-});
+});*/
+
+Route::post('webhooks',[MainController::class, 'webhooks']);
 
 Route::group(['prefix' => 'auth'], function () {
     Route::get('install', [MainController::class, 'install']);
@@ -37,11 +39,11 @@ Route::group(['prefix' => 'auth'], function () {
 
 Route::get('get-dom',[MainController::class, 'getDom']);
 
-Route::get('getQoutes','MainController@getQoutes');
+Route::get('getQoutes',[MainController::class, 'getQoutes']);
 
 //    Route::any('/rate', 'MainController@rate');
 
-Route::any('/bc-api/{endpoint}', 'MainController@proxyBigCommerceAPIRequest')
+Route::any('/bc-api/{endpoint}', [MainController::class, 'proxyBigCommerceAPIRequest'])
     ->where('endpoint', 'v2\/.*|v3\/.*');
 
-Route::get('/getProducts','MainController@getProducts');
+Route::get('/getProducts',[MainController::class, 'getProducts']);

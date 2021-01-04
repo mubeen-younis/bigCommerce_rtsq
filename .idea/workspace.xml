@@ -2,24 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="24715a4d-0eda-4296-a2c3-b3a4aedba505" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/backend.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/backend.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/deployment.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/deployment.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/php.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/php.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/Http/Controllers/AdditionalCarrierTabSettingController.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Http/Controllers/AdditionalCarrierTabSettingController.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/Http/Controllers/CarrierTabController.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Http/Controllers/CarrierTabController.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/Http/Controllers/ConnectionController.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Http/Controllers/ConnectionController.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/Http/Controllers/LocationsController.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Http/Controllers/LocationsController.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/Http/Controllers/MainController.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Http/Controllers/MainController.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/Http/Controllers/QuoteSettingsController.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Http/Controllers/QuoteSettingsController.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/Http/Kernel.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Http/Kernel.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/Http/Middleware/VerifyCsrfToken.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Http/Middleware/VerifyCsrfToken.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/Models/AdditionalCarrierTabSetting.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Models/AdditionalCarrierTabSetting.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/composer.json" beforeDir="false" afterPath="$PROJECT_DIR$/composer.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/composer.lock" beforeDir="false" afterPath="$PROJECT_DIR$/composer.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/cors.php" beforeDir="false" afterPath="$PROJECT_DIR$/config/cors.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/public/index.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/routes/api.php" beforeDir="false" afterPath="$PROJECT_DIR$/routes/api.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/routes/web.php" beforeDir="false" afterPath="$PROJECT_DIR$/routes/web.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -192,6 +177,7 @@
       <workItem from="1609135556542" duration="6842000" />
       <workItem from="1609154056844" duration="13570000" />
       <workItem from="1609391451562" duration="16775000" />
+      <workItem from="1609735310768" duration="11902000" />
     </task>
     <servers />
   </component>
@@ -199,10 +185,10 @@
     <option name="version" value="3" />
   </component>
   <component name="WindowStateProjectService">
-    <state x="275" y="22" key="#Deployment" timestamp="1609502919516">
+    <state x="275" y="22" key="#Deployment" timestamp="1609740590789">
       <screen x="0" y="0" width="1366" height="728" />
     </state>
-    <state x="275" y="22" key="#Deployment/0.0.1366.728@0.0.1366.728" timestamp="1609502919516" />
+    <state x="275" y="22" key="#Deployment/0.0.1366.728@0.0.1366.728" timestamp="1609740590789" />
     <state x="413" y="118" key="#com.jetbrains.php.actions.copyPaste.importReferences.PhpImportReferencesDialog" timestamp="1609395086792">
       <screen x="0" y="0" width="1366" height="728" />
     </state>
@@ -211,10 +197,10 @@
       <screen x="0" y="0" width="1366" height="728" />
     </state>
     <state x="446" y="274" key="ComposerInitDialogKey/0.0.1366.728@0.0.1366.728" timestamp="1605703613457" />
-    <state x="463" y="119" key="FileChooserDialogImpl" timestamp="1609473398927">
+    <state x="463" y="119" key="FileChooserDialogImpl" timestamp="1609743408899">
       <screen x="0" y="0" width="1366" height="728" />
     </state>
-    <state x="463" y="119" key="FileChooserDialogImpl/0.0.1366.728@0.0.1366.728" timestamp="1609473398927" />
+    <state x="463" y="119" key="FileChooserDialogImpl/0.0.1366.728@0.0.1366.728" timestamp="1609743408899" />
     <state x="370" y="71" key="NewPhpClassDialog" timestamp="1605695925562">
       <screen x="0" y="0" width="1366" height="728" />
     </state>

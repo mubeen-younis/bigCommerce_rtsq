@@ -101,7 +101,7 @@ class MainController extends BaseController
             }
 
             //return redirect('/');
-            Redirect::to('https://bc-fe.eniture-dev3.com/?store='. $data['access_token']);
+            Redirect::to($this->baseURL.'/?store='. $data['access_token']);
         } catch (RequestException $e) {
             $statusCode = $e->getResponse()->getStatusCode();
             $errorMessage = "An error occurred.";
@@ -144,7 +144,7 @@ class MainController extends BaseController
         }
         //header('location: http://bc-fe.eniture-dev3.com/?store='. $verifiedSignedRequestData['context']);
         //return redirect('/');
-        return Redirect::to('https://bc-fe.eniture-dev3.com/?store='. $verifiedSignedRequestData['context']);
+        return Redirect::to($this->baseURL.'/?store='. $verifiedSignedRequestData['context']);
     }
 
     public function error(Request $request)
@@ -200,16 +200,15 @@ class MainController extends BaseController
             // For v2 endpoints, add a .json to the end of each endpoint, to normalize against the v3 API standards
             $endpoint .= '.json';
         }
-
         $result = $this->makeBigCommerceAPIRequest($request, $endpoint);
-
         return response($result->getBody(), $result->getStatusCode())->header('Content-Type', 'application/json');
     }
 
-    public function webhooks()
+    public function webhooks(Request $request)
     {
 //        echo 'I am from Webhook';
-        Log::info('I am from Webhook');
+        //DB::table('webhook_test')->insert(['value' => json_encode($request)]);
+        Log::info('I am from Webhook '. json_encode($request->all()));
     }
 
     public function rate(Request $request)
