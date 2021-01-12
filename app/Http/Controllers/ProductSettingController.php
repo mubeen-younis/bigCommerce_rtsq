@@ -56,9 +56,9 @@ class ProductSettingController extends Controller
     public function getStoreProductsFromDb(Request $request)
     {
         $storeId = isset($request->store_id) ? $request->store_id : 1;
-        $allProducts = ProductSetting::where('store_id', $storeId)
+        $products = ProductSetting::where('store_id', $storeId)
             ->groupBy('source_product_id')->get();
-        return response()->json($allProducts);
+        return response()->json($products);
     }
 
     //
