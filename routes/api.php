@@ -23,6 +23,12 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
+Route::middleware([\App\Http\Middleware\EnsureTokenIsValid::class])->group(function () {
+    //========Product Routes
+    Route::get('/getProducts', [\App\Http\Controllers\ProductSettingController::class, 'getAllProducts']);
+    Route::get('/import_products', [\App\Http\Controllers\ProductSettingController::class, 'importProducts']);
+    Route::get('/get_products', [\App\Http\Controllers\ProductSettingController::class, 'getStoreProductsFromDb']);
+});
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);
 Route::get('/get_conn_settings', [ConnectionController::class, 'index']);
@@ -53,8 +59,6 @@ Route::get('get_carrier_info', [CarrierController::class, 'getCarrierDetails']);
 Route::get('getAllCarriers', [CarrierController::class, 'getAllCarriers']);
 
 
-//========Product Routes
-Route::get('/getProducts', [\App\Http\Controllers\ProductSettingController::class, 'getAllProducts']);
-Route::get('/import_products', [\App\Http\Controllers\ProductSettingController::class, 'importProducts']);
-Route::get('/get_products', [\App\Http\Controllers\ProductSettingController::class, 'getStoreProductsFromDb']);
+
+
 

@@ -28,7 +28,10 @@ class ProductSettingController extends Controller
         $storeName = isset($request->store_name) ? $request->store_name : 'uann2u';
         $storeToken = $this->mainController->getCustAccessTok($storeId);
         if (isset($storeToken['status']) && $storeToken['status'] == false) {
-            return response()->json($storeToken);
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'Token Not Found'
+            ], 200);
         }
         $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeName . '/v3/catalog/products';
         $headers[] = 'X-Auth-Client: ' . $this->mainController->getAppClientId();
@@ -37,18 +40,20 @@ class ProductSettingController extends Controller
         $headers[] = 'Accept: application/json';
         $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
         if (isset($response['status']) && $response['status'] == false) {
-            return response()->json($response);
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => $response['response']
+            ]);
         }
         $response = json_decode($response['response'], true);
-        /*   echo '<pre>';
-           print_r($response);
-           echo '</pre>';
-           die();*/
         if (isset($response['data']) && count($response['data'])) {
             foreach ($response['data'] as $product) {
                 $this->saveProducts->saveProduct($product, $storeId);
             }
-            return response()->json(['status' => true, 'response' => 'Products Saved Succesfully']);
+            return response()->json(['error' => false,
+                'data' => [],
+                'message' => 'Products Saved Succesfully'
+            ], 200);
         }
 
     }
@@ -58,7 +63,16 @@ class ProductSettingController extends Controller
         $storeId = isset($request->store_id) ? $request->store_id : 1;
         $products = ProductSetting::where('store_id', $storeId)
             ->groupBy('source_product_id')->get();
-        return response()->json($products);
+        if (empty($products)) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'No Products Available'
+            ], 404);
+        }
+        return response()->json(['error' => false,
+            'data' => $products,
+            'message' => ''
+        ], 200);
     }
 
     //
