@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AccessTokens;
+use App\Models\Store;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Http\Request;
 use GuzzleHttp\Psr7;
@@ -29,6 +30,15 @@ class MainController extends BaseController
         } else {
             return env('BC_APP_CLIENT_ID');
         }
+    }
+
+    public function getCustAccessTok($storeId)
+    {
+        $store = Store::where('id', $storeId)->first();
+        if (!empty($store)) {
+            return $store->access_token;
+        }
+        return ['status' => false, 'response' => 'Not Found'];
     }
 
     public function getAppSecret(Request $request)
@@ -101,7 +111,7 @@ class MainController extends BaseController
             }
 
             //return redirect('/');
-            Redirect::to($this->baseURL.'/?store='. $data['access_token']);
+            Redirect::to($this->baseURL . '/?store=' . $data['access_token']);
         } catch (RequestException $e) {
             $statusCode = $e->getResponse()->getStatusCode();
             $errorMessage = "An error occurred.";
@@ -144,7 +154,7 @@ class MainController extends BaseController
         }
         //header('location: http://bc-fe.eniture-dev3.com/?store='. $verifiedSignedRequestData['context']);
         //return redirect('/');
-        return Redirect::to($this->baseURL.'/?store='. $verifiedSignedRequestData['context']);
+        return Redirect::to($this->baseURL . '/?store=' . $verifiedSignedRequestData['context']);
     }
 
     public function error(Request $request)
@@ -208,7 +218,7 @@ class MainController extends BaseController
     {
 //        echo 'I am from Webhook';
         //DB::table('webhook_test')->insert(['value' => json_encode($request)]);
-        Log::info('I am from Webhook '. json_encode($request->all()));
+        Log::info('I am from Webhook ' . json_encode($request->all()));
     }
 
     public function rate(Request $request)
@@ -300,8 +310,8 @@ class MainController extends BaseController
                 ],
                 'sub_attributes' => [
                     'type' => "text",
-                    'name'=> "city",
-                    'id'=> "city",
+                    'name' => "city",
+                    'id' => "city",
                     'placeholder' => 'City'
                 ]
             ],
@@ -339,7 +349,7 @@ class MainController extends BaseController
                 'type' => 'checkbox',
                 'attributes' => [ // This array will contain element specific attributes
                     'label' => 'Copy billing address to physical address.',
-                     'name' => 'physical_address_checked',
+                    'name' => 'physical_address_checked',
                 ]
             ],
 
@@ -359,8 +369,8 @@ class MainController extends BaseController
                 ],
                 'sub_attributes' => [
                     'type' => "text",
-                    'name'=> "city",
-                    'id'=> "physical_city",
+                    'name' => "city",
+                    'id' => "physical_city",
                     'placeholder' => 'City'
                 ]
             ],

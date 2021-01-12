@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\CurlRequest;
+use App\Models\ProductSetting;
 use GuzzleHttp\Client;
 use GuzzleHttp\TransferStats;
 use Illuminate\Http\Request;
@@ -9,6 +11,56 @@ use Illuminate\Support\Facades\DB;
 
 class ProductSettingController extends Controller
 {
+    public $curlRequest;
+    public $mainController;
+    public $saveProducts;
+
+    public function __construct()
+    {
+        $this->curlRequest = new CurlRequest();
+        $this->mainController = new MainController();
+        $this->saveProducts = new ProductSetting();
+    }
+
+    public function importProducts(Request $request)
+    {
+        $storeId = isset($request->store_name) ? $request->store_name : 1;
+        $storeName = isset($request->store_name) ? $request->store_name : 'uann2u';
+        $storeToken = $this->mainController->getCustAccessTok($storeId);
+        if (isset($storeToken['status']) && $storeToken['status'] == false) {
+            return response()->json($storeToken);
+        }
+        $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeName . '/v3/catalog/products';
+        $headers[] = 'X-Auth-Client: ' . $this->mainController->getAppClientId();
+        $headers[] = 'X-Auth-Token: ' . $storeToken;
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
+        if (isset($response['status']) && $response['status'] == false) {
+            return response()->json($response);
+        }
+        $response = json_decode($response['response'], true);
+        /*   echo '<pre>';
+           print_r($response);
+           echo '</pre>';
+           die();*/
+        if (isset($response['data']) && count($response['data'])) {
+            foreach ($response['data'] as $product) {
+                $this->saveProducts->saveProduct($product, $storeId);
+            }
+            return response()->json(['status' => true, 'response' => 'Products Saved Succesfully']);
+        }
+
+    }
+
+    public function getStoreProductsFromDb(Request $request)
+    {
+        $storeId = isset($request->store_id) ? $request->store_id : 1;
+        $products = ProductSetting::where('store_id', $storeId)
+            ->groupBy('source_product_id')->get();
+        return response()->json($products);
+    }
+
     //
     public function getAllProducts(Request $request)
     {
