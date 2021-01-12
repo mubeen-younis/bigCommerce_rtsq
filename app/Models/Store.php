@@ -7,4 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 class Store extends Model
 {
     //
+    public function installedCarriers()
+    {
+        return $this->hasMany(InstalledCarrier::class);
+    }
 }

@@ -51,4 +51,9 @@ Route::get('/getDetails/{zip_code}','AdressController@googleApiCurl');
 
 //=============Carrier Route
 Route::get('get_carrier_info', [CarrierController::class, 'getCarrierDetails']);
+Route::get('getAllCarriers', [CarrierController::class, 'getAllCarriers']);
+
+
+//========Product Routes
+Route::get('/getProducts', [\App\Http\Controllers\ProductSettingController::class, 'getAllProducts']);
 

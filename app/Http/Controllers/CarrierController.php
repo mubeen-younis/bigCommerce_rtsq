@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Carrier;
+use App\Models\InstalledCarrier;
+use App\Models\Store;
 use Illuminate\Http\Request;
 
 class CarrierController extends Controller
@@ -13,11 +15,28 @@ class CarrierController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function index()
-
     {
 
      return response()->json(Carrier::get(),200);
 
+    }
+
+    public function getAllCarriers(Request $request)
+    {
+        $response = [
+            'error' => true,
+            'message' => 'Something went wrong',
+            'data' => []
+        ];
+        $store = $request->store ?? null;
+        if (!empty($store)){
+            $installedCarriers = Store::find('hash', $store)->installedCarriers();
+            $response['data']['installedCarriers'] = $installedCarriers;
+        }else{
+            $response['message'] = 'Store hash is required.';
+        }
+
+        return response()->json($response, 200);
     }
 
     /**
