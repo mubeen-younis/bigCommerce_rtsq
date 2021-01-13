@@ -17,17 +17,19 @@ class CreateLocationsTable extends Migration
             $table->id();
             $table->char('nickname', 100)->nullable();
             $table->unsignedBigInteger('store_id');
-             $table->foreign('store_id')
-              ->references('id')->on('stores');
-            $table->tinyInteger('type');  
+            $table->foreign('store_id')
+                ->references('id')->on('stores');
+            $table->tinyInteger('type');
             $table->char('city', 50);
-            $table->char('state', 50); 
+            $table->char('state', 50);
             $table->char('zip_code', 50);
             $table->char('country', 20);
-            // $table->json('additional_params'); 
-            $table->dateTime('created_at'); 
+            $table->json('additionals');
+
+            // $table->json('additional_params');
+            $table->dateTime('created_at');
             $table->dateTime('updated_at');
-            // $table->dateTime('deleted_at')->default(null);     
+            // $table->dateTime('deleted_at')->default(null);
         });
     }
 

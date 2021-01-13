@@ -62,22 +62,117 @@ class LocationsController extends Controller
      */
     public function store(Request $request)
     {
-        print_r($request->all());
-        die();
         $rules = [
             'city' => 'required',
             'state' => 'required',
-            'zip_code' => 'required',
+            'zipcode' => 'required',
             'country' => 'required',
+            'location_type' => 'required'
         ];
-        /*$validator = Validator::make($request->all(), $rules);
+        $validator = Validator::make($request->all(), $rules);
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 400);
-        }*/
-        //$data = $request->all();
-        $location = new Locations();
-        return response()->json(['message' => "Form Submitted Successfully!"]);
-        // return response()->json($connection, 201);
+            return response()->json(
+                ['error' => true,
+                    'data' => $validator->errors()->all(),
+                    'message' => 'Validation Errors'
+                ], 400);
+        }
+        if (isset($request->location_type) && $request->location_type == 1) {
+            $resp = $this->saveWarehouseAddress($request);
+        } elseif (isset($request->location_type) && $request->location_type == 2) {
+            $resp = $this->saveDropshipAddress($request);
+        } else {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'Request Not Properly Formatted'
+            ], 404);
+        }
+        $status = $resp['status'];
+        unset($resp['status']);
+        return response()->json($resp, $status);
+
+    }
+
+    public function saveWarehouseAddress($request)
+    {
+        $method = "Added";
+        if (!empty($request->location_id)) {
+            $method = "Updated";
+            $location = Locations::where('id', $request->location_id)->where('type', 1)->first();
+            if ($location === null) {
+                return ['error' => true,
+                    'data' => [],
+                    'message' => 'Incorrect Location Id',
+                    'status' => 404
+                ];
+            }
+        } else {
+            $location = new Locations();
+            if (Locations::where('zip_code', $request->zipcode)->where('type', 1)->exists()) {
+                return ['error' => true,
+                    'data' => [],
+                    'message' => 'Warehouse already exists',
+                    'status' => 404
+                ];
+            }
+        }
+        $loc = $this->saveLocationRequest($location, $request);
+        return ['error' => false,
+            'data' => [$loc],
+            'message' => 'Successfully ' . $method . ' Warehouse Address',
+            'status' => 200
+        ];
+    }
+
+    public function saveDropshipAddress($request)
+    {
+        $method = "Added";
+        if (!empty($request->location_id)) {
+            $method = "Updated";
+            $location = Locations::where('id', $request->location_id)->where('type', 2)->first();
+            if ($location === null) {
+                return ['error' => true,
+                    'data' => [],
+                    'message' => 'Incorrect Location Id',
+                    'status' => 404
+                ];
+            }
+        } else {
+            $location = new Locations();
+            if (Locations::where('zip_code', $request->zipcode)->where('type', 2)->exists()) {
+                return ['error' => true,
+                    'data' => [],
+                    'message' => 'Dropship already exists',
+                    'status' => 404
+                ];
+            }
+        }
+        $loc = $this->saveLocationRequest($location, $request);
+        return ['error' => false,
+            'data' => [$loc],
+            'message' => 'Successfully ' . $method . ' Dropship Address',
+            'status' => 200
+        ];
+    }
+
+    public function saveLocationRequest($location, $request)
+    {
+        $nickname = "";
+        if (empty($request->nickname)) {
+            $nickname = $request->zipcode . '_' . $request->city . '_' . $request->state;
+        } else {
+            $nickname = $request->nickname;
+        }
+        $location->nickname = $nickname;
+        $location->store_id = $request->store_id;
+        $location->type = $request->location_type;
+        $location->zip_code = $request->zipcode;
+        $location->city = $request->city;
+        $location->state = $request->state;
+        $location->country = $request->country;
+        $location->additionals = json_encode($request->all());
+        $location->save();
+        return $location->id;
     }
 
     /**
