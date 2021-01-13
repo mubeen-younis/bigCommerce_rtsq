@@ -45,16 +45,18 @@ class CurlRequest
             curl_setopt($curl, CURLOPT_FAILONERROR, true);
         }
         $result = curl_exec($curl);
-
+        $info = curl_getinfo($curl);
         if (curl_errno($curl)) {
             $error_msg = curl_error($curl);
             $this->curlResponse['status'] = false;
             $this->curlResponse['response'] = $error_msg;
             return $this->curlResponse;
         }
+
         curl_close($curl);
         $this->curlResponse['status'] = true;
         $this->curlResponse['response'] = $result;
+        $this->curlResponse['info'] = $info;
         return $this->curlResponse;
 
     }

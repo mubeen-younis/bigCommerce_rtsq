@@ -28,6 +28,14 @@ Route::middleware([\App\Http\Middleware\EnsureTokenIsValid::class])->group(funct
     Route::get('/getProducts', [\App\Http\Controllers\ProductSettingController::class, 'getAllProducts']);
     Route::get('/import_products', [\App\Http\Controllers\ProductSettingController::class, 'importProducts']);
     Route::get('/get_products', [\App\Http\Controllers\ProductSettingController::class, 'getStoreProductsFromDb']);
+    Route::get('/get_product', [\App\Http\Controllers\ProductSettingController::class, 'getSingleProductDetail']);
+
+    //=========Locations
+    Route::put('/location/update/{locations}', 'LocationsController@update');
+    Route::delete('warehouse/delete/{id}', 'LocationsController@delete_warehouse');
+    Route::delete('dropship/delete/{id}', 'LocationsController@delete_dropships');
+    Route::get('/get_loc_from_zip', [\App\Http\Controllers\LocationsController::class, 'getLocationFromZip']);
+    Route::post('/save_location', [\App\Http\Controllers\LocationsController::class, 'store']);
 });
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);
@@ -46,9 +54,7 @@ Route::get('/get_dropships', 'LocationsController@dropships');
 Route::post('/submit_location', [LocationsController::class, 'store']);
 
 
-Route::put('/location/update/{locations}', 'LocationsController@update');
-Route::delete('warehouse/delete/{id}', 'LocationsController@delete_warehouse');
-Route::delete('dropship/delete/{id}', 'LocationsController@delete_dropships');
+
 Route::post('/save_csv', 'CsvController@store');
 Route::post('/save_boxsize', 'BoxSizeController@store');
 Route::get('/get_boxsize', 'BoxSizeController@index');

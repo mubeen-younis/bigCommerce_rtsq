@@ -17,10 +17,12 @@ class EnsureTokenIsValid
      */
     public function handle(Request $request, Closure $next)
     {
-        if (isset($request->token) && !empty($request->token)) {
-            if (Store::where('token', $request->token)->exists()) {
-                $storeID = Store::where('token', $request->token)->first();
+
+        if (!empty($request->header('token'))) {
+            if (Store::where('token', $request->header('token'))->exists()) {
+                $storeID = Store::where('token', $request->header('token'))->first();
                 $request['store_id'] = $storeID->id;
+                $request['store_name'] = $storeID->hash;
                 return $next($request);
             }
             return response()->json(['error' => true,

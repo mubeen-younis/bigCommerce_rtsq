@@ -24,7 +24,7 @@ class ProductSettingController extends Controller
 
     public function importProducts(Request $request)
     {
-        $storeId = isset($request->store_name) ? $request->store_name : 1;
+        $storeId = isset($request->store_id) ? $request->store_id : 1;
         $storeName = isset($request->store_name) ? $request->store_name : 'uann2u';
         $storeToken = $this->mainController->getCustAccessTok($storeId);
         if (isset($storeToken['status']) && $storeToken['status'] == false) {
@@ -58,12 +58,17 @@ class ProductSettingController extends Controller
 
     }
 
-    public function getStoreProductsFromDb(Request $request)
+    public function getSingleProductDetail(Request $request)
     {
-        $storeId = isset($request->store_id) ? $request->store_id : 1;
-        $products = ProductSetting::where('store_id', $storeId)
-            ->groupBy('source_product_id')->get();
-        if (empty($products)) {
+        if (!isset($request->product_id)) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'No Product Id'
+            ], 404);
+        }
+        $products = ProductSetting::where('source_product_id', $request->product_id)
+            ->get();
+        if ($products->isEmpty()) {
             return response()->json(['error' => true,
                 'data' => [],
                 'message' => 'No Products Available'
@@ -74,6 +79,23 @@ class ProductSettingController extends Controller
             'message' => ''
         ], 200);
     }
+
+    public function getStoreProductsFromDb(Request $request)
+    {
+        $products = ProductSetting::where('store_id', $request->store_id)
+            ->groupBy('source_product_id')->get();
+        if ($products->isEmpty()) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'No Products Available'
+            ], 404);
+        }
+        return response()->json(['error' => false,
+            'data' => $products,
+            'message' => ''
+        ], 200);
+    }
+
 
     //
     public function getAllProducts(Request $request)
