@@ -6,5 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class InstalledCarrier extends Model
 {
-       protected $guarded = [];
+    protected $guarded = [];
+    public $timestamps = false;
 }

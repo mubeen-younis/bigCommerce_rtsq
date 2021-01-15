@@ -106,6 +106,15 @@ class LocationsController extends Controller
                     'status' => 404
                 ];
             }
+            if ($location->zip_code != $request->zipcode) {
+                if (Locations::where('zip_code', $request->zipcode)->where('type', 1)->exists()) {
+                    return ['error' => true,
+                        'data' => [],
+                        'message' => 'Warehouse address with this zipcode already exists',
+                        'status' => 404
+                    ];
+                }
+            }
         } else {
             $location = new Locations();
             if (Locations::where('zip_code', $request->zipcode)->where('type', 1)->exists()) {
@@ -136,6 +145,15 @@ class LocationsController extends Controller
                     'message' => 'Incorrect Location Id',
                     'status' => 404
                 ];
+            }
+            if ($location->zip_code != $request->zipcode) {
+                if (Locations::where('zip_code', $request->zipcode)->where('type', 2)->exists()) {
+                    return ['error' => true,
+                        'data' => [],
+                        'message' => 'Dropship address with this zipcode already exists',
+                        'status' => 404
+                    ];
+                }
             }
         } else {
             $location = new Locations();
@@ -175,27 +193,6 @@ class LocationsController extends Controller
         return $location->id;
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param \App\Locations $locations
-     * @return \Illuminate\Http\Response
-     */
-    public function show(Locations $locations)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param \App\Locations $locations
-     * @return \Illuminate\Http\Response
-     */
-    public function edit(Locations $locations)
-    {
-        //
-    }
 
     /**
      * Update the specified resource in storage.
@@ -211,102 +208,137 @@ class LocationsController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
-     *
-     * @param \App\Locations $locations
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function delete_warehouse($id)
+    public function getSingleLocation(Request $request)
     {
-        DB::table('locations')
-            ->where('id', $id)
-            ->where('type', '=', 1)
-            ->delete();
-
-        return response()->json(['message' => "Record deleted Successfully"]);
+        if (empty($request->location_id)) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'No Location Id'
+            ], 404);
+        }
+        $location = Locations::where('id', $request->location_id)
+            ->first();
+        if ($location === null) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'No Locations Available'
+            ], 404);
+        }
+        return response()->json(['error' => false,
+            'data' => $location,
+            'message' => ''
+        ], 200);
     }
 
-    public function delete_dropships($id)
+    public function getLocations(Request $request)
     {
-        DB::table('locations')
-            ->where('id', $id)
-            ->where('type', '=', 2)
-            ->delete();
-        return response()->json(['message' => "Record deleted Successfully"]);
+        $locations = Locations::where('store_id', $request->store_id)
+            ->get();
+        if ($locations->isEmpty()) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'No Locations Available'
+            ], 404);
+        }
+        return response()->json(['error' => false,
+            'data' => $locations,
+            'message' => ''
+        ], 200);
+    }
+
+    public function deleteLocation(Request $request)
+    {
+        if (empty($request->location_id)) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'No Location Id'
+            ], 404);
+        }
+        if (Locations::where('id', $request->location_id)->exists()) {
+            Locations::where('id', $request->location_id)->delete();
+            return response()->json(['error' => false,
+                'data' => [],
+                'message' => 'Location Deleted Successfully'
+            ], 200);
+        } else {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'No Location exists against this Id'
+            ], 404);
+        }
     }
 
     public function getLocationFromZip(Request $request)
     {
-        if (!isset($request->zip_code) || empty($request->zip_code)) {
+        if (empty($request->zip_code)) {
             return response()->json(['error' => true,
                 'data' => [],
                 'message' => 'No Valid Zip Code Provided'
             ], 404);
         }
         $zipCode = $request->zip_code;
-        if (!empty($zipCode)) {
-            $url = "https://maps.googleapis.com/maps/api/geocode/json?address=" . urlencode($zipCode) . "&key=AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w";
-            $zipcodeDetail = $this->curlRequest->enSingleCurlRequest($url, [], [], 'GET', false);
-            if ($zipcodeDetail['info']['http_code'] != 200) {
-                return response()->json(['error' => true,
-                    'data' => [],
-                    'message' => 'Unable to connect to server'
-                ], 404);
-            }
-
-            $mapResult = json_decode($zipcodeDetail['response'], true);
-
-            if (isset($mapResult['error_message']) || $mapResult['status'] != 'OK') {
-                return response()->json(['error' => true,
-                    'data' => [],
-                    'message' => isset($mapResult['error_message']) ? $mapResult['error_message'] : " Zero Results"
-                ], 404);
-            }
-            $city = [];
-            $state = "";
-            $country = "";
-            if (count($mapResult['results']) > 0) {
-                //dd($mapResult['results']);
-                $arrComponents = $mapResult['results'][0]['address_components'];
-                if (isset($mapResult['results'][0]['postcode_localities'])) {
-                    foreach ($mapResult['results'][0]['postcode_localities'] as $index => $component) {
-                        $city[] = $component;
-                    }
-                    $postcodeLocalities = 1;
-                } elseif ($arrComponents) {
-                    foreach ($arrComponents as $index => $component) {
-                        $type = $component['types'][0];
-                        if ($type == "sublocality_level_1" || $type == "locality") {
-                            $city[] = trim($component['long_name']);
-                        }
-                    }
-                }
-                if ($arrComponents) {
-                    $country = '';
-                    $state = '';
-                    foreach ($arrComponents as $index => $stateApp) {
-                        $type = $stateApp['types'][0];
-                        if ($state == "" && ($type == "administrative_area_level_1")) {
-                            $state = trim($stateApp['short_name']);
-                        }
-                        if ($country == "" && ($type == "country")) {
-                            $country = trim($stateApp['short_name']);
-                        }
-                    }
-                }
-                return response()->json(['error' => false,
-                    'data' => ['postal_code' => $zipCode, 'city' => $city, 'state' => $state, 'country' => $country],
-                    'message' => ''
-                ], 200);
-            } else {
-                return response()->json(['error' => true,
-                    'data' => [],
-                    'message' => 'Something Went Wrong'
-                ], 404);
-
-            }
+        $url = "https://maps.googleapis.com/maps/api/geocode/json?address=" . urlencode($zipCode) . "&key=AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w";
+        $zipcodeDetail = $this->curlRequest->enSingleCurlRequest($url, [], [], 'GET', false);
+        if ($zipcodeDetail['info']['http_code'] != 200) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'Unable to connect to server'
+            ], 404);
         }
-        //Added Arslan
-        return ['error' => 'Zip code is not provided.'];
+
+        $mapResult = json_decode($zipcodeDetail['response'], true);
+
+        if (isset($mapResult['error_message']) || $mapResult['status'] != 'OK') {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => isset($mapResult['error_message']) ? $mapResult['error_message'] : " Zero Results"
+            ], 404);
+        }
+        $city = [];
+        $state = "";
+        $country = "";
+        if (count($mapResult['results']) > 0) {
+            //dd($mapResult['results']);
+            $arrComponents = $mapResult['results'][0]['address_components'];
+            if (isset($mapResult['results'][0]['postcode_localities'])) {
+                foreach ($mapResult['results'][0]['postcode_localities'] as $index => $component) {
+                    $city[] = $component;
+                }
+            } elseif ($arrComponents) {
+                foreach ($arrComponents as $index => $component) {
+                    $type = $component['types'][0];
+                    if ($type == "sublocality_level_1" || $type == "locality") {
+                        $city[] = trim($component['long_name']);
+                    }
+                }
+            }
+            if ($arrComponents) {
+                $country = '';
+                $state = '';
+                foreach ($arrComponents as $index => $stateApp) {
+                    $type = $stateApp['types'][0];
+                    if ($state == "" && ($type == "administrative_area_level_1")) {
+                        $state = trim($stateApp['short_name']);
+                    }
+                    if ($country == "" && ($type == "country")) {
+                        $country = trim($stateApp['short_name']);
+                    }
+                }
+            }
+            return response()->json(['error' => false,
+                'data' => ['postal_code' => $zipCode, 'city' => $city, 'state' => $state, 'country' => $country],
+                'message' => ''
+            ], 200);
+        } else {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'Something Went Wrong'
+            ], 404);
+
+        }
+
     }
 }

@@ -30,12 +30,21 @@ Route::middleware([\App\Http\Middleware\EnsureTokenIsValid::class])->group(funct
     Route::get('/get_products', [\App\Http\Controllers\ProductSettingController::class, 'getStoreProductsFromDb']);
     Route::get('/get_product', [\App\Http\Controllers\ProductSettingController::class, 'getSingleProductDetail']);
 
+
+    //=======Carriers
+    Route::get('/get_add_tab_sett', [\App\Http\Controllers\AdditionalCarrierTabSettingController::class, 'getAddTabSett']);
+    Route::get('/get_inst_car', [\App\Http\Controllers\InstalledCarrierController::class, 'getInstalledCarriers']);
+    Route::post('/inst_carrier', [\App\Http\Controllers\InstalledCarrierController::class, 'installCarrier']);
+
     //=========Locations
     Route::put('/location/update/{locations}', 'LocationsController@update');
     Route::delete('warehouse/delete/{id}', 'LocationsController@delete_warehouse');
     Route::delete('dropship/delete/{id}', 'LocationsController@delete_dropships');
     Route::get('/get_loc_from_zip', [\App\Http\Controllers\LocationsController::class, 'getLocationFromZip']);
     Route::post('/save_location', [\App\Http\Controllers\LocationsController::class, 'store']);
+    Route::get('/get_location', [\App\Http\Controllers\LocationsController::class, 'getSingleLocation']);
+    Route::get('/get_locations', [\App\Http\Controllers\LocationsController::class, 'getLocations']);
+    Route::post('/delete_location', [\App\Http\Controllers\LocationsController::class, 'deleteLocation']);
 });
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);
@@ -43,7 +52,6 @@ Route::get('/get_conn_settings', [ConnectionController::class, 'index']);
 Route::post('/submit_connection_settings', [ConnectionController::class, 'store']);
 Route::get('/get_qoute_settings', [QuoteSettingsController::class, 'getSettings']);
 Route::post('/submit_quote_settings', [QuoteSettingsController::class, 'saveSettings']);
-Route::get('/get_locations', [LocationsController::class, 'index']);
 
 /*------Services tab-------*/
 Route::post('/submit_carriers', [AdditionalCarrierTabSettingController::class, 'store']);
@@ -52,7 +60,6 @@ Route::get('/get_carrier_services', [AdditionalCarrierTabSettingController::clas
 Route::get('/get_warehouse', 'LocationsController@warehouse');
 Route::get('/get_dropships', 'LocationsController@dropships');
 Route::post('/submit_location', [LocationsController::class, 'store']);
-
 
 
 Route::post('/save_csv', 'CsvController@store');

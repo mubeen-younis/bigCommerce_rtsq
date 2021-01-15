@@ -60,7 +60,7 @@ class ProductSettingController extends Controller
 
     public function getSingleProductDetail(Request $request)
     {
-        if (!isset($request->product_id)) {
+        if (empty($request->product_id)) {
             return response()->json(['error' => true,
                 'data' => [],
                 'message' => 'No Product Id'
@@ -98,7 +98,7 @@ class ProductSettingController extends Controller
 
 
     //
-    public function getAllProducts(Request $request)
+/*    public function getAllProducts(Request $request)
     {
         $this->getProductsFromBC();
     }
@@ -161,5 +161,5 @@ class ProductSettingController extends Controller
         print_r($products);
         echo '</pre>';
         exit();*/
-    }
+   // }*/
 }

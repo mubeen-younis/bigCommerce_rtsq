@@ -15,14 +15,14 @@ class CreateInstalledCarriersTable extends Migration
     {
         Schema::create('installed_carriers', function (Blueprint $table) {
             $table->id();
-            $table->bigInteger('store_id')->unique();;
-            $table->bigInteger('carrier_plan_id')->unique();;
+            $table->bigInteger('store_id');
+            $table->bigInteger('carrier_plan_id')->unique();
             //    $table->bigInteger('install_carrier_id')->unique();
             // $table->bigInteger('installed_app_id');
             $table->boolean('is_enabled')->default(false);
-            $table->dateTime('installed_at'); 
-            $table->dateTime('plan_updated_at');    
-            $table->dateTime('plan_expiry_at'); 
+            $table->dateTime('installed_at');
+            $table->dateTime('plan_updated_at');
+            $table->dateTime('plan_expiry_at');
         });
     }
 
