@@ -58,6 +58,34 @@ class ProductSettingController extends Controller
 
     }
 
+    public function getSingleProductFromApi($request)
+    {
+        $storeId = isset($request['store_id']) ? $request['store_id'] : '';
+        $storeName = isset($request['store_name']) ? $request['store_name'] : '';
+        $productId = isset($request['product_id']) ? $request['product_id'] : '';
+        $storeToken = $this->mainController->getCustAccessTok($storeId);
+        if (isset($storeToken['status']) && $storeToken['status'] == false) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'Token Not Found'
+            ], 200);
+        }
+        $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeName . '/v3/catalog/products/' . $productId;
+        $headers[] = 'X-Auth-Client: ' . $this->mainController->getAppClientId();
+        $headers[] = 'X-Auth-Token: ' . $storeToken;
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
+        $response = json_decode($response['response'], true);
+        if (isset($response['data']) && count($response['data'])) {
+            $this->saveProducts->saveProduct($response['data'], $storeId);
+            return response()->json(['error' => false,
+                'data' => [],
+                'message' => 'Products Saved Succesfully'
+            ], 200);
+        }
+    }
+
     public function getSingleProductDetail(Request $request)
     {
         if (empty($request->product_id)) {

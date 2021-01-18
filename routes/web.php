@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Route;
     return view('welcome');
 });*/
 
-Route::post('webhooks',[MainController::class, 'webhooks']);
+Route::post('webhooks',[MainController::class, 'updateProductFromWebHook']);
 
 Route::group(['prefix' => 'auth'], function () {
     Route::get('install', [MainController::class, 'install']);

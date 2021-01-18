@@ -215,15 +215,27 @@ class MainController extends BaseController
         return response($result->getBody(), $result->getStatusCode())->header('Content-Type', 'application/json');
     }
 
-    public function webhooks(Request $request)
+    public function updateProductFromWebHook(Request $request)
     {
-        $product = ProductSetting::where('id', 1)
-            ->first();
-        $product->settings = json_encode($request->all());
-        $product->update();
+        try {
+            $postData = file_get_contents("php://input");
+            $postData = json_decode($postData, true);
+            $storeHash = explode('/', $postData['producer']);
+            $storeHash = $storeHash[1];
+            $productId = $postData['data']['id'];
+            $storeID = Store::where('hash', $storeHash)->first();
+            $toRequest['store_id'] = $storeID->id;
+            $toRequest['store_name'] = $storeHash;
+            $toRequest['product_id'] = $productId;
+            $prodSetCon = new ProductSettingController();
+            $prodSetCon->getSingleProductFromApi($toRequest);
+        } catch (\Exception $exception) {
+            //  Have to LOg Here
+        }
+
 //        echo 'I am from Webhook';
         //DB::table('webhook_test')->insert(['value' => json_encode($request)]);
-       // Log::info('I am from Webhook ' . json_encode($request->all()));
+        // Log::info('I am from Webhook ' . json_encode($request->all()));
     }
 
     public function rate(Request $request)
