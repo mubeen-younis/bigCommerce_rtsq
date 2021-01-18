@@ -215,7 +215,7 @@ class MainController extends BaseController
         return response($result->getBody(), $result->getStatusCode())->header('Content-Type', 'application/json');
     }
 
-    public function updateProductFromWebHook(Request $request)
+    public function addAndUpdateProductFromWebHook(Request $request)
     {
         try {
             $postData = file_get_contents("php://input");

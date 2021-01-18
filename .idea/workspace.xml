@@ -4,8 +4,6 @@
     <list default="true" id="24715a4d-0eda-4296-a2c3-b3a4aedba505" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/Http/Controllers/MainController.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Http/Controllers/MainController.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/Http/Controllers/ProductSettingController.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Http/Controllers/ProductSettingController.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/Http/Middleware/EnsureTokenIsValid.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Http/Middleware/EnsureTokenIsValid.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/routes/web.php" beforeDir="false" afterPath="$PROJECT_DIR$/routes/web.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -209,7 +207,7 @@
       <workItem from="1610511963303" duration="23004000" />
       <workItem from="1610689846923" duration="11037000" />
       <workItem from="1610804451232" duration="4212000" />
-      <workItem from="1610949880630" duration="13019000" />
+      <workItem from="1610949880630" duration="13187000" />
     </task>
     <servers />
   </component>
