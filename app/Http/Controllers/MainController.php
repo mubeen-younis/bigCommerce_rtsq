@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AccessTokens;
+use App\Models\ProductSetting;
 use App\Models\Store;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Http\Request;
@@ -216,9 +217,13 @@ class MainController extends BaseController
 
     public function webhooks(Request $request)
     {
+        $product = ProductSetting::where('id', 1)
+            ->first();
+        $product->settings = json_encode($request->all());
+        $product->update();
 //        echo 'I am from Webhook';
         //DB::table('webhook_test')->insert(['value' => json_encode($request)]);
-        Log::info('I am from Webhook ' . json_encode($request->all()));
+       // Log::info('I am from Webhook ' . json_encode($request->all()));
     }
 
     public function rate(Request $request)

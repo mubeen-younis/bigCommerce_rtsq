@@ -96,6 +96,7 @@ class LocationsController extends Controller
     public function saveWarehouseAddress($request)
     {
         $method = "Added";
+        $callBy = "Warehouse";
         if (!empty($request->location_id)) {
             $method = "Updated";
             $location = Locations::where('id', $request->location_id)->where('type', 1)->first();
@@ -106,6 +107,8 @@ class LocationsController extends Controller
                     'status' => 404
                 ];
             }
+            // Checking if zipcode matches with current location saved record
+            // its important when updating to know whether a zip exists on any other record or not
             if ($location->zip_code != $request->zipcode) {
                 if (Locations::where('zip_code', $request->zipcode)->where('type', 1)->exists()) {
                     return ['error' => true,
@@ -125,17 +128,14 @@ class LocationsController extends Controller
                 ];
             }
         }
-        $loc = $this->saveLocationRequest($location, $request);
-        return ['error' => false,
-            'data' => [$loc],
-            'message' => 'Successfully ' . $method . ' Warehouse Address',
-            'status' => 200
-        ];
+        $loc = $this->saveLocationRequest($location, $request, $method, $callBy);
+        return $loc;
     }
 
     public function saveDropshipAddress($request)
     {
         $method = "Added";
+        $callBy = "Dropship";
         if (!empty($request->location_id)) {
             $method = "Updated";
             $location = Locations::where('id', $request->location_id)->where('type', 2)->first();
@@ -146,6 +146,8 @@ class LocationsController extends Controller
                     'status' => 404
                 ];
             }
+            // Checking if zipcode matches with current location saved record
+            // its important when updating to know whether a zip exists on any other record or not
             if ($location->zip_code != $request->zipcode) {
                 if (Locations::where('zip_code', $request->zipcode)->where('type', 2)->exists()) {
                     return ['error' => true,
@@ -165,15 +167,11 @@ class LocationsController extends Controller
                 ];
             }
         }
-        $loc = $this->saveLocationRequest($location, $request);
-        return ['error' => false,
-            'data' => [$loc],
-            'message' => 'Successfully ' . $method . ' Dropship Address',
-            'status' => 200
-        ];
+        $loc = $this->saveLocationRequest($location, $request, $method, $callBy);
+        return $loc;
     }
 
-    public function saveLocationRequest($location, $request)
+    public function saveLocationRequest($location, $request, $method, $callBy)
     {
         $nickname = "";
         if (empty($request->nickname)) {
@@ -181,31 +179,31 @@ class LocationsController extends Controller
         } else {
             $nickname = $request->nickname;
         }
-        $location->nickname = $nickname;
-        $location->store_id = $request->store_id;
-        $location->type = $request->location_type;
-        $location->zip_code = $request->zipcode;
-        $location->city = $request->city;
-        $location->state = $request->state;
-        $location->country = $request->country;
-        $location->additionals = json_encode($request->all());
-        $location->save();
-        return $location->id;
+        try {
+            $location->nickname = $nickname;
+            $location->store_id = $request->store_id;
+            $location->type = $request->location_type;
+            $location->zip_code = $request->zipcode;
+            $location->city = $request->city;
+            $location->state = $request->state;
+            $location->country = $request->country;
+            $location->additionals = json_encode($request->all());
+            $location->save();
+            return ['error' => false,
+                'data' => [$location->id],
+                'message' => 'Successfully ' . $method . ' ' . $callBy . ' Address',
+                'status' => 200
+            ];
+        } catch (\Exception $exception) {
+            return ['error' => true,
+                'data' => [],
+                'message' => $exception->getMessage(),
+                'status' => 500
+            ];
+        }
+
     }
 
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @param \App\Locations $locations
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, Locations $locations)
-    {
-        $locations->update($request->all());
-        return response()->json($locations, 200);
-    }
 
     /**
      * @param Request $request

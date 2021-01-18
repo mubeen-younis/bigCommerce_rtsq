@@ -15,19 +15,17 @@ class CreateCarrierPlansTable extends Migration
     {
         Schema::create('carrier_plans', function (Blueprint $table) {
             $table->id();
-            $table->char('name', 100);
-            $table->unsignedBigInteger('carrier_id');
-            $table->foreign('carrier_id')
-            ->references('id')->on('carriers')
+            $table->string('plan_type', 50);
+            $table->unsignedBigInteger('installed_carrier_id');
+            $table->foreign('installed_carrier_id')
+            ->references('id')->on('installed_carriers')
             ->onDelete('cascade');
-            $table->char('slug', 100);
-            $table->integer('price');
-            $table->integer('duration_period');		
-            $table->json('page_data');
-            $table->tinyInteger('Status');
-            $table->integer('sort');		          
-            $table->dateTime('created_at'); 
-            $table->dateTime('updated_at');  
+            $table->string('pakg_price', 10);
+            $table->string('pakg_duration', 10);
+            $table->string('pakg_group', 10);
+            $table->string('pakg_level', 10);
+            $table->string('expiry_date',100);
+            $table->timestamps();
         });
     }
 

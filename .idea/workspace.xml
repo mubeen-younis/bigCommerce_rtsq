@@ -3,13 +3,15 @@
   <component name="ChangeListManager">
     <list default="true" id="24715a4d-0eda-4296-a2c3-b3a4aedba505" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/Http/Controllers/AdditionalCarrierTabSettingController.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Http/Controllers/AdditionalCarrierTabSettingController.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/Http/Controllers/CarrierController.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Http/Controllers/CarrierController.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/Http/Controllers/CarrierPlanController.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Http/Controllers/CarrierPlanController.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/Http/Controllers/InstalledCarrierController.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Http/Controllers/InstalledCarrierController.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/Http/Controllers/LocationsController.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Http/Controllers/LocationsController.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/Http/Controllers/MainController.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Http/Controllers/MainController.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/Http/Controllers/ProductSettingController.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Http/Controllers/ProductSettingController.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/Http/Middleware/EnsureTokenIsValid.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Http/Middleware/EnsureTokenIsValid.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/Models/InstalledCarrier.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Models/InstalledCarrier.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/database/migrations/2020_07_01_9_create_installed_carriers_table.php" beforeDir="false" afterPath="$PROJECT_DIR$/database/migrations/2020_07_01_9_create_installed_carriers_table.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/database/migrations/2020_07_01_8_create_carrier_plans_table.php" beforeDir="false" afterPath="$PROJECT_DIR$/database/migrations/2020_07_01_8_create_carrier_plans_table.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/.htaccess" beforeDir="false" afterPath="$PROJECT_DIR$/public/.htaccess" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/routes/api.php" beforeDir="false" afterPath="$PROJECT_DIR$/routes/api.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -39,6 +41,9 @@
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="PackageJsonUpdateNotifier">
+    <dismissed value="$PROJECT_DIR$/package.json" />
   </component>
   <component name="PhpWorkspaceProjectConfiguration">
     <include_path>
@@ -208,7 +213,9 @@
       <workItem from="1610436937320" duration="13591000" />
       <workItem from="1610476507488" duration="742000" />
       <workItem from="1610511963303" duration="23004000" />
-      <workItem from="1610689846923" duration="8320000" />
+      <workItem from="1610689846923" duration="11037000" />
+      <workItem from="1610804451232" duration="4212000" />
+      <workItem from="1610949880630" duration="8517000" />
     </task>
     <servers />
   </component>
@@ -221,11 +228,11 @@
     </state>
     <state x="275" y="22" key="#Deployment/0.0.1366.728@0.0.1366.728" timestamp="1610368098972" />
     <state x="309" y="25" key="#Deployment/0.0.1536.824@0.0.1536.824" timestamp="1610445163791" />
-    <state x="464" y="134" key="#com.jetbrains.php.actions.copyPaste.importReferences.PhpImportReferencesDialog" timestamp="1610693819696">
+    <state x="464" y="134" key="#com.jetbrains.php.actions.copyPaste.importReferences.PhpImportReferencesDialog" timestamp="1610807144312">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state x="413" y="118" key="#com.jetbrains.php.actions.copyPaste.importReferences.PhpImportReferencesDialog/0.0.1366.728@0.0.1366.728" timestamp="1610361690648" />
-    <state x="464" y="134" key="#com.jetbrains.php.actions.copyPaste.importReferences.PhpImportReferencesDialog/0.0.1536.824@0.0.1536.824" timestamp="1610693819696" />
+    <state x="464" y="134" key="#com.jetbrains.php.actions.copyPaste.importReferences.PhpImportReferencesDialog/0.0.1536.824@0.0.1536.824" timestamp="1610807144312" />
     <state x="446" y="274" key="ComposerInitDialogKey" timestamp="1605703613457">
       <screen x="0" y="0" width="1366" height="728" />
     </state>
@@ -244,15 +251,19 @@
     </state>
     <state x="184" y="8" key="SettingsEditor/0.0.1366.728@0.0.1366.728" timestamp="1609502872315" />
     <state x="207" y="9" key="SettingsEditor/0.0.1536.824@0.0.1536.824" timestamp="1610445305883" />
+    <state x="474" y="168" width="588" height="488" key="find.popup" timestamp="1610807127221">
+      <screen x="0" y="0" width="1536" height="824" />
+    </state>
+    <state x="474" y="168" width="588" height="488" key="find.popup/0.0.1536.824@0.0.1536.824" timestamp="1610807127221" />
     <state x="639" y="16" key="ftp.server.browser" timestamp="1610445059926">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state x="568" y="14" key="ftp.server.browser/0.0.1366.728@0.0.1366.728" timestamp="1609502909837" />
     <state x="639" y="16" key="ftp.server.browser/0.0.1536.824@0.0.1536.824" timestamp="1610445059926" />
-    <state x="389" y="55" width="756" height="768" key="search.everywhere.popup" timestamp="1610710662245">
+    <state x="389" y="55" width="756" height="768" key="search.everywhere.popup" timestamp="1610965531511">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state x="346" y="49" width="672" height="678" key="search.everywhere.popup/0.0.1366.728@0.0.1366.728" timestamp="1610362866945" />
-    <state x="389" y="55" width="756" height="768" key="search.everywhere.popup/0.0.1536.824@0.0.1536.824" timestamp="1610710662245" />
+    <state x="389" y="55" width="756" height="768" key="search.everywhere.popup/0.0.1536.824@0.0.1536.824" timestamp="1610965531511" />
   </component>
 </project>

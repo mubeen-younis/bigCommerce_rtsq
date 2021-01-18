@@ -23,18 +23,26 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
+// Ws Route For Adding Plan
+Route::post('/save_plan_detail', [\App\Http\Controllers\CarrierPlanController::class, 'addPlanFromWs']);
 Route::middleware([\App\Http\Middleware\EnsureTokenIsValid::class])->group(function () {
     //========Product Routes
     Route::get('/getProducts', [\App\Http\Controllers\ProductSettingController::class, 'getAllProducts']);
     Route::get('/import_products', [\App\Http\Controllers\ProductSettingController::class, 'importProducts']);
     Route::get('/get_products', [\App\Http\Controllers\ProductSettingController::class, 'getStoreProductsFromDb']);
     Route::get('/get_product', [\App\Http\Controllers\ProductSettingController::class, 'getSingleProductDetail']);
+    Route::get('/edit_product', [\App\Http\Controllers\ProductSettingController::class, 'editProduct']);
+    Route::post('/update_product', [\App\Http\Controllers\ProductSettingController::class, 'updateProductDetail']);
 
 
     //=======Carriers
     Route::get('/get_add_tab_sett', [\App\Http\Controllers\AdditionalCarrierTabSettingController::class, 'getAddTabSett']);
     Route::get('/get_inst_car', [\App\Http\Controllers\InstalledCarrierController::class, 'getInstalledCarriers']);
     Route::post('/inst_carrier', [\App\Http\Controllers\InstalledCarrierController::class, 'installCarrier']);
+    Route::post('/update_carrier', [\App\Http\Controllers\InstalledCarrierController::class, 'updateCarrier']);
+    Route::get('/get_plans_det', [\App\Http\Controllers\CarrierPlanController::class, 'getPlansDetail']);
+    Route::get('/get_sin_car_plan', [\App\Http\Controllers\CarrierPlanController::class, 'getSingleCarrierPlan']);
+
 
     //=========Locations
     Route::put('/location/update/{locations}', 'LocationsController@update');
