@@ -72,6 +72,12 @@ class MainController extends BaseController
 //        }
     }
 
+    public function registerWebHook(Request $request, $webHookType)
+    {
+        $webhooks = new WebHooksController();
+        $response = $webhooks->registerWebHook($request->all(), $webHookType);
+    }
+
     public function install(Request $request)
     {
         // Make sure all required query params have been passed
@@ -215,6 +221,7 @@ class MainController extends BaseController
         return response($result->getBody(), $result->getStatusCode())->header('Content-Type', 'application/json');
     }
 
+
     public function addAndUpdateProductFromWebHook(Request $request)
     {
         try {
@@ -223,10 +230,16 @@ class MainController extends BaseController
             $storeHash = explode('/', $postData['producer']);
             $storeHash = $storeHash[1];
             $productId = $postData['data']['id'];
+            $scope = $postData['scope'];
             $storeID = Store::where('hash', $storeHash)->first();
             $toRequest['store_id'] = $storeID->id;
             $toRequest['store_name'] = $storeHash;
             $toRequest['product_id'] = $productId;
+            // If product is deleted through webhook
+            if ($scope == "store/product/deleted") {
+                ProductSetting::where('source_product_id', $productId)->delete();
+                return true;
+            }
             $prodSetCon = new ProductSettingController();
             $prodSetCon->getSingleProductFromApi($toRequest);
         } catch (\Exception $exception) {

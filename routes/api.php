@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
+Route::post('webhooks', [\App\Http\Controllers\MainController::class, 'addAndUpdateProductFromWebHook']);
 // Ws Route For Adding Plan
 Route::post('/save_plan_detail', [\App\Http\Controllers\CarrierPlanController::class, 'addPlanFromWs']);
 Route::middleware([\App\Http\Middleware\EnsureTokenIsValid::class])->group(function () {
@@ -53,6 +54,8 @@ Route::middleware([\App\Http\Middleware\EnsureTokenIsValid::class])->group(funct
     Route::get('/get_location', [\App\Http\Controllers\LocationsController::class, 'getSingleLocation']);
     Route::get('/get_locations', [\App\Http\Controllers\LocationsController::class, 'getLocations']);
     Route::post('/delete_location', [\App\Http\Controllers\LocationsController::class, 'deleteLocation']);
+    //============= Register WebHook
+    Route::get('register_webhook/{type}', [\App\Http\Controllers\MainController::class, 'registerWebHook']);
 });
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);

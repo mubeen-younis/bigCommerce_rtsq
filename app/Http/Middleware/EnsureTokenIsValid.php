@@ -17,10 +17,8 @@ class EnsureTokenIsValid
      */
     public function handle(Request $request, Closure $next)
     {
-        //dd($request->headers);
-       // if (!empty($request->header('authorization'))) {
+        if (!empty($request->header('authorization'))) {
             $token = explode(' ', $request->header('authorization'));
-            $token[1] = 1234;
             if (empty($token[1])) {
                 return response()->json(['error' => true,
                     'data' => [],
@@ -37,7 +35,7 @@ class EnsureTokenIsValid
                 'data' => [],
                 'message' => 'Token Mismatch'
             ], 401);
-       // }
+        }
         return response()->json(['error' => true,
             'data' => [],
             'message' => 'Token Not Found'

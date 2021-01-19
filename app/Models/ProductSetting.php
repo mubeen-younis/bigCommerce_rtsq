@@ -9,6 +9,9 @@ class ProductSetting extends Model
 {
     use HasFactory;
     protected $table = 'product_settings';
+    protected $fillable = [
+        'settings'
+    ];
 
     public function saveProduct($product, $storeId)
     {
