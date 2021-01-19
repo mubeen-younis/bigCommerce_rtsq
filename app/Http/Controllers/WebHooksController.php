@@ -16,7 +16,7 @@ class WebHooksController extends Controller
 
     public function registerWebHook($request, $webHookType)
     {
-       // dd($request, $webHookType,URL::to('api/webhooks'));
+        // dd($request, $webHookType,URL::to('api/webhooks'));
         $storeId = isset($request['store_id']) ? $request['store_id'] : '';
         $storeHash = isset($request['store_name']) ? $request['store_name'] : '';
         $storeToken = $this->mainController->getCustAccessTok($storeId);
@@ -38,6 +38,6 @@ class WebHooksController extends Controller
             "is_active" => true
         ];
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, json_encode($request), $headers, 'POST', false);
-        dd($response);
+        return $response;
     }
 }

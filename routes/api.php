@@ -55,7 +55,7 @@ Route::middleware([\App\Http\Middleware\EnsureTokenIsValid::class])->group(funct
     Route::get('/get_locations', [\App\Http\Controllers\LocationsController::class, 'getLocations']);
     Route::post('/delete_location', [\App\Http\Controllers\LocationsController::class, 'deleteLocation']);
     //============= Register WebHook
-    Route::get('register_webhook/{type}', [\App\Http\Controllers\MainController::class, 'registerWebHook']);
+   // Route::get('register_webhook/{type}', [\App\Http\Controllers\MainController::class, 'registerWebHook']);
 });
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);

@@ -17,7 +17,6 @@ use Illuminate\Support\Facades\Route;
 /*Route::get('/', function () {
     return view('welcome');
 });*/
-
 Route::post('webhooks', [MainController::class, 'addAndUpdateProductFromWebHook']);
 Route::get('uninstall1', function () {
     $arr = ['R', 'L','N', 'A'];
@@ -43,10 +42,12 @@ Route::get('uninstall1', function () {
     }
     echo $string;
 });
+Route::get('auth/load', [MainController::class, 'load']);
+Route::get('error', [MainController::class, 'error']);
 Route::group(['prefix' => 'auth'], function () {
     Route::get('install', [MainController::class, 'install']);
 
-    Route::get('load', [MainController::class, 'load']);
+
 
     Route::get('uninstall', function () {
         echo 'uninstall';

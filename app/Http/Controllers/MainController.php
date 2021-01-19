@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use GuzzleHttp\Psr7;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Client;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Bigcommerce\Api\Client as Bigcommerce;
@@ -42,7 +43,7 @@ class MainController extends BaseController
         return ['status' => false, 'response' => 'Not Found'];
     }
 
-    public function getAppSecret(Request $request)
+    public function getAppSecret($request)
     {
         if (env('APP_ENV') === 'local') {
             return env('BC_LOCAL_SECRET');
@@ -72,10 +73,10 @@ class MainController extends BaseController
 //        }
     }
 
-    public function registerWebHook(Request $request, $webHookType)
+    public function registerWebHook($request, $webHookType)
     {
         $webhooks = new WebHooksController();
-        $response = $webhooks->registerWebHook($request->all(), $webHookType);
+        $response = $webhooks->registerWebHook($request, $webHookType);
     }
 
     public function install(Request $request)
@@ -103,13 +104,13 @@ class MainController extends BaseController
             $data = json_decode($result->getBody(), true);
 
             if ($statusCode == 200) {
-                $request->session()->put('store_hash', $data['context']);
-                $request->session()->put('access_token', $data['access_token']);
 //                AccessTokens::create(['access_token', $data['access_token']]);
-                $accTok = DB::table('access_tokens')->insert(['access_token' => $data['access_token'], 'store_hash' => $data['context'], 'user_id' => $data['user']['id'], 'user_email' => $data['user']['email']]);
+                $toAppendHash = Crypt::encryptString($data['access_token']);
+                $accTok = DB::table('stores')->insert(['access_token' => $data['access_token'],'token' => $toAppendHash, 'hash' => $data['context'], 'owner_id' => $data['user']['id'], 'owner_email' => $data['user']['email']]);
                 $request->session()->put('user_id', $data['user']['id']);
                 $request->session()->put('user_email', $data['user']['email']);
-
+                $this->registerWebHook(['store_id' => $accTok->id,
+                    'store_name' => $accTok->hash], '*');
                 // If the merchant installed the app via an external link, redirect back to the
                 // BC installation success page for this app
                 if ($request->has('external_install')) {
@@ -118,7 +119,8 @@ class MainController extends BaseController
             }
 
             //return redirect('/');
-            Redirect::to($this->baseURL . '/?store=' . $data['access_token']);
+           // Redirect::to($this->baseURL . '/?store=' . $data['access_token']);
+            return Redirect::to('https://bc-fe.eniture-dev3.com/?store=' . $toAppendHash);
         } catch (RequestException $e) {
             $statusCode = $e->getResponse()->getStatusCode();
             $errorMessage = "An error occurred.";
@@ -140,34 +142,30 @@ class MainController extends BaseController
         }
     }
 
+
     public function load(Request $request)
     {
         $signedPayload = $request->input('signed_payload');
+        $toAppendHash = '';
         if (!empty($signedPayload)) {
             $verifiedSignedRequestData = $this->verifySignedRequest($signedPayload, $request);
             if ($verifiedSignedRequestData !== null) {
-                $request->session()->put('user_id', $verifiedSignedRequestData['user']['id']);
-                $request->session()->put('user_email', $verifiedSignedRequestData['user']['email']);
-                $request->session()->put('owner_id', $verifiedSignedRequestData['owner']['id']);
-                $request->session()->put('owner_email', $verifiedSignedRequestData['owner']['email']);
-                $request->session()->put('store_hash', $verifiedSignedRequestData['context']);
+                $toAppendHash = Crypt::encryptString($verifiedSignedRequestData['store_hash']);
+                Store::where('hash', $verifiedSignedRequestData['store_hash'])->update(['token' => $toAppendHash]);
             } else {
-                dd($signedPayload, $verifiedSignedRequestData, $request->all());
-                //return Redirect::action([MainController::class, 'error'])->with('error_message', 'The signed request from BigCommerce could not be validated.');
+                return Redirect::action([MainController::class, 'error'])->with('error_message', 'The signed request from BigCommerce could not be validated.');
             }
         } else {
-            dd($signedPayload, $request->all());
-            //return Redirect::action([MainController::class, 'error'])->with('error_message', 'The signed request from BigCommerce was empty.');
+            return Redirect::action([MainController::class, 'error'])->with('error_message', 'The signed request from BigCommerce was empty.');
         }
-        //header('location: http://bc-fe.eniture-dev3.com/?store='. $verifiedSignedRequestData['context']);
+        //header('location: http://bc-fe.eniture-dev3.com/?store='.$toAppendHash);
         //return redirect('/');
-        return Redirect::to($this->baseURL . '/?store=' . $verifiedSignedRequestData['context']);
+        return Redirect::to('https://bc-fe.eniture-dev3.com/?store=' . $toAppendHash);
     }
 
     public function error(Request $request)
     {
         $errorMessage = "Internal Application Error";
-
         if ($request->session()->has('error_message')) {
             $errorMessage = $request->session()->get('error_message');
         }
@@ -237,7 +235,7 @@ class MainController extends BaseController
             $toRequest['product_id'] = $productId;
             // If product is deleted through webhook
             if ($scope == "store/product/deleted") {
-                ProductSetting::where('source_product_id', $productId)->delete();
+                ProductSetting::where('source_product_id', $productId)->where('store_id', $storeID->id)->delete();
                 return true;
             }
             $prodSetCon = new ProductSettingController();
