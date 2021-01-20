@@ -42,6 +42,7 @@ Route::get('uninstall1', function () {
     }
     echo $string;
 });
+Route::get('load', [MainController::class, 'load1']);
 Route::get('auth/load', [MainController::class, 'load']);
 Route::get('error', [MainController::class, 'error']);
 Route::group(['prefix' => 'auth'], function () {

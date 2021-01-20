@@ -3,10 +3,12 @@
   <component name="ChangeListManager">
     <list default="true" id="24715a4d-0eda-4296-a2c3-b3a4aedba505" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/Http/Controllers/LocationsController.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Http/Controllers/LocationsController.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/Http/Controllers/MainController.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Http/Controllers/MainController.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/Http/Controllers/ProductSettingController.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Http/Controllers/ProductSettingController.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/Http/Controllers/WebHooksController.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Http/Controllers/WebHooksController.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/Models/Store.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Models/Store.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/routes/api.php" beforeDir="false" afterPath="$PROJECT_DIR$/routes/api.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/database/migrations/2020_07_01_2_create_stores_table.php" beforeDir="false" afterPath="$PROJECT_DIR$/database/migrations/2020_07_01_2_create_stores_table.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/routes/web.php" beforeDir="false" afterPath="$PROJECT_DIR$/routes/web.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -210,7 +212,8 @@
       <workItem from="1610511963303" duration="23004000" />
       <workItem from="1610689846923" duration="11037000" />
       <workItem from="1610804451232" duration="4212000" />
-      <workItem from="1610949880630" duration="31526000" />
+      <workItem from="1610949880630" duration="36383000" />
+      <workItem from="1611135447867" duration="5196000" />
     </task>
     <servers />
   </component>
@@ -255,10 +258,10 @@
     </state>
     <state x="568" y="14" key="ftp.server.browser/0.0.1366.728@0.0.1366.728" timestamp="1609502909837" />
     <state x="639" y="16" key="ftp.server.browser/0.0.1536.824@0.0.1536.824" timestamp="1610445059926" />
-    <state x="389" y="55" width="756" height="768" key="search.everywhere.popup" timestamp="1611042838639">
+    <state x="389" y="55" width="756" height="768" key="search.everywhere.popup" timestamp="1611128956101">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state x="346" y="49" width="672" height="678" key="search.everywhere.popup/0.0.1366.728@0.0.1366.728" timestamp="1610362866945" />
-    <state x="389" y="55" width="756" height="768" key="search.everywhere.popup/0.0.1536.824@0.0.1536.824" timestamp="1611042838639" />
+    <state x="389" y="55" width="756" height="768" key="search.everywhere.popup/0.0.1536.824@0.0.1536.824" timestamp="1611128956101" />
   </component>
 </project>

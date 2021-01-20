@@ -104,7 +104,7 @@ class LocationsController extends Controller
                 return ['error' => true,
                     'data' => [],
                     'message' => 'Incorrect Location Id',
-                    'status' => 404
+                    'status' => 200
                 ];
             }
             // Checking if zipcode matches with current location saved record
@@ -114,7 +114,7 @@ class LocationsController extends Controller
                     return ['error' => true,
                         'data' => [],
                         'message' => 'Warehouse address with this zipcode already exists',
-                        'status' => 404
+                        'status' => 200
                     ];
                 }
             }
@@ -124,7 +124,7 @@ class LocationsController extends Controller
                 return ['error' => true,
                     'data' => [],
                     'message' => 'Warehouse already exists',
-                    'status' => 404
+                    'status' => 200
                 ];
             }
         }
@@ -143,7 +143,7 @@ class LocationsController extends Controller
                 return ['error' => true,
                     'data' => [],
                     'message' => 'Incorrect Location Id',
-                    'status' => 404
+                    'status' => 200
                 ];
             }
             // Checking if zipcode matches with current location saved record
@@ -153,7 +153,7 @@ class LocationsController extends Controller
                     return ['error' => true,
                         'data' => [],
                         'message' => 'Dropship address with this zipcode already exists',
-                        'status' => 404
+                        'status' => 200
                     ];
                 }
             }
@@ -163,7 +163,7 @@ class LocationsController extends Controller
                 return ['error' => true,
                     'data' => [],
                     'message' => 'Dropship already exists',
-                    'status' => 404
+                    'status' => 200
                 ];
             }
         }
@@ -197,6 +197,7 @@ class LocationsController extends Controller
         } catch (\Exception $exception) {
             return ['error' => true,
                 'data' => [],
+                //Todo: change message
                 'message' => $exception->getMessage(),
                 'status' => 500
             ];
@@ -275,7 +276,7 @@ class LocationsController extends Controller
             return response()->json(['error' => true,
                 'data' => [],
                 'message' => 'No Valid Zip Code Provided'
-            ], 404);
+            ], 200);
         }
         $zipCode = $request->zip_code;
         $url = "https://maps.googleapis.com/maps/api/geocode/json?address=" . urlencode($zipCode) . "&key=AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w";
@@ -284,7 +285,7 @@ class LocationsController extends Controller
             return response()->json(['error' => true,
                 'data' => [],
                 'message' => 'Unable to connect to server'
-            ], 404);
+            ], $zipcodeDetail['info']['http_code']);
         }
 
         $mapResult = json_decode($zipcodeDetail['response'], true);
@@ -293,14 +294,14 @@ class LocationsController extends Controller
             return response()->json(['error' => true,
                 'data' => [],
                 'message' => isset($mapResult['error_message']) ? $mapResult['error_message'] : " Zero Results"
-            ], 404);
+            ], 200);
         }
         $city = [];
         $state = "";
         $country = "";
         if (count($mapResult['results']) > 0) {
             //dd($mapResult['results']);
-            $arrComponents = $mapResult['results'][0]['address_components'];
+            $arrComponents = $mapResult['results'][0]['address_components'] ?? [];
             if (isset($mapResult['results'][0]['postcode_localities'])) {
                 foreach ($mapResult['results'][0]['postcode_localities'] as $index => $component) {
                     $city[] = $component;
@@ -334,7 +335,7 @@ class LocationsController extends Controller
             return response()->json(['error' => true,
                 'data' => [],
                 'message' => 'Something Went Wrong'
-            ], 404);
+            ], 500);
 
         }
 

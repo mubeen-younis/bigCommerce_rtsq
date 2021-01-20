@@ -73,11 +73,6 @@ class MainController extends BaseController
 //        }
     }
 
-    public function registerWebHook($request, $webHookType)
-    {
-        $webhooks = new WebHooksController();
-        $response = $webhooks->registerWebHook($request, $webHookType);
-    }
 
     public function install(Request $request)
     {
@@ -105,12 +100,12 @@ class MainController extends BaseController
 
             if ($statusCode == 200) {
 //                AccessTokens::create(['access_token', $data['access_token']]);
-                $toAppendHash = Crypt::encryptString($data['access_token']);
-                $accTok = DB::table('stores')->insert(['access_token' => $data['access_token'],'token' => $toAppendHash, 'hash' => $data['context'], 'owner_id' => $data['user']['id'], 'owner_email' => $data['user']['email']]);
+                $toAppendHash = Crypt::encryptString($data['context']);
+                $accTok = DB::table('stores')->insert(['access_token' => $data['access_token'], 'token' => $toAppendHash, 'hash' => $data['context'], 'owner_id' => $data['user']['id'], 'owner_email' => $data['user']['email']]);
                 $request->session()->put('user_id', $data['user']['id']);
                 $request->session()->put('user_email', $data['user']['email']);
                 $this->registerWebHook(['store_id' => $accTok->id,
-                    'store_name' => $accTok->hash], '*');
+                    'store_name' => $accTok->hash]);
                 // If the merchant installed the app via an external link, redirect back to the
                 // BC installation success page for this app
                 if ($request->has('external_install')) {
@@ -119,7 +114,7 @@ class MainController extends BaseController
             }
 
             //return redirect('/');
-           // Redirect::to($this->baseURL . '/?store=' . $data['access_token']);
+            // Redirect::to($this->baseURL . '/?store=' . $data['access_token']);
             return Redirect::to('https://bc-fe.eniture-dev3.com/?store=' . $toAppendHash);
         } catch (RequestException $e) {
             $statusCode = $e->getResponse()->getStatusCode();
@@ -152,6 +147,11 @@ class MainController extends BaseController
             if ($verifiedSignedRequestData !== null) {
                 $toAppendHash = Crypt::encryptString($verifiedSignedRequestData['store_hash']);
                 Store::where('hash', $verifiedSignedRequestData['store_hash'])->update(['token' => $toAppendHash]);
+                 if(Store::where('hash', $verifiedSignedRequestData['store_hash'])->where('is_webhook_created',false)->exists()){
+                    $store= Store::where('hash', $verifiedSignedRequestData['store_hash'])->where('is_webhook_created',false)->first();
+                     $this->registerWebHook(['store_id' => $store->id,
+                         'store_name' => $store->hash]);
+                 }
             } else {
                 return Redirect::action([MainController::class, 'error'])->with('error_message', 'The signed request from BigCommerce could not be validated.');
             }
@@ -160,7 +160,14 @@ class MainController extends BaseController
         }
         //header('location: http://bc-fe.eniture-dev3.com/?store='.$toAppendHash);
         //return redirect('/');
+
         return Redirect::to('https://bc-fe.eniture-dev3.com/?store=' . $toAppendHash);
+    }
+
+    public function registerWebHook($request)
+    {
+        $webHooks= new WebHooksController();
+        $webHooks->registerWebHook($request);
     }
 
     public function error(Request $request)
@@ -228,8 +235,12 @@ class MainController extends BaseController
             $storeHash = explode('/', $postData['producer']);
             $storeHash = $storeHash[1];
             $productId = $postData['data']['id'];
+            // Update,delete,create from  webhook
             $scope = $postData['scope'];
             $storeID = Store::where('hash', $storeHash)->first();
+            if ($storeID === null) {
+                return null;
+            }
             $toRequest['store_id'] = $storeID->id;
             $toRequest['store_name'] = $storeHash;
             $toRequest['product_id'] = $productId;

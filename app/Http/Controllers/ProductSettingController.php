@@ -60,9 +60,9 @@ class ProductSettingController extends Controller
 
     public function getSingleProductFromApi($request)
     {
-        $storeId = isset($request['store_id']) ? $request['store_id'] : '';
-        $storeName = isset($request['store_name']) ? $request['store_name'] : '';
-        $productId = isset($request['product_id']) ? $request['product_id'] : '';
+        $storeId = $request['store_id'] ?? '';
+        $storeName =  $request['store_name'] ?? '';
+        $productId =  $request['product_id'] ?? '';
         $storeToken = $this->mainController->getCustAccessTok($storeId);
         if (isset($storeToken['status']) && $storeToken['status'] == false) {
             return response()->json(['error' => true,

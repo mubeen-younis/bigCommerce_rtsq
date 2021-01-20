@@ -8,7 +8,8 @@ class Store extends Model
 {
     //
     protected $fillable=[
-        'token'
+        'token',
+        ''
     ];
     public function installedCarriers()
     {

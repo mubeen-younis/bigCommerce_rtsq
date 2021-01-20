@@ -20,6 +20,7 @@ class CreateStoresTable extends Migration
             $table->char('hash', 100);
             $table->char('access_token', 255);
             $table->char('token', 255);
+            $table->boolean('is_webhook_created')->default(false);
             $table->char('owner_email', 100);
             $table->char('owner_id', 50);
             // $table->bigInteger('owner_id')->unique();
