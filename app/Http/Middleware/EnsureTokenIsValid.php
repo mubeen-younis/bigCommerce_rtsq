@@ -25,10 +25,10 @@ class EnsureTokenIsValid
                     'message' => 'Missing Token Value'
                 ], 401);
             }
-            if (Store::where('token', $token[1])->exists()) {
-                $storeID = Store::where('token', $token[1])->first();
-                $request['store_id'] = $storeID->id;
-                $request['store_name'] = $storeID->hash;
+            $store = Store::whereToken($token[1])->first();
+            if (isset($store->id)) {
+                $request['store_id'] = $store->id;
+                $request['store_name'] = $store->hash;
                 return $next($request);
             }
             return response()->json(['error' => true,
