@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\CustomClasses\Origin;
-use App\Models\Locations;
+use App\Models\ProductSetting;
 
 class GetRatesController extends Controller
 {
@@ -20,6 +20,8 @@ class GetRatesController extends Controller
     }
 
     public function formateRequest($data){
+
+        $product_settings = $this->getProductSetting($data);
         return [
             'street_1'      => $data['base_options']['destination']['street_1'] ?? '',
             'street_2'      => $data['base_options']['destination']['street_2'] ?? '',
@@ -58,5 +60,12 @@ class GetRatesController extends Controller
                             'amount' => $data['base_options']['items']['declared_value']['amount'] ?? '',
             ],
         ];
+    }
+
+    public function getProductSetting($data){
+        return ProductSetting::select('settings')
+            ->where('source_product_id', $data['base_options']['items']['product_id'])
+            ->where('variant_id', $data['base_options']['items']['variant_id'])
+            ->first();
     }
 }
