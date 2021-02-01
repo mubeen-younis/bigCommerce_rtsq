@@ -6,6 +6,7 @@ use App\Http\Controllers\CarrierTabController;
 use App\Http\Controllers\ConnectionController;
 use App\Http\Controllers\LocationsController;
 use App\Http\Controllers\QuoteSettingsController;
+use App\Http\Controllers\GetRatesController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -81,6 +82,9 @@ Route::get('/getDetails/{zip_code}', 'AdressController@googleApiCurl');
 
 Route::get('get_carrier_info', [CarrierController::class, 'getCarrierDetails']);
 Route::get('getAllCarriers', [CarrierController::class, 'getAllCarriers']);
+Route::post('rates', [GetRatesController::class, 'returnRates']);
+
+Route::get('getNearestWareHouse', [GetRatesController::class, 'getNearestWarehouseTest']);
 
 
 
