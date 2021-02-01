@@ -18,6 +18,7 @@ class Origin
         $destination = $this->getFormedDestination($destination);
         foreach ($wareHouses as $wareHouse){
             $endPoint = $this->generateEndPoints($wareHouse, $destination);
+
             echo $endPoint."<br>";
         }
     }
