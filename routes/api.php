@@ -2,11 +2,10 @@
 
 use App\Http\Controllers\AdditionalCarrierTabSettingController;
 use App\Http\Controllers\CarrierController;
-use App\Http\Controllers\CarrierTabController;
 use App\Http\Controllers\ConnectionController;
+use App\Http\Controllers\GetRatesController;
 use App\Http\Controllers\LocationsController;
 use App\Http\Controllers\QuoteSettingsController;
-use App\Http\Controllers\GetRatesController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -19,7 +18,7 @@ use Illuminate\Support\Facades\Route;
 | routes are loaded by the RouteServiceProvider within a group which
 | is assigned the "api" middleware group. Enjoy building your API!
 |
-*/
+ */
 
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
@@ -36,7 +35,6 @@ Route::middleware([\App\Http\Middleware\EnsureTokenIsValid::class])->group(funct
     Route::get('/edit_product', [\App\Http\Controllers\ProductSettingController::class, 'editProduct']);
     Route::post('/update_product', [\App\Http\Controllers\ProductSettingController::class, 'updateProductDetail']);
 
-
     //=======Carriers
     Route::get('/get_add_tab_sett', [\App\Http\Controllers\AdditionalCarrierTabSettingController::class, 'getAddTabSett']);
     Route::get('/get_inst_car', [\App\Http\Controllers\InstalledCarrierController::class, 'getInstalledCarriers']);
@@ -44,7 +42,6 @@ Route::middleware([\App\Http\Middleware\EnsureTokenIsValid::class])->group(funct
     Route::post('/update_carrier', [\App\Http\Controllers\InstalledCarrierController::class, 'updateCarrier']);
     Route::get('/get_plans_det', [\App\Http\Controllers\CarrierPlanController::class, 'getPlansDetail']);
     Route::get('/get_sin_car_plan', [\App\Http\Controllers\CarrierPlanController::class, 'getSingleCarrierPlan']);
-
 
     //=========Locations
     Route::put('/location/update/{locations}', 'LocationsController@update');
@@ -56,7 +53,7 @@ Route::middleware([\App\Http\Middleware\EnsureTokenIsValid::class])->group(funct
     Route::get('/get_locations', [\App\Http\Controllers\LocationsController::class, 'getLocations']);
     Route::post('/delete_location', [\App\Http\Controllers\LocationsController::class, 'deleteLocation']);
     //============= Register WebHook
-   // Route::get('register_webhook/{type}', [\App\Http\Controllers\MainController::class, 'registerWebHook']);
+    // Route::get('register_webhook/{type}', [\App\Http\Controllers\MainController::class, 'registerWebHook']);
 });
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);
@@ -73,7 +70,6 @@ Route::get('/get_warehouse', 'LocationsController@warehouse');
 Route::get('/get_dropships', 'LocationsController@dropships');
 Route::post('/submit_location', [LocationsController::class, 'store']);
 
-
 Route::post('/save_csv', 'CsvController@store');
 Route::post('/save_boxsize', 'BoxSizeController@store');
 Route::get('/get_boxsize', 'BoxSizeController@index');
@@ -86,7 +82,6 @@ Route::post('rates', [GetRatesController::class, 'returnRates']);
 
 Route::get('getNearestWareHouse', [GetRatesController::class, 'getNearestWarehouseTest']);
 
-
-
-
-
+//
+Route::get('/getInstalledCarriers', [CarrierController::class, 'getInstalledCarriers']);
+Route::post('/changeCarrierStatus', [CarrierController::class, 'changeCarrierStatus']);

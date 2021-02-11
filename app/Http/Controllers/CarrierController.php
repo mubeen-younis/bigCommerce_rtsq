@@ -110,4 +110,37 @@ class CarrierController extends Controller
         return response()->json([], 200);
     }
 
+    public function getInstalledCarriers()
+    {
+        $installed_carriers = DB::table('carriers')->join('installed_carriers', 'carriers.id', 'installed_carriers.carrier_id')
+            ->get();
+
+        if ($installed_carriers->isEmpty()) {
+            return response()->json([
+                'data' => [],
+                'message' => 'No Carrier Found',
+            ], 404);
+
+        }
+
+        $response['data']['installedCarriers'] = $installed_carriers;
+
+        return response()->json($response, 200);
+    }
+
+    public function changeCarrierStatus(Request $request)
+    {
+        $carrier = InstalledCarrier::where('carrier_id', $request->carrier_id)->first();
+
+        if ($carrier) {
+            InstalledCarrier::where('carrier_id', $request->carrier_id)->update(['is_enabled' => !$carrier->is_enabled]);
+
+            return response()->json(['data' => InstalledCarrier::find($request->carrier_id), 'message' => 'Carrier updated'], 200);
+        } else {
+            return response()->json([
+                'message' => 'Invalid Carrier ID',
+            ], 404);
+        }
+    }
+
 }
