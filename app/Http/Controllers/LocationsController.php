@@ -187,7 +187,24 @@ class LocationsController extends Controller
             $location->city = $request->city;
             $location->state = $request->state;
             $location->country = $request->country;
-            $location->additionals = json_encode($request->all());
+            //$location->additionals = json_encode($request->all());
+            $additionals = [
+                'instore_pickup' => $request->enable_instore ?? '',
+                'local_delivery' => $request->enable_ld ?? '',
+                'ld_enable_supress' => $request->ld_enable_supress ?? '',
+                'instore_pickup_data' => [
+                    'miles' => $request->instore_miles ?? '',
+                    'postalCodes' => $request->instore_zipcodes ?? '',
+                    'checkout_description' => $request->instock_description ?? ''
+                ],
+                'local_delivery_data' => [
+                    'miles' => $request->ld_miles ?? '',
+                    'postalCodes' => $request->ld_zipcodes  ?? '',
+                    'local_delivery_fee' => $request->ld_fee ?? '',
+                    'checkout_description' => $request->ld_description ?? '',
+                ]
+            ];
+            $location->additionals = json_encode($additionals);
             $location->save();
             return ['error' => false,
                 'data' => [$location->id],
