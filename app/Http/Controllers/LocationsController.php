@@ -183,7 +183,7 @@ class LocationsController extends Controller
             $location->nickname = $nickname;
             $location->store_id = $request->store_id;
             $location->type = $request->location_type;
-            $location->zip_code = $request->zipcode;
+            $location->zip_code = $request->zip_code;
             $location->city = $request->city;
             $location->state = $request->state;
             $location->country = $request->country;
@@ -194,12 +194,12 @@ class LocationsController extends Controller
                 'ld_enable_supress' => $request->ld_enable_supress ?? '',
                 'instore_pickup_data' => [
                     'miles' => $request->instore_miles ?? '',
-                    'postalCodes' => $request->instore_zipcodes ?? '',
+                    'postalCodes' => (!empty($request->instore_zipcodes)) ? implode(',',$request->instore_zipcodes ) : '',
                     'checkout_description' => $request->instock_description ?? ''
                 ],
                 'local_delivery_data' => [
                     'miles' => $request->ld_miles ?? '',
-                    'postalCodes' => $request->ld_zipcodes  ?? '',
+                    'postalCodes' => (!empty($request->ld_zipcodes)) ? implode(',',$request->ld_zipcodes ) : '',
                     'local_delivery_fee' => $request->ld_fee ?? '',
                     'checkout_description' => $request->ld_description ?? '',
                 ]
