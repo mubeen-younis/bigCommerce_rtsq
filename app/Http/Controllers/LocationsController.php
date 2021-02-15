@@ -180,6 +180,9 @@ class LocationsController extends Controller
             $nickname = $request->nickname;
         }
         try {
+            if (Locations::where('id', $request->id)->exists()){
+                $location = Locations::where('id', $request->id)->first();
+            }
             $location->nickname = $nickname;
             $location->store_id = $request->store_id;
             $location->type = $request->location_type;
