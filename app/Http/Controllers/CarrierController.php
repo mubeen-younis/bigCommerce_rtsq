@@ -6,6 +6,7 @@ use App\Models\Carrier;
 use App\Models\InstalledCarrier;
 use App\Models\Store;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CarrierController extends Controller
 {
@@ -24,16 +25,20 @@ class CarrierController extends Controller
     public function getAllCarriers(Request $request)
     {
         $response = [
-            'error' => true,
-            'message' => 'Something went wrong',
-            'data' => []
+            'error' => false,
         ];
         $store = $request->store ?? null;
         if (!empty($store)){
-            $installedCarriers = Store::find('hash', $store)->installedCarriers();
+            //$installedCarriers = Store::where('hash', $store)->installedCarriers();
+            $installedCarriers = Store::where('hash', $store)->get();
             $response['data']['installedCarriers'] = $installedCarriers;
+
         }else{
-            $response['message'] = 'Store hash is required.';
+            $response = [
+                'error' => true,
+                'message' => 'Store hash is required.',
+                'data' => []
+            ];
         }
 
         return response()->json($response, 200);
