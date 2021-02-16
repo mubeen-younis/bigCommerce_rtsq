@@ -65,7 +65,7 @@ class LocationsController extends Controller
         $rules = [
             'city' => 'required',
             'state' => 'required',
-            'zipcode' => 'required',
+            'zip_code' => 'required',
             'country' => 'required',
             'location_type' => 'required'
         ];
