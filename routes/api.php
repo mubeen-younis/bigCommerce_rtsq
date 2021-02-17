@@ -37,6 +37,7 @@ Route::middleware([\App\Http\Middleware\EnsureTokenIsValid::class])->group(funct
 
     //=======Carriers
     Route::get('/get_add_tab_sett', [\App\Http\Controllers\AdditionalCarrierTabSettingController::class, 'getAddTabSett']);
+    Route::get('/get_add_tab_sett_store', [\App\Http\Controllers\AdditionalCarrierTabSettingController::class, 'getAddTabSettByStoreID']);
     Route::get('/get_inst_car', [\App\Http\Controllers\InstalledCarrierController::class, 'getInstalledCarriers']);
     Route::post('/inst_carrier', [\App\Http\Controllers\InstalledCarrierController::class, 'installCarrier']);
     Route::post('/update_carrier', [\App\Http\Controllers\InstalledCarrierController::class, 'updateCarrier']);

@@ -118,4 +118,21 @@ class AdditionalCarrierTabSettingController extends Controller
         ], 200) ;
 
     }
+
+    public function getAddTabSettByStoreID(Request $request)
+    {
+        if (empty($request->store_id)) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => "Store Id Missing"
+            ], 404);
+        }
+        $addTabSettings=AdditionalCarrierTabSetting::where('store_id',$request->store_id)->get();
+
+        return response()->json(['error' => false,
+            'data' => $addTabSettings,
+            'message' => "Settings Not Found"
+        ], 200) ;
+
+    }
 }
