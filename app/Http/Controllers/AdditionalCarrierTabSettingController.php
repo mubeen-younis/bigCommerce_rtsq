@@ -127,7 +127,7 @@ class AdditionalCarrierTabSettingController extends Controller
                 'message' => "Store Id Missing"
             ], 404);
         }
-        $addTabSettings=AdditionalCarrierTabSetting::where('store_id',$request->store_id)->get();
+        $addTabSettings=AdditionalCarrierTabSetting::select('value')->where('store_id',$request->store_id)->get();
 
         return response()->json(['error' => false,
             'data' => $addTabSettings,
