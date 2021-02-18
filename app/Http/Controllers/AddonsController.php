@@ -82,4 +82,13 @@ class AddonsController extends Controller
     {
         //
     }
+
+    public function getAddons(Request $request){
+        $addons = Addons::all();
+        return response()->json(
+            ['error' => false,
+                'data' => $addons,
+                'message' => ''
+            ], 200);
+    }
 }
