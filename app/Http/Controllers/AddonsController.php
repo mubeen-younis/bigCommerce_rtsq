@@ -84,7 +84,11 @@ class AddonsController extends Controller
     }
 
     public function getAddons(Request $request){
-        $addons = Addons::all();
+        $store = $request->store;
+        $addons = Addons::select('addons.id', 'addons.name', 'installed_addons.is_enabled' )
+            ->join('installed_addons', 'installed_addons.addon_id','=','addons.id')
+            ->join('stores', 'stores.id', '=', 'installed_addons.store_id')
+            ->where('stores.hash', $store )->get();
         return response()->json(
             ['error' => false,
                 'data' => $addons,
