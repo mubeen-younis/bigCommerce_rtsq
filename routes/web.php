@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\GetRatesController;
 use App\Http\Controllers\MainController;
 use Illuminate\Support\Facades\Route;
 
@@ -47,8 +48,6 @@ Route::get('auth/load', [MainController::class, 'load']);
 Route::get('error', [MainController::class, 'error']);
 Route::group(['prefix' => 'auth'], function () {
     Route::get('install', [MainController::class, 'install']);
-
-
 
     Route::get('uninstall', function () {
         echo 'uninstall';

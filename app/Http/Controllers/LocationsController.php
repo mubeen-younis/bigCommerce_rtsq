@@ -338,6 +338,18 @@ class LocationsController extends Controller
             ], 500);
 
         }
+    }
 
+    public static function getLocationById($id)
+    {
+        $location = Locations::where('id', $id)->first();
+        if (!empty($location)){
+            return $location;
+        }
+        return [];
+    }
+
+    public static function getAllLocations($storeId, $type){
+        return Locations::where(['store_id' => $storeId, 'type' => $type])->get();
     }
 }

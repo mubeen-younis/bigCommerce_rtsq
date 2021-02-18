@@ -82,11 +82,10 @@ Route::get('/getDetails/{zip_code}', 'AdressController@googleApiCurl');
 
 Route::get('get_carrier_info', [CarrierController::class, 'getCarrierDetails']);
 Route::get('getAllCarriers', [CarrierController::class, 'getAllCarriers']);
-Route::post('rates', [GetRatesController::class, 'returnRates']);
 
 Route::get('getNearestWareHouse', [GetRatesController::class, 'getNearestWarehouseTest']);
 
 
-
+Route::post('rate', [GetRatesController::class, 'returnRates']);
 
 
