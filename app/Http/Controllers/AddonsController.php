@@ -91,8 +91,7 @@ class AddonsController extends Controller
             ->where('stores.hash', $store )->get();
         return response()->json(
             ['error' => false,
-                'data' => $addons,
-                'message' => ''
+                'data' => $addons
             ], 200);
     }
 }

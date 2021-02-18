@@ -59,6 +59,7 @@ Route::middleware([\App\Http\Middleware\EnsureTokenIsValid::class])->group(funct
     //=========Addons
 
     Route::get('/get_installed_addons', [\App\Http\Controllers\AddonsController::class, 'getAddons']);
+    
 });
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);
