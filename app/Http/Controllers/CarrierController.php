@@ -6,6 +6,7 @@ use App\Models\Carrier;
 use App\Models\InstalledCarrier;
 use App\Models\Store;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CarrierController extends Controller
 {
@@ -24,16 +25,20 @@ class CarrierController extends Controller
     public function getAllCarriers(Request $request)
     {
         $response = [
-            'error' => true,
-            'message' => 'Something went wrong',
-            'data' => []
+            'error' => false,
         ];
         $store = $request->store ?? null;
         if (!empty($store)){
-            $installedCarriers = Store::find('hash', $store)->installedCarriers();
+            //$installedCarriers = Store::where('hash', $store)->installedCarriers();
+            $installedCarriers = Store::where('hash', $store)->get();
             $response['data']['installedCarriers'] = $installedCarriers;
+
         }else{
-            $response['message'] = 'Store hash is required.';
+            $response = [
+                'error' => true,
+                'message' => 'Store hash is required.',
+                'data' => []
+            ];
         }
 
         return response()->json($response, 200);
@@ -108,6 +113,39 @@ class CarrierController extends Controller
     public function getCarrierDetails(Request $request)
     {
         return response()->json([], 200);
+    }
+
+    public function getInstalledCarriers()
+    {
+        $installed_carriers = DB::table('carriers')->join('installed_carriers', 'carriers.id', 'installed_carriers.carrier_id')
+            ->get();
+
+        if ($installed_carriers->isEmpty()) {
+            return response()->json([
+                'data' => [],
+                'message' => 'No Carrier Found',
+            ], 404);
+
+        }
+
+        $response['data']['installedCarriers'] = $installed_carriers;
+
+        return response()->json($response, 200);
+    }
+
+    public function changeCarrierStatus(Request $request)
+    {
+        $carrier = InstalledCarrier::where('carrier_id', $request->carrier_id)->first();
+
+        if ($carrier) {
+            InstalledCarrier::where('carrier_id', $request->carrier_id)->update(['is_enabled' => !$carrier->is_enabled]);
+
+            return response()->json(['data' => InstalledCarrier::find($request->carrier_id), 'message' => 'Carrier updated'], 200);
+        } else {
+            return response()->json([
+                'message' => 'Invalid Carrier ID',
+            ], 404);
+        }
     }
 
 }

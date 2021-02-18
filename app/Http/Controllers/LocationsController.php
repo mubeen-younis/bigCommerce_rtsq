@@ -65,7 +65,7 @@ class LocationsController extends Controller
         $rules = [
             'city' => 'required',
             'state' => 'required',
-            'zipcode' => 'required',
+            'zip_code' => 'required',
             'country' => 'required',
             'location_type' => 'required'
         ];
@@ -180,14 +180,34 @@ class LocationsController extends Controller
             $nickname = $request->nickname;
         }
         try {
+            if (Locations::where('id', $request->id)->exists()){
+                $location = Locations::where('id', $request->id)->first();
+            }
             $location->nickname = $nickname;
             $location->store_id = $request->store_id;
             $location->type = $request->location_type;
-            $location->zip_code = $request->zipcode;
+            $location->zip_code = $request->zip_code;
             $location->city = $request->city;
             $location->state = $request->state;
             $location->country = $request->country;
-            $location->additionals = json_encode($request->all());
+            //$location->additionals = json_encode($request->all());
+            $additionals = [
+                'instore_pickup' => $request->enable_instore ?? '',
+                'local_delivery' => $request->enable_ld ?? '',
+                'ld_enable_supress' => $request->ld_enable_supress ?? '',
+                'instore_pickup_data' => [
+                    'miles' => $request->instore_miles ?? '',
+                    'postalCodes' => (!empty($request->instore_zipcodes)) ? implode(',',$request->instore_zipcodes ) : '',
+                    'checkout_description' => $request->instock_description ?? ''
+                ],
+                'local_delivery_data' => [
+                    'miles' => $request->ld_miles ?? '',
+                    'postalCodes' => (!empty($request->ld_zipcodes)) ? implode(',',$request->ld_zipcodes ) : '',
+                    'local_delivery_fee' => $request->ld_fee ?? '',
+                    'checkout_description' => $request->ld_description ?? '',
+                ]
+            ];
+            $location->additionals = json_encode($additionals);
             $location->save();
             return ['error' => false,
                 'data' => [$location->id],

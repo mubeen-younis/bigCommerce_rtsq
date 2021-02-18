@@ -94,7 +94,7 @@ class ProductSettingController extends Controller
                 'message' => 'No Product Id'
             ], 404);
         }
-        $products = ProductSetting::where('source_product_id', $request->product_id)
+        $products = ProductSetting::where('id', $request->product_id)
             ->get();
         if ($products->isEmpty()) {
             return response()->json(['error' => true,
