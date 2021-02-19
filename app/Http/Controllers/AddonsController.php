@@ -14,7 +14,13 @@ class AddonsController extends Controller
      */
     public function index()
     {
-        //
+        $response = [
+            'error' => false,
+            'addons' => Addons::get(),
+        ];
+
+        return response()->json($response, 200);
+
     }
 
     /**
@@ -83,15 +89,41 @@ class AddonsController extends Controller
         //
     }
 
-    public function getAddons(Request $request){
+    public function getAddons(Request $request)
+    {
         $store = $request->store;
-        $addons = Addons::select('addons.id', 'addons.name', 'installed_addons.is_enabled' )
-            ->join('installed_addons', 'installed_addons.addon_id','=','addons.id')
+        $addons = Addons::select('addons.id', 'addons.name', 'installed_addons.is_enabled')
+            ->join('installed_addons', 'installed_addons.addon_id', '=', 'addons.id')
             ->join('stores', 'stores.id', '=', 'installed_addons.store_id')
-            ->where('stores.hash', $store )->get();
+            ->where('stores.hash', $store)->get();
+
         return response()->json(
             ['error' => false,
-                'data' => $addons
+                'data' => $addons,
             ], 200);
     }
+
+    public function getRecommendedAddons(Request $request)
+    {
+        $store = $request->store;
+
+        if (empty($store)) {
+            return response()->json([
+                'error' => true,
+                'data' => [],
+                'message' => 'Empty Store Hash',
+            ], 404);
+        }
+
+        $addons = Addons::select('addons.id', 'addons.name', 'installed_addons.is_enabled')
+            ->join('installed_addons', 'installed_addons.addon_id', '!=', 'addons.id')
+            ->join('stores', 'stores.id', '=', 'installed_addons.store_id')
+            ->where('stores.hash', $store)->get();
+
+        return response()->json(
+            ['error' => false,
+                'addons' => $addons,
+            ], 200);
+    }
+
 }

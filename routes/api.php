@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdditionalCarrierTabSettingController;
+use App\Http\Controllers\AddonsController;
 use App\Http\Controllers\CarrierController;
 use App\Http\Controllers\ConnectionController;
 use App\Http\Controllers\GetRatesController;
@@ -57,8 +58,9 @@ Route::middleware([\App\Http\Middleware\EnsureTokenIsValid::class])->group(funct
     // Route::get('register_webhook/{type}', [\App\Http\Controllers\MainController::class, 'registerWebHook']);
 
     //=========Addons
-
-    Route::get('/get_installed_addons', [\App\Http\Controllers\AddonsController::class, 'getAddons']);
+    Route::get('/getAllAddons', [AddonsController::class, 'index']);
+    Route::get('/get_installed_addons', [AddonsController::class, 'getAddons']);
+    Route::get('/getRecommendedAddons', [AddonsController::class, 'getRecommendedAddons']);
 
 });
 
@@ -83,11 +85,12 @@ Route::delete('boxsize/delete/{id}', 'BoxSizeController@destroy');
 Route::get('/getDetails/{zip_code}', 'AdressController@googleApiCurl');
 
 Route::get('get_carrier_info', [CarrierController::class, 'getCarrierDetails']);
-Route::get('getAllCarriers', [CarrierController::class, 'getAllCarriers']);
+Route::get('getAllCarriers', [CarrierController::class, 'index']);
 
 Route::get('getNearestWareHouse', [GetRatesController::class, 'getNearestWarehouseTest']);
 
 Route::post('rate', [GetRatesController::class, 'returnRates']);
 
 Route::get('/getInstalledCarriers', [CarrierController::class, 'getInstalledCarriers']);
+Route::get('/getRecommendedCarriers', [CarrierController::class, 'getRecommendedCarriers']);
 Route::post('/changeCarrierStatus', [CarrierController::class, 'changeCarrierStatus']);
