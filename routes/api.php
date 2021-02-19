@@ -60,6 +60,9 @@ Route::middleware([\App\Http\Middleware\EnsureTokenIsValid::class])->group(funct
 
     Route::get('/get_installed_addons', [\App\Http\Controllers\AddonsController::class, 'getAddons']);
 
+    //====Plans Info
+    Route::get('/get_plans_info', [\App\Http\Controllers\PlansController::class, 'getPlansInfo']);
+
 });
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);
