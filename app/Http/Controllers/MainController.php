@@ -102,10 +102,12 @@ class MainController extends BaseController
 //                AccessTokens::create(['access_token', $data['access_token']]);
                 $toAppendHash = Crypt::encryptString($data['context']);
                 $accTok = DB::table('stores')->insert(['access_token' => $data['access_token'], 'token' => $toAppendHash, 'hash' => $data['context'], 'owner_id' => $data['user']['id'], 'owner_email' => $data['user']['email']]);
-                $request->session()->put('user_id', $data['user']['id']);
-                $request->session()->put('user_email', $data['user']['email']);
-                $this->registerWebHook(['store_id' => $accTok->id,
-                    'store_name' => $accTok->hash]);
+                if (!empty($accTok)){
+                    $this->registerWebHook([
+                        'store_id' => $accTok->id,
+                        'store_name' => $accTok->hash
+                    ]);
+                }
                 // If the merchant installed the app via an external link, redirect back to the
                 // BC installation success page for this app
                 if ($request->has('external_install')) {
@@ -146,7 +148,7 @@ class MainController extends BaseController
             $verifiedSignedRequestData = $this->verifySignedRequest($signedPayload, $request);
             if ($verifiedSignedRequestData !== null) {
                 $toAppendHash = Crypt::encryptString($verifiedSignedRequestData['store_hash']);
-                Store::where('hash', $verifiedSignedRequestData['store_hash'])->update(['token' => $toAppendHash]);
+                //Store::where('hash', $verifiedSignedRequestData['store_hash'])->update(['token' => $toAppendHash]);
                  if(Store::where('hash', $verifiedSignedRequestData['store_hash'])->where('is_webhook_created',false)->exists()){
                     $store= Store::where('hash', $verifiedSignedRequestData['store_hash'])->where('is_webhook_created',false)->first();
                      $this->registerWebHook(['store_id' => $store->id,

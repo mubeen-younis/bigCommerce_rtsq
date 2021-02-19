@@ -10,8 +10,9 @@ class QuoteSettingsController extends Controller
     //
     public function getSettings(Request $request)
     {
-        $settings = QuoteSetting::where('installed_carrier_id', 1)->first();
-        return response()->json(['error' => false, 'data' => $settings], 200);
+        $carrierId = $request->carrierId ?? 1;
+        $settings = QuoteSetting::where('installed_carrier_id', $carrierId)->first();
+        return response()->json(['error' => false, 'data' => $settings, 'debug' => $request->all()], 200);
     }
 
     public function saveSettings(Request $request)

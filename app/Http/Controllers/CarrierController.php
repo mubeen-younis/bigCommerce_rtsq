@@ -128,6 +128,7 @@ class CarrierController extends Controller
                 'data' => [],
                 'message' => 'Empty Store ID',
             ], 404);
+<<<<<<< HEAD
         }
 
         $installedCarriers = Carrier::select('carriers.name', 'carriers.id', 'carriers.logo', 'installed_carriers.store_id', 'installed_carriers.carrier_id', 'carriers.carrier_type', 'installed_carriers.is_enabled')
@@ -140,6 +141,8 @@ class CarrierController extends Controller
                 'data' => [],
                 'message' => 'No Installed Carriers Found',
             ], 404);
+=======
+>>>>>>> a7edf366db8317244d2c3a08e93c38d4e5a2a572
         }
 
         $response['error'] = false;
