@@ -12,13 +12,14 @@ class CurlRequest
     /**
      * @var array
      */
-    protected $curlResponse = array();
+    protected $curlResponse = [];
 
     /**
      * @param $endPoint
      * @param $request
      * @param $header
      * @param $method
+     * @param bool $showHeaders
      * @return array
      */
 

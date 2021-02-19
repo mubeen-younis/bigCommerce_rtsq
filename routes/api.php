@@ -2,10 +2,16 @@
 
 use App\Http\Controllers\AdditionalCarrierTabSettingController;
 use App\Http\Controllers\CarrierController;
+use App\Http\Controllers\CarrierPlanController;
 use App\Http\Controllers\ConnectionController;
 use App\Http\Controllers\GetRatesController;
+use App\Http\Controllers\InstalledCarrierController;
 use App\Http\Controllers\LocationsController;
+use App\Http\Controllers\MainController;
+use App\Http\Controllers\ProductSettingController;
 use App\Http\Controllers\QuoteSettingsController;
+use App\Http\Controllers\RADController;
+use App\Http\Middleware\EnsureTokenIsValid;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -23,38 +29,48 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
-Route::post('webhooks', [\App\Http\Controllers\MainController::class, 'addAndUpdateProductFromWebHook']);
+Route::post('webhooks', [MainController::class, 'addAndUpdateProductFromWebHook']);
 // Ws Route For Adding Plan
-Route::post('/save_plan_detail', [\App\Http\Controllers\CarrierPlanController::class, 'addPlanFromWs']);
-Route::middleware([\App\Http\Middleware\EnsureTokenIsValid::class])->group(function () {
+Route::post('/save_plan_detail', [CarrierPlanController::class, 'addPlanFromWs']);
+Route::middleware([EnsureTokenIsValid::class])->group(function () {
     //========Product Routes
-    Route::get('/getProducts', [\App\Http\Controllers\ProductSettingController::class, 'getAllProducts']);
-    Route::get('/import_products', [\App\Http\Controllers\ProductSettingController::class, 'importProducts']);
-    Route::get('/get_products', [\App\Http\Controllers\ProductSettingController::class, 'getStoreProductsFromDb']);
-    Route::get('/get_product', [\App\Http\Controllers\ProductSettingController::class, 'getSingleProductDetail']);
-    Route::get('/edit_product', [\App\Http\Controllers\ProductSettingController::class, 'editProduct']);
-    Route::post('/update_product', [\App\Http\Controllers\ProductSettingController::class, 'updateProductDetail']);
+    Route::get('/getProducts', [ProductSettingController::class, 'getAllProducts']);
+    Route::get('/import_products', [ProductSettingController::class, 'importProducts']);
+    Route::get('/get_products', [ProductSettingController::class, 'getStoreProductsFromDb']);
+    Route::get('/get_product', [ProductSettingController::class, 'getSingleProductDetail']);
+    Route::get('/edit_product', [ProductSettingController::class, 'editProduct']);
+    Route::post('/update_product', [ProductSettingController::class, 'updateProductDetail']);
 
     //=======Carriers
-    Route::get('/get_add_tab_sett', [\App\Http\Controllers\AdditionalCarrierTabSettingController::class, 'getAddTabSett']);
-    Route::get('/get_add_tab_sett_store', [\App\Http\Controllers\AdditionalCarrierTabSettingController::class, 'getAddTabSettByStoreID']);
-    Route::get('/get_inst_car', [\App\Http\Controllers\InstalledCarrierController::class, 'getInstalledCarriers']);
-    Route::post('/inst_carrier', [\App\Http\Controllers\InstalledCarrierController::class, 'installCarrier']);
-    Route::post('/update_carrier', [\App\Http\Controllers\InstalledCarrierController::class, 'updateCarrier']);
-    Route::get('/get_plans_det', [\App\Http\Controllers\CarrierPlanController::class, 'getPlansDetail']);
-    Route::get('/get_sin_car_plan', [\App\Http\Controllers\CarrierPlanController::class, 'getSingleCarrierPlan']);
+    Route::get('/get_add_tab_sett', [AdditionalCarrierTabSettingController::class, 'getAddTabSett']);
+    Route::get('/get_add_tab_sett_store', [AdditionalCarrierTabSettingController::class, 'getAddTabSettByStoreID']);
+    Route::get('/get_inst_car', [InstalledCarrierController::class, 'getInstalledCarriers']);
+    Route::post('/inst_carrier', [InstalledCarrierController::class, 'installCarrier']);
+    Route::post('/update_carrier', [InstalledCarrierController::class, 'updateCarrier']);
+    Route::get('/get_plans_det', [CarrierPlanController::class, 'getPlansDetail']);
+    Route::get('/get_sin_car_plan', [CarrierPlanController::class, 'getSingleCarrierPlan']);
 
     //=========Locations
     Route::put('/location/update/{locations}', 'LocationsController@update');
     Route::delete('warehouse/delete/{id}', 'LocationsController@delete_warehouse');
     Route::delete('dropship/delete/{id}', 'LocationsController@delete_dropships');
-    Route::get('/get_loc_from_zip/{zip_code}', [\App\Http\Controllers\LocationsController::class, 'getLocationFromZip']);
-    Route::post('/save_location', [\App\Http\Controllers\LocationsController::class, 'store']);
-    Route::get('/get_location', [\App\Http\Controllers\LocationsController::class, 'getSingleLocation']);
-    Route::get('/get_locations', [\App\Http\Controllers\LocationsController::class, 'getLocations']);
-    Route::post('/delete_location', [\App\Http\Controllers\LocationsController::class, 'deleteLocation']);
+    Route::get('/get_loc_from_zip/{zip_code}', [LocationsController::class, 'getLocationFromZip']);
+    Route::post('/save_location', [LocationsController::class, 'store']);
+    Route::get('/get_location', [LocationsController::class, 'getSingleLocation']);
+    Route::get('/get_locations', [LocationsController::class, 'getLocations']);
+    Route::post('/delete_location', [LocationsController::class, 'deleteLocation']);
     //============= Register WebHook
     // Route::get('register_webhook/{type}', [\App\Http\Controllers\MainController::class, 'registerWebHook']);
+
+    /*RAD routes*/
+    Route::post('/rad/get_plans', [RADController::class, 'getPlans']);
+    Route::post('/rad/change_plan', [RADController::class, 'changePlan']);
+    Route::post('/rad/change_status', [RADController::class, 'changeStatus']);
+    Route::post('/rad/default_address', [RADController::class, 'setDefaultAddress']);
+
+        //=========Addons
+
+    Route::get('/get_installed_addons', [\App\Http\Controllers\AddonsController::class, 'getAddons']);
 });
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);

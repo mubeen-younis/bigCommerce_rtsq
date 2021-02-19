@@ -32,7 +32,10 @@ class EnsureTokenIsValid
                 return $next($request);
             }
             return response()->json(['error' => true,
-                'data' => [],
+                'data' => [
+                    'token' => $token[1],
+                    'store' => $store
+                ],
                 'message' => 'Token Mismatch'
             ], 401);
         }

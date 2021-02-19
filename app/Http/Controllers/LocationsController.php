@@ -128,8 +128,7 @@ class LocationsController extends Controller
                 ];
             }
         }
-        $loc = $this->saveLocationRequest($location, $request, $method, $callBy);
-        return $loc;
+        return $this->saveLocationRequest($location, $request, $method, $callBy);
     }
 
     public function saveDropshipAddress($request)
@@ -167,15 +166,13 @@ class LocationsController extends Controller
                 ];
             }
         }
-        $loc = $this->saveLocationRequest($location, $request, $method, $callBy);
-        return $loc;
+        return $this->saveLocationRequest($location, $request, $method, $callBy);
     }
 
     public function saveLocationRequest($location, $request, $method, $callBy)
     {
-        $nickname = "";
         if (empty($request->nickname)) {
-            $nickname = $request->zipcode . '_' . $request->city . '_' . $request->state;
+            $nickname = $request->zip_code . '_' . $request->city . '_' . $request->state;
         } else {
             $nickname = $request->nickname;
         }

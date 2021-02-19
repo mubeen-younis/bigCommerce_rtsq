@@ -125,7 +125,6 @@ class CarrierController extends Controller
                 'data' => [],
                 'message' => 'No Carrier Found',
             ], 404);
-
         }
 
         $response['data']['installedCarriers'] = $installed_carriers;
