@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Constants\Constant;
 use App\Models\Connection;
 use GuzzleHttp\Client;
 use Illuminate\Http\Request;
@@ -68,14 +69,14 @@ class ConnectionController extends Controller
             'error' => true,
             'message' => 'Something went wrong!'
         ];
-        $url = 'https://eniture.com/sfws/quote-speedfreight-shipment.php';
+        $url = 'https://eniture-qa.com/sfws/quote-speedfreight-shipment.php';//Constant::TEST_CONN_URL;
         $params = [
             'platform' => 'bigcommerce',
             'speed_freight_username' => $data->username,
             'speed_freight_password' => $data->password,
             'authentication_key' => $data->authentication_key,
             'world_wide_express_account_number' => $data->account_number,
-            'plugin_domain_name' => 'wpqa2.eniture-qa.com',
+            'plugin_domain_name' => 'store-uann2u.mybigcommerce.com',
             'plugin_licence_key' => $data->license_key,
         ];
 

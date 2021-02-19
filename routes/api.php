@@ -80,7 +80,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
 Route::get('/get_carriers', [CarrierController::class, 'index']);
 Route::get('/get_conn_settings', [ConnectionController::class, 'index']);
 Route::post('/submit_connection_settings', [ConnectionController::class, 'store']);
-Route::get('/get_qoute_settings', [QuoteSettingsController::class, 'getSettings']);
+Route::get('/get_qoute_settings/{carrierId}', [QuoteSettingsController::class, 'getSettings']);
 Route::post('/submit_quote_settings', [QuoteSettingsController::class, 'saveSettings']);
 
 /*------Services tab-------*/
