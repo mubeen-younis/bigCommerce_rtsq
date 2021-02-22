@@ -99,44 +99,41 @@ class AdditionalCarrierTabSettingController extends Controller
         if (empty($request->carrier_id)) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => "Carrier Id Missing"
+                'message' => "Carrier Id Missing",
             ], 404);
         }
-        $addTabSettings=AdditionalCarrierTabSetting::where('store_id',$request->store_id)
-            ->where('carrier_id',$request->carrier_id)
+        $addTabSettings = AdditionalCarrierTabSetting::where('store_id', $request->store_id)
+            ->where('carrier_id', $request->carrier_id)
             ->first();
         // If Record NOt Exists
-        if($addTabSettings===null){
+        if ($addTabSettings === null) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => "Settings Not Found"
+                'message' => "Settings Not Found",
             ], 404);
         }
         return response()->json(['error' => false,
             'data' => $addTabSettings,
-            'message' => "Settings Not Found"
-        ], 200) ;
+            'message' => "Settings Not Found",
+        ], 200);
 
     }
 
     public function getAddTabSettByStoreID(Request $request)
     {
-        if (empty($request->store)) {
-            return response()->json(['error' => true,
-                'data' => [],
-                'message' => "Store Id Missing"
-            ], 404);
+        if (!empty($request->header('authorization'))) {
+            $token = explode(' ', $request->header('authorization'))[1];
+
+            $addTabSettings = AdditionalCarrierTabSetting::select('additional_carrier_tab_settings.value')
+                ->join('installed_carriers', 'installed_carriers.id', '=', 'additional_carrier_tab_settings.installed_carrier_id')
+                ->join('stores', 'stores.id', '=', 'installed_carriers.store_id')
+                ->where('stores.token', $token)
+                ->get();
+
+            return response()->json(['error' => false,
+                'data' => $addTabSettings,
+                'message' => "Settings Found",
+            ], 200);
         }
-        $addTabSettings=AdditionalCarrierTabSetting::select('additional_carrier_tab_settings.value')
-            ->join('installed_carriers', 'installed_carriers.id', '=', 'additional_carrier_tab_settings.installed_carrier_id')
-            ->join('stores', 'stores.id', '=', 'installed_carriers.store_id')
-            ->where('stores.hash',$request->store)
-            ->get();
-
-        return response()->json(['error' => false,
-            'data' => $addTabSettings,
-            'message' => "Settings Not Found"
-        ], 200) ;
-
     }
 }
