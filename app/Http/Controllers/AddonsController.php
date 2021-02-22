@@ -127,6 +127,13 @@ class AddonsController extends Controller
 
     public function changeAddonStatus(Request $request)
     {
+        if (empty($request->addon_id)) {
+            return response()->json([
+                'error' => true,
+                'message' => 'Empty Addon Id',
+            ]);
+        }
+
         if (!empty($request->header('authorization'))) {
             $addon = InstalledAddon::where('addon_id', $request->addon_id)->first();
 

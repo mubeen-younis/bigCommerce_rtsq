@@ -73,6 +73,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::get('/getAllAddons', [AddonsController::class, 'index']);
     Route::get('/get_installed_addons', [AddonsController::class, 'getAddons']);
     Route::get('/getRecommendedAddons', [AddonsController::class, 'getRecommendedAddons']);
+    Route::post('/changeAddonStatus', [AddonsController::class, 'changeAddonStatus']);
 
     //====Plans Info
     Route::get('/get_plans_info', [\App\Http\Controllers\PlansController::class, 'getPlansInfo']);
