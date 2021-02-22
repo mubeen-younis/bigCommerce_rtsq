@@ -77,6 +77,10 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     //====Plans Info
     Route::get('/get_plans_info', [\App\Http\Controllers\PlansController::class, 'getPlansInfo']);
 
+    Route::get('/getInstalledCarriers', [CarrierController::class, 'getInstalledCarriers']);
+    Route::get('/getRecommendedCarriers', [CarrierController::class, 'getRecommendedCarriers']);
+    Route::post('/changeCarrierStatus', [CarrierController::class, 'changeCarrierStatus']);
+
 });
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);
@@ -105,7 +109,3 @@ Route::get('getAllCarriers', [CarrierController::class, 'index']);
 Route::get('getNearestWareHouse', [GetRatesController::class, 'getNearestWarehouseTest']);
 
 Route::post('rate', [GetRatesController::class, 'returnRates']);
-
-Route::get('/getInstalledCarriers', [CarrierController::class, 'getInstalledCarriers']);
-Route::get('/getRecommendedCarriers', [CarrierController::class, 'getRecommendedCarriers']);
-Route::post('/changeCarrierStatus', [CarrierController::class, 'changeCarrierStatus']);
