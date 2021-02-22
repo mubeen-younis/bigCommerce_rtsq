@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Addons;
+use App\Models\InstalledAddon;
 use Illuminate\Http\Request;
 
 class AddonsController extends Controller
@@ -124,4 +125,20 @@ class AddonsController extends Controller
         }
     }
 
+    public function changeAddonStatus(Request $request)
+    {
+        if (!empty($request->header('authorization'))) {
+            $addon = InstalledAddon::where('addon_id', $request->addon_id)->first();
+
+            if ($addon) {
+                InstalledAddon::where('addon_id', $request->addon_id)->update(['is_enabled' => !$addon->is_enabled]);
+
+                return response()->json(['data' => InstalledAddon::find($request->addon_id), 'message' => 'Addon Status updated'], 200);
+            } else {
+                return response()->json([
+                    'message' => 'Invalid Addon ID',
+                ], 404);
+            }
+        }
+    }
 }
