@@ -140,7 +140,7 @@ class CarrierController extends Controller
             $installCarrier->save();
 
             return response()->json(['error' => false,
-                'data' => $installCarrier,
+                'data' => $installCarrier->id,
                 'error' => false,
                 'message' => 'Carrier Installed Successfully',
             ], 200);
