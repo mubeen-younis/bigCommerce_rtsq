@@ -118,6 +118,41 @@ class CarrierController extends Controller
         return response()->json([], 200);
     }
 
+    public function installCarrier(Request $request)
+    {
+        if (empty($request->carrier_id)) {
+            return response()->json([
+                'error' => true,
+                'message' => 'Empty Carrier ID',
+            ], 200);
+        }
+
+        if (!empty($request->header('authorization'))) {
+            $token = explode(' ', $request->header('authorization'))[1];
+            $store = Store::where('token', $token)->first();
+
+            $installCarrier = new InstalledCarrier();
+            $installCarrier->store_id = $store->id;
+            $installCarrier->carrier_id = $request->carrier_id;
+            $installCarrier->is_enabled = false;
+            $installCarrier->installed_at = now();
+            $installCarrier->plan_updated_at = now();
+            $installCarrier->save();
+
+            return response()->json(['error' => false,
+                'data' => $installCarrier,
+                'error' => false,
+                'message' => 'Carrier Installed Successfully',
+            ], 200);
+
+        } else {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => "Carrier couldn't be installed",
+            ], 500);
+        }
+    }
+
     public function getInstalledCarriers(Request $request)
     {
         if (!empty($request->header('authorization'))) {

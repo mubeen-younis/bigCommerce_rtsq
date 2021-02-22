@@ -50,6 +50,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/update_carrier', [InstalledCarrierController::class, 'updateCarrier']);
     Route::get('/get_plans_det', [CarrierPlanController::class, 'getPlansDetail']);
     Route::get('/get_sin_car_plan', [CarrierPlanController::class, 'getSingleCarrierPlan']);
+    Route::post('/installCarrier', [CarrierController::class, 'installCarrier']);
 
     //=========Locations
     Route::put('/location/update/{locations}', 'LocationsController@update');
