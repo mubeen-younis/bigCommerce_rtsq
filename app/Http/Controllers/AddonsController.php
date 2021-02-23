@@ -135,15 +135,16 @@ class AddonsController extends Controller
         }
 
         if (!empty($request->header('authorization'))) {
-            $addon = InstalledAddon::where('addon_id', $request->addon_id)->first();
+            $addon = InstalledAddon::find($request->addon_id);
 
             if ($addon) {
-                InstalledAddon::where('addon_id', $request->addon_id)->update(['is_enabled' => !$addon->is_enabled]);
+                InstalledAddon::where('id', $request->addon_id)->update(['is_enabled' => !$addon->is_enabled]);
 
-                return response()->json(['data' => InstalledAddon::find($request->addon_id), 'message' => 'Addon Status updated'], 200);
+                return response()->json(['data' => InstalledAddon::find($request->addon_id), 'message' => 'Addon Status updated', 'error' => false], 200);
             } else {
                 return response()->json([
                     'message' => 'Invalid Addon ID',
+                    'error' => true,
                 ], 404);
             }
         }
