@@ -95,7 +95,7 @@ class AddonsController extends Controller
         if (!empty($request->header('authorization'))) {
             $token = explode(' ', $request->header('authorization'))[1];
 
-            $addons = Addons::select('addons.id', 'addons.name', 'installed_addons.is_enabled')
+            $addons = Addons::select('installed_addons.id', 'addons.name', 'installed_addons.is_enabled')
                 ->join('installed_addons', 'installed_addons.addon_id', '=', 'addons.id')
                 ->join('stores', 'stores.id', '=', 'installed_addons.store_id')
                 ->where('stores.token', $token)->get();
