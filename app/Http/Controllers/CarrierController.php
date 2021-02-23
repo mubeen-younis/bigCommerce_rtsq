@@ -6,6 +6,7 @@ use App\Models\Carrier;
 use App\Models\InstalledCarrier;
 use App\Models\Store;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CarrierController extends Controller
 {
@@ -188,10 +189,8 @@ class CarrierController extends Controller
         if (!empty($request->header('authorization'))) {
             $token = explode(' ', $request->header('authorization'))[1];
 
-            $installedCarriers = Carrier::select('carriers.id', 'carriers.carrier_type', 'carriers.name', 'carriers.logo', 'installed_carriers.store_id', 'installed_carriers.carrier_id', 'installed_carriers.is_enabled')
-                ->join('installed_carriers', 'installed_carriers.carrier_id', '!=', 'carriers.id')
-                ->join('stores', 'stores.id', '=', 'installed_carriers.store_id')
-                ->where('stores.token', $token)->get();
+            $installedCarriers = DB::table('installed_carriers')->join('stores', 'stores.id', '=', 'installed_carriers.store_id')->where('stores.token', $token)->pluck('carrier_id');
+            $recommendedCarriers = Carrier::whereNotIn('id', $installedCarriers)->get();
 
             if ($installedCarriers->isEmpty()) {
                 return response()->json(['error' => true,
@@ -201,7 +200,7 @@ class CarrierController extends Controller
             }
 
             $response['error'] = false;
-            $response['data']['carriers'] = $installedCarriers;
+            $response['data']['carriers'] = $recommendedCarriers;
 
             return response()->json($response, 200);
         }
