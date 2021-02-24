@@ -85,7 +85,7 @@ class Shipping {
      */
     public function setCarrierRates($quotes)
     {
-        return !empty($quotes) ? dd($quotes) : [];
+        $quotes = $quotes ?? [];
     }
 
     /**
