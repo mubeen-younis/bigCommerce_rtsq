@@ -104,7 +104,7 @@ class AddonsController extends Controller
             return response()->json(['error' => true,
                 'data' => [],
                 'message' => 'No Installed Addons Found',
-            ], 404);
+            ], 200);
         }
 
         return response()->json(
@@ -124,7 +124,7 @@ class AddonsController extends Controller
             return response()->json(['error' => true,
                 'data' => [],
                 'message' => 'Addons Not Found',
-            ], 404);
+            ], 200);
         }
 
         return response()->json(
