@@ -97,7 +97,6 @@ class MainController extends BaseController
 
             $statusCode = $result->getStatusCode();
             $data = json_decode($result->getBody(), true);
-
             if ($statusCode == 200) {
 //                AccessTokens::create(['access_token', $data['access_token']]);
                 $toAppendHash = Crypt::encryptString($data['context']);
@@ -156,8 +155,8 @@ class MainController extends BaseController
         if (!empty($signedPayload)) {
             $verifiedSignedRequestData = $this->verifySignedRequest($signedPayload, $request);
             if ($verifiedSignedRequestData !== null) {
-                $toAppendHash = Crypt::encryptString($verifiedSignedRequestData['store_hash']);
-                //Store::where('hash', $verifiedSignedRequestData['store_hash'])->update(['token' => $toAppendHash]);
+                $toAppendHash = Crypt::encryptString($verifiedSignedRequestData['context']);
+                Store::where('hash', $verifiedSignedRequestData['context'])->update(['token' => $toAppendHash]);
                  if(Store::where('hash', $verifiedSignedRequestData['store_hash'])->where('is_webhook_created',false)->exists()){
                     $store= Store::where('hash', $verifiedSignedRequestData['store_hash'])->where('is_webhook_created',false)->first();
                      $this->registerWebHook([

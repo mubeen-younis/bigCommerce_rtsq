@@ -6,11 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="24715a4d-0eda-4296-a2c3-b3a4aedba505" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/CurlRequest.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/CurlRequest.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/CustomClasses/WweLTLShipmentPackage.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/CustomClasses/WweLTLShipmentPackage.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/Http/Controllers/MainController.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Http/Controllers/MainController.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/Http/Controllers/RADController.php" beforeDir="false" afterPath="$PROJECT_DIR$/app/Http/Controllers/RADController.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/routes/api.php" beforeDir="false" afterPath="$PROJECT_DIR$/routes/api.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -216,7 +212,7 @@
       <workItem from="1613102807877" duration="620000" />
       <workItem from="1613448074029" duration="19075000" />
       <workItem from="1613623118134" duration="15336000" />
-      <workItem from="1613711821794" duration="21424000" />
+      <workItem from="1613711821794" duration="22060000" />
     </task>
     <servers />
   </component>
