@@ -17,8 +17,12 @@ class CarrierController extends Controller
      */
     public function index()
     {
+        $response = [
+            'error' => false,
+            'carriers' => Carrier::get(),
+        ];
 
-     return response()->json(Carrier::get(),200);
+        return response()->json($response, 200);
 
     }
 
@@ -28,16 +32,16 @@ class CarrierController extends Controller
             'error' => false,
         ];
         $store = $request->store ?? null;
-        if (!empty($store)){
+        if (!empty($store)) {
             //$installedCarriers = Store::where('hash', $store)->installedCarriers();
             $installedCarriers = Store::where('hash', $store)->get();
             $response['data']['installedCarriers'] = $installedCarriers;
 
-        }else{
+        } else {
             $response = [
                 'error' => true,
                 'message' => 'Store hash is required.',
-                'data' => []
+                'data' => [],
             ];
         }
 
@@ -115,21 +119,91 @@ class CarrierController extends Controller
         return response()->json([], 200);
     }
 
-    public function getInstalledCarriers()
+    public function installCarrier(Request $request)
     {
-        $installed_carriers = DB::table('carriers')->join('installed_carriers', 'carriers.id', 'installed_carriers.carrier_id')
-            ->get();
-
-        if ($installed_carriers->isEmpty()) {
+        if (empty($request->carrier_id)) {
             return response()->json([
-                'data' => [],
-                'message' => 'No Carrier Found',
-            ], 404);
+                'error' => true,
+                'message' => 'Empty Carrier ID',
+            ], 200);
         }
 
-        $response['data']['installedCarriers'] = $installed_carriers;
+        if (!empty($request->header('authorization'))) {
+            $token = explode(' ', $request->header('authorization'))[1];
+            $store = Store::where('token', $token)->first();
 
-        return response()->json($response, 200);
+            $installCarrier = new InstalledCarrier();
+            $installCarrier->store_id = $store->id;
+            $installCarrier->carrier_id = $request->carrier_id;
+            $installCarrier->is_enabled = false;
+            $installCarrier->installed_at = now();
+            $installCarrier->plan_updated_at = now();
+            $installCarrier->save();
+
+            return response()->json(['error' => false,
+                'data' => $installCarrier->id,
+                'error' => false,
+                'message' => 'Carrier Installed Successfully',
+            ], 200);
+
+        } else {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => "Carrier couldn't be installed",
+            ], 500);
+        }
+    }
+
+    public function getInstalledCarriers(Request $request)
+    {
+        if (!empty($request->header('authorization'))) {
+            $token = explode(' ', $request->header('authorization'))[1];
+
+            $installedCarriers = Carrier::select('carriers.name', 'carriers.id', 'carriers.logo', 'installed_carriers.store_id', 'installed_carriers.carrier_id', 'carriers.carrier_type', 'installed_carriers.is_enabled')
+                ->join('installed_carriers', 'installed_carriers.carrier_id', '=', 'carriers.id')
+                ->join('stores', 'stores.id', '=', 'installed_carriers.store_id')
+                ->where('stores.token', $token)->get();
+
+            if ($installedCarriers->isEmpty()) {
+                return response()->json(['error' => true,
+                    'data' => [],
+                    'message' => 'No Installed Carriers Found',
+                ], 404);
+            }
+
+            $response['error'] = false;
+            $response['data']['installedCarriers'] = $installedCarriers;
+
+            return response()->json($response, 200);
+        } else {
+            return response()->json([
+                'error' => true,
+                'data' => [],
+                'message' => 'Empty Token Field',
+            ], 404);
+        }
+    }
+
+    public function getRecommendedCarriers(Request $request)
+    {
+        if (!empty($request->header('authorization'))) {
+            $token = explode(' ', $request->header('authorization'))[1];
+
+            $installedCarriers = DB::table('installed_carriers')->join('stores', 'stores.id', '=', 'installed_carriers.store_id')->where('stores.token', $token)->pluck('carrier_id');
+            $recommendedCarriers = Carrier::whereNotIn('id', $installedCarriers)->get();
+
+            if ($installedCarriers->isEmpty()) {
+                return response()->json(['error' => true,
+                    'data' => [],
+                    'message' => 'Carriers Not Found',
+                ], 404);
+            }
+
+            $response['error'] = false;
+            $response['data']['carriers'] = $recommendedCarriers;
+
+            return response()->json($response, 200);
+        }
     }
 
     public function changeCarrierStatus(Request $request)

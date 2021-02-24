@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdditionalCarrierTabSettingController;
+use App\Http\Controllers\AddonsController;
 use App\Http\Controllers\CarrierController;
 use App\Http\Controllers\CarrierPlanController;
 use App\Http\Controllers\ConnectionController;
@@ -49,6 +50,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/update_carrier', [InstalledCarrierController::class, 'updateCarrier']);
     Route::get('/get_plans_det', [CarrierPlanController::class, 'getPlansDetail']);
     Route::get('/get_sin_car_plan', [CarrierPlanController::class, 'getSingleCarrierPlan']);
+    Route::post('/installCarrier', [CarrierController::class, 'installCarrier']);
 
     //=========Locations
     Route::put('/location/update/{locations}', 'LocationsController@update');
@@ -69,11 +71,17 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/rad/default_address', [RADController::class, 'setDefaultAddress']);
 
     //=========Addons
-
-    Route::get('/get_installed_addons', [\App\Http\Controllers\AddonsController::class, 'getAddons']);
+    Route::get('/getAllAddons', [AddonsController::class, 'index']);
+    Route::get('/get_installed_addons', [AddonsController::class, 'getAddons']);
+    Route::get('/getRecommendedAddons', [AddonsController::class, 'getRecommendedAddons']);
+    Route::post('/changeAddonStatus', [AddonsController::class, 'changeAddonStatus']);
 
     //====Plans Info
     Route::get('/get_plans_info', [\App\Http\Controllers\PlansController::class, 'getPlansInfo']);
+
+    Route::get('/getInstalledCarriers', [CarrierController::class, 'getInstalledCarriers']);
+    Route::get('/getRecommendedCarriers', [CarrierController::class, 'getRecommendedCarriers']);
+    Route::post('/changeCarrierStatus', [CarrierController::class, 'changeCarrierStatus']);
 
 });
 
@@ -98,11 +106,8 @@ Route::delete('boxsize/delete/{id}', 'BoxSizeController@destroy');
 Route::get('/getDetails/{zip_code}', 'AdressController@googleApiCurl');
 
 Route::get('get_carrier_info', [CarrierController::class, 'getCarrierDetails']);
-Route::get('getAllCarriers', [CarrierController::class, 'getAllCarriers']);
+Route::get('getAllCarriers', [CarrierController::class, 'index']);
 
 Route::get('getNearestWareHouse', [GetRatesController::class, 'getNearestWarehouseTest']);
 
 Route::post('rate', [GetRatesController::class, 'returnRates']);
-
-Route::get('/getInstalledCarriers', [CarrierController::class, 'getInstalledCarriers']);
-Route::post('/changeCarrierStatus', [CarrierController::class, 'changeCarrierStatus']);
