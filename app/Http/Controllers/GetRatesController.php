@@ -178,8 +178,8 @@ class GetRatesController extends Controller
         }
         $store = Store::where(['hash' => $storeHash, 'app_status' => 1])->first();
         if (!empty($store)) {
-            $installedCarriers = InstalledCarrier::whereStoreId($store->id)->get();
-            $installedAddons = InstalledAddon::whereStoreId($store->id)->get();
+            $installedCarriers = InstalledCarrier::where(['store_id' => $store->id, 'is_enabled' => 1])->get();
+            $installedAddons = InstalledAddon::where(['store_id' => $store->id, 'is_enabled' => 1])->get();
             if (!empty($installedCarriers)) {
                 return [
                     'installed_carriers' => $installedCarriers,
