@@ -101,11 +101,21 @@ class MainController extends BaseController
             if ($statusCode == 200) {
 //                AccessTokens::create(['access_token', $data['access_token']]);
                 $toAppendHash = Crypt::encryptString($data['context']);
-                $accTok = DB::table('stores')->insert(['access_token' => $data['access_token'], 'token' => $toAppendHash, 'hash' => $data['context'], 'owner_id' => $data['user']['id'], 'owner_email' => $data['user']['email']]);
-                if (!empty($accTok)){
+                $store = Store::where('hash', $data['context'])->first();
+                if (empty($store)){
+                    $store = new Store();
+                }
+                $store->access_token = $data['access_token'];
+                $store->token = $toAppendHash;
+                $store->hash = $data['context'];
+                $store->owner_id = $data['user']['id'];
+                $store->owner_email = $data['user']['email'];
+                $store->save();
+                //$accTok = Store::create(['access_token' => $data['access_token'], 'token' => $toAppendHash, 'hash' => $data['context'], 'owner_id' => $data['user']['id'], 'owner_email' => $data['user']['email']]);
+                if (!empty($store)){
                     $this->registerWebHook([
-                        'store_id' => $accTok->id,
-                        'store_name' => $accTok->hash
+                        'store_id' => $store->id,
+                        'store_name' => $store->hash
                     ]);
                 }
                 // If the merchant installed the app via an external link, redirect back to the
@@ -143,7 +153,6 @@ class MainController extends BaseController
     public function load(Request $request)
     {
         $signedPayload = $request->input('signed_payload');
-        $toAppendHash = '';
         if (!empty($signedPayload)) {
             $verifiedSignedRequestData = $this->verifySignedRequest($signedPayload, $request);
             if ($verifiedSignedRequestData !== null) {
@@ -151,8 +160,10 @@ class MainController extends BaseController
                 //Store::where('hash', $verifiedSignedRequestData['store_hash'])->update(['token' => $toAppendHash]);
                  if(Store::where('hash', $verifiedSignedRequestData['store_hash'])->where('is_webhook_created',false)->exists()){
                     $store= Store::where('hash', $verifiedSignedRequestData['store_hash'])->where('is_webhook_created',false)->first();
-                     $this->registerWebHook(['store_id' => $store->id,
-                         'store_name' => $store->hash]);
+                     $this->registerWebHook([
+                         'store_id' => $store->id,
+                         'store_name' => $store->hash
+                     ]);
                  }
             } else {
                 return Redirect::action([MainController::class, 'error'])->with('error_message', 'The signed request from BigCommerce could not be validated.');
@@ -162,7 +173,6 @@ class MainController extends BaseController
         }
         //header('location: http://bc-fe.eniture-dev3.com/?store='.$toAppendHash);
         //return redirect('/');
-
         return Redirect::to('https://bc-fe.eniture-dev3.com/?store=' . $toAppendHash);
     }
 

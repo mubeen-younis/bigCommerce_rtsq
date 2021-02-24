@@ -63,7 +63,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     // Route::get('register_webhook/{type}', [\App\Http\Controllers\MainController::class, 'registerWebHook']);
 
     /*RAD routes*/
-    Route::post('/rad/get_plans', [RADController::class, 'getPlans']);
+    Route::get('/rad/get_plans', [RADController::class, 'getPlans']);
     Route::post('/rad/change_plan', [RADController::class, 'changePlan']);
     Route::post('/rad/change_status', [RADController::class, 'changeStatus']);
     Route::post('/rad/default_address', [RADController::class, 'setDefaultAddress']);

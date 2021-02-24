@@ -25,41 +25,34 @@ class CurlRequest
 
     public function enSingleCurlRequest($endPoint, $request, $header, $method, $showHeaders = true)
     {
-        set_time_limit(0);
-        $curl = curl_init();
-        curl_setopt($curl, CURLOPT_URL, $endPoint);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-
-        if ($method != 'GET') {
-            // curl_setopt($soap_do, CURLOPT_POST, true);
-            curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
-            curl_setopt($curl, CURLOPT_POSTFIELDS, $request);
-        }
-        curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
-        //    curl_setopt($soap_do, CURLOPT_RETURNTRANSFER, 1);
-        //    curl_setopt($soap_do, CURLOPT_VERBOSE, 1);
-        //    curl_setopt($soap_do, CURLOPT_HEADER, 1);
-//        curl_setopt($soap_do, CURLOPT_TIMEOUT, 5);
-
-
-        if ($showHeaders == true) {
-            curl_setopt($curl, CURLOPT_FAILONERROR, true);
-        }
-        $result = curl_exec($curl);
-        $info = curl_getinfo($curl);
-        if (curl_errno($curl)) {
-            $error_msg = curl_error($curl);
-            $this->curlResponse['status'] = false;
-            $this->curlResponse['response'] = $error_msg;
+        try {
+            $curl = curl_init();
+            curl_setopt($curl, CURLOPT_URL, $endPoint);
+            curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+            if ($method != 'GET') {
+                curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
+                curl_setopt($curl, CURLOPT_POSTFIELDS, $request);
+            }
+            curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
+            if ($showHeaders == true) {
+                curl_setopt($curl, CURLOPT_FAILONERROR, true);
+            }
+            $result = curl_exec($curl);
+            $info = curl_getinfo($curl);
+            if (curl_errno($curl)) {
+                $error_msg = curl_error($curl);
+                $this->curlResponse['status'] = false;
+                $this->curlResponse['response'] = $error_msg;
+                return $this->curlResponse;
+            }
+            curl_close($curl);
+            $this->curlResponse['status'] = true;
+            $this->curlResponse['response'] = $result;
+            $this->curlResponse['info'] = $info;
             return $this->curlResponse;
+        }catch (\Exception $exception){
+            dd($exception->getMessage());
         }
-
-        curl_close($curl);
-        $this->curlResponse['status'] = true;
-        $this->curlResponse['response'] = $result;
-        $this->curlResponse['info'] = $info;
-        return $this->curlResponse;
-
     }
 
     /**
@@ -133,5 +126,22 @@ class CurlRequest
      * This function is used to update the SMC3 API Access Token
      * */
 
+    public function sendPostRequest($endPoint, $requestData)
+    {
+        try {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $endPoint);
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 1000);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $requestData);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, array('Expect:'));
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            $output = curl_exec($ch);
+            curl_close($ch);
+            return json_decode($output);
+        }catch (\Exception $exception){
+            return $exception->getMessage();
+        }
+    }
 
 }

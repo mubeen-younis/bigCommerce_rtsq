@@ -83,7 +83,7 @@ class WweLTLShipmentPackage
         $this->request = $request;
         $whQuery = LocationsController::getAllLocations($storeData['store']->id, 1);
         if ($_product['dropship_enabled']) {
-            $dropShipID = $_product['dropship'];
+            $dropShipID = $_product['dropship_location'];
             $originList = LocationsController::getLocationById($dropShipID);
             $origin = (!$originList) ? $whQuery : $originList;
         } else {
