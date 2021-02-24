@@ -156,7 +156,7 @@ class MainController extends BaseController
             $verifiedSignedRequestData = $this->verifySignedRequest($signedPayload, $request);
             if ($verifiedSignedRequestData !== null) {
                 $toAppendHash = Crypt::encryptString($verifiedSignedRequestData['context']);
-                Store::where('hash', $verifiedSignedRequestData['context'])->update(['token' => $toAppendHash]);
+                $updated = Store::where('hash', $verifiedSignedRequestData['context'])->update(['token' => $toAppendHash]);
                  if(Store::where('hash', $verifiedSignedRequestData['store_hash'])->where('is_webhook_created',false)->exists()){
                     $store= Store::where('hash', $verifiedSignedRequestData['store_hash'])->where('is_webhook_created',false)->first();
                      $this->registerWebHook([
