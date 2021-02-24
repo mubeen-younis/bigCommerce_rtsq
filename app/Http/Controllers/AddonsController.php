@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Addons;
 use App\Models\InstalledAddon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AddonsController extends Controller
 {
@@ -92,37 +93,45 @@ class AddonsController extends Controller
 
     public function getAddons(Request $request)
     {
-        if (!empty($request->header('authorization'))) {
-            $token = explode(' ', $request->header('authorization'))[1];
+        $store_id = $request->store_id;
 
-            $addons = Addons::select('installed_addons.id', 'addons.name', 'installed_addons.is_enabled')
-                ->join('installed_addons', 'installed_addons.addon_id', '=', 'addons.id')
-                ->join('stores', 'stores.id', '=', 'installed_addons.store_id')
-                ->where('stores.token', $token)->get();
+        $addons = Addons::select('installed_addons.id', 'addons.name', 'installed_addons.is_enabled')
+            ->join('installed_addons', 'installed_addons.addon_id', '=', 'addons.id')
+            ->join('stores', 'stores.id', '=', 'installed_addons.store_id')
+            ->where('stores.id', $store_id)->get();
 
-            return response()->json(
-                ['error' => false,
-                    'data' => $addons,
-                ], 200);
+        if ($addons->isEmpty()) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'No Installed Addons Found',
+            ], 404);
         }
+
+        return response()->json(
+            ['error' => false,
+                'data' => $addons,
+            ], 200);
     }
 
     public function getRecommendedAddons(Request $request)
     {
-        if (!empty($request->header('authorization'))) {
-            $token = explode(' ', $request->header('authorization'))[1];
+        $store_id = $request->store_id;
 
-            $addons = Addons::select('addons.id', 'addons.name', 'installed_addons.is_enabled')
-                ->join('installed_addons', 'installed_addons.addon_id', '!=', 'addons.id')
-                ->join('stores', 'stores.id', '=', 'installed_addons.store_id')
-                ->where('stores.token', $token)->get();
+        $installedAddons = DB::table('installed_addons')->join('stores', 'stores.id', '=', 'installed_addons.store_id')->where('stores.id', $store_id)->pluck('addon_id');
+        $addons = Addons::whereNotIn('id', $installedAddons)->get();
 
-            return response()->json(
-                ['error' => false,
-                    'addons' => $addons,
-                ], 200);
-
+        if ($installedAddons->isEmpty()) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'Addons Not Found',
+            ], 404);
         }
+
+        return response()->json(
+            ['error' => false,
+                'addons' => $addons,
+            ], 200);
+
     }
 
     public function changeAddonStatus(Request $request)
@@ -134,19 +143,18 @@ class AddonsController extends Controller
             ]);
         }
 
-        if (!empty($request->header('authorization'))) {
-            $addon = InstalledAddon::find($request->addon_id);
+        $addon = InstalledAddon::find($request->addon_id);
 
-            if ($addon) {
-                InstalledAddon::where('id', $request->addon_id)->update(['is_enabled' => !$addon->is_enabled]);
+        if ($addon) {
+            InstalledAddon::where('id', $request->addon_id)->update(['is_enabled' => !$addon->is_enabled]);
 
-                return response()->json(['data' => InstalledAddon::find($request->addon_id), 'message' => 'Addon Status updated', 'error' => false], 200);
-            } else {
-                return response()->json([
-                    'message' => 'Invalid Addon ID',
-                    'error' => true,
-                ], 404);
-            }
+            return response()->json(['data' => InstalledAddon::find($request->addon_id), 'message' => 'Addon Status updated', 'error' => false], 200);
+        } else {
+            return response()->json([
+                'message' => 'Invalid Addon ID',
+                'error' => true,
+            ], 404);
         }
+
     }
 }
