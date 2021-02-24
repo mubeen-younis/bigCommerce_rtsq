@@ -91,6 +91,36 @@ class AddonsController extends Controller
         //
     }
 
+    public function installAddon(Request $request)
+    {
+        $store_id = $request->store_id;
+
+        if (empty($request->addon_id)) {
+            return response()->json([
+                'error' => true,
+                'message' => 'Empty Addon ID',
+            ], 200);
+        }
+
+        $installAddon = new InstalledAddon();
+        $installAddon->store_id = $store_id;
+        $installAddon->carrier_id = $request->addon_id;
+        $installAddon->is_enabled = false;
+        $installAddon->installed_at = now();
+        $installAddon->plan_updated_at = now();
+        $installAddon->save();
+
+        return response()->json(['error' => false,
+            'data' => $installAddon->id,
+            'message' => 'Addon Installed Successfully',
+        ], 200);
+
+        return response()->json(['error' => true,
+            'data' => [],
+            'message' => "Addon couldn't be installed",
+        ], 500);
+    }
+
     public function getAddons(Request $request)
     {
         $store_id = $request->store_id;
@@ -101,7 +131,7 @@ class AddonsController extends Controller
             ->where('stores.id', $store_id)->get();
 
         if ($addons->isEmpty()) {
-            return response()->json(['error' => true,
+            return response()->json(['error' => false,
                 'data' => [],
                 'message' => 'No Installed Addons Found',
             ], 200);
@@ -118,18 +148,21 @@ class AddonsController extends Controller
         $store_id = $request->store_id;
 
         $installedAddons = DB::table('installed_addons')->join('stores', 'stores.id', '=', 'installed_addons.store_id')->where('stores.id', $store_id)->pluck('addon_id');
-        $addons = Addons::whereNotIn('id', $installedAddons)->get();
 
         if ($installedAddons->isEmpty()) {
-            return response()->json(['error' => true,
-                'data' => [],
-                'message' => 'Addons Not Found',
+            $addons = Addons::get();
+
+            return response()->json(['error' => false,
+                'data' => $addons,
+                'message' => 'Addons Found',
             ], 200);
         }
 
+        $recommendedAddons = Addons::whereNotIn('id', $installedAddons)->get();
+
         return response()->json(
             ['error' => false,
-                'addons' => $addons,
+                'addons' => $recommendedAddons,
             ], 200);
 
     }

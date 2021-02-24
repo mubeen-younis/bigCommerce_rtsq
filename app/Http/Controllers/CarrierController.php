@@ -164,10 +164,10 @@ class CarrierController extends Controller
             ->where('stores.id', $store_id)->get();
 
         if ($installedCarriers->isEmpty()) {
-            return response()->json(['error' => true,
+            return response()->json(['error' => false,
                 'data' => [],
                 'message' => 'No Installed Carriers Found',
-            ], 404);
+            ], 200);
         }
 
         $response['error'] = false;
@@ -181,14 +181,17 @@ class CarrierController extends Controller
         $store_id = $request->store_id;
 
         $installedCarriers = DB::table('installed_carriers')->join('stores', 'stores.id', '=', 'installed_carriers.store_id')->where('stores.id', $store_id)->pluck('carrier_id');
-        $recommendedCarriers = Carrier::whereNotIn('id', $installedCarriers)->get();
 
         if ($installedCarriers->isEmpty()) {
-            return response()->json(['error' => true,
-                'data' => [],
-                'message' => 'Carriers Not Found',
-            ], 404);
+            $carriers = Carrier::get();
+
+            $response['error'] = false;
+            $response['data']['carriers'] = $carriers;
+
+            return response()->json($response, 200);
         }
+
+        $recommendedCarriers = Carrier::whereNotIn('id', $installedCarriers)->get();
 
         $response['error'] = false;
         $response['data']['carriers'] = $recommendedCarriers;
