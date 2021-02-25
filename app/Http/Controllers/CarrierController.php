@@ -208,6 +208,7 @@ class CarrierController extends Controller
             return response()->json(['error' => false, 'data' => InstalledCarrier::find($carrier->id), 'message' => 'Carrier updated'], 200);
         } else {
             return response()->json([
+                'error' => true,
                 'message' => 'Invalid Carrier ID',
             ], 404);
         }

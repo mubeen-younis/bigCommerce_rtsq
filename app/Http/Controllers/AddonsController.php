@@ -166,7 +166,7 @@ class AddonsController extends Controller
 
         return response()->json(
             ['error' => false,
-                'addons' => $recommendedAddons,
+                'data' => $recommendedAddons,
             ], 200);
 
     }
