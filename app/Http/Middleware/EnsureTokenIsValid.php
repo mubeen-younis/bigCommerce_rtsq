@@ -28,7 +28,7 @@ class EnsureTokenIsValid
             $store = Store::whereToken($token[1])->first();
             if (isset($store->id)) {
                 $request['store_id'] = $store->id;
-                $request['store_name'] = $store->hash;
+                $request['store_name'] = $store->name;
                 return $next($request);
             }
             return response()->json(['error' => true,

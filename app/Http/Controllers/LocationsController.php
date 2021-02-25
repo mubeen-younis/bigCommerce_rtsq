@@ -257,7 +257,7 @@ class LocationsController extends Controller
             return response()->json(['error' => true,
                 'data' => [],
                 'message' => 'No Locations Available'
-            ], 404);
+            ], 200);
         }
         return response()->json(['error' => false,
             'data' => $locations,
