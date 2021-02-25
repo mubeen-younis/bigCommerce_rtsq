@@ -42,17 +42,21 @@ class GetRatesController extends Controller
     {
         $storeHash = $request->base_options['store_id'] ?? null;
         $storeData = $this->getStoreData($storeHash);
-        $formatReq = $this->formatRequest($request->all(), $storeData);
-        if (
-            $storeData == null ||
-            $formatReq['lineItemData']['destination']['zip'] == null ||
-            $formatReq['lineItemData']['destination']['state'] == null ||
-            $formatReq['lineItemData']['destination']['country'] == null ||
-            $formatReq['lineItemData']['destination']['city'] == null
-        ) {
+        if ($storeData == null){
             return [];
         }
         $this->getCarrierSettings($storeData['installed_carriers']);
+        $formatReq = $this->formatRequest($request->all(), $storeData);
+        if (
+            $formatReq['lineItemData']['destination']['zip'] == null ||
+            $formatReq['lineItemData']['destination']['state'] == null ||
+            $formatReq['lineItemData']['destination']['country'] == null ||
+            $formatReq['lineItemData']['destination']['city'] == null ||
+            count($this->connectionSettings) == 0 ||
+            count($this->quoteSettings) == 0
+        ) {
+            return [];
+        }
         $this->shipping->collectRates($formatReq, $storeData, $this->connectionSettings, $this->quoteSettings);
         $originWarehouse = new Origin();
         $originWarehouse->getNearestWarehouse($formatReq);
@@ -60,9 +64,6 @@ class GetRatesController extends Controller
 
     public function formatRequest($data, $storeData)
     {
-        if ($storeData == null){
-            return null;
-        }
         $details = [
             'destination' => [
                 'street_1' => $data['base_options']['destination']['street_1'] ?? null,
@@ -81,7 +82,7 @@ class GetRatesController extends Controller
                 $weight = (isset($product['weight']['value']) && isset($product['weight']['units'])) ? $this->convertWeight($product['weight']['value'], strtolower($product['weight']['units'])) : 0;
                 $ltlCheck = $product_settings['freight_enabled'] ?? false;
 
-                $originAddress = $this->shipmentPkg->wweLTLOriginAddress($details, $product_settings, $details['destination']['zip'], $storeData);
+                $originAddress = $this->shipmentPkg->wweLTLOriginAddress($details, $product_settings, $details['destination']['zip'], $storeData, $this->connectionSettings);
                 $details['origin'][$product['product_id']] = $originAddress;
 
                 $details['items'][$product['product_id']] = [
@@ -180,7 +181,7 @@ class GetRatesController extends Controller
         if (!empty($store)) {
             $installedCarriers = InstalledCarrier::where(['store_id' => $store->id, 'is_enabled' => 1])->get();
             $installedAddons = InstalledAddon::where(['store_id' => $store->id, 'is_enabled' => 1])->get();
-            if (!empty($installedCarriers)) {
+            if (!empty($installedCarriers) && count($installedCarriers)) {
                 return [
                     'installed_carriers' => $installedCarriers,
                     'installed_addons' => $installedAddons,

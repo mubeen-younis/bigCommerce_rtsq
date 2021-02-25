@@ -129,6 +129,7 @@ class CarrierController extends Controller
                 'message' => 'Empty Carrier ID',
             ], 200);
         }
+        //status=1
 
         $carrier = Carrier::find($request->carrier_id);
 

@@ -52,6 +52,7 @@ class ConnectionController extends Controller
 //        if ($validator->fails()) {
 //            return response()->json($validator->errors(), 400);
 //        }
+
         if (!empty($request->testType)){
             return $this->testConnection($request);
         }

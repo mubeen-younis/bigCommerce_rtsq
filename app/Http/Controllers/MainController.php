@@ -98,15 +98,17 @@ class MainController extends BaseController
             $statusCode = $result->getStatusCode();
             $data = json_decode($result->getBody(), true);
             if ($statusCode == 200) {
-//                AccessTokens::create(['access_token', $data['access_token']]);
-                $toAppendHash = Crypt::encryptString($data['context']);
-                $store = Store::where('hash', $data['context'])->first();
+                $storeHash = explode('/', $data['context']);
+                $storeHash = $storeHash[1] ?? $data['context'];
+                $toAppendHash = Crypt::encryptString($storeHash);
+                $store = Store::where('hash', $storeHash)->first();
                 if (empty($store)){
                     $store = new Store();
                 }
+                $store->name = 'store-'.$storeHash.'.mybigcommerce.com';
                 $store->access_token = $data['access_token'];
                 $store->token = $toAppendHash;
-                $store->hash = $data['context'];
+                $store->hash = $storeHash;
                 $store->owner_id = $data['user']['id'];
                 $store->owner_email = $data['user']['email'];
                 $store->save();
@@ -155,8 +157,11 @@ class MainController extends BaseController
         if (!empty($signedPayload)) {
             $verifiedSignedRequestData = $this->verifySignedRequest($signedPayload, $request);
             if ($verifiedSignedRequestData !== null) {
-                $toAppendHash = Crypt::encryptString($verifiedSignedRequestData['context']);
-                $updated = Store::where('hash', $verifiedSignedRequestData['context'])->update(['token' => $toAppendHash]);
+                $storeHash = explode('/', $verifiedSignedRequestData['context']);
+                $storeHash = $storeHash[1] ?? $verifiedSignedRequestData['context'];
+
+                $toAppendHash = Crypt::encryptString($storeHash);
+                Store::where('hash', $storeHash)->update(['token' => $toAppendHash]);
                  if(Store::where('hash', $verifiedSignedRequestData['store_hash'])->where('is_webhook_created',false)->exists()){
                     $store= Store::where('hash', $verifiedSignedRequestData['store_hash'])->where('is_webhook_created',false)->first();
                      $this->registerWebHook([
