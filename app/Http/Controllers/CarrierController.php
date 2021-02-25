@@ -129,6 +129,7 @@ class CarrierController extends Controller
                 'message' => 'Empty Carrier ID',
             ], 200);
         }
+        //status=1
 
         // $store = Store::where('id', $store_id)->first();
         $store = Store::find($store_id);

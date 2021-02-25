@@ -76,11 +76,14 @@ class WweLTLShipmentPackage
         $request,
         $_product,
         $receiverZipCode,
-        $storeData
+        $storeData,
+        $connectionSettings
     )
     {
         //Todo: need to check which warehouse is selected and method params conflict also must be fixed. fetchWarehouseSecData()
         $this->request = $request;
+        $this->storeData = $storeData;
+        $this->connectionSettings = $connectionSettings;
         $whQuery = LocationsController::getAllLocations($storeData['store']->id, 1);
         if ($_product['dropship_enabled']) {
             $dropShipID = $_product['dropship_location'];
@@ -166,13 +169,13 @@ class WweLTLShipmentPackage
             'address' => $originAddress,
             'originAddresses' => (isset($originAddress)) ? $originAddress : "",
             'destinationAddress' => [
-                'city' => $this->request->getDestCity(),
-                'state' => $this->request->getDestRegionCode(),
-                'zip' => $this->request->getDestPostcode(),
-                'country' => $this->request->getDestCountryId(),
+                'city' => $this->request['destination']['city'],
+                'state' => $this->request['destination']['state'],
+                'zip' => $this->request['destination']['zip'],
+                'country' => $this->request['destination']['country']
             ],
-            'ServerName' => $this->httpRequest->getServer('SERVER_NAME'),
-            'eniureLicenceKey' => $this->scopeConfig->getValue('wweLtlConnSettings/first/WweLtllicnsKey', ScopeInterface::SCOPE_STORE),
+            'ServerName' => $this->storeData['store']->name,
+            'eniureLicenceKey' => $this->connectionSettings,
         ];
         $curlRes = $this->dataHelper->wweLTLSendCurlRequest(Constant::GOOGLE_URL, $post);
 
