@@ -129,7 +129,7 @@ class AddonsController extends Controller
     {
         $store_id = $request->store_id;
 
-        $addons = Addons::select('installed_addons.id', 'addons.name', 'installed_addons.is_enabled')
+        $addons = Addons::select('installed_addons.id', 'addons.name', 'installed_addons.is_enabled', 'addons.logo')
             ->join('installed_addons', 'installed_addons.addon_id', '=', 'addons.id')
             ->join('stores', 'stores.id', '=', 'installed_addons.store_id')
             ->where('stores.id', $store_id)->get();
