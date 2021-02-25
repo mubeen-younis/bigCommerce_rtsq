@@ -114,7 +114,7 @@ class AddonsController extends Controller
             $installAddon->save();
 
             return response()->json(['error' => false,
-                'data' => $installAddon->id,
+                'data' => $request->addon_id,
                 'message' => 'Addon Installed Successfully',
             ], 200);
         }
