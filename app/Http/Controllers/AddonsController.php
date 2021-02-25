@@ -108,13 +108,13 @@ class AddonsController extends Controller
             $installAddon = new InstalledAddon();
             $installAddon->store_id = $store_id;
             $installAddon->addon_id = $request->addon_id;
-            $installAddon->is_enabled = true; /*
-            $installAddon->installed_at = now();
-            $installAddon->plan_updated_at = now(); */
+            $installAddon->is_enabled = true;
+            /*$installAddon->installed_at = now();
+            $installAddon->plan_updated_at = now();*/
             $installAddon->save();
 
             return response()->json(['error' => false,
-                'data' => $request->addon_id,
+                'data' => $installAddon,
                 'message' => 'Addon Installed Successfully',
             ], 200);
         }

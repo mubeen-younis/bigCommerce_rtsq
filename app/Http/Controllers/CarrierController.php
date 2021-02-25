@@ -129,7 +129,6 @@ class CarrierController extends Controller
                 'message' => 'Empty Carrier ID',
             ], 200);
         }
-        //status=1
 
         $carrier = Carrier::find($request->carrier_id);
 
@@ -143,7 +142,7 @@ class CarrierController extends Controller
             $installCarrier->save();
 
             return response()->json(['error' => false,
-                'data' => $request->carrier_id,
+                'data' => $installCarrier,
                 'message' => 'Carrier Installed Successfully',
             ], 200);
         }
