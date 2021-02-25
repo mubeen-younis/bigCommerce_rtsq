@@ -102,22 +102,26 @@ class AddonsController extends Controller
             ], 200);
         }
 
-        $installAddon = new InstalledAddon();
-        $installAddon->store_id = $store_id;
-        $installAddon->carrier_id = $request->addon_id;
-        $installAddon->is_enabled = false;
-        $installAddon->installed_at = now();
-        $installAddon->plan_updated_at = now();
-        $installAddon->save();
+        $addon = Addons::find($request->addon_id);
 
-        return response()->json(['error' => false,
-            'data' => $installAddon->id,
-            'message' => 'Addon Installed Successfully',
-        ], 200);
+        if ($addon->status === 1) {
+            $installAddon = new InstalledAddon();
+            $installAddon->store_id = $store_id;
+            $installAddon->addon_id = $request->addon_id;
+            $installAddon->is_enabled = true; /*
+            $installAddon->installed_at = now();
+            $installAddon->plan_updated_at = now(); */
+            $installAddon->save();
+
+            return response()->json(['error' => false,
+                'data' => $installAddon->id,
+                'message' => 'Addon Installed Successfully',
+            ], 200);
+        }
 
         return response()->json(['error' => true,
             'data' => [],
-            'message' => "Addon couldn't be installed",
+            'message' => "Addon is not available at the moment",
         ], 500);
     }
 
@@ -176,18 +180,17 @@ class AddonsController extends Controller
             ]);
         }
 
-        $addon = InstalledAddon::find($request->addon_id);
+        $addon = InstalledAddon::where('addon_id', $request->addon_id)->first();
 
         if ($addon) {
-            InstalledAddon::where('id', $request->addon_id)->update(['is_enabled' => !$addon->is_enabled]);
+            InstalledAddon::where('addon_id', $request->addon_id)->update(['is_enabled' => !$addon->is_enabled]);
 
-            return response()->json(['data' => InstalledAddon::find($request->addon_id), 'message' => 'Addon Status updated', 'error' => false], 200);
+            return response()->json(['data' => InstalledAddon::find($addon->id), 'message' => 'Addon Status updated', 'error' => false], 200);
         } else {
             return response()->json([
                 'message' => 'Invalid Addon ID',
                 'error' => true,
             ], 404);
         }
-
     }
 }

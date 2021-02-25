@@ -131,28 +131,27 @@ class CarrierController extends Controller
         }
         //status=1
 
-        // $store = Store::where('id', $store_id)->first();
-        $store = Store::find($store_id);
+        $carrier = Carrier::find($request->carrier_id);
 
-        $installCarrier = new InstalledCarrier();
-        $installCarrier->store_id = $store->id;
-        $installCarrier->carrier_id = $request->carrier_id;
-        $installCarrier->is_enabled = false;
-        $installCarrier->installed_at = now();
-        $installCarrier->plan_updated_at = now();
-        $installCarrier->save();
+        if ($carrier->status === 1) {
+            $installCarrier = new InstalledCarrier();
+            $installCarrier->store_id = $store_id;
+            $installCarrier->carrier_id = $request->carrier_id;
+            $installCarrier->is_enabled = true;
+            $installCarrier->installed_at = now();
+            $installCarrier->plan_updated_at = now();
+            $installCarrier->save();
 
-        return response()->json(['error' => false,
-            'data' => $installCarrier->id,
-            'error' => false,
-            'message' => 'Carrier Installed Successfully',
-        ], 200);
+            return response()->json(['error' => false,
+                'data' => $installCarrier->id,
+                'message' => 'Carrier Installed Successfully',
+            ], 200);
+        }
 
         return response()->json(['error' => true,
             'data' => [],
-            'message' => "Carrier couldn't be installed",
-        ], 500);
-
+            'message' => "Carrier is not available at the moment",
+        ], 200);
     }
 
     public function getInstalledCarriers(Request $request)
@@ -207,7 +206,7 @@ class CarrierController extends Controller
         if ($carrier) {
             InstalledCarrier::where('carrier_id', $request->carrier_id)->update(['is_enabled' => !$carrier->is_enabled]);
 
-            return response()->json(['data' => InstalledCarrier::find($request->carrier_id), 'message' => 'Carrier updated'], 200);
+            return response()->json(['error' => false, 'data' => InstalledCarrier::find($carrier->id), 'message' => 'Carrier updated'], 200);
         } else {
             return response()->json([
                 'message' => 'Invalid Carrier ID',
