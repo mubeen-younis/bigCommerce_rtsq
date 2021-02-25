@@ -114,7 +114,7 @@ class AddonsController extends Controller
             $installAddon->save();
 
             return response()->json(['error' => false,
-                'data' => $installAddon,
+                'data' => InstalledAddon::find($installAddon->id),
                 'message' => 'Addon Installed Successfully',
             ], 200);
         }
@@ -180,10 +180,10 @@ class AddonsController extends Controller
             ]);
         }
 
-        $addon = InstalledAddon::where('addon_id', $request->addon_id)->first();
+        $addon = InstalledAddon::find($request->addon_id);
 
         if ($addon) {
-            InstalledAddon::where('addon_id', $request->addon_id)->update(['is_enabled' => !$addon->is_enabled]);
+            InstalledAddon::where('id', $request->addon_id)->update(['is_enabled' => !$addon->is_enabled]);
 
             return response()->json(['data' => InstalledAddon::find($addon->id), 'message' => 'Addon Status updated', 'error' => false], 200);
         } else {
