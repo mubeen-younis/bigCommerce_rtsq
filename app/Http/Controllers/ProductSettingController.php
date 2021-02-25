@@ -4,10 +4,7 @@ namespace App\Http\Controllers;
 
 use App\CurlRequest;
 use App\Models\ProductSetting;
-use GuzzleHttp\Client;
-use GuzzleHttp\TransferStats;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class ProductSettingController extends Controller
 {
@@ -30,7 +27,7 @@ class ProductSettingController extends Controller
         if (isset($storeToken['status']) && $storeToken['status'] == false) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'Token Not Found'
+                'message' => 'Token Not Found',
             ], 200);
         }
         $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeName . '/v3/catalog/products';
@@ -42,7 +39,7 @@ class ProductSettingController extends Controller
         if (isset($response['status']) && $response['status'] == false) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => $response['response']
+                'message' => $response['response'],
             ]);
         }
         $response = json_decode($response['response'], true);
@@ -52,7 +49,7 @@ class ProductSettingController extends Controller
             }
             return response()->json(['error' => false,
                 'data' => [],
-                'message' => 'Products Saved Succesfully'
+                'message' => 'Products Saved Succesfully',
             ], 200);
         }
 
@@ -61,13 +58,13 @@ class ProductSettingController extends Controller
     public function getSingleProductFromApi($request)
     {
         $storeId = $request['store_id'] ?? '';
-        $storeName =  $request['store_name'] ?? '';
-        $productId =  $request['product_id'] ?? '';
+        $storeName = $request['store_name'] ?? '';
+        $productId = $request['product_id'] ?? '';
         $storeToken = $this->mainController->getCustAccessTok($storeId);
         if (isset($storeToken['status']) && $storeToken['status'] == false) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'Token Not Found'
+                'message' => 'Token Not Found',
             ], 200);
         }
         $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeName . '/v3/catalog/products/' . $productId;
@@ -81,7 +78,7 @@ class ProductSettingController extends Controller
             $this->saveProducts->saveProduct($response['data'], $storeId);
             return response()->json(['error' => false,
                 'data' => [],
-                'message' => 'Products Saved Succesfully'
+                'message' => 'Products Saved Succesfully',
             ], 200);
         }
     }
@@ -91,7 +88,7 @@ class ProductSettingController extends Controller
         if (empty($request->product_id)) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'No Product Id'
+                'message' => 'No Product Id',
             ], 404);
         }
         $products = ProductSetting::where('id', $request->product_id)
@@ -99,12 +96,12 @@ class ProductSettingController extends Controller
         if ($products->isEmpty()) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'No Products Available'
-            ], 404);
+                'message' => 'No Products Available',
+            ], 200);
         }
         return response()->json(['error' => false,
             'data' => $products,
-            'message' => ''
+            'message' => '',
         ], 200);
     }
 
@@ -115,12 +112,12 @@ class ProductSettingController extends Controller
         if ($products->isEmpty()) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'No Products Available'
+                'message' => 'No Products Available',
             ], 404);
         }
         return response()->json(['error' => false,
             'data' => $products,
-            'message' => ''
+            'message' => '',
         ], 200);
     }
 
@@ -129,7 +126,7 @@ class ProductSettingController extends Controller
         if (empty($request->product_id)) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'No Product Id'
+                'message' => 'No Product Id',
             ], 404);
         }
         $product = ProductSetting::where('id', $request->product_id)
@@ -137,12 +134,12 @@ class ProductSettingController extends Controller
         if ($product === null) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'No Product Found Against This Id'
+                'message' => 'No Product Found Against This Id',
             ], 404);
         }
         return response()->json(['error' => false,
             'data' => $product,
-            'message' => 'Product Info'
+            'message' => 'Product Info',
         ], 200);
     }
 
@@ -151,7 +148,7 @@ class ProductSettingController extends Controller
         if (empty($request->product_id)) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'No Product Id'
+                'message' => 'No Product Id',
             ], 404);
         }
         $product = ProductSetting::where('id', $request->product_id)
@@ -159,82 +156,80 @@ class ProductSettingController extends Controller
         if ($product === null) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'No Product Found Against This Id'
+                'message' => 'No Product Found Against This Id',
             ], 404);
         }
         $product->settings = json_encode($request->all());
         $product->update();
         return response()->json(['error' => false,
             'data' => [],
-            'message' => 'Product Updated Successfully'
+            'message' => 'Product Updated Successfully',
         ], 200);
     }
 
-
-
 //
     /*    public function getAllProducts(Request $request)
-        {
-            $this->getProductsFromBC();
-        }
+    {
+    $this->getProductsFromBC();
+    }
 
-        public function getProductsFromBC()
-        {
-            $client = new Client();
-            $mainController = new MainController();
-            //https://api.bigcommerce.com/stores/{$$.env.store_hash}/v3/catalog/products
+    public function getProductsFromBC()
+    {
+    $client = new Client();
+    $mainController = new MainController();
+    //https://api.bigcommerce.com/stores/{$$.env.store_hash}/v3/catalog/products
 
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, "https://api.bigcommerce.com/stores/uann2u/v3/catalog/products");
-            //curl_setopt($ch, CURLOPT_GET, 1);
-            //curl_setopt($ch, CURLOPT_POSTFIELDS);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'X-Auth-Token' => 'fo9l40uqj8najktk0t01klrl7dioiuc',
-                'X-Auth-Client' => $mainController->getAppClientId()
-            ]);
-            curl_setopt($ch, CURLOPT_HEADER, true);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            $output = curl_exec($ch);
-            $curlInfo = curl_getinfo($ch);
-            curl_close($ch);
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, "https://api.bigcommerce.com/stores/uann2u/v3/catalog/products");
+    //curl_setopt($ch, CURLOPT_GET, 1);
+    //curl_setopt($ch, CURLOPT_POSTFIELDS);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    'X-Auth-Token' => 'fo9l40uqj8najktk0t01klrl7dioiuc',
+    'X-Auth-Client' => $mainController->getAppClientId()
+    ]);
+    curl_setopt($ch, CURLOPT_HEADER, true);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $output = curl_exec($ch);
+    $curlInfo = curl_getinfo($ch);
+    curl_close($ch);
 
-            echo '<pre>';
-            print_r($output);
-            print_r(json_decode($output));
-            echo '</pre>';
-            exit();
+    echo '<pre>';
+    print_r($output);
+    print_r(json_decode($output));
+    echo '</pre>';
+    exit();
 
-            $result = $client->request('GET', 'https://api.bigcommerce.com/stores/uann2u/v3/catalog/products', [
-                'headers' => [
-                    'X-Auth-Token' => 'fo9l40uqj8najktk0t01klrl7dioiuc'
-                ],
-                'on_stats' => function (TransferStats $stats) {
-                    // You must check if a response was received before using the
-                    // response object.
-                    if ($stats->hasResponse()) {
-                        echo $stats->getResponse()->getStatusCode();
-                        dd($stats->getResponse());
-                    } else {
-                        // Error data is handler specific. You will need to know what
-                        // type of error data your handler uses before using this
-                        // value.
-                        var_dump($stats->getHandlerErrorData());
-                    }
-                }
-            ]);
-            /*$store = DB::table('access_tokens')->get()->toArray();
-            $storeHash = explode('/', $store[0]->store_hash);
-            Bigcommerce::configure(array(
-                'client_id' => env('BC_APP_CLIENT_ID'),
-                'auth_token' => $store[0]->access_token,
-                'store_hash' => $storeHash[1]
-            ));
-            $products = Bigcommerce::getProducts();
-            //Debug point added by @Azeem
-            echo '$products';
-            echo '<pre>';
-            print_r($products);
-            echo '</pre>';
-            exit();*/
+    $result = $client->request('GET', 'https://api.bigcommerce.com/stores/uann2u/v3/catalog/products', [
+    'headers' => [
+    'X-Auth-Token' => 'fo9l40uqj8najktk0t01klrl7dioiuc'
+    ],
+    'on_stats' => function (TransferStats $stats) {
+    // You must check if a response was received before using the
+    // response object.
+    if ($stats->hasResponse()) {
+    echo $stats->getResponse()->getStatusCode();
+    dd($stats->getResponse());
+    } else {
+    // Error data is handler specific. You will need to know what
+    // type of error data your handler uses before using this
+    // value.
+    var_dump($stats->getHandlerErrorData());
+    }
+    }
+    ]);
+    /*$store = DB::table('access_tokens')->get()->toArray();
+    $storeHash = explode('/', $store[0]->store_hash);
+    Bigcommerce::configure(array(
+    'client_id' => env('BC_APP_CLIENT_ID'),
+    'auth_token' => $store[0]->access_token,
+    'store_hash' => $storeHash[1]
+    ));
+    $products = Bigcommerce::getProducts();
+    //Debug point added by @Azeem
+    echo '$products';
+    echo '<pre>';
+    print_r($products);
+    echo '</pre>';
+    exit();*/
 // }*/
 }
