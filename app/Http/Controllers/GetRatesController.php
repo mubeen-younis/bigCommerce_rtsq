@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use App\CustomClasses\Origin;
 use App\Models\ProductSetting;
 use App\CustomClasses\Shipping;
+use Illuminate\Support\Facades\Log;
 
 class GetRatesController extends Controller
 {
