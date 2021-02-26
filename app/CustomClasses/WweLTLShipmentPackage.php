@@ -177,8 +177,8 @@ class WweLTLShipmentPackage
             'ServerName' => $this->storeData['store']->name,
             'eniureLicenceKey' => $this->connectionSettings,
         ];
-        $curlRes = $this->dataHelper->wweLTLSendCurlRequest(Constant::GOOGLE_URL, $post);
-
+        $shipping = new Shipping();
+        $curlRes = $shipping->sendCurlRequest('https://eniture-qa.com/ws/v2.0/index.php', $post);
         if (!isset($curlRes->error)) {
             $response = $curlRes;
         } else {
