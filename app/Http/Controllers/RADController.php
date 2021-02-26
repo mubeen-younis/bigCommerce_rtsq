@@ -89,7 +89,7 @@ class RADController extends Controller
                         'action' => $action,
                         'package' => '',
                         'licenseKey' => $settings->license_key,
-                        'serverName' => 'store-uann2u.mybigcommerce.com',//$store->hash,
+                        'serverName' => $request->store_name,
                     ];
                     $response = $this->curlRequest->sendPostRequest('https://eniture-qa.com/ws/addon/rad/index.php', $requestData);
                     return [

@@ -56,7 +56,7 @@ class ConnectionController extends Controller
         if (!empty($request->testType)){
             return $this->testConnection($request);
         }
-        $con = Connection::where('installed_carrier_id', 1)->first();
+        $con = Connection::where('installed_carrier_id', $request->carrierId)->first();
         $con->value = json_encode($request->all());
         $con->installed_carrier_id = 1;
         $con->save();
