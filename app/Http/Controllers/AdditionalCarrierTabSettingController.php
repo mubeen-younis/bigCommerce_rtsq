@@ -119,21 +119,16 @@ class AdditionalCarrierTabSettingController extends Controller
 
     }
 
-    public function getAddTabSettByStoreID(Request $request)
+    public function getAddTabSettByCarrierID(Request $request, $carrierId)
     {
-        if (!empty($request->header('authorization'))) {
-            $token = explode(' ', $request->header('authorization'))[1];
+        $addTabSettings = AdditionalCarrierTabSetting::select('additional_carrier_tab_settings.value')
+            ->where('additional_carrier_tab_settings.store_id', $request->store_id)
+            ->where('additional_carrier_tab_settings.installed_carrier_id', $carrierId)
+            ->get();
 
-            $addTabSettings = AdditionalCarrierTabSetting::select('additional_carrier_tab_settings.value')
-                ->join('installed_carriers', 'installed_carriers.id', '=', 'additional_carrier_tab_settings.installed_carrier_id')
-                ->join('stores', 'stores.id', '=', 'installed_carriers.store_id')
-                ->where('stores.token', $token)
-                ->get();
-
-            return response()->json(['error' => false,
-                'data' => $addTabSettings,
-                'message' => "Settings Found",
-            ], 200);
-        }
+        return response()->json(['error' => false,
+            'data' => $addTabSettings,
+            'message' => "Settings Found",
+        ], 200);
     }
 }
