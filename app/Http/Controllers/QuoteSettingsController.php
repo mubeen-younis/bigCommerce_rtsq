@@ -8,9 +8,9 @@ use Illuminate\Http\Request;
 class QuoteSettingsController extends Controller
 {
     //
-    public function getSettings(Request $request)
+    public function getSettings(Request $request, $carrierId)
     {
-        $carrierId = $request->carrierId ?? 1;
+        $carrierId = $carrierId ?? 1;
         $settings = QuoteSetting::where('installed_carrier_id', $carrierId)->first();
         return response()->json(['error' => false, 'data' => $settings, 'debug' => $request->all()], 200);
     }
