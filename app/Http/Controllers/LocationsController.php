@@ -68,7 +68,9 @@ class LocationsController extends Controller
             'country' => 'required',
             'location_type' => 'required',
         ];
+
         $validator = Validator::make($request->all(), $rules);
+
         if ($validator->fails()) {
             return response()->json(
                 ['error' => true,
@@ -76,6 +78,7 @@ class LocationsController extends Controller
                     'message' => 'Validation Errors',
                 ], 400);
         }
+
         if (isset($request->location_type) && $request->location_type == 1) {
             $resp = $this->saveWarehouseAddress($request);
         } elseif (isset($request->location_type) && $request->location_type == 2) {
@@ -86,19 +89,22 @@ class LocationsController extends Controller
                 'message' => 'Request Not Properly Formatted',
             ], 404);
         }
+
         $status = $resp['status'];
         unset($resp['status']);
-        return response()->json($resp, $status);
 
+        return response()->json($resp, $status);
     }
 
     public function saveWarehouseAddress($request)
     {
         $method = "Added";
         $callBy = "Warehouse";
+
         if (!empty($request->location_id)) {
             $method = "Updated";
             $location = Locations::where('id', $request->location_id)->where('type', 1)->first();
+
             if ($location === null) {
                 return ['error' => true,
                     'data' => [],
@@ -108,8 +114,8 @@ class LocationsController extends Controller
             }
             // Checking if zipcode matches with current location saved record
             // its important when updating to know whether a zip exists on any other record or not
-            if ($location->zip_code != $request->zipcode) {
-                if (Locations::where('zip_code', $request->zipcode)->where('type', 1)->exists()) {
+            if ($location->zip_code != $request->zip_code) {
+                if (Locations::where('zip_code', $request->zip_code)->where('type', 1)->exists()) {
                     return ['error' => true,
                         'data' => [],
                         'message' => 'Warehouse address with this zipcode already exists',
@@ -119,7 +125,8 @@ class LocationsController extends Controller
             }
         } else {
             $location = new Locations();
-            if (Locations::where('zip_code', $request->zipcode)->where('type', 1)->exists()) {
+
+            if (Locations::where('zip_code', $request->zip_code)->where('type', 1)->exists()) {
                 return ['error' => true,
                     'data' => [],
                     'message' => 'Warehouse already exists',
@@ -127,6 +134,7 @@ class LocationsController extends Controller
                 ];
             }
         }
+
         return $this->saveLocationRequest($location, $request, $method, $callBy);
     }
 
@@ -146,8 +154,8 @@ class LocationsController extends Controller
             }
             // Checking if zipcode matches with current location saved record
             // its important when updating to know whether a zip exists on any other record or not
-            if ($location->zip_code != $request->zipcode) {
-                if (Locations::where('zip_code', $request->zipcode)->where('type', 2)->exists()) {
+            if ($location->zip_code != $request->zip_code) {
+                if (Locations::where('zip_code', $request->zip_code)->where('type', 2)->exists()) {
                     return ['error' => true,
                         'data' => [],
                         'message' => 'Dropship address with this zipcode already exists',
@@ -157,7 +165,7 @@ class LocationsController extends Controller
             }
         } else {
             $location = new Locations();
-            if (Locations::where('zip_code', $request->zipcode)->where('type', 2)->exists()) {
+            if (Locations::where('zip_code', $request->zip_code)->where('type', 2)->exists()) {
                 return ['error' => true,
                     'data' => [],
                     'message' => 'Dropship already exists',
