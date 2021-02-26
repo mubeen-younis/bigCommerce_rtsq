@@ -43,7 +43,6 @@ class LocationsController extends Controller
 
     }
 
-
     /**
      * Show the form for creating a new resource.
      *
@@ -67,14 +66,14 @@ class LocationsController extends Controller
             'state' => 'required',
             'zip_code' => 'required',
             'country' => 'required',
-            'location_type' => 'required'
+            'location_type' => 'required',
         ];
         $validator = Validator::make($request->all(), $rules);
         if ($validator->fails()) {
             return response()->json(
                 ['error' => true,
                     'data' => $validator->errors()->all(),
-                    'message' => 'Validation Errors'
+                    'message' => 'Validation Errors',
                 ], 400);
         }
         if (isset($request->location_type) && $request->location_type == 1) {
@@ -84,7 +83,7 @@ class LocationsController extends Controller
         } else {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'Request Not Properly Formatted'
+                'message' => 'Request Not Properly Formatted',
             ], 404);
         }
         $status = $resp['status'];
@@ -104,7 +103,7 @@ class LocationsController extends Controller
                 return ['error' => true,
                     'data' => [],
                     'message' => 'Incorrect Location Id',
-                    'status' => 200
+                    'status' => 200,
                 ];
             }
             // Checking if zipcode matches with current location saved record
@@ -114,7 +113,7 @@ class LocationsController extends Controller
                     return ['error' => true,
                         'data' => [],
                         'message' => 'Warehouse address with this zipcode already exists',
-                        'status' => 200
+                        'status' => 200,
                     ];
                 }
             }
@@ -124,7 +123,7 @@ class LocationsController extends Controller
                 return ['error' => true,
                     'data' => [],
                     'message' => 'Warehouse already exists',
-                    'status' => 200
+                    'status' => 200,
                 ];
             }
         }
@@ -142,7 +141,7 @@ class LocationsController extends Controller
                 return ['error' => true,
                     'data' => [],
                     'message' => 'Incorrect Location Id',
-                    'status' => 200
+                    'status' => 200,
                 ];
             }
             // Checking if zipcode matches with current location saved record
@@ -152,7 +151,7 @@ class LocationsController extends Controller
                     return ['error' => true,
                         'data' => [],
                         'message' => 'Dropship address with this zipcode already exists',
-                        'status' => 200
+                        'status' => 200,
                     ];
                 }
             }
@@ -162,7 +161,7 @@ class LocationsController extends Controller
                 return ['error' => true,
                     'data' => [],
                     'message' => 'Dropship already exists',
-                    'status' => 200
+                    'status' => 200,
                 ];
             }
         }
@@ -177,7 +176,7 @@ class LocationsController extends Controller
             $nickname = $request->nickname;
         }
         try {
-            if (Locations::where('id', $request->id)->exists()){
+            if (Locations::where('id', $request->id)->exists()) {
                 $location = Locations::where('id', $request->id)->first();
             }
             $location->nickname = $nickname;
@@ -194,34 +193,33 @@ class LocationsController extends Controller
                 'ld_enable_supress' => $request->ld_enable_supress ?? '',
                 'instore_pickup_data' => [
                     'miles' => $request->instore_miles ?? '',
-                    'postalCodes' => (!empty($request->instore_zipcodes)) ? implode(',',$request->instore_zipcodes ) : '',
-                    'checkout_description' => $request->instock_description ?? ''
+                    'postalCodes' => (!empty($request->instore_zipcodes)) ? implode(',', $request->instore_zipcodes) : '',
+                    'checkout_description' => $request->instock_description ?? '',
                 ],
                 'local_delivery_data' => [
                     'miles' => $request->ld_miles ?? '',
-                    'postalCodes' => (!empty($request->ld_zipcodes)) ? implode(',',$request->ld_zipcodes ) : '',
+                    'postalCodes' => (!empty($request->ld_zipcodes)) ? implode(',', $request->ld_zipcodes) : '',
                     'local_delivery_fee' => $request->ld_fee ?? '',
                     'checkout_description' => $request->ld_description ?? '',
-                ]
+                ],
             ];
             $location->additionals = json_encode($additionals);
             $location->save();
             return ['error' => false,
-                'data' => [$location->id],
+                'data' => Locations::find($location->id),
                 'message' => 'Successfully ' . $method . ' ' . $callBy . ' Address',
-                'status' => 200
+                'status' => 200,
             ];
         } catch (\Exception $exception) {
             return ['error' => true,
                 'data' => [],
                 //Todo: change message
                 'message' => $exception->getMessage(),
-                'status' => 500
+                'status' => 500,
             ];
         }
 
     }
-
 
     /**
      * @param Request $request
@@ -232,7 +230,7 @@ class LocationsController extends Controller
         if (empty($request->location_id)) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'No Location Id'
+                'message' => 'No Location Id',
             ], 404);
         }
         $location = Locations::where('id', $request->location_id)
@@ -240,12 +238,12 @@ class LocationsController extends Controller
         if ($location === null) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'No Locations Available'
+                'message' => 'No Locations Available',
             ], 404);
         }
         return response()->json(['error' => false,
             'data' => $location,
-            'message' => ''
+            'message' => '',
         ], 200);
     }
 
@@ -256,12 +254,12 @@ class LocationsController extends Controller
         if ($locations->isEmpty()) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'No Locations Available'
+                'message' => 'No Locations Available',
             ], 200);
         }
         return response()->json(['error' => false,
             'data' => $locations,
-            'message' => ''
+            'message' => '',
         ], 200);
     }
 
@@ -270,19 +268,19 @@ class LocationsController extends Controller
         if (empty($request->location_id)) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'No Location Id'
+                'message' => 'No Location Id',
             ], 404);
         }
         if (Locations::where('id', $request->location_id)->exists()) {
             Locations::where('id', $request->location_id)->delete();
             return response()->json(['error' => false,
                 'data' => [],
-                'message' => 'Location Deleted Successfully'
+                'message' => 'Location Deleted Successfully',
             ], 200);
         } else {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'No Location exists against this Id'
+                'message' => 'No Location exists against this Id',
             ], 404);
         }
     }
@@ -292,7 +290,7 @@ class LocationsController extends Controller
         if (empty($request->zip_code)) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'No Valid Zip Code Provided'
+                'message' => 'No Valid Zip Code Provided',
             ], 200);
         }
         $zipCode = $request->zip_code;
@@ -301,7 +299,7 @@ class LocationsController extends Controller
         if ($zipcodeDetail['info']['http_code'] != 200) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'Unable to connect to server'
+                'message' => 'Unable to connect to server',
             ], $zipcodeDetail['info']['http_code']);
         }
 
@@ -310,7 +308,7 @@ class LocationsController extends Controller
         if (isset($mapResult['error_message']) || $mapResult['status'] != 'OK') {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => isset($mapResult['error_message']) ? $mapResult['error_message'] : " Zero Results"
+                'message' => isset($mapResult['error_message']) ? $mapResult['error_message'] : " Zero Results",
             ], 200);
         }
         $city = [];
@@ -346,12 +344,12 @@ class LocationsController extends Controller
             }
             return response()->json(['error' => false,
                 'data' => ['postal_code' => $zipCode, 'city' => $city, 'state' => $state, 'country' => $country],
-                'message' => ''
+                'message' => '',
             ], 200);
         } else {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'Something Went Wrong'
+                'message' => 'Something Went Wrong',
             ], 500);
 
         }
@@ -360,13 +358,14 @@ class LocationsController extends Controller
     public static function getLocationById($id)
     {
         $location = Locations::where('id', $id)->first();
-        if (!empty($location)){
+        if (!empty($location)) {
             return $location;
         }
         return [];
     }
 
-    public static function getAllLocations($storeId, $type){
+    public static function getAllLocations($storeId, $type)
+    {
         return Locations::where(['store_id' => $storeId, 'type' => $type])->get();
     }
 }
