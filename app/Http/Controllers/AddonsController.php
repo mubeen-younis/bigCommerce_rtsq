@@ -108,13 +108,13 @@ class AddonsController extends Controller
             $installAddon = new InstalledAddon();
             $installAddon->store_id = $store_id;
             $installAddon->addon_id = $request->addon_id;
-            $installAddon->is_enabled = true; /*
-            $installAddon->installed_at = now();
-            $installAddon->plan_updated_at = now(); */
+            $installAddon->is_enabled = true;
+            /*$installAddon->installed_at = now();
+            $installAddon->plan_updated_at = now();*/
             $installAddon->save();
 
             return response()->json(['error' => false,
-                'data' => $installAddon->id,
+                'data' => InstalledAddon::find($installAddon->id),
                 'message' => 'Addon Installed Successfully',
             ], 200);
         }
@@ -129,7 +129,7 @@ class AddonsController extends Controller
     {
         $store_id = $request->store_id;
 
-        $addons = Addons::select('installed_addons.id', 'addons.name', 'installed_addons.is_enabled')
+        $addons = Addons::select('installed_addons.id', 'addons.name', 'installed_addons.is_enabled', 'addons.logo')
             ->join('installed_addons', 'installed_addons.addon_id', '=', 'addons.id')
             ->join('stores', 'stores.id', '=', 'installed_addons.store_id')
             ->where('stores.id', $store_id)->get();
@@ -166,7 +166,7 @@ class AddonsController extends Controller
 
         return response()->json(
             ['error' => false,
-                'addons' => $recommendedAddons,
+                'data' => $recommendedAddons,
             ], 200);
 
     }
@@ -180,10 +180,10 @@ class AddonsController extends Controller
             ]);
         }
 
-        $addon = InstalledAddon::where('addon_id', $request->addon_id)->first();
+        $addon = InstalledAddon::find($request->addon_id);
 
         if ($addon) {
-            InstalledAddon::where('addon_id', $request->addon_id)->update(['is_enabled' => !$addon->is_enabled]);
+            InstalledAddon::where('id', $request->addon_id)->update(['is_enabled' => !$addon->is_enabled]);
 
             return response()->json(['data' => InstalledAddon::find($addon->id), 'message' => 'Addon Status updated', 'error' => false], 200);
         } else {

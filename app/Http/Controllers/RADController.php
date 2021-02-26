@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\CurlRequest;
 use App\Models\Connection;
 use App\Models\InstalledCarrier;
-use App\Models\Store;
 use Illuminate\Http\Request;
 
 class RADController extends Controller
@@ -20,16 +19,17 @@ class RADController extends Controller
     public function getPlans(Request $request)
     {
         $data = $this->runRADAction($request, 's');
-        if ($data['error']){
+
+        if ($data['error']) {
             $response = $data['response'];
-        }else{
+        } else {
             $responseError = isset($data['response']->severity) && $data['response']->severity == 'ERROR';
             $response = [
                 'data' => [
                     'plans' => $data['response']->ListOfPackages->Info ?? [],
-                    'current_plan' => $responseError ? $data['response']->Message : $data['response']
+                    'current_plan' => $responseError ? $data['response']->Message : $data['response'],
                 ],
-                'error' => false
+                'error' => false,
             ];
         }
         return response()->json($response, $data['status']);
@@ -38,12 +38,12 @@ class RADController extends Controller
     public function changePlan(Request $request)
     {
         $data = $this->runRADAction($request, 'c');
-        if ($data['error']){
+        if ($data['error']) {
             $response = $data['response'];
-        }else{
+        } else {
             $response = [
                 'data' => $data['response'] ?? [],
-                'error' => false
+                'error' => false,
             ];
         }
         return response()->json($response, $data['status']);
@@ -52,12 +52,12 @@ class RADController extends Controller
     public function getCurrentPlan(Request $request)
     {
         $data = $this->runRADAction($request, 's');
-        if ($data['error']){
+        if ($data['error']) {
             $response = $data['response'];
-        }else{
+        } else {
             $response = [
                 'data' => $data['response'] ?? [],
-                'error' => false
+                'error' => false,
             ];
         }
         return response()->json($response, $data['status']);
@@ -95,7 +95,7 @@ class RADController extends Controller
                     return [
                         'response' => $response,
                         'status' => 200,
-                        'error' => false
+                        'error' => false,
                     ];
                 } else {
                     $message = 'No connection settings available!';
@@ -108,10 +108,10 @@ class RADController extends Controller
             'response' => [
                 'data' => [],
                 'error' => true,
-                'message' => $message
+                'message' => $message,
             ],
-            'status' => 403,
-            'error' => true
+            'status' => 200,
+            'error' => true,
         ];
     }
 
