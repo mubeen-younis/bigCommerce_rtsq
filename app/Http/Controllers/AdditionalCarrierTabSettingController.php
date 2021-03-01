@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AdditionalCarrierTabSetting;
-use App\Models\CarrierServices;
 use Illuminate\Http\Request;
+use App\Models\CarrierServices;
+use App\Models\AdditionalCarrierTabSetting;
 
 class AdditionalCarrierTabSettingController extends Controller
 {
@@ -37,11 +37,13 @@ class AdditionalCarrierTabSettingController extends Controller
      */
     public function store(Request $request)
     {
-        $settings = AdditionalCarrierTabSetting::firstOrNew(['carrier_id' => 1, 'store_id' => 1]);
-        $settings->carrier_id = 1;
-        $settings->store_id = 1;
+        $settings = AdditionalCarrierTabSetting::firstOrNew(['carrier_id' => $request->carrierId, 'store_id' => $request->store_id]);
+
+        $settings->carrier_id = $request->carrierId;
+        $settings->store_id = $request->store_id;
         $settings->value = json_encode($request->all());
         $settings->save();
+
         return response()->json(['error' => false, 'message' => 'Carriers have been successfully saved.', 'data' => $settings]);
     }
 
@@ -119,21 +121,16 @@ class AdditionalCarrierTabSettingController extends Controller
 
     }
 
-    public function getAddTabSettByStoreID(Request $request)
+    public function getAddTabSettByCarrierID(Request $request, $carrierId)
     {
-        if (!empty($request->header('authorization'))) {
-            $token = explode(' ', $request->header('authorization'))[1];
+        $addTabSettings = AdditionalCarrierTabSetting::select('additional_carrier_tab_settings.value')
+            ->where('additional_carrier_tab_settings.store_id', $request->store_id)
+            ->where('additional_carrier_tab_settings.installed_carrier_id', $carrierId)
+            ->get();
 
-            $addTabSettings = AdditionalCarrierTabSetting::select('additional_carrier_tab_settings.value')
-                ->join('installed_carriers', 'installed_carriers.id', '=', 'additional_carrier_tab_settings.installed_carrier_id')
-                ->join('stores', 'stores.id', '=', 'installed_carriers.store_id')
-                ->where('stores.token', $token)
-                ->get();
-
-            return response()->json(['error' => false,
-                'data' => $addTabSettings,
-                'message' => "Settings Found",
-            ], 200);
-        }
+        return response()->json(['error' => false,
+            'data' => $addTabSettings,
+            'message' => "Settings Found",
+        ], 200);
     }
 }

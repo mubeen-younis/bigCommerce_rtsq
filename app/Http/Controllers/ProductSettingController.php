@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\CurlRequest;
-use App\Models\ProductSetting;
 use Illuminate\Http\Request;
+use App\Models\ProductSetting;
 
 class ProductSettingController extends Controller
 {
@@ -23,6 +23,7 @@ class ProductSettingController extends Controller
     {
         $storeId = isset($request->store_id) ? $request->store_id : 1;
         $storeName = isset($request->store_name) ? $request->store_name : 'uann2u';
+        $storeHash = isset($request->store_hash) ? $request->store_hash : 'uann2u';
         $storeToken = $this->mainController->getCustAccessTok($storeId);
         if (isset($storeToken['status']) && $storeToken['status'] == false) {
             return response()->json(['error' => true,
@@ -30,7 +31,7 @@ class ProductSettingController extends Controller
                 'message' => 'Token Not Found',
             ], 200);
         }
-        $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeName . '/v3/catalog/products';
+        $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products';
         $headers[] = 'X-Auth-Client: ' . $this->mainController->getAppClientId();
         $headers[] = 'X-Auth-Token: ' . $storeToken;
         $headers[] = 'Content-Type: application/json';
@@ -113,7 +114,7 @@ class ProductSettingController extends Controller
             return response()->json(['error' => true,
                 'data' => [],
                 'message' => 'No Products Available',
-            ], 404);
+            ], 200);
         }
         return response()->json(['error' => false,
             'data' => $products,
