@@ -49,7 +49,7 @@ class ProductSettingController extends Controller
                 $this->saveProducts->saveProduct($product, $storeId);
             }
             return response()->json(['error' => false,
-                'data' => [],
+                'data' => $response,
                 'message' => 'Products Syncronized Succesfully',
             ], 200);
         }
