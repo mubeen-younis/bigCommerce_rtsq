@@ -1,20 +1,20 @@
 <?php
 
-use App\Http\Controllers\AdditionalCarrierTabSettingController;
-use App\Http\Controllers\AddonsController;
-use App\Http\Controllers\CarrierController;
-use App\Http\Controllers\CarrierPlanController;
-use App\Http\Controllers\ConnectionController;
-use App\Http\Controllers\GetRatesController;
-use App\Http\Controllers\InstalledCarrierController;
-use App\Http\Controllers\LocationsController;
-use App\Http\Controllers\MainController;
-use App\Http\Controllers\ProductSettingController;
-use App\Http\Controllers\QuoteSettingsController;
-use App\Http\Controllers\RADController;
-use App\Http\Middleware\EnsureTokenIsValid;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\RADController;
+use App\Http\Controllers\MainController;
+use App\Http\Controllers\AddonsController;
+use App\Http\Controllers\CarrierController;
+use App\Http\Middleware\EnsureTokenIsValid;
+use App\Http\Controllers\GetRatesController;
+use App\Http\Controllers\LocationsController;
+use App\Http\Controllers\ConnectionController;
+use App\Http\Controllers\CarrierPlanController;
+use App\Http\Controllers\QuoteSettingsController;
+use App\Http\Controllers\ProductSettingController;
+use App\Http\Controllers\InstalledCarrierController;
+use App\Http\Controllers\AdditionalCarrierTabSettingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -84,6 +84,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::get('/getRecommendedCarriers', [CarrierController::class, 'getRecommendedCarriers']);
     Route::post('/changeCarrierStatus', [CarrierController::class, 'changeCarrierStatus']);
 
+    Route::post('/submit_carriers', [AdditionalCarrierTabSettingController::class, 'store']);
 });
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);
@@ -93,7 +94,6 @@ Route::get('/get_qoute_settings/{carrierId}', [QuoteSettingsController::class, '
 Route::post('/submit_quote_settings', [QuoteSettingsController::class, 'saveSettings']);
 
 /*------Services tab-------*/
-Route::post('/submit_carriers', [AdditionalCarrierTabSettingController::class, 'store']);
 Route::get('/get_carrier_services', [AdditionalCarrierTabSettingController::class, 'index']);
 
 Route::get('/get_warehouse', 'LocationsController@warehouse');
