@@ -13,9 +13,9 @@ class ConnectionController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        $con = Connection::where('installed_carrier_id', 1)->first();
+        $con = Connection::where('installed_carrier_id', $request->carrierId)->first();
         return response()->json(["error" => false, "data" => $con]);
     }
 
@@ -54,7 +54,7 @@ class ConnectionController extends Controller
             return $this->testConnection($request);
         }
 
-        $con = Connection::firstOrNew('installed_carrier_id', $request->carrierId);
+        $con = Connection::firstOrNew(['installed_carrier_id' => $request->carrierId]);
 
         $con->value = json_encode($request->all());
         $con->installed_carrier_id = $request->carrierId;
