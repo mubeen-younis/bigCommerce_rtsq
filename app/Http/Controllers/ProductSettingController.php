@@ -50,7 +50,7 @@ class ProductSettingController extends Controller
             }
             return response()->json(['error' => false,
                 'data' => [],
-                'message' => 'Products Saved Succesfully',
+                'message' => 'Products Syncronized Succesfully',
             ], 200);
         }
 
