@@ -178,6 +178,10 @@ class GetRatesController extends Controller
         if ($storeHash == null) {
             return null;
         }
+        $storeHash = explode('/', $storeHash)[1] ?? null;
+        if ($storeHash == null){
+            return null;
+        }
         $store = Store::where(['hash' => $storeHash, 'app_status' => 1])->first();
         if (!empty($store)) {
             $installedCarriers = InstalledCarrier::where(['store_id' => $store->id, 'is_enabled' => 1])->get();
