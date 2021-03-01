@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Carrier;
-use App\Models\InstalledCarrier;
 use App\Models\Store;
+use App\Models\Carrier;
 use Illuminate\Http\Request;
+use App\Models\InstalledCarrier;
 use Illuminate\Support\Facades\DB;
 
 class CarrierController extends Controller
@@ -159,8 +159,7 @@ class CarrierController extends Controller
 
         $installedCarriers = Carrier::select('carriers.name', 'installed_carriers.id', 'carriers.logo', 'installed_carriers.carrier_id', 'carriers.carrier_type', 'installed_carriers.is_enabled')
             ->join('installed_carriers', 'installed_carriers.carrier_id', '=', 'carriers.id')
-            ->join('stores', 'stores.id', '=', 'installed_carriers.store_id')
-            ->where('stores.id', $store_id)->get();
+            ->where('installed_carriers.store_id', $store_id)->get();
 
         if ($installedCarriers->isEmpty()) {
             return response()->json(['error' => false,
@@ -205,7 +204,7 @@ class CarrierController extends Controller
         if ($carrier) {
             InstalledCarrier::where('id', $request->carrier_id)->update(['is_enabled' => !$carrier->is_enabled]);
 
-            return response()->json(['error' => false, 'data' => InstalledCarrier::find($carrier->id), 'message' => 'Carrier updated'], 200);
+            return response()->json(['error' => false, 'data' => InstalledCarrier::find($carrier->id), 'message' => 'Carrier Status updated'], 200);
         } else {
             return response()->json([
                 'error' => true,

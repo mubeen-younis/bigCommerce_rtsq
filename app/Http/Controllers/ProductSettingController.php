@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\CurlRequest;
-use App\Models\ProductSetting;
 use Illuminate\Http\Request;
+use App\Models\ProductSetting;
 
 class ProductSettingController extends Controller
 {
@@ -113,7 +113,7 @@ class ProductSettingController extends Controller
             return response()->json(['error' => true,
                 'data' => [],
                 'message' => 'No Products Available',
-            ], 404);
+            ], 200);
         }
         return response()->json(['error' => false,
             'data' => $products,
