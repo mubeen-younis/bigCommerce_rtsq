@@ -178,7 +178,7 @@ class WweLTLShipmentPackage
             'eniureLicenceKey' => $this->connectionSettings,
         ];
         $shipping = new Shipping();
-        $curlRes = $shipping->sendCurlRequest('https://eniture-qa.com/ws/v2.0/index.php', $post);
+        $curlRes = $shipping->sendCurlRequest('https://eniture-qa.com/ws/addon/google-location.php', $post);
         if (!isset($curlRes->error)) {
             $response = $curlRes;
         } else {
