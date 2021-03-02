@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Addons;
-use App\Models\InstalledAddon;
 use Illuminate\Http\Request;
+use App\Models\InstalledAddon;
 use Illuminate\Support\Facades\DB;
 
 class AddonsController extends Controller
@@ -129,7 +129,7 @@ class AddonsController extends Controller
     {
         $store_id = $request->store_id;
 
-        $addons = Addons::select('installed_addons.id', 'addons.name', 'installed_addons.is_enabled', 'addons.logo')
+        $addons = Addons::select('installed_addons.id', 'addons.name', 'installed_addons.is_enabled', 'installed_addons.is_suspend', 'addons.logo')
             ->join('installed_addons', 'installed_addons.addon_id', '=', 'addons.id')
             ->join('stores', 'stores.id', '=', 'installed_addons.store_id')
             ->where('stores.id', $store_id)->get();
@@ -184,6 +184,29 @@ class AddonsController extends Controller
 
         if ($addon) {
             InstalledAddon::where('id', $request->addon_id)->update(['is_enabled' => !$addon->is_enabled]);
+
+            return response()->json(['data' => InstalledAddon::find($addon->id), 'message' => 'Addon Status updated', 'error' => false], 200);
+        } else {
+            return response()->json([
+                'message' => 'Invalid Addon ID',
+                'error' => true,
+            ], 404);
+        }
+    }
+
+    public function changeAddonSuspendStatus(Request $request)
+    {
+        if (empty($request->addon_id)) {
+            return response()->json([
+                'error' => true,
+                'message' => 'Empty Addon Id',
+            ]);
+        }
+
+        $addon = InstalledAddon::find($request->addon_id);
+
+        if ($addon) {
+            InstalledAddon::where('id', $request->addon_id)->update(['is_suspend' => !$addon->is_suspend]);
 
             return response()->json(['data' => InstalledAddon::find($addon->id), 'message' => 'Addon Status updated', 'error' => false], 200);
         } else {

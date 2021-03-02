@@ -68,13 +68,14 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::get('/rad/get_plans', [RADController::class, 'getPlans']);
     Route::post('/rad/change_plan', [RADController::class, 'changePlan']);
     Route::post('/rad/change_status', [RADController::class, 'changeStatus']);
-    Route::post('/rad/default_address', [RADController::class, 'setDefaultAddress']);
+    Route::post('/rad/changeDefaultAddress', [RADController::class, 'setDefaultAddress']);
 
     //=========Addons
     Route::get('/getAllAddons', [AddonsController::class, 'index']);
     Route::get('/get_installed_addons', [AddonsController::class, 'getAddons']);
     Route::get('/getRecommendedAddons', [AddonsController::class, 'getRecommendedAddons']);
     Route::post('/changeAddonStatus', [AddonsController::class, 'changeAddonStatus']);
+    Route::post('/changeAddonSuspendStatus', [AddonsController::class, 'changeAddonSuspendStatus']);
     Route::post('/installAddon', [AddonsController::class, 'installAddon']);
 
     //====Plans Info
