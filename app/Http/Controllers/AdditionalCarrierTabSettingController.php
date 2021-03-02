@@ -37,9 +37,9 @@ class AdditionalCarrierTabSettingController extends Controller
      */
     public function store(Request $request)
     {
-        $settings = AdditionalCarrierTabSetting::firstOrNew(['carrier_id' => $request->carrierId, 'store_id' => $request->store_id]);
+        $settings = AdditionalCarrierTabSetting::firstOrNew(['installed_carrier_id' => $request->carrierId, 'store_id' => $request->store_id]);
 
-        $settings->carrier_id = $request->carrierId;
+        $settings->installed_carrier_id = $request->carrierId;
         $settings->store_id = $request->store_id;
         $settings->value = json_encode($request->all());
         $settings->save();
