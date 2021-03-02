@@ -73,15 +73,60 @@ class RADController extends Controller
 
     }
 
+    public function getDefaultAddress(Request $request)
+    {
+        if (empty($request->addon_id)) {
+            return response()->json([
+                'error' => true,
+                'data' => [],
+                'message' => 'Empty Addon Id',
+            ], 200);
+        }
+
+        $add_settings = AddonSettings::wherer(['installed_addon_id' => $request->addon_id])->first();
+
+        if ($add_settings) {
+            return response()->json([
+                'error' => false,
+                'data' => $add_settings,
+                'message' => '',
+            ], 200);
+
+        } else {
+            return response()->json([
+                'error' => true,
+                'data' => [],
+                'message' => 'Invalid Addon Id',
+            ], 404);
+        }
+    }
+
     public function setDefaultAddress(Request $request)
     {
+        if (empty($request->addon_id)) {
+            return response()->json([
+                'error' => true,
+                'data' => [],
+                'message' => 'Empty Addon Id',
+            ], 200);
+        }
+
         $installed_addon_settings = AddonSettings::firstOrNew(['installed_addon_id' => $request->addon_id]);
 
-        $installed_addon_settings->value = json_encode($request->address);
-        $installed_addon_settings->installed_addon_id = $request->addon_id;
-        $installed_addon_settings->save();
+        if ($installed_addon_settings) {
+            $installed_addon_settings->value = json_encode($request->address);
+            $installed_addon_settings->installed_addon_id = $request->addon_id;
+            $installed_addon_settings->save();
 
-        return response()->json(["error" => false, 'message' => "Default Unconfirmed Address has been updated.", "data" => $installed_addon_settings]);
+            return response()->json(["error" => false, 'message' => "Default Unconfirmed Address has been updated.", "data" => $installed_addon_settings]);
+
+        } else {
+            return response()->json([
+                'error' => true,
+                'data' => [],
+                'message' => 'Invalid Addon Id',
+            ], 404);
+        }
     }
 
     public function runRADAction($request, $action)
