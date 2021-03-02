@@ -33,7 +33,7 @@ class ProductSetting extends Model
         $saveProduct->width = $product['width'];
         $saveProduct->height = $product['height'];
         $saveProduct->price = $product['price'];
-       //  $saveProduct->settings = json_encode($product);
+        $saveProduct->settings = json_encode($saveProduct);
         $saveProduct->store_id = $storeId;
         $saveProduct->save();
     }
