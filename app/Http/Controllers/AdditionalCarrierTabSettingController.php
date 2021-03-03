@@ -41,7 +41,7 @@ class AdditionalCarrierTabSettingController extends Controller
 
         $settings->installed_carrier_id = $request->carrierId;
         $settings->store_id = $request->store_id;
-        $settings->value = json_encode($request->all());
+        $settings->value = json_encode($request->services);
         $settings->save();
 
         return response()->json(['error' => false, 'message' => 'Carriers have been successfully saved.', 'data' => $settings]);
