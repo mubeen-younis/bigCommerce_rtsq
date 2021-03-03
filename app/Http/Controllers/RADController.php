@@ -83,7 +83,7 @@ class RADController extends Controller
             ], 200);
         }
 
-        $add_settings = AddonSettings::wherer(['installed_addon_id' => $request->addon_id])->first();
+        $add_settings = AddonSettings::where(['installed_addon_id' => $request->addon_id])->first();
 
         if ($add_settings) {
             return response()->json([
