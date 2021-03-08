@@ -41,6 +41,107 @@ class GetRatesController extends Controller
 
     public function returnRates(Request $request)
     {
+        $resp = array (
+            'quote_id' => 'sample_quote',
+            'messages' =>
+                array (
+                ),
+            'carrier_quotes' =>
+                array (
+                    0 =>
+                        array (
+                            'carrier_info' =>
+                                array (
+                                    'code' => 'usps_pitney_bowes',
+                                    'display_name' => 'USPS',
+                                ),
+                            'quotes' =>
+                                array (
+                                    0 =>
+                                        array (
+                                            'code' => '',
+                                            'rate_id' => '9vcV1JfckPJZW2pjeNXcKP5y',
+                                            'display_name' => 'USPS Priority Mail',
+                                            'cost' =>
+                                                array (
+                                                    'currency' => 'USD',
+                                                    'amount' => 6.35,
+                                                ),
+                                            'transit_time' =>
+                                                array (
+                                                    'units' => 'BUSINESS_DAYS',
+                                                    'duration' => 1,
+                                                ),
+                                            'dispatch_date' => '2021-03-06T00:00:00-05:00',
+                                        ),
+                                    1 =>
+                                        array (
+                                            'code' => '',
+                                            'rate_id' => 'EakTRTvck2XYGVAQw9Mza8WW',
+                                            'display_name' => 'USPS Priority Mail Express',
+                                            'cost' =>
+                                                array (
+                                                    'currency' => 'USD',
+                                                    'amount' => 22.98,
+                                                ),
+                                            'transit_time' =>
+                                                array (
+                                                    'units' => 'BUSINESS_DAYS',
+                                                    'duration' => 1,
+                                                ),
+                                            'dispatch_date' => '2021-03-06T00:00:00-05:00',
+                                        ),
+                                ),
+                        ),
+                    1 =>
+                        array (
+                            'carrier_info' =>
+                                array (
+                                    'code' => 'fedex',
+                                    'display_name' => 'FedEx',
+                                ),
+                            'quotes' =>
+                                array (
+                                    0 =>
+                                        array (
+                                            'code' => 'GND',
+                                            'rate_id' => 'JnQ2MPqkAMX9cBsw0jyt551R',
+                                            'display_name' => 'FedEx Ground',
+                                            'cost' =>
+                                                array (
+                                                    'currency' => 'USD',
+                                                    'amount' => 8.53,
+                                                ),
+                                            'transit_time' =>
+                                                array (
+                                                    'units' => 'BUSINESS_DAYS',
+                                                    'duration' => 1,
+                                                ),
+                                            'dispatch_date' => '2021-03-06T11:00:00-05:00',
+                                        ),
+                                    1 =>
+                                        array (
+                                            'code' => '2DA',
+                                            'rate_id' => 'QwygEz9XjZx1bT9rfDZsVxSy',
+                                            'display_name' => 'FedEx 2 Day',
+                                            'cost' =>
+                                                array (
+                                                    'currency' => 'USD',
+                                                    'amount' => 10.47,
+                                                ),
+                                            'transit_time' =>
+                                                array (
+                                                    'units' => 'BUSINESS_DAYS',
+                                                    'duration' => 2,
+                                                ),
+                                            'dispatch_date' => '2021-03-06T11:00:00-05:00',
+                                        ),
+                                ),
+                        ),
+                ),
+        );
+        return json_encode($resp);
+        exit;
         $storeHash = $request->base_options['store_id'] ?? null;
         $storeData = $this->getStoreData($storeHash);
         if ($storeData == null){
