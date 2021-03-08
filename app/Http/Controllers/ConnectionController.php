@@ -100,6 +100,7 @@ class ConnectionController extends Controller
             $response = [
                 'error' => false,
                 'message' => 'Test connection successful.',
+                'data' => Connection::where('installed_carrier_id', $data->carrierId)->first(),
             ];
         }
         return response()->json($response);
