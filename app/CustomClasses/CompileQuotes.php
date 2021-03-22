@@ -1,6 +1,7 @@
 <?php
 
 namespace App\CustomClasses;
+use Illuminate\Support\Facades\Log;
 
 class CompileQuotes
 {
@@ -562,8 +563,9 @@ class CompileQuotes
         $quotes = reset($quotes);
         $this->quoteSettings = $quoteSettings['WweLtl'];
         $allConfigServices = $quoteSettings['WweLtl']['carrier_services'] ?? [];
+        // dd($allConfigServices);
         $this->quoteSettingsData();
-
+        //echo "<pre>"; print_r($quotes); exit;
         /*if ($isMultiShipmentQuantity) {
             return $this->getOriginsMinimumQuotes($quotes, $allConfigServices, $scopeConfig);
         }*/
@@ -611,8 +613,10 @@ class CompileQuotes
                     }
                 }
             }
+            Log::info('616 $originQuotes '. json_encode($originQuotes));
             //Todo: function naming according to the functionality
             $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
+            Log::info('619 $compiledQuotes '. json_encode($compiledQuotes));
             if ($compiledQuotes !== null) {
                 if (count($compiledQuotes) > 1) {
                     foreach ($compiledQuotes as $k => $service) {
@@ -621,7 +625,7 @@ class CompileQuotes
                     }
                 } else {
                     $service = reset($compiledQuotes);
-                    $allQuotes['simple'][] = $service['simple'];
+                    $allQuotes['simple'][] = $service['simple'] ?? '';
                     $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
                 }
             }
@@ -630,11 +634,13 @@ class CompileQuotes
             }
             $count++;
         }
+        Log::info('638 $allQuotes '. json_encode($allQuotes));
         //s$this->setOrderDetailWidgetData($odwArr, $hazShipmentArr);
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
+        Log::info('644 $allQuotes '. json_encode($allQuotes));
         return $this->arrangeOwnFreight($allQuotes);
     }
 
@@ -645,8 +651,8 @@ class CompileQuotes
      */
     public function calculateHandlingFee($cost)
     {
-        $handlingFeeMarkup = $this->quoteSettings['handling_fee_markup'];
-        $symbolicHandlingFee = $this->quoteSettings['max_weight_per_handling_unit'];
+        $handlingFeeMarkup = $this->quoteSettings['handling_fee_markup'] ?? 0;
+        $symbolicHandlingFee = $this->quoteSettings['max_weight_per_handling_unit'] ?? 0;
 
         if (strlen($handlingFeeMarkup) > 0) {
             if ($symbolicHandlingFee == '%') {
@@ -1195,10 +1201,12 @@ class CompileQuotes
         asort($arraySorting['simple']);
         $options = ($this->quoteSettings['method'] > 1 && $this->isMultiShipment == false) ? (int)$this->quoteSettings['number_of_options'] : 1;
         $sliced = array_slice($arraySorting['simple'], 0, $options, true);
+
         if ($this->quoteSettings['method'] == 3) {
             return $this->averageRattingMethod($arraySorting, $options, $lgQuotes);
         }
-        return array_intersect_key($services, $sliced);
+        $resp = array_intersect_key($services, $sliced);
+        return $resp;
     }
 
     /**
@@ -1239,7 +1247,7 @@ class CompileQuotes
 
     public function customLabel($serviceName)
     {
-        return (($this->quoteSettings['method'] == 1 || $this->quoteSettings['method'] == 3) && $this->quoteSettings['labelAs'] != null) ? $this->quoteSettings['labelAs'] : $serviceName;
+        return (($this->quoteSettings['method'] == 1 || $this->quoteSettings['method'] == 3) && ( isset($this->quoteSettings['labelAs']) && $this->quoteSettings['labelAs'] != null) ) ? $this->quoteSettings['labelAs'] : $serviceName;
     }
 
     /**

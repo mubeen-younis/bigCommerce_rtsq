@@ -85,13 +85,24 @@ class WweLTLShipmentPackage
         $this->storeData = $storeData;
         $this->connectionSettings = $connectionSettings;
         $whQuery = LocationsController::getAllLocations($storeData['store']->id, 1);
-        if ($_product['dropship_enabled']) {
+        $dropship_enabled = $_product['dropship_enabled'] ?? false;
+        if ($dropship_enabled) {
             $dropShipID = $_product['dropship_location'];
             $originList = LocationsController::getLocationById($dropShipID);
             $origin = (!$originList) ? $whQuery : $originList;
         } else {
             $origin = $whQuery;
         }
+        $originLocal = [[]];
+        // dd($origin);
+        foreach($origin as $key => $ori){
+            $originLoca[$key]['warehouse_id'] = $ori->id ?? '';
+            $originLoca[$key]['city'] = $ori->city ?? '';
+            $originLoca[$key]['state'] = $ori->state ?? '';
+            $originLoca[$key]['zip'] = $ori->zip_code ?? '';
+            $originLoca[$key]['country'] = $ori->country ?? '';
+        }
+        $origin = $originLoca;
         if ($origin !== null && count($origin)) {
             return $this->multiWarehouse($origin, $receiverZipCode);
         }
@@ -111,6 +122,7 @@ class WweLTLShipmentPackage
         //$planNumber = $this->dataHelper->planInfo()['planNumber'];
 
         if (!empty($warehouseList)) {
+
             if (count($warehouseList) == 1) {
                 $warehouseList = reset($warehouseList);
                 return $this->wweLTLOriginArray($warehouseList, $receiverZipCode, $planNumber);
@@ -118,7 +130,8 @@ class WweLTLShipmentPackage
                 return $this->wweLTLOriginArray($warehouseList[0], $receiverZipCode, $planNumber);
             }
 
-            $response = $this->wweLTLAddress($warehouseList);
+            $response = (object) $this->wweLTLAddress($warehouseList);
+
             if (!empty($response)) {
                 $originWithMinDist = (isset($response->origin_with_min_dist) && !empty($response->origin_with_min_dist)) ? (array)$response->origin_with_min_dist : [];
                 return $this->wweLTLOriginArray($originWithMinDist, $receiverZipCode, $planNumber);
@@ -136,15 +149,15 @@ class WweLTLShipmentPackage
     public function wweLTLOriginArray($shortOrigin, $receiverZipCode, $planNumber)
     {
         if (isset($shortOrigin) && count($shortOrigin)) {
+            //$origin = reset($origin);
             $origin = isset($shortOrigin['origin']) ? $shortOrigin['origin'] : $shortOrigin;
-            $origin = reset($origin);
-            $zip = $origin['zip_code'] ?? '';
+            $zip = $origin['zip'] ?? '';
             $city = $origin['city'] ?? '';
             $state = $origin['state'] ?? '';
             $country = ($origin['country'] == "United State") ? "US" : $origin['country'];
             $location = isset($origin['type']) && $origin['type'] == 1 ? 'warehouse' : 'dropship';
             $locationId = $shortOrigin->id ?? '';
-            return [
+            $data = [
                 'location' => $location,
                 'locationId' => $locationId,
                 'senderZip' => $zip,
@@ -153,6 +166,8 @@ class WweLTLShipmentPackage
                 'senderCountryCode' => $country,
                 'InstorPickupLocalDelivery' => $planNumber == 3 ? $this->instorePickupLdData($origin, $receiverZipCode) : '',
             ];
+            $origin = reset($origin);
+            return $data;
         }
     }
 
@@ -175,10 +190,12 @@ class WweLTLShipmentPackage
                 'country' => $this->request['destination']['country']
             ],
             'ServerName' => $this->storeData['store']->name,
-            'eniureLicenceKey' => $this->connectionSettings,
+            'eniureLicenceKey' => $this->connectionSettings['WweLtl']['license_key'],
         ];
         $shipping = new Shipping();
-        $curlRes = $shipping->sendCurlRequest('https://eniture-qa.com/ws/addon/google-location.php', $post);
+        $url = Constant::GOOGLE_URL;
+
+        $curlRes = $shipping->sendCurlRequest($url, $post);
         if (!isset($curlRes->error)) {
             $response = $curlRes;
         } else {

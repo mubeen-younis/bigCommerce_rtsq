@@ -41,10 +41,61 @@ class GetRatesController extends Controller
 
     public function returnRates(Request $request)
     {
-        $resp = array (
-            'quote_id' => 'sample_quote',
+        $storeHash = $request->base_options['store_id'] ?? null;
+        $storeData = $this->getStoreData($storeHash);
+
+        if ($storeData == null){
+            return [];
+        }
+
+        $this->getCarrierSettings($storeData['installed_carriers']);
+
+        $formatReq = $this->formatRequest($request->all(), $storeData);
+
+        if (
+            $formatReq['lineItemData']['destination']['zip'] == null ||
+            $formatReq['lineItemData']['destination']['state'] == null ||
+            $formatReq['lineItemData']['destination']['country'] == null ||
+            //$formatReq['lineItemData']['destination']['city'] == null ||
+            count($this->connectionSettings) == 0 ||
+            count($this->quoteSettings) == 0
+        ) {
+
+            return [];
+        }
+
+        $quotes = $this->shipping->collectRates($formatReq, $storeData, $this->connectionSettings, $this->quoteSettings);
+
+        return $this->generateQuoteFormatResponse($quotes); exit;
+        $originWarehouse = new Origin();
+        $originWarehouse->getNearestWarehouse($formatReq);
+    }
+
+    public function generateQuoteFormatResponse($quotes){
+        Log::info('$quotes '. json_encode($quotes));
+
+        if(!empty(array_filter($quotes))){
+            $resp['quote_id'] = "2";// need to change
+            $resp['messages'] = [];// need to change
+            $resp['carrier_quotes'][0] = [ 'carrier_info' => ['code' => 'usps_pitney_bowes', 'display_name' => $quotes[0]['title'] ?? '']];
+            foreach($quotes as $key => $quote){
+                $resp['carrier_quotes'][0]['quotes'][$key] = [
+                    'code' => $quote['code'],
+                    'rate_id' => '9vcV1JfckPJZW2pjeNXcKP5y',
+                    'display_name' => $quote['title'],
+                    'cost' => ['currency'=>  'USD', 'amount' => $quote['rate'] ],
+                    'transit_time' => ['units' => 'BUSINESS_DAYS', 'duration' => 1],
+                    'dispatch_date' => '2021-03-19T00:00:00-05:00'
+                ];
+            }
+        }else{
+            $resp = [];
+        }
+        /*$resp = array (
+            'quote_id' => '2',
             'messages' =>
                 array (
+
                 ),
             'carrier_quotes' =>
                 array (
@@ -59,109 +110,30 @@ class GetRatesController extends Controller
                                 array (
                                     0 =>
                                         array (
-                                            'code' => '',
+                                            'code' => 'ODFL',
                                             'rate_id' => '9vcV1JfckPJZW2pjeNXcKP5y',
-                                            'display_name' => 'USPS Priority Mail',
+                                            'display_name' => 'Freight online',
                                             'cost' =>
                                                 array (
                                                     'currency' => 'USD',
-                                                    'amount' => 6.35,
+                                                    'amount' => 1000,
                                                 ),
                                             'transit_time' =>
                                                 array (
                                                     'units' => 'BUSINESS_DAYS',
                                                     'duration' => 1,
                                                 ),
-                                            'dispatch_date' => '2021-03-06T00:00:00-05:00',
+                                            'dispatch_date' => '2021-03-19T00:00:00-05:00',
                                         ),
-                                    1 =>
-                                        array (
-                                            'code' => '',
-                                            'rate_id' => 'EakTRTvck2XYGVAQw9Mza8WW',
-                                            'display_name' => 'USPS Priority Mail Express',
-                                            'cost' =>
-                                                array (
-                                                    'currency' => 'USD',
-                                                    'amount' => 22.98,
-                                                ),
-                                            'transit_time' =>
-                                                array (
-                                                    'units' => 'BUSINESS_DAYS',
-                                                    'duration' => 1,
-                                                ),
-                                            'dispatch_date' => '2021-03-06T00:00:00-05:00',
-                                        ),
+
                                 ),
                         ),
-                    1 =>
-                        array (
-                            'carrier_info' =>
-                                array (
-                                    'code' => 'fedex',
-                                    'display_name' => 'FedEx',
-                                ),
-                            'quotes' =>
-                                array (
-                                    0 =>
-                                        array (
-                                            'code' => 'GND',
-                                            'rate_id' => 'JnQ2MPqkAMX9cBsw0jyt551R',
-                                            'display_name' => 'FedEx Ground',
-                                            'cost' =>
-                                                array (
-                                                    'currency' => 'USD',
-                                                    'amount' => 8.53,
-                                                ),
-                                            'transit_time' =>
-                                                array (
-                                                    'units' => 'BUSINESS_DAYS',
-                                                    'duration' => 1,
-                                                ),
-                                            'dispatch_date' => '2021-03-06T11:00:00-05:00',
-                                        ),
-                                    1 =>
-                                        array (
-                                            'code' => '2DA',
-                                            'rate_id' => 'QwygEz9XjZx1bT9rfDZsVxSy',
-                                            'display_name' => 'FedEx 2 Day',
-                                            'cost' =>
-                                                array (
-                                                    'currency' => 'USD',
-                                                    'amount' => 10.47,
-                                                ),
-                                            'transit_time' =>
-                                                array (
-                                                    'units' => 'BUSINESS_DAYS',
-                                                    'duration' => 2,
-                                                ),
-                                            'dispatch_date' => '2021-03-06T11:00:00-05:00',
-                                        ),
-                                ),
-                        ),
+
                 ),
-        );
-        return json_encode($resp);
-        exit;
-        $storeHash = $request->base_options['store_id'] ?? null;
-        $storeData = $this->getStoreData($storeHash);
-        if ($storeData == null){
-            return [];
-        }
-        $this->getCarrierSettings($storeData['installed_carriers']);
-        $formatReq = $this->formatRequest($request->all(), $storeData);
-        if (
-            $formatReq['lineItemData']['destination']['zip'] == null ||
-            $formatReq['lineItemData']['destination']['state'] == null ||
-            $formatReq['lineItemData']['destination']['country'] == null ||
-            $formatReq['lineItemData']['destination']['city'] == null ||
-            count($this->connectionSettings) == 0 ||
-            count($this->quoteSettings) == 0
-        ) {
-            return [];
-        }
-        $this->shipping->collectRates($formatReq, $storeData, $this->connectionSettings, $this->quoteSettings);
-        $originWarehouse = new Origin();
-        $originWarehouse->getNearestWarehouse($formatReq);
+        );*/
+        //echo "<pre>"; print_r($resp); exit;
+        Log::info('$resp '. json_encode($resp));
+        return $resp;
     }
 
     public function formatRequest($data, $storeData)
@@ -185,6 +157,7 @@ class GetRatesController extends Controller
                 $ltlCheck = $product_settings['freight_enabled'] ?? false;
 
                 $originAddress = $this->shipmentPkg->wweLTLOriginAddress($details, $product_settings, $details['destination']['zip'], $storeData, $this->connectionSettings);
+
                 $details['origin'][$product['product_id']] = $originAddress;
 
                 $details['items'][$product['product_id']] = [
@@ -203,11 +176,12 @@ class GetRatesController extends Controller
                     'dropship_enabled' => $product_settings['dropship_enabled'] ?? '',
                     'dropship' => $product_settings['dropship'] ?? '',
                     'product_insurance_active' => $product_settings['insurance'] ?? '',
-                    'freightClass' => $this->isLTL($weight, $ltlCheck),
-                    'lineItemClass' => $this->getLineItemClass($product_settings['freight_class']),
+                    'freightClass' => $this->isLTL($weight, $ltlCheck) ? $this->isLTL($weight, $ltlCheck) : 'ltl', //ltl for testing
+                    'lineItemClass' => isset($product_settings['freight_class']) ? $this->getLineItemClass($product_settings['freight_class']) : '',
                 ];
             }
         }
+
         return ['lineItemData' => $details];
     }
 
@@ -279,10 +253,10 @@ class GetRatesController extends Controller
         if ($storeHash == null) {
             return null;
         }
-        $storeHash = explode('/', $storeHash)[1] ?? null;
-        if ($storeHash == null){
-            return null;
-        }
+        /* $storeHash = explode('/', $storeHash)[1] ?? null;
+         if ($storeHash == null){
+             return null;
+         }*/
         $store = Store::where(['hash' => $storeHash, 'app_status' => 1])->first();
         if (!empty($store)) {
             $installedCarriers = InstalledCarrier::where(['store_id' => $store->id, 'is_enabled' => 1])->get();
@@ -311,6 +285,8 @@ class GetRatesController extends Controller
                 if (isset($connectionSettings->value)){
                     //$installedCarrier->carrier_id
                     $this->connectionSettings['WweLtl'] = json_decode($connectionSettings->value,true);
+                    //$connectionSettings = json_decode($connectionSettings->value,true);
+                    //$this->connectionSettings = $connectionSettings['license_key'];
                 }
                 $quoteSettings = QuoteSetting::where('installed_carrier_id', $installedCarrier->id)->first();
                 if (isset($quoteSettings->value)){

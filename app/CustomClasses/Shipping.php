@@ -5,7 +5,7 @@ namespace App\CustomClasses;
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
 use App\CustomClasses\WweLTL\WweLTLGenerateRequestData;
-
+use Illuminate\Support\Facades\Log;
 
 class Shipping {
 
@@ -50,12 +50,16 @@ class Shipping {
                 ],
             ];
         }
+
         $wweLtlArr['originAddress'] = $package['origin'];
+
         $requestArr = $generateReqData->generateRequestArray($request, $wweLtlArr, $package['items']);
+        $requestArr['carriers']['wweLTL']['licenseKey'] = $requestArr['carriers']['wweLTL']['licenseKey']['license_key'];
         if (empty($requestArr)) {
             return false;
         }
         $url = Constant::QUOTES_URL;
+
         $quotes = $this->sendCurlRequest($url, $requestArr);
         // Debug point will print data if en_print_query=1
         if (isset($_GET['DEBUG_ON'])) {
@@ -67,8 +71,10 @@ class Shipping {
             ];
             dd($printData);
         }
+        Log::info('$quotes '. json_encode($quotes));
         $finalQuotes = $this->compileQuotes->getQuotesResults($quotes, $quoteSettings, $package['origin']);
-        return $this->setCarrierRates($finalQuotes);
+        $resp = $this->setCarrierRates($finalQuotes);
+        return $resp;
     }
 
     /**
@@ -85,7 +91,7 @@ class Shipping {
      */
     public function setCarrierRates($quotes)
     {
-        $quotes = $quotes ?? [];
+        return $quotes = $quotes ?? [];
     }
 
     /**
@@ -98,6 +104,7 @@ class Shipping {
      */
     public function sendCurlRequest($url, $postData)
     {
+        Log::info('$postData '. json_encode($postData));
         $fieldString = http_build_query($postData);
         try {
             $ch = curl_init();
@@ -109,6 +116,7 @@ class Shipping {
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
             $output = curl_exec($ch);
             curl_close($ch);
+            Log::info('$output '. json_encode($output));
             return json_decode($output, true);
         } catch (\Throwable $e) {
             $result = [];
