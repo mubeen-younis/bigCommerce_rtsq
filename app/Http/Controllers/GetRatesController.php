@@ -14,7 +14,7 @@ use Illuminate\Http\Request;
 use App\CustomClasses\Origin;
 use App\Models\ProductSetting;
 use App\CustomClasses\Shipping;
-use Illuminate\Support\Facades\Log;
+
 
 class GetRatesController extends Controller
 {
@@ -72,7 +72,6 @@ class GetRatesController extends Controller
     }
 
     public function generateQuoteFormatResponse($quotes){
-        Log::info('$quotes '. json_encode($quotes));
 
         if(!empty(array_filter($quotes))){
             $resp['quote_id'] = "2";// need to change
@@ -132,7 +131,6 @@ class GetRatesController extends Controller
                 ),
         );*/
         //echo "<pre>"; print_r($resp); exit;
-        Log::info('$resp '. json_encode($resp));
         return $resp;
     }
 

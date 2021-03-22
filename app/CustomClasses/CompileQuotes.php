@@ -1,7 +1,6 @@
 <?php
 
 namespace App\CustomClasses;
-use Illuminate\Support\Facades\Log;
 
 class CompileQuotes
 {
@@ -563,9 +562,7 @@ class CompileQuotes
         $quotes = reset($quotes);
         $this->quoteSettings = $quoteSettings['WweLtl'];
         $allConfigServices = $quoteSettings['WweLtl']['carrier_services'] ?? [];
-        // dd($allConfigServices);
         $this->quoteSettingsData();
-        //echo "<pre>"; print_r($quotes); exit;
         /*if ($isMultiShipmentQuantity) {
             return $this->getOriginsMinimumQuotes($quotes, $allConfigServices, $scopeConfig);
         }*/
@@ -613,10 +610,8 @@ class CompileQuotes
                     }
                 }
             }
-            Log::info('616 $originQuotes '. json_encode($originQuotes));
             //Todo: function naming according to the functionality
             $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
-            Log::info('619 $compiledQuotes '. json_encode($compiledQuotes));
             if ($compiledQuotes !== null) {
                 if (count($compiledQuotes) > 1) {
                     foreach ($compiledQuotes as $k => $service) {
@@ -634,13 +629,11 @@ class CompileQuotes
             }
             $count++;
         }
-        Log::info('638 $allQuotes '. json_encode($allQuotes));
         //s$this->setOrderDetailWidgetData($odwArr, $hazShipmentArr);
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
-        Log::info('644 $allQuotes '. json_encode($allQuotes));
         return $this->arrangeOwnFreight($allQuotes);
     }
 

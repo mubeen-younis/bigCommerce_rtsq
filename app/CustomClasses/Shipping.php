@@ -5,7 +5,6 @@ namespace App\CustomClasses;
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
 use App\CustomClasses\WweLTL\WweLTLGenerateRequestData;
-use Illuminate\Support\Facades\Log;
 
 class Shipping {
 
@@ -71,7 +70,6 @@ class Shipping {
             ];
             dd($printData);
         }
-        Log::info('$quotes '. json_encode($quotes));
         $finalQuotes = $this->compileQuotes->getQuotesResults($quotes, $quoteSettings, $package['origin']);
         $resp = $this->setCarrierRates($finalQuotes);
         return $resp;
@@ -104,7 +102,6 @@ class Shipping {
      */
     public function sendCurlRequest($url, $postData)
     {
-        Log::info('$postData '. json_encode($postData));
         $fieldString = http_build_query($postData);
         try {
             $ch = curl_init();
@@ -116,7 +113,6 @@ class Shipping {
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
             $output = curl_exec($ch);
             curl_close($ch);
-            Log::info('$output '. json_encode($output));
             return json_decode($output, true);
         } catch (\Throwable $e) {
             $result = [];

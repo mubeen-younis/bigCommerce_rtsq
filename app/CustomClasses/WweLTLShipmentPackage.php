@@ -94,7 +94,7 @@ class WweLTLShipmentPackage
             $origin = $whQuery;
         }
         $originLocal = [[]];
-        // dd($origin);
+
         foreach($origin as $key => $ori){
             $originLoca[$key]['warehouse_id'] = $ori->id ?? '';
             $originLoca[$key]['city'] = $ori->city ?? '';
