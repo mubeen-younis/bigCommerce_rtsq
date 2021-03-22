@@ -563,7 +563,6 @@ class CompileQuotes
         $this->quoteSettings = $quoteSettings['WweLtl'];
         $allConfigServices = $quoteSettings['WweLtl']['carrier_services'] ?? [];
         $this->quoteSettingsData();
-
         /*if ($isMultiShipmentQuantity) {
             return $this->getOriginsMinimumQuotes($quotes, $allConfigServices, $scopeConfig);
         }*/
@@ -621,7 +620,7 @@ class CompileQuotes
                     }
                 } else {
                     $service = reset($compiledQuotes);
-                    $allQuotes['simple'][] = $service['simple'];
+                    $allQuotes['simple'][] = $service['simple'] ?? '';
                     $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
                 }
             }
@@ -645,8 +644,8 @@ class CompileQuotes
      */
     public function calculateHandlingFee($cost)
     {
-        $handlingFeeMarkup = $this->quoteSettings['handling_fee_markup'];
-        $symbolicHandlingFee = $this->quoteSettings['max_weight_per_handling_unit'];
+        $handlingFeeMarkup = $this->quoteSettings['handling_fee_markup'] ?? 0;
+        $symbolicHandlingFee = $this->quoteSettings['max_weight_per_handling_unit'] ?? 0;
 
         if (strlen($handlingFeeMarkup) > 0) {
             if ($symbolicHandlingFee == '%') {
@@ -1195,10 +1194,12 @@ class CompileQuotes
         asort($arraySorting['simple']);
         $options = ($this->quoteSettings['method'] > 1 && $this->isMultiShipment == false) ? (int)$this->quoteSettings['number_of_options'] : 1;
         $sliced = array_slice($arraySorting['simple'], 0, $options, true);
+
         if ($this->quoteSettings['method'] == 3) {
             return $this->averageRattingMethod($arraySorting, $options, $lgQuotes);
         }
-        return array_intersect_key($services, $sliced);
+        $resp = array_intersect_key($services, $sliced);
+        return $resp;
     }
 
     /**
@@ -1239,7 +1240,7 @@ class CompileQuotes
 
     public function customLabel($serviceName)
     {
-        return (($this->quoteSettings['method'] == 1 || $this->quoteSettings['method'] == 3) && $this->quoteSettings['labelAs'] != null) ? $this->quoteSettings['labelAs'] : $serviceName;
+        return (($this->quoteSettings['method'] == 1 || $this->quoteSettings['method'] == 3) && ( isset($this->quoteSettings['labelAs']) && $this->quoteSettings['labelAs'] != null) ) ? $this->quoteSettings['labelAs'] : $serviceName;
     }
 
     /**

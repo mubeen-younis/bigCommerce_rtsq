@@ -6,7 +6,6 @@ use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
 use App\CustomClasses\WweLTL\WweLTLGenerateRequestData;
 
-
 class Shipping {
 
     /**
@@ -50,12 +49,16 @@ class Shipping {
                 ],
             ];
         }
+
         $wweLtlArr['originAddress'] = $package['origin'];
+
         $requestArr = $generateReqData->generateRequestArray($request, $wweLtlArr, $package['items']);
+        $requestArr['carriers']['wweLTL']['licenseKey'] = $requestArr['carriers']['wweLTL']['licenseKey']['license_key'];
         if (empty($requestArr)) {
             return false;
         }
         $url = Constant::QUOTES_URL;
+
         $quotes = $this->sendCurlRequest($url, $requestArr);
         // Debug point will print data if en_print_query=1
         if (isset($_GET['DEBUG_ON'])) {
@@ -68,7 +71,8 @@ class Shipping {
             dd($printData);
         }
         $finalQuotes = $this->compileQuotes->getQuotesResults($quotes, $quoteSettings, $package['origin']);
-        return $this->setCarrierRates($finalQuotes);
+        $resp = $this->setCarrierRates($finalQuotes);
+        return $resp;
     }
 
     /**
@@ -85,7 +89,7 @@ class Shipping {
      */
     public function setCarrierRates($quotes)
     {
-        $quotes = $quotes ?? [];
+        return $quotes = $quotes ?? [];
     }
 
     /**

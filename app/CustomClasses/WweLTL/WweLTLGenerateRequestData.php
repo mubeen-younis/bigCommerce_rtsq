@@ -34,7 +34,7 @@ class WweLTLGenerateRequestData
     {
         $this->storeData = $storeData;
         $this->quoteSettings = $quoteSettings;
-        $this->connectionSettings = $connectionSettings['WweLtl'];
+        $this->connectionSettings = $connectionSettings['WweLtl'] ?? $connectionSettings;
     }
 
     /**
@@ -44,7 +44,7 @@ class WweLTLGenerateRequestData
     public function generateEnitureArray()
     {
         return [
-            'licenseKey' => $this->connectionSettings['license_key'],
+            'licenseKey' => $this->connectionSettings,//$this->connectionSettings['license_key'],
             'serverName' => "https://store-uann2u.mybigcommerce.com",//"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
