@@ -76,7 +76,7 @@ class LocationsController extends Controller
                 ['error' => true,
                     'data' => $validator->errors()->all(),
                     'message' => 'Validation Errors',
-                ], 400);
+                ], 200);
         }
 
         if (isset($request->location_type) && $request->location_type == 1) {
