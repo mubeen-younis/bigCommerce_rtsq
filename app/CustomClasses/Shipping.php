@@ -112,7 +112,6 @@ class Shipping {
             curl_setopt($ch, CURLOPT_HTTPHEADER, array('Expect:'));
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
             $output = curl_exec($ch);
-            Log::info('shipping 166 $output '. json_encode($output));
             curl_close($ch);
             return json_decode($output, true);
         } catch (\Throwable $e) {
