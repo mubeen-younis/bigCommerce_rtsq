@@ -89,7 +89,7 @@ class WweLTLShipmentPackage
         if ($dropship_enabled) {
             $dropShipID = $_product['dropship_location'];
             $originList = LocationsController::getLocationById($dropShipID);
-            $origin = (!$originList) ? $whQuery : $originList;
+            $origin[] = (!$originList) ? $whQuery : $originList;
         } else {
             $origin = $whQuery;
         }
@@ -103,6 +103,7 @@ class WweLTLShipmentPackage
             $originLoca[$key]['country'] = $ori->country ?? '';
         }
         $origin = $originLoca;
+        Log::info('WweLTLShipmentPackage $origin no '. json_encode($origin));
         if ($origin !== null && count($origin)) {
             return $this->multiWarehouse($origin, $receiverZipCode);
         }
