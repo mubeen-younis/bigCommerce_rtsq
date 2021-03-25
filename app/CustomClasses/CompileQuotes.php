@@ -1240,7 +1240,7 @@ class CompileQuotes
 
     public function customLabel($serviceName)
     {
-        return (($this->quoteSettings['method'] == 1 || $this->quoteSettings['method'] == 3) && ( isset($this->quoteSettings['labelAs']) && $this->quoteSettings['labelAs'] != null) ) ? $this->quoteSettings['labelAs'] : $serviceName;
+        return (($this->quoteSettings['method'] == 1 || $this->quoteSettings['method'] == 3) && ( isset($this->quoteSettings['label_as']) && $this->quoteSettings['label_as'] != null) ) ? $this->quoteSettings['label_as'] : $serviceName;
     }
 
     /**
