@@ -123,6 +123,8 @@ class WweLTLGenerateRequestData
         $liftGate = ($this->quoteSettings['WweLtl']['alwaysLiftGateDelivery'] ||
             $this->quoteSettings['WweLtl']['offerLiftGateDelivery']) ? 'Y' : 'N';
 
+        $residentialPickup = ($this->quoteSettings['WweLtl']['residentialPickup'] && $this->quoteSettings['WweLtl']['residentialPickup'] == true) ? 'Y' : 'N';
+
         $apiArray = [
             'speed_freight_username' => $this->connectionSettings['username'],
             'speed_freight_password' => $this->connectionSettings['password'],
@@ -130,6 +132,7 @@ class WweLTLGenerateRequestData
             'speed_freight_account_number' => $this->connectionSettings['account_number'],
             'speed_freight_residential_delivery' => $residential,
             'speed_freight_lift_gate_delivery' => $liftGate,
+            'speed_freight_residential_pickup' => $residentialPickup,
         ];
 
         //Todo: need to review this functionality
