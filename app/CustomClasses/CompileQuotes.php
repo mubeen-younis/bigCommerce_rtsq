@@ -644,11 +644,11 @@ class CompileQuotes
      */
     public function calculateHandlingFee($cost)
     {
-        $handlingFeeMarkup = $this->quoteSettings['handling_fee_markup'] ?? 0;
-        $symbolicHandlingFee = $this->quoteSettings['max_weight_per_handling_unit'] ?? 0;
+        $handlingFeeMarkup = (float) $this->quoteSettings['handling_free_markup'] ?? 0;
+        $symbolicHandlingFee = strpos($this->quoteSettings['handling_free_markup'], '%') ? '%' : '';
 
         if (strlen($handlingFeeMarkup) > 0) {
-            if ($symbolicHandlingFee == '%') {
+            if ($symbolicHandlingFee === '%') {
                 $percentVal = $handlingFeeMarkup / 100 * $cost;
                 $grandTotal = $percentVal + $cost;
             } else {
