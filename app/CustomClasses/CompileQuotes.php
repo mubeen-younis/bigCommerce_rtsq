@@ -1249,7 +1249,7 @@ class CompileQuotes
      */
     public function arrangeOwnFreight($finalQuotes)
     {
-        if (!isset($this->quoteSettings['own_arrangment']) || $this->quoteSettings['own_arrangment'] == 0 || $this->quoteSettings['method'] == 3) {
+        if (!isset($this->quoteSettings['own_arrangment']) || $this->quoteSettings['own_arrangment'] == 0 ) {
             return $finalQuotes;
         }
         $ownArrangement[] = [
