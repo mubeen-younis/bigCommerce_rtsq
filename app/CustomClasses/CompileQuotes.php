@@ -1254,7 +1254,7 @@ class CompileQuotes
         }
         $ownArrangement[] = [
             'code' => 'own_arrangement',
-            'title' => (!empty($this->quoteSettings['own_arrangement_text'])) ? $this->quoteSettings['own_arrangement_text'] : "I'll Arrange My Own Freight",
+            'title' => (isset($this->quoteSettings['own_arrangement_text']) && !empty($this->quoteSettings['own_arrangement_text'])) ? $this->quoteSettings['own_arrangement_text'] : "I'll Arrange My Own Freight",
             'rate' => 0
         ];
         return array_merge($finalQuotes, $ownArrangement);
