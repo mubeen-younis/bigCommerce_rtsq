@@ -246,15 +246,15 @@ class CarrierController extends Controller
             );
 
             $quesry = http_build_query($quesry);
-            $end_point = Constant::QUOTES_URL. '?' . $quesry;
-            $res = json_decode(file_get_contents($end_point));
+            $end_point = Constant::PLAN_URL. '?' . $quesry;
+            $res = (array) json_decode(file_get_contents($end_point));
             $response['expiry_date'] = $res['expiry_date'];
             $response['plan_type'] = $res['pakg_group'];
 
             /*
              * trial -> 0, basic -> 1, standard -> 2, advaced -> 3
              * */
-            if($response['pakg_level'] == 1){
+            if($res['pakg_level'] == 1){
                 $response['plan_type'] = 0;
             }
 
