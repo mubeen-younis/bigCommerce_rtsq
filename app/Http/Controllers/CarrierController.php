@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Constants\Constant;
 use App\Models\Carrier;
 use App\Models\Connection;
 use App\Models\InstalledCarrier;
 use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Constants\Constant;
 
 class CarrierController extends Controller
 {
@@ -246,7 +246,7 @@ class CarrierController extends Controller
             );
 
             $quesry = http_build_query($quesry);
-            $end_point = Constant::PLAN_URL. '?' . $quesry;
+            $end_point = Constant::PLAN_URL . '?' . $quesry;
             $res = (array) json_decode(file_get_contents($end_point));
             $response['expiry_date'] = $res['expiry_date'];
             $response['plan_type'] = $res['pakg_group'];
@@ -254,8 +254,12 @@ class CarrierController extends Controller
             /*
              * trial -> 0, basic -> 1, standard -> 2, advaced -> 3
              * */
-            if($res['pakg_level'] == 1){
+            if ($res['pakg_group'] == 1 && $res['pakg_level'] == 1) {
                 $response['plan_type'] = 0;
+            }
+
+            if ($res['pakg_group'] == 1 && $res['pakg_level'] != 1) {
+                $response['plan_type'] = 1;
             }
 
             return response()->json([
