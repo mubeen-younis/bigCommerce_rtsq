@@ -644,11 +644,11 @@ class CompileQuotes
      */
     public function calculateHandlingFee($cost)
     {
-        $handlingFeeMarkup = $this->quoteSettings['handling_fee_markup'] ?? 0;
-        $symbolicHandlingFee = $this->quoteSettings['max_weight_per_handling_unit'] ?? 0;
+        $handlingFeeMarkup = (float) $this->quoteSettings['handling_free_markup'] ?? 0;
+        $symbolicHandlingFee = strpos($this->quoteSettings['handling_free_markup'], '%') ? '%' : '';
 
         if (strlen($handlingFeeMarkup) > 0) {
-            if ($symbolicHandlingFee == '%') {
+            if ($symbolicHandlingFee === '%') {
                 $percentVal = $handlingFeeMarkup / 100 * $cost;
                 $grandTotal = $percentVal + $cost;
             } else {
@@ -1240,7 +1240,7 @@ class CompileQuotes
 
     public function customLabel($serviceName)
     {
-        return (($this->quoteSettings['method'] == 1 || $this->quoteSettings['method'] == 3) && ( isset($this->quoteSettings['labelAs']) && $this->quoteSettings['labelAs'] != null) ) ? $this->quoteSettings['labelAs'] : $serviceName;
+        return (($this->quoteSettings['method'] == 1 || $this->quoteSettings['method'] == 3) && ( isset($this->quoteSettings['label_as']) && $this->quoteSettings['label_as'] != null) ) ? $this->quoteSettings['label_as'] : $serviceName;
     }
 
     /**
@@ -1249,12 +1249,12 @@ class CompileQuotes
      */
     public function arrangeOwnFreight($finalQuotes)
     {
-        if (!isset($this->quoteSettings['own_arrangement']) || $this->quoteSettings['own_arrangement'] == 0 || $this->quoteSettings['method'] == 3) {
+        if (!isset($this->quoteSettings['own_arrangment']) || $this->quoteSettings['own_arrangment'] == 0 ) {
             return $finalQuotes;
         }
         $ownArrangement[] = [
             'code' => 'own_arrangement',
-            'title' => (!empty($this->quoteSettings['own_arrangement_text'])) ? $this->quoteSettings['own_arrangement_text'] : "I'll Arrange My Own Freight",
+            'title' => (isset($this->quoteSettings['own_arrangement_text']) && !empty($this->quoteSettings['own_arrangement_text'])) ? $this->quoteSettings['own_arrangement_text'] : "I'll Arrange My Own Freight",
             'rate' => 0
         ];
         return array_merge($finalQuotes, $ownArrangement);
