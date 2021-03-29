@@ -1,20 +1,20 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\RADController;
-use App\Http\Controllers\MainController;
+use App\Http\Controllers\AdditionalCarrierTabSettingController;
 use App\Http\Controllers\AddonsController;
 use App\Http\Controllers\CarrierController;
-use App\Http\Middleware\EnsureTokenIsValid;
-use App\Http\Controllers\GetRatesController;
-use App\Http\Controllers\LocationsController;
-use App\Http\Controllers\ConnectionController;
 use App\Http\Controllers\CarrierPlanController;
-use App\Http\Controllers\QuoteSettingsController;
-use App\Http\Controllers\ProductSettingController;
+use App\Http\Controllers\ConnectionController;
+use App\Http\Controllers\GetRatesController;
 use App\Http\Controllers\InstalledCarrierController;
-use App\Http\Controllers\AdditionalCarrierTabSettingController;
+use App\Http\Controllers\LocationsController;
+use App\Http\Controllers\MainController;
+use App\Http\Controllers\ProductSettingController;
+use App\Http\Controllers\QuoteSettingsController;
+use App\Http\Controllers\RADController;
+use App\Http\Middleware\EnsureTokenIsValid;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -85,6 +85,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::get('/getInstalledCarriers', [CarrierController::class, 'getInstalledCarriers']);
     Route::get('/getRecommendedCarriers', [CarrierController::class, 'getRecommendedCarriers']);
     Route::post('/changeCarrierStatus', [CarrierController::class, 'changeCarrierStatus']);
+    Route::get('/getInstalledCarrierPlanInfo', [CarrierController::class, 'getInstalledCarrierPlanInfo']);
 
     Route::post('/submit_carriers', [AdditionalCarrierTabSettingController::class, 'store']);
 });

@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Store;
 use App\Models\Carrier;
-use Illuminate\Http\Request;
+use App\Models\Connection;
 use App\Models\InstalledCarrier;
+use App\Models\Store;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class CarrierController extends Controller
@@ -213,4 +214,49 @@ class CarrierController extends Controller
         }
     }
 
+    public function getInstalledCarrierPlanInfo(Request $request)
+    {
+        if (empty($request->carrierId)) {
+            return response()->json([
+                'error' => true,
+                'message' => 'No Carrier Id found',
+            ]);
+        }
+
+        $connection_settings = Connection::where('installed_carrier_id', $request->carrierId)->first();
+        $license_key = json_decode($connection_settings->value)->license_key;
+        $store = Store::find($request->store_id);
+
+        if (empty($store) || !$store) {
+            return response()->json([
+                'error' => true,
+                'message' => 'No Store found',
+            ]);
+        }
+
+        if ($connection_settings && $license_key && $store) {
+            $quesry = array(
+                'platform' => '',
+                'carrier' => '1', // required wwltl -> 1
+                'store_url' => $store->url, // required store url
+                'license_key' => $license_key, //required license key
+                'webhook_url' => '',
+                'plugin_version' => '',
+            );
+
+            $quesry = http_build_query($quesry);
+            $end_point = 'https://eniture-qa.com/ws/web-hooks/subscription-plans/create-plugin-webhook.php?' . $quesry;
+            $res = file_get_contents($end_point);
+
+            return response()->json([
+                'error' => false,
+                'data' => $res,
+            ], 200);
+        }
+
+        return response()->json([
+            'error' => true,
+            'message' => 'No connection settings found againt this Carrier Id',
+        ]);
+    }
 }
