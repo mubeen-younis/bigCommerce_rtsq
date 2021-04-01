@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\CurlRequest;
-use Illuminate\Http\Request;
 use App\Models\ProductSetting;
+use Illuminate\Http\Request;
 
 class ProductSettingController extends Controller
 {
@@ -152,16 +152,24 @@ class ProductSettingController extends Controller
                 'message' => 'No Product Id',
             ], 404);
         }
-        $product = ProductSetting::where('id', $request->product_id)
-            ->first();
+
+        $product = ProductSetting::find($request->product_id);
+
         if ($product === null) {
             return response()->json(['error' => true,
                 'data' => [],
                 'message' => 'No Product Found Against This Id',
             ], 404);
         }
-        $product->settings = json_encode($request->all());
+
+        $product->weight = $request->weight;
+        $product->length = $request->length;
+        $product->width = $request->width;
+        $product->height = $request->height;
+        $product->settings = json_encode($request->only(['dropship_enabled', 'dropship_location', 'freight_class',
+            'hazardous_enabled', 'freight_enabled', 'insurance']));
         $product->update();
+
         return response()->json(['error' => false,
             'data' => [],
             'message' => 'Product Updated Successfully',
