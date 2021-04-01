@@ -82,7 +82,6 @@ class Shipping {
      */
      public function isHazmatMaterial($items){
          foreach($items as $item){
-             Log::info('$item->isHazmatLineItem '. $item->isHazmatLineItem);
              if(isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y'){
                  $this->isHazmat = 'Y';
                  break;
