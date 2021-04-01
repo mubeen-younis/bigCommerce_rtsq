@@ -82,7 +82,7 @@ class Shipping {
      */
      public function isHazmatMaterial($items){
          foreach($items as $item){
-             if(isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y'){
+             if(isset($item['isHazmatLineItem']) && $item['isHazmatLineItem'] == 'Y'){
                  $this->isHazmat = 'Y';
                  break;
              }
