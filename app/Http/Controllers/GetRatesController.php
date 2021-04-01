@@ -169,11 +169,11 @@ class GetRatesController extends Controller
                     'lineItemWidth' => $product['width']['value'] ?? '',
                     'lineItemHeight' => $product['height']['value'] ?? '',
                     'lineItemWeight' => $weight,
-                    'freight_enabled' => $product_settings['freight_enabled'] ?? '',
-                    'isHazmatLineItem' => $product_settings['hazardous_enabled'] ?? '',
-                    'dropship_enabled' => $product_settings['dropship_enabled'] ?? '',
+                    'freight_enabled' => isset($product_settings['freight_enabled']) && $product_settings['freight_enabled'] ? 'Y' : 'N',
+                    'isHazmatLineItem' => isset($product_settings['hazardous_enabled']) && $product_settings['hazardous_enabled'] ? 'Y' : 'N',
+                    'dropship_enabled' => isset($product_settings['dropship_enabled']) && $product_settings['dropship_enabled'] ? 'Y' : 'N',
                     'dropship' => $product_settings['dropship'] ?? '',
-                    'product_insurance_active' => $product_settings['insurance'] ?? '',
+                    'product_insurance_active' => isset($product_settings['insurance']) && $product_settings['insurance'] ? 'Y' : 'N',
                     'freightClass' => $this->isLTL($weight, $ltlCheck) ? $this->isLTL($weight, $ltlCheck) : 'ltl', //ltl for testing
                     'lineItemClass' => isset($product_settings['freight_class']) ? $this->getLineItemClass($product_settings['freight_class']) : '',
                 ];
