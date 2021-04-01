@@ -5,6 +5,7 @@ namespace App\CustomClasses;
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
 use App\CustomClasses\WweLTL\WweLTLGenerateRequestData;
+use Illuminate\Support\Facades\Log;
 
 class Shipping {
 
