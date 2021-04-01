@@ -37,6 +37,7 @@ class Shipping {
         $request1 = $request;
         $package = $request['lineItemData'];
         $wweLtlArr = $generateReqData->generateEnitureArray();
+        $this->isHazmatMaterial($package['items']);
         if ($this->isHazmat == 'Y'){
             $wweLtlArr['api']['lineItemHazmatInfo'] = [
                 [
@@ -74,6 +75,19 @@ class Shipping {
         $resp = $this->setCarrierRates($finalQuotes);
         return $resp;
     }
+
+    /**
+     * to enable hazmat property for Api
+     */
+     public function isHazmatMaterial($items){
+         foreach($items as $item){
+             Log::info('$item->isHazmatLineItem '. $item->isHazmatLineItem);
+             if(isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y'){
+                 $this->isHazmat = 'Y';
+                 break;
+             }
+         }
+     }
 
     /**
      * @return array
