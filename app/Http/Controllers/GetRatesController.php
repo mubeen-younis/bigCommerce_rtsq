@@ -226,7 +226,7 @@ class GetRatesController extends Controller
     {
         $settings = [];
         $productSetting = ProductSetting::select('settings')
-            ->where(['source_product_id' => $productId, 'variant_id' => $variantId])
+            ->where(['source_product_id' => $productId /*, 'variant_id' => $variantId*/])
             ->first();
         if (!empty($productSetting)) {
             $productSetting->toArray();
