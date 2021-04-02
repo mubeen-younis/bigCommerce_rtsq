@@ -3,7 +3,7 @@
   <component name="WebServers">
     <option name="servers">
       <webServer id="c6853d00-6d2d-4e7a-8d19-558f3fabb5b2" name="Dev Server" url="http://eniture-dev3.com">
-        <fileTransfer host="eniture-dev3.com" port="22" privateKey="C:\Users\Saif\Desktop\DEV-Eniture-2020-pvt-key.ppk" rootFolder="/home/eniture/public_html/bigcommerce/backend" accessType="SFTP" keyPair="true">
+        <fileTransfer host="eniture-dev3.com" port="22" privateKey="C:\Users\Saif\Desktop\DEV-Eniture-2020-pvt-key.ppk" rootFolder="/home/eniture/public_html/bc" accessType="SFTP" keyPair="true">
           <advancedOptions>
             <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
           </advancedOptions>

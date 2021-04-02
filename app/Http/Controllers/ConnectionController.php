@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\CustomClasses\WWESMALL\SmallConnectionSettings;
 use App\Models\Connection;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 class ConnectionController extends Controller
@@ -13,6 +15,12 @@ class ConnectionController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
+    public function __construct()
+    {
+        $this->wweSmallTestCon = new SmallConnectionSettings();
+
+    }
+
     public function index(Request $request)
     {
         $con = Connection::where('installed_carrier_id', $request->carrierId)->first();
@@ -37,6 +45,7 @@ class ConnectionController extends Controller
      */
     public function store(Request $request)
     {
+
         $rules = [
             'billing_account_no' => 'required',
             'meter_number' => 'required',
@@ -45,13 +54,31 @@ class ConnectionController extends Controller
             'shipper_account_no' => 'required',
             'billing_address' => 'required',
         ];
+
 //        $validator = Validator::make($request->all(), $rules);
         //        if ($validator->fails()) {
         //            return response()->json($validator->errors(), 400);
         //        }
 
+        $checkCarrierType = DB::table('carriers')->leftJoin('installed_carriers', 'carriers.id', 'installed_carriers.carrier_id')
+            ->where('installed_carriers.id', $request->carrierId)
+            ->first();
+        if ($checkCarrierType === null) {
+            return response()->json(["error" => true, "data" => [],
+                'message' => 'Carrier Not Found']);
+        }
         if (!empty($request->testType)) {
-            return $this->testConnection($request);
+            switch ($checkCarrierType->slug) {
+                case "ltl-quotes":
+                    return $this->testConnection($request);
+                case "small-package":
+                    dd(2);
+                    return $this->wweSmallTestCon->testSmallConnection($request);
+                default:
+                    return response()->json(["error" => true, "data" => [],
+                        'message' => 'No carrier Matches']);
+            }
+
         }
 
         $con = Connection::firstOrNew(['installed_carrier_id' => $request->carrierId]);
