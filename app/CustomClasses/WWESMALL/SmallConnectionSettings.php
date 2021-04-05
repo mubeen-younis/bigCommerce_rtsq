@@ -32,9 +32,9 @@ class SmallConnectionSettings
         ];
 
         $queryString = http_build_query($params);
-        $resp = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
-        dd($resp);
-
+        $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
+        dd($output);
+/*
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_POST, 1);
@@ -44,7 +44,7 @@ class SmallConnectionSettings
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         $output = curl_exec($ch);
         curl_close($ch);
-        $output = \GuzzleHttp\json_decode($output, true);
+        $output = \GuzzleHttp\json_decode($output, true);*/
         if (isset($output['error']) && isset($output['error_desc'])) {
             $response = [
                 'error' => true,

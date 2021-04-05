@@ -67,22 +67,22 @@ class ConnectionController extends Controller
             return response()->json(["error" => true, "data" => [],
                 'message' => 'Carrier Not Found']);
         }
+
         if (!empty($request->testType)) {
             switch ($checkCarrierType->slug) {
                 case "ltl-quotes":
                     return $this->testConnection($request);
                 case "small-package":
-                    dd(2);
-                    return $this->wweSmallTestCon->testSmallConnection($request);
+                    $response = $this->wweSmallTestCon->testSmallConnection($request);
+                    return response()->json($response);
                 default:
                     return response()->json(["error" => true, "data" => [],
                         'message' => 'No carrier Matches']);
+
             }
 
         }
-
         $con = Connection::firstOrNew(['installed_carrier_id' => $request->carrierId]);
-
         $con->value = json_encode($request->all());
         $con->installed_carrier_id = $request->carrierId;
         $con->save();
