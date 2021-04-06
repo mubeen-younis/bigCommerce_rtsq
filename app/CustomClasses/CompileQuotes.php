@@ -583,6 +583,7 @@ class CompileQuotes
         $count = 0;
         $lgQuotes = false;
         $this->isMultiShipment = count($shipments) > 1;
+
         foreach ($shipments as $origin => $quote) {
             if (isset($quote->severity)) {
                 return [];

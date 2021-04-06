@@ -44,6 +44,7 @@ class WweLTLGenerateRequestData
     public function generateEnitureArray($origin)
     {
         $carriersArr['carriers'] = [];
+        //dd($this->connectionSettings);
         foreach ($this->connectionSettings as $key => $con1) {
             switch ($key) {
                 case "ltl-quotes":
@@ -52,9 +53,9 @@ class WweLTLGenerateRequestData
                     $carriersArr['carriers']['wweLTL'] = $wweLtlArr;
                     break;
                 case "small-package":
-                    $wweLtlArr = $this->wweLtlEnitArr($con1);
+                  /*  $wweLtlArr = $this->wweLtlEnitArr($con1);
                     $wweLtlArr['originAddress'] = $origin;
-                    $carriersArr['carriers']['wweSmall'] = $wweLtlArr;
+                    $carriersArr['carriers']['wweLTL'] = $wweLtlArr;*/
                     break;
             }
         }
@@ -64,7 +65,7 @@ class WweLTLGenerateRequestData
 
     public function wweLtlEnitArr($connSettings)
     {
-
+        //dd($connSettings['quote_settings']);
         return [
             'licenseKey' => $connSettings['creds']['license_key'],//$this->connectionSettings['license_key'],
             'serverName' => "https://store-uann2u.mybigcommerce.com",//"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
