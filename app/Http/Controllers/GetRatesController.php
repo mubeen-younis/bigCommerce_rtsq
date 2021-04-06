@@ -44,12 +44,11 @@ class GetRatesController extends Controller
         $storeHash = $request->base_options['store_id'] ?? null;
         $storeData = $this->getStoreData($storeHash);
 
-        if ($storeData == null){
+        if ($storeData == null) {
             return [];
         }
 
         $this->getCarrierSettings($storeData['installed_carriers']);
-
         $formatReq = $this->formatRequest($request->all(), $storeData);
 
         if (
@@ -57,37 +56,38 @@ class GetRatesController extends Controller
             $formatReq['lineItemData']['destination']['state'] == null ||
             $formatReq['lineItemData']['destination']['country'] == null ||
             //$formatReq['lineItemData']['destination']['city'] == null ||
-            count($this->connectionSettings) == 0 ||
-            count($this->quoteSettings) == 0
+            count($this->connectionSettings) == 0
         ) {
 
             return [];
         }
 
-        $quotes = $this->shipping->collectRates($formatReq, $storeData, $this->connectionSettings, $this->quoteSettings);
+        $quotes = $this->shipping->collectRates($formatReq, $storeData, $this->connectionSettings);
 
-        return $this->generateQuoteFormatResponse($quotes); exit;
+        return $this->generateQuoteFormatResponse($quotes);
+        exit;
         $originWarehouse = new Origin();
         $originWarehouse->getNearestWarehouse($formatReq);
     }
 
-    public function generateQuoteFormatResponse($quotes){
+    public function generateQuoteFormatResponse($quotes)
+    {
 
-        if(!empty(array_filter($quotes))){
+        if (!empty(array_filter($quotes))) {
             $resp['quote_id'] = "2";// need to change
             $resp['messages'] = [];// need to change
-            $resp['carrier_quotes'][0] = [ 'carrier_info' => ['code' => 'usps_pitney_bowes', 'display_name' => $quotes[0]['title'] ?? '']];
-            foreach($quotes as $key => $quote){
+            $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'usps_pitney_bowes', 'display_name' => $quotes[0]['title'] ?? '']];
+            foreach ($quotes as $key => $quote) {
                 $resp['carrier_quotes'][0]['quotes'][$key] = [
                     'code' => $quote['code'],
                     'rate_id' => '9vcV1JfckPJZW2pjeNXcKP5y',
                     'display_name' => $quote['title'],
-                    'cost' => ['currency'=>  'USD', 'amount' => $quote['rate'] ],
+                    'cost' => ['currency' => 'USD', 'amount' => $quote['rate']],
                     'transit_time' => ['units' => 'BUSINESS_DAYS', 'duration' => 1],
                     'dispatch_date' => '2021-03-19T00:00:00-05:00'
                 ];
             }
-        }else{
+        } else {
             $resp = [];
         }
         /*$resp = array (
@@ -277,24 +277,27 @@ class GetRatesController extends Controller
 
     public function getCarrierSettings($installedCarriers)
     {
-        if (!empty($installedCarriers)){
+        if (!empty($installedCarriers)) {
             foreach ($installedCarriers as $installedCarrier) {
-                $connectionSettings = Connection::where('installed_carrier_id', $installedCarrier->id)->first();
-                if (isset($connectionSettings->value)){
-                    //$installedCarrier->carrier_id
-                    $this->connectionSettings['WweLtl'] = json_decode($connectionSettings->value,true);
-                    //$connectionSettings = json_decode($connectionSettings->value,true);
-                    //$this->connectionSettings = $connectionSettings['license_key'];
-                }
-                $quoteSettings = QuoteSetting::where('installed_carrier_id', $installedCarrier->id)->first();
-                if (isset($quoteSettings->value)){
-                    //$installedCarrier->carrier_id
-                    $this->quoteSettings['WweLtl'] = json_decode($quoteSettings->value,true);
-                }
-                $carrierServices = AdditionalCarrierTabSetting::where('installed_carrier_id', $installedCarrier->id)->first();
-                if (isset($carrierServices->value)){
-                    //$installedCarrier->carrier_id
-                    $this->quoteSettings['WweLtl']['carrier_services'] = json_decode($carrierServices->value,true);
+                $connectionSettings = Connection::join('installed_carriers', 'installed_carriers.id', 'connection_settings.installed_carrier_id')
+                    ->join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
+                    ->select('carriers.slug', 'connection_settings.id', 'connection_settings.installed_carrier_id',
+                        'connection_settings.value')
+                    ->where('connection_settings.installed_carrier_id', $installedCarrier->id)->first();
+                Log::info('id ' . json_encode($installedCarrier->id));
+                if ($connectionSettings !== null) {
+
+                    $this->connectionSettings[$connectionSettings->slug]['creds'] = json_decode($connectionSettings->value, true);
+
+                    $quoteSettings = QuoteSetting::where('installed_carrier_id', $installedCarrier->id)->first();
+                    if (isset($quoteSettings->value)) {
+                        $this->connectionSettings[$connectionSettings->slug]['quote_settings'] = json_decode($quoteSettings->value, true);
+                    }
+                    $carrierServices = AdditionalCarrierTabSetting::where('installed_carrier_id', $installedCarrier->id)->first();
+                    if (isset($carrierServices->value)) {
+                        //$installedCarrier->carrier_id
+                        $this->connectionSettings[$connectionSettings->slug]['carrier_services'] = json_decode($carrierServices->value, true);
+                    }
                 }
             }
         }

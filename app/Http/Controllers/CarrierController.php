@@ -170,6 +170,8 @@ class CarrierController extends Controller
             ], 200);
         }
 
+
+
         $response['error'] = false;
         $response['data']['installedCarriers'] = $installedCarriers;
 

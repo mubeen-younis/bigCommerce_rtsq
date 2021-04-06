@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\CustomClasses\WweLTL\WweLtlConnectionSettings;
 use App\CustomClasses\WWESMALL\SmallConnectionSettings;
 use App\Models\Connection;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ class ConnectionController extends Controller
     public function __construct()
     {
         $this->wweSmallTestCon = new SmallConnectionSettings();
+        $this->wweLtlTestCon = new WweLtlConnectionSettings();
 
     }
 
@@ -71,7 +73,8 @@ class ConnectionController extends Controller
         if (!empty($request->testType)) {
             switch ($checkCarrierType->slug) {
                 case "ltl-quotes":
-                    return $this->testConnection($request);
+                    $response = $this->wweLtlTestCon->testLtlConnection($request);
+                    return response()->json($response);
                 case "small-package":
                     $response = $this->wweSmallTestCon->testSmallConnection($request);
                     return response()->json($response);

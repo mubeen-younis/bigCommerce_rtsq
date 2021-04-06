@@ -7,7 +7,8 @@ use App\CustomClasses\CompileQuotes;
 use App\CustomClasses\WweLTL\WweLTLGenerateRequestData;
 use Illuminate\Support\Facades\Log;
 
-class Shipping {
+class Shipping
+{
 
     /**
      * @var WweLTLShipmentPackage
@@ -31,16 +32,17 @@ class Shipping {
      * @param $quoteSettings
      * @return array | bool
      */
-    public function collectRates($request, $storeData, $connectionSettings, $quoteSettings)
+    public function collectRates($request, $storeData, $connectionSettings, $quoteSettings=[])
     {
         $generateReqData = new WweLTLGenerateRequestData();
+        //   init is a function to to call it explixitlitly rather constructor
         $generateReqData->_init($quoteSettings, $connectionSettings, $storeData);
-        $request1 = $request;
+        $carriersArray = $generateReqData->generateEnitureArray();
         $package = $request['lineItemData'];
-        $wweLtlArr = $generateReqData->generateEnitureArray();
+        // Checking if any productis hazardous
         $this->isHazmatMaterial($package['items']);
-        if ($this->isHazmat == 'Y'){
-            $wweLtlArr['api']['lineItemHazmatInfo'] = [
+        if ($this->isHazmat == 'Y') {
+            $carriersArray['api']['lineItemHazmatInfo'] = [
                 [
                     'isHazmatLineItem' => 'Y',
                     'lineItemHazmatUNNumberHeader' => 'UN #',
@@ -52,15 +54,16 @@ class Shipping {
             ];
         }
 
-        $wweLtlArr['originAddress'] = $package['origin'];
+        $carriersArray['originAddress'] = $package['origin'];
 
-        $requestArr = $generateReqData->generateRequestArray($request, $wweLtlArr, $package['items']);
-        $requestArr['carriers']['wweLTL']['licenseKey'] = $requestArr['carriers']['wweLTL']['licenseKey']['license_key'];
+        $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items']);
+
+       /* $requestArr['carriers']['wweLTL']['licenseKey'] = $requestArr['carriers']['wweLTL']['licenseKey']['license_key'];*/
         if (empty($requestArr)) {
             return false;
         }
         $url = Constant::QUOTES_URL;
-
+        Log::info('Request ' . json_encode($requestArr));
         $quotes = $this->sendCurlRequest($url, $requestArr);
         // Debug point will print data if en_print_query=1
         if (isset($_GET['DEBUG_ON'])) {
@@ -72,6 +75,7 @@ class Shipping {
             ];
             dd($printData);
         }
+        Log::info('Response ' . json_encode($quotes));
         $finalQuotes = $this->compileQuotes->getQuotesResults($quotes, $quoteSettings, $package['origin']);
         $resp = $this->setCarrierRates($finalQuotes);
         return $resp;
@@ -80,14 +84,15 @@ class Shipping {
     /**
      * to enable hazmat property for Api
      */
-     public function isHazmatMaterial($items){
-         foreach($items as $item){
-             if(isset($item['isHazmatLineItem']) && $item['isHazmatLineItem'] == 'Y'){
-                 $this->isHazmat = 'Y';
-                 break;
-             }
-         }
-     }
+    public function isHazmatMaterial($items)
+    {
+        foreach ($items as $item) {
+            if (isset($item['isHazmatLineItem']) && $item['isHazmatLineItem'] == 'Y') {
+                $this->isHazmat = 'Y';
+                break;
+            }
+        }
+    }
 
     /**
      * @return array

@@ -1,12 +1,12 @@
 <?php
 
 
-namespace App\CustomClasses\WWESMALL;
+namespace App\CustomClasses\WweLTL;
 
 use App\CustomClasses\CurlRequest;
 use App\Models\Connection;
 
-class SmallConnectionSettings
+class WweLtlConnectionSettings
 {
     public function __construct()
     {
@@ -14,13 +14,14 @@ class SmallConnectionSettings
         $this->curlRequest = new CurlRequest();
     }
 
-    public function testSmallConnection($data)
+    public function testLtlConnection($data)
     {
+
         $response = [
             'error' => true,
             'message' => 'Something went wrong!',
         ];
-        $url = 'https://eniture-qa.com/ws/carriers/wwe-small/speedshipTest.php'; //Constant::TEST_CONN_URL;
+        $url = 'https://eniture-qa.com/sfws/quote-speedfreight-shipment.php'; //Constant::TEST_CONN_URL;
         $params = [
             'platform' => 'bigcommerce',
             'speed_freight_username' => $data->username,
@@ -31,6 +32,7 @@ class SmallConnectionSettings
             'plugin_licence_key' => $data->license_key,
         ];
 
+
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
         if (isset($output['status']) && $output['status'] == false) {
@@ -39,6 +41,7 @@ class SmallConnectionSettings
                 'message' => $output['response'],
             ];
         }
+
         $output = json_decode($output['response'], true);
         if (isset($output['error']) && isset($output['error_desc'])) {
             $response = [
@@ -49,7 +52,8 @@ class SmallConnectionSettings
             $response = [
                 'error' => false,
                 'message' => 'Test connection successful.',
-                'data' => [],
+                'data' => Connection::where('installed_carrier_id', $data->carrierId)->first(),
+                'type' => 'ltl'
             ];
         }
         return $response;
