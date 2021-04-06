@@ -47,7 +47,7 @@ class GetRatesController extends Controller
         if ($storeData == null) {
             return [];
         }
-
+// Getting installed carriers there quote settings and services
         $this->getCarrierSettings($storeData['installed_carriers']);
         $formatReq = $this->formatRequest($request->all(), $storeData);
 
@@ -157,7 +157,6 @@ class GetRatesController extends Controller
                 $originAddress = $this->shipmentPkg->wweLTLOriginAddress($details, $product_settings, $details['destination']['zip'], $storeData, $this->connectionSettings);
 
                 $details['origin'][$product['product_id']] = $originAddress;
-
                 $details['items'][$product['product_id']] = [
                     'product_id' => $product['product_id'] ?? '',
                     'variant_id' => $product['variant_id'] ?? '',

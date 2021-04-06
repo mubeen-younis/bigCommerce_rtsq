@@ -32,13 +32,18 @@ class Shipping
      * @param $quoteSettings
      * @return array | bool
      */
-    public function collectRates($request, $storeData, $connectionSettings, $quoteSettings=[])
+    public function collectRates($request, $storeData, $connectionSettings)
     {
+        $quoteSettings = [];
         $generateReqData = new WweLTLGenerateRequestData();
         //   init is a function to to call it explixitlitly rather constructor
         $generateReqData->_init($quoteSettings, $connectionSettings, $storeData);
-        $carriersArray = $generateReqData->generateEnitureArray();
         $package = $request['lineItemData'];
+        // Disabling instore pickup if there is multi shipment case
+        $originAddress = $this->checkInstorePickup($package['origin']);
+        // Generating carrier creds and origin array
+        $carriersArray = $generateReqData->generateEnitureArray($originAddress);
+
         // Checking if any productis hazardous
         $this->isHazmatMaterial($package['items']);
         if ($this->isHazmat == 'Y') {
@@ -54,16 +59,14 @@ class Shipping
             ];
         }
 
-        $carriersArray['originAddress'] = $package['origin'];
-
+// Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items']);
 
-       /* $requestArr['carriers']['wweLTL']['licenseKey'] = $requestArr['carriers']['wweLTL']['licenseKey']['license_key'];*/
+        /* $requestArr['carriers']['wweLTL']['licenseKey'] = $requestArr['carriers']['wweLTL']['licenseKey']['license_key'];*/
         if (empty($requestArr)) {
             return false;
         }
         $url = Constant::QUOTES_URL;
-        Log::info('Request ' . json_encode($requestArr));
         $quotes = $this->sendCurlRequest($url, $requestArr);
         // Debug point will print data if en_print_query=1
         if (isset($_GET['DEBUG_ON'])) {
@@ -75,10 +78,27 @@ class Shipping
             ];
             dd($printData);
         }
-        Log::info('Response ' . json_encode($quotes));
-        $finalQuotes = $this->compileQuotes->getQuotesResults($quotes, $quoteSettings, $package['origin']);
+        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin']);
         $resp = $this->setCarrierRates($finalQuotes);
         return $resp;
+    }
+
+    public function checkInstorePickup($origin)
+    {
+        if (count($origin) > 1) {
+            $whIDs = [];
+            foreach ($origin as $wh) {
+                $whIDs[] = $wh['locationId'];
+            }
+            if (count(array_unique($whIDs)) > 1) {
+                foreach ($origin as $id => $wh) {
+                    if (isset($wh['InstorPickupLocalDelivery'])) {
+                        $origin[$id]['InstorPickupLocalDelivery'] = [];
+                    }
+                }
+            }
+        }
+        return $origin;
     }
 
     /**

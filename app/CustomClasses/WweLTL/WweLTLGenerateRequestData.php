@@ -41,16 +41,20 @@ class WweLTLGenerateRequestData
      * function that generates Wwe array
      * @return array
      */
-    public function generateEnitureArray()
+    public function generateEnitureArray($origin)
     {
         $carriersArr['carriers'] = [];
         foreach ($this->connectionSettings as $key => $con1) {
             switch ($key) {
                 case "ltl-quotes":
-                    $carriersArr['carriers']['wweLtl'] = $this->wweLtlEnitArr($con1);
+                    $wweLtlArr = $this->wweLtlEnitArr($con1);
+                    $wweLtlArr['originAddress'] = $origin;
+                    $carriersArr['carriers']['wweLTL'] = $wweLtlArr;
                     break;
                 case "small-package":
-                    $carriersArr['carriers']['wweSmall'] = $this->wweSmallEnitArr($con1);
+                    $wweLtlArr = $this->wweLtlEnitArr($con1);
+                    $wweLtlArr['originAddress'] = $origin;
+                    $carriersArr['carriers']['wweSmall'] = $wweLtlArr;
                     break;
             }
         }
@@ -60,6 +64,7 @@ class WweLTLGenerateRequestData
 
     public function wweLtlEnitArr($connSettings)
     {
+
         return [
             'licenseKey' => $connSettings['creds']['license_key'],//$this->connectionSettings['license_key'],
             'serverName' => "https://store-uann2u.mybigcommerce.com",//"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
@@ -77,6 +82,7 @@ class WweLTLGenerateRequestData
 
     public function wweSmallEnitArr($connSettings)
     {
+        // TODO: Need to set dynamic parameters of wwe small
         return [
             'licenseKey' => $connSettings['creds']['license_key'],//$this->connectionSettings['license_key'],
             'serverName' => "https://store-uann2u.mybigcommerce.com",//"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
@@ -99,21 +105,22 @@ class WweLTLGenerateRequestData
      */
     public function generateRequestArray($request, $carriersArray, $itemsArr)
     {
-        if (count($carriersArray['originAddress']) > 1) {
-            $whIDs = [];
-            foreach ($carriersArray['originAddress'] as $wh) {
-                $whIDs[] = $wh['locationId'];
-            }
-            if (count(array_unique($whIDs)) > 1) {
-                foreach ($carriersArray['originAddress'] as $id => $wh) {
-                    if (isset($wh['InstorPickupLocalDelivery'])) {
-                        $carriersArray['originAddress'][$id]['InstorPickupLocalDelivery'] = [];
-                    }
-                }
-            }
-        }
+
+        /* if (count($carriersArray['originAddress']) > 1) {
+             $whIDs = [];
+             foreach ($carriersArray['originAddress'] as $wh) {
+                 $whIDs[] = $wh['locationId'];
+             }
+             if (count(array_unique($whIDs)) > 1) {
+                 foreach ($carriersArray['originAddress'] as $id => $wh) {
+                     if (isset($wh['InstorPickupLocalDelivery'])) {
+                         $carriersArray['originAddress'][$id]['InstorPickupLocalDelivery'] = [];
+                     }
+                 }
+             }
+         }*/
         //$carriers = $this->registry->registry('enitureCarriers');
-        $carriers = $carriersArray;
+        $carriers = $carriersArray['carriers'];
         $receiverAddress = $this->getReceiverData($request);
 
         $autoResidential = $liftGateWithAuto = '0';
@@ -128,7 +135,7 @@ class WweLTLGenerateRequestData
             'binPackagingMultiCarrier' => $this->storeData['installed_addons']['SBS'] ?? '',
             'autoResidentials' => $autoResidential,
             'liftGateWithAutoResidentials' => $liftGateWithAuto,
-            'requestKey' => 'asasdasdasdasdasdasdasd',
+            'requestKey' => 'asasdasdasdasdasdadje84sdasd',
             'carriers' => $carriers,
             'receiverAddress' => $receiverAddress,
             'commdityDetails' => $itemsArr,

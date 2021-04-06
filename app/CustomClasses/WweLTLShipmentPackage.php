@@ -4,6 +4,7 @@ namespace App\CustomClasses;
 
 use App\Constants\Constant;
 use App\Http\Controllers\LocationsController;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class WweLTLShipmentPackage
@@ -80,6 +81,7 @@ class WweLTLShipmentPackage
         $connectionSettings
     )
     {
+        //dd(1,$request,$_product,$receiverZipCode,$storeData,$connectionSettings);
         //Todo: need to check which warehouse is selected and method params conflict also must be fixed. fetchWarehouseSecData()
         $this->request = $request;
         $this->storeData = $storeData;
@@ -118,9 +120,8 @@ class WweLTLShipmentPackage
     public function multiWarehouse($warehouseList, $receiverZipCode)
     {
         //Todo: we need to get plans from DB
-        $planNumber = 3;
+        $planNumber = 1;
         //$planNumber = $this->dataHelper->planInfo()['planNumber'];
-
         if (!empty($warehouseList)) {
 
             if (count($warehouseList) == 1) {
@@ -178,6 +179,7 @@ class WweLTLShipmentPackage
      */
     public function wweLTLAddress($originAddress)
     {
+        Log::info('connection'.json_encode($this->connectionSettings));
         $originAddress = $this->changeWarehouseIdKey($originAddress);
         $post = [
             'acessLevel' => 'MultiDistance',
