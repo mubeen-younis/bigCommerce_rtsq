@@ -161,19 +161,20 @@ class GetRatesController extends Controller
                     'product_id' => $product['product_id'] ?? '',
                     'variant_id' => $product['variant_id'] ?? '',
                     'sku' => $product['sku'] ?? '',
-                    'piecesOfLineItem' => $product['quantity'] ?? '',
+                    'piecesOfLineItem' => /*$product['quantity'] ?? ''*/ 2,
                     'lineItemId' => $product['product_id'] ?? '',
                     'lineItemName' => $product['name'] ?? '',
                     'lineItemLength' => $product['length']['value'] ?? '',
                     'lineItemWidth' => $product['width']['value'] ?? '',
                     'lineItemHeight' => $product['height']['value'] ?? '',
-                    'lineItemWeight' => $weight,
+                    'lineItemWeight' => /*$weight*/80,
                     'freight_enabled' => isset($product_settings['freight_enabled']) && $product_settings['freight_enabled'] ? 'Y' : 'N',
                     'isHazmatLineItem' => isset($product_settings['hazardous_enabled']) && $product_settings['hazardous_enabled'] ? 'Y' : 'N',
                     'dropship_enabled' => isset($product_settings['dropship_enabled']) && $product_settings['dropship_enabled'] ? 'Y' : 'N',
                     'dropship' => $product_settings['dropship'] ?? '',
                     'product_insurance_active' => isset($product_settings['insurance']) && $product_settings['insurance'] ? 'Y' : 'N',
-                    'freightClass' => $this->isLTL($weight, $ltlCheck) ? $this->isLTL($weight, $ltlCheck) : 'ltl', //ltl for testing
+                    //'freightClass' => $this->isLTL($weight, $ltlCheck) ? $this->isLTL($weight, $ltlCheck) : 'ltl', //ltl for testing
+                    'freightClass' => '',
                     'lineItemClass' => isset($product_settings['freight_class']) ? $this->getLineItemClass($product_settings['freight_class']) : '',
                 ];
             }
