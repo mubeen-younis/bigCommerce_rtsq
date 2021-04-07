@@ -73,7 +73,7 @@ class GenerateRequestData
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
            // 'returnQuotesOnExceedWeight' => $connSettings['quote_settings']['weightExeeds'],
-            // 'returnQuotesOnExceedWeight' => 1,
+             'returnQuotesOnExceedWeight' => 1,
 
             'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'],
             'api' => $this->getApiInfoArrWweLtl($connSettings),

@@ -77,6 +77,7 @@ class GetRatesController extends Controller
             $resp['quote_id'] = "2";// need to change
             $resp['messages'] = [];// need to change
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'usps_pitney_bowes', 'display_name' => $quotes[0]['title'] ?? '']];
+           // dd($quotes);
             foreach ($quotes as $key => $quote) {
                 $resp['carrier_quotes'][0]['quotes'][$key] = [
                     'code' => $quote['code'],
@@ -130,7 +131,9 @@ class GetRatesController extends Controller
 
                 ),
         );*/
-        //echo "<pre>"; print_r($resp); exit;
+      /*  echo "<pre>";
+        print_r($resp);
+        exit;*/
         return $resp;
     }
 
@@ -161,20 +164,22 @@ class GetRatesController extends Controller
                     'product_id' => $product['product_id'] ?? '',
                     'variant_id' => $product['variant_id'] ?? '',
                     'sku' => $product['sku'] ?? '',
-                    'piecesOfLineItem' => $product['quantity'] ?? '' ,
+                    'piecesOfLineItem' => /*$product['quantity'] ?? ''*/
+                        2,
                     'lineItemId' => $product['product_id'] ?? '',
                     'lineItemName' => $product['name'] ?? '',
                     'lineItemLength' => $product['length']['value'] ?? '',
                     'lineItemWidth' => $product['width']['value'] ?? '',
                     'lineItemHeight' => $product['height']['value'] ?? '',
-                    'lineItemWeight' => $weight,
+                    'lineItemWeight' => /*$weight*/
+                        80,
                     'freight_enabled' => isset($product_settings['freight_enabled']) && $product_settings['freight_enabled'] ? 'Y' : 'N',
                     'isHazmatLineItem' => isset($product_settings['hazardous_enabled']) && $product_settings['hazardous_enabled'] ? 'Y' : 'N',
                     'dropship_enabled' => isset($product_settings['dropship_enabled']) && $product_settings['dropship_enabled'] ? 'Y' : 'N',
                     'dropship' => $product_settings['dropship'] ?? '',
                     'product_insurance_active' => isset($product_settings['insurance']) && $product_settings['insurance'] ? 'Y' : 'N',
-                    'freightClass' => $this->isLTL($weight, $ltlCheck) ? $this->isLTL($weight, $ltlCheck) : 'ltl', //ltl for testing
-                    //'freightClass' => '',
+                    //'freightClass' => $this->isLTL($weight, $ltlCheck) ? $this->isLTL($weight, $ltlCheck) : 'ltl', //ltl for testing
+                    'freightClass' => '',
                     'lineItemClass' => isset($product_settings['freight_class']) ? $this->getLineItemClass($product_settings['freight_class']) : '',
                 ];
             }

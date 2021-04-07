@@ -61,14 +61,15 @@ class Shipping
 // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items']);
 
+        //echo json_encode($requestArr);die();
+
+
         /* $requestArr['carriers']['wweLTL']['licenseKey'] = $requestArr['carriers']['wweLTL']['licenseKey']['license_key'];*/
         if (empty($requestArr)) {
             return false;
         }
         $url = Constant::QUOTES_URL;
 
-       /* echo json_encode($requestArr);
-        die();*/
         $quotes = $this->sendCurlRequest($url, $requestArr);
         // Debug point will print data if en_print_query=1
         if (isset($_GET['DEBUG_ON'])) {
@@ -80,7 +81,6 @@ class Shipping
             ];
             dd($printData);
         }
-        dd($quotes);
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin']);
         $resp = $this->setCarrierRates($finalQuotes);
         return $resp;

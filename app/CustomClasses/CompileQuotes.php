@@ -2,6 +2,8 @@
 
 namespace App\CustomClasses;
 
+use App\Constants\Constant;
+
 class CompileQuotes
 {
     /**
@@ -556,7 +558,6 @@ class CompileQuotes
      */
     public function newGetQuotesResults($quotes, $connectionSettings, $allOrigins)
     {
-        //dd(1, $storeData);
         if ($quotes == null) {
             return [];
         }
@@ -564,9 +565,10 @@ class CompileQuotes
         foreach ($quotes as $key => $shipment) {
             switch ($key) {
                 case "wweLTL":
-                    $quotesRes = $this->compileWweLtlQuotes($shipment, $connectionSettings, $allOrigins);
+                    $quotesRes = array_merge($quotesRes, $this->compileWweLtlQuotes($shipment, $connectionSettings, $allOrigins));
                     break;
                 case "wweSmall":
+                    $quotesRes = array_merge($quotesRes, $this->compileWweSmallQuotes($shipment, $connectionSettings, $allOrigins));
                     break;
             }
         }
@@ -582,7 +584,8 @@ class CompileQuotes
         $allQuotes = $odwArr = $hazShipmentArr = [];
         $count = 0;
         $lgQuotes = false;
-        $this->isMultiShipment = count($shipments) > 1;
+        $this->isMultiShipment = false;
+        $this->isMultiShipment = is_countable($shipments) && count($shipments) > 1;
 
         foreach ($shipments as $origin => $quote) {
             if (isset($quote->severity)) {
@@ -651,6 +654,77 @@ class CompileQuotes
         return $this->arrangeOwnFreight($allQuotes);
     }
 
+    public function compileWweSmallQuotes($shipments, $connectionSettings, $allOrigins)
+    {
+        $this->quoteSettings = $connectionSettings['small-package']['quote_settings'];
+        $allConfigServices = $connectionSettings['small-package']['quote_settings']['carrier_services'] ?? [];
+        // Removing Markup indexes from services
+        $allConfigServices = $this->filterWweSmallServicesFromMarkup($allConfigServices);
+        $this->isMultiShipment = false;
+        $this->isMultiShipment = count($shipments) > 1;
+        $originQuotes = [];
+        $arraySorting = [];
+        foreach ($shipments as $origin => $quote) {
+            if (isset($quote->severity)) {
+                return [];
+            }
+
+            if (isset($quote['q'])) {
+                foreach ($quote['q'] as $key => $data) {
+                    //TODO: Here We have to dynamically show services, set small titles dynamically and service codes as well
+
+                    // if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices)) {
+
+                    $access = '';
+                    $price = (float)$data['totalNetCharge']['Amount'];
+                    $title = $data['serviceDesc'];
+                    $arraySorting['simple'][$key] = $price;
+                    $originQuotes[$key]['simple']['code'] = $data['serviceType'] . $access;
+                    $originQuotes[$key]['simple']['rate'] = $price;
+                    $originQuotes[$key]['simple']['title'] = $title;
+                    //  }
+                }
+            }
+
+            //Todo: function naming according to the functionality
+            /*      $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
+                  if ($compiledQuotes !== null) {
+                      if (count($compiledQuotes) > 1) {
+                          foreach ($compiledQuotes as $k => $service) {
+                              $allQuotes['simple'][] = $service['simple'];
+                              $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
+                          }
+                      } else {
+                          $service = reset($compiledQuotes);
+                          $allQuotes['simple'][] = $service['simple'] ?? '';
+                          $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
+                      }
+                  }
+                  if ($this->isMultiShipment) {
+                      $odwArr[$origin]['quotes'] = $compiledQuotes;
+                  }
+                  $count++;*/
+        }
+        $originQuotes= array_column($originQuotes, 'simple');
+        return $originQuotes;
+
+    }
+
+    public function filterWweSmallServicesFromMarkup($services)
+    {
+        if (!empty($services)) {
+            $allowed = Constant::WWE_SMALL_SERVICES;
+            $filtered = array_filter(
+                $services,
+                function ($key) use ($allowed) {
+                    return in_array($key, $allowed);
+                },
+                ARRAY_FILTER_USE_KEY
+            );
+            return $filtered;
+        }
+        return $services;
+    }
 
     public function getQuotesResults($quotes, $quoteSettings, $allOrigins)
     {
