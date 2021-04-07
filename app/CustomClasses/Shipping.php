@@ -4,9 +4,10 @@ namespace App\CustomClasses;
 
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
-use App\CustomClasses\WweLTL\WweLTLGenerateRequestData;
+use Illuminate\Support\Facades\Log;
 
-class Shipping {
+class Shipping
+{
 
     /**
      * @var WweLTLShipmentPackage
@@ -30,15 +31,22 @@ class Shipping {
      * @param $quoteSettings
      * @return array | bool
      */
-    public function collectRates($request, $storeData, $connectionSettings, $quoteSettings)
+    public function collectRates($request, $storeData, $connectionSettings)
     {
-        $generateReqData = new WweLTLGenerateRequestData();
+        $quoteSettings = [];
+        $generateReqData = new GenerateRequestData();
+        //   init is a function to to call it explixitlitly rather constructor
         $generateReqData->_init($quoteSettings, $connectionSettings, $storeData);
-        $request1 = $request;
         $package = $request['lineItemData'];
-        $wweLtlArr = $generateReqData->generateEnitureArray();
-        if ($this->isHazmat == 'Y'){
-            $wweLtlArr['api']['lineItemHazmatInfo'] = [
+        // Disabling instore pickup if there is multi shipment case
+        $originAddress = $this->checkInstorePickup($package['origin']);
+        // Generating carrier creds and origin array
+        $carriersArray = $generateReqData->generateEnitureArray($originAddress);
+
+        // Checking if any productis hazardous
+        $this->isHazmatMaterial($package['items']);
+        if ($this->isHazmat == 'Y') {
+            $carriersArray['api']['lineItemHazmatInfo'] = [
                 [
                     'isHazmatLineItem' => 'Y',
                     'lineItemHazmatUNNumberHeader' => 'UN #',
@@ -50,10 +58,13 @@ class Shipping {
             ];
         }
 
-        $wweLtlArr['originAddress'] = $package['origin'];
+// Genearting final request Array
+        $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items']);
 
-        $requestArr = $generateReqData->generateRequestArray($request, $wweLtlArr, $package['items']);
-        $requestArr['carriers']['wweLTL']['licenseKey'] = $requestArr['carriers']['wweLTL']['licenseKey']['license_key'];
+        //echo json_encode($requestArr);die();
+
+
+        /* $requestArr['carriers']['wweLTL']['licenseKey'] = $requestArr['carriers']['wweLTL']['licenseKey']['license_key'];*/
         if (empty($requestArr)) {
             return false;
         }
@@ -70,9 +81,40 @@ class Shipping {
             ];
             dd($printData);
         }
-        $finalQuotes = $this->compileQuotes->getQuotesResults($quotes, $quoteSettings, $package['origin']);
+        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin']);
         $resp = $this->setCarrierRates($finalQuotes);
         return $resp;
+    }
+
+    public function checkInstorePickup($origin)
+    {
+        if (count($origin) > 1) {
+            $whIDs = [];
+            foreach ($origin as $wh) {
+                $whIDs[] = $wh['locationId'];
+            }
+            if (count(array_unique($whIDs)) > 1) {
+                foreach ($origin as $id => $wh) {
+                    if (isset($wh['InstorPickupLocalDelivery'])) {
+                        $origin[$id]['InstorPickupLocalDelivery'] = [];
+                    }
+                }
+            }
+        }
+        return $origin;
+    }
+
+    /**
+     * to enable hazmat property for Api
+     */
+    public function isHazmatMaterial($items)
+    {
+        foreach ($items as $item) {
+            if (isset($item['isHazmatLineItem']) && $item['isHazmatLineItem'] == 'Y') {
+                $this->isHazmat = 'Y';
+                break;
+            }
+        }
     }
 
     /**

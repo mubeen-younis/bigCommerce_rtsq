@@ -1,11 +1,11 @@
 <?php
 
-namespace App\CustomClasses\WweLTL;
+namespace App\CustomClasses;
 
 /**
  * class that generated request data
  */
-class WweLTLGenerateRequestData
+class GenerateRequestData
 {
     /**
      * @var Object
@@ -34,24 +34,65 @@ class WweLTLGenerateRequestData
     {
         $this->storeData = $storeData;
         $this->quoteSettings = $quoteSettings;
-        $this->connectionSettings = $connectionSettings['WweLtl'] ?? $connectionSettings;
+        $this->connectionSettings = $connectionSettings;
     }
 
     /**
      * function that generates Wwe array
      * @return array
      */
-    public function generateEnitureArray()
+    public function generateEnitureArray($origin)
     {
+        $carriersArr['carriers'] = [];
+        //dd($this->connectionSettings);
+        foreach ($this->connectionSettings as $key => $con1) {
+            switch ($key) {
+                case "ltl-quotes":
+                    $wweLtlArr = $this->wweLtlEnitArr($con1);
+                    $wweLtlArr['originAddress'] = $origin;
+                    $carriersArr['carriers']['wweLTL'] = $wweLtlArr;
+                    break;
+                case "small-package":
+                    $wweLtlArr = $this->wweSmallEnitArr($con1);
+                    $wweLtlArr['originAddress'] = $origin;
+                    $carriersArr['carriers']['wweSmall'] = $wweLtlArr;
+                    break;
+            }
+        }
+        return $carriersArr;
+
+    }
+
+    public function wweLtlEnitArr($connSettings)
+    {
+        //dd($connSettings['quote_settings']);
         return [
-            'licenseKey' => $this->connectionSettings,//$this->connectionSettings['license_key'],
-            'serverName' => "https://store-uann2u.mybigcommerce.com",//"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
+            'licenseKey' => $connSettings['creds']['license_key'],//$this->connectionSettings['license_key'],
+            'serverName' => "https://" . $this->storeData['store']['name'],//"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
-            //'returnQuotesOnExceedWeight' => $this->quoteSettings['WweLtl']['weightExeeds'],
-            'liftGateAsAnOption' => $this->quoteSettings['WweLtl']['offerLiftGateDelivery'],
-            'api' => $this->getApiInfoArr(),
+           // 'returnQuotesOnExceedWeight' => $connSettings['quote_settings']['weightExeeds'],
+             'returnQuotesOnExceedWeight' => 1,
+
+            'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'],
+            'api' => $this->getApiInfoArrWweLtl($connSettings),
+            'getDistance' => 0,
+        ];
+    }
+
+    // WWE SMALL QUOTE SETTINGS AND CREDENTIALS
+
+    public function wweSmallEnitArr($connSettings)
+    {
+        // TODO: Need to set dynamic parameters of wwe small
+        return [
+            'licenseKey' => $connSettings['creds']['license_key'],//$this->connectionSettings['license_key'],
+            'serverName' => "https://" . $this->storeData['store']['name'],//"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
+            'carrierMode' => 'pro',
+            'quotestType' => 'small', // ltl / small
+            'version' => '2.0.4',
+            'api' => $this->getApiInfoArrWweSmall($connSettings),
             'getDistance' => 0,
         ];
     }
@@ -63,29 +104,30 @@ class WweLTLGenerateRequestData
      * @param $itemsArr
      * @return array|bool
      */
-    public function generateRequestArray($request, $originArr, $itemsArr)
+    public function generateRequestArray($request, $carriersArray, $itemsArr)
     {
-        if (count($originArr['originAddress']) > 1) {
-            $whIDs = [];
-            foreach ($originArr['originAddress'] as $wh) {
-                $whIDs[] = $wh['locationId'];
-            }
-            if (count(array_unique($whIDs)) > 1) {
-                foreach ($originArr['originAddress'] as $id => $wh) {
-                    if (isset($wh['InstorPickupLocalDelivery'])) {
-                        $originArr['originAddress'][$id]['InstorPickupLocalDelivery'] = [];
-                    }
-                }
-            }
-        }
+
+        /* if (count($carriersArray['originAddress']) > 1) {
+             $whIDs = [];
+             foreach ($carriersArray['originAddress'] as $wh) {
+                 $whIDs[] = $wh['locationId'];
+             }
+             if (count(array_unique($whIDs)) > 1) {
+                 foreach ($carriersArray['originAddress'] as $id => $wh) {
+                     if (isset($wh['InstorPickupLocalDelivery'])) {
+                         $carriersArray['originAddress'][$id]['InstorPickupLocalDelivery'] = [];
+                     }
+                 }
+             }
+         }*/
         //$carriers = $this->registry->registry('enitureCarriers');
-        $carriers['wweLTL'] = $originArr;
+        $carriers = $carriersArray['carriers'];
         $receiverAddress = $this->getReceiverData($request);
 
         $autoResidential = $liftGateWithAuto = '0';
         if (isset($this->storeData['installed_addons']['RAD']) && $this->storeData['installed_addons']['RAD']) {
             $autoResidential = '1';
-            $liftGateWithAuto = $this->quoteSettings['WweLtl']['RADforLiftgate'] ?? '0';
+            $liftGateWithAuto = '1';
         }
 
         return [
@@ -94,7 +136,7 @@ class WweLTLGenerateRequestData
             'binPackagingMultiCarrier' => $this->storeData['installed_addons']['SBS'] ?? '',
             'autoResidentials' => $autoResidential,
             'liftGateWithAutoResidentials' => $liftGateWithAuto,
-            'requestKey' => 'asasdasdasdasdasdasdasd',
+            'requestKey' => 'asasdasdasdasdasdadje84sdasd',
             'carriers' => $carriers,
             'receiverAddress' => $receiverAddress,
             'commdityDetails' => $itemsArr,
@@ -105,34 +147,71 @@ class WweLTLGenerateRequestData
      * function that returns API array
      * @return array
      */
-    public function getApiInfoArr()
+    public function getApiInfoArrWweLtl($connSettings)
     {
         //Todo: need to review this function
         $accessorials = [];
         if (isset($this->storeData['installed_addons']['RAD']) && !$this->storeData['installed_addons']['RAD']) {
-            ($this->quoteSettings['WweLtl']['residentialDlvry']) ? array_push($accessorials, 'RESDEL') : '';
+            ($connSettings['quote_settings']['residentialDlvry']) ? array_push($accessorials, 'RESDEL') : '';
         }
-        ($this->quoteSettings['WweLtl']['alwaysLiftGateDelivery']) ? array_push($accessorials, 'LFTGATDEST') : '';
+        ($connSettings['quote_settings']['alwaysLiftGateDelivery']) ? array_push($accessorials, 'LFTGATDEST') : '';
 
         if (isset($this->storeData['installed_addons']['RAD']) && $this->storeData['installed_addons']['RAD']) {
             $residential = 'N';
         } else {
-            $residential = ($this->quoteSettings['WweLtl']['alwaysResidentialDelivery']) ? 'Y' : 'N';
+            $residential = ($connSettings['quote_settings']['alwaysResidentialDelivery']) ? 'Y' : 'N';
         }
 
-        $liftGate = ($this->quoteSettings['WweLtl']['alwaysLiftGateDelivery'] ||
-            $this->quoteSettings['WweLtl']['offerLiftGateDelivery']) ? 'Y' : 'N';
+        $liftGate = ($connSettings['quote_settings']['alwaysLiftGateDelivery'] ||
+            $connSettings['quote_settings']['offerLiftGateDelivery']) ? 'Y' : 'N';
 
-        $residentialPickup = ($this->quoteSettings['WweLtl']['residentialPickup'] && $this->quoteSettings['WweLtl']['residentialPickup'] == true) ? 'Y' : 'N';
+        $residentialPickup = ($connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
 
         $apiArray = [
-            'speed_freight_username' => $this->connectionSettings['username'],
-            'speed_freight_password' => $this->connectionSettings['password'],
-            'speed_freight_authentication_key' => $this->connectionSettings['authentication_key'],
-            'speed_freight_account_number' => $this->connectionSettings['account_number'],
+            'speed_freight_username' => $connSettings['creds']['username'],
+            'speed_freight_password' => $connSettings['creds']['password'],
+            'speed_freight_authentication_key' => $connSettings['creds']['authentication_key'],
+            'speed_freight_account_number' => $connSettings['creds']['account_number'],
             'speed_freight_residential_delivery' => $residential,
             'speed_freight_lift_gate_delivery' => $liftGate,
             'speed_freight_residential_pickup' => $residentialPickup,
+        ];
+
+        //Todo: need to review this functionality
+        /*
+         * $shipperRelation = $this->getConfigData('shipperRelation');
+         * if ($shipperRelation == 'ThirdParty') {
+            $apiArray['payerAddress'] = [
+                'name' => 'name',
+                'addressLine' => 'addressLine',
+                'country' => $this->getConfigData('thirdPartyCountry'),
+                'zip' => $this->getConfigData('thirdPartyPostalCode'),
+                'state' => $this->getConfigData('thirdPartyState'),
+                'city' => $this->getConfigData('thirdPartyCity')
+            ];
+        }*/
+
+        return $apiArray;
+    }
+
+    public function getApiInfoArrWweSmall($connSettings)
+    {
+        //Todo: need to review this function
+
+        if (isset($this->storeData['installed_addons']['RAD']) && $this->storeData['installed_addons']['RAD']) {
+            $residential = 'N';
+        } else {
+            $residential = ($connSettings['quote_settings']['alwaysResidentialDelivery']) ? 'Y' : 'N';
+        }
+
+        $apiArray = [
+            'speed_ship_username' => $connSettings['creds']['username'],
+            'speed_ship_password' => $connSettings['creds']['password'],
+            'authentication_key' => $connSettings['creds']['authentication_key'],
+            'world_wide_express_account_number' => $connSettings['creds']['account_number'],
+            'residential_delivery' => $residential,
+            'prefferedCurrency' => 'USD',
+            'includeDeclaredValue' => "1"
         ];
 
         //Todo: need to review this functionality
