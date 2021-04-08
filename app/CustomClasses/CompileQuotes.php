@@ -3,6 +3,7 @@
 namespace App\CustomClasses;
 
 use App\Constants\Constant;
+use App\CustomClasses\WWESMALL\WweSmallQuoteResults;
 
 class CompileQuotes
 {
@@ -85,6 +86,7 @@ class CompileQuotes
     public function __construct()
     {
 
+        $this->wweSmallQuoteRes = new WweSmallQuoteResults();
     }
 
     /**
@@ -656,11 +658,16 @@ class CompileQuotes
 
     public function compileWweSmallQuotes($shipments, $connectionSettings, $allOrigins)
     {
+        $this->quoteSettings = [];
         $this->quoteSettings = $connectionSettings['small-package']['quote_settings'];
         $allConfigServices = $connectionSettings['small-package']['quote_settings']['carrier_services'] ?? [];
         // Removing Markup indexes from services
-        $allConfigServices = $this->filterWweSmallServicesFromMarkup($allConfigServices);
-        dd($shipments, $this->quoteSettings, $allConfigServices);
+        $allConfigServices = $this->wweSmallQuoteRes->filterWweSmallServicesFromMarkup($allConfigServices);
+        $enabledServices = $this->wweSmallQuoteRes->getEnabledServicesCodes($allConfigServices);
+        if (empty($enabledServices)) {
+            return [];
+        }
+       // dd($allConfigServices, $enabledServices, $shipments,$this->quoteSettings);
         $this->isMultiShipment = false;
         $this->isMultiShipment = count($shipments) > 1;
         $originQuotes = [];
@@ -673,16 +680,17 @@ class CompileQuotes
             if (isset($quote['q'])) {
                 foreach ($quote['q'] as $key => $data) {
                     //TODO: Here We have to dynamically show services, set small titles dynamically and service codes as well
+                    if (!isset($enabledServices[$data['serviceType']])) {
+                        continue;
+                    }
 
-                    // if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices)) {
                     $access = '';
-                    $price = (float)$data['totalNetCharge']['Amount'];
+                    $price = $this->wweSmallQuoteRes->getServiceRate($data['totalNetCharge']['Amount'],$data['serviceType'],$this->quoteSettings);
                     $title = $data['serviceDesc'];
                     $arraySorting['simple'][$key] = $price;
                     $originQuotes[$key]['simple']['code'] = $data['serviceType'] . $access;
                     $originQuotes[$key]['simple']['rate'] = $price;
                     $originQuotes[$key]['simple']['title'] = $title;
-                    //  }
                 }
             }
 
@@ -705,26 +713,11 @@ class CompileQuotes
                   }
                   $count++;*/
         }
-        $originQuotes = array_column($originQuotes, 'simple');
+        $originQuotes = array_column(array_values($originQuotes), 'simple');
         return $originQuotes;
 
     }
 
-    public function filterWweSmallServicesFromMarkup($services)
-    {
-        if (!empty($services)) {
-            $allowed = Constant::WWE_SMALL_SERVICES;
-            $filtered = array_filter(
-                $services,
-                function ($key) use ($allowed) {
-                    return in_array($key, $allowed);
-                },
-                ARRAY_FILTER_USE_KEY
-            );
-            return $filtered;
-        }
-        return $services;
-    }
 
     public function getQuotesResults($quotes, $quoteSettings, $allOrigins)
     {

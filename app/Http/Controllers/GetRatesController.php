@@ -179,7 +179,7 @@ class GetRatesController extends Controller
                     'dropship_enabled' => isset($product_settings['dropship_enabled']) && $product_settings['dropship_enabled'] ? 'Y' : 'N',
                     'dropship' => $product_settings['dropship'] ?? '',
                     'product_insurance_active' => isset($product_settings['insurance']) && $product_settings['insurance'] ? 'Y' : 'N',
-                    //'freightClass' => $this->isLTL($weight, $ltlCheck) ? $this->isLTL($weight, $ltlCheck) : 'ltl', //ltl for testing
+                    'freightClass' => $this->isLTL($weight, $ltlCheck) ? $this->isLTL($weight, $ltlCheck) : 'ltl', //ltl for testing
                     'freightClass' => '',
                     'lineItemClass' => isset($product_settings['freight_class']) ? $this->getLineItemClass($product_settings['freight_class']) : '',
                 ];

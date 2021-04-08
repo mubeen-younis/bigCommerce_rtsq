@@ -72,8 +72,8 @@ class GenerateRequestData
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
-           // 'returnQuotesOnExceedWeight' => $connSettings['quote_settings']['weightExeeds'],
-             'returnQuotesOnExceedWeight' => 1,
+            // 'returnQuotesOnExceedWeight' => $connSettings['quote_settings']['weightExeeds'],
+            'returnQuotesOnExceedWeight' => 1,
 
             'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'],
             'api' => $this->getApiInfoArrWweLtl($connSettings),
@@ -197,7 +197,6 @@ class GenerateRequestData
     public function getApiInfoArrWweSmall($connSettings)
     {
         //Todo: need to review this function
-
         if (isset($this->storeData['installed_addons']['RAD']) && $this->storeData['installed_addons']['RAD']) {
             $residential = 'N';
         } else {
