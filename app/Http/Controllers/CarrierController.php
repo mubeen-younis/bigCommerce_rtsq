@@ -221,23 +221,31 @@ class CarrierController extends Controller
     {
         if (empty($request->carrierId)) {
             return response()->json([
-                'error' => true,
+                'error' => false,
                 'message' => 'No Carrier Id found',
             ]);
         }
 
         $connection_settings = Connection::where('installed_carrier_id', $request->carrierId)->first();
+
+        if (!$connection_settings) {
+            return response()->json([
+                'error' => false,
+                'message' => 'No connection settings found against this Carrier Id',
+            ]);
+        }
+
         $license_key = json_decode($connection_settings->value)->license_key;
         $store = Store::find($request->store_id);
 
         if (empty($store) || !$store) {
             return response()->json([
-                'error' => true,
+                'error' => false,
                 'message' => 'No Store found',
             ]);
         }
 
-        if ($connection_settings && $license_key && $store) {
+        if ($license_key && $store) {
             $quesry = array(
                 'platform' => '',
                 'carrier' => '1', // required wwltl -> 1
@@ -250,6 +258,17 @@ class CarrierController extends Controller
             $quesry = http_build_query($quesry);
             $end_point = Constant::PLAN_URL . '?' . $quesry;
             $res = (array) json_decode(file_get_contents($end_point));
+
+            if ($res['plan_type'] == 1 && $res['pakg_group'] == '' && $res['message'] == 'Subscription Not Found.') {
+                $response['plan_type'] = 0;
+                $response['expiry_date'] = '';
+
+                return response()->json([
+                    'error' => false,
+                    'data' => $response,
+                ], 200);
+            }
+
             $response['expiry_date'] = $res['expiry_date'];
             $response['plan_type'] = $res['pakg_group'];
 
@@ -270,9 +289,5 @@ class CarrierController extends Controller
             ], 200);
         }
 
-        return response()->json([
-            'error' => true,
-            'message' => 'No connection settings found againt this Carrier Id',
-        ]);
     }
 }
