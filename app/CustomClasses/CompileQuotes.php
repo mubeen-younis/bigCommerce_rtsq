@@ -660,6 +660,7 @@ class CompileQuotes
         $allConfigServices = $connectionSettings['small-package']['quote_settings']['carrier_services'] ?? [];
         // Removing Markup indexes from services
         $allConfigServices = $this->filterWweSmallServicesFromMarkup($allConfigServices);
+        dd($shipments, $this->quoteSettings, $allConfigServices);
         $this->isMultiShipment = false;
         $this->isMultiShipment = count($shipments) > 1;
         $originQuotes = [];
@@ -674,7 +675,6 @@ class CompileQuotes
                     //TODO: Here We have to dynamically show services, set small titles dynamically and service codes as well
 
                     // if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices)) {
-
                     $access = '';
                     $price = (float)$data['totalNetCharge']['Amount'];
                     $title = $data['serviceDesc'];
@@ -705,7 +705,7 @@ class CompileQuotes
                   }
                   $count++;*/
         }
-        $originQuotes= array_column($originQuotes, 'simple');
+        $originQuotes = array_column($originQuotes, 'simple');
         return $originQuotes;
 
     }
@@ -1024,11 +1024,14 @@ class CompileQuotes
      */
     public function getTitle($serviceName, $lgOption = false, $from = false, $deliveryEstimate = '')
     {
+        // Here  Making service title
         $serviceTitle = $this->customLabel($serviceName);
         if ($this->isMultiShipment && $from == false) {
             return $serviceTitle;
         }
+        // Here  Making Delivery estimate title
         $deliveryEstimateLabel = (!empty($deliveryEstimate) && $this->quoteSettings['showDeliveryEstimate']) ? ' (Estimated transit time of ' . $deliveryEstimate . ' business days)' : '';
+        // Here  Making Access title
         $accessTitle = '';
         if ($lgOption === true || $this->quoteSettings['autoDetectedResidentialAddressesLfg']) {
             if ($lgOption && $this->quoteSettings['alwaysLiftGateDelivery'] == '0') {

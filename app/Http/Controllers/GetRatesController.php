@@ -85,6 +85,7 @@ class GetRatesController extends Controller
                     'display_name' => $quote['title'],
                     'cost' => ['currency' => 'USD', 'amount' => $quote['rate']],
                     'transit_time' => ['units' => 'BUSINESS_DAYS', 'duration' => 1],
+                    // TODO: Will be set
                     'dispatch_date' => '2021-03-19T00:00:00-05:00'
                 ];
             }
