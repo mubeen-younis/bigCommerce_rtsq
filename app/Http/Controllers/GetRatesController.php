@@ -290,7 +290,6 @@ class GetRatesController extends Controller
                     ->select('carriers.slug', 'connection_settings.id', 'connection_settings.installed_carrier_id',
                         'connection_settings.value')
                     ->where('connection_settings.installed_carrier_id', $installedCarrier->id)->first();
-                Log::info('id ' . json_encode($installedCarrier->id));
                 if ($connectionSettings !== null) {
 
                     $this->connectionSettings[$connectionSettings->slug]['creds'] = json_decode($connectionSettings->value, true);

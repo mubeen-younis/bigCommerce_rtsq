@@ -196,6 +196,7 @@ class GenerateRequestData
 
     public function getApiInfoArrWweSmall($connSettings)
     {
+        //dd($connSettings);
         //Todo: need to review this function
         if (isset($this->storeData['installed_addons']['RAD']) && $this->storeData['installed_addons']['RAD']) {
             $residential = 'N';
@@ -212,7 +213,6 @@ class GenerateRequestData
             'prefferedCurrency' => 'USD',
             'includeDeclaredValue' => "1"
         ];
-
         //Todo: need to review this functionality
         /*
          * $shipperRelation = $this->getConfigData('shipperRelation');

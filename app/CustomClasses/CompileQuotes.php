@@ -667,7 +667,7 @@ class CompileQuotes
         if (empty($enabledServices)) {
             return [];
         }
-       // dd($allConfigServices, $enabledServices, $shipments,$this->quoteSettings);
+        // dd($allConfigServices, $enabledServices, $shipments,$this->quoteSettings);
         $this->isMultiShipment = false;
         $this->isMultiShipment = count($shipments) > 1;
         $originQuotes = [];
@@ -679,14 +679,25 @@ class CompileQuotes
 
             if (isset($quote['q'])) {
                 foreach ($quote['q'] as $key => $data) {
-                    //TODO: Here We have to dynamically show services, set small titles dynamically and service codes as well
+                    // Check if service type is checked to show
                     if (!isset($enabledServices[$data['serviceType']])) {
                         continue;
                     }
+                    //  CHeck FOr Ups ground transit days
+                    if ($data['serviceType'] == "GND") {
+                        // TODO: ALso We have to check plan here
+                        if ($this->quoteSettings['number_of_transit_days'] != null && $this->quoteSettings['ground_metric'] != null) {
+                            $islimited = $this->wweSmallQuoteRes->checkGroundTransit($data, $this->quoteSettings);
+                            if ($islimited) {
+                                continue;
+                            }
+                        }
+                    }
 
                     $access = '';
-                    $price = $this->wweSmallQuoteRes->getServiceRate($data['totalNetCharge']['Amount'],$data['serviceType'],$this->quoteSettings);
-                    $title = $data['serviceDesc'];
+                    // Adding Markup in services if enabled
+                    $price = $this->wweSmallQuoteRes->getServiceRate($data['totalNetCharge']['Amount'], $data['serviceType'], $this->quoteSettings);
+                    $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $data['serviceType'], $this->quoteSettings);
                     $arraySorting['simple'][$key] = $price;
                     $originQuotes[$key]['simple']['code'] = $data['serviceType'] . $access;
                     $originQuotes[$key]['simple']['rate'] = $price;

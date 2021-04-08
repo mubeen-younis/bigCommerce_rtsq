@@ -41,18 +41,16 @@ class WweSmallQuoteResults
     public function getServiceRate($amount, $serviceCode, $quoteSettings)
     {
         $markupIndex = $this->getMarkupIndexFromServiceCode($serviceCode);
-        //dd(1, $markupIndex,$quoteSettings,$quoteSettings['carrier_services'][$markupIndex]);
         $markupValue = $quoteSettings['carrier_services'][$markupIndex] ?? '';
-        if (empty($markupValue) || !is_numeric($markupValue)) {
+        if (empty($markupValue) || !is_numeric(str_replace('%', '', $markupValue))) {
             return $amount;
         }
-        //$markupValue = '5%';
         if (strpbrk($markupValue, '%') !== FALSE) {
             $amount = $this->getvalueFromPercent($amount, str_replace('%', '', $markupValue));
         } else {
             $amount = $amount + $markupValue;
         }
-        return (float)$amount;
+        return number_format($amount, 2);
 
     }
 
@@ -62,6 +60,12 @@ class WweSmallQuoteResults
         $markupValue = $markupPercentage / 100 * $amount;
         $amountWithMarkup = $markupValue + $amount;
         return $amountWithMarkup;
+
+    }
+
+    public function getServiceTitle($title, $serviceCode, $quoteSettings)
+    {
+        return $title;
 
     }
 
@@ -97,7 +101,25 @@ class WweSmallQuoteResults
         }
     }
 
-    public function getMarkupIndexFromServiceCode($serviceCode)
+    public function checkGroundTransit($quote, $quoteSettings)
+    {
+        // Check limited to carrier transit days
+        if ($quoteSettings['ground_metric'] == 1) {
+            //  2>3
+            if ($quote['TransitTimeInDays'] > $quoteSettings['number_of_transit_days']) {
+                return true;
+            }
+            // Check by calendar days
+        } else {
+            if ($quote['CalenderDaysInTransit'] > $quoteSettings['number_of_transit_days']) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public
+    function getMarkupIndexFromServiceCode($serviceCode)
     {
         switch ($serviceCode) {
             case "GND":
