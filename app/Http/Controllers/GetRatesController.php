@@ -41,15 +41,20 @@ class GetRatesController extends Controller
 
     public function returnRates(Request $request)
     {
+
         $storeHash = $request->base_options['store_id'] ?? null;
         $storeData = $this->getStoreData($storeHash);
+
 
         if ($storeData == null) {
             return [];
         }
+
 // Getting installed carriers there quote settings and services
         $this->getCarrierSettings($storeData['installed_carriers']);
+
         $formatReq = $this->formatRequest($request->all(), $storeData);
+
 
         if (
             $formatReq['lineItemData']['destination']['zip'] == null ||
@@ -72,12 +77,11 @@ class GetRatesController extends Controller
 
     public function generateQuoteFormatResponse($quotes)
     {
-
         if (!empty(array_filter($quotes))) {
             $resp['quote_id'] = "2";// need to change
             $resp['messages'] = [];// need to change
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'usps_pitney_bowes', 'display_name' => $quotes[0]['title'] ?? '']];
-           // dd($quotes);
+            // dd($quotes);
             foreach ($quotes as $key => $quote) {
                 $resp['carrier_quotes'][0]['quotes'][$key] = [
                     'code' => $quote['code'],
@@ -132,9 +136,9 @@ class GetRatesController extends Controller
 
                 ),
         );*/
-      /*  echo "<pre>";
-        print_r($resp);
-        exit;*/
+        /*  echo "<pre>";
+          print_r($resp);
+          exit;*/
         return $resp;
     }
 
@@ -155,25 +159,25 @@ class GetRatesController extends Controller
         if (count($data['base_options']['items'])) {
             foreach ($data['base_options']['items'] as $product) {
                 $product_settings = $this->getProductSetting($product['product_id'], $product['variant_id']);
+
                 $weight = (isset($product['weight']['value']) && isset($product['weight']['units'])) ? $this->convertWeight($product['weight']['value'], strtolower($product['weight']['units'])) : 0;
                 $ltlCheck = $product_settings['freight_enabled'] ?? false;
 
-                $originAddress = $this->shipmentPkg->wweLTLOriginAddress($details, $product_settings, $details['destination']['zip'], $storeData, $this->connectionSettings);
 
+                $originAddress = $this->shipmentPkg->wweLTLOriginAddress($details, $product_settings, $details['destination']['zip'], $storeData, $this->connectionSettings);
                 $details['origin'][$product['product_id']] = $originAddress;
                 $details['items'][$product['product_id']] = [
                     'product_id' => $product['product_id'] ?? '',
                     'variant_id' => $product['variant_id'] ?? '',
                     'sku' => $product['sku'] ?? '',
-                    'piecesOfLineItem' => /*$product['quantity'] ?? ''*/
-                        2,
+                    'piecesOfLineItem' => $product['quantity'] ?? ''
+                    ,
                     'lineItemId' => $product['product_id'] ?? '',
                     'lineItemName' => $product['name'] ?? '',
                     'lineItemLength' => $product['length']['value'] ?? '',
                     'lineItemWidth' => $product['width']['value'] ?? '',
                     'lineItemHeight' => $product['height']['value'] ?? '',
-                    'lineItemWeight' => /*$weight*/
-                        80,
+                    'lineItemWeight' => $weight,
                     'freight_enabled' => isset($product_settings['freight_enabled']) && $product_settings['freight_enabled'] ? 'Y' : 'N',
                     'isHazmatLineItem' => isset($product_settings['hazardous_enabled']) && $product_settings['hazardous_enabled'] ? 'Y' : 'N',
                     'dropship_enabled' => isset($product_settings['dropship_enabled']) && $product_settings['dropship_enabled'] ? 'Y' : 'N',

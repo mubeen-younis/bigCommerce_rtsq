@@ -558,7 +558,7 @@ class CompileQuotes
      * @info: This function will compile all quotes according to the origin.
      * After getting from quotes almost all type of compilation happened in this function
      */
-    public function newGetQuotesResults($quotes, $connectionSettings, $allOrigins)
+    public function newGetQuotesResults($quotes, $connectionSettings, $allOrigins, $isHazmat)
     {
         if ($quotes == null) {
             return [];
@@ -567,10 +567,13 @@ class CompileQuotes
         foreach ($quotes as $key => $shipment) {
             switch ($key) {
                 case "wweLTL":
-                    $quotesRes = array_merge($quotesRes, $this->compileWweLtlQuotes($shipment, $connectionSettings, $allOrigins));
+                    $resp = $this->compileWweLtlQuotes($shipment, $connectionSettings, $allOrigins);
+                    if (!empty($resp)) {
+                        $quotesRes = array_merge($quotesRes, $resp);
+                    }
                     break;
                 case "wweSmall":
-                    $quotesRes = array_merge($quotesRes, $this->compileWweSmallQuotes($shipment, $connectionSettings, $allOrigins));
+                    $quotesRes = array_merge($quotesRes, $this->compileWweSmallQuotes($shipment, $connectionSettings, $allOrigins, $isHazmat));
                     break;
             }
         }
@@ -590,7 +593,7 @@ class CompileQuotes
         $this->isMultiShipment = is_countable($shipments) && count($shipments) > 1;
 
         foreach ($shipments as $origin => $quote) {
-            if (isset($quote->severity)) {
+            if (isset($quote['severity'])) {
                 return [];
             }
 
@@ -656,9 +659,11 @@ class CompileQuotes
         return $this->arrangeOwnFreight($allQuotes);
     }
 
-    public function compileWweSmallQuotes($shipments, $connectionSettings, $allOrigins)
+    public function compileWweSmallQuotes($shipments, $connectionSettings, $allOrigins, $isHazmat)
     {
+
         $this->quoteSettings = [];
+        $isHazmat = $isHazmat == "Y" ? true : false;
         $this->quoteSettings = $connectionSettings['small-package']['quote_settings'];
         $allConfigServices = $connectionSettings['small-package']['quote_settings']['carrier_services'] ?? [];
         // Removing Markup indexes from services
@@ -673,7 +678,7 @@ class CompileQuotes
         $originQuotes = [];
         $arraySorting = [];
         foreach ($shipments as $origin => $quote) {
-            if (isset($quote->severity)) {
+            if (isset($quote['severity'])) {
                 return [];
             }
 
@@ -693,11 +698,22 @@ class CompileQuotes
                             }
                         }
                     }
+                    //  CHecks FOr Only quote ground service if hazardous
+                    if ($isHazmat && $this->quoteSettings['ground_service_for_hazardous_material']) {
+                        if ($data['serviceType'] != "GND") {
+                            continue;
+                        }
+                    }
 
                     $access = '';
                     // Adding Markup in services if enabled
                     $price = $this->wweSmallQuoteRes->getServiceRate($data['totalNetCharge']['Amount'], $data['serviceType'], $this->quoteSettings);
-                    $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $data['serviceType'], $this->quoteSettings);
+                    // Checking hazmat and adding hazmat amounts in services
+                    if ($isHazmat) {
+                        $price = $this->wweSmallQuoteRes->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
+                    }
+
+                    $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'],$data['transitTime'] ,$data['serviceType'], $this->quoteSettings);
                     $arraySorting['simple'][$key] = $price;
                     $originQuotes[$key]['simple']['code'] = $data['serviceType'] . $access;
                     $originQuotes[$key]['simple']['rate'] = $price;
@@ -705,25 +721,8 @@ class CompileQuotes
                 }
             }
 
-            //Todo: function naming according to the functionality
-            /*      $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
-                  if ($compiledQuotes !== null) {
-                      if (count($compiledQuotes) > 1) {
-                          foreach ($compiledQuotes as $k => $service) {
-                              $allQuotes['simple'][] = $service['simple'];
-                              $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
-                          }
-                      } else {
-                          $service = reset($compiledQuotes);
-                          $allQuotes['simple'][] = $service['simple'] ?? '';
-                          $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
-                      }
-                  }
-                  if ($this->isMultiShipment) {
-                      $odwArr[$origin]['quotes'] = $compiledQuotes;
-                  }
-                  $count++;*/
         }
+
         $originQuotes = array_column(array_values($originQuotes), 'simple');
         return $originQuotes;
 

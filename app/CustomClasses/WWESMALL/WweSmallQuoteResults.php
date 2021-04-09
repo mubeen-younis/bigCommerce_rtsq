@@ -54,17 +54,48 @@ class WweSmallQuoteResults
 
     }
 
+    public function addHazmatAmountsInServices($amount, $serviceCode, $quoteSettings)
+    {
+        // Adding hazmat fee to Ground Service
+        if ($serviceCode == "GND") {
+            if (is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
+                $amount = $amount + $quoteSettings['ground_hazardous_material_fee'];
+            }
+            // Adding hazmat fee to Air Services
+        } else {
+            if (is_numeric($quoteSettings['air_hazardous_material_fee']) && !empty($quoteSettings['air_hazardous_material_fee'])) {
+                $amount = $amount + $quoteSettings['air_hazardous_material_fee'];
+            }
+        }
+        $amount = $this->addHandlingMarkupOfHazmat($amount, $quoteSettings['handling_fee_markup']);
+        return number_format($amount, 2);
+
+    }
+
+    public function addHandlingMarkupOfHazmat($amount, $markupValue)
+    {
+        if (strpbrk($markupValue, '%') !== FALSE) {
+            $amount = $this->getvalueFromPercent($amount, str_replace('%', '', $markupValue));
+        } else {
+            $amount = $amount + $markupValue;
+        }
+        return $amount;
+    }
+
     public function getvalueFromPercent($amount, $markupPercentage)
     {
 
         $markupValue = $markupPercentage / 100 * $amount;
-        $amountWithMarkup = $markupValue + $amount;
+        $amountWithMarkup = $amount + $markupValue;
         return $amountWithMarkup;
 
     }
 
-    public function getServiceTitle($title, $serviceCode, $quoteSettings)
+    public function getServiceTitle($title, $transitTime, $serviceCode, $quoteSettings)
     {
+        if ($quoteSettings['showDeliveryEstimate'] == true) {
+            $title = $title . ' (Delivery ' . $transitTime . ')';
+        }
         return $title;
 
     }

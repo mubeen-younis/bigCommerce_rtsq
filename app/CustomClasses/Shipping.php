@@ -61,10 +61,8 @@ class Shipping
 // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items']);
 
-      /*  echo json_encode($requestArr);die();*/
+        /*  echo json_encode($requestArr);die();*/
 
-
-        /* $requestArr['carriers']['wweLTL']['licenseKey'] = $requestArr['carriers']['wweLTL']['licenseKey']['license_key'];*/
         if (empty($requestArr)) {
             return false;
         }
@@ -81,7 +79,7 @@ class Shipping
             ];
             dd($printData);
         }
-        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin']);
+        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat);
         $resp = $this->setCarrierRates($finalQuotes);
         return $resp;
     }
