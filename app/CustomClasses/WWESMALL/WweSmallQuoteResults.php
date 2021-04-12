@@ -181,4 +181,5 @@ class WweSmallQuoteResults
                 return "";
         }
     }
+
 }

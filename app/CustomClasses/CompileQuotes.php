@@ -673,15 +673,18 @@ class CompileQuotes
             return [];
         }
         // dd($allConfigServices, $enabledServices, $shipments,$this->quoteSettings);
+
         $this->isMultiShipment = false;
         $this->isMultiShipment = count($shipments) > 1;
         $originQuotes = [];
-        $arraySorting = [];
+        $shipmentCount = 0;
+
         foreach ($shipments as $origin => $quote) {
             if (isset($quote['severity'])) {
                 return [];
             }
 
+            $lowestAmount = 0;
             if (isset($quote['q'])) {
                 foreach ($quote['q'] as $key => $data) {
                     // Check if service type is checked to show
@@ -713,16 +716,36 @@ class CompileQuotes
                         $price = $this->wweSmallQuoteRes->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
                     }
 
-                    $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'],$data['transitTime'] ,$data['serviceType'], $this->quoteSettings);
-                    $arraySorting['simple'][$key] = $price;
-                    $originQuotes[$key]['simple']['code'] = $data['serviceType'] . $access;
-                    $originQuotes[$key]['simple']['rate'] = $price;
-                    $originQuotes[$key]['simple']['title'] = $title;
+                    $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $data['transitTime'], $data['serviceType'], $this->quoteSettings);
+                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = $data['serviceType'] . $access;
+                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
+                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
                 }
             }
+            $shipmentCount++;
+        }
+        
+        // Check for mukti shipment finding lowest price in each shipment and adding them for multi shipment
+        if ($this->isMultiShipment) {
+            $originQuotesMulti = [];
+            $multiShipPrice = 0;
+            foreach ($originQuotes as $shipmentKey => $shipment) {
+                $netChargeArray = array_column($shipment['shipment'], 'simple');
+                $minValueFromNetChargeArr = min(array_column($netChargeArray, 'rate'));
+                $multiShipPrice += $minValueFromNetChargeArr;
+                $originQuotesMulti[0]['simple']['code'] = 'Multi';
+                $originQuotesMulti[0]['simple']['rate'] = number_format($multiShipPrice, 2);
+                $originQuotesMulti[0]['simple']['title'] = 'Shipping';
 
+            }
+            if (!empty($originQuotesMulti)) {
+                return array_column(array_values($originQuotesMulti), 'simple');
+            }
+            return [];
         }
 
+        $originQuotes = array_column(array_values($originQuotes), 'shipment');
+        $originQuotes = reset($originQuotes);
         $originQuotes = array_column(array_values($originQuotes), 'simple');
         return $originQuotes;
 
