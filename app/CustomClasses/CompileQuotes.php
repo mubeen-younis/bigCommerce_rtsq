@@ -724,7 +724,6 @@ class CompileQuotes
             }
             $shipmentCount++;
         }
-        
         // Check for mukti shipment finding lowest price in each shipment and adding them for multi shipment
         if ($this->isMultiShipment) {
             $originQuotesMulti = [];
@@ -733,17 +732,14 @@ class CompileQuotes
                 $netChargeArray = array_column($shipment['shipment'], 'simple');
                 $minValueFromNetChargeArr = min(array_column($netChargeArray, 'rate'));
                 $multiShipPrice += $minValueFromNetChargeArr;
-                $originQuotesMulti[0]['simple']['code'] = 'Multi';
-                $originQuotesMulti[0]['simple']['rate'] = number_format($multiShipPrice, 2);
-                $originQuotesMulti[0]['simple']['title'] = 'Shipping';
+                $originQuotesMulti[0]['code'] = 'Multi';
+                $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
+                $originQuotesMulti[0]['title'] = 'Shipping';
 
             }
-            if (!empty($originQuotesMulti)) {
-                return array_column(array_values($originQuotesMulti), 'simple');
-            }
-            return [];
+            return $originQuotesMulti;
         }
-
+        // Doing For SIngle Shipment
         $originQuotes = array_column(array_values($originQuotes), 'shipment');
         $originQuotes = reset($originQuotes);
         $originQuotes = array_column(array_values($originQuotes), 'simple');
