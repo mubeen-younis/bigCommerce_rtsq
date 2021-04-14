@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\CurlRequest;
-use App\Models\Connection;
-use Illuminate\Http\Request;
 use App\Models\AddonSettings;
+use App\Models\Connection;
 use App\Models\InstalledCarrier;
+use Illuminate\Http\Request;
 
 class RADController extends Controller
 {
@@ -40,7 +40,14 @@ class RADController extends Controller
 
     public function changePlan(Request $request)
     {
-        $data = $this->runRADAction($request, 'c');
+        if (!$request->selected_plan || empty($request->selected_plan)) {
+            return response()->json([
+                'error' => false,
+                'message' => 'No plan is selected',
+            ], 200);
+        }
+
+        $data = $this->runRADAction($request, $request->selected_plan == 'disable' ? 'd' : 'c');
 
         if ($data['error']) {
             $response = $data['response'];
@@ -48,6 +55,7 @@ class RADController extends Controller
             $response = [
                 'data' => $data['response'] ?? [],
                 'error' => false,
+                'message' => 'Your plan has been changed successfully.',
             ];
         }
 
@@ -146,7 +154,7 @@ class RADController extends Controller
                         'platform' => 'bigcommerce',
                         'request_key' => 'fowpejopeojpwefwekashdkasd',
                         'action' => $action,
-                        'package' => '',
+                        'package' => !$request->selected_plan || $request->selected_plan == 'disable' ? '' : $request->selected_plan,
                         'licenseKey' => $settings->license_key,
                         'serverName' => $request->store_name,
                     ];
