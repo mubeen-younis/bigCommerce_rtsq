@@ -69,6 +69,7 @@ class Shipping
         $url = Constant::QUOTES_URL;
 
         $quotes = $this->sendCurlRequest($url, $requestArr);
+
         // Debug point will print data if en_print_query=1
         if (isset($_GET['DEBUG_ON'])) {
             $printData = [
@@ -79,6 +80,7 @@ class Shipping
             ];
             dd($printData);
         }
+        //dd($requestArr,$quotes);
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat);
         $resp = $this->setCarrierRates($finalQuotes);
         return $resp;

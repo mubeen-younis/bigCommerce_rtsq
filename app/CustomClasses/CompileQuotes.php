@@ -594,6 +594,9 @@ class CompileQuotes
 
         foreach ($shipments as $origin => $quote) {
             if (isset($quote['severity'])) {
+                if (isset($quote['dismissedProduct'])) {
+                    continue;
+                }
                 return [];
             }
 
@@ -681,6 +684,9 @@ class CompileQuotes
 
         foreach ($shipments as $origin => $quote) {
             if (isset($quote['severity'])) {
+                if (isset($quote['dismissedProduct'])) {
+                    continue;
+                }
                 return [];
             }
 

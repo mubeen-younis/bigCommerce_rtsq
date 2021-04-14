@@ -41,7 +41,7 @@ class GetRatesController extends Controller
 
     public function returnRates(Request $request)
     {
-
+        /*Log::info('I am from Webhook ' . json_encode($request->all()));*/
         $storeHash = $request->base_options['store_id'] ?? null;
         $storeData = $this->getStoreData($storeHash);
 
@@ -80,7 +80,7 @@ class GetRatesController extends Controller
         if (!empty(array_filter($quotes))) {
             $resp['quote_id'] = "2";// need to change
             $resp['messages'] = [];// need to change
-            $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'Worldwide Express', 'display_name' => 'Worldwide Express']];
+            $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'usps_pitney_bowes', 'display_name' => $quotes[0]['title'] ?? '']];
             // dd($quotes);
             foreach ($quotes as $key => $quote) {
                 $resp['carrier_quotes'][0]['quotes'][$key] = [
@@ -167,6 +167,8 @@ class GetRatesController extends Controller
 
 
                 $originAddress = $this->shipmentPkg->wweLTLOriginAddress($details, $product_settings, $details['destination']['zip'], $storeData, $this->connectionSettings);
+
+
                 $details['origin'][$product['product_id']] = $originAddress;
                 $details['items'][$product['product_id']] = [
                     'product_id' => $product['product_id'] ?? '',

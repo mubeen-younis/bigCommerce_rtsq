@@ -139,6 +139,7 @@ class WweLTLShipmentPackage
         $planInfo = $this->getPlanNumberFromInstalledCarriers($this->storeData['installed_carriers']);
         $planNumber = $planInfo['pkg'] ?? 1;
         $planLicenseKey = $planInfo['license_key'] ?? '';
+        //$planNumber=1;
         // $planNumber = $this->dataHelper->planInfo()['planNumber'];
         if (!empty($warehouseList)) {
 
@@ -148,6 +149,8 @@ class WweLTLShipmentPackage
             } elseif (count($warehouseList) > 1 && ($planNumber == 0 || $planNumber == 1)) {
                 return $this->wweLTLOriginArray($warehouseList[0], $receiverZipCode, $planNumber);
             }
+
+
             $response = (object)$this->wweLTLAddress($warehouseList, $planLicenseKey);
 
             if (!empty($response)) {
@@ -313,6 +316,7 @@ class WweLTLShipmentPackage
                 $res = json_decode(file_get_contents($end_point), true);
                 if (isset($res['pakg_group'])) {
                     $plansArray[$licenseKey] = $res['pakg_group'];
+                    //kkdkdd=3;
                 }
             }
             if (in_array(3, $plansArray)) {
