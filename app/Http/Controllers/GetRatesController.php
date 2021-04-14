@@ -80,7 +80,7 @@ class GetRatesController extends Controller
         if (!empty(array_filter($quotes))) {
             $resp['quote_id'] = "2";// need to change
             $resp['messages'] = [];// need to change
-            $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'usps_pitney_bowes', 'display_name' => $quotes[0]['title'] ?? '']];
+            $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'Worldwide Express', 'display_name' => 'Worldwide Express']];
             // dd($quotes);
             foreach ($quotes as $key => $quote) {
                 $resp['carrier_quotes'][0]['quotes'][$key] = [
@@ -161,7 +161,7 @@ class GetRatesController extends Controller
                 $product_settings = $this->getProductSetting($product['product_id'], $product['variant_id']);
 
                 $weight = (isset($product['weight']['value']) && isset($product['weight']['units'])) ? $this->convertWeight($product['weight']['value'], strtolower($product['weight']['units'])) : 0;
-               // $weight=148;
+                // $weight=148;
 
                 $ltlCheck = $product_settings['freight_enabled'] ?? false;
 

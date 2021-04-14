@@ -134,7 +134,8 @@ class WweLTLShipmentPackage
      */
     public function multiWarehouse($warehouseList, $receiverZipCode)
     {
-        //Todo: we need to get plans from DB
+        // Here we are getting plans f carriers and seeing if any of carrier has standard or advance plan
+        // if they have and origin address is more then 1 then we are firing multiwarehouse request
         $planInfo = $this->getPlanNumberFromInstalledCarriers($this->storeData['installed_carriers']);
         $planNumber = $planInfo['pkg'] ?? 1;
         $planLicenseKey = $planInfo['license_key'] ?? '';
