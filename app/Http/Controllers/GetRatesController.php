@@ -161,6 +161,8 @@ class GetRatesController extends Controller
                 $product_settings = $this->getProductSetting($product['product_id'], $product['variant_id']);
 
                 $weight = (isset($product['weight']['value']) && isset($product['weight']['units'])) ? $this->convertWeight($product['weight']['value'], strtolower($product['weight']['units'])) : 0;
+               // $weight=148;
+
                 $ltlCheck = $product_settings['freight_enabled'] ?? false;
 
 
@@ -183,8 +185,8 @@ class GetRatesController extends Controller
                     'dropship_enabled' => isset($product_settings['dropship_enabled']) && $product_settings['dropship_enabled'] ? 'Y' : 'N',
                     'dropship' => $product_settings['dropship'] ?? '',
                     'product_insurance_active' => isset($product_settings['insurance']) && $product_settings['insurance'] ? 'Y' : 'N',
-                    'freightClass' => $this->isLTL($weight, $ltlCheck) ? $this->isLTL($weight, $ltlCheck) : 'ltl', //ltl for testing
-                    'freightClass' => '',
+                    'freightClass' => $this->isLTL($weight, $ltlCheck) ? 'ltl' : '', //ltl for testing
+                    //'freightClass' => '',
                     'lineItemClass' => isset($product_settings['freight_class']) ? $this->getLineItemClass($product_settings['freight_class']) : '',
                 ];
             }
@@ -202,9 +204,9 @@ class GetRatesController extends Controller
     {
         //$weightConfigExceedOpt = $this->quoteSettings[''];
         if ($ltlCheck || ($weight > 150)) { // && $weightConfigExceedOpt
-            $freightClass = 'ltl';
+            $freightClass = true;
         } else {
-            $freightClass = '';
+            $freightClass = false;
         }
 
         return $freightClass;
