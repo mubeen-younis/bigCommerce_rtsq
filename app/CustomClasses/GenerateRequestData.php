@@ -125,11 +125,11 @@ class GenerateRequestData
         $receiverAddress = $this->getReceiverData($request);
 
         $autoResidential = $liftGateWithAuto = '0';
-        if (isset($this->storeData['installed_addons']['RAD']) && $this->storeData['installed_addons']['RAD']) {
+        $isRAD = isset($this->storeData['installed_addons']) && $this->storeData['installed_addons'][0]->is_enabled == 1 && $this->storeData['installed_addons'][0]->is_suspend == 0;
+        if ($isRAD) {
             $autoResidential = '1';
             $liftGateWithAuto = '1';
         }
-
         return [
             'apiVersion' => '2.0',
             'platform' => 'bigcommerce',
