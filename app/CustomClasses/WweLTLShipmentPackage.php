@@ -87,23 +87,36 @@ class WweLTLShipmentPackage
         $this->storeData = $storeData;
         $this->connectionSettings = $connectionSettings;
         $whQuery = LocationsController::getAllLocations($storeData['store']->id, 1);
+
         $dropship_enabled = $_product['dropship_enabled'] ?? false;
+
         if ($dropship_enabled) {
             $dropShipID = $_product['dropship_location'];
             $originList = LocationsController::getLocationById($dropShipID);
-            $origin[] = (!$originList) ? $whQuery : $originList;
+            //dd($whQuery, $dropShipID, $originList);
+            if (empty($originList)) {
+                $origin = $whQuery;
+            } else {
+                $origin[] = $originList;
+            }
         } else {
             $origin = $whQuery;
         }
         $originLocal = [];
 
-        foreach($origin as $key => $ori){
+        foreach ($origin as $key => $ori) {
+            /*   echo '<pre>';
+               print_r($ori);
+               echo '</pre>';
+               die();*/
             $originLoca[$key]['warehouse_id'] = $ori->id ?? '';
+
             $originLoca[$key]['city'] = $ori->city ?? '';
             $originLoca[$key]['state'] = $ori->state ?? '';
             $originLoca[$key]['zip'] = $ori->zip_code ?? '';
             $originLoca[$key]['country'] = $ori->country ?? '';
         }
+
         $origin = $originLoca;
         if ($origin !== null && count($origin)) {
             return $this->multiWarehouse($origin, $receiverZipCode);
@@ -131,7 +144,7 @@ class WweLTLShipmentPackage
                 return $this->wweLTLOriginArray($warehouseList[0], $receiverZipCode, $planNumber);
             }
 
-            $response = (object) $this->wweLTLAddress($warehouseList);
+            $response = (object)$this->wweLTLAddress($warehouseList);
 
             if (!empty($response)) {
                 $originWithMinDist = (isset($response->origin_with_min_dist) && !empty($response->origin_with_min_dist)) ? (array)$response->origin_with_min_dist : [];
@@ -179,7 +192,7 @@ class WweLTLShipmentPackage
      */
     public function wweLTLAddress($originAddress)
     {
-        Log::info('connection'.json_encode($this->connectionSettings));
+        Log::info('connection' . json_encode($this->connectionSettings));
         $originAddress = $this->changeWarehouseIdKey($originAddress);
         $post = [
             'acessLevel' => 'MultiDistance',

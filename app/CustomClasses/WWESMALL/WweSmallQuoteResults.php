@@ -1,0 +1,185 @@
+<?php
+
+
+namespace App\CustomClasses\WWESMALL;
+
+
+use App\Constants\Constant;
+
+class WweSmallQuoteResults
+{
+
+    public function filterWweSmallServicesFromMarkup($services)
+    {
+        if (!empty($services)) {
+            $allowed = Constant::WWE_SMALL_SERVICES;
+            $filtered = array_filter(
+                $services,
+                function ($key) use ($allowed) {
+                    return in_array($key, $allowed);
+                },
+                ARRAY_FILTER_USE_KEY
+            );
+            return $filtered;
+        }
+        return $services;
+    }
+
+    public function getEnabledServicesCodes($services)
+    {
+        $enabledServices = [];;
+        if (!empty($services)) {
+            foreach ($services as $key => $service) {
+                if ($service) {
+                    $enabledServices[] = $this->serviceCodeOfWweSmallService($key);
+                }
+            }
+        }
+        return array_flip($enabledServices);
+    }
+
+    public function getServiceRate($amount, $serviceCode, $quoteSettings)
+    {
+        $markupIndex = $this->getMarkupIndexFromServiceCode($serviceCode);
+        $markupValue = $quoteSettings['carrier_services'][$markupIndex] ?? '';
+        if (empty($markupValue) || !is_numeric(str_replace('%', '', $markupValue))) {
+            return $amount;
+        }
+        if (strpbrk($markupValue, '%') !== FALSE) {
+            $amount = $this->getvalueFromPercent($amount, str_replace('%', '', $markupValue));
+        } else {
+            $amount = $amount + $markupValue;
+        }
+        return number_format($amount, 2);
+
+    }
+
+    public function addHazmatAmountsInServices($amount, $serviceCode, $quoteSettings)
+    {
+        // Adding hazmat fee to Ground Service
+        if ($serviceCode == "GND") {
+            if (is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
+                $amount = $amount + $quoteSettings['ground_hazardous_material_fee'];
+            }
+            // Adding hazmat fee to Air Services
+        } else {
+            if (is_numeric($quoteSettings['air_hazardous_material_fee']) && !empty($quoteSettings['air_hazardous_material_fee'])) {
+                $amount = $amount + $quoteSettings['air_hazardous_material_fee'];
+            }
+        }
+        $amount = $this->addHandlingMarkupOfHazmat($amount, $quoteSettings['handling_fee_markup']);
+        return number_format($amount, 2);
+
+    }
+
+    public function addHandlingMarkupOfHazmat($amount, $markupValue)
+    {
+        if (strpbrk($markupValue, '%') !== FALSE) {
+            $amount = $this->getvalueFromPercent($amount, str_replace('%', '', $markupValue));
+        } else {
+            $amount = $amount + $markupValue;
+        }
+        return $amount;
+    }
+
+    public function getvalueFromPercent($amount, $markupPercentage)
+    {
+
+        $markupValue = $markupPercentage / 100 * $amount;
+        $amountWithMarkup = $amount + $markupValue;
+        return $amountWithMarkup;
+
+    }
+
+    public function getServiceTitle($title, $transitTime, $serviceCode, $quoteSettings)
+    {
+        if ($quoteSettings['showDeliveryEstimate'] == true) {
+            $title = $title . ' (Delivery ' . $transitTime . ')';
+        }
+        return $title;
+
+    }
+
+    public function serviceCodeOfWweSmallService($service)
+    {
+        switch ($service) {
+            case "ups_ground":
+                return "GND";
+                break;
+            case "ups_3_day_select":
+                return "3DS";
+                break;
+            case "ups_2nd_day_air":
+                return "2DA";
+                break;
+            case "ups_2nd_day_air_am":
+                return "2DM";
+                break;
+            case "ups_2nd_day_air_saver":
+                return "2DAS";
+                break;
+            case "ups_next_day_air":
+                return "1DA";
+                break;
+            case "ups_next_day_air_saver":
+                return "1DP";
+                break;
+            case "ups_next_day_air_early":
+                return "1DM";
+                break;
+            default:
+                return "";
+        }
+    }
+
+    public function checkGroundTransit($quote, $quoteSettings)
+    {
+        // Check limited to carrier transit days
+        if ($quoteSettings['ground_metric'] == 1) {
+            //  2>3
+            if ($quote['TransitTimeInDays'] > $quoteSettings['number_of_transit_days']) {
+                return true;
+            }
+            // Check by calendar days
+        } else {
+            if ($quote['CalenderDaysInTransit'] > $quoteSettings['number_of_transit_days']) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public
+    function getMarkupIndexFromServiceCode($serviceCode)
+    {
+        switch ($serviceCode) {
+            case "GND":
+                return "ups_ground_markup";
+                break;
+            case "3DS":
+                return "ups_3_day_select_markup";
+                break;
+            case "2DA":
+                return "ups_2nd_day_air_markup";
+                break;
+            case "2DM":
+                return "ups_2nd_day_air_am_markup";
+                break;
+            case "2DAS":
+                return "ups_2nd_day_air_saver_markup";
+                break;
+            case "1DA":
+                return "ups_next_day_air_markup";
+                break;
+            case "1DP":
+                return "ups_next_day_air_saver_markup";
+                break;
+            case "1DM":
+                return "ups_next_day_air_early_markup";
+                break;
+            default:
+                return "";
+        }
+    }
+
+}

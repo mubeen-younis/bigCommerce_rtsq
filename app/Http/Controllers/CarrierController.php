@@ -248,7 +248,7 @@ class CarrierController extends Controller
         if ($license_key && $store) {
             $quesry = array(
                 'platform' => '',
-                'carrier' => '1', // required wwltl -> 1
+                'carrier' => $this->getCarrierForPlanInfoRequest($request->carrierId), // required wwltl -> 1, wweSmall -> 2
                 'store_url' => $store->url, // required store url
                 'license_key' => $license_key, //required license key
                 'webhook_url' => '',
@@ -289,5 +289,26 @@ class CarrierController extends Controller
             ], 200);
         }
 
+    }
+
+    public function getCarrierForPlanInfoRequest($installedCarrierId){
+        $slug = InstalledCarrier::where('installed_carriers.id', $installedCarrierId)
+            ->join('carriers', 'carriers.id', '=', 'installed_carriers.carrier_id')
+            ->select('carriers.slug')->first();
+        if(!isset($slug->slug)) {
+            return 0;
+        }
+        $slug = $slug->slug;
+        switch ($slug){
+            case 'ltl-quotes':
+                return 1;
+                break;
+            case 'small-package':
+                return 2;
+                break;
+            default:
+                return 0;
+                break;
+        }
     }
 }

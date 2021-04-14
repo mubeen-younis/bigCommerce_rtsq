@@ -3,6 +3,7 @@
 namespace App\CustomClasses;
 
 use App\Constants\Constant;
+use App\CustomClasses\WWESMALL\WweSmallQuoteResults;
 
 class CompileQuotes
 {
@@ -85,6 +86,7 @@ class CompileQuotes
     public function __construct()
     {
 
+        $this->wweSmallQuoteRes = new WweSmallQuoteResults();
     }
 
     /**
@@ -556,7 +558,7 @@ class CompileQuotes
      * @info: This function will compile all quotes according to the origin.
      * After getting from quotes almost all type of compilation happened in this function
      */
-    public function newGetQuotesResults($quotes, $connectionSettings, $allOrigins)
+    public function newGetQuotesResults($quotes, $connectionSettings, $allOrigins, $isHazmat)
     {
         if ($quotes == null) {
             return [];
@@ -565,10 +567,13 @@ class CompileQuotes
         foreach ($quotes as $key => $shipment) {
             switch ($key) {
                 case "wweLTL":
-                    $quotesRes = array_merge($quotesRes, $this->compileWweLtlQuotes($shipment, $connectionSettings, $allOrigins));
+                    $resp = $this->compileWweLtlQuotes($shipment, $connectionSettings, $allOrigins);
+                    if (!empty($resp)) {
+                        $quotesRes = array_merge($quotesRes, $resp);
+                    }
                     break;
                 case "wweSmall":
-                    $quotesRes = array_merge($quotesRes, $this->compileWweSmallQuotes($shipment, $connectionSettings, $allOrigins));
+                    $quotesRes = array_merge($quotesRes, $this->compileWweSmallQuotes($shipment, $connectionSettings, $allOrigins, $isHazmat));
                     break;
             }
         }
@@ -588,7 +593,7 @@ class CompileQuotes
         $this->isMultiShipment = is_countable($shipments) && count($shipments) > 1;
 
         foreach ($shipments as $origin => $quote) {
-            if (isset($quote->severity)) {
+            if (isset($quote['severity'])) {
                 return [];
             }
 
@@ -654,77 +659,94 @@ class CompileQuotes
         return $this->arrangeOwnFreight($allQuotes);
     }
 
-    public function compileWweSmallQuotes($shipments, $connectionSettings, $allOrigins)
+    public function compileWweSmallQuotes($shipments, $connectionSettings, $allOrigins, $isHazmat)
     {
+
+        $this->quoteSettings = [];
+        $isHazmat = $isHazmat == "Y" ? true : false;
         $this->quoteSettings = $connectionSettings['small-package']['quote_settings'];
         $allConfigServices = $connectionSettings['small-package']['quote_settings']['carrier_services'] ?? [];
         // Removing Markup indexes from services
-        $allConfigServices = $this->filterWweSmallServicesFromMarkup($allConfigServices);
+        $allConfigServices = $this->wweSmallQuoteRes->filterWweSmallServicesFromMarkup($allConfigServices);
+        $enabledServices = $this->wweSmallQuoteRes->getEnabledServicesCodes($allConfigServices);
+        if (empty($enabledServices)) {
+            return [];
+        }
+        // dd($allConfigServices, $enabledServices, $shipments,$this->quoteSettings);
+
         $this->isMultiShipment = false;
         $this->isMultiShipment = count($shipments) > 1;
         $originQuotes = [];
-        $arraySorting = [];
+        $shipmentCount = 0;
+
         foreach ($shipments as $origin => $quote) {
-            if (isset($quote->severity)) {
+            if (isset($quote['severity'])) {
                 return [];
             }
 
+            $lowestAmount = 0;
             if (isset($quote['q'])) {
                 foreach ($quote['q'] as $key => $data) {
-                    //TODO: Here We have to dynamically show services, set small titles dynamically and service codes as well
-
-                    // if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices)) {
+                    // Check if service type is checked to show
+                    if (!isset($enabledServices[$data['serviceType']])) {
+                        continue;
+                    }
+                    //  CHeck FOr Ups ground transit days
+                    if ($data['serviceType'] == "GND") {
+                        // TODO: ALso We have to check plan here
+                        if ($this->quoteSettings['number_of_transit_days'] != null && $this->quoteSettings['ground_metric'] != null) {
+                            $islimited = $this->wweSmallQuoteRes->checkGroundTransit($data, $this->quoteSettings);
+                            if ($islimited) {
+                                continue;
+                            }
+                        }
+                    }
+                    //  CHecks FOr Only quote ground service if hazardous
+                    if ($isHazmat && $this->quoteSettings['ground_service_for_hazardous_material']) {
+                        if ($data['serviceType'] != "GND") {
+                            continue;
+                        }
+                    }
 
                     $access = '';
-                    $price = (float)$data['totalNetCharge']['Amount'];
-                    $title = $data['serviceDesc'];
-                    $arraySorting['simple'][$key] = $price;
-                    $originQuotes[$key]['simple']['code'] = $data['serviceType'] . $access;
-                    $originQuotes[$key]['simple']['rate'] = $price;
-                    $originQuotes[$key]['simple']['title'] = $title;
-                    //  }
+                    // Adding Markup in services if enabled
+                    $price = $this->wweSmallQuoteRes->getServiceRate($data['totalNetCharge']['Amount'], $data['serviceType'], $this->quoteSettings);
+                    // Checking hazmat and adding hazmat amounts in services
+                    if ($isHazmat) {
+                        $price = $this->wweSmallQuoteRes->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
+                    }
+
+                    $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $data['transitTime'], $data['serviceType'], $this->quoteSettings);
+                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = $data['serviceType'] . $access;
+                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
+                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
                 }
             }
-
-            //Todo: function naming according to the functionality
-            /*      $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
-                  if ($compiledQuotes !== null) {
-                      if (count($compiledQuotes) > 1) {
-                          foreach ($compiledQuotes as $k => $service) {
-                              $allQuotes['simple'][] = $service['simple'];
-                              $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
-                          }
-                      } else {
-                          $service = reset($compiledQuotes);
-                          $allQuotes['simple'][] = $service['simple'] ?? '';
-                          $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
-                      }
-                  }
-                  if ($this->isMultiShipment) {
-                      $odwArr[$origin]['quotes'] = $compiledQuotes;
-                  }
-                  $count++;*/
+            $shipmentCount++;
         }
-        $originQuotes= array_column($originQuotes, 'simple');
+        // Check for mukti shipment finding lowest price in each shipment and adding them for multi shipment
+        if ($this->isMultiShipment) {
+            $originQuotesMulti = [];
+            $multiShipPrice = 0;
+            foreach ($originQuotes as $shipmentKey => $shipment) {
+                $netChargeArray = array_column($shipment['shipment'], 'simple');
+                $minValueFromNetChargeArr = min(array_column($netChargeArray, 'rate'));
+                $multiShipPrice += $minValueFromNetChargeArr;
+                $originQuotesMulti[0]['code'] = 'Multi';
+                $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
+                $originQuotesMulti[0]['title'] = 'Shipping';
+
+            }
+            return $originQuotesMulti;
+        }
+        // Doing For SIngle Shipment
+        $originQuotes = array_column(array_values($originQuotes), 'shipment');
+        $originQuotes = reset($originQuotes);
+        $originQuotes = array_column(array_values($originQuotes), 'simple');
         return $originQuotes;
 
     }
 
-    public function filterWweSmallServicesFromMarkup($services)
-    {
-        if (!empty($services)) {
-            $allowed = Constant::WWE_SMALL_SERVICES;
-            $filtered = array_filter(
-                $services,
-                function ($key) use ($allowed) {
-                    return in_array($key, $allowed);
-                },
-                ARRAY_FILTER_USE_KEY
-            );
-            return $filtered;
-        }
-        return $services;
-    }
 
     public function getQuotesResults($quotes, $quoteSettings, $allOrigins)
     {
@@ -1024,11 +1046,14 @@ class CompileQuotes
      */
     public function getTitle($serviceName, $lgOption = false, $from = false, $deliveryEstimate = '')
     {
+        // Here  Making service title
         $serviceTitle = $this->customLabel($serviceName);
         if ($this->isMultiShipment && $from == false) {
             return $serviceTitle;
         }
+        // Here  Making Delivery estimate title
         $deliveryEstimateLabel = (!empty($deliveryEstimate) && $this->quoteSettings['showDeliveryEstimate']) ? ' (Estimated transit time of ' . $deliveryEstimate . ' business days)' : '';
+        // Here  Making Access title
         $accessTitle = '';
         if ($lgOption === true || $this->quoteSettings['autoDetectedResidentialAddressesLfg']) {
             if ($lgOption && $this->quoteSettings['alwaysLiftGateDelivery'] == '0') {

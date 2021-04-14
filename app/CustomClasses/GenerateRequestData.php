@@ -72,8 +72,8 @@ class GenerateRequestData
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
-           // 'returnQuotesOnExceedWeight' => $connSettings['quote_settings']['weightExeeds'],
-             'returnQuotesOnExceedWeight' => 1,
+            // 'returnQuotesOnExceedWeight' => $connSettings['quote_settings']['weightExeeds'],
+            'returnQuotesOnExceedWeight' => 1,
 
             'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'],
             'api' => $this->getApiInfoArrWweLtl($connSettings),
@@ -125,11 +125,11 @@ class GenerateRequestData
         $receiverAddress = $this->getReceiverData($request);
 
         $autoResidential = $liftGateWithAuto = '0';
-        if (isset($this->storeData['installed_addons']['RAD']) && $this->storeData['installed_addons']['RAD']) {
+        $isRAD = isset($this->storeData['installed_addons']) && $this->storeData['installed_addons'][0]->is_enabled == 1 && $this->storeData['installed_addons'][0]->is_suspend == 0;
+        if ($isRAD) {
             $autoResidential = '1';
             $liftGateWithAuto = '1';
         }
-
         return [
             'apiVersion' => '2.0',
             'platform' => 'bigcommerce',
@@ -196,8 +196,8 @@ class GenerateRequestData
 
     public function getApiInfoArrWweSmall($connSettings)
     {
+        //dd($connSettings);
         //Todo: need to review this function
-
         if (isset($this->storeData['installed_addons']['RAD']) && $this->storeData['installed_addons']['RAD']) {
             $residential = 'N';
         } else {
@@ -213,7 +213,6 @@ class GenerateRequestData
             'prefferedCurrency' => 'USD',
             'includeDeclaredValue' => "1"
         ];
-
         //Todo: need to review this functionality
         /*
          * $shipperRelation = $this->getConfigData('shipperRelation');
