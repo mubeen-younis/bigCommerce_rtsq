@@ -4,6 +4,9 @@ namespace App\CustomClasses;
 
 use App\Constants\Constant;
 use App\Http\Controllers\LocationsController;
+use App\Models\Connection;
+use App\Models\InstalledCarrier;
+use App\Models\Store;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -52,11 +55,10 @@ class WweLTLShipmentPackage
      * @param $productLoader
      * @param $httpRequest
      */
-    public function _init(
-        $scopeConfig,
-        $dataHelper,
-        $productLoader,
-        $httpRequest
+    public function _init($scopeConfig,
+                          $dataHelper,
+                          $productLoader,
+                          $httpRequest
     )
     {
         $this->scopeConfig = $scopeConfig;
@@ -102,7 +104,7 @@ class WweLTLShipmentPackage
         } else {
             $origin = $whQuery;
         }
-        $originLocal = [];
+        $originLoca = [];
 
         foreach ($origin as $key => $ori) {
             /*   echo '<pre>';
@@ -133,8 +135,10 @@ class WweLTLShipmentPackage
     public function multiWarehouse($warehouseList, $receiverZipCode)
     {
         //Todo: we need to get plans from DB
-        $planNumber = 1;
-        //$planNumber = $this->dataHelper->planInfo()['planNumber'];
+        $planInfo = $this->getPlanNumberFromInstalledCarriers($this->storeData['installed_carriers']);
+        $planNumber = $planInfo['pkg'] ?? 1;
+        $planLicenseKey = $planInfo['license_key'] ?? '';
+        // $planNumber = $this->dataHelper->planInfo()['planNumber'];
         if (!empty($warehouseList)) {
 
             if (count($warehouseList) == 1) {
@@ -143,8 +147,7 @@ class WweLTLShipmentPackage
             } elseif (count($warehouseList) > 1 && ($planNumber == 0 || $planNumber == 1)) {
                 return $this->wweLTLOriginArray($warehouseList[0], $receiverZipCode, $planNumber);
             }
-
-            $response = (object)$this->wweLTLAddress($warehouseList);
+            $response = (object)$this->wweLTLAddress($warehouseList, $planLicenseKey);
 
             if (!empty($response)) {
                 $originWithMinDist = (isset($response->origin_with_min_dist) && !empty($response->origin_with_min_dist)) ? (array)$response->origin_with_min_dist : [];
@@ -190,14 +193,14 @@ class WweLTLShipmentPackage
      * @param $originAddress
      * @return array
      */
-    public function wweLTLAddress($originAddress)
+    public function wweLTLAddress($originAddress, $planLicenseKey)
     {
-        Log::info('connection' . json_encode($this->connectionSettings));
+
         $originAddress = $this->changeWarehouseIdKey($originAddress);
         $post = [
             'acessLevel' => 'MultiDistance',
             'address' => $originAddress,
-            'originAddresses' => (isset($originAddress)) ? $originAddress : "",
+            'originAddresses' => $originAddress,
             'destinationAddress' => [
                 'city' => $this->request['destination']['city'],
                 'state' => $this->request['destination']['state'],
@@ -205,7 +208,7 @@ class WweLTLShipmentPackage
                 'country' => $this->request['destination']['country']
             ],
             'ServerName' => $this->storeData['store']->name,
-            'eniureLicenceKey' => $this->connectionSettings['WweLtl']['license_key'],
+            'eniureLicenceKey' => $planLicenseKey,
         ];
         $shipping = new Shipping();
         $url = Constant::GOOGLE_URL;
@@ -280,5 +283,74 @@ class WweLTLShipmentPackage
         $receiverZipCode = preg_replace('/\s+/', '', $receiverZipCode);
         $originZipCodes = preg_replace('/\s+/', '', $originZipCodes);
         return in_array($receiverZipCode, explode(',', $originZipCodes)) ? 1 : 0;
+    }
+
+    public function getPlanNumberFromInstalledCarriers($installedCarriers)
+    {
+        $plansArray = [];
+        if (!empty($installedCarriers)) {
+            foreach ($installedCarriers as $c1) {
+                $connectionSettings = Connection::where('installed_carrier_id', $c1->id)->first();
+                if ($connectionSettings === null) {
+                    continue;
+                }
+                $connectionSettings = json_decode($connectionSettings->value);
+                $licenseKey = $connectionSettings->license_key;
+                $store = Store::find($c1->store_id);
+
+                $query = array(
+                    'platform' => '',
+                    'carrier' => $this->getCarrierForPlanInfoRequest($c1->id), // required wwltl -> 1, wweSmall -> 2
+                    'store_url' => $store->url, // required store url
+                    'license_key' => $licenseKey, //required license key
+                    'webhook_url' => '',
+                    'plugin_version' => '',
+                );
+
+                $query = http_build_query($query);
+                $end_point = Constant::PLAN_URL . '?' . $query;
+                $res = json_decode(file_get_contents($end_point), true);
+                if (isset($res['pakg_group'])) {
+                    $plansArray[$licenseKey] = $res['pakg_group'];
+                }
+            }
+            if (in_array(3, $plansArray)) {
+                $plansArray = array_flip($plansArray);
+                return ['license_key' => $plansArray[3],
+                    'pkg' => 3];
+            }
+            if (in_array(2, $plansArray)) {
+                $plansArray = array_flip($plansArray);
+                return ['license_key' => $plansArray[2],
+                    'pkg' => 2];
+            }
+            return ['licenseKey' => '',
+                'pkg' => 0];
+        }
+        return ['licenseKey' => '',
+            'pkg' => 0];
+
+    }
+
+    public function getCarrierForPlanInfoRequest($installedCarrierId)
+    {
+        $slug = InstalledCarrier::where('installed_carriers.id', $installedCarrierId)
+            ->join('carriers', 'carriers.id', '=', 'installed_carriers.carrier_id')
+            ->select('carriers.slug')->first();
+        if (!isset($slug->slug)) {
+            return 0;
+        }
+        $slug = $slug->slug;
+        switch ($slug) {
+            case 'ltl-quotes':
+                return 1;
+                break;
+            case 'small-package':
+                return 2;
+                break;
+            default:
+                return 0;
+                break;
+        }
     }
 }

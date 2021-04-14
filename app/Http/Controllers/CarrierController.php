@@ -246,7 +246,7 @@ class CarrierController extends Controller
         }
 
         if ($license_key && $store) {
-            $quesry = array(
+            $query = array(
                 'platform' => '',
                 'carrier' => $this->getCarrierForPlanInfoRequest($request->carrierId), // required wwltl -> 1, wweSmall -> 2
                 'store_url' => $store->url, // required store url
@@ -255,10 +255,10 @@ class CarrierController extends Controller
                 'plugin_version' => '',
             );
 
-            $quesry = http_build_query($quesry);
-            $end_point = Constant::PLAN_URL . '?' . $quesry;
+            $query = http_build_query($query);
+            $end_point = Constant::PLAN_URL . '?' . $query;
             $res = (array) json_decode(file_get_contents($end_point));
-
+// Means that it is trial plan
             if ($res['plan_type'] == 1 && $res['pakg_group'] == '' && $res['message'] == 'Subscription Not Found.') {
                 $response['plan_type'] = 0;
                 $response['expiry_date'] = '';
