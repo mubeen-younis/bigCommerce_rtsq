@@ -269,7 +269,7 @@ class WweLTLShipmentPackage
             }
         }
 
-        if (isset($additionalData['local_delivery']) && $additionalData['local_delivery'] == true){
+        if (isset($additionalData['local_delivery']) && $additionalData['local_delivery'] == true) {
             if (!empty($additionalData['local_delivery_data']) && $additionalData['local_delivery_data'] != null) {
                 $locDel = json_decode($shortOrigin['local_delivery_data']);
                 $array['localDelivery'] = [
