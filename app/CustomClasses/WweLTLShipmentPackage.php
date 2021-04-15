@@ -249,28 +249,33 @@ class WweLTLShipmentPackage
      * @param string $receiverZipCode
      * @return array
      */
+
     public function instorePickupLdData($shortOrigin, $receiverZipCode)
     {
+        Log::info('Origin ' . json_encode($shortOrigin));
+        Log::info('Zip ' . json_encode($receiverZipCode));
         $additionalData = isset($shortOrigin['additionals']) ? \GuzzleHttp\json_decode($shortOrigin['additionals'], true) : null;
 
         $array = [];
-        if (!empty($additionalData['in_store']) && $additionalData['in_store'] != null) {
-            $inStore = json_decode($shortOrigin['in_store']);
-            if ($inStore->enable_store_pickup == 1) {
-                $array['inStorePickup'] = [
-                    'addressWithInMiles' => $inStore->miles_store_pickup,
-                    'postalCodeMatch' => $this->checkPostalCodeMatch($receiverZipCode, $inStore->match_postal_store_pickup),
-                ];
+        if (isset($additionalData['instore_pickup']) && $additionalData['instore_pickup'] == true) {
+            if (!empty($additionalData['instore_pickup_data']) && $additionalData['instore_pickup_data'] != null) {
+                $inStore = json_decode($shortOrigin['instore_pickup_data']);
+                if ($inStore->enable_store_pickup == 1) {
+                    $array['inStorePickup'] = [
+                        'addressWithInMiles' => $inStore->miles,
+                        'postalCodeMatch' => $this->checkPostalCodeMatch($receiverZipCode, $inStore->postalCodes),
+                    ];
+                }
             }
         }
 
-        if (!empty($additionalData['local_delivery']) && $additionalData['local_delivery'] != null) {
-            $locDel = json_decode($shortOrigin['local_delivery']);
-            if ($locDel->enable_local_delivery == 1) {
+        if (isset($additionalData['local_delivery']) && $additionalData['local_delivery'] == true){
+            if (!empty($additionalData['local_delivery_data']) && $additionalData['local_delivery_data'] != null) {
+                $locDel = json_decode($shortOrigin['local_delivery_data']);
                 $array['localDelivery'] = [
-                    'addressWithInMiles' => $locDel->miles_local_delivery,
-                    'postalCodeMatch' => $this->checkPostalCodeMatch($receiverZipCode, $locDel->match_postal_local_delivery),
-                    'suppressOtherRates' => $locDel->suppress_other,
+                    'addressWithInMiles' => $locDel->miles,
+                    'postalCodeMatch' => $this->checkPostalCodeMatch($receiverZipCode, $locDel->postalCodes),
+                    'suppressOtherRates' => isset($additionalData['ld_enable_supress']) && $additionalData['ld_enable_supress'] == true ? 1 : 0,
                 ];
             }
         }
