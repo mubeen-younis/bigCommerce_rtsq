@@ -117,6 +117,7 @@ class WweLTLShipmentPackage
             $originLoca[$key]['state'] = $ori->state ?? '';
             $originLoca[$key]['zip'] = $ori->zip_code ?? '';
             $originLoca[$key]['country'] = $ori->country ?? '';
+            $originLoca[$key]['additionals'] = $ori->additionals ?? [];
         }
 
         $origin = $originLoca;
@@ -150,7 +151,6 @@ class WweLTLShipmentPackage
                 return $this->wweLTLOriginArray($warehouseList[0], $receiverZipCode, $planNumber);
             }
 
-
             $response = (object)$this->wweLTLAddress($warehouseList, $planLicenseKey);
 
             if (!empty($response)) {
@@ -177,7 +177,7 @@ class WweLTLShipmentPackage
             $state = $origin['state'] ?? '';
             $country = ($origin['country'] == "United State") ? "US" : $origin['country'];
             $location = isset($origin['type']) && $origin['type'] == 1 ? 'warehouse' : 'dropship';
-            $locationId = $shortOrigin->id ?? '';
+            $locationId = $shortOrigin['warehouse_id'] ?? '';
             $data = [
                 'location' => $location,
                 'locationId' => $locationId,
@@ -252,29 +252,25 @@ class WweLTLShipmentPackage
 
     public function instorePickupLdData($shortOrigin, $receiverZipCode)
     {
-        Log::info('Origin ' . json_encode($shortOrigin));
-        Log::info('Zip ' . json_encode($receiverZipCode));
         $additionalData = isset($shortOrigin['additionals']) ? \GuzzleHttp\json_decode($shortOrigin['additionals'], true) : null;
-
         $array = [];
+
         if (isset($additionalData['instore_pickup']) && $additionalData['instore_pickup'] == true) {
-            if (!empty($additionalData['instore_pickup_data']) && $additionalData['instore_pickup_data'] != null) {
-                $inStore = json_decode($shortOrigin['instore_pickup_data']);
-                if ($inStore->enable_store_pickup == 1) {
-                    $array['inStorePickup'] = [
-                        'addressWithInMiles' => $inStore->miles,
-                        'postalCodeMatch' => $this->checkPostalCodeMatch($receiverZipCode, $inStore->postalCodes),
-                    ];
-                }
+            if (!empty($additionalData['instore_pickup_data'])) {
+                $inStore = $additionalData['instore_pickup_data'];
+                $array['inStorePickup'] = [
+                    'addressWithInMiles' => $inStore['miles'],
+                    'postalCodeMatch' => $this->checkPostalCodeMatch($receiverZipCode, $inStore['postalCodes']),
+                ];
             }
         }
 
         if (isset($additionalData['local_delivery']) && $additionalData['local_delivery'] == true) {
             if (!empty($additionalData['local_delivery_data']) && $additionalData['local_delivery_data'] != null) {
-                $locDel = json_decode($shortOrigin['local_delivery_data']);
+                $locDel = $additionalData['local_delivery_data'];
                 $array['localDelivery'] = [
-                    'addressWithInMiles' => $locDel->miles,
-                    'postalCodeMatch' => $this->checkPostalCodeMatch($receiverZipCode, $locDel->postalCodes),
+                    'addressWithInMiles' => $locDel['miles'],
+                    'postalCodeMatch' => $this->checkPostalCodeMatch($receiverZipCode, $locDel['postalCodes']),
                     'suppressOtherRates' => isset($additionalData['ld_enable_supress']) && $additionalData['ld_enable_supress'] == true ? 1 : 0,
                 ];
             }

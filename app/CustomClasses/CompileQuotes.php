@@ -4,6 +4,7 @@ namespace App\CustomClasses;
 
 use App\Constants\Constant;
 use App\CustomClasses\WWESMALL\WweSmallQuoteResults;
+use App\Models\Locations;
 
 class CompileQuotes
 {
@@ -113,11 +114,13 @@ class CompileQuotes
     public function fetchWarehouseWithID($location, $warehouseId)
     {
         try {
-            $whFactory = $this->warehouseFactory->create();
-            $dsCollection = $whFactory->getCollection()
-                ->addFilter('location', ['eq' => $location])
-                ->addFilter('warehouse_id', ['eq' => $warehouseId]);
-            return $this->purifyCollectionData($dsCollection);
+            $location = Locations::where('id', $warehouseId)->first();
+            return json_decode($location->additionals, true);
+            /*     $whFactory = $this->warehouseFactory->create();
+                 $dsCollection = $whFactory->getCollection()
+                     ->addFilter('location', ['eq' => $location])
+                     ->addFilter('warehouse_id', ['eq' => $warehouseId]);
+                 return $this->purifyCollectionData($dsCollection);*/
         } catch (\Throwable $e) {
             return [];
         }
@@ -256,11 +259,18 @@ class CompileQuotes
      */
     public function inStoreLocalDeliveryQuotes($quotesArray, $inStoreLd, $allOrigins)
     {
+
+        if (empty($quotesArray)) {
+            return [];
+        }
         if (count($allOrigins) > 1) {
+            dd(1);
             return $quotesArray;
         }
+
         foreach ($allOrigins as $array) {
             $warehouseData = $this->getWarehouseData($array);
+
             /**
              * Quotes array only to be made empty if Suppress other rates is ON and In-store
              *  Pickup or Local Delivery also carries some quotes. Else if In-store Pickup or
@@ -269,13 +279,14 @@ class CompileQuotes
              * */
             if (isset($warehouseData['suppress_other']) && $warehouseData['suppress_other']) {
                 if (
-                    (isset($inStoreLd->inStorePickup->status) && $inStoreLd->inStorePickup->status == 1) ||
-                    (isset($inStoreLd->localDelivery->status) && $inStoreLd->localDelivery->status == 1)
+                    (isset($inStoreLd['inStorePickup']['status']) && $inStoreLd['inStorePickup']['status'] == 1) ||
+                    (isset($inStoreLd['localDelivery']['status']) && $inStoreLd['localDelivery']['status'] == 1)
                 ) {
                     $quotesArray = [];
                 }
             }
-            if (isset($inStoreLd->inStorePickup->status) && $inStoreLd->inStorePickup->status == 1) {
+           /* dd(2,$inStoreLd);*/
+            if (isset($inStoreLd['inStorePickup']['status']) && $inStoreLd['inStorePickup']['status'] == 1) {
                 $quotesArray[] = [
                     'code' => 'INSP',
                     'rate' => 0,
@@ -284,7 +295,7 @@ class CompileQuotes
                 ];
             }
 
-            if (isset($inStoreLd->localDelivery->status) && $inStoreLd->localDelivery->status == 1) {
+            if (isset($inStoreLd['localDelivery']['status']) && $inStoreLd['localDelivery']['status'] == 1) {
                 $quotesArray[] = [
                     'code' => 'LOCDEL',
                     'rate' => $warehouseData['fee_local_delivery'] ?? 0,
@@ -302,29 +313,29 @@ class CompileQuotes
      */
     public function getWarehouseData($data)
     {
+
         $return = [];
         $whCollection = $this->fetchWarehouseWithID($data['location'], $data['locationId']);
-        $inStore = json_decode($whCollection[0]['in_store'], true);
-        $locDel = json_decode($whCollection[0]['local_delivery'], true);
+        $inStore = $whCollection['instore_pickup_data'];
+        $locDel = $whCollection['local_delivery_data'];
 
         if ($inStore) {
-            $inStoreTitle = $inStore['checkout_desc_store_pickup'];
+            $inStoreTitle = $inStore['checkout_description'];
             if (empty($inStoreTitle)) {
                 $inStoreTitle = "In-store pick up";
             }
             $return['inStoreTitle'] = $inStoreTitle;
-            $return['suppress_other'] = $inStore['suppress_other'] == '1';
+            $return['suppress_other'] = $whCollection['ld_enable_supress'] == true ? true : false;
         }
         if ($locDel) {
-            $locDelTitle = $locDel['checkout_desc_local_delivery'];
+            $locDelTitle = $locDel['checkout_description'];
             if (empty($locDelTitle)) {
                 $locDelTitle = "Local delivery";
             }
             $return['locDelTitle'] = $locDelTitle;
-            $return['fee_local_delivery'] = $locDel['fee_local_delivery'];
-            $return['suppress_other'] = $locDel['suppress_other'] == '1';
+            $return['fee_local_delivery'] = $locDel['local_delivery_fee'];
+            $return['suppress_other'] = $whCollection['ld_enable_supress'] == true ? true : false;
         }
-
         return $return;
     }
 
@@ -601,18 +612,18 @@ class CompileQuotes
             }
 
             if ($count == 0) { //To be checked only once
-                $isRad = $quote->autoResidentialsStatus ?? '';
+                $isRad = $quote['autoResidentialsStatus'] ?? '';
                 $this->getAutoResidentialTitle($isRad);
-                $inStoreLdData = $quote->InstorPickupLocalDelivery ?? false;
-                unset($quote->InstorPickupLocalDelivery);
+                $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
+                unset($quote['InstorPickupLocalDelivery']);
                 $lgQuotes = $this->quoteSettings['alwaysLiftGateDelivery'] || $this->quoteSettings['offerLiftGateDelivery'] || ($this->quoteSettings['alwaysResidentialDelivery'] && $this->quoteSettings['autoDetectedResidentialAddressesLfg']);
             }
 
             $originQuotes = [];
             $arraySorting = [];
             if (isset($quote['q'])) {
-                if (isset($quote->hazardousStatus)) {
-                    $hazShipmentArr[$origin] = $quote->hazardousStatus == 'y' ? 'Y' : 'N';
+                if (isset($quote['hazardousStatus'])) {
+                    $hazShipmentArr[$origin] = $quote['hazardousStatus'] == 'y' ? 'Y' : 'N';
                 }
                 foreach ($quote['q'] as $key => $data) {
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices)) {
@@ -664,7 +675,6 @@ class CompileQuotes
 
     public function compileWweSmallQuotes($shipments, $connectionSettings, $allOrigins, $isHazmat)
     {
-
         $this->quoteSettings = [];
         $isHazmat = $isHazmat == "Y" ? true : false;
         $this->quoteSettings = $connectionSettings['small-package']['quote_settings'];
@@ -746,11 +756,14 @@ class CompileQuotes
             return $originQuotesMulti;
         }
         // Doing For SIngle Shipment
-        $originQuotes = array_column(array_values($originQuotes), 'shipment');
-        $originQuotes = reset($originQuotes);
-        $originQuotes = array_column(array_values($originQuotes), 'simple');
-        return $originQuotes;
+        if (!empty($originQuotes)) {
+            $originQuotes = array_column(array_values($originQuotes), 'shipment');
+            $originQuotes = reset($originQuotes);
+            $originQuotes = array_column(array_values($originQuotes), 'simple');
+            return $originQuotes;
+        }
 
+        return [];
     }
 
 
@@ -876,6 +889,10 @@ class CompileQuotes
      */
     public function getFinalQuotesArray($quotes)
     {
+        //dd($quotes);
+        if (empty($quotes)) {
+            return [];
+        }
         $lfg = $this->quoteSettings['alwaysLiftGateDelivery'] == 1 || ($this->isResi && $this->quoteSettings['autoDetectedResidentialAddressesLfg']);
         if ($this->isMultiShipment == false) {
             if (isset($quotes['liftgate']) && $this->quoteSettings['offerLiftGateDelivery'] == 1 && ($this->quoteSettings['autoDetectedResidentialAddressesLfg'] == 0 || $this->isResi == 0)) {

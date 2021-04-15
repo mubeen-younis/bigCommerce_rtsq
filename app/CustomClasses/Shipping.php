@@ -80,7 +80,7 @@ class Shipping
             ];
             dd($printData);
         }
-        //dd($requestArr,$quotes);
+        // dd($requestArr, $quotes);
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat);
         $resp = $this->setCarrierRates($finalQuotes);
         return $resp;
