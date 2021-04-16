@@ -43,6 +43,7 @@ class Shipping
         // Generating carrier creds and origin array
         $carriersArray = $generateReqData->generateEnitureArray($originAddress);
 
+
         // Checking if any productis hazardous
         $this->isHazmatMaterial($package['items']);
         if ($this->isHazmat == 'Y') {
@@ -80,7 +81,7 @@ class Shipping
             ];
             dd($printData);
         }
-        // dd($requestArr, $quotes);
+        //dd($requestArr,$quotes);
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat);
         $resp = $this->setCarrierRates($finalQuotes);
         return $resp;

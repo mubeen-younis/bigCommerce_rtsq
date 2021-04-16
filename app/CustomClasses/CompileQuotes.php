@@ -263,10 +263,9 @@ class CompileQuotes
         if (empty($quotesArray)) {
             return [];
         }
-        if (count($allOrigins) > 1) {
+    /*    if (count($allOrigins) > 1) {
             return $quotesArray;
-        }
-
+        }*/
         foreach ($allOrigins as $array) {
             $warehouseData = $this->getWarehouseData($array);
 
@@ -611,6 +610,7 @@ class CompileQuotes
                 return [];
             }
 
+
             if ($count == 0) { //To be checked only once
                 $isRad = $quote['autoResidentialsStatus'] ?? '';
                 $this->getAutoResidentialTitle($isRad);
@@ -668,7 +668,7 @@ class CompileQuotes
         }
         //s$this->setOrderDetailWidgetData($odwArr, $hazShipmentArr);
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
-        if (!$this->isMultiShipment && isset($inStoreLdData) && $inStoreLdData) {
+        if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
         return $this->arrangeOwnFreight($allQuotes);
