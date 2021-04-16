@@ -264,7 +264,6 @@ class CompileQuotes
             return [];
         }
         if (count($allOrigins) > 1) {
-            dd(1);
             return $quotesArray;
         }
 
@@ -285,7 +284,7 @@ class CompileQuotes
                     $quotesArray = [];
                 }
             }
-           /* dd(2,$inStoreLd);*/
+            /* dd(2,$inStoreLd);*/
             if (isset($inStoreLd['inStorePickup']['status']) && $inStoreLd['inStorePickup']['status'] == 1) {
                 $quotesArray[] = [
                     'code' => 'INSP',
@@ -660,6 +659,7 @@ class CompileQuotes
                     $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
                 }
             }
+
             if ($this->isMultiShipment) {
                 $odwArr[$origin]['quotes'] = $compiledQuotes;
             }
@@ -667,7 +667,7 @@ class CompileQuotes
         }
         //s$this->setOrderDetailWidgetData($odwArr, $hazShipmentArr);
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
-        if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
+        if (!$this->isMultiShipment && isset($inStoreLdData) && $inStoreLdData) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
         return $this->arrangeOwnFreight($allQuotes);
@@ -691,7 +691,7 @@ class CompileQuotes
         $this->isMultiShipment = count($shipments) > 1;
         $originQuotes = [];
         $shipmentCount = 0;
-
+        $count = 0;
         foreach ($shipments as $origin => $quote) {
             if (isset($quote['severity'])) {
                 if (isset($quote['dismissedProduct'])) {
@@ -699,7 +699,10 @@ class CompileQuotes
                 }
                 return [];
             }
-
+            if ($count == 0) { //To be checked only once
+                $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
+                unset($quote['InstorPickupLocalDelivery']);
+            }
             $lowestAmount = 0;
             if (isset($quote['q'])) {
                 foreach ($quote['q'] as $key => $data) {
@@ -760,6 +763,11 @@ class CompileQuotes
             $originQuotes = array_column(array_values($originQuotes), 'shipment');
             $originQuotes = reset($originQuotes);
             $originQuotes = array_column(array_values($originQuotes), 'simple');
+            // Checkking for instore pickup
+            if (!$this->isMultiShipment && isset($inStoreLdData) && $inStoreLdData) {
+                $allQuotes = $this->inStoreLocalDeliveryQuotes($originQuotes, $inStoreLdData, $allOrigins);
+                return $allQuotes;
+            }
             return $originQuotes;
         }
 
@@ -767,19 +775,16 @@ class CompileQuotes
     }
 
 
-    public function getQuotesResults($quotes, $quoteSettings, $allOrigins)
+    /*public function getQuotesResults($quotes, $quoteSettings, $allOrigins)
     {
         if ($quotes == null) {
             return [];
         }
         $quotes = reset($quotes);
-        dd(2, $quotes);
         $this->quoteSettings = $quoteSettings['WweLtl'];
         $allConfigServices = $quoteSettings['WweLtl']['carrier_services'] ?? [];
         $this->quoteSettingsData();
-        /*if ($isMultiShipmentQuantity) {
-            return $this->getOriginsMinimumQuotes($quotes, $allConfigServices, $scopeConfig);
-        }*/
+
         $allQuotes = $odwArr = $hazShipmentArr = [];
         $count = 0;
         $lgQuotes = false;
@@ -849,7 +854,7 @@ class CompileQuotes
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
         return $this->arrangeOwnFreight($allQuotes);
-    }
+    }*/
 
     /**
      * Calculate Handling Fee
