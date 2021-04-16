@@ -587,6 +587,7 @@ class CompileQuotes
                     break;
             }
         }
+
         return $quotesRes;
 
     }

@@ -2,6 +2,8 @@
 
 namespace App\CustomClasses;
 
+use Illuminate\Support\Facades\DB;
+
 /**
  * class that generated request data
  */
@@ -130,17 +132,22 @@ class GenerateRequestData
             $autoResidential = '1';
             $liftGateWithAuto = '1';
         }
-        return [
+        $requestArr = [
             'apiVersion' => '2.0',
             'platform' => 'bigcommerce',
-            'binPackagingMultiCarrier' => $this->storeData['installed_addons']['SBS'] ?? '',
+            'binPackagingMultiCarrier' => $this->storeData['installed_addon_sbs'],
             'autoResidentials' => $autoResidential,
             'liftGateWithAutoResidentials' => $liftGateWithAuto,
-            'requestKey' => 'asasdasdasdasdasdadje84sdasd',
+            'requestKey' => md5(microtime() . rand()),
             'carriers' => $carriers,
             'receiverAddress' => $receiverAddress,
             'commdityDetails' => $itemsArr,
         ];
+
+        if ($this->storeData['installed_addon_sbs']) {
+            $requestArr['bins'] = $this->getStoreBoxes($this->storeData['store']->id);
+        }
+        return $requestArr;
     }
 
     /**
@@ -228,6 +235,26 @@ class GenerateRequestData
         }*/
 
         return $apiArray;
+    }
+
+    public function getStoreBoxes($storeId)
+    {
+        $bins = [];
+        $boxes = DB::table('box_sizes')->where('store_id', $storeId)
+            ->where('is_available', 1)->get();
+        foreach ($boxes as $box) {
+            $bins[] = array(
+                'nickname' => $box->nickname,
+                'w' => $box->width,
+                'h' => $box->height,
+                'd' => $box->length,
+                'id' => $box->id,
+                'max_wg' => $box->max_weight,
+                'box_weight' => $box->box_weight,
+            );
+        }
+        return $bins;
+
     }
 
     /**

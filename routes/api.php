@@ -98,6 +98,7 @@ Route::post('/submit_quote_settings', [QuoteSettingsController::class, 'saveSett
 
 /*------Services tab-------*/
 Route::get('/get_carrier_services', [AdditionalCarrierTabSettingController::class, 'index']);
+Route::get('/get_boxsize', 'App\Http\Controllers\BoxSizeController@index');
 
 Route::get('/get_warehouse', 'LocationsController@warehouse');
 Route::get('/get_dropships', 'LocationsController@dropships');
@@ -105,7 +106,6 @@ Route::post('/submit_location', [LocationsController::class, 'store']);
 
 Route::post('/save_csv', 'CsvController@store');
 Route::post('/save_boxsize', 'BoxSizeController@store');
-Route::get('/get_boxsize', 'BoxSizeController@index');
 Route::delete('boxsize/delete/{id}', 'BoxSizeController@destroy');
 Route::get('/getDetails/{zip_code}', 'AdressController@googleApiCurl');
 

@@ -273,11 +273,21 @@ class GetRatesController extends Controller
         if (!empty($store)) {
             $installedCarriers = InstalledCarrier::where(['store_id' => $store->id, 'is_enabled' => 1])->get();
             $installedAddons = InstalledAddon::where(['store_id' => $store->id, 'is_enabled' => 1])->get();
+            $installedAddonSbs = InstalledAddon::join('addons', 'addons.id', 'installed_addons.addon_id')
+                ->where(['installed_addons.store_id' => $store->id,
+                    'installed_addons.is_enabled' => 1,
+                    'installed_addons.is_suspend' => 0,
+                    'installed_addons.is_expired' => 0,
+                    'addons.short_code' => 'SBS',
+
+                ])
+                ->exists();
             if (!empty($installedCarriers) && count($installedCarriers)) {
                 return [
                     'installed_carriers' => $installedCarriers,
                     'installed_addons' => $installedAddons,
-                    'store' => $store
+                    'store' => $store,
+                    'installed_addon_sbs' => $installedAddonSbs
                 ];
             }
         }

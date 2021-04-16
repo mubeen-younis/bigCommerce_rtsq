@@ -15,6 +15,7 @@ class BoxSizeController extends Controller
      */
     public function index()
     {
+
         return response()->json(BoxSize::get(),200);
     }
 
