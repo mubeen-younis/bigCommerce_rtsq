@@ -88,6 +88,11 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::get('/getInstalledCarrierPlanInfo', [CarrierController::class, 'getInstalledCarrierPlanInfo']);
 
     Route::post('/submit_carriers', [AdditionalCarrierTabSettingController::class, 'store']);
+
+
+    Route::get('/get_boxsize', 'App\Http\Controllers\BoxSizeController@index');
+    Route::post('/save_boxsize', 'App\Http\Controllers\BoxSizeController@store');
+    Route::delete('boxsize/delete/{id}', 'App\Http\Controllers\BoxSizeController@destroy');
 });
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);
@@ -98,15 +103,14 @@ Route::post('/submit_quote_settings', [QuoteSettingsController::class, 'saveSett
 
 /*------Services tab-------*/
 Route::get('/get_carrier_services', [AdditionalCarrierTabSettingController::class, 'index']);
-Route::get('/get_boxsize', 'App\Http\Controllers\BoxSizeController@index');
+
 
 Route::get('/get_warehouse', 'LocationsController@warehouse');
 Route::get('/get_dropships', 'LocationsController@dropships');
 Route::post('/submit_location', [LocationsController::class, 'store']);
 
 Route::post('/save_csv', 'CsvController@store');
-Route::post('/save_boxsize', 'BoxSizeController@store');
-Route::delete('boxsize/delete/{id}', 'BoxSizeController@destroy');
+
 Route::get('/getDetails/{zip_code}', 'AdressController@googleApiCurl');
 
 Route::get('get_carrier_info', [CarrierController::class, 'getCarrierDetails']);
