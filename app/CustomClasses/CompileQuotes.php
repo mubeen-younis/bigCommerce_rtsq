@@ -259,14 +259,19 @@ class CompileQuotes
      */
     public function inStoreLocalDeliveryQuotes($quotesArray, $inStoreLd, $allOrigins)
     {
-
+        // dd($allOrigins);
         if (empty($quotesArray)) {
             return [];
         }
-    /*    if (count($allOrigins) > 1) {
-            return $quotesArray;
-        }*/
+        /*    if (count($allOrigins) > 1) {
+                return $quotesArray;
+            }*/
+        $count = 0;
         foreach ($allOrigins as $array) {
+            if ($count == 1) {
+                break;
+            }
+            $count++;
             $warehouseData = $this->getWarehouseData($array);
 
             /**
@@ -586,7 +591,8 @@ class CompileQuotes
                     break;
             }
         }
-
+        // Removing duplicate respone of quotes
+        $quotesRes = array_map("unserialize", array_unique(array_map("serialize", $quotesRes)));
         return $quotesRes;
 
     }
