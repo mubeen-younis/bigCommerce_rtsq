@@ -15,8 +15,7 @@ class BoxSizeController extends Controller
      */
     public function index()
     {
-
-        return response()->json(BoxSize::get(),200);
+        return response()->json(['error' => false, 'data' => BoxSize::get()]);
     }
 
     /**
@@ -36,45 +35,34 @@ class BoxSizeController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
-
     {
-
         $rules = [
-
-            'nickname' => 'required',
-
+            'nickname' => 'required|unique:box_sizes',
             'length' => 'required',
-
             'width' => 'required',
-
             'height' => 'required',
-
             'max_weight' => 'required',
-
             'box_weight' => 'required',
-
             'is_available' => 'required',
+        ];
 
-            ];
+        $validator = Validator::make($request->all(), $rules);
 
-            $validator = Validator::make($request->all(),$rules);
+        if ($validator->fails()) {
+            return response()->json(['error' => true, 'message' => $validator->errors()], 200);
+        }
 
-            if($validator->fails())
+        $data = $request->except(['store_name', 'store_hash']);
 
-            {
+        $boxsize = BoxSize::create($data);
+        $boxsize->save();
 
-             return response()->json($validator->errors(), 400);
-
-            }
-
-          $data = $request->all();
-
-          $boxsize = BoxSize::create($data);
-
-          $boxsize->save();
-
-          return response()->json(['message' => "Form Submitted Successfully!"]);
-
+        return response()->json(
+            [
+                'error' => false,
+                'message' => "Box Size added successfully.",
+                'data' => $boxsize,
+            ], 200);
     }
 
     /**
@@ -108,7 +96,32 @@ class BoxSizeController extends Controller
      */
     public function update(Request $request, BoxSize $boxSize)
     {
-        //
+        if (!$request->id || empty($request->id)) {
+            return response()->json([
+                'error' => true,
+                'message' => "Box Size Id is empty!",
+            ], 200);
+        }
+
+        $box_size = BoxSize::find($request->id);
+
+        if ($box_size) {
+            $data = $request->except(['store_name', 'store_hash']);
+
+            $boxsize = BoxSize::where('id', $request->id)->update($data);
+
+            return response()->json(
+                [
+                    'error' => false,
+                    'message' => "Box Size updated successfully.",
+                    'data' => BoxSize::find($request->id),
+                ], 200);
+        }
+
+        return response()->json([
+            'error' => true,
+            'message' => 'Box size could not be updated successfully.',
+        ]);
     }
 
     /**
@@ -120,9 +133,10 @@ class BoxSizeController extends Controller
     public function destroy($id)
     {
         $boxsize = BoxSize::find($id);
-
         $boxsize->delete();
 
-        return response()->json(['message'=>"Record deleted Successfully"]);
+        return response()->json(['error' => false,
+            'message' => "Box Size deleted Successfully",
+            'data' => $id]);
     }
 }
