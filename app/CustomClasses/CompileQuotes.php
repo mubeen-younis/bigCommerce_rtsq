@@ -259,15 +259,19 @@ class CompileQuotes
      */
     public function inStoreLocalDeliveryQuotes($quotesArray, $inStoreLd, $allOrigins)
     {
-
+        // dd($allOrigins);
         if (empty($quotesArray)) {
             return [];
         }
-        if (count($allOrigins) > 1) {
-            return $quotesArray;
-        }
-
+        /*    if (count($allOrigins) > 1) {
+                return $quotesArray;
+            }*/
+        $count = 0;
         foreach ($allOrigins as $array) {
+            if ($count == 1) {
+                break;
+            }
+            $count++;
             $warehouseData = $this->getWarehouseData($array);
 
             /**
@@ -587,7 +591,8 @@ class CompileQuotes
                     break;
             }
         }
-
+        // Removing duplicate respone of quotes
+        $quotesRes = array_map("unserialize", array_unique(array_map("serialize", $quotesRes)));
         return $quotesRes;
 
     }
@@ -610,6 +615,7 @@ class CompileQuotes
                 }
                 return [];
             }
+
 
             if ($count == 0) { //To be checked only once
                 $isRad = $quote['autoResidentialsStatus'] ?? '';
@@ -668,7 +674,7 @@ class CompileQuotes
         }
         //s$this->setOrderDetailWidgetData($odwArr, $hazShipmentArr);
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
-        if (!$this->isMultiShipment && isset($inStoreLdData) && $inStoreLdData) {
+        if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
         return $this->arrangeOwnFreight($allQuotes);

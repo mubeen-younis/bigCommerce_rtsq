@@ -52,11 +52,37 @@ class GenerateRequestData
                 case "ltl-quotes":
                     $wweLtlArr = $this->wweLtlEnitArr($con1);
                     $wweLtlArr['originAddress'] = $origin;
+                    if (count($wweLtlArr['originAddress']) > 1) {
+                        $whIDs = [];
+                        foreach ($wweLtlArr['originAddress'] as $wh) {
+                            $whIDs[] = $wh['locationId'];
+                        }
+                        if (count(array_unique($whIDs)) > 1) {
+                            foreach ($wweLtlArr['originAddress'] as $id => $wh) {
+                                if (isset($wh['InstorPickupLocalDelivery'])) {
+                                    $wweLtlArr['originAddress'][$id]['InstorPickupLocalDelivery'] = [];
+                                }
+                            }
+                        }
+                    }
                     $carriersArr['carriers']['wweLTL'] = $wweLtlArr;
                     break;
                 case "small-package":
                     $wweLtlArr = $this->wweSmallEnitArr($con1);
                     $wweLtlArr['originAddress'] = $origin;
+                    if (count($wweLtlArr['originAddress']) > 1) {
+                        $whIDs = [];
+                        foreach ($wweLtlArr['originAddress'] as $wh) {
+                            $whIDs[] = $wh['locationId'];
+                        }
+                        if (count(array_unique($whIDs)) > 1) {
+                            foreach ($wweLtlArr['originAddress'] as $id => $wh) {
+                                if (isset($wh['InstorPickupLocalDelivery'])) {
+                                    $wweLtlArr['originAddress'][$id]['InstorPickupLocalDelivery'] = [];
+                                }
+                            }
+                        }
+                    }
                     $carriersArr['carriers']['wweSmall'] = $wweLtlArr;
                     break;
             }
@@ -108,21 +134,20 @@ class GenerateRequestData
      */
     public function generateRequestArray($request, $carriersArray, $itemsArr)
     {
-
-        /* if (count($carriersArray['originAddress']) > 1) {
-             $whIDs = [];
-             foreach ($carriersArray['originAddress'] as $wh) {
-                 $whIDs[] = $wh['locationId'];
-             }
-             if (count(array_unique($whIDs)) > 1) {
-                 foreach ($carriersArray['originAddress'] as $id => $wh) {
-                     if (isset($wh['InstorPickupLocalDelivery'])) {
-                         $carriersArray['originAddress'][$id]['InstorPickupLocalDelivery'] = [];
-                     }
-                 }
-             }
-         }*/
-        //$carriers = $this->registry->registry('enitureCarriers');
+ /*       if (count($carriersArray['originAddress']) > 1) {
+            $whIDs = [];
+            foreach ($carriersArray['originAddress'] as $wh) {
+                $whIDs[] = $wh['locationId'];
+            }
+            if (count(array_unique($whIDs)) > 1) {
+                foreach ($carriersArray['originAddress'] as $id => $wh) {
+                    if (isset($wh['InstorPickupLocalDelivery'])) {
+                        $carriersArray['originAddress'][$id]['InstorPickupLocalDelivery'] = [];
+                    }
+                }
+            }
+        }*/
+       // $carriers = $this->registry->registry('enitureCarriers');
         $carriers = $carriersArray['carriers'];
         $receiverAddress = $this->getReceiverData($request);
 
