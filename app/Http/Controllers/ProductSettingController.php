@@ -146,7 +146,7 @@ class ProductSettingController extends Controller
 
     public function updateProductDetail(Request $request)
     {
-        if (empty($request->product_id)) {
+        if (!$request->product_id || empty($request->product_id)) {
             return response()->json(['error' => true,
                 'data' => [],
                 'message' => 'No Product Id',
@@ -171,7 +171,7 @@ class ProductSettingController extends Controller
         $product->update();
 
         return response()->json(['error' => false,
-            'data' => [],
+            'data' => ProductSetting::find($request->product_id),
             'message' => 'Product Updated Successfully',
         ], 200);
     }
