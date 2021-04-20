@@ -294,7 +294,7 @@ class CompileQuotes
                     'code' => 'INSP',
                     'rate' => 0,
                     'transitTime' => '',
-                    'title' => $warehouseData['inStoreTitle'],
+                    'title' => $warehouseData['inStoreTitle'] ?? '',
                 ];
             }
 
