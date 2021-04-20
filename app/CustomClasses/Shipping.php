@@ -145,7 +145,7 @@ class Shipping
      */
     public function sendCurlRequest($url, $postData)
     {
-        Log::info('$postData ', json_encode($postData));
+        Log::info('$postData '. json_encode($postData));
         $fieldString = http_build_query($postData);
         try {
             $ch = curl_init();
@@ -157,7 +157,7 @@ class Shipping
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
             $output = curl_exec($ch);
             curl_close($ch);
-            Log::info('$output ', json_encode($output));
+            Log::info('$output '. json_encode($output));
             return json_decode($output, true);
         } catch (\Throwable $e) {
             $result = [];
