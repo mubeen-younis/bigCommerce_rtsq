@@ -89,9 +89,9 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
 
     Route::post('/submit_carriers', [AdditionalCarrierTabSettingController::class, 'store']);
 
-
     Route::get('/get_boxsize', 'App\Http\Controllers\BoxSizeController@index');
     Route::post('/save_boxsize', 'App\Http\Controllers\BoxSizeController@store');
+    Route::post('/update_boxsize', 'App\Http\Controllers\BoxSizeController@update');
     Route::delete('boxsize/delete/{id}', 'App\Http\Controllers\BoxSizeController@destroy');
 });
 
@@ -103,7 +103,6 @@ Route::post('/submit_quote_settings', [QuoteSettingsController::class, 'saveSett
 
 /*------Services tab-------*/
 Route::get('/get_carrier_services', [AdditionalCarrierTabSettingController::class, 'index']);
-
 
 Route::get('/get_warehouse', 'LocationsController@warehouse');
 Route::get('/get_dropships', 'LocationsController@dropships');
