@@ -152,7 +152,7 @@ class GenerateRequestData
         $receiverAddress = $this->getReceiverData($request);
 
         $autoResidential = $liftGateWithAuto = '0';
-        $isRAD = isset($this->storeData['installed_addons']) && $this->storeData['installed_addons'][0]->is_enabled == 1 && $this->storeData['installed_addons'][0]->is_suspend == 0;
+        $isRAD = isset($this->storeData['installed_addons']) && isset($this->storeData['installed_addons'][0]->is_enabled) && isset($this->storeData['installed_addons'][0]->is_enabled) && $this->storeData['installed_addons'][0]->is_enabled == 1 && isset($this->storeData['installed_addons'][0]->is_suspend) && $this->storeData['installed_addons'][0]->is_suspend == 0;
         if ($isRAD) {
             $autoResidential = '1';
             $liftGateWithAuto = '1';

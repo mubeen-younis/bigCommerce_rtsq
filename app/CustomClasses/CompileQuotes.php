@@ -303,7 +303,7 @@ class CompileQuotes
                     'code' => 'LOCDEL',
                     'rate' => $warehouseData['fee_local_delivery'] ?? 0,
                     'transitTime' => '',
-                    'title' => $warehouseData['locDelTitle'],
+                    'title' => $warehouseData['locDelTitle'] ?? '',
                 ];
             }
         }
@@ -319,8 +319,8 @@ class CompileQuotes
 
         $return = [];
         $whCollection = $this->fetchWarehouseWithID($data['location'], $data['locationId']);
-        $inStore = $whCollection['instore_pickup_data'];
-        $locDel = $whCollection['local_delivery_data'];
+        $inStore = $whCollection['instore_pickup_data'] ?? false;
+        $locDel = $whCollection['local_delivery_data'] ?? false;
 
         if ($inStore) {
             $inStoreTitle = $inStore['checkout_description'];
@@ -328,7 +328,7 @@ class CompileQuotes
                 $inStoreTitle = "In-store pick up";
             }
             $return['inStoreTitle'] = $inStoreTitle;
-            $return['suppress_other'] = $whCollection['ld_enable_supress'] == true ? true : false;
+            $return['suppress_other'] = isset($whCollection['ld_enable_supress']) && $whCollection['ld_enable_supress'] == true ? true : false;
         }
         if ($locDel) {
             $locDelTitle = $locDel['checkout_description'];
