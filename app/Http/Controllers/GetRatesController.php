@@ -41,7 +41,7 @@ class GetRatesController extends Controller
 
     public function returnRates(Request $request)
     {
-        /*Log::info('I am from Webhook ' . json_encode($request->all()));*/
+        Log::info('Request ' . json_encode($request->all()));
         $storeHash = $request->base_options['store_id'] ?? null;
         $storeData = $this->getStoreData($storeHash);
 
@@ -138,6 +138,7 @@ class GetRatesController extends Controller
         /*  echo "<pre>";
           print_r($resp);
           exit;*/
+        Log::info('$resp '. json_encode($resp));
         return $resp;
     }
 
