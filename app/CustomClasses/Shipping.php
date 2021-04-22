@@ -43,22 +43,22 @@ class Shipping
         // Generating carrier creds and origin array
         $carriersArray = $generateReqData->generateEnitureArray($originAddress);
 
-
         // Checking if any productis hazardous
         $this->isHazmatMaterial($package['items']);
         if ($this->isHazmat == 'Y') {
-            $carriersArray['api']['lineItemHazmatInfo'] = [
-                [
-                    'isHazmatLineItem' => 'Y',
-                    'lineItemHazmatUNNumberHeader' => 'UN #',
-                    'lineItemHazmatUNNumber' => 'UN 1139',
-                    'lineItemHazmatClass' => '1.1',
-                    'lineItemHazmatEmContactPhone' => '4043308699',
-                    'lineItemHazmatPackagingGroup' => 'I',
-                ],
-            ];
+            foreach($carriersArray['carriers'] as $key => $carriers){
+                $carriersArray['carriers'][$key]['api']['lineItemHazmatInfo'] = [
+                    [
+                        'isHazmatLineItem' => 'Y',
+                        'lineItemHazmatUNNumberHeader' => 'UN #',
+                        'lineItemHazmatUNNumber' => 'UN 1139',
+                        'lineItemHazmatClass' => '1.1',
+                        'lineItemHazmatEmContactPhone' => '4043308699',
+                        'lineItemHazmatPackagingGroup' => 'I',
+                    ],
+                ];
+            }
         }
-
 // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items']);
 
