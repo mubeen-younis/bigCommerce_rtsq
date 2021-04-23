@@ -157,7 +157,7 @@ class Shipping
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
             $output = curl_exec($ch);
             curl_close($ch);
-            Log::info('$output '. json_encode($output));
+            Log::info('$output '. $output);
             return json_decode($output, true);
         } catch (\Throwable $e) {
             $result = [];
