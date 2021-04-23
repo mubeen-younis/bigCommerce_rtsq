@@ -67,7 +67,7 @@ class WweSmallQuoteResults
                 $amount = $amount + $quoteSettings['air_hazardous_material_fee'];
             }
         }
-        $amount = $this->addHandlingMarkupOfHazmat($amount, $quoteSettings['handling_fee_markup']);
+       // $amount = $this->addHandlingMarkupOfHazmat($amount, $quoteSettings['handling_fee_markup']);
         return number_format($amount, 2);
 
     }

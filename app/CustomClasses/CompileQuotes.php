@@ -741,6 +741,8 @@ class CompileQuotes
                     if ($isHazmat) {
                         $price = $this->wweSmallQuoteRes->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
                     }
+                    $quoteSettings = $this->quoteSettings;
+                    $price = $this->wweSmallQuoteRes->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup']);
 
                     $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $data['transitTime'], $data['serviceType'], $this->quoteSettings);
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = $data['serviceType'] . $access;
