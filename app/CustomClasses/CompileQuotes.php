@@ -632,7 +632,7 @@ class CompileQuotes
                     $hazShipmentArr[$origin] = $quote['hazardousStatus'] == 'y' ? 'Y' : 'N';
                 }
                 foreach ($quote['q'] as $key => $data) {
-                    if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices)) {
+                    if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) && isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y' ) {
                         $access = $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
                         $title = $this->getTitle($data['serviceDesc'], false, false, $data['transitTime']);
