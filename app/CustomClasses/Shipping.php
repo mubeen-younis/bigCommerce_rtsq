@@ -44,7 +44,7 @@ class Shipping
         $carriersArray = $generateReqData->generateEnitureArray($originAddress);
 
         // Checking if any productis hazardous
-        $this->isHazmatMaterial($package['items']);
+        $hazmatAllItems = $this->isHazmatMaterial($package['items']);
         if ($this->isHazmat == 'Y') {
             foreach($carriersArray['carriers'] as $key => $carriers){
                 $carriersArray['carriers'][$key]['api']['lineItemHazmatInfo'] = [
@@ -82,7 +82,7 @@ class Shipping
             dd($printData);
         }
         //dd($requestArr,$quotes);
-        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat);
+        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $hazmatAllItems);
         $resp = $this->setCarrierRates($finalQuotes);
         return $resp;
     }
@@ -110,12 +110,16 @@ class Shipping
      */
     public function isHazmatMaterial($items)
     {
-        foreach ($items as $item) {
+        $hazmatAllItems = [];
+        foreach ($items as $key => $item) {
             if (isset($item['isHazmatLineItem']) && $item['isHazmatLineItem'] == 'Y') {
                 $this->isHazmat = 'Y';
-                break;
+                $hazmatAllItems[$key] = 'Y';
+            }else{
+                $hazmatAllItems[$key] = 'N';
             }
         }
+        return $hazmatAllItems;
     }
 
     /**

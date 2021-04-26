@@ -572,7 +572,7 @@ class CompileQuotes
      * @info: This function will compile all quotes according to the origin.
      * After getting from quotes almost all type of compilation happened in this function
      */
-    public function newGetQuotesResults($quotes, $connectionSettings, $allOrigins, $isHazmat)
+    public function newGetQuotesResults($quotes, $connectionSettings, $allOrigins, $isHazmat, $hazmatAllItems)
     {
         if ($quotes == null) {
             return [];
@@ -587,7 +587,7 @@ class CompileQuotes
                     }
                     break;
                 case "wweSmall":
-                    $quotesRes = array_merge($quotesRes, $this->compileWweSmallQuotes($shipment, $connectionSettings, $allOrigins, $isHazmat));
+                    $quotesRes = array_merge($quotesRes, $this->compileWweSmallQuotes($shipment, $connectionSettings, $allOrigins, $isHazmat, $hazmatAllItems));
                     break;
             }
         }
@@ -680,7 +680,7 @@ class CompileQuotes
         return $this->arrangeOwnFreight($allQuotes);
     }
 
-    public function compileWweSmallQuotes($shipments, $connectionSettings, $allOrigins, $isHazmat)
+    public function compileWweSmallQuotes($shipments, $connectionSettings, $allOrigins, $isHazmat, $hazmatAllItems)
     {
         $this->quoteSettings = [];
         $isHazmat = $isHazmat == "Y" ? true : false;
