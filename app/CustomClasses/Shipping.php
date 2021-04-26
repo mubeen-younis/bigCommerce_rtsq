@@ -44,7 +44,7 @@ class Shipping
         $carriersArray = $generateReqData->generateEnitureArray($originAddress);
 
         // Checking if any productis hazardous
-        $hazmatAllItems = $this->isHazmatMaterial($package['items']);
+        $hazmatAllItems = $this->isHazmatMaterial($package);
         if ($this->isHazmat == 'Y') {
             foreach($carriersArray['carriers'] as $key => $carriers){
                 $carriersArray['carriers'][$key]['api']['lineItemHazmatInfo'] = [
