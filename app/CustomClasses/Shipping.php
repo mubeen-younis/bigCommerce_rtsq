@@ -114,9 +114,9 @@ class Shipping
         foreach ($items as $key => $item) {
             if (isset($item['isHazmatLineItem']) && $item['isHazmatLineItem'] == 'Y') {
                 $this->isHazmat = 'Y';
-                $hazmatAllItems[$key] = 'Y';
+                $hazmatAllItems[$items['origin'][$key]['senderZip']] = 'Y';
             }else{
-                $hazmatAllItems[$key] = 'N';
+                $hazmatAllItems[$items['origin'][$key]['senderZip']] = 'N';
             }
         }
         return $hazmatAllItems;

@@ -739,7 +739,13 @@ class CompileQuotes
                     $price = $this->wweSmallQuoteRes->getServiceRate($data['totalNetCharge']['Amount'], $data['serviceType'], $this->quoteSettings);
                     // Checking hazmat and adding hazmat amounts in services
                     if ($isHazmat) {
-                        $price = $this->wweSmallQuoteRes->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
+                        if($this->isMultiShipment){
+                            if ($hazmatAllItems[$origin] == 'Y'){
+                                $price = $this->wweSmallQuoteRes->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
+                            }
+                        }else{
+                            $price = $this->wweSmallQuoteRes->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
+                        }
                     }
                     $quoteSettings = $this->quoteSettings;
                     $price = $this->wweSmallQuoteRes->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup']);
