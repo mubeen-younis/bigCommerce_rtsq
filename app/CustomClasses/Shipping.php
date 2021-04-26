@@ -111,7 +111,7 @@ class Shipping
     public function isHazmatMaterial($items)
     {
         $hazmatAllItems = [];
-        foreach ($items as $key => $item) {
+        foreach ($items['items'] as $key => $item) {
             if (isset($item['isHazmatLineItem']) && $item['isHazmatLineItem'] == 'Y') {
                 $this->isHazmat = 'Y';
                 $hazmatAllItems[$items['origin'][$key]['senderZip']] = 'Y';
