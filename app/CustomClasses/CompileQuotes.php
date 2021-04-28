@@ -5,6 +5,9 @@ namespace App\CustomClasses;
 use App\Constants\Constant;
 use App\CustomClasses\WWESMALL\WweSmallQuoteResults;
 use App\Models\Locations;
+use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\RADController;
+use Carbon\Carbon;
 
 class CompileQuotes
 {
@@ -541,8 +544,9 @@ class CompileQuotes
     public function getAutoResidentialTitle($resi)
     {
         //Todo: check RAD is enabled or not
-        if (false) {
-            $isRadSuspend = $this->getConfigData("resaddressdetection/suspend/value");
+        $isRadEnabled = $this->isRADEnabledandActive();
+        if (!empty($isRadEnabled) && $isRadEnabled['is_enabled']) {
+            $isRadSuspend = $isRadEnabled['is_suspend'] == 1 ? 'no' : '';//$this->getConfigData("resaddressdetection/suspend/value");
             if ($this->residentialDlvry == "1") {
                 $this->residentialDlvry = $isRadSuspend == "no" ? '0' : '1';
             } else {
@@ -557,6 +561,33 @@ class CompileQuotes
         }
     }
 
+    public function isRADEnabledandActive(){
+        $quoteSettings = $this->quoteSettings;
+        $installed_addon = (array) DB::table('installed_carriers')->where('installed_carriers.id', $quoteSettings['carrierId'])
+        ->Join('installed_addons', 'installed_addons.store_id', '=', 'installed_carriers.store_id')         ->Join('stores', 'stores.id', '=', 'installed_carriers.store_id')->select('installed_addons.is_enabled', 'installed_addons.is_suspend', 'installed_addons.store_id', 'stores.name')->first();
+        if(empty($installed_addon)){
+            return [];
+        }
+        $RADController = new RADController();
+        $request = new \Illuminate\Http\Request();
+        $request->store_id = $installed_addon['store_id'];
+        $request->store_name = $installed_addon['name'];
+        $RADplan = $RADController->getPlans($request)->original['data']['current_plan'];
+
+        $now = Carbon::createFromFormat('Y-d-m H:i:s', now());
+        $expiry = Carbon::createFromFormat('Y-d-m H:i:s', $RADplan->status->subscriptionInfo->expiryTime);
+
+        $isRadNotActive = $RADplan->severity !== 'SUCCESS' || $expiry->gt($now) || $RADplan->status->subscriptionInfo->subscriptionStatus != 1;
+        if($isRadNotActive){
+            return [];
+        }else{
+            return [
+                'rad' => 1,
+                'is_enabled' => $installed_addon['is_enabled'],
+                'is_suspend' => $installed_addon['is_suspend'],
+            ];
+        }
+    }
     /**
      * =======================================================
      * ***************** Get Quotes Section ******************
@@ -1152,7 +1183,6 @@ class CompileQuotes
             if (isset($quote->severity)) {
                 return [];
             }
-
             if ($counter == 0) { //To be checked only once
                 $isRad = $quote->autoResidentialsStatus ?? '';
                 $this->getAutoResidentialTitle($isRad);
