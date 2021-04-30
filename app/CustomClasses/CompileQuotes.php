@@ -1149,7 +1149,7 @@ class CompileQuotes
         } elseif ($this->isResi) {
             $accessTitle = $this->resiLabel;
         }
-        return $serviceTitle . $accessTitle . $deliveryEstimateLabel;
+        return $serviceTitle  . $deliveryEstimateLabel . $accessTitle;
     }
 
     /**
