@@ -545,14 +545,15 @@ class CompileQuotes
     {
         //Todo: check RAD is enabled or not
         $isRadEnabled = $this->isRADEnabledandActive();
-        if (!empty($isRadEnabled) && $isRadEnabled['is_enabled']) {
-            $isRadSuspend = $isRadEnabled['is_suspend'] == 1 ? 'no' : '';//$this->getConfigData("resaddressdetection/suspend/value");
+        // dd($isRadEnabled, $resi);
+        if (!empty($isRadEnabled) && $isRadEnabled['is_enabled'] && $isRadEnabled['is_suspend'] !== 1) {
+            $isRadSuspend = $isRadEnabled['is_suspend'] == 0 ? 'no' : '';//$this->getConfigData("resaddressdetection/suspend/value");
             if ($this->residentialDlvry == "1") {
                 $this->residentialDlvry = $isRadSuspend == "no" ? '0' : '1';
             } else {
                 $this->residentialDlvry = $isRadSuspend == "no" ? '0' : $this->residentialDlvry;
             }
-
+            $resi = 'r';
             if ($this->residentialDlvry == null || $this->residentialDlvry == '0') {
                 if ($resi == 'r') {
                     $this->isResi = true;
@@ -564,7 +565,7 @@ class CompileQuotes
     public function isRADEnabledandActive(){
         $quoteSettings = $this->quoteSettings;
         $installed_addon = (array) DB::table('installed_carriers')->where('installed_carriers.id', $quoteSettings['carrierId'])
-        ->Join('installed_addons', 'installed_addons.store_id', '=', 'installed_carriers.store_id')         ->Join('stores', 'stores.id', '=', 'installed_carriers.store_id')->select('installed_addons.is_enabled', 'installed_addons.is_suspend', 'installed_addons.store_id', 'stores.name')->first();
+            ->Join('installed_addons', 'installed_addons.store_id', '=', 'installed_carriers.store_id')         ->Join('stores', 'stores.id', '=', 'installed_carriers.store_id')->select('installed_addons.is_enabled', 'installed_addons.is_suspend', 'installed_addons.store_id', 'stores.name')->first();
         if(empty($installed_addon)){
             return [];
         }
@@ -650,6 +651,8 @@ class CompileQuotes
 
             if ($count == 0) { //To be checked only once
                 $isRad = $quote['autoResidentialsStatus'] ?? '';
+                //$resi = $this->isResi ? $this->resiLabel : '';
+                //dd($isRad, $resi);
                 $this->getAutoResidentialTitle($isRad);
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
                 unset($quote['InstorPickupLocalDelivery']);
@@ -685,16 +688,19 @@ class CompileQuotes
             }
             //Todo: function naming according to the functionality
             $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
+//echo "<pre>"; print_r($compiledQuotes); exit;
             if ($compiledQuotes !== null) {
                 if (count($compiledQuotes) > 1) {
                     foreach ($compiledQuotes as $k => $service) {
                         $allQuotes['simple'][] = $service['simple'];
                         $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
+                        //$allQuotes['liftgate'][] = $service['simple'];
                     }
                 } else {
                     $service = reset($compiledQuotes);
                     $allQuotes['simple'][] = $service['simple'] ?? '';
                     $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
+                    //$allQuotes['liftgate'][] = $service['simple'];
                 }
             }
 
@@ -945,6 +951,7 @@ class CompileQuotes
             return [];
         }
         $lfg = $this->quoteSettings['alwaysLiftGateDelivery'] == 1 || ($this->isResi && $this->quoteSettings['autoDetectedResidentialAddressesLfg']);
+        //echo "<pre>"; print_r($quotes); print_r($this->quoteSettings); exit;
         if ($this->isMultiShipment == false) {
             if (isset($quotes['liftgate']) && $this->quoteSettings['offerLiftGateDelivery'] == 1 && ($this->quoteSettings['autoDetectedResidentialAddressesLfg'] == 0 || $this->isResi == 0)) {
                 /**
@@ -955,7 +962,7 @@ class CompileQuotes
                 /**
                  * Condition for Always lift gate and lift gate for residential (Single Shipment)
                  * */
-                return $quotes['liftgate'];
+                return $quotes['simple'];
             } else {
                 return $quotes['simple'];
             }
