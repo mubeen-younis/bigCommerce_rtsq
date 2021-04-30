@@ -79,13 +79,13 @@ class GetRatesController extends Controller
         if (!empty(array_filter($quotes))) {
             $resp['quote_id'] = "2";// need to change
             $resp['messages'] = [];// need to change
-            $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'usps_pitney_bowes', 'display_name' => strlen($quotes[0]['title']) > 100 ? explode( ' (Estimated', $quotes[0]['title'])[0]:$quotes[0]['title']]];
+            $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'usps_pitney_bowes', 'display_name' => $quotes[0]['title']]];
             // dd($quotes);
             foreach ($quotes as $key => $quote) {
                 $resp['carrier_quotes'][0]['quotes'][$key] = [
                     'code' => $quote['code'],
                     'rate_id' => '9vcV1JfckPJZW2pjeNXcKP5y',
-                    'display_name' => strlen($quote['title']) > 100 ? explode( ' (Estimated', $quote['title'])[0]:$quote['title'],
+                    'display_name' => $quote['title'],
                     'cost' => ['currency' => 'USD', 'amount' => number_format($quote['rate'],  2, '.', ',')],
                     'transit_time' => ['units' => 'BUSINESS_DAYS', 'duration' => 1],
                     // TODO: Will be set

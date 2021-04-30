@@ -495,9 +495,9 @@ class CompileQuotes
         foreach ($fields as $key => $field) {
             $this->$key = $this->configSettings[$field] ?? '';
         }
-        $this->resiLabel = ' with residential delivery';
-        $this->lgLabel = ' with lift gate delivery';
-        $this->resiLgLabel = ' with residential delivery and lift gate delivery';
+        $this->resiLabel = ' (R)';
+        $this->lgLabel = ' (L)';
+        $this->resiLgLabel = ' (R | L)';
     }
 
     /**
