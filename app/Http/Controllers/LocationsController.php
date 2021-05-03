@@ -219,7 +219,7 @@ class LocationsController extends Controller
 
             return ['error' => false,
                 'data' => Locations::find($location->id),
-                'message' => 'Success! ' . $callBy . $method . 'successfully.',
+                'message' => 'Success! ' . $callBy . ' ' . $method . ' successfully.',
                 'status' => 200,
             ];
         } catch (\Exception $exception) {
@@ -322,7 +322,7 @@ class LocationsController extends Controller
         if (isset($mapResult['error_message']) || $mapResult['status'] != 'OK') {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => isset($mapResult['error_message']) ? $mapResult['error_message'] : " Zero Results",
+                'message' => isset($mapResult['error_message']) ? $mapResult['error_message'] : " Error! Please enter valid US or Canada zip code.",
             ], 200);
         }
         $city = [];
