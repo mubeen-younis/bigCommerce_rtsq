@@ -578,7 +578,7 @@ class CompileQuotes
         $now = Carbon::createFromFormat('Y-d-m H:i:s', now());
         $expiry = Carbon::createFromFormat('Y-d-m H:i:s', $RADplan->status->subscriptionInfo->expiryTime);
 
-        $isRadNotActive = $RADplan->severity !== 'SUCCESS' || $expiry->gt($now) || $RADplan->status->subscriptionInfo->subscriptionStatus != 1;
+        $isRadNotActive = $RADplan->severity !== 'SUCCESS' || $now->gt($expiry) || $RADplan->status->subscriptionInfo->subscriptionStatus != 1;
         if($isRadNotActive){
             return [];
         }else{
