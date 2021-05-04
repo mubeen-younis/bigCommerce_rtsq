@@ -85,6 +85,24 @@ class GenerateRequestData
                     }
                     $carriersArr['carriers']['wweSmall'] = $wweLtlArr;
                     break;
+                case "ups-ltl":
+                    $wweLtlArr = $this->upsLtlEnitArr($con1);
+                    $wweLtlArr['originAddress'] = $origin;
+                    if (count($wweLtlArr['originAddress']) > 1) {
+                        $whIDs = [];
+                        foreach ($wweLtlArr['originAddress'] as $wh) {
+                            $whIDs[] = $wh['locationId'];
+                        }
+                        if (count(array_unique($whIDs)) > 1) {
+                            foreach ($wweLtlArr['originAddress'] as $id => $wh) {
+                                if (isset($wh['InstorPickupLocalDelivery'])) {
+                                    $wweLtlArr['originAddress'][$id]['InstorPickupLocalDelivery'] = [];
+                                }
+                            }
+                        }
+                    }
+                    $carriersArr['carriers']['upsLTL'] = $wweLtlArr;
+                    break;
             }
         }
         return $carriersArr;
@@ -121,6 +139,18 @@ class GenerateRequestData
             'quotestType' => 'small', // ltl / small
             'version' => '2.0.4',
             'api' => $this->getApiInfoArrWweSmall($connSettings),
+            'getDistance' => 0,
+        ];
+    }
+
+    public function upsLtlEnitArr($connSettings){
+        return [
+            'licenseKey' => $connSettings['creds']['license_key'],//$this->connectionSettings['license_key'],
+            'serverName' => "https://" . $this->storeData['store']['name'],//"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
+            'carrierMode' => 'pro',
+            'quotestType' => 'small', // ltl / small
+            'version' => '2.0.4',
+            'api' => $this->getApiInfoArrUpsLtl($connSettings),
             'getDistance' => 0,
         ];
     }
