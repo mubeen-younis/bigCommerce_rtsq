@@ -807,10 +807,9 @@ class CompileQuotes
                 $multiShipPrice += $minValueFromNetChargeArr;
                 $originQuotesMulti[0]['code'] = 'Multi';
                 $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
-                $originQuotesMulti[0]['title'] = 'Shipping';
+                $originQuotesMulti[0]['title'] = $this->isResi ? 'Shipping ( R ) ' : 'Shipping';
 
             }
-            $originQuotesMulti[0]['title'] .= $this->isResi ? '( R )' : '';
             return $originQuotesMulti;
         }
         // Doing For SIngle Shipment
