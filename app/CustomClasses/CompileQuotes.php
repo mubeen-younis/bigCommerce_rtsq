@@ -810,6 +810,7 @@ class CompileQuotes
                 $originQuotesMulti[0]['title'] = 'Shipping';
 
             }
+            $originQuotesMulti[0]['title'] .= $this->isResi ? '( R )' : '';
             return $originQuotesMulti;
         }
         // Doing For SIngle Shipment
