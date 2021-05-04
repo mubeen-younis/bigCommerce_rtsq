@@ -55,6 +55,7 @@ class CompileQuotes
     private $isResi = false;
 
     private $residentialDelivery;
+    private $residentialDlvry;
     /**
      * @var SessionManagerInterface
      */
@@ -744,6 +745,7 @@ class CompileQuotes
                 return [];
             }
             if ($count == 0) { //To be checked only once
+                $this->getAutoResidentialTitle('');
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
                 unset($quote['InstorPickupLocalDelivery']);
             }
@@ -787,7 +789,7 @@ class CompileQuotes
                     $quoteSettings = $this->quoteSettings;
                     $price = $this->wweSmallQuoteRes->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup']);
 
-                    $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $data['transitTime'], $data['serviceType'], $this->quoteSettings);
+                    $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $data['transitTime'], $data['serviceType'], $this->quoteSettings, $this->isResi);
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = $data['serviceType'] . $access;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
@@ -1136,6 +1138,7 @@ class CompileQuotes
         $deliveryEstimateLabel = (!empty($deliveryEstimate) && $this->quoteSettings['showDeliveryEstimate']) ? ' (Estimated transit time of ' . $deliveryEstimate . ' business days)' : '';
         // Here  Making Access title
         $accessTitle = '';
+
         if ($lgOption === true || $this->quoteSettings['autoDetectedResidentialAddressesLfg']) {
             if ($lgOption && $this->quoteSettings['alwaysLiftGateDelivery'] == '0') {
                 $accessTitle = $this->isResi ? $this->resiLgLabel : $this->lgLabel;
