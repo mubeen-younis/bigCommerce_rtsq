@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Constants\Constant;
 use App\Models\AccessTokens;
 use App\Models\ProductSetting;
 use App\Models\Store;
@@ -128,7 +129,7 @@ class MainController extends BaseController
 
             //return redirect('/');
             // Redirect::to($this->baseURL . '/?store=' . $data['access_token']);
-            return Redirect::to('https://bc-fe.eniture-dev3.com/?store=' . $toAppendHash);
+            return Redirect::to(Constant::FRONTEND_URL.'/?store=' . $toAppendHash);
         } catch (RequestException $e) {
             $statusCode = $e->getResponse()->getStatusCode();
             $errorMessage = "An error occurred.";
@@ -144,7 +145,7 @@ class MainController extends BaseController
             if ($request->has('external_install')) {
                 return redirect('https://login.bigcommerce.com/app/' . $this->getAppClientId() . '/install/failed');
             } else {
-                dd('Azeem', $errorMessage);
+                dd($errorMessage);
                 //return redirect()->action([MainController::class, 'error'])->with('error_message', $errorMessage);
             }
         }
@@ -177,7 +178,7 @@ class MainController extends BaseController
         }
         //header('location: http://bc-fe.eniture-dev3.com/?store='.$toAppendHash);
         //return redirect('/');
-        return Redirect::to('https://bc-fe.eniture-dev3.com/?store=' . $toAppendHash);
+        return Redirect::to(Constant::FRONTEND_URL.'/?store=' . $toAppendHash);
     }
 
     public function registerWebHook($request)
