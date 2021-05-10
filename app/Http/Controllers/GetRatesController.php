@@ -78,6 +78,9 @@ class GetRatesController extends Controller
         if( strlen($title) > 100 ){
             $title = explode("(Estimated", $title)[0];
         }
+        if($title == "" || $title == null){
+            $title = "LOCDEL";
+        }
         return $title;
     }
 
