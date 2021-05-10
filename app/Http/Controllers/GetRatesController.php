@@ -84,20 +84,22 @@ class GetRatesController extends Controller
     public function generateQuoteFormatResponse($quotes)
     {
         $current = Carbon::now();
+        $quote_id = rand(1,9);
         if (!empty(array_filter($quotes))) {
-            $resp['quote_id'] = rand(1,9);// need to change
+            $resp['quote_id'] = "$quote_id";// need to change
             $resp['messages'] = [];// need to change
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'usps_pitney_bowes', 'display_name' => $this->limitTitle($quotes[0]['title'])]];
             foreach ($quotes as $key => $quote) {
                 if($quote['title'] != "") {
+                    $rate_id = $quote['code'].time();
                     $resp['carrier_quotes'][0]['quotes'][$key] = [
                         'code' => $quote['code'],
-                        'rate_id' => $quote['code'].time(),
+                        'rate_id' => "$rate_id",
                         'display_name' => $this->limitTitle($quote['title']),
                         'cost' => ['currency' => 'USD', 'amount' => number_format($quote['rate'], 2, '.', ',')],
                         //'transit_time' => ['units' => 'BUSINESS_DAYS', 'duration' => 1],
                         // TODO: Will be set
-                        'dispatch_date' => $current
+                        'dispatch_date' => "$current"
                     ];
                 }
             }
