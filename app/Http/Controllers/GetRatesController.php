@@ -92,12 +92,12 @@ class GetRatesController extends Controller
                 if($quote['title'] != "") {
                     $resp['carrier_quotes'][0]['quotes'][$key] = [
                         'code' => $quote['code'],
-                        'rate_id' => '9vcV1JfckPJZW2pjeNXcKP5y',
+                        //'rate_id' => '9vcV1JfckPJZW2pjeNXcKP5y',
                         'display_name' => $this->limitTitle($quote['title']),
                         'cost' => ['currency' => 'USD', 'amount' => number_format($quote['rate'], 2, '.', ',')],
-                        'transit_time' => ['units' => 'BUSINESS_DAYS', 'duration' => 1],
+                        //'transit_time' => ['units' => 'BUSINESS_DAYS', 'duration' => 1],
                         // TODO: Will be set
-                        'dispatch_date' => '2021-03-19T00:00:00-05:00'
+                        //'dispatch_date' => '2021-03-19T00:00:00-05:00'
                     ];
                 }
             }
