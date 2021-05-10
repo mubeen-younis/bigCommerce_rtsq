@@ -15,7 +15,7 @@ use App\CustomClasses\Origin;
 use App\Models\ProductSetting;
 use App\CustomClasses\Shipping;
 use Illuminate\Support\Facades\Log;
-
+use Carbon\Carbon;
 class GetRatesController extends Controller
 {
     public $shipping = null;
@@ -83,21 +83,21 @@ class GetRatesController extends Controller
 
     public function generateQuoteFormatResponse($quotes)
     {
+        $current = Carbon::now();
         if (!empty(array_filter($quotes))) {
-            $resp['quote_id'] = "2";// need to change
+            $resp['quote_id'] = rand(1,9);// need to change
             $resp['messages'] = [];// need to change
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'usps_pitney_bowes', 'display_name' => $this->limitTitle($quotes[0]['title'])]];
-            // dd($quotes);
             foreach ($quotes as $key => $quote) {
                 if($quote['title'] != "") {
                     $resp['carrier_quotes'][0]['quotes'][$key] = [
                         'code' => $quote['code'],
-                        //'rate_id' => '9vcV1JfckPJZW2pjeNXcKP5y',
+                        'rate_id' => $quote['code'].time(),
                         'display_name' => $this->limitTitle($quote['title']),
                         'cost' => ['currency' => 'USD', 'amount' => number_format($quote['rate'], 2, '.', ',')],
                         //'transit_time' => ['units' => 'BUSINESS_DAYS', 'duration' => 1],
                         // TODO: Will be set
-                        //'dispatch_date' => '2021-03-19T00:00:00-05:00'
+                        'dispatch_date' => $current
                     ];
                 }
             }
