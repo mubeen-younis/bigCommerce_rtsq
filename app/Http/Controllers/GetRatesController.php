@@ -78,9 +78,6 @@ class GetRatesController extends Controller
         if( strlen($title) > 100 ){
             $title = explode("(Estimated", $title)[0];
         }
-        if($title == "" || $title == null){
-            $title = "LOCDEL";
-        }
         return $title;
     }
 
@@ -92,15 +89,17 @@ class GetRatesController extends Controller
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'usps_pitney_bowes', 'display_name' => $this->limitTitle($quotes[0]['title'])]];
             // dd($quotes);
             foreach ($quotes as $key => $quote) {
-                $resp['carrier_quotes'][0]['quotes'][$key] = [
-                    'code' => $quote['code'],
-                    'rate_id' => '9vcV1JfckPJZW2pjeNXcKP5y',
-                    'display_name' => $this->limitTitle($quote['title']),
-                    'cost' => ['currency' => 'USD', 'amount' => number_format($quote['rate'],  2, '.', ',')],
-                    'transit_time' => ['units' => 'BUSINESS_DAYS', 'duration' => 1],
-                    // TODO: Will be set
-                    'dispatch_date' => '2021-03-19T00:00:00-05:00'
-                ];
+                if($quote['title'] != "") {
+                    $resp['carrier_quotes'][0]['quotes'][$key] = [
+                        'code' => $quote['code'],
+                        'rate_id' => '9vcV1JfckPJZW2pjeNXcKP5y',
+                        'display_name' => $this->limitTitle($quote['title']),
+                        'cost' => ['currency' => 'USD', 'amount' => number_format($quote['rate'], 2, '.', ',')],
+                        'transit_time' => ['units' => 'BUSINESS_DAYS', 'duration' => 1],
+                        // TODO: Will be set
+                        'dispatch_date' => '2021-03-19T00:00:00-05:00'
+                    ];
+                }
             }
         } else {
             $resp = [];
