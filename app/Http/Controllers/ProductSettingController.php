@@ -84,6 +84,26 @@ class ProductSettingController extends Controller
         }
     }
 
+    public function updateSingleProductFromApi($request)
+    {
+        $storeId = $request['store_id'] ?? '';
+        $storeHash = $request['store_hash'] ?? '';
+        $source_product_id = $request['source_product_id'] ?? '';
+        $storeToken = $this->mainController->getCustAccessTok($storeId);
+        $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products/' . $source_product_id;
+        //$headers[] = 'X-Auth-Client: ' . $this->mainController->getAppClientId();
+        $headers[] = 'X-Auth-Token: ' . $storeToken;
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $data = [
+            'weight' => $request['weight'] ?? 0,
+            'width' => $request['width'] ?? 0,
+            'height' => $request['height'] ?? 0,
+            'depth' => $request['length'] ?? 0
+        ];
+        $this->curlRequest->enSingleCurlRequest($storeUrl, json_encode($data), $headers, 'PUT', true);
+    }
+
     public function getSingleProductDetail(Request $request)
     {
         if (empty($request->product_id)) {
@@ -169,9 +189,9 @@ class ProductSettingController extends Controller
         $product->settings = json_encode($request->only(['dropship_enabled', 'dropship_location', 'freight_class',
             'hazardous_enabled', 'freight_enabled', 'insurance']));
         $product->update();
-
+        $this->updateSingleProductFromApi($request);
         return response()->json(['error' => false,
-            'data' => ProductSetting::find($request->product_id),
+            'data' => $request->all(),//ProductSetting::find($request->product_id),
             'message' => 'Product Updated Successfully',
         ], 200);
     }
