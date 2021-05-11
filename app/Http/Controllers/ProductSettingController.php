@@ -191,7 +191,7 @@ class ProductSettingController extends Controller
         $product->update();
         $this->updateSingleProductFromApi($request);
         return response()->json(['error' => false,
-            'data' => $request->all(),//ProductSetting::find($request->product_id),
+            'data' => ProductSetting::find($request->product_id),
             'message' => 'Product Updated Successfully',
         ], 200);
     }
