@@ -46,6 +46,14 @@ class ProductSettingController extends Controller
         $response = json_decode($response['response'], true);
         if (isset($response['data']) && count($response['data'])) {
             foreach ($response['data'] as $product) {
+                $imageEndPoint = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products/'.$product['id'].'/images';
+                $image = $this->curlRequest->enSingleCurlRequest($imageEndPoint, [], $headers, 'GET', true);
+                if (isset($image['status']) && $image['status'] == true) {
+                    $image = json_decode($image['response'], true);
+                    if (isset($image['data']) && count($image['data'])) {
+                        $product['image'] = $image['data'][0]['url_tiny'] ?? '';
+                    }
+                }
                 $this->saveProducts->saveProduct($product, $storeId);
             }
             return response()->json(['error' => false,

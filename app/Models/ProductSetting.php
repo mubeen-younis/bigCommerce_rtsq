@@ -26,7 +26,7 @@ class ProductSetting extends Model
         $saveProduct->name = $product['name'];
         $saveProduct->source_product_id = $product['id'];
         $saveProduct->variant_id = $product['base_variant_id'];
-        $saveProduct->image_src = $product['custom_url']['url'];
+        $saveProduct->image_src = $product['image'] ?? $product['custom_url']['url'];
         $saveProduct->product_type = $product['type'];
         $saveProduct->sku = $product['sku'];
         $saveProduct->weight = $product['weight'];
