@@ -49,7 +49,7 @@ class ProductSettingController extends Controller
                 $this->saveProducts->saveProduct($product, $storeId);
             }
             return response()->json(['error' => false,
-                'data' => $response,
+                'data' => $this->getStoreProductsFromDb($request),
                 'message' => 'Products Syncronized Succesfully',
             ], 200);
         }
@@ -99,7 +99,7 @@ class ProductSettingController extends Controller
             'weight' => $request['weight'] ?? 0,
             'width' => $request['width'] ?? 0,
             'height' => $request['height'] ?? 0,
-            'depth' => $request['length'] ?? 0
+            'depth' => $request['length'] ?? 0,
         ];
         $this->curlRequest->enSingleCurlRequest($storeUrl, json_encode($data), $headers, 'PUT', true);
     }
