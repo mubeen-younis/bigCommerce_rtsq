@@ -74,77 +74,42 @@ class GetRatesController extends Controller
         $originWarehouse->getNearestWarehouse($formatReq);
     }
 
-    public function limitTitle($title){
-        if( strlen($title) > 100 ){
-            $title = explode("(Estimated", $title)[0];
+    public function limitTitle($quote){
+        $res = $quote['title'];
+        if( strlen($quote['title']) > 100 ){
+            $res = explode("(Estimated", $quote['title'])[0];
+        }else if( $quote['title'] == "" ){
+            $res = $quote['code'];
         }
-        return $title;
+        return $res;
     }
 
     public function generateQuoteFormatResponse($quotes)
     {
+        //echo "<pre>"; print_r($quotes); exit;
         $current = str_replace(' ', 'T', Carbon::now())."-00:00";
         if (!empty(array_filter($quotes))) {
             $resp['quote_id'] = (string) rand(1,9);// need to change
             $resp['messages'] = [];// need to change
-            $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'usps_pitney_bowes', 'display_name' => $this->limitTitle($quotes[0]['title'])]];
+            $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'usps_pitney_bowes', 'display_name' => $this->limitTitle($quotes[0])]];
             foreach ($quotes as $key => $quote) {
-                if($quote['title'] != "") {
-                    $rate_id = $quote['code'].time();
-                    $resp['carrier_quotes'][0]['quotes'][$key] = [
-                        'code' => $quote['code'],
-                        'rate_id' => "$rate_id",
-                        'display_name' => $this->limitTitle($quote['title']),
-                        'cost' => ['currency' => 'USD', 'amount' => number_format($quote['rate'], 2, '.', ',')],
-                        //'transit_time' => ['units' => 'BUSINESS_DAYS', 'duration' => 1],
-                        // TODO: Will be set
-                        'dispatch_date' => "$current"
-                    ];
-                }
+                $rate_id = $quote['code'].time();
+                $resp['carrier_quotes'][0]['quotes'][$key] = [
+                    'code' => $quote['code'],
+                    'rate_id' => "$rate_id",
+                    'display_name' => $this->limitTitle($quote),
+                    'cost' => ['currency' => 'USD', 'amount' => $quote['rate']],
+                    'dispatch_date' => "$current"
+                    //'cost' => ['currency' => 'USD', 'amount' => number_format($quote['rate'], 2, '.', ',')],
+                    //'transit_time' => ['units' => 'BUSINESS_DAYS', 'duration' => 1],
+                    // TODO: Will be set
+
+                ];
             }
         } else {
             $resp = [];
         }
-        /*$resp = array (
-            'quote_id' => '2',
-            'messages' =>
-                array (
-
-                ),
-            'carrier_quotes' =>
-                array (
-                    0 =>
-                        array (
-                            'carrier_info' =>
-                                array (
-                                    'code' => 'usps_pitney_bowes',
-                                    'display_name' => 'USPS',
-                                ),
-                            'quotes' =>
-                                array (
-                                    0 =>
-                                        array (
-                                            'code' => 'ODFL',
-                                            'rate_id' => '9vcV1JfckPJZW2pjeNXcKP5y',
-                                            'display_name' => 'Freight online',
-                                            'cost' =>
-                                                array (
-                                                    'currency' => 'USD',
-                                                    'amount' => 1000,
-                                                ),
-                                            'transit_time' =>
-                                                array (
-                                                    'units' => 'BUSINESS_DAYS',
-                                                    'duration' => 1,
-                                                ),
-                                            'dispatch_date' => '2021-03-19T00:00:00-05:00',
-                                        ),
-
-                                ),
-                        ),
-
-                ),
-        );*/
+        //$resp = '{"quote_id":"1","messages":[],"carrier_quotes":[{"carrier_info":{"code":"usps_pitney_bowes","display_name":"R & L Carriers Inc (Estimated transit time of 2 business days)"},"quotes":[{"code":"RLCA","rate_id":"RLCA1621237116","display_name":"R & L Carriers Inc (Estimated transit time of 2 business days)","cost":{"currency":"USD","amount":"245.83"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"EXLA","rate_id":"EXLA1621237116","display_name":"Estes Express Lines (Estimated transit time of 2 business days)","cost":{"currency":"USD","amount":"266.48"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"SEFL","rate_id":"SEFL1621237116","display_name":"Southeastern Freight Lines (Estimated transit time of 2 business days)","cost":{"currency":"USD","amount":"246.43"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"UPGF","rate_id":"UPGF1621237116","display_name":"TForce Freight (Estimated transit time of 2 business days)","cost":{"currency":"USD","amount":"253.65"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"RLCA+LG","rate_id":"RLCA+LG1621237116","display_name":"R & L Carriers Inc (Estimated transit time of 2 business days) (L)","cost":{"currency":"USD","amount":"245.83"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"EXLA+LG","rate_id":"EXLA+LG1621237116","display_name":"Estes Express Lines (Estimated transit time of 2 business days) (L)","cost":{"currency":"USD","amount":"291.48"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"SEFL+LG","rate_id":"SEFL+LG1621237116","display_name":"Southeastern Freight Lines (Estimated transit time of 2 business days) (L)","cost":{"currency":"USD","amount":"306.43"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"UPGF+LG","rate_id":"UPGF+LG1621237116","display_name":"TForce Freight (Estimated transit time of 2 business days) (L)","cost":{"currency":"USD","amount":"318.65"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"INSP","rate_id":"INSP1621237116","display_name":"INSP","cost":{"currency":"USD","amount":"0.00"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"LOCDEL","rate_id":"LOCDEL1621237116","display_name":"LOCDEL","cost":{"currency":"USD","amount":"0.00"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"own_arrangement","rate_id":"own_arrangement1621237116","display_name":"I shall arrange by own way","cost":{"currency":"USD","amount":"0.00"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"1DM","rate_id":"1DM1621237116","display_name":"UPS Next Day Air Early","cost":{"currency":"USD","amount":"1,499.87"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"1DA","rate_id":"1DA1621237116","display_name":"UPS Next Day Air","cost":{"currency":"USD","amount":"622.18"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"2DA","rate_id":"2DA1621237116","display_name":"UPS 2nd Day Air","cost":{"currency":"USD","amount":"307.22"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"3DS","rate_id":"3DS1621237116","display_name":"UPS 3 Day Select","cost":{"currency":"USD","amount":"253.61"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"GND","rate_id":"GND1621237116","display_name":"UPS Ground","cost":{"currency":"USD","amount":"150.43"},"dispatch_date":"2021-05-17T07:38:36-00:00"}]}]}';
         /*  echo "<pre>";
           print_r($resp);
           exit;*/
@@ -184,7 +149,7 @@ class GetRatesController extends Controller
                     'product_id' => $product['product_id'] ?? '',
                     'variant_id' => $product['variant_id'] ?? '',
                     'sku' => $product['sku'] ?? '',
-                    'piecesOfLineItem' => $product['quantity'] ?? ''
+                    'piecesOfLineItem' => 2//$product['quantity'] ?? ''
                     ,
                     'lineItemId' => $product['product_id'] ?? '',
                     'lineItemName' => $product['name'] ?? '',
