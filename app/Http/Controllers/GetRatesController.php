@@ -149,7 +149,7 @@ class GetRatesController extends Controller
                     'product_id' => $product['product_id'] ?? '',
                     'variant_id' => $product['variant_id'] ?? '',
                     'sku' => $product['sku'] ?? '',
-                    'piecesOfLineItem' => 2//$product['quantity'] ?? ''
+                    'piecesOfLineItem' => $product['quantity'] ?? ''
                     ,
                     'lineItemId' => $product['product_id'] ?? '',
                     'lineItemName' => $product['name'] ?? '',
