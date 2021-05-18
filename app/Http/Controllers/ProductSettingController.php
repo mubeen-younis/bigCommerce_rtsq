@@ -46,10 +46,18 @@ class ProductSettingController extends Controller
         $response = json_decode($response['response'], true);
         if (isset($response['data']) && count($response['data'])) {
             foreach ($response['data'] as $product) {
+                $imageEndPoint = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products/'.$product['id'].'/images';
+                $image = $this->curlRequest->enSingleCurlRequest($imageEndPoint, [], $headers, 'GET', true);
+                if (isset($image['status']) && $image['status'] == true) {
+                    $image = json_decode($image['response'], true);
+                    if (isset($image['data']) && count($image['data'])) {
+                        $product['image'] = $image['data'][0]['url_tiny'] ?? '';
+                    }
+                }
                 $this->saveProducts->saveProduct($product, $storeId);
             }
             return response()->json(['error' => false,
-                'data' => $response,
+                'data' => $this->getStoreProductsFromDb($request),
                 'message' => 'Products Syncronized Succesfully',
             ], 200);
         }
@@ -82,6 +90,26 @@ class ProductSettingController extends Controller
                 'message' => 'Products Saved Succesfully',
             ], 200);
         }
+    }
+
+    public function updateSingleProductFromApi($request)
+    {
+        $storeId = $request['store_id'] ?? '';
+        $storeHash = $request['store_hash'] ?? '';
+        $source_product_id = $request['source_product_id'] ?? '';
+        $storeToken = $this->mainController->getCustAccessTok($storeId);
+        $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products/' . $source_product_id;
+        //$headers[] = 'X-Auth-Client: ' . $this->mainController->getAppClientId();
+        $headers[] = 'X-Auth-Token: ' . $storeToken;
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $data = [
+            'weight' => $request['weight'] ?? 0,
+            'width' => $request['width'] ?? 0,
+            'height' => $request['height'] ?? 0,
+            'depth' => $request['length'] ?? 0,
+        ];
+        $this->curlRequest->enSingleCurlRequest($storeUrl, json_encode($data), $headers, 'PUT', true);
     }
 
     public function getSingleProductDetail(Request $request)
@@ -169,7 +197,7 @@ class ProductSettingController extends Controller
         $product->settings = json_encode($request->only(['dropship_enabled', 'dropship_location', 'freight_class',
             'hazardous_enabled', 'freight_enabled', 'insurance']));
         $product->update();
-
+        $this->updateSingleProductFromApi($request);
         return response()->json(['error' => false,
             'data' => ProductSetting::find($request->product_id),
             'message' => 'Product Updated Successfully',

@@ -8,7 +8,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    development:
+    laravel8:
     - step:
         caches:
           - composer
@@ -19,7 +19,7 @@ pipelines:
               SERVER: '3.210.152.102'
               MODE: 'command'
               COMMAND: '/home/eniture/public_html/bc/remote-script.sh'
-              
+
     staging:
     - step:
         caches:
@@ -31,7 +31,7 @@ pipelines:
               SERVER: '3.213.234.241'
               MODE: 'command'
               COMMAND: '/home/eniture/public_html/bigcommerce/bc/remote-script.sh'
-              
+
     master:
     - step:
         caches:
@@ -43,7 +43,7 @@ pipelines:
               SERVER: '3.94.2.214'
               MODE: 'command'
               COMMAND: '/home/eniture/public_html/bigcommerce/bc/remote-script.sh'
-              
+
     ws-elb:
     - step:
         caches:
