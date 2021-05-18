@@ -143,5 +143,4 @@ class CurlRequest
             return $exception->getMessage();
         }
     }
-
 }
