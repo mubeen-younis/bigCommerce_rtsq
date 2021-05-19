@@ -98,11 +98,11 @@ class LocationsController extends Controller
 
     public function saveWarehouseAddress($request)
     {
-        $method = "Added";
+        $method = "added";
         $callBy = "Warehouse";
 
         if (!empty($request->location_id)) {
-            $method = "Updated";
+            $method = "updated";
             $location = Locations::where('id', $request->location_id)->where('type', 1)->first();
 
             if ($location === null) {
@@ -118,7 +118,7 @@ class LocationsController extends Controller
                 if (Locations::where('zip_code', $request->zip_code)->where('type', 1)->exists()) {
                     return ['error' => true,
                         'data' => [],
-                        'message' => 'Warehouse address with this zipcode already exists',
+                        'message' => 'Error! Zip code already exists.',
                         'status' => 200,
                     ];
                 }
@@ -129,7 +129,7 @@ class LocationsController extends Controller
             if (Locations::where('zip_code', $request->zip_code)->where('type', 1)->exists()) {
                 return ['error' => true,
                     'data' => [],
-                    'message' => 'Warehouse already exists',
+                    'message' => 'Error! Zip code already exists',
                     'status' => 200,
                 ];
             }
@@ -140,10 +140,11 @@ class LocationsController extends Controller
 
     public function saveDropshipAddress($request)
     {
-        $method = "Added";
-        $callBy = "Dropship";
+        $method = "added";
+        $callBy = "Drop ship";
+
         if (!empty($request->location_id)) {
-            $method = "Updated";
+            $method = "updated";
             $location = Locations::where('id', $request->location_id)->where('type', 2)->first();
             if ($location === null) {
                 return ['error' => true,
@@ -158,7 +159,7 @@ class LocationsController extends Controller
                 if (Locations::where('zip_code', $request->zip_code)->where('type', 2)->exists()) {
                     return ['error' => true,
                         'data' => [],
-                        'message' => 'Dropship address with this zipcode already exists',
+                        'message' => 'Error! Zip code already exists.',
                         'status' => 200,
                     ];
                 }
@@ -168,7 +169,7 @@ class LocationsController extends Controller
             if (Locations::where('zip_code', $request->zip_code)->where('type', 2)->exists()) {
                 return ['error' => true,
                     'data' => [],
-                    'message' => 'Dropship already exists',
+                    'message' => 'Error! Zip code already exists',
                     'status' => 200,
                 ];
             }
@@ -213,9 +214,12 @@ class LocationsController extends Controller
             ];
             $location->additionals = json_encode($additionals);
             $location->save();
+
+            $callBy = $method == 'added' ? 'New ' . lcfirst($callBy) : ucfirst($callBy);
+
             return ['error' => false,
                 'data' => Locations::find($location->id),
-                'message' => 'Successfully ' . $method . ' ' . $callBy . ' Address',
+                'message' => 'Success! ' . $callBy . ' ' . $method . ' successfully.',
                 'status' => 200,
             ];
         } catch (\Exception $exception) {
@@ -279,11 +283,13 @@ class LocationsController extends Controller
                 'message' => 'No Location Id',
             ], 404);
         }
+
         if (Locations::where('id', $request->location_id)->exists()) {
             Locations::where('id', $request->location_id)->delete();
+
             return response()->json(['error' => false,
                 'data' => [],
-                'message' => 'Location Deleted Successfully',
+                'message' => 'Success! ' . $request->location_type . ' deleted successfully',
             ], 200);
         } else {
             return response()->json(['error' => true,
@@ -316,7 +322,7 @@ class LocationsController extends Controller
         if (isset($mapResult['error_message']) || $mapResult['status'] != 'OK') {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => isset($mapResult['error_message']) ? $mapResult['error_message'] : " Zero Results",
+                'message' => isset($mapResult['error_message']) ? $mapResult['error_message'] : " Error! Please enter valid US or Canada zip code.",
             ], 200);
         }
         $city = [];

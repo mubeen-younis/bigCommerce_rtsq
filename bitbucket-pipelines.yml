@@ -1,0 +1,57 @@
+# This is a sample build configuration for PHP.
+# Check our guides at https://confluence.atlassian.com/x/e8YWN for more examples.
+# Only use spaces to indent your .yml configuration.
+# -----
+# You can specify a custom docker image from Docker Hub as your build environment.
+image: php:7.1.29
+options:
+  max-time: 60
+pipelines:
+  branches:
+    laravel8:
+    - step:
+        caches:
+          - composer
+        script:
+          - pipe: atlassian/ssh-run:0.2.2
+            variables:
+              SSH_USER: 'eniture'
+              SERVER: '3.210.152.102'
+              MODE: 'command'
+              COMMAND: '/home/eniture/public_html/bc/remote-script.sh'
+
+    staging:
+    - step:
+        caches:
+          - composer
+        script:
+          - pipe: atlassian/ssh-run:0.2.2
+            variables:
+              SSH_USER: 'eniture'
+              SERVER: '3.213.234.241'
+              MODE: 'command'
+              COMMAND: '/home/eniture/public_html/bigcommerce/bc/remote-script.sh'
+
+    master:
+    - step:
+        caches:
+          - composer
+        script:
+          - pipe: atlassian/ssh-run:0.2.2
+            variables:
+              SSH_USER: 'eniture'
+              SERVER: '3.94.2.214'
+              MODE: 'command'
+              COMMAND: '/home/eniture/public_html/bigcommerce/bc/remote-script.sh'
+
+    ws-elb:
+    - step:
+        caches:
+          - composer
+        script:
+          - pipe: atlassian/ssh-run:0.2.2
+            variables:
+              SSH_USER: 'ec2-user'
+              SERVER: '54.159.170.144'
+              MODE: 'command'
+              COMMAND: '/var/www/html/ws/carriers/cerasis/remote-script.sh'

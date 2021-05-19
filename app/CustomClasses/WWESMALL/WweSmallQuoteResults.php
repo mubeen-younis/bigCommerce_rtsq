@@ -91,13 +91,16 @@ class WweSmallQuoteResults
 
     }
 
-    public function getServiceTitle($title, $transitTime, $serviceCode, $quoteSettings)
+    public function getServiceTitle($title, $transitTime, $serviceCode, $quoteSettings, $isResi = false)
     {
         if ($quoteSettings['showDeliveryEstimate'] == true) {
             $title = $title . ' (Delivery ' . $transitTime . ')';
         }
-        return $title;
-
+        $resiTitle = '';
+        if($isResi){
+            $resiTitle = " ( R ) ";
+        }
+        return $title . $resiTitle;
     }
 
     public function serviceCodeOfWweSmallService($service)

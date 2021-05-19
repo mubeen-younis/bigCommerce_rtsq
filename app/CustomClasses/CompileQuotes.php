@@ -55,6 +55,7 @@ class CompileQuotes
     private $isResi = false;
 
     private $residentialDelivery;
+    private $residentialDlvry;
     /**
      * @var SessionManagerInterface
      */
@@ -578,7 +579,7 @@ class CompileQuotes
         $now = Carbon::createFromFormat('Y-d-m H:i:s', now());
         $expiry = Carbon::createFromFormat('Y-d-m H:i:s', $RADplan->status->subscriptionInfo->expiryTime);
 
-        $isRadNotActive = $RADplan->severity !== 'SUCCESS' || $expiry->gt($now) || $RADplan->status->subscriptionInfo->subscriptionStatus != 1;
+        $isRadNotActive = $RADplan->severity !== 'SUCCESS' || $now->gt($expiry) || $RADplan->status->subscriptionInfo->subscriptionStatus != 1;
         if($isRadNotActive){
             return [];
         }else{
@@ -744,6 +745,7 @@ class CompileQuotes
                 return [];
             }
             if ($count == 0) { //To be checked only once
+                $this->getAutoResidentialTitle('');
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
                 unset($quote['InstorPickupLocalDelivery']);
             }
@@ -787,7 +789,7 @@ class CompileQuotes
                     $quoteSettings = $this->quoteSettings;
                     $price = $this->wweSmallQuoteRes->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup']);
 
-                    $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $data['transitTime'], $data['serviceType'], $this->quoteSettings);
+                    $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $data['transitTime'], $data['serviceType'], $this->quoteSettings, $this->isResi);
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = $data['serviceType'] . $access;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
@@ -805,7 +807,7 @@ class CompileQuotes
                 $multiShipPrice += $minValueFromNetChargeArr;
                 $originQuotesMulti[0]['code'] = 'Multi';
                 $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
-                $originQuotesMulti[0]['title'] = 'Shipping';
+                $originQuotesMulti[0]['title'] = $this->isResi ? 'Shipping ( R ) ' : 'Shipping';
 
             }
             return $originQuotesMulti;
@@ -1136,6 +1138,7 @@ class CompileQuotes
         $deliveryEstimateLabel = (!empty($deliveryEstimate) && $this->quoteSettings['showDeliveryEstimate']) ? ' (Estimated transit time of ' . $deliveryEstimate . ' business days)' : '';
         // Here  Making Access title
         $accessTitle = '';
+
         if ($lgOption === true || $this->quoteSettings['autoDetectedResidentialAddressesLfg']) {
             if ($lgOption && $this->quoteSettings['alwaysLiftGateDelivery'] == '0') {
                 $accessTitle = $this->isResi ? $this->resiLgLabel : $this->lgLabel;
