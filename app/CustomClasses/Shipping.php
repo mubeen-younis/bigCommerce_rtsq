@@ -45,8 +45,9 @@ class Shipping
 
         // Checking if any productis hazardous
         $hazmatAllItems = $this->isHazmatMaterial($package);
+
         if ($this->isHazmat == 'Y') {
-            foreach($carriersArray['carriers'] as $key => $carriers){
+            foreach ($carriersArray['carriers'] as $key => $carriers) {
                 $carriersArray['carriers'][$key]['api']['lineItemHazmatInfo'] = [
                     [
                         'isHazmatLineItem' => 'Y',
@@ -77,13 +78,14 @@ class Shipping
                 'url' => $url,
                 'buildQuery' => http_build_query($requestArr),
                 'request' => $requestArr,
-                'quotes' => $quotes
+                'quotes' => $quotes,
             ];
             dd($printData);
         }
         //dd($requestArr,$quotes);
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $hazmatAllItems);
         $resp = $this->setCarrierRates($finalQuotes);
+
         return $resp;
     }
 
@@ -91,9 +93,13 @@ class Shipping
     {
         if (count($origin) > 1) {
             $whIDs = [];
+
             foreach ($origin as $wh) {
-                $whIDs[] = $wh['locationId'];
+                if (isset($wh['locationId'])) {
+                    $whIDs[] = $wh['locationId'];
+                }
             }
+
             if (count(array_unique($whIDs)) > 1) {
                 foreach ($origin as $id => $wh) {
                     if (isset($wh['InstorPickupLocalDelivery'])) {
@@ -102,6 +108,7 @@ class Shipping
                 }
             }
         }
+
         return $origin;
     }
 
@@ -111,14 +118,18 @@ class Shipping
     public function isHazmatMaterial($items)
     {
         $hazmatAllItems = [];
+
         foreach ($items['items'] as $key => $item) {
             if (isset($item['isHazmatLineItem']) && $item['isHazmatLineItem'] == 'Y') {
                 $this->isHazmat = 'Y';
                 $hazmatAllItems[$items['origin'][$key]['senderZip']] = 'Y';
-            }else{
-                $hazmatAllItems[$items['origin'][$key]['senderZip']] = 'N';
+            } else {
+                if (isset($items['origin'][$key]['senderZip'])) {
+                    $hazmatAllItems[$items['origin'][$key]['senderZip']] = 'N';
+                }
             }
         }
+
         return $hazmatAllItems;
     }
 
@@ -149,7 +160,7 @@ class Shipping
      */
     public function sendCurlRequest($url, $postData)
     {
-        Log::info('$postData '. json_encode($postData));
+        Log::info('$postData ' . json_encode($postData));
         $fieldString = http_build_query($postData);
         try {
             $ch = curl_init();
@@ -161,7 +172,7 @@ class Shipping
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
             $output = curl_exec($ch);
             curl_close($ch);
-            Log::info('$output '. $output);
+            Log::info('$output ' . $output);
             return json_decode($output, true);
         } catch (\Throwable $e) {
             $result = [];

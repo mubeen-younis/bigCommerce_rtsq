@@ -2,18 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\CustomClasses\Origin;
+use App\CustomClasses\Shipping;
 use App\CustomClasses\WweLTLShipmentPackage;
 use App\Models\AdditionalCarrierTabSetting;
 use App\Models\Connection;
 use App\Models\InstalledAddon;
 use App\Models\InstalledCarrier;
-use App\Models\Locations;
+use App\Models\ProductSetting;
 use App\Models\QuoteSetting;
 use App\Models\Store;
 use Illuminate\Http\Request;
-use App\CustomClasses\Origin;
-use App\Models\ProductSetting;
-use App\CustomClasses\Shipping;
 use Illuminate\Support\Facades\Log;
 
 class GetRatesController extends Controller
@@ -45,12 +44,11 @@ class GetRatesController extends Controller
         $storeHash = $request->base_options['store_id'] ?? null;
         $storeData = $this->getStoreData($storeHash);
 
-
         if ($storeData == null) {
             return [];
         }
 
-// Getting installed carriers there quote settings and services
+        // Getting installed carriers there quote settings and services
         $this->getCarrierSettings($storeData['installed_carriers']);
 
         $formatReq = $this->formatRequest($request->all(), $storeData);
@@ -77,8 +75,8 @@ class GetRatesController extends Controller
     public function generateQuoteFormatResponse($quotes)
     {
         if (!empty(array_filter($quotes))) {
-            $resp['quote_id'] = "2";// need to change
-            $resp['messages'] = [];// need to change
+            $resp['quote_id'] = "2"; // need to change
+            $resp['messages'] = []; // need to change
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'usps_pitney_bowes', 'display_name' => $quotes[0]['title']]];
             // dd($quotes);
             foreach ($quotes as $key => $quote) {
@@ -86,59 +84,59 @@ class GetRatesController extends Controller
                     'code' => $quote['code'],
                     'rate_id' => '9vcV1JfckPJZW2pjeNXcKP5y',
                     'display_name' => $quote['title'],
-                    'cost' => ['currency' => 'USD', 'amount' => number_format($quote['rate'],  2, '.', ',')],
+                    'cost' => ['currency' => 'USD', 'amount' => number_format($quote['rate'], 2, '.', ',')],
                     'transit_time' => ['units' => 'BUSINESS_DAYS', 'duration' => 1],
                     // TODO: Will be set
-                    'dispatch_date' => '2021-03-19T00:00:00-05:00'
+                    'dispatch_date' => '2021-03-19T00:00:00-05:00',
                 ];
             }
         } else {
             $resp = [];
         }
         /*$resp = array (
-            'quote_id' => '2',
-            'messages' =>
-                array (
+        'quote_id' => '2',
+        'messages' =>
+        array (
 
-                ),
-            'carrier_quotes' =>
-                array (
-                    0 =>
-                        array (
-                            'carrier_info' =>
-                                array (
-                                    'code' => 'usps_pitney_bowes',
-                                    'display_name' => 'USPS',
-                                ),
-                            'quotes' =>
-                                array (
-                                    0 =>
-                                        array (
-                                            'code' => 'ODFL',
-                                            'rate_id' => '9vcV1JfckPJZW2pjeNXcKP5y',
-                                            'display_name' => 'Freight online',
-                                            'cost' =>
-                                                array (
-                                                    'currency' => 'USD',
-                                                    'amount' => 1000,
-                                                ),
-                                            'transit_time' =>
-                                                array (
-                                                    'units' => 'BUSINESS_DAYS',
-                                                    'duration' => 1,
-                                                ),
-                                            'dispatch_date' => '2021-03-19T00:00:00-05:00',
-                                        ),
+        ),
+        'carrier_quotes' =>
+        array (
+        0 =>
+        array (
+        'carrier_info' =>
+        array (
+        'code' => 'usps_pitney_bowes',
+        'display_name' => 'USPS',
+        ),
+        'quotes' =>
+        array (
+        0 =>
+        array (
+        'code' => 'ODFL',
+        'rate_id' => '9vcV1JfckPJZW2pjeNXcKP5y',
+        'display_name' => 'Freight online',
+        'cost' =>
+        array (
+        'currency' => 'USD',
+        'amount' => 1000,
+        ),
+        'transit_time' =>
+        array (
+        'units' => 'BUSINESS_DAYS',
+        'duration' => 1,
+        ),
+        'dispatch_date' => '2021-03-19T00:00:00-05:00',
+        ),
 
-                                ),
-                        ),
+        ),
+        ),
 
-                ),
+        ),
         );*/
         /*  echo "<pre>";
-          print_r($resp);
-          exit;*/
-        Log::info('$resp '. json_encode($resp));
+        print_r($resp);
+        exit;*/
+        Log::info('$resp ' . json_encode($resp));
         return $resp;
     }
 
@@ -153,7 +151,7 @@ class GetRatesController extends Controller
                 'state' => $data['base_options']['destination']['state_iso2'] ?? null,
                 'country' => $data['base_options']['destination']['country_iso2'] ?? null,
                 'address_type' => $data['base_options']['destination']['address_type'] ?? null,
-            ]
+            ],
         ];
 
         if (count($data['base_options']['items'])) {
@@ -165,9 +163,7 @@ class GetRatesController extends Controller
 
                 $ltlCheck = $product_settings['freight_enabled'] ?? false;
 
-
                 $originAddress = $this->shipmentPkg->wweLTLOriginAddress($details, $product_settings, $details['destination']['zip'], $storeData, $this->connectionSettings);
-
 
                 $details['origin'][$product['product_id']] = $originAddress;
                 $details['items'][$product['product_id']] = [
@@ -240,7 +236,7 @@ class GetRatesController extends Controller
     {
         $settings = [];
         $productSetting = ProductSetting::select('settings')
-            ->where(['source_product_id' => $productId /*, 'variant_id' => $variantId*/])
+            ->where(['source_product_id' => $productId/*, 'variant_id' => $variantId*/])
             ->first();
         if (!empty($productSetting)) {
             $productSetting->toArray();
@@ -252,7 +248,7 @@ class GetRatesController extends Controller
     public function convertWeight($value, $unit)
     {
         switch ($unit) {
-            case 'oz' :
+            case 'oz':
                 return $value / 16;
                 break;
             default:
@@ -266,9 +262,9 @@ class GetRatesController extends Controller
             return null;
         }
         /* $storeHash = explode('/', $storeHash)[1] ?? null;
-         if ($storeHash == null){
-             return null;
-         }*/
+        if ($storeHash == null){
+        return null;
+        }*/
         $store = Store::where(['hash' => $storeHash, 'app_status' => 1])->first();
         if (!empty($store)) {
             $installedCarriers = InstalledCarrier::where(['store_id' => $store->id, 'is_enabled' => 1])->get();
@@ -287,7 +283,7 @@ class GetRatesController extends Controller
                     'installed_carriers' => $installedCarriers,
                     'installed_addons' => $installedAddons,
                     'store' => $store,
-                    'installed_addon_sbs' => $installedAddonSbs
+                    'installed_addon_sbs' => $installedAddonSbs,
                 ];
             }
         }

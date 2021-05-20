@@ -32,8 +32,7 @@ class GenerateRequestData
         $quoteSettings,
         $connectionSettings,
         $storeData
-    )
-    {
+    ) {
         $this->storeData = $storeData;
         $this->quoteSettings = $quoteSettings;
         $this->connectionSettings = $connectionSettings;
@@ -52,11 +51,15 @@ class GenerateRequestData
                 case "ltl-quotes":
                     $wweLtlArr = $this->wweLtlEnitArr($con1);
                     $wweLtlArr['originAddress'] = $origin;
+
                     if (count($wweLtlArr['originAddress']) > 1) {
                         $whIDs = [];
                         foreach ($wweLtlArr['originAddress'] as $wh) {
-                            $whIDs[] = $wh['locationId'];
+                            if (isset($wh['locationId'])) {
+                                $whIDs[] = $wh['locationId'];
+                            }
                         }
+
                         if (count(array_unique($whIDs)) > 1) {
                             foreach ($wweLtlArr['originAddress'] as $id => $wh) {
                                 if (isset($wh['InstorPickupLocalDelivery'])) {
@@ -67,14 +70,20 @@ class GenerateRequestData
                     }
                     $carriersArr['carriers']['wweLTL'] = $wweLtlArr;
                     break;
+
                 case "small-package":
                     $wweLtlArr = $this->wweSmallEnitArr($con1);
                     $wweLtlArr['originAddress'] = $origin;
+
                     if (count($wweLtlArr['originAddress']) > 1) {
                         $whIDs = [];
+
                         foreach ($wweLtlArr['originAddress'] as $wh) {
-                            $whIDs[] = $wh['locationId'];
+                            if (isset($wh['locationId'])) {
+                                $whIDs[] = $wh['locationId'];
+                            }
                         }
+
                         if (count(array_unique($whIDs)) > 1) {
                             foreach ($wweLtlArr['originAddress'] as $id => $wh) {
                                 if (isset($wh['InstorPickupLocalDelivery'])) {
@@ -85,14 +94,20 @@ class GenerateRequestData
                     }
                     $carriersArr['carriers']['wweSmall'] = $wweLtlArr;
                     break;
+
                 case "ups-ltl":
                     $wweLtlArr = $this->upsLtlEnitArr($con1);
                     $wweLtlArr['originAddress'] = $origin;
+
                     if (count($wweLtlArr['originAddress']) > 1) {
                         $whIDs = [];
+
                         foreach ($wweLtlArr['originAddress'] as $wh) {
-                            $whIDs[] = $wh['locationId'];
+                            if (isset($wh['locationId'])) {
+                                $whIDs[] = $wh['locationId'];
+                            }
                         }
+
                         if (count(array_unique($whIDs)) > 1) {
                             foreach ($wweLtlArr['originAddress'] as $id => $wh) {
                                 if (isset($wh['InstorPickupLocalDelivery'])) {
@@ -101,20 +116,21 @@ class GenerateRequestData
                             }
                         }
                     }
+
                     $carriersArr['carriers']['upsLTL'] = $wweLtlArr;
                     break;
             }
         }
-        return $carriersArr;
 
+        return $carriersArr;
     }
 
     public function wweLtlEnitArr($connSettings)
     {
         //dd($connSettings['quote_settings']);
         return [
-            'licenseKey' => $connSettings['creds']['license_key'],//$this->connectionSettings['license_key'],
-            'serverName' => "https://" . $this->storeData['store']['name'],//"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
+            'licenseKey' => $connSettings['creds']['license_key'], //$this->connectionSettings['license_key'],
+            'serverName' => "https://" . $this->storeData['store']['name'], //"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
@@ -133,8 +149,8 @@ class GenerateRequestData
     {
         // TODO: Need to set dynamic parameters of wwe small
         return [
-            'licenseKey' => $connSettings['creds']['license_key'],//$this->connectionSettings['license_key'],
-            'serverName' => "https://" . $this->storeData['store']['name'],//"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
+            'licenseKey' => $connSettings['creds']['license_key'], //$this->connectionSettings['license_key'],
+            'serverName' => "https://" . $this->storeData['store']['name'], //"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
             'carrierMode' => 'pro',
             'quotestType' => 'small', // ltl / small
             'version' => '2.0.4',
@@ -143,13 +159,14 @@ class GenerateRequestData
         ];
     }
 
-    public function upsLtlEnitArr($connSettings){
+    public function upsLtlEnitArr($connSettings)
+    {
         return [
-            'licenseKey' => $connSettings['creds']['license_key'],//$this->connectionSettings['license_key'],
-            'serverName' => "https://" . $this->storeData['store']['name'],//"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
+            'licenseKey' => $connSettings['creds']['license_key'], //$this->connectionSettings['license_key'],
+            'serverName' => "https://" . $this->storeData['store']['name'], //"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
             'carrierMode' => 'pro',
-            'quotestType' => 'small', // ltl / small
-            'version' => '2.0.4',
+            'quotestType' => 'ltl', // ltl / small
+            'version' => '1.0.0',
             'api' => $this->getApiInfoArrUpsLtl($connSettings),
             'getDistance' => 0,
         ];
@@ -164,20 +181,20 @@ class GenerateRequestData
      */
     public function generateRequestArray($request, $carriersArray, $itemsArr)
     {
- /*       if (count($carriersArray['originAddress']) > 1) {
-            $whIDs = [];
-            foreach ($carriersArray['originAddress'] as $wh) {
-                $whIDs[] = $wh['locationId'];
-            }
-            if (count(array_unique($whIDs)) > 1) {
-                foreach ($carriersArray['originAddress'] as $id => $wh) {
-                    if (isset($wh['InstorPickupLocalDelivery'])) {
-                        $carriersArray['originAddress'][$id]['InstorPickupLocalDelivery'] = [];
-                    }
-                }
-            }
+        /*       if (count($carriersArray['originAddress']) > 1) {
+        $whIDs = [];
+        foreach ($carriersArray['originAddress'] as $wh) {
+        $whIDs[] = $wh['locationId'];
+        }
+        if (count(array_unique($whIDs)) > 1) {
+        foreach ($carriersArray['originAddress'] as $id => $wh) {
+        if (isset($wh['InstorPickupLocalDelivery'])) {
+        $carriersArray['originAddress'][$id]['InstorPickupLocalDelivery'] = [];
+        }
+        }
+        }
         }*/
-       // $carriers = $this->registry->registry('enitureCarriers');
+        // $carriers = $this->registry->registry('enitureCarriers');
         $carriers = $carriersArray['carriers'];
         $receiverAddress = $this->getReceiverData($request);
 
@@ -243,14 +260,14 @@ class GenerateRequestData
         /*
          * $shipperRelation = $this->getConfigData('shipperRelation');
          * if ($shipperRelation == 'ThirdParty') {
-            $apiArray['payerAddress'] = [
-                'name' => 'name',
-                'addressLine' => 'addressLine',
-                'country' => $this->getConfigData('thirdPartyCountry'),
-                'zip' => $this->getConfigData('thirdPartyPostalCode'),
-                'state' => $this->getConfigData('thirdPartyState'),
-                'city' => $this->getConfigData('thirdPartyCity')
-            ];
+        $apiArray['payerAddress'] = [
+        'name' => 'name',
+        'addressLine' => 'addressLine',
+        'country' => $this->getConfigData('thirdPartyCountry'),
+        'zip' => $this->getConfigData('thirdPartyPostalCode'),
+        'state' => $this->getConfigData('thirdPartyState'),
+        'city' => $this->getConfigData('thirdPartyCity')
+        ];
         }*/
 
         return $apiArray;
@@ -273,21 +290,62 @@ class GenerateRequestData
             'world_wide_express_account_number' => $connSettings['creds']['account_number'],
             'residential_delivery' => $residential,
             'prefferedCurrency' => 'USD',
-            'includeDeclaredValue' => "1"
+            'includeDeclaredValue' => "1",
         ];
         //Todo: need to review this functionality
         /*
          * $shipperRelation = $this->getConfigData('shipperRelation');
          * if ($shipperRelation == 'ThirdParty') {
-            $apiArray['payerAddress'] = [
-                'name' => 'name',
-                'addressLine' => 'addressLine',
-                'country' => $this->getConfigData('thirdPartyCountry'),
-                'zip' => $this->getConfigData('thirdPartyPostalCode'),
-                'state' => $this->getConfigData('thirdPartyState'),
-                'city' => $this->getConfigData('thirdPartyCity')
-            ];
+        $apiArray['payerAddress'] = [
+        'name' => 'name',
+        'addressLine' => 'addressLine',
+        'country' => $this->getConfigData('thirdPartyCountry'),
+        'zip' => $this->getConfigData('thirdPartyPostalCode'),
+        'state' => $this->getConfigData('thirdPartyState'),
+        'city' => $this->getConfigData('thirdPartyCity')
+        ];
         }*/
+
+        return $apiArray;
+    }
+
+    public function getApiInfoArrUpsLtl($connSettings)
+    {
+        // dd($connSettings);
+        // Todo: need to review this function
+        if (isset($this->storeData['installed_addons']['RAD']) && $this->storeData['installed_addons']['RAD']) {
+            $residential = 'N';
+        } else {
+            $residential = ($connSettings['quote_settings']['alwaysResidentialDelivery']) ? 'Y' : 'N';
+        }
+
+        $apiArray = [
+            'accessLevel' => $connSettings['creds']['access_level'],
+            'APIKey' => $connSettings['creds']['ups_api_access_key'],
+            'AccountNumber' => $connSettings['creds']['account_number'],
+            'UserName' => $connSettings['creds']['username'],
+            'Password' => $connSettings['creds']['password'],
+            'paymentCode' => '10',
+            'paymentDescription' => 'PREPAID',
+            'paymentType' => $connSettings['quote_settings']['shipper_relationship'],
+            'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'],
+            'maxWeightPerHandlingUnit' => '',
+            'serviceCode' => '308',
+            'serviceCodeDescription' => 'UPS Freight LTL',
+            'timeInTransitIndicator' => 'N',
+            'accessorial' => [
+                'liftgateDelivery' => $connSettings['quote_settings']['alwaysLiftGateDelivery'] ? 'Y' : 'N',
+                'residentialDelivery' => $residential,
+            ],
+            'payerAddress' => [
+                'payerName' => 'name',
+                'payerAddressLine' => 'addressLine',
+                'payerCountryCode' => 'US',
+                'payerZip' => '12205',
+                'payerState' => 'NY',
+                'payerCity' => 'Albany',
+            ],
+        ];
 
         return $apiArray;
     }
@@ -326,7 +384,7 @@ class GenerateRequestData
             'receiverState' => $request['lineItemData']['destination']['state'],
             'receiverZip' => preg_replace('/\s+/', '', $request['lineItemData']['destination']['zip']),
             'receiverCountryCode' => $request['lineItemData']['destination']['country'],
-            'defaultRADAddressType' => 'residential'//$addressType ?? 'residential', //get value from RAD
+            'defaultRADAddressType' => 'residential', //$addressType ?? 'residential', //get value from RAD
         ];
     }
 
