@@ -48,7 +48,6 @@ class ConnectionController extends Controller
      */
     public function store(Request $request)
     {
-
         /* $rules = [
         'billing_account_no' => 'required',
         'meter_number' => 'required',
