@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Constants\Constant;
 use App\CurlRequest;
 use App\Models\Connection;
 use App\Models\InstalledCarrier;
@@ -103,7 +104,7 @@ class SBSController extends Controller
                         'serverName' => $request->store_name,
                     ];
 
-                    $response = $this->curlRequest->sendPostRequest('https://eniture-qa.com/ws/addon/bin-packaging/index.php', $requestData);
+                    $response = $this->curlRequest->sendPostRequest(Constant::SBS_PLAN_URL, $requestData);
 
                     return [
                         'response' => $response,
