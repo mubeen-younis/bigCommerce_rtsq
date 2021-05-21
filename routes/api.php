@@ -12,6 +12,7 @@ use App\Http\Controllers\MainController;
 use App\Http\Controllers\ProductSettingController;
 use App\Http\Controllers\QuoteSettingsController;
 use App\Http\Controllers\RADController;
+use App\Http\Controllers\SBSController;
 use App\Http\Middleware\EnsureTokenIsValid;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -70,6 +71,11 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/rad/change_status', [RADController::class, 'changeStatus']);
     Route::post('/rad/changeDefaultAddress', [RADController::class, 'setDefaultAddress']);
     Route::get('/rad/getAddonAdressSettings', [RADController::class, 'getDefaultAddress']);
+
+    /* SBS routes */
+    Route::get('/sbs/get_plans', [SBSController::class, 'getPlans']);
+    Route::post('/sbsb/change_plan', [RADController::class, 'changePlan']);
+    Route::post('/sbs/change_status', [RADController::class, 'changeStatus']);
 
     //=========Addons
     Route::get('/getAllAddons', [AddonsController::class, 'index']);
