@@ -104,7 +104,7 @@ class SBSController extends Controller
                         'serverName' => $request->store_name,
                     ];
 
-                    $response = $this->curlRequest->sendPostRequest(Constant::SBS_PLAN_URL, $requestData);
+                    $response = $this->curlRequest->sendPostRequest(Constant::SBS_PLAN_URL, json_encode($requestData));
 
                     return [
                         'response' => $response,
