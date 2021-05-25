@@ -9,6 +9,7 @@ use App\Http\Controllers\GetRatesController;
 use App\Http\Controllers\InstalledCarrierController;
 use App\Http\Controllers\LocationsController;
 use App\Http\Controllers\MainController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductSettingController;
 use App\Http\Controllers\QuoteSettingsController;
 use App\Http\Controllers\RADController;
@@ -99,6 +100,10 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/save_boxsize', 'App\Http\Controllers\BoxSizeController@store');
     Route::post('/update_boxsize', 'App\Http\Controllers\BoxSizeController@update');
     Route::delete('boxsize/delete/{id}', 'App\Http\Controllers\BoxSizeController@destroy');
+
+    // Orders
+    Route::get('/get_orders', [OrderController::class, 'index']);
+    Route::post('/update_order', [OrderController::class, 'update']);
 });
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);
