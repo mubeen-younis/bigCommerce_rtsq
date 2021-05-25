@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use App\Models\Store;
+use GuzzleHttp\Exception\RequestException;
 
 class OrderController extends Controller
 {
