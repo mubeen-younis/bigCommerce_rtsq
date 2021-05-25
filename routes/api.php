@@ -13,6 +13,7 @@ use App\Http\Controllers\ProductSettingController;
 use App\Http\Controllers\QuoteSettingsController;
 use App\Http\Controllers\RADController;
 use App\Http\Controllers\SBSController;
+use App\Http\Controllers\OrderController;
 use App\Http\Middleware\EnsureTokenIsValid;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
