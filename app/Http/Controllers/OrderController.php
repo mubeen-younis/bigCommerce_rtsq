@@ -23,7 +23,8 @@ class OrderController extends Controller
             // Update,delete,create from  webhook
             $scope = $postData['scope'];
             $store = Store::where('hash', $storeHash)->first();
-            if (empty($store)) {
+            $onlyScopes = ['store/order/created', 'store/order/updated'];
+            if (empty($store) || !in_array($scope, $onlyScopes)) {
                 return null;
             }
             $toRequest['store_id'] = $store->id;
