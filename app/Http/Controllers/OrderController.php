@@ -42,7 +42,7 @@ class OrderController extends Controller
 
     public function getOrderByID($toRequest){
         Log::info('toRequest: '. json_encode($toRequest));
-        Orders::
+
         $order = Orders::where('order_id', $toRequest['order_id'])
             ->where('store_id',$toRequest['store_id'])
             ->first();
