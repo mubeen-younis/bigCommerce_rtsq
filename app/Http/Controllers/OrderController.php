@@ -71,7 +71,8 @@ class OrderController extends Controller
             'permission_set' => 'app_only',
             'key' => 'settings',
             'value' => json_encode($toRequest),
-            'resource_id' => $toRequest['order_id']
+            'resource_id' => $toRequest['order_id'],
+            "namespace" => "str"
         ];
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, json_encode($request), $headers, 'POST', false);
         Log::info('$response '. $response);
