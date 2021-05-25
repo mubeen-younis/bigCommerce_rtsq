@@ -18,6 +18,7 @@ class OrderController extends Controller
     public function orderFromWebhook(Request $request){
         try {
             $postData = file_get_contents("php://input");
+            Log::info('Orderdata: '. $postData);
             $postData = json_decode($postData, true);
             $storeHash = explode('/', $postData['producer']);
             $storeHash = $storeHash[1];
@@ -47,7 +48,7 @@ class OrderController extends Controller
             ->where('store_id',$toRequest['store_id'])
             ->first();
         if (empty($order)){
-            $order = new Store();
+            $order = new Orders();
         }
         $order->store_id = $toRequest['store_id'];
         $order->order_id = $toRequest['order_id'];
