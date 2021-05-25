@@ -185,7 +185,7 @@ class MainController extends BaseController
     {
         $webHooks= new WebHooksController();
         $webHooks->registerWebHook($request);
-        $webHooks->registerCarrier($request);
+        $webHooks->registerOrderWebHook($request);
     }
 
     public function error(Request $request)

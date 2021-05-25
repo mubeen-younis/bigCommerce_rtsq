@@ -48,7 +48,7 @@ class WebHooksController extends Controller
         return true;
     }
 
-    public function registerCarrier($request){
+    public function registerOrderWebHook($request){
         $storeId =  $request['store_id'] ?? '';
         $storeHash =  $request['store_name'] ?? '';
         $storeToken = $this->mainController->getCustAccessTok($storeId);
@@ -63,10 +63,11 @@ class WebHooksController extends Controller
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
         //https://api.bigcommerce.com/stores/uann2u/v2/shipping/carrier/connection
-        $endpoint = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v2/shipping/carrier/connection';
+        $endpoint = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/hooks';
         $request = [
-            "carrier_id" => "149", //149 provided by bigcommerce our carrier id
-            "connection" => []
+            "scope" => "store/order/*",
+            "destination" => URL::to('api/order/webhooks'),
+            "is_active" => true
         ];
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, json_encode($request), $headers, 'POST', false);
         $response=json_decode($response['response'],true);
