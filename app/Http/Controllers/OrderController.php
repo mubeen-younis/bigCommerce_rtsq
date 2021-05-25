@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class OrderController extends Controller
 {
@@ -29,7 +30,7 @@ class OrderController extends Controller
         }
     }
 
-    public function getOrderByID(){
-
+    public function getOrderByID($toRequest){
+        Log::info('toRequest: '. json_encode($toRequest));
     }
 }
