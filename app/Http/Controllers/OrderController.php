@@ -23,7 +23,7 @@ class OrderController extends Controller
             // Update,delete,create from  webhook
             $scope = $postData['scope'];
             $store = Store::where('hash', $storeHash)->first();
-            if (empty($storeID)) {
+            if (empty($store)) {
                 return null;
             }
             $toRequest['store_id'] = $store->id;
