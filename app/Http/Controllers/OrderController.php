@@ -6,6 +6,7 @@ use App\Models\Orders;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Models\Store;
+use App\CurlRequest;
 
 use GuzzleHttp\Exception\RequestException;
 
@@ -13,7 +14,7 @@ class OrderController extends Controller
 {
     public function __construct()
     {
-
+        $this->curlRequest = new CurlRequest();
     }
     public function orderFromWebhook(Request $request){
         try {
@@ -53,25 +54,27 @@ class OrderController extends Controller
         $order->order_id = $toRequest['order_id'];
         $order->settings = json_encode($this->orderSettings($toRequest));
         $order->save();
-        return $order->id;
+        //return $order->id;
     }
 
     function orderSettings($toRequest){
-        return ['todo' => 'settings will be saved'];
+        //return ['todo' => 'settings will be saved'];
     }
 
     function setOrderMeta($toRequest){
+        Log::info('setOrderMeta ');
         $store = Store::where('id', $toRequest['store_id'])->first();
         $headers[] = 'X-Auth-Token: ' . $store->access_token;
         $headers[] = 'Content-Type: application/json';
         $endpoint = 'https://api.bigcommerce.com/stores/' . $toRequest['store_hash'] . '/v3/orders/'.$toRequest['order_id'].'/metafields';
         $request = [
             'permission_set' => 'app_only',
-            'key' => settings,
+            'key' => 'settings',
             'value' => json_encode($toRequest),
             'resource_id' => $toRequest['order_id']
         ];
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, json_encode($request), $headers, 'POST', false);
+        Log::info('$response '. $response);
         $response=json_decode($response['response'],true);
         Log::info('metafield set for order :'. $toRequest['order_id']);
         Log::info('metafield response :'. json_encode($response));
