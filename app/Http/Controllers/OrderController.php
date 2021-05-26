@@ -2,22 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\CurlRequest;
 use App\Models\Order;
 use App\Models\Orders;
 use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-<<<<<<< HEAD
-=======
-use App\Models\Store;
-use App\CurlRequest;
-
-use GuzzleHttp\Exception\RequestException;
->>>>>>> 9c8399510f74d56d14391e4ffd0a1d93d6618216
 
 class OrderController extends Controller
 {
     public $accessToken;
+    public $storeHash;
+
     public function __construct()
     {
         $this->curlRequest = new CurlRequest();
@@ -172,68 +168,127 @@ class OrderController extends Controller
             $toRequest['store_hash'] = $storeHash;
             $toRequest['order_id'] = $orderId;
             $this->accessToken = $store->access_token;
+            $this->storeHash = $storeHash;
             $saveOrderId = $this->saveUpdateOrderByID($toRequest);
-            $this->setOrderMeta($toRequest);
+            //$this->setOrderMeta($toRequest);
         } catch (\Exception $exception) {
             //  Have to LOg Here
         }
     }
 
-<<<<<<< HEAD
-    public function getOrderByID($toRequest)
+    public function setOrderMeta($toRequest, $orderMetaFields, $updateWidgetId)
     {
-        Log::info('toRequest: ' . json_encode($toRequest));
+        $headers[] = 'X-Auth-Token: ' . $this->accessToken;
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
 
-=======
-    public function saveUpdateOrderByID($toRequest){
->>>>>>> 9c8399510f74d56d14391e4ffd0a1d93d6618216
+        $endpoint = 'https://api.bigcommerce.com/stores/' . $toRequest['store_hash'] . '/v3/orders/' . $toRequest['order_id'] . '/metafields';
+        $method = "POST";
+        if ($updateWidgetId) { //if order widget already created
+            $endpoint = 'https://api.bigcommerce.com/stores/' . $toRequest['store_hash'] . '/v3/orders/' . $toRequest['order_id'] . '/metafields/' . $updateWidgetId;
+            $method = "PUT";
+        }
+
+        $request = [
+            'permission_set' => 'app_only',
+            'key' => 'settings',
+            'value' => json_encode($orderMetaFields),
+            'resource_id' => $toRequest['order_id'],
+            "namespace" => "str",
+        ];
+        $response = $this->curlRequest->enSingleCurlRequest($endpoint, json_encode($request), $headers, $method, false);
+        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+            return json_decode($response['response'])->data->id;
+        }
+    }
+
+    public function saveUpdateOrderByID($toRequest)
+    {
+
         $order = Orders::where('order_id', $toRequest['order_id'])
             ->where('store_id', $toRequest['store_id'])
             ->first();
         if (empty($order)) {
             $order = new Orders();
+            $updateWidget = 0;
+        } else {
+            $updateWidget = $order->widgetid;
         }
         $order->store_id = $toRequest['store_id'];
         $order->order_id = $toRequest['order_id'];
-<<<<<<< HEAD
-        $order->settings = json_encode(['setting' => 'settings here']);
-=======
-        $order->settings = json_encode(['test'=>'testing settings']);
->>>>>>> 9c8399510f74d56d14391e4ffd0a1d93d6618216
+        $orderSettings = $this->orderSettings($toRequest);
+        $order->widgetid = $this->setOrderMeta($toRequest, $orderSettings, $updateWidget) ?? 0;
+        $order->settings = json_encode($orderSettings);
         $order->save();
-        $this->orderSettings($toRequest);
-        //return $order->id;
     }
 
-    function orderSettings($toRequest){
-        $order = $this->getBCOrderByID($toRequest);
-        $products = $this->getBCOrderProducts();
+    public function orderSettings($toRequest)
+    {
+        $order = json_decode($this->getBCOrderByID($toRequest), true);
+        return $this->getBCOrderProducts($order['products']['url']);
     }
 
-    public function getBCOrderProducts(){
-
-    }
-
-    public function getBCOrderByID($toRequest){
+    public function getBCOrderProducts($productsUrl)
+    {
         $headers[] = 'X-Auth-Token: ' . $this->accessToken;
         $headers[] = 'Content-Type: application/json';
-        $endpoint = 'https://api.bigcommerce.com/stores/' . $toRequest['store_hash'] . '/v2/orders/'.$toRequest['order_id'];
-
+        $headers[] = 'Accept: application/json';
+        $endpoint = $productsUrl;
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
-        Log::info('order '. $response);
+
+        $prds = [];
+        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+            $products = json_decode($response['response']);
+            echo "<pre>";
+            print_r($products);exit;
+            foreach ($products as $key => $product) {
+                $prds[$key]['product_id'] = $product->product_id;
+                $prds[$key]['weight'] = $product->weight ?? 0;
+                $prds[$key]['width'] = $product->width ?? 0;
+                $prds[$key]['height'] = $product->height ?? 0;
+                $prds[$key]['depth'] = $product->depth ?? 0;
+                $prds[$key]['color'] = $product->product_options[0]->display_value_customer ?? '';
+                $prdCustomFields = $this->prdCustomFeilds($product->product_id);
+                $prds[$key]['dropship_location'] = $prdCustomFields['dropship_location'] ?? false;
+                $prds[$key]['freight_class'] = $prdCustomFields['freight_class'] ?? false;
+                $prds[$key]['dropship_enabled'] = isset($prdCustomFields['dropship_enabled']) && $prdCustomFields['dropship_enabled'] == "true" ? true : false;
+                $prds[$key]['hazardous_enabled'] = isset($prdCustomFields['hazardous_enabled']) && $prdCustomFields['hazardous_enabled'] == "true" ? true : false;
+                $prds[$key]['freight_enabled'] = isset($prdCustomFields['freight_enabled']) && $prdCustomFields['freight_enabled'] == "true" ? true : false;
+                $prds[$key]['insurance'] = isset($prdCustomFields['insurance']) && $prdCustomFields['insurance'] == "true" ? true : false;
+            }
+            //dd($prds);
+        }
+        return $prds;
     }
 
-    function setOrderMeta($toRequest){
+    public function prdCustomFeilds($productdId)
+    {
         $headers[] = 'X-Auth-Token: ' . $this->accessToken;
         $headers[] = 'Content-Type: application/json';
-        $endpoint = 'https://api.bigcommerce.com/stores/' . $toRequest['store_hash'] . '/v3/orders/'.$toRequest['order_id'].'/metafields';
-        $request = [
-            'permission_set' => 'app_only',
-            'key' => 'settings',
-            'value' => json_encode($toRequest),
-            'resource_id' => $toRequest['order_id'],
-            "namespace" => "str"
-        ];
-        $response = $this->curlRequest->enSingleCurlRequest($endpoint, json_encode($request), $headers, 'POST', false);
+        $headers[] = 'Accept: application/json';
+        $endpoint = 'https://api.bigcommerce.com/stores/' . $this->storeHash . '/v3/catalog/products/' . $productdId . '/custom-fields';
+        $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
+        $prdCustomFieldData = [];
+        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+            $prdCustomFields = json_decode($response['response'])->data;
+            if (!empty($prdCustomFields)) {
+                foreach ($prdCustomFields as $prdCustomField) {
+                    $prdCustomFieldData[$prdCustomField->name] = $prdCustomField->value;
+                }
+            }
+        }
+        return $prdCustomFieldData;
+    }
+
+    public function getBCOrderByID($toRequest)
+    {
+        $headers[] = 'X-Auth-Token: ' . $this->accessToken;
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $endpoint = 'https://api.bigcommerce.com/stores/' . $toRequest['store_hash'] . '/v2/orders/' . $toRequest['order_id'];
+        $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
+        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+            return $response['response'];
+        }
     }
 }
