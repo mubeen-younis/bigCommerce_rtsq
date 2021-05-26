@@ -14,6 +14,7 @@ use App\Http\Controllers\ProductSettingController;
 use App\Http\Controllers\QuoteSettingsController;
 use App\Http\Controllers\RADController;
 use App\Http\Controllers\SBSController;
+use App\Http\Controllers\OrderController;
 use App\Http\Middleware\EnsureTokenIsValid;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -33,6 +34,7 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
 Route::post('webhooks', [MainController::class, 'addAndUpdateProductFromWebHook']);
+Route::post('order/webhooks', [OrderController::class, 'orderFromWebhook']);
 // Ws Route For Adding Plan
 Route::post('/save_plan_detail', [CarrierPlanController::class, 'addPlanFromWs']);
 Route::middleware([EnsureTokenIsValid::class])->group(function () {

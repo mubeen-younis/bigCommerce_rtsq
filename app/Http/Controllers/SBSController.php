@@ -99,7 +99,7 @@ class SBSController extends Controller
                         'request_key' => 'e48dc18afwewb49ca2a48cb92b8ff',
                         'action' => $action,
                         'package' => !$request->selected_plan || $request->selected_plan == 'disable' ? '' : $request->selected_plan,
-                        'licenseKey' => $settings->license_key,
+                        'license_key' => $settings->license_key,
                         'domain_name' => 'store-uann2u.mybigcommerce.com',
                         'serverName' => $request->store_name,
                     ];
