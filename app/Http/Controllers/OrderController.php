@@ -12,6 +12,7 @@ use GuzzleHttp\Exception\RequestException;
 
 class OrderController extends Controller
 {
+    public $accessToken;
     public function __construct()
     {
         $this->curlRequest = new CurlRequest();
@@ -35,15 +36,15 @@ class OrderController extends Controller
             $toRequest['store_id'] = $store->id;
             $toRequest['store_hash'] = $storeHash;
             $toRequest['order_id'] = $orderId;
-
-            $saveOrderId = $this->getOrderByID($toRequest);
+            $this->accessToken = $store->access_token;
+            $saveOrderId = $this->saveUpdateOrderByID($toRequest);
             $this->setOrderMeta($toRequest);
         } catch (\Exception $exception) {
             //  Have to LOg Here
         }
     }
 
-    public function getOrderByID($toRequest){
+    public function saveUpdateOrderByID($toRequest){
         $order = Orders::where('order_id', $toRequest['order_id'])
             ->where('store_id',$toRequest['store_id'])
             ->first();
@@ -52,19 +53,32 @@ class OrderController extends Controller
         }
         $order->store_id = $toRequest['store_id'];
         $order->order_id = $toRequest['order_id'];
-        $order->settings = json_encode($this->orderSettings($toRequest));
+        $order->settings = json_encode(['test'=>'testing settings']);
         $order->save();
+        $this->orderSettings($toRequest);
         //return $order->id;
     }
 
     function orderSettings($toRequest){
-        //return ['todo' => 'settings will be saved'];
+        $order = $this->getBCOrderByID($toRequest);
+        $products = $this->getBCOrderProducts();
+    }
+
+    public function getBCOrderProducts(){
+
+    }
+
+    public function getBCOrderByID($toRequest){
+        $headers[] = 'X-Auth-Token: ' . $this->accessToken;
+        $headers[] = 'Content-Type: application/json';
+        $endpoint = 'https://api.bigcommerce.com/stores/' . $toRequest['store_hash'] . '/v2/orders/'.$toRequest['order_id'];
+
+        $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
+        Log::info('order '. $response);
     }
 
     function setOrderMeta($toRequest){
-        Log::info('setOrderMeta ');
-        $store = Store::where('id', $toRequest['store_id'])->first();
-        $headers[] = 'X-Auth-Token: ' . $store->access_token;
+        $headers[] = 'X-Auth-Token: ' . $this->accessToken;
         $headers[] = 'Content-Type: application/json';
         $endpoint = 'https://api.bigcommerce.com/stores/' . $toRequest['store_hash'] . '/v3/orders/'.$toRequest['order_id'].'/metafields';
         $request = [
@@ -75,9 +89,5 @@ class OrderController extends Controller
             "namespace" => "str"
         ];
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, json_encode($request), $headers, 'POST', false);
-        Log::info('$response '. $response);
-        $response=json_decode($response['response'],true);
-        Log::info('metafield set for order :'. $toRequest['order_id']);
-        Log::info('metafield response :'. json_encode($response));
     }
 }
