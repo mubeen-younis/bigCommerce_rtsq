@@ -5,7 +5,10 @@ namespace App\CustomClasses;
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
 use Illuminate\Support\Facades\Log;
-
+use App\Models\Requestdata;
+use App\Models\Requestmetadata;
+use App\Models\Store;
+use Carbon\Carbon;
 class Shipping
 {
 
@@ -31,7 +34,7 @@ class Shipping
      * @param $quoteSettings
      * @return array | bool
      */
-    public function collectRates($request, $storeData, $connectionSettings)
+    public function collectRates($request, $storeData, $connectionSettings, $cartInfo)
     {
         $quoteSettings = [];
         $generateReqData = new GenerateRequestData();
@@ -83,8 +86,38 @@ class Shipping
         }
         //dd($requestArr,$quotes);
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $hazmatAllItems);
-        $resp = $this->setCarrierRates($finalQuotes);
+
+        $finalQuotes = $this->addRateId($finalQuotes);
+        $resp = $this->generateQuoteFormatResponse($finalQuotes);
+        $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo);
         return $resp;
+    }
+
+    public function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo){
+        //print_r($cartId); print_r($requestArr); print_r($quotes); print_r($finalQuotes); print_r($resp); exit;
+        $RequestMetaData = new Requestmetadata();
+        $RequestMetaData->request = json_encode($requestArr);
+        $RequestMetaData->lineitems = json_encode($lineItems);
+        $RequestMetaData->quotes = json_encode($quotes);
+        $RequestMetaData->response = json_encode($resp);
+        $RequestMetaData->save();
+        $metaId = $RequestMetaData->id;
+        foreach ($finalQuotes as $finalQuote){
+            $RequestData = new Requestdata();
+            $RequestData->meta_id = $metaId;
+            $RequestData->store_id = $cartInfo['store_id'];
+            $RequestData->rate_id = $finalQuote['rate_id'];
+            $RequestData->cart_id = $cartInfo['cartId'];
+            $RequestData->save();
+        }
+    }
+
+    public function addRateId($finalQuotes){
+        $time = time();
+        foreach($finalQuotes as $key => $finalQuote){
+            $finalQuotes[$key]['rate_id'] = $finalQuote['code'].$time;
+        }
+        return $finalQuotes;
     }
 
     public function checkInstorePickup($origin)
@@ -137,6 +170,46 @@ class Shipping
     public function setCarrierRates($quotes)
     {
         return $quotes = $quotes ?? [];
+    }
+
+    public function generateQuoteFormatResponse($quotes)
+    {
+        //echo "<pre>"; print_r($quotes); exit;
+        $current = str_replace(' ', 'T', Carbon::now())."-00:00";
+        if (!empty(array_filter($quotes))) {
+            $resp['quote_id'] = (string) rand(1,9);// need to change
+            $resp['messages'] = [];// need to change
+            $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'usps_pitney_bowes', 'display_name' => $this->limitTitle($quotes[0])]];
+            foreach ($quotes as $key => $quote) {
+                $resp['carrier_quotes'][0]['quotes'][$key] = [
+                    'code' => $quote['code'],
+                    'rate_id' => $quote['rate_id'],
+                    'display_name' => $this->limitTitle($quote),
+                    'cost' => ['currency' => 'USD', 'amount' => $quote['rate']],
+                    'dispatch_date' => "$current"
+                    //'cost' => ['currency' => 'USD', 'amount' => number_format($quote['rate'], 2, '.', ',')],
+                    //'transit_time' => ['units' => 'BUSINESS_DAYS', 'duration' => 1],
+                    // TODO: Will be set
+
+                ];
+            }
+        } else {
+            $resp = [];
+        }
+
+        Log::info('$resp '. json_encode($resp));
+        return $resp;
+    }
+
+
+    public function limitTitle($quote){
+        $res = $quote['title'];
+        if( strlen($quote['title']) > 100 ){
+            $res = explode("(Estimated", $quote['title'])[0];
+        }else if( $quote['title'] == "" ){
+            $res = $quote['code'];
+        }
+        return $res;
     }
 
     /**
