@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\CurlRequest;
-use App\Models\Order;
 use App\Models\Orders;
 use App\Models\Store;
 use Illuminate\Http\Request;
@@ -23,12 +22,13 @@ class OrderController extends Controller
      * Display a listing of the resource.
      *
      * @return \Illuminate\Http\Response
+     * get Orders from Bigcommerce
      */
     public function index()
     {
         return response()->json(
             [
-                'data' => Order::all(),
+                'data' => Orders::all(),
                 'error' => false,
             ]
         );
@@ -72,7 +72,7 @@ class OrderController extends Controller
      * @param  \App\Models\Order  $order
      * @return \Illuminate\Http\Response
      */
-    public function edit(Order $order, Request $request)
+    public function edit(Orders $order, Request $request)
     {
         if (empty($request->order_id)) {
             return response()->json(['error' => true,
@@ -81,7 +81,7 @@ class OrderController extends Controller
             ], 404);
         }
 
-        $order = Order::where('id', $request->order_id)
+        $order = Orders::where('id', $request->order_id)
             ->first();
 
         if ($order === null) {
@@ -106,7 +106,7 @@ class OrderController extends Controller
      * @param  \App\Models\Order  $order
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Order $order)
+    public function update(Request $request, Orders $order)
     {
         if (!$request->order_id || empty($request->order_id)) {
             return response()->json(['error' => true,
@@ -115,7 +115,7 @@ class OrderController extends Controller
             ], 404);
         }
 
-        $order = Order::find($request->order_id);
+        $order = Orders::find($request->order_id);
 
         if ($order === null) {
             return response()->json(['error' => true,
@@ -130,7 +130,7 @@ class OrderController extends Controller
         $this->updateSingleProductFromApi($request);
 
         return response()->json(['error' => false,
-            'data' => Order::find($request->order_id),
+            'data' => Orders::find($request->order_id),
             'message' => 'Order Updated Successfully',
         ], 200);
 
@@ -142,7 +142,7 @@ class OrderController extends Controller
      * @param  \App\Models\Order  $order
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Order $order)
+    public function destroy(Orders $order)
     {
         //
     }
