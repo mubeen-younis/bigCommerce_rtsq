@@ -5,8 +5,7 @@ namespace App\CustomClasses;
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
 use Illuminate\Support\Facades\Log;
-use App\Models\Requestdata;
-use App\Models\Requestmetadata;
+use App\Models\RequestTempData;
 use App\Models\Store;
 use Carbon\Carbon;
 class Shipping
@@ -95,20 +94,17 @@ class Shipping
 
     public function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo){
         //print_r($cartId); print_r($requestArr); print_r($quotes); print_r($finalQuotes); print_r($resp); exit;
-        $RequestMetaData = new Requestmetadata();
-        $RequestMetaData->request = json_encode($requestArr);
-        $RequestMetaData->lineitems = json_encode($lineItems);
-        $RequestMetaData->quotes = json_encode($quotes);
-        $RequestMetaData->response = json_encode($resp);
-        $RequestMetaData->save();
-        $metaId = $RequestMetaData->id;
+
         foreach ($finalQuotes as $finalQuote){
-            $RequestData = new Requestdata();
-            $RequestData->meta_id = $metaId;
-            $RequestData->store_id = $cartInfo['store_id'];
-            $RequestData->rate_id = $finalQuote['rate_id'];
-            $RequestData->cart_id = $cartInfo['cartId'];
-            $RequestData->save();
+            $RequestTempData = new RequestTempData();
+            $RequestTempData->request = json_encode($requestArr);
+            $RequestTempData->lineitems = json_encode($lineItems);
+            $RequestTempData->quotes = json_encode($quotes);
+            $RequestTempData->response = json_encode($resp);
+            $RequestTempData->store_id = $cartInfo['store_id'];
+            $RequestTempData->rate_id = $finalQuote['rate_id'];
+            $RequestTempData->cart_id = $cartInfo['cartId'];
+            $RequestTempData->save();
         }
     }
 

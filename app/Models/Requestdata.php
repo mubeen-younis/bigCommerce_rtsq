@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Requestdata extends Model
+class RequestData extends Model
 {
     use HasFactory;
     protected $table = 'request';
@@ -14,6 +14,10 @@ class Requestdata extends Model
         'store_id',
         'meta_id',
         'rate_id',
-        'cart_id'
+        'cart_id',
+        'request',
+        'lineitems',
+        'quotes',
+        'response'
     ];
 }

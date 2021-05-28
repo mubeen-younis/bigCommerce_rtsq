@@ -5,12 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Requestmetadata extends Model
+class RequestTempData extends Model
 {
     use HasFactory;
-    protected $table = 'requestmetadata';
+    protected $table = 'request_temp';
 
     protected $fillable=[
+        'store_id',
+        'meta_id',
+        'rate_id',
+        'cart_id',
         'request',
         'lineitems',
         'quotes',

@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\CurlRequest;
 use App\Models\Orders;
+use App\Models\RequestData;
+use App\Models\RequestTempData;
 use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -169,7 +171,8 @@ class OrderController extends Controller
             $toRequest['order_id'] = $orderId;
             $this->accessToken = $store->access_token;
             $this->storeHash = $storeHash;
-            $saveOrderId = $this->saveUpdateOrderByID($toRequest);
+            $this->moveQuotesTempToReq($toRequest);
+            //$saveOrderId = $this->saveUpdateOrderByID($toRequest);
             //$this->setOrderMeta($toRequest);
         } catch (\Exception $exception) {
             //  Have to LOg Here
@@ -289,6 +292,33 @@ class OrderController extends Controller
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
             return $response['response'];
+        }
+    }
+
+    public function moveQuotesTempToReq($toRequest){
+        $headers[] = 'X-Auth-Token: ' . $this->accessToken;
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $endpoint = 'https://api.bigcommerce.com/stores/' . $toRequest['store_hash'] . '/v2/orders/' . $toRequest['order_id'];
+        $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
+        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+            $cartId = json_decode($response['response'])->cart_id;
+            $endpoint = json_decode($response['response'])->shipping_addresses->url;
+            $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
+            if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+                $endpoint = json_decode($response['response'])[0]->shipping_quotes->url;
+                $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
+                if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+                    $rateId = json_decode($response['response'])->rate_id;
+                    $rateId = "RLCA1622184139"; $cartId = "2484e9e2-ed65-4115-befb-f79b05b0b988";
+                    $requestData = RequestTempData::where('rate_id', $rateId)->where('cart_id', $cartId)->get()->toArray();
+                    foreach ($requestData as $data)
+                    {
+                        RequestData::insert($data);
+                    }
+                    RequestTempData::where('cart_id', $cartId)->delete();
+                }
+            }
         }
     }
 }
