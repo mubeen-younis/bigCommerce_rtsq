@@ -310,7 +310,7 @@ class OrderController extends Controller
                 $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
                 if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
                     $rateId = json_decode($response['response'])->rate_id;
-                    $rateId = "RLCA1622184139"; $cartId = "2484e9e2-ed65-4115-befb-f79b05b0b988";
+                    //$rateId = "RLCA1622184139"; $cartId = "2484e9e2-ed65-4115-befb-f79b05b0b988";
                     $requestData = RequestTempData::where('rate_id', $rateId)->where('cart_id', $cartId)->get()->toArray();
                     foreach ($requestData as $data)
                     {
