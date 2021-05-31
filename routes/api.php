@@ -104,6 +104,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
 
     // Orders
     Route::get('/get_orders', [OrderController::class, 'index']);
+    Route::get('/get_order_widget', [OrderController::class, 'getOrderWidget']);
     Route::post('/update_order', [OrderController::class, 'update']);
 });
 

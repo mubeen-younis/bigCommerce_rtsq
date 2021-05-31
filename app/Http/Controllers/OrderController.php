@@ -26,16 +26,52 @@ class OrderController extends Controller
      * @return \Illuminate\Http\Response
      * get Orders from Bigcommerce
      */
-    public function index()
+    public function index(Request $request)
     {
+        $orders = $this->getBCOrders($request);
+        $orders['cpage'] = $request['page'] ?? 1;
         return response()->json(
             [
-                'data' => Orders::all(),
+                'data' => $orders,
                 'error' => false,
             ]
         );
     }
 
+    public function getOrderWidget(Request $request){
+        $orderId = $request['order_id'];
+        return response()->json(
+            [
+                'data' => $request->all(),
+                'error' => false,
+            ]
+        );
+    }
+
+   // public function getOrder
+
+    public function getBCOrders($request){
+        $store = Store::where('hash', $request['store_hash'])->first();
+        if(empty($store)){
+            return null;
+        }
+        $page = $request['page'] ?? 1;
+        $headers[] = 'X-Auth-Token: ' . $store->access_token;
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders?sort=id:desc&page=".$page;
+        $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
+        $resp = [];
+        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+            $resp['allOrders']  = json_decode($response['response']);
+        }
+        $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders/count";
+        $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
+        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+            $resp['pages']  = (int) ceil(json_decode($response['response'])->count/50);
+        }
+        return $resp;
+    }
     /**
      * Show the form for creating a new resource.
      *
@@ -295,6 +331,11 @@ class OrderController extends Controller
         }
     }
 
+    /***
+     * @param $toRequest
+     * Move row from request_temp to request table after order placing
+     * delete all rows from request_temp relevant to cart_id
+     */
     public function moveQuotesTempToReq($toRequest){
         $headers[] = 'X-Auth-Token: ' . $this->accessToken;
         $headers[] = 'Content-Type: application/json';
@@ -310,7 +351,6 @@ class OrderController extends Controller
                 $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
                 if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
                     $rateId = json_decode($response['response'])->rate_id;
-                    //$rateId = "RLCA1622184139"; $cartId = "2484e9e2-ed65-4115-befb-f79b05b0b988";
                     $requestData = RequestTempData::where('rate_id', $rateId)->where('cart_id', $cartId)->get()->toArray();
                     foreach ($requestData as $data)
                     {
