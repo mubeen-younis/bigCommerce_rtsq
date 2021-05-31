@@ -39,16 +39,117 @@ class OrderController extends Controller
     }
 
     public function getOrderWidget(Request $request){
-        $orderId = $request['order_id'];
+        $order = $this->getBCOrderByID($request);
+        if(empty($order)){
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'No Order Found',
+            ], 404);
+        }
+       // dd($order['cart_id'], $order['rate_id']); //echo "<pre>"; print_r($order); exit;
+        $orderWidget = $this->createOrderWidget($request, $order);
+        if(empty($orderWidget)){
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'No Order Widget Found',
+            ], 404);
+        }
         return response()->json(
             [
-                'data' => $request->all(),
+                'data' => $orderWidget,
                 'error' => false,
             ]
         );
     }
 
-   // public function getOrder
+    public function createOrderWidget($request, $order){
+        $data = RequestData::where('rate_id', $order['rate_id'])
+            ->where('cart_id', $order['cart_id'])
+            ->where('store_id', $request['store_id'])
+            ->first()->toArray();
+        if(empty($data)){
+            return [];
+        }
+        //echo "<pre>"; print_r($data); exit;
+        $lineItem = json_decode($data['lineitems'])->lineItemData;
+        $responseFromWS = json_decode($data['quotes']);
+        $autoResidentialsStatus = 'n';
+        $binPackagingData = '';
+        foreach($responseFromWS as $carrrierName => $WsResp){
+            foreach($WsResp as $ws){
+                //echo "<pre>"; print_r($ws);// exit;
+                if( !(isset($ws->severity) && $ws->severity == 'ERROR') ){
+                    $autoResidentialsStatus = $ws->autoResidentialsStatus ?? 'n';
+                    //$binPackagingData = $ws['binPackagingData']['response']['']
+                }
+            }
+        }
+        //dd($autoResidentialsStatus);
+        $origins = $lineItem->origin;
+        $items = $lineItem->items;
+        $orderWidget = [];
+        $count = 0;
+        foreach($origins as $key => $origin){
+            $item =  $items->$key;
+            $city = $origin->senderCity ? $origin->senderCity.',': '';
+            $state = $origin->senderState ?? '';
+            $zip = $origin->senderZip ?? '';
+            $orderWidget[$zip]['locationtype'] = $item->dropship_enabled == 'N' ? 'Dropship' : 'Warehouse';
+            $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $zip;
+            $orderWidget[$zip]['shipping_method'] = explode('(Delivery',$order['shipping_name'])[0];
+            $orderWidget[$zip]['shipping_rate'] = '$'.$order['shipping_rate'];
+            $orderWidget[$zip]['items'][] = $item->piecesOfLineItem.' X '.$item->lineItemName;
+            //$orderWidget[$zip]['accessories'][$key] = [];
+            $orderWidget[$zip]['accessories'] = [];
+            isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y' ? array_push($orderWidget[$zip]['accessories'], 'Hazardous Material') : '';
+            isset($item->product_insurance_active) && $item->product_insurance_active == 'Y' ? array_push($orderWidget[$zip]['accessories'], 'Insurance') : '';
+            $autoResidentialsStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Auto Residential Delivery') : '';
+            $count++;
+        }
+        $sbs = '';
+        $resp = [
+            'widget' => $this->objectToArray( $orderWidget ),
+            'sbs' => $sbs
+        ];
+        return $resp;
+    }
+
+    public function objectToArray($orderWidget){
+        $resp= [];
+        foreach ($orderWidget as $widget){
+            $resp[] = $widget;
+        }
+        return $resp;
+    }
+
+    public function getBCOrderByID($request){
+        $store = Store::where('hash', $request['store_hash'])->first();
+        if(empty($store)){
+            return [];
+        }
+        $headers[] = 'X-Auth-Token: ' . $store->access_token;
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders/".$request['order_id'];
+        $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
+        $resp = [];
+        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+            $resp  = json_decode($response['response'], true);
+            $endpoint = json_decode($response['response'])->shipping_addresses->url;
+            $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
+            if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+                $endpoint = json_decode($response['response'])[0]->shipping_quotes->url;
+                $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
+                if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+                    $response = json_decode($response['response']);
+                    $resp['rate_id'] = $response->rate_id;
+                    $resp['shipping_name'] = $response->shipping_provider_quote->name ?? '';
+                    $resp['shipping_rate'] = $response->shipping_provider_quote->rate->value ?? '';
+                }
+            }
+        }
+        return $resp;
+    }
 
     public function getBCOrders($request){
         $store = Store::where('hash', $request['store_hash'])->first();
@@ -263,7 +364,7 @@ class OrderController extends Controller
 
     public function orderSettings($toRequest)
     {
-        $order = json_decode($this->getBCOrderByID($toRequest), true);
+        $order = $this->getBCOrderByID($toRequest);
         return $this->getBCOrderProducts($order['products']['url']);
     }
 
@@ -319,7 +420,7 @@ class OrderController extends Controller
         return $prdCustomFieldData;
     }
 
-    public function getBCOrderByID($toRequest)
+    /*public function getBCOrderByID($toRequest)
     {
         $headers[] = 'X-Auth-Token: ' . $this->accessToken;
         $headers[] = 'Content-Type: application/json';
@@ -329,7 +430,7 @@ class OrderController extends Controller
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
             return $response['response'];
         }
-    }
+    }*/
 
     /***
      * @param $toRequest
