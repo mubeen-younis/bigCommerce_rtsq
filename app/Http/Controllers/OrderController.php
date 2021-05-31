@@ -452,8 +452,8 @@ class OrderController extends Controller
                 $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
                 if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
                     $rateId = json_decode($response['response'])->rate_id;
-                    $requestData = RequestTempData::where('rate_id', $rateId)->where('cart_id', $cartId)->get()->toArray();
-                    foreach ($requestData as $data)
+                    $reqData = RequestTempData::where('rate_id', $rateId)->where('cart_id', $cartId)->get()->toArray();
+                    foreach ($reqData as $data)
                     {
                         RequestData::insert($data);
                     }
