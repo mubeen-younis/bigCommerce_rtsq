@@ -127,7 +127,7 @@ class OrderController extends Controller
             $zip = $origin->senderZip ?? '';
             $orderWidget[$zip]['locationtype'] = $item->dropship_enabled == 'N' ? 'Dropship' : 'Warehouse';
             $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $zip;
-            $orderWidget[$zip]['shipping_method'] = explode('(Delivery',$order['shipping_name'])[0];
+            $orderWidget[$zip]['shipping_method'] = explode('(',$order['shipping_name'])[0];
             $orderWidget[$zip]['shipping_rate'] = '$'.$order['shipping_rate'];
             $orderWidget[$zip]['items'][] = $item->piecesOfLineItem.' X '.$item->lineItemName;
             //$orderWidget[$zip]['accessories'][$key] = [];
