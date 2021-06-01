@@ -67,6 +67,7 @@ class OrderController extends Controller
             ->where('cart_id', $order['cart_id'])
             ->where('store_id', $request['store_id'])
             ->first()->toArray();
+        //dd($data);
         if(empty($data)){
             return [];
         }
@@ -75,19 +76,44 @@ class OrderController extends Controller
         $responseFromWS = json_decode($data['quotes']);
         $autoResidentialsStatus = 'n';
         $binPackagingData = '';
+        $orderWidget = [];
         foreach($responseFromWS as $carrrierName => $WsResp){
-            foreach($WsResp as $ws){
+            foreach($WsResp as $zip => $ws){
                 //echo "<pre>"; print_r($ws);// exit;
                 if( !(isset($ws->severity) && $ws->severity == 'ERROR') ){
                     $autoResidentialsStatus = $ws->autoResidentialsStatus ?? 'n';
                     //$binPackagingData = $ws['binPackagingData']['response']['']
+
+                    if(isset($ws->binPackagingData) && !empty($ws->binPackagingData)){
+                        $sbsData = $ws->binPackagingData->response;
+                        if(isset($sbsData->errors) && empty($sbsData->errors)) {
+                            $binPacked = $sbsData->bins_packed[0];
+                            $type = '';
+                            if(isset($binPacked->bin_data->type) && $binPacked->bin_data->type == 'item' ){
+                                $type = 'item';
+                            }
+                            $count = 0;
+                            foreach($binPacked->items as $item){
+                                $orderWidget[$zip]['sbs'][$count]['w'] = $item->w;
+                                $orderWidget[$zip]['sbs'][$count]['h'] = $item->h;
+                                $orderWidget[$zip]['sbs'][$count]['d'] = $item->d;
+                                $orderWidget[$zip]['sbs'][$count]['type'] = $type;
+                                $orderWidget[$zip]['sbs'][$count]['image_complete'] = $binPacked->image_complete;
+                                $orderWidget[$zip]['sbs'][$count]['image_separated'] = $item->image_separated;
+                                $orderWidget[$zip]['sbs'][$count]['image_sbs'] = $item->image_sbs;
+                                $count++;
+                            }
+                            //echo "<pre>"; print_r($binPacked); exit;
+                        }
+                        //echo "<pre>"; print_r($sbsData->errors); exit;
+                    }
                 }
             }
         }
-        //dd($autoResidentialsStatus);
+        //echo "<pre>"; print_r($orderWidget); exit;
         $origins = $lineItem->origin;
         $items = $lineItem->items;
-        $orderWidget = [];
+
         $count = 0;
         foreach($origins as $key => $origin){
             $item =  $items->$key;
@@ -107,6 +133,8 @@ class OrderController extends Controller
             $count++;
         }
         $sbs = '';
+        //echo "<pre>"; print_r($orderWidget); exit;
+       // dd($orderWidget);
         $resp = [
             'widget' => $this->objectToArray( $orderWidget ),
             'sbs' => $sbs
