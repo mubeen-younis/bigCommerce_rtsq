@@ -455,6 +455,7 @@ class OrderController extends Controller
                     $reqData = RequestTempData::where('rate_id', $rateId)->where('cart_id', $cartId)->get()->toArray();
                     foreach ($reqData as $data)
                     {
+                        unset($data['id']);
                         RequestData::insert($data);
                     }
                     RequestTempData::where('cart_id', $cartId)->delete();
