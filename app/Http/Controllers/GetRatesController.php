@@ -122,6 +122,8 @@ class GetRatesController extends Controller
                     'lineItemHeight' => $product['height']['value'] ?? '',
                     'lineItemWeight' => $weight,
                     'freight_enabled' => isset($product_settings['freight_enabled']) && $product_settings['freight_enabled'] ? 'Y' : 'N',
+                    'shipBinAlone' => isset($product_settings['ship_bin_alone']) && $product_settings['ship_bin_alone'] ? '1' : '0',
+                    'vertical_rotation' => isset($product_settings['vertical_rotation']) && $product_settings['vertical_rotation'] ? '1' : '0',
                     'isHazmatLineItem' => isset($product_settings['hazardous_enabled']) && $product_settings['hazardous_enabled'] ? 'Y' : 'N',
                     'dropship_enabled' => isset($product_settings['dropship_enabled']) && $product_settings['dropship_enabled'] ? 'Y' : 'N',
                     'dropship' => $product_settings['dropship'] ?? '',
