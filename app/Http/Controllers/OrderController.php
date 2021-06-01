@@ -94,13 +94,18 @@ class OrderController extends Controller
                             }
                             $count = 0;
                             foreach($binPacked->items as $item){
-                                $orderWidget[$zip]['sbs'][$count]['w'] = $item->w;
-                                $orderWidget[$zip]['sbs'][$count]['h'] = $item->h;
-                                $orderWidget[$zip]['sbs'][$count]['d'] = $item->d;
-                                $orderWidget[$zip]['sbs'][$count]['type'] = $type;
-                                $orderWidget[$zip]['sbs'][$count]['image_complete'] = $binPacked->image_complete;
-                                $orderWidget[$zip]['sbs'][$count]['image_separated'] = $item->image_separated;
-                                $orderWidget[$zip]['sbs'][$count]['image_sbs'] = $item->image_sbs;
+                                $orderWidget[$zip]['sbs']['type'] = $type;
+                                $orderWidget[$zip]['sbs']['image_complete'] = $binPacked->image_complete;
+                                $orderWidget[$zip]['sbs']['w'] = $item->w;
+                                $orderWidget[$zip]['sbs']['h'] = $item->h;
+                                $orderWidget[$zip]['sbs']['d'] = $item->d;
+
+                                $orderWidget[$zip]['sbs']['items'][$count]['w'] = $item->w;
+                                $orderWidget[$zip]['sbs']['items'][$count]['h'] = $item->h;
+                                $orderWidget[$zip]['sbs']['items'][$count]['d'] = $item->d;
+
+                                $orderWidget[$zip]['sbs']['items'][$count]['image_separated'] = $item->image_separated;
+                                $orderWidget[$zip]['sbs']['items'][$count]['image_sbs'] = $item->image_sbs;
                                 $count++;
                             }
                             //echo "<pre>"; print_r($binPacked); exit;
