@@ -37,7 +37,7 @@ class ProductSetting extends Model
         $product_settings = new stdClass();
         $product_settings->insurance = false;
         $product_settings->freight_enabled = false;
-        $saveProduct->settings = json_encode($product_settings);
+        //$saveProduct->settings = json_encode($product_settings);
         $saveProduct->store_id = $storeId;
         $saveProduct->save();
     }

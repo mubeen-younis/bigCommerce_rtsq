@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\CurlRequest;
 use App\Models\ProductSetting;
 use Illuminate\Http\Request;
+use App\Models\Store;
 
 class ProductSettingController extends Controller
 {
@@ -112,6 +113,74 @@ class ProductSettingController extends Controller
         $this->curlRequest->enSingleCurlRequest($storeUrl, json_encode($data), $headers, 'PUT', true);
     }
 
+
+    /*public function getSingleProductDetail(Request $request)
+    {
+        if (empty($request->product_id)) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'No Product Id',
+            ], 404);
+        }
+        $products = ProductSetting::where('id', $request->product_id)->get();
+        //$products = $this->getBCProductByID($request);
+        return response()->json(['error' => false,
+            'data' => $products,
+            'message' => '',
+        ], 200);
+    }*/
+
+    public function getBCProductByID($request){
+        $store = Store::where('hash', $request['store_hash'])->first();
+        if(empty($store)){
+            return [];
+        }
+        $headers[] = 'X-Auth-Token: ' . $store->access_token;
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v3/catalog/products/".$request['product_id'];
+        $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
+        $prd = [];
+        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+            $product = json_decode($response['response'], true)['data'];
+            $prd['weight'] = number_format($product['weight'], 2);
+            $prd['width'] = number_format($product['width'], 2);
+            $prd['length'] = number_format($product['depth'], 2);
+            $prd['height'] = number_format($product['height'], 2);
+            $prdSettings = $this->getProductSettings($request , $store->access_token);
+            $prd['settings'] = json_encode($prdSettings);
+            $prd['id'] = $product['id'];
+            //echo "<pre>"; print_r($prd); exit;
+        }
+        return $prd;
+    }
+
+    public function getProductSettings($request, $token){
+        $headers[] = 'X-Auth-Token: ' . $token;
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v3/catalog/products/".$request['product_id']."/custom-fields?limit=250";
+        $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
+        $settings = [];
+        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+            $customFields = json_decode($response['response'], true);
+
+            foreach($customFields['data'] as $field){
+                $boolIndex = ['dropship_enabled', 'hazardous_enabled', 'freight_enabled', 'insurance'];
+                $name = strtolower($field['name']);
+                $value = strtolower($field['value']);
+                if(in_array( $name, $boolIndex)){
+                    $settings[$name] = ($value == 'true') ? true : false;
+                }else{
+                    $settings[$name] = $value;
+                }
+
+            }
+        }
+        return $settings;
+    }
+
+
     public function getSingleProductDetail(Request $request)
     {
         if (empty($request->product_id)) {
@@ -204,10 +273,59 @@ class ProductSettingController extends Controller
         ], 200);
     }
 
+
+    public function getAllProducts(Request $request){
+        $store = Store::where('hash', $request['store_hash'])->first();
+        if(empty($store)){
+            return [];
+        }
+        $headers[] = 'X-Auth-Token: ' . $store->access_token;
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v3/catalog/products";
+        $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
+        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+            $allProducts = json_decode($response['response'], true);
+            //$allowed = ['id', 'sku', 'name', 'price'];
+            $filteredPrds = [];
+            $productsMeta = $allProducts['meta'];
+            foreach ($allProducts['data'] as $key=>$product){
+                $filteredPrds[$key]['id'] = $product['id'];
+                $filteredPrds[$key]['name'] = $product['name'];
+                $filteredPrds[$key]['sku'] = $product['sku'];
+                $filteredPrds[$key]['price'] = $product['price'];
+                //$filteredPrds[$key]['image_src'] = $this->getProductImageByID($product['id'], $request, $store->access_token );
+            };
+        }
+        return response()->json(
+            [
+                'error' => false,
+                'data' => $filteredPrds,
+                'meta' => $productsMeta,
+                'message' => '',
+            ]
+        );
+    }
+
+    public function getProductImageByID($id, $request, $token){
+        $imageEndPoint = 'https://api.bigcommerce.com/stores/' .$request['store_hash']. '/v3/catalog/products/'.$id.'/images';
+        $headers[] = 'X-Auth-Token: ' . $token;
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $image_src = '';
+        $image = $this->curlRequest->enSingleCurlRequest($imageEndPoint, [], $headers, 'GET', true);
+        if (isset($image['status']) && $image['status'] == true) {
+            $image = json_decode($image['response'], true);
+            if (isset($image['data']) && count($image['data'])) {
+                $image_src = $image['data'][0]['url_tiny'] ?? '';
+            }
+        }
+        return $image_src;
+    }
 //
-    /*    public function getAllProducts(Request $request)
+   /* public function getAllProducts(Request $request)
     {
-    $this->getProductsFromBC();
+        $this->getProductsFromBC();
     }
 
     public function getProductsFromBC()
