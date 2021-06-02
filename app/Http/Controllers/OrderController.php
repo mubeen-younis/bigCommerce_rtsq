@@ -82,6 +82,7 @@ class OrderController extends Controller
                 //echo "<pre>"; print_r($ws);// exit;
                 if( !(isset($ws->severity) && $ws->severity == 'ERROR') ){
                     $autoResidentialsStatus = $ws->autoResidentialsStatus ?? 'n';
+                    $liftGateStatus = $ws->liftGateStatus ?? 'n';
                     //$binPackagingData = $ws['binPackagingData']['response']['']
 
                     if(isset($ws->binPackagingData) && !empty($ws->binPackagingData)){
@@ -134,7 +135,8 @@ class OrderController extends Controller
             $orderWidget[$zip]['accessories'] = [];
             isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y' ? array_push($orderWidget[$zip]['accessories'], 'Hazardous Material') : '';
             isset($item->product_insurance_active) && $item->product_insurance_active == 'Y' ? array_push($orderWidget[$zip]['accessories'], 'Insurance') : '';
-            $autoResidentialsStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Auto Residential Delivery') : '';
+            $autoResidentialsStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Delivery') : '';
+            $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Delivery') : '';
             $count++;
         }
         $sbs = '';
