@@ -96,8 +96,8 @@ class OrderController extends Controller
                             foreach($binPacked->items as $item){
                                 $orderWidget[$zip]['sbs']['type'] = $type;
                                 $orderWidget[$zip]['sbs']['image_complete'] = $binPacked->image_complete;
-                                $orderWidget[$zip]['sbs']['w'] = $item->w;
-                                $orderWidget[$zip]['sbs']['h'] = $item->h;
+                                $orderWidget[$zip]['sbs']['w'] = $item->w . 'x';
+                                $orderWidget[$zip]['sbs']['h'] = $item->h . 'x';
                                 $orderWidget[$zip]['sbs']['d'] = $item->d;
 
                                 $orderWidget[$zip]['sbs']['items'][$count]['w'] = $item->w;
