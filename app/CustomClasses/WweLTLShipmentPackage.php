@@ -155,6 +155,7 @@ class WweLTLShipmentPackage
 
             if (!empty($response)) {
                 $originWithMinDist = (isset($response->origin_with_min_dist) && !empty($response->origin_with_min_dist)) ? (array)$response->origin_with_min_dist : [];
+                $originWithMinDist['type'] = 1;
                 return $this->wweLTLOriginArray($originWithMinDist, $receiverZipCode, $planNumber);
             }
         }
@@ -199,7 +200,6 @@ class WweLTLShipmentPackage
      */
     public function wweLTLAddress($originAddress, $planLicenseKey)
     {
-
         $originAddress = $this->changeWarehouseIdKey($originAddress);
         $post = [
             'acessLevel' => 'MultiDistance',
@@ -218,6 +218,7 @@ class WweLTLShipmentPackage
         $url = Constant::GOOGLE_URL;
 
         $curlRes = $shipping->sendCurlRequest($url, $post);
+
         if (!isset($curlRes->error)) {
             $response = $curlRes;
         } else {

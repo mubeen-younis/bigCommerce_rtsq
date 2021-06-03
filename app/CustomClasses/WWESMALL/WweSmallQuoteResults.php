@@ -74,6 +74,7 @@ class WweSmallQuoteResults
 
     public function addHandlingMarkupOfHazmat($amount, $markupValue)
     {
+        $amount = (float) str_replace(',', '', $amount);
         if (strpbrk($markupValue, '%') !== FALSE) {
             $amount = $this->getvalueFromPercent($amount, str_replace('%', '', $markupValue));
         } else {
