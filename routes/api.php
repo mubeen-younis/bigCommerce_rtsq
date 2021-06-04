@@ -5,6 +5,8 @@ use App\Http\Controllers\AddonsController;
 use App\Http\Controllers\CarrierController;
 use App\Http\Controllers\CarrierPlanController;
 use App\Http\Controllers\ConnectionController;
+//use App\Http\Controllers\CsvController;
+use App\Http\Controllers\ExportImportProducts;
 use App\Http\Controllers\GetRatesController;
 use App\Http\Controllers\InstalledCarrierController;
 use App\Http\Controllers\LocationsController;
@@ -106,6 +108,9 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::get('/get_orders', [OrderController::class, 'index']);
     Route::get('/get_order_widget', [OrderController::class, 'getOrderWidget']);
     Route::post('/update_order', [OrderController::class, 'update']);
+
+    //import export csv
+    Route::post('/exportProductsTemplate', [ExportImportProducts::class, 'exportProductsTemplate']);
 });
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);

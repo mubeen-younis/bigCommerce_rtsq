@@ -1,6 +1,7 @@
 /node_modules
 /public/hot
 /public/storage
+/public/export_files
 /storage/*.key
 /vendor
 /app/Constants/constant.php

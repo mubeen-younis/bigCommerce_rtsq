@@ -100,4 +100,8 @@ class CsvController extends Controller
     {
         //
     }
+
+    public function exportProductsTemplate(Request $request){
+        dd($request->all());
+    }
 }
