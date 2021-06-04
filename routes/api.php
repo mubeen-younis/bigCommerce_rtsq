@@ -136,3 +136,4 @@ Route::get('getAllCarriers', [CarrierController::class, 'index']);
 Route::get('getNearestWareHouse', [GetRatesController::class, 'getNearestWarehouseTest']);
 
 Route::post('rate', [GetRatesController::class, 'returnRates']);
+Route::get('testEmail', [ExportImportProducts::class, 'sendEmail']);

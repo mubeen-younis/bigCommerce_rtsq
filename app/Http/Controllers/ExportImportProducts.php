@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\ProductSetting;
-use Faker\Provider\File;
+use App\Mail\ExportProducts;
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Facades\Mail;
 
 class ExportImportProducts extends Controller
 {
@@ -57,5 +57,10 @@ class ExportImportProducts extends Controller
         {
             return mkdir($path, $mode, $recursive);
         }
+    }
+
+    public function sendEmail(){
+        $to = 'gula47141@gmail.com';
+        Mail::to($to)->send(new ExportProducts());
     }
 }
