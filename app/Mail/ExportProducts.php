@@ -16,9 +16,10 @@ class ExportProducts extends Mailable
      *
      * @return void
      */
-    public function __construct()
+    public $hash;
+    public function __construct($hash)
     {
-        //
+        $this->hash = $hash;
     }
 
     /**
@@ -28,6 +29,6 @@ class ExportProducts extends Mailable
      */
     public function build()
     {
-        return $this->view('emails.exportproducts');
+        return $this->view('emails.exportproducts', compact('hash'));
     }
 }

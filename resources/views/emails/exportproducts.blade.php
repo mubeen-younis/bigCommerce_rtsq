@@ -1,1 +1,1 @@
-<div>testing content</div>
+<div>testing content {{$hash}}</div>
