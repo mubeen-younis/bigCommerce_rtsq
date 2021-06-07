@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use GuzzleHttp\Psr7;
 use GuzzleHttp\Exception\RequestException;
+use Illuminate\Support\Facades\URL;
 use ZipArchive;
 use Illuminate\Filesystem\Filesystem;
 
@@ -31,10 +32,11 @@ class ExportImportProducts extends Controller
         $productsChunk = ProductSetting::where('store_id', $request['store_id']);
         $comma = ",";
         if(!isset($request['rerunrequest'])) {
-            $request['folderName'] = public_path() . '/export_files/' . $request['store_hash'] . '/store-' . $request['store_id'] . '-' . time();
+            $fileName = '/export_files/' . $request['store_hash'] . '/store-' . $request['store_id'] . '-' . time();
+            $request['folderName'] = public_path() . $fileName;
             $hash = md5($request['store_id'] . time());
             $this->makeDirectory($request['folderName'], $mode = 0777, true, true);
-            $request['exportProductsId'] = ExportProductsModel::insertGetId(['store_id' => $request['store_id'], 'foldername' => $request['folderName'].'.zip', 'hash' => $hash, 'request_time' => time(), 'email' => $request['email'], 'status' => 0]);
+            $request['exportProductsId'] = ExportProductsModel::insertGetId(['store_id' => $request['store_id'], 'foldername' => $fileName.'.zip', 'hash' => $hash, 'request_time' => time(), 'email' => $request['email'], 'status' => 0]);
         }
         $folderName = $request['folderName'];
         $folderNamePath = [];
@@ -118,5 +120,32 @@ class ExportImportProducts extends Controller
             if(file_exists($filetopath)){
                 return response()->download($filetopath,$zipFileName,$headers);
             }*/
+    }
+
+    public function downloadCsv($hash){
+        $status = ExportProductsModel::where('hash', $hash)->first();
+        if(empty($status) || $status->status !== 1 || ($status->request_time <= time()-24*3600) ){
+            echo "Download link has been expired";
+        }else{
+            $status->status = 2;
+            //$status->save();
+            $headers = array(
+                'Content-Type' => 'application/octet-stream',
+            );
+            $foldername = explode('/', $status->foldername);
+            $zipFileName = $foldername[count($foldername)-1];
+           // unset($foldername[count($foldername)-1]);
+            $foldername = implode('/', $foldername);
+            $filetopath = asset('public'.$foldername);
+
+            //$zipFileName = explode('/',asset($status->foldername) );
+            // Create Download Response
+            //if(file_exists($filetopath)){
+                echo "test";
+               return response()->download($filetopath,$zipFileName,$headers);
+            //}
+            dd($filetopath, $zipFileName);
+            echo "Download is ready";
+        }
     }
 }
