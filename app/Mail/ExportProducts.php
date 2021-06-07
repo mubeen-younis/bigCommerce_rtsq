@@ -29,6 +29,7 @@ class ExportProducts extends Mailable
      */
     public function build()
     {
+        $hash = $this->hash;
         return $this->view('emails.exportproducts', compact('hash'));
     }
 }
