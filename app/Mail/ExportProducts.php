@@ -31,7 +31,7 @@ class ExportProducts extends Mailable
     public function build()
     {
         $hash = $this->hash;
-        $url = URL::to('downloadcsv/'.$hash);
+        $url = URL::to('api/downloadcsv/'.$hash);
         return $this->view('emails.exportproducts', compact('url'));
     }
 }
