@@ -32,7 +32,7 @@ class ExportImportProducts extends Controller
         $productsChunk = ProductSetting::where('store_id', $request['store_id']);
         $comma = ",";
         if(!isset($request['rerunrequest'])) {
-            $fileName = '/export_files/' . $request['store_hash'] . '/store-' . $request['store_id'] . '-' . time();
+            $fileName = '/export_files/' . $request['store_hash'] . '/' . time();
             $request['folderName'] = public_path() . $fileName;
             $hash = md5($request['store_id'] . time());
             $this->makeDirectory($request['folderName'], $mode = 0777, true, true);
@@ -97,7 +97,6 @@ class ExportImportProducts extends Controller
     public function makeZipWithFiles($folderName){
             $zip = new ZipArchive;
             $files = glob($folderName.'/*.csv');
-            //dd($folderName, $files);
             $zipFileName = $folderName.'.zip';
             if ($zip->open($zipFileName, ZipArchive::CREATE) === TRUE) {
                 // Add File in ZipArchive
@@ -106,20 +105,11 @@ class ExportImportProducts extends Controller
                     $name = $name[count($name)-1];
                     $zip->addFile($file, $name);
                 }
-                // Close ZipArchive
                 $zip->close();
             }
             File::deleteDirectory($folderName);
             return $zipFileName;
-            // Set Header
-           /* $headers = array(
-                'Content-Type' => 'application/octet-stream',
-            );
-            $filetopath=$public_dir.'/'.$zipFileName;
-            // Create Download Response
-            if(file_exists($filetopath)){
-                return response()->download($filetopath,$zipFileName,$headers);
-            }*/
+
     }
 
     public function downloadCsv($hash){
@@ -129,25 +119,10 @@ class ExportImportProducts extends Controller
         }else{
             $status->status = 2;
             $status->save();
-            /*$headers = array(
-                'Content-Type' => 'application/octet-stream',
-            );*/
             $foldername = explode('/', $status->foldername);
-            //$zipFileName = $foldername[count($foldername)-1];
-           // unset($foldername[count($foldername)-1]);
             $foldername = implode('/', $foldername);
             $filetopath = asset('public'.$foldername);
             header('Location: '. $filetopath); exit;
-            /*
-            //$zipFileName = explode('/',asset($status->foldername) );
-            // Create Download Response
-            //if(file_exists($filetopath)){
-                echo "test";
-               return response()->download($filetopath,$zipFileName,$headers);
-            //}
-            dd($filetopath, $zipFileName);
-            echo "Download is ready";
-            */
         }
     }
 }
