@@ -137,4 +137,4 @@ Route::get('getNearestWareHouse', [GetRatesController::class, 'getNearestWarehou
 
 Route::post('rate', [GetRatesController::class, 'returnRates']);
 Route::get('testEmail', [ExportImportProducts::class, 'sendEmail']);
-Route::get('downloadCsv/{hash}', [ExportImportProducts::class, 'downloadCsv'])->name('downloadcsv');
+Route::get('downloadcsv/{hash}', [ExportImportProducts::class, 'downloadCsv'])->name('downloadcsv');

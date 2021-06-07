@@ -128,16 +128,17 @@ class ExportImportProducts extends Controller
             echo "Download link has been expired";
         }else{
             $status->status = 2;
-            //$status->save();
-            $headers = array(
+            $status->save();
+            /*$headers = array(
                 'Content-Type' => 'application/octet-stream',
-            );
+            );*/
             $foldername = explode('/', $status->foldername);
-            $zipFileName = $foldername[count($foldername)-1];
+            //$zipFileName = $foldername[count($foldername)-1];
            // unset($foldername[count($foldername)-1]);
             $foldername = implode('/', $foldername);
             $filetopath = asset('public'.$foldername);
-
+            header('Location: '. $filetopath); exit;
+            /*
             //$zipFileName = explode('/',asset($status->foldername) );
             // Create Download Response
             //if(file_exists($filetopath)){
@@ -146,6 +147,7 @@ class ExportImportProducts extends Controller
             //}
             dd($filetopath, $zipFileName);
             echo "Download is ready";
+            */
         }
     }
 }
