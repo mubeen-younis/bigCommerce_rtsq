@@ -103,7 +103,7 @@ class ExportImportProducts extends Controller
 
     public function sendEmail($email, $hash){
         //$to = 'gula47141@gmail.com';
-        Mail::to($email)->subject('Here is CSV file you requested')->send(new ExportProductsEmail($hash));
+        Mail::to($email)->send(new ExportProductsEmail($hash));
     }
 
     public function makeZipWithFiles($folderName){
