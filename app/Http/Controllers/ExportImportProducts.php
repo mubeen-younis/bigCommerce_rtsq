@@ -47,7 +47,7 @@ class ExportImportProducts extends Controller
                 $folderNamePath[] = $filename;
                 $fp = fopen($filename, "w");
                 if (true) {
-                    $line = 'Product Id, Product Name, Product Cat, Product SKU, Product Weight, Product Height, Product Length, Product Width, Freight Enabled, Freight Class, Hazardous Enabled, Insurance, Dropship Enabled, Dropship Location';
+                    $line = 'Product Id, Product Name, Product SKU, Product Weight, Product Height, Product Length, Product Width, Freight Enabled, Freight Class, Hazardous Enabled, Insurance, Dropship Enabled, Dropship Location';
                     $line .= "\n";
                     fputs($fp, $line);
                 }
