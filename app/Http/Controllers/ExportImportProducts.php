@@ -47,7 +47,7 @@ class ExportImportProducts extends Controller
                 $folderNamePath[] = $filename;
                 $fp = fopen($filename, "w");
                 if (true) {
-                    $line = 'Product Id, Product Name, Product Cat, Product SKU, Product Weight, Product Height, Product Length, Product Width';
+                    $line = 'Product Id, Product Name, Product Cat, Product SKU, Product Weight, Product Height, Product Length, Product Width, Freight Enabled, Freight Class, Hazardous Enabled, Insurance, Dropship Enabled, Dropship Location';
                     $line .= "\n";
                     fputs($fp, $line);
                 }
@@ -60,6 +60,15 @@ class ExportImportProducts extends Controller
                     $line .= $comma . $product->height;
                     $line .= $comma . $product->length;
                     $line .= $comma . $product->width;
+                    $settings = json_decode($product->settings);
+                    $line .= $comma . $settings->freight_enabled ?? false;
+                    $line .= $comma . $settings->freight_class ?? '';
+
+                    $line .= $comma . $settings->hazardous_enabled ?? false;
+                    $line .= $comma . $settings->insurance ?? false;
+                    $line .= $comma . $settings->dropship_enabled ?? false;
+                    $line .= $comma . $settings->dropship_location ?? '';
+
                     $line .= "\n";
                     fputs($fp, $line);
                 }
