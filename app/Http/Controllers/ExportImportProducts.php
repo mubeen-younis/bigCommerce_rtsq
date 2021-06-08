@@ -47,7 +47,7 @@ class ExportImportProducts extends Controller
                 $folderNamePath[] = $filename;
                 $fp = fopen($filename, "w");
                 if (true) {
-                    $line = 'Product Id, Product Name, Product SKU, Product Weight, Product Height, Product Length, Product Width, Freight Enabled, Freight Class, Hazardous Enabled, Insurance, Dropship Enabled, Dropship Location';
+                    $line = 'Product Id, Product Name, Product SKU, Weight (lbs), Length (in), Width (in), Height (in),Freight Enabled, Freight Class, Hazardous Enabled, Insurance, Dropship Enabled, Dropship Location';
                     $line .= "\n";
                     fputs($fp, $line);
                 }
@@ -57,9 +57,11 @@ class ExportImportProducts extends Controller
                     //$line .= $comma . 'Cat';
                     $line .= $comma . $product->sku . rand(0, 100000);
                     $line .= $comma . $product->weight;
-                    $line .= $comma . $product->height;
                     $line .= $comma . $product->length;
                     $line .= $comma . $product->width;
+                    $line .= $comma . $product->height;
+
+
                     $settings = json_decode($product->settings);
                     $line .=  isset($settings->freight_enabled)  ? $comma . $settings->freight_enabled : $comma . false;
 
@@ -101,7 +103,7 @@ class ExportImportProducts extends Controller
 
     public function sendEmail($email, $hash){
         //$to = 'gula47141@gmail.com';
-        Mail::to($email)->send(new ExportProductsEmail($hash));
+        Mail::to($email)->subject('Here is CSV file you requested')->send(new ExportProductsEmail($hash));
     }
 
     public function makeZipWithFiles($folderName){
