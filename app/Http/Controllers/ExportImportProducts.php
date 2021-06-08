@@ -61,13 +61,14 @@ class ExportImportProducts extends Controller
                     $line .= $comma . $product->length;
                     $line .= $comma . $product->width;
                     $settings = json_decode($product->settings);
-                    $line .= $comma . $settings->freight_enabled ?? false;
-                    $line .= $comma . $settings->freight_class ?? '';
+                    $line .=  isset($settings->freight_enabled)  ? $comma . $settings->freight_enabled : $comma . false;
+                    
+                    $line .=  isset($settings->freight_class)  ? $comma . $settings->freight_class : $comma;
+                    $line .=  isset($settings->hazardous_enabled)  ? $comma . $settings->hazardous_enabled : $comma . false;
+                    $line .=  isset($settings->insurance)  ? $comma . $settings->insurance : $comma . false;
+                    $line .=  isset($settings->dropship_enabled)  ? $comma . $settings->dropship_enabled : $comma . false;
+                    $line .=  isset($settings->dropship_location)  ? $comma . $settings->dropship_location : $comma;
 
-                    $line .= $comma . $settings->hazardous_enabled ?? false;
-                    $line .= $comma . $settings->insurance ?? false;
-                    $line .= $comma . $settings->dropship_enabled ?? false;
-                    $line .= $comma . $settings->dropship_location ?? '';
 
                     $line .= "\n";
                     fputs($fp, $line);
