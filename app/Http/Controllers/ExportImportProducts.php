@@ -54,7 +54,7 @@ class ExportImportProducts extends Controller
                 foreach ($products as $key => $product) {
                     $line = $product->source_product_id;
                     $line .= $comma . $product->name . ' dummy' . rand(0, 100000);
-                    $line .= $comma . 'Cat';
+                    //$line .= $comma . 'Cat';
                     $line .= $comma . $product->sku . rand(0, 100000);
                     $line .= $comma . $product->weight;
                     $line .= $comma . $product->height;
