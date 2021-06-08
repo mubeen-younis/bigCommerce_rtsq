@@ -52,7 +52,7 @@ class ExportImportProducts extends Controller
                     fputs($fp, $line);
                 }
                 foreach ($products as $key => $product) {
-                    $line = $product->id;
+                    $line = $product->source_product_id;
                     $line .= $comma . $product->name . ' dummy' . rand(0, 100000);
                     $line .= $comma . 'Cat';
                     $line .= $comma . $product->sku . rand(0, 100000);
@@ -62,7 +62,7 @@ class ExportImportProducts extends Controller
                     $line .= $comma . $product->width;
                     $settings = json_decode($product->settings);
                     $line .=  isset($settings->freight_enabled)  ? $comma . $settings->freight_enabled : $comma . false;
-                    
+
                     $line .=  isset($settings->freight_class)  ? $comma . $settings->freight_class : $comma;
                     $line .=  isset($settings->hazardous_enabled)  ? $comma . $settings->hazardous_enabled : $comma . false;
                     $line .=  isset($settings->insurance)  ? $comma . $settings->insurance : $comma . false;
@@ -124,7 +124,7 @@ class ExportImportProducts extends Controller
 
     public function downloadCsv($hash){
         $status = ExportProductsModel::where('hash', $hash)->first();
-        if(empty($status) || $status->status !== 1 || ($status->request_time <= time()-24*3600) ){
+        if(empty($status) || $status->status == 0 || ($status->request_time <= time()-24*3600) ){
             echo "Download link has been expired";
         }else{
             $status->status = 2;
