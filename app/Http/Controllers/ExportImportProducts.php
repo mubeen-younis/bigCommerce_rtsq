@@ -137,4 +137,31 @@ class ExportImportProducts extends Controller
             header('Location: '. $filetopath); exit;
         }
     }
+
+    public function uploadCsv(Request $request){
+        return response()->json(['error' => false,
+            'data' => [],
+            'message' => 'Uploaded Completed',
+        ], 200);
+    }
+
+    public function getRowHeaderImportedFile(Request $request){
+        $path = public_path('import_files/'.$request['store_hash'].'/'.$request['filename']);
+        $csv = array_map('str_getcsv', file($path));
+        array_walk($csv, function(&$a) use ($csv) {
+            $a = array_combine($csv[0], $a);
+        });
+        if( isset($request['hasheaders']) && $request['hasheaders'] === "false"){
+            $heading = range('A','ZZ');
+        }else{
+            foreach ($csv[0] as $key=> $val){
+                $heading[] = trim($val);
+            }
+        }
+        $heading = array_slice($heading, 0, count($csv[0]));
+        return response()->json([
+            'error' => false,
+            'data' => $heading ?? [],
+        ], 200);
+    }
 }

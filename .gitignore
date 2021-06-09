@@ -2,6 +2,7 @@
 /public/hot
 /public/storage
 /public/export_files
+/public/import_files
 /storage/*.key
 /vendor
 /app/Constants/constant.php
