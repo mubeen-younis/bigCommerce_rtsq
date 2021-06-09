@@ -52,10 +52,9 @@ class ExportImportProducts extends Controller
                     fputs($fp, $line);
                 }
                 foreach ($products as $key => $product) {
-                    $line = $product->source_product_id;
-                    $line .= $comma . $product->name . ' dummy' . rand(0, 100000);
-                    //$line .= $comma . 'Cat';
-                    $line .= $comma . $product->sku . rand(0, 100000);
+                    $line = $product->id;
+                    $line .= $comma . $product->name;
+                    $line .= $comma . $product->sku;
                     $line .= $comma . $product->weight;
                     $line .= $comma . $product->length;
                     $line .= $comma . $product->width;
@@ -163,5 +162,21 @@ class ExportImportProducts extends Controller
             'error' => false,
             'data' => $heading ?? [],
         ], 200);
+    }
+
+    public function importProducts(Request $request){
+        $indexes = ["Product Id", "Product Name", "Product SKU", "Weight (lbs)", "Length (in)", "Width (in)", "Height (in)", "Freight Enabled", "Freight Class", "Hazardous Enabled", "Insurance", "Dropship Enabled", "Dropship Location"];//$request['indexes'];
+        $path = public_path('import_files/'.$request['store_hash'].'/'.$request['filename']);
+        $csv = array_map('str_getcsv', file($path));
+        array_walk($csv, function(&$a) use ($csv) {
+            $a = array_combine(array_map('trim', $csv[0]), array_map('trim', $a));
+        });
+        //dd($csv[1]['Product Id']);
+        unset($csv[0]);
+        dd($csv);
+
+        foreach ($csv as $key => $product ){
+            //ProductSetting::where('src', )
+        }
     }
 }

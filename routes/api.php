@@ -112,6 +112,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     //import export csv
     Route::post('/exportProductsTemplate', [ExportImportProducts::class, 'exportProductsTemplate']);
     Route::get('/getRowHeaderImportedFile', [ExportImportProducts::class, 'getRowHeaderImportedFile']);
+    Route::post('/importProducts', [ExportImportProducts::class, 'importProducts']);
 });
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);
