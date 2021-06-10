@@ -241,27 +241,39 @@ class ExportImportProducts extends Controller
         $settings = $oldSettings[0] ? json_decode($oldSettings[0]) : new \stdClass();
         if(isset($indexes['freight_enabled'])){
             $key = $indexes['freight_enabled'];
-            $settings->freight_enabled = (bool) $product["$key"];
+            if(array_key_exists($key, $product)){
+                $settings->freight_enabled = (bool) $product["$key"];
+            }
         }
         if(isset($indexes['freight_class']) && $indexes['freight_class']){
             $key = $indexes['freight_class'];
-            $settings->freight_class = (string) $product["$key"];
+            if(array_key_exists($key, $product)) {
+                $settings->freight_class = (string)$product["$key"];
+            }
         }
         if(isset($indexes['dropship_enabled'])){
             $key = $indexes['dropship_enabled'];
-            $settings->dropship_enabled = (bool) $product["$key"];
+            if(array_key_exists($key, $product)) {
+                $settings->dropship_enabled = (bool)$product["$key"];
+            }
         }
         if(isset($indexes['dropship_location']) && $indexes['dropship_location']){
             $key = $indexes['dropship_location'];
-            $settings->dropship_location = (int) $product["$key"];
+            if(array_key_exists($key, $product)) {
+                $settings->dropship_location = (int)$product["$key"];
+            }
         }
         if(isset($indexes['insurance'])){
             $key = $indexes['insurance'];
-            $settings->insurance = (bool) $product["$key"];
+            if(array_key_exists($key, $product)) {
+                $settings->insurance = (bool)$product["$key"];
+            }
         }
         if(isset($indexes['hazardous_enabled'])){
             $key = $indexes['hazardous_enabled'];
-            $settings->hazardous_enabled = (bool) $product["$key"];
+            if(array_key_exists($key, $product)) {
+                $settings->hazardous_enabled = (bool)$product["$key"];
+            }
         }
         return $settings;
     }
