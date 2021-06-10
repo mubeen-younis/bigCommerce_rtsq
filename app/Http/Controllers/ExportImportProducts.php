@@ -239,7 +239,7 @@ class ExportImportProducts extends Controller
     }
     public function getSettings($oldSettings, $product, $indexes){
         $settings = $oldSettings[0] ? json_decode($oldSettings[0]) : new \stdClass();
-        if(isset($indexes['freight_enabled'])){
+        if(isset($indexes['freight_enabled']) && $indexes['freight_enabled']){
             $key = $indexes['freight_enabled'];
             if(array_key_exists($key, $product)){
                 $settings->freight_enabled = (bool) $product["$key"];
@@ -251,7 +251,7 @@ class ExportImportProducts extends Controller
                 $settings->freight_class = (string)$product["$key"];
             }
         }
-        if(isset($indexes['dropship_enabled'])){
+        if(isset($indexes['dropship_enabled']) && $indexes['dropship_enabled']){
             $key = $indexes['dropship_enabled'];
             if(array_key_exists($key, $product)) {
                 $settings->dropship_enabled = (bool)$product["$key"];
@@ -263,13 +263,13 @@ class ExportImportProducts extends Controller
                 $settings->dropship_location = (int)$product["$key"];
             }
         }
-        if(isset($indexes['insurance'])){
+        if(isset($indexes['insurance']) && $indexes['insurance']){
             $key = $indexes['insurance'];
             if(array_key_exists($key, $product)) {
                 $settings->insurance = (bool)$product["$key"];
             }
         }
-        if(isset($indexes['hazardous_enabled'])){
+        if(isset($indexes['hazardous_enabled']) && $indexes['hazardous_enabled']){
             $key = $indexes['hazardous_enabled'];
             if(array_key_exists($key, $product)) {
                 $settings->hazardous_enabled = (bool)$product["$key"];
