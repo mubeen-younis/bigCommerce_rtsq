@@ -182,18 +182,24 @@ class ExportImportProducts extends Controller
 
         $path = public_path('import_files/'.$request['store_hash'].'/'.$request['filename']);
         $csv = array_map('str_getcsv', file($path));
-        array_walk($csv, function(&$a) use ($csv) {
-            $a = array_combine(array_map('trim', $csv[0]), array_map('trim', $a));
+
+        $headerRow = array_slice(range('A','Z'), 0, count($csv[0]));
+        if($request['firstHeader'] == "true" ){
+            $headerRow = $csv[0];
+            unset($csv[0]);
+        }
+        array_walk($csv, function(&$a) use ($csv, $headerRow) {
+            $a = array_combine(array_map('trim', $headerRow), array_map('trim', $a));
         });
-        unset($csv[0]);
+
         $count = 0;
         try {
             foreach ($csv as $key => $product) {
                 $this->getUpdateData($product, $indexes, $store_id);
-                $count++;
-                if($count>5){
-                   // break 1;
-                }
+                /*$count++;
+                if($count>2){
+                    break 1;
+                }*/
             }
         }catch (RequestException $e){
             $catch = time();
