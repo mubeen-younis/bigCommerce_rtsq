@@ -171,7 +171,7 @@ class ExportImportProducts extends Controller
         ], 200);
     }
 
-    public function importProducts(Request $request){
+    public function importProductsCsv(Request $request){
         $initial = time();
         $indexes = $request->indexes;
         $store_id = $request['store_id'];
@@ -186,9 +186,14 @@ class ExportImportProducts extends Controller
             $a = array_combine(array_map('trim', $csv[0]), array_map('trim', $a));
         });
         unset($csv[0]);
+        $count = 0;
         try {
             foreach ($csv as $key => $product) {
                 $this->getUpdateData($product, $indexes, $store_id);
+                $count++;
+                if($count>5){
+                   // break 1;
+                }
             }
         }catch (RequestException $e){
             $catch = time();
@@ -203,6 +208,17 @@ class ExportImportProducts extends Controller
     }
     function getUpdateData($product, $indexes, $store_id){
         $update = [];
+        if(isset($indexes['id']) && $indexes['id']){
+            $key = $indexes['id'];
+            $source_product_id = (int) $product["$key"];
+            if(!ProductSetting::where('source_product_id', $source_product_id)
+                ->where('store_id', $store_id)->exists()) {
+                return true; // no action perform if product not exist
+            }
+            $oldSettings = ProductSetting::where('source_product_id', $source_product_id)
+                ->where('store_id', $store_id)->pluck('settings')->toArray();
+            $update['settings'] = json_encode($this->getSettings($oldSettings, $product, $indexes));
+        }
         if(isset($indexes['name']) && $indexes['name']){
             $key = $indexes['name'];
             $update['name'] = $product["$key"];
@@ -222,13 +238,6 @@ class ExportImportProducts extends Controller
         if(isset($indexes['height']) && $indexes['height']){
             $key = $indexes['height'];
             $update['height'] = (float) $product["$key"];
-        }
-        if(isset($indexes['id']) && $indexes['id']){
-            $key = $indexes['id'];
-            $source_product_id = (int) $product["$key"];
-            $oldSettings = ProductSetting::where('source_product_id', $source_product_id)
-                ->where('store_id', $store_id)->pluck('settings')->toArray();
-            $update['settings'] = json_encode($this->getSettings($oldSettings, $product, $indexes));
         }
         if(!empty($update)){
             ProductSetting::where('source_product_id', $source_product_id)
