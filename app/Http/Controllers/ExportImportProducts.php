@@ -283,7 +283,9 @@ class ExportImportProducts extends Controller
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
         $endpoint = "https://api.bigcommerce.com/stores/".$this->store_hash."/v3/catalog/products/".$source_product_id;
-        $update['depth'] = $update['length'];
+        if(isset($update['length'])){
+            $update['depth'] = $update['length'];
+        }
         unset($update['length']);
         $this->curlRequest->enSingleCurlRequest($endpoint, json_encode($update), $headers, 'PUT', false);
     }
