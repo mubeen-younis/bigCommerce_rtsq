@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ProductSetting;
 use App\Models\ExportProducts as ExportProductsModel;
 use App\Mail\ExportProducts as ExportProductsEmail;
+use App\Models\Store;
 use Illuminate\Support\Facades\File;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -13,9 +14,15 @@ use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\URL;
 use ZipArchive;
 use Illuminate\Filesystem\Filesystem;
+use App\CurlRequest;
 
 class ExportImportProducts extends Controller
 {
+    public $curlRequest;
+    public $access_token;
+    public $store_hash;
+
+
     public function exportProductsTemplate(Request $request)
     {
         if (isset($request['onlyResponse']) && $request['onlyResponse'] === true) {
@@ -41,7 +48,7 @@ class ExportImportProducts extends Controller
         $folderName = $request['folderName'];
         $folderNamePath = [];
         try {
-            $productsChunk->chunk(3000, function ($products, $chunkCount = 0) use ($comma, $folderName) {
+            $productsChunk->chunk(2000, function ($products, $chunkCount = 0) use ($comma, $folderName) {
                 $fileName = $chunkCount++ . '-export.csv';
                 $filename = $folderName . '/' . $fileName;
                 $folderNamePath[] = $filename;
@@ -52,7 +59,7 @@ class ExportImportProducts extends Controller
                     fputs($fp, $line);
                 }
                 foreach ($products as $key => $product) {
-                    $line = $product->id;
+                    $line = $product->source_product_id;
                     $line .= $comma . $product->name;
                     $line .= $comma . $product->sku;
                     $line .= $comma . $product->weight;
@@ -165,18 +172,108 @@ class ExportImportProducts extends Controller
     }
 
     public function importProducts(Request $request){
-        $indexes = ["Product Id", "Product Name", "Product SKU", "Weight (lbs)", "Length (in)", "Width (in)", "Height (in)", "Freight Enabled", "Freight Class", "Hazardous Enabled", "Insurance", "Dropship Enabled", "Dropship Location"];//$request['indexes'];
+        echo time();
+        $indexes = $request->indexes;
+        $store_id = $request['store_id'];
+        $store = Store::where('id', $store_id)->first();
+        $this->access_token = $store->access_token;
+        $this->store_hash = $request['store_hash'];
+        $this->curlRequest = new CurlRequest();
+
         $path = public_path('import_files/'.$request['store_hash'].'/'.$request['filename']);
         $csv = array_map('str_getcsv', file($path));
         array_walk($csv, function(&$a) use ($csv) {
             $a = array_combine(array_map('trim', $csv[0]), array_map('trim', $a));
         });
-        //dd($csv[1]['Product Id']);
         unset($csv[0]);
-        dd($csv);
-
-        foreach ($csv as $key => $product ){
-            //ProductSetting::where('src', )
+        $count = 0;
+        try {
+            foreach ($csv as $key => $product) {
+                $this->getUpdateData($product, $indexes, $store_id);
+                /*$count++;
+                if($count>4){
+                    dd($count);
+                }*/
+            }
+        }catch (RequestException $e){
+            echo 'catch'.time();
         }
+        echo time();
     }
+    function getUpdateData($product, $indexes, $store_id){
+        $update = [];
+        if(isset($indexes['name']) && $indexes['name']){
+            $key = $indexes['name'];
+            $update['name'] = $product["$key"];
+        }
+        if(isset($indexes['weight']) && $indexes['weight']){
+            $key = $indexes['weight'];
+            $update['weight'] = (float) $product["$key"];
+        }
+        if(isset($indexes['length']) && $indexes['length']){
+            $key = $indexes['length'];
+            $update['length'] = (float) $product["$key"];
+        }
+        if(isset($indexes['width']) && $indexes['width']){
+            $key = $indexes['width'];
+            $update['width'] = (float) $product["$key"];
+        }
+        if(isset($indexes['height']) && $indexes['height']){
+            $key = $indexes['height'];
+            $update['height'] = (float) $product["$key"];
+        }
+        if(isset($indexes['id']) && $indexes['id']){
+            $key = $indexes['id'];
+            $source_product_id = (int) $product["$key"];
+            $oldSettings = ProductSetting::where('source_product_id', $source_product_id)
+                ->where('store_id', $store_id)->pluck('settings')->toArray();
+            $update['settings'] = json_encode($this->getSettings($oldSettings, $product, $indexes));
+        }
+        if(!empty($update)){
+            ProductSetting::where('source_product_id', $source_product_id)
+                ->where('store_id', $store_id)->update($update);
+            unset($update['settings']);
+            $this->updateBCProduct($source_product_id, $store_id, $update);
+        }
+        return $update;
+    }
+    public function getSettings($oldSettings, $product, $indexes){
+        $settings = $oldSettings[0] ? json_decode($oldSettings[0]) : new \stdClass();
+        if(isset($indexes['freight_enabled'])){
+            $key = $indexes['freight_enabled'];
+            $settings->freight_enabled = (bool) $product["$key"];
+        }
+        if(isset($indexes['freight_class']) && $indexes['freight_class']){
+            $key = $indexes['freight_class'];
+            $settings->freight_class = (string) $product["$key"];
+        }
+        if(isset($indexes['dropship_enabled'])){
+            $key = $indexes['dropship_enabled'];
+            $settings->dropship_enabled = (bool) $product["$key"];
+        }
+        if(isset($indexes['dropship_location']) && $indexes['dropship_location']){
+            $key = $indexes['dropship_location'];
+            $settings->dropship_location = (int) $product["$key"];
+        }
+        if(isset($indexes['insurance'])){
+            $key = $indexes['insurance'];
+            $settings->insurance = (bool) $product["$key"];
+        }
+        if(isset($indexes['hazardous_enabled'])){
+            $key = $indexes['hazardous_enabled'];
+            $settings->hazardous_enabled = (bool) $product["$key"];
+        }
+        return $settings;
+    }
+
+    public function updateBCProduct($source_product_id, $store_id, $update){
+        $headers[] = 'X-Auth-Token: ' . $this->access_token;
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $endpoint = "https://api.bigcommerce.com/stores/".$this->store_hash."/v3/catalog/products/".$source_product_id;
+        $update['depth'] = $update['length'];
+        unset($update['length']);
+        $this->curlRequest->enSingleCurlRequest($endpoint, json_encode($update), $headers, 'PUT', false);
+    }
+
 }
