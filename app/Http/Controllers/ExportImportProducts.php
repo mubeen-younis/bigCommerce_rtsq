@@ -49,7 +49,7 @@ class ExportImportProducts extends Controller
         $folderName = $request['folderName'];
         $folderNamePath = [];
         try {
-            $productsChunk->chunk(2000, function ($products, $chunkCount = 0) use ($comma, $folderName) {
+            $productsChunk->chunk(900, function ($products, $chunkCount = 0) use ($comma, $folderName) {
                 $fileName = $chunkCount++ . '-export.csv';
                 $filename = $folderName . '/' . $fileName;
                 $folderNamePath[] = $filename;
