@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ProductSetting;
 use App\Models\ExportProducts as ExportProductsModel;
 use App\Mail\ExportProducts as ExportProductsEmail;
+use App\Mail\ImportProducts as ImportProductsEmail;
 use App\Models\Store;
 use Illuminate\Support\Facades\File;
 use Illuminate\Http\Request;
@@ -112,6 +113,11 @@ class ExportImportProducts extends Controller
         Mail::to($email)->send(new ExportProductsEmail($hash));
     }
 
+    public function ImportNotifyEmail($email){
+        //$to = 'gula47141@gmail.com';
+        Mail::to($email)->send(new ImportProductsEmail());
+    }
+
     public function makeZipWithFiles($folderName){
             $zip = new ZipArchive;
             $files = glob($folderName.'/*.csv');
@@ -179,7 +185,7 @@ class ExportImportProducts extends Controller
         $this->access_token = $store->access_token;
         $this->store_hash = $request['store_hash'];
         $this->curlRequest = new CurlRequest();
-
+        $emailNotify = $request['importEmailAddress'] ?? '';
         $path = public_path('import_files/'.$request['store_hash'].'/'.$request['filename']);
         $csv = array_map('str_getcsv', file($path));
 
@@ -191,20 +197,15 @@ class ExportImportProducts extends Controller
         array_walk($csv, function(&$a) use ($csv, $headerRow) {
             $a = array_combine(array_map('trim', $headerRow), array_map('trim', $a));
         });
-
-        $count = 0;
         try {
             foreach ($csv as $key => $product) {
                 $this->getUpdateData($product, $indexes, $store_id);
-                /*$count++;
-                if($count>2){
-                    break 1;
-                }*/
             }
         }catch (RequestException $e){
             $catch = time();
         }
         $last = time();
+        $this->ImportNotifyEmail($emailNotify);
         return response()->json([
             'error' => false,
             'initial' => $initial ?? '',
