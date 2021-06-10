@@ -172,7 +172,7 @@ class ExportImportProducts extends Controller
     }
 
     public function importProducts(Request $request){
-        echo time();
+        $initial = time();
         $indexes = $request->indexes;
         $store_id = $request['store_id'];
         $store = Store::where('id', $store_id)->first();
@@ -186,19 +186,20 @@ class ExportImportProducts extends Controller
             $a = array_combine(array_map('trim', $csv[0]), array_map('trim', $a));
         });
         unset($csv[0]);
-        $count = 0;
         try {
             foreach ($csv as $key => $product) {
                 $this->getUpdateData($product, $indexes, $store_id);
-                /*$count++;
-                if($count>4){
-                    dd($count);
-                }*/
             }
         }catch (RequestException $e){
-            echo 'catch'.time();
+            $catch = time();
         }
-        echo time();
+        $last = time();
+        return response()->json([
+            'error' => false,
+            'initial' => $initial ?? '',
+            'last' => $last ?? '',
+            'catch' => $catch ?? '',
+        ], 200);
     }
     function getUpdateData($product, $indexes, $store_id){
         $update = [];
@@ -235,7 +236,6 @@ class ExportImportProducts extends Controller
             unset($update['settings']);
             $this->updateBCProduct($source_product_id, $store_id, $update);
         }
-        return $update;
     }
     public function getSettings($oldSettings, $product, $indexes){
         $settings = $oldSettings[0] ? json_decode($oldSettings[0]) : new \stdClass();
