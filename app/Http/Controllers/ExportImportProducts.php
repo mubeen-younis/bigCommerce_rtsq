@@ -119,7 +119,6 @@ class ExportImportProducts extends Controller
     }
 
     public function ImportNotifyEmail($email){
-        Log::info('email '.$email);
         Mail::to($email)->send(new ImportProductsEmail());
     }
 
@@ -214,7 +213,6 @@ class ExportImportProducts extends Controller
             ImportProductsJob::dispatch($data)->delay(Carbon::now()->addSecond($delay));
             //$this->importProductCsvJob($request);
         }
-        Log::info('create email job '.$data['importEmailAddress']);
         ImportProductsNotification::dispatch($data['importEmailAddress'])->delay(Carbon::now()->addSecond($delay+10));
         // start running queue
         \Artisan::call('queue:work');
