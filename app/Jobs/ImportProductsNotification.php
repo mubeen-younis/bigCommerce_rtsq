@@ -32,6 +32,7 @@ class ImportProductsNotification implements ShouldQueue
      */
     public function handle()
     {
-        ExportImportProducts::ImportNotifyEmail($this->email);
+        $ExportImportProducts = new ExportImportProducts();
+        $ExportImportProducts::ImportNotifyEmail($this->email);
     }
 }
