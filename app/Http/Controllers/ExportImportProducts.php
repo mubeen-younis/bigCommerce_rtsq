@@ -205,9 +205,6 @@ class ExportImportProducts extends Controller
         $data['store_id'] = $request['store_id'];
         $data['store_name'] = $request['store_name'];
         foreach ($chunks as $key => $path){
-            if($key >= 2){
-                break 1;
-            }
             $data['path'] = $path;
             $delay = ($key+1)*10;
             ImportProductsJob::dispatch($data)->delay(Carbon::now()->addSecond($delay));
