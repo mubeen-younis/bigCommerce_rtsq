@@ -138,6 +138,5 @@ Route::get('getAllCarriers', [CarrierController::class, 'index']);
 Route::get('getNearestWareHouse', [GetRatesController::class, 'getNearestWarehouseTest']);
 
 Route::post('rate', [GetRatesController::class, 'returnRates']);
-Route::get('testEmail', [ExportImportProducts::class, 'sendEmail']);
 Route::get('downloadcsv/{hash}', [ExportImportProducts::class, 'downloadCsv'])->name('downloadcsv');
-Route::post('uploadcsv', [ExportImportProducts::class, 'uploadCsv'])->name('uploadcsv');
+Route::post('/uploadcsv', [ExportImportProducts::class, 'uploadCsv'])->name('uploadcsv');

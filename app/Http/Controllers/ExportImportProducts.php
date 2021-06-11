@@ -151,8 +151,19 @@ class ExportImportProducts extends Controller
     }
 
     public function uploadCsv(Request $request){
+        $token = $request->token;
+        $store = Store::where('token', $token)->get()->toArray();
+        $hash = $store[0]['hash'];
+        if ($request->hasFile('file')){
+            $file = $request->file('file');
+            $extension = $file->getClientOriginalExtension(); // you can also use file name
+            $fileName = time().'.'.$extension;
+            $path = public_path().'/import_files/'.$hash;
+            $file->move($path,$fileName);
+        }
         return response()->json(['error' => false,
             'data' => [],
+            'filename' => $fileName,
             'message' => 'Uploaded Completed',
         ], 200);
     }
@@ -250,7 +261,7 @@ class ExportImportProducts extends Controller
             ProductSetting::where('source_product_id', $source_product_id)
                 ->where('store_id', $store_id)->update($update);
             unset($update['settings']);
-            $this->updateBCProduct($source_product_id, $store_id, $update);
+            //$this->updateBCProduct($source_product_id, $store_id, $update);
         }
     }
     public function getSettings($oldSettings, $product, $indexes){
