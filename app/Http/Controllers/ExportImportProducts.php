@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ImportProducts as ImportProductsJob;
+use App\Jobs\ImportProductsNotification;
 use App\Models\ProductSetting;
 use App\Models\ExportProducts as ExportProductsModel;
 use App\Mail\ExportProducts as ExportProductsEmail;
@@ -9,6 +11,7 @@ use App\Mail\ImportProducts as ImportProductsEmail;
 use App\Models\Store;
 use Illuminate\Support\Facades\File;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use GuzzleHttp\Psr7;
 use GuzzleHttp\Exception\RequestException;
@@ -16,13 +19,15 @@ use Illuminate\Support\Facades\URL;
 use ZipArchive;
 use Illuminate\Filesystem\Filesystem;
 use App\CurlRequest;
+use Carbon\Carbon;
 
 class ExportImportProducts extends Controller
 {
     public $curlRequest;
-    public $access_token;
-    public $store_hash;
 
+    public function __construct(){
+        $this->curlRequest = new CurlRequest();
+    }
 
     public function exportProductsTemplate(Request $request)
     {
@@ -114,7 +119,6 @@ class ExportImportProducts extends Controller
     }
 
     public function ImportNotifyEmail($email){
-        //$to = 'gula47141@gmail.com';
         Mail::to($email)->send(new ImportProductsEmail());
     }
 
@@ -189,17 +193,45 @@ class ExportImportProducts extends Controller
     }
 
     public function importProductsCsv(Request $request){
-        $initial = time();
-        $indexes = $request->indexes;
+        $chunks = $this->splitCcvInChunks($request);
+        //$this->importProductCsvJob($request);
+        $delay = 10;
+
+        $data['filename'] = $request['filename'];
+        $data['firstHeader'] = $request['firstHeader'];
+        $data['importEmailAddress'] = $request['importEmailAddress'];
+        $data['indexes'] = $request['indexes'];
+        $data['store_hash'] = $request['store_hash'];
+        $data['store_id'] = $request['store_id'];
+        $data['store_name'] = $request['store_name'];
+        foreach ($chunks as $key => $path){
+            if($key >= 2){
+                break 1;
+            }
+            $data['path'] = $path;
+            $delay = ($key+1)*10;
+            ImportProductsJob::dispatch($data)->delay(Carbon::now()->addSecond($delay));
+            //$this->importProductCsvJob($request);
+        }
+
+        ImportProductsNotification::dispatch($data['importEmailAddress'])->delay(Carbon::now()->addSecond($delay+10));
+        // start running queue
+        \Artisan::call('queue:work');
+        return response()->json([
+            'error' => false,
+            'data' => $data,
+            'delay'=>$delay,
+        ], 200);
+    }
+
+    public function importProductCsvJob($request){
+        Log::info('214 importProductCsvJob '. json_encode($request));
+        $indexes = $request['indexes'];
         $store_id = $request['store_id'];
         $store = Store::where('id', $store_id)->first();
-        $this->access_token = $store->access_token;
-        $this->store_hash = $request['store_hash'];
-        $this->curlRequest = new CurlRequest();
         $emailNotify = $request['importEmailAddress'] ?? '';
-        $path = public_path('import_files/'.$request['store_hash'].'/'.$request['filename']);
+        $path = $request['path'];//public_path('import_files/'.$request['store_hash'].'/'.$request['filename']);
         $csv = array_map('str_getcsv', file($path));
-
         $headerRow = array_slice(range('A','Z'), 0, count($csv[0]));
         if($request['firstHeader'] == "true" ){
             $headerRow = $csv[0];
@@ -208,23 +240,12 @@ class ExportImportProducts extends Controller
         array_walk($csv, function(&$a) use ($csv, $headerRow) {
             $a = array_combine(array_map('trim', $headerRow), array_map('trim', $a));
         });
-        try {
-            foreach ($csv as $key => $product) {
-                $this->getUpdateData($product, $indexes, $store_id);
-            }
-        }catch (RequestException $e){
-            $catch = time();
+        foreach ($csv as $key => $product) {
+            $this->getUpdateData($product, $indexes, $store_id, $store->access_token, $request['store_hash']);
         }
-        $last = time();
-        $this->ImportNotifyEmail($emailNotify);
-        return response()->json([
-            'error' => false,
-            'initial' => $initial ?? '',
-            'last' => $last ?? '',
-            'catch' => $catch ?? '',
-        ], 200);
+        //$this->ImportNotifyEmail($emailNotify);
     }
-    function getUpdateData($product, $indexes, $store_id){
+    function getUpdateData($product, $indexes, $store_id, $access_token, $hash){
         $update = [];
         if(isset($indexes['id']) && $indexes['id']){
             $key = $indexes['id'];
@@ -261,7 +282,7 @@ class ExportImportProducts extends Controller
             ProductSetting::where('source_product_id', $source_product_id)
                 ->where('store_id', $store_id)->update($update);
             unset($update['settings']);
-            //$this->updateBCProduct($source_product_id, $store_id, $update);
+            $this->updateBCProduct($source_product_id, $store_id, $update,  $access_token, $hash);
         }
     }
     public function getSettings($oldSettings, $product, $indexes){
@@ -305,16 +326,53 @@ class ExportImportProducts extends Controller
         return $settings;
     }
 
-    public function updateBCProduct($source_product_id, $store_id, $update){
-        $headers[] = 'X-Auth-Token: ' . $this->access_token;
+    public function updateBCProduct($source_product_id, $store_id, $update,  $access_token, $hash){
+        $headers[] = 'X-Auth-Token: ' . $access_token;
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
-        $endpoint = "https://api.bigcommerce.com/stores/".$this->store_hash."/v3/catalog/products/".$source_product_id;
+        $endpoint = "https://api.bigcommerce.com/stores/".$hash."/v3/catalog/products/".$source_product_id;
         if(isset($update['length'])){
             $update['depth'] = $update['length'];
         }
         unset($update['length']);
         $this->curlRequest->enSingleCurlRequest($endpoint, json_encode($update), $headers, 'PUT', false);
+    }
+
+    public function splitCcvInChunks($request){
+        $path = public_path('import_files/'.$request['store_hash'].'/'.$request['filename']);
+        $inputFile = $path;
+        $outputFile =  str_replace('.csv', '', $path).'/';
+        $this->makeDirectory($outputFile, $mode = 0777, true, true);
+        $splitSize = 20;
+
+        $in = fopen($inputFile, 'r');
+        $headerRow = [];
+        if($request['firstHeader'] == "true" ){
+            $headerRow = fgetcsv($in);
+        }
+        $rowCount = 0;
+        $fileCount = 1;
+        $files = [];
+        while (!feof($in)) {
+            if (($rowCount % $splitSize) == 0) {
+                if ($rowCount > 0) {
+                    fclose($out);
+                }
+                $fileName = $outputFile . $fileCount++ . '.csv';
+                $files[] = $fileName;
+                $out = fopen($fileName, 'w');
+                if(!empty($headerRow)) {
+                    fputcsv($out, $headerRow);
+                }
+            }
+            $data = fgetcsv($in);
+            if ($data)
+                fputcsv($out, $data);
+            $rowCount++;
+        }
+
+        fclose($out);
+        return $files;
     }
 
 }

@@ -140,3 +140,5 @@ Route::get('getNearestWareHouse', [GetRatesController::class, 'getNearestWarehou
 Route::post('rate', [GetRatesController::class, 'returnRates']);
 Route::get('downloadcsv/{hash}', [ExportImportProducts::class, 'downloadCsv'])->name('downloadcsv');
 Route::post('/uploadcsv', [ExportImportProducts::class, 'uploadCsv'])->name('uploadcsv');
+
+Route::get('splitCSVinChunks', [ExportImportProducts::class, 'splitCSVinChunks']);
