@@ -42,6 +42,7 @@ class ExportImportProducts extends Controller
     }
 
     public function createExportData($request){
+        Log::info('createExportData before : '.time(). ' : '. $this->getCpuUsage());
         $productsChunk = ProductSetting::where('store_id', $request['store_id']);
         $comma = ",";
         if(!isset($request['rerunrequest'])) {
@@ -91,6 +92,7 @@ class ExportImportProducts extends Controller
             ExportProductsModel::find($request['exportProductsId'])->update(['status' => 1]);
             $this->makeZipWithFiles($folderName);
             $this->sendEmail($request['email'], $hash);
+            Log::info('createExportData after : '.time(). ' : '. $this->getCpuUsage());
         } catch (RequestException $e) {
             $statusCode = $e->getResponse()->getStatusCode();
             $errorMessage = "An error occurred.";
