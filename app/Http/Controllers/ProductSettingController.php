@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\CurlRequest;
+use App\Jobs\ImportProductsFromBCStore;
 use App\Models\ProductSetting;
 use Illuminate\Http\Request;
 use App\Models\Store;
+use Carbon\Carbon;
 
 class ProductSettingController extends Controller
 {
@@ -22,19 +24,31 @@ class ProductSettingController extends Controller
 
     public function importProducts(Request $request)
     {
-        $storeId = isset($request->store_id) ? $request->store_id : 1;
-        $storeName = isset($request->store_name) ? $request->store_name : 'uann2u';
-        $storeHash = isset($request->store_hash) ? $request->store_hash : 'uann2u';
-        $storeToken = $this->mainController->getCustAccessTok($storeId);
-        if (isset($storeToken['status']) && $storeToken['status'] == false) {
-            return response()->json(['error' => true,
-                'data' => [],
-                'message' => 'Token Not Found',
-            ], 200);
+        //dd($request->all());
+        $data['store_hash'] = $request['store_hash'];
+        $data['store_token'] = $this->mainController->getCustAccessTok($request['store_id']);
+        $data['store_id'] = $request['store_id'];
+
+        $data['perpage'] = 50;
+        $totalpages = $this->importProductsGetPages($data);
+        $delay = 0;
+        for($page = 0; $page<=$totalpages; $page++){
+            $data['page'] = $page;
+            //$this->importProductsJob($data);
+            ImportProductsFromBCStore::dispatch($data)->delay(Carbon::now()->addSecond(($delay++)*20));
+            if($data['page'] > 2){
+                break 1;
+            }
         }
-        $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products';
-        $headers[] = 'X-Auth-Client: ' . $this->mainController->getAppClientId();
-        $headers[] = 'X-Auth-Token: ' . $storeToken;
+        \Artisan::call('queue:work');
+        return response()->json(['error' => false,
+            'data' => $page,
+        ], 200);
+    }
+    public function importProductsJob($data){
+        $storeUrl = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products?limit=50&page='.$data['page'];
+        unset($headers);
+        $headers[] = 'X-Auth-Token: ' . $data['store_token'];
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
         $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
@@ -47,7 +61,7 @@ class ProductSettingController extends Controller
         $response = json_decode($response['response'], true);
         if (isset($response['data']) && count($response['data'])) {
             foreach ($response['data'] as $product) {
-                $imageEndPoint = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products/'.$product['id'].'/images';
+                $imageEndPoint = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products/'.$product['id'].'/images';
                 $image = $this->curlRequest->enSingleCurlRequest($imageEndPoint, [], $headers, 'GET', true);
                 if (isset($image['status']) && $image['status'] == true) {
                     $image = json_decode($image['response'], true);
@@ -55,14 +69,26 @@ class ProductSettingController extends Controller
                         $product['image'] = $image['data'][0]['url_tiny'] ?? '';
                     }
                 }
-                $this->saveProducts->saveProduct($product, $storeId);
+                $this->saveProducts->saveProduct($product, $data['store_id']);
             }
-            return response()->json(['error' => false,
-                'data' => $this->getStoreProductsFromDb($request),
-                'message' => 'Products Syncronized Succesfully',
-            ], 200);
+
         }
 
+    }
+
+    /*
+     * return number of pages for all products
+     */
+
+    public function importProductsGetPages($data){
+        $storeUrl = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products?limit='.$data['perpage'].'&page=0';
+        $headers[] = 'X-Auth-Token: ' . $data['store_token'];
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
+        $response = json_decode($response['response'], true);
+        //dd($response['meta']['pagination']['total_pages']);
+        return $response['meta']['pagination']['total_pages'];
     }
 
     public function getSingleProductFromApi($request)

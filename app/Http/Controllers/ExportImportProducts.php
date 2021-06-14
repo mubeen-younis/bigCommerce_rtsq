@@ -326,6 +326,7 @@ class ExportImportProducts extends Controller
     }
 
     public function updateBCProduct($source_product_id, $store_id, $update,  $access_token, $hash){
+        unset($headers);
         $headers[] = 'X-Auth-Token: ' . $access_token;
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
