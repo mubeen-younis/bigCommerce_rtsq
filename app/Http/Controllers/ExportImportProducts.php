@@ -54,7 +54,7 @@ class ExportImportProducts extends Controller
         $folderName = $request['folderName'];
         $folderNamePath = [];
         try {
-            $productsChunk->chunk(900, function ($products, $chunkCount = 0) use ($comma, $folderName) {
+            $productsChunk->chunk(2500, function ($products, $chunkCount = 0) use ($comma, $folderName) {
                 $fileName = $chunkCount++ . '-export.csv';
                 $filename = $folderName . '/' . $fileName;
                 $folderNamePath[] = $filename;
@@ -377,9 +377,7 @@ class ExportImportProducts extends Controller
      */
     public function getCpuUsage()
     {
-        $cpu = exec("top -bn2 | grep 'Cpu' | tail -1");
-        $cupArr = explode(',', $cpu);
-        $cpsUsage = (float)filter_var($cupArr[0], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-        return $cpsUsage;
+        $load = sys_getloadavg();
+        return $load[0];
     }
 }
