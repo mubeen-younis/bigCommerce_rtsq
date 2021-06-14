@@ -221,7 +221,7 @@ class ExportImportProducts extends Controller
     }
 
     public function importProductCsvJob($request){
-        Log::info('214 importProductCsvJob '. json_encode($request));
+        Log::info(' before : '.time(). ' : '. $this->getCpuUsage());
         $indexes = $request['indexes'];
         $store_id = $request['store_id'];
         $store = Store::where('id', $store_id)->first();
@@ -239,7 +239,8 @@ class ExportImportProducts extends Controller
         foreach ($csv as $key => $product) {
             $this->getUpdateData($product, $indexes, $store_id, $store->access_token, $request['store_hash']);
         }
-        //$this->ImportNotifyEmail($emailNotify);
+        unlink($path);
+        Log::info(' after : '.time(). ' : '. $this->getCpuUsage());
     }
     function getUpdateData($product, $indexes, $store_id, $access_token, $hash){
         $update = [];
@@ -371,4 +372,14 @@ class ExportImportProducts extends Controller
         return $files;
     }
 
+    /**
+     * Output the cpu usage
+     */
+    public function getCpuUsage()
+    {
+        $cpu = exec("top -bn2 | grep 'Cpu' | tail -1");
+        $cupArr = explode(',', $cpu);
+        $cpsUsage = (float)filter_var($cupArr[0], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+        return $cpsUsage;
+    }
 }
