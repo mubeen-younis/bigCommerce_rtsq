@@ -35,9 +35,6 @@ class ProductSettingController extends Controller
         for($page = 0; $page<=$totalpages; $page++){
             $data['page'] = $page;
             ImportProductsFromBCStore::dispatch($data)->delay(Carbon::now()->addSecond(($delay++)*10));
-            if($data['page'] > 20){
-                break 1;
-            }
         }
         \Artisan::call('queue:work');
         return response()->json(['error' => false,
