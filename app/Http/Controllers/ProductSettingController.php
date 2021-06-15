@@ -29,12 +29,12 @@ class ProductSettingController extends Controller
         $data['store_token'] = $this->mainController->getCustAccessTok($request['store_id']);
         $data['store_id'] = $request['store_id'];
 
-        $data['perpage'] = 50;
+        $data['perpage'] = 250;
         $totalpages = $this->importProductsGetPages($data);
         $delay = 0;
         for($page = 0; $page<=$totalpages; $page++){
             $data['page'] = $page;
-            ImportProductsFromBCStore::dispatch($data)->delay(Carbon::now()->addSecond(($delay++)*10));
+            ImportProductsFromBCStore::dispatch($data)->delay(Carbon::now()->addSecond(($delay++)*15));
         }
         \Artisan::call('queue:work');
         return response()->json(['error' => false,
@@ -57,17 +57,8 @@ class ProductSettingController extends Controller
         $response = json_decode($response['response'], true);
         if (isset($response['data']) && count($response['data'])) {
             foreach ($response['data'] as $product) {
-                $imageEndPoint = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products/'.$product['id'].'/images';
-                $image = $this->curlRequest->enSingleCurlRequest($imageEndPoint, [], $headers, 'GET', true);
-                if (isset($image['status']) && $image['status'] == true) {
-                    $image = json_decode($image['response'], true);
-                    if (isset($image['data']) && count($image['data'])) {
-                        $product['image'] = $image['data'][0]['url_tiny'] ?? '';
-                    }
-                }
                 $this->saveProducts->saveProduct($product, $data['store_id']);
             }
-
         }
         \Artisan::call('queue:work');
     }

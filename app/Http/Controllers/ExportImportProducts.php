@@ -42,7 +42,6 @@ class ExportImportProducts extends Controller
     }
 
     public function createExportData($request){
-        Log::info('createExportData before : '.time(). ' : '. $this->getCpuUsage());
         $productsChunk = ProductSetting::where('store_id', $request['store_id']);
         $comma = ",";
         if(!isset($request['rerunrequest'])) {
@@ -61,12 +60,13 @@ class ExportImportProducts extends Controller
                 $folderNamePath[] = $filename;
                 $fp = fopen($filename, "w");
                 if (true) {
-                    $line = 'Product Id, Product Name, Product SKU, Weight (lbs), Length (in), Width (in), Height (in),Freight Enabled, Freight Class, Hazardous Enabled, Insurance, Dropship Enabled, Dropship Location';
+                    $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (lbs), Length (in), Width (in), Height (in),Freight Enabled, Freight Class, Hazardous Enabled, Insurance, Dropship Enabled, Dropship Location, Parcel Enabled';
                     $line .= "\n";
                     fputs($fp, $line);
                 }
                 foreach ($products as $key => $product) {
-                    $line = $product->source_product_id;
+                    $line = 'P'.$product->source_product_id;
+                    $line .= $comma . 'V'.$product->variant_id;
                     $line .= $comma . $product->name;
                     $line .= $comma . $product->sku;
                     $line .= $comma . $product->weight;
@@ -83,6 +83,8 @@ class ExportImportProducts extends Controller
                     $line .=  isset($settings->insurance)  ? $comma . $settings->insurance : $comma . false;
                     $line .=  isset($settings->dropship_enabled)  ? $comma . $settings->dropship_enabled : $comma . false;
                     $line .=  isset($settings->dropship_location)  ? $comma . $settings->dropship_location : $comma;
+                    $line .=  isset($settings->small_enabled)  ? $comma . $settings->small_enabled : $comma;
+
 
 
                     $line .= "\n";
@@ -92,7 +94,6 @@ class ExportImportProducts extends Controller
             ExportProductsModel::find($request['exportProductsId'])->update(['status' => 1]);
             $this->makeZipWithFiles($folderName);
             $this->sendEmail($request['email'], $hash);
-            Log::info('createExportData after : '.time(). ' : '. $this->getCpuUsage());
         } catch (RequestException $e) {
             $statusCode = $e->getResponse()->getStatusCode();
             $errorMessage = "An error occurred.";
@@ -223,7 +224,6 @@ class ExportImportProducts extends Controller
     }
 
     public function importProductCsvJob($request){
-        Log::info(' before : '.time(). ' : '. $this->getCpuUsage());
         $indexes = $request['indexes'];
         $store_id = $request['store_id'];
         $store = Store::where('id', $store_id)->first();
@@ -242,7 +242,6 @@ class ExportImportProducts extends Controller
             $this->getUpdateData($product, $indexes, $store_id, $store->access_token, $request['store_hash']);
         }
         unlink($path);
-        Log::info(' after : '.time(). ' : '. $this->getCpuUsage());
     }
     function getUpdateData($product, $indexes, $store_id, $access_token, $hash){
         $update = [];
@@ -290,6 +289,12 @@ class ExportImportProducts extends Controller
             $key = $indexes['freight_enabled'];
             if(array_key_exists($key, $product)){
                 $settings->freight_enabled = (bool) $product["$key"];
+            }
+        }
+        if(isset($indexes['small_enabled']) && $indexes['small_enabled']){
+            $key = $indexes['small_enabled'];
+            if(array_key_exists($key, $product)){
+                $settings->small_enabled = (bool) $product["$key"];
             }
         }
         if(isset($indexes['freight_class']) && $indexes['freight_class']){
