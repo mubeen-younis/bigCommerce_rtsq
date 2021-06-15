@@ -83,7 +83,7 @@ class ExportImportProducts extends Controller
                     $line .=  isset($settings->insurance)  ? $comma . $settings->insurance : $comma . false;
                     $line .=  isset($settings->dropship_enabled)  ? $comma . $settings->dropship_enabled : $comma . false;
                     $line .=  isset($settings->dropship_location)  ? $comma . $settings->dropship_location : $comma;
-                    $line .=  isset($settings->small_enabled)  ? $comma . $settings->small_enabled : $comma;
+                    $line .=  isset($settings->parcel_enabled)  ? $comma . $settings->parcel_enabled : $comma;
 
 
 
@@ -248,6 +248,7 @@ class ExportImportProducts extends Controller
         if(isset($indexes['id']) && $indexes['id']){
             $key = $indexes['id'];
             $source_product_id = (int) $product["$key"];
+            Log::info('product id : '. $source_product_id);
             if(!ProductSetting::where('source_product_id', $source_product_id)
                 ->where('store_id', $store_id)->exists()) {
                 return true; // no action perform if product not exist
@@ -291,10 +292,10 @@ class ExportImportProducts extends Controller
                 $settings->freight_enabled = (bool) $product["$key"];
             }
         }
-        if(isset($indexes['small_enabled']) && $indexes['small_enabled']){
-            $key = $indexes['small_enabled'];
+        if(isset($indexes['parcel_enabled']) && $indexes['parcel_enabled']){
+            $key = $indexes['parcel_enabled'];
             if(array_key_exists($key, $product)){
-                $settings->small_enabled = (bool) $product["$key"];
+                $settings->parcel_enabled = (bool) $product["$key"];
             }
         }
         if(isset($indexes['freight_class']) && $indexes['freight_class']){
