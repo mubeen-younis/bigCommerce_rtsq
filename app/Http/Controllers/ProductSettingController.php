@@ -34,9 +34,8 @@ class ProductSettingController extends Controller
         $delay = 0;
         for($page = 0; $page<=$totalpages; $page++){
             $data['page'] = $page;
-            //$this->importProductsJob($data);
-            ImportProductsFromBCStore::dispatch($data)->delay(Carbon::now()->addSecond(($delay++)*20));
-            if($data['page'] > 2){
+            ImportProductsFromBCStore::dispatch($data)->delay(Carbon::now()->addSecond(($delay++)*10));
+            if($data['page'] > 20){
                 break 1;
             }
         }
@@ -73,7 +72,7 @@ class ProductSettingController extends Controller
             }
 
         }
-
+        \Artisan::call('queue:work');
     }
 
     /*
