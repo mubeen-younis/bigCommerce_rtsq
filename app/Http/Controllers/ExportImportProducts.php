@@ -247,8 +247,8 @@ class ExportImportProducts extends Controller
         $update = [];
         if(isset($indexes['id']) && $indexes['id']){
             $key = $indexes['id'];
-            $source_product_id = (int) $product["$key"];
-            Log::info('product id : '. $source_product_id);
+            //$source_product_id = (int) $product["$key"];
+            $source_product_id = (int) filter_var($product["$key"], FILTER_SANITIZE_NUMBER_INT);
             if(!ProductSetting::where('source_product_id', $source_product_id)
                 ->where('store_id', $store_id)->exists()) {
                 return true; // no action perform if product not exist
