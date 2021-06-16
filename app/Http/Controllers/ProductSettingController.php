@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\CurlRequest;
 use App\Jobs\ImportProductsFromBCStore;
+use App\Jobs\ImportProductsFromBCStoreStatusUpdate;
 use App\Models\ProductSetting;
+use App\Models\ImportProducts as ImportProductsModel;
 use Illuminate\Http\Request;
 use App\Models\Store;
 use Carbon\Carbon;
@@ -25,20 +27,27 @@ class ProductSettingController extends Controller
     public function importProducts(Request $request)
     {
         //dd($request->all());
-        $data['store_hash'] = $request['store_hash'];
-        $data['store_token'] = $this->mainController->getCustAccessTok($request['store_id']);
-        $data['store_id'] = $request['store_id'];
+        if(!ImportProductsModel::where('store_id', $request['store_id'])->where('status', '=',1)->exists()) {
+            $inserted = ImportProductsModel::create(['store_id'=> $request['store_id'], 'status' => 1]);
+            $insertedId = $inserted->id();
+            $data['store_hash'] = $request['store_hash'];
+            $data['store_token'] = $this->mainController->getCustAccessTok($request['store_id']);
+            $data['store_id'] = $request['store_id'];
 
-        $data['perpage'] = 250;
-        $totalpages = $this->importProductsGetPages($data);
-        $delay = 0;
-        for($page = 0; $page<=$totalpages; $page++){
-            $data['page'] = $page;
-            ImportProductsFromBCStore::dispatch($data)->delay(Carbon::now()->addSecond(($delay++)*20));
+            $data['perpage'] = 250;
+            $totalpages = $this->importProductsGetPages($data);
+            $delay = 0;
+
+            for ($page = 0; $page <= $totalpages; $page++) {
+                $data['page'] = $page;
+                if($page<3)
+                ImportProductsFromBCStore::dispatch($data)->delay(Carbon::now()->addSecond(($delay++) * 20));
+            }
+            ImportProductsFromBCStoreStatusUpdate::dispatch($insertedId)->delay(Carbon::now()->addSecond(($delay++) * 20));
+            \Artisan::call('queue:work');
         }
-        \Artisan::call('queue:work');
         return response()->json(['error' => false,
-            'data' => $page,
+            'message' => 'Synchronize request is in progress.',
         ], 200);
     }
     public function importProductsJob($data){
@@ -60,7 +69,6 @@ class ProductSettingController extends Controller
                 $this->saveProducts->saveProduct($product, $data['store_id']);
             }
         }
-        \Artisan::call('queue:work');
     }
 
     /*
