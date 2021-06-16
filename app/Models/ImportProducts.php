@@ -9,4 +9,8 @@ class ImportProducts extends Model
 {
     use HasFactory;
     protected $table = 'import_products';
+    protected $fillable = [
+        'store_id',
+        'status'
+    ];
 }
