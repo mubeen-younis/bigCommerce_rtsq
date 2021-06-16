@@ -28,8 +28,11 @@ class ProductSettingController extends Controller
     {
         //dd($request->all());
         if(!ImportProductsModel::where('store_id', $request['store_id'])->where('status', '=',1)->exists()) {
-            $inserted = ImportProductsModel::create(['store_id'=> $request['store_id'], 'status' => 1]);
-            $insertedId = $inserted->id();
+            $importPrdModel = new ImportProductsModel();
+            $importPrdModel->store_id = $request['store_id'];
+            $importPrdModel->status = 1;
+            $importPrdModel->save();
+            $insertedId = $importPrdModel->id;
             $data['store_hash'] = $request['store_hash'];
             $data['store_token'] = $this->mainController->getCustAccessTok($request['store_id']);
             $data['store_id'] = $request['store_id'];
