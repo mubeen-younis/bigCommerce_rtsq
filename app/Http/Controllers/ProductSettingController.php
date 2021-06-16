@@ -43,15 +43,12 @@ class ProductSettingController extends Controller
 
             for ($page = 0; $page <= $totalpages; $page++) {
                 $data['page'] = $page;
-                if($page<3)
                 ImportProductsFromBCStore::dispatch($data)->delay(Carbon::now()->addSecond(($delay++) * 20));
             }
             ImportProductsFromBCStoreStatusUpdate::dispatch($insertedId)->delay(Carbon::now()->addSecond(($delay++) * 20));
             \Artisan::call('queue:work');
         }
-        return response()->json(['error' => false,
-            'message' => 'Synchronize request is in progress.',
-        ], 200);
+
     }
     public function importProductsJob($data){
         $storeUrl = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products?limit='.$data['perpage'].'&page='.$data['page'];
