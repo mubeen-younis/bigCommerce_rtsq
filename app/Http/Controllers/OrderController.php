@@ -32,7 +32,8 @@ class OrderController extends Controller
         $orders['cpage'] = $request['page'] ?? 1;
         return response()->json(
             [
-                'data' => $orders,
+                'data' => $orders['allOrders'],
+                'meta' => $orders['meta'],
                 'error' => false,
             ]
         );
@@ -192,10 +193,11 @@ class OrderController extends Controller
             return null;
         }
         $page = $request['page'] ?? 1;
+        $perPage = $request['perpage'] ?? 50;
         $headers[] = 'X-Auth-Token: ' . $store->access_token;
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
-        $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders?sort=id:desc&page=".$page;
+        $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders?sort=id:desc&limit=".$perPage."&page=".$page;
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
         $resp = [];
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
@@ -204,7 +206,11 @@ class OrderController extends Controller
         $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders/count";
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
-            $resp['pages']  = (int) ceil(json_decode($response['response'])->count/50);
+            $resp['meta']  =[
+                'total' => (int) ceil(json_decode($response['response'])->count),
+                'current' => $page,
+                'perpage' => $perPage
+            ];
         }
         return $resp;
     }

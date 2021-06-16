@@ -34,7 +34,7 @@ class ProductSettingController extends Controller
         $delay = 0;
         for($page = 0; $page<=$totalpages; $page++){
             $data['page'] = $page;
-            ImportProductsFromBCStore::dispatch($data)->delay(Carbon::now()->addSecond(($delay++)*15));
+            ImportProductsFromBCStore::dispatch($data)->delay(Carbon::now()->addSecond(($delay++)*20));
         }
         \Artisan::call('queue:work');
         return response()->json(['error' => false,
@@ -42,7 +42,7 @@ class ProductSettingController extends Controller
         ], 200);
     }
     public function importProductsJob($data){
-        $storeUrl = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products?limit=50&page='.$data['page'];
+        $storeUrl = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products?limit='.$data['perpage'].'&page='.$data['page'];
         unset($headers);
         $headers[] = 'X-Auth-Token: ' . $data['store_token'];
         $headers[] = 'Content-Type: application/json';
@@ -218,8 +218,12 @@ class ProductSettingController extends Controller
 
     public function getStoreProductsFromDb(Request $request)
     {
+        $page = $request['page'] ?? 1;
+        $perPage = $request['perpage'] ?? 50;
+        $count = ProductSetting::where('store_id', $request->store_id)
+            ->groupBy('source_product_id')->get()->count();
         $products = ProductSetting::where('store_id', $request->store_id)
-            ->groupBy('source_product_id')->get();
+            ->groupBy('source_product_id')->skip(($page-1)*$perPage)->take($perPage)->get();
         if ($products->isEmpty()) {
             return response()->json(['error' => true,
                 'data' => [],
@@ -228,6 +232,7 @@ class ProductSettingController extends Controller
         }
         return response()->json(['error' => false,
             'data' => $products,
+            'meta' => ['total'=>$count, 'current' => $page, 'perpage'=>$perPage],
             'message' => '',
         ], 200);
     }
