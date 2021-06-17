@@ -290,7 +290,7 @@ class ProductSettingController extends Controller
         $product->width = $request->width;
         $product->height = $request->height;
         $product->settings = json_encode($request->only(['dropship_enabled', 'dropship_location', 'freight_class',
-            'hazardous_enabled', 'freight_enabled', 'insurance']));
+            'hazardous_enabled', 'freight_enabled', 'parcel_enabled', 'insurance']));
         $product->update();
         $this->updateSingleProductFromApi($request);
         return response()->json(['error' => false,

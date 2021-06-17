@@ -1,0 +1,5 @@
+Dependency for Real-time Shipping Quotes
+
+->Supervisory 
+. To process Queues
+reference: https://laravel.com/docs/8.x/queues#supervisor-configuration
