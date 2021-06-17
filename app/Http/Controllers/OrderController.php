@@ -30,13 +30,23 @@ class OrderController extends Controller
     {
         $orders = $this->getBCOrders($request);
         $orders['cpage'] = $request['page'] ?? 1;
-        return response()->json(
-            [
-                'data' => $orders['allOrders'],
-                'meta' => $orders['meta'],
-                'error' => false,
-            ]
-        );
+        if(empty($orders['allOrders'])){
+            return response()->json(
+                [
+                    'data' => [],
+                    'message' => "Order not found",
+                    'error' => true,
+                ]
+            );
+        }else {
+            return response()->json(
+                [
+                    'data' => $orders['allOrders'],
+                    'meta' => $orders['meta'],
+                    'error' => false,
+                ]
+            );
+        }
     }
 
     public function getOrderWidget(Request $request){
@@ -194,24 +204,37 @@ class OrderController extends Controller
         }
         $page = $request['page'] ?? 1;
         $perPage = $request['perpage'] ?? 50;
+        $search = (int) $request['search'] ?? 0;
         $headers[] = 'X-Auth-Token: ' . $store->access_token;
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
-        $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders?sort=id:desc&limit=".$perPage."&page=".$page;
+        $total = 1;
+        if($search){
+            $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders/".$search;
+        }else{
+            $countEndPoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders/count";
+            $response = $this->curlRequest->enSingleCurlRequest($countEndPoint, [], $headers, 'GET', false);
+            $total = (int) ceil(json_decode($response['response'])->count);
+            $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders?sort=id:desc&limit=".$perPage."&page=".$page;
+        }
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
+
         $resp = [];
+        $resp['allOrders'] = [];
+
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
-            $resp['allOrders']  = json_decode($response['response']);
+            $response = json_decode($response['response'], true);
+            if( !(isset($response[0]['status']) && $search)){
+                $resp['allOrders'] = $search ? [$response] : $response;
+            }
         }
-        $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders/count";
-        $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
-        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
-            $resp['meta']  =[
-                'total' => (int) ceil(json_decode($response['response'])->count),
-                'current' => $page,
-                'perpage' => $perPage
-            ];
-        }
+
+        $resp['meta']  =[
+            'total' => $total,
+            'current' => $page,
+            'perpage' => $perPage
+        ];
+
         return $resp;
     }
     /**

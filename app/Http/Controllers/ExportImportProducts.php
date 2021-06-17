@@ -295,7 +295,7 @@ class ExportImportProducts extends Controller
         if(isset($indexes['parcel_enabled']) && $indexes['parcel_enabled']){
             $key = $indexes['parcel_enabled'];
             if(array_key_exists($key, $product)){
-                $settings->parcel_enabled = (bool) $product["$key"];
+                $settings->parcel_enabled = (bool) $product["$key"];;
             }
         }
         if(isset($indexes['freight_class']) && $indexes['freight_class']){
