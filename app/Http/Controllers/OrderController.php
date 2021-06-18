@@ -204,18 +204,34 @@ class OrderController extends Controller
         }
         $page = $request['page'] ?? 1;
         $perPage = $request['perpage'] ?? 50;
+        $status = $request['status'] ?? '';
+        //dd($status);
         $search = (int) $request['search'] ?? 0;
         $headers[] = 'X-Auth-Token: ' . $store->access_token;
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
         $total = 1;
         if($search){
-            $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders/".$search;
+            if($status == ''){
+                $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders/".$search;
+            }else{
+                $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders/".$search."?status_id=".$status;
+            }
+
         }else{
-            $countEndPoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders/count";
+            if($status == ''){
+                $countEndPoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders/count";
+            }else{
+                $countEndPoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders/count?status_id=".$status;
+            }
             $response = $this->curlRequest->enSingleCurlRequest($countEndPoint, [], $headers, 'GET', false);
             $total = (int) ceil(json_decode($response['response'])->count);
-            $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders?sort=id:desc&limit=".$perPage."&page=".$page;
+            if($status !== ''){
+                $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders?sort=id:desc&status_id=".$status."&limit=".$perPage."&page=".$page;
+            }else{
+                $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders?sort=id:desc&limit=".$perPage."&page=".$page;
+            }
+
         }
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
 
@@ -224,8 +240,21 @@ class OrderController extends Controller
 
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
             $response = json_decode($response['response'], true);
+            //dd($endpoint,$response);
             if( !(isset($response[0]['status']) && $search)){
-                $resp['allOrders'] = $search ? [$response] : $response;
+                $orders = $search ? [$response] : $response;
+                $count = 0;
+                if($orders) {
+                    foreach ($orders as $count => $order) {
+                        //$count++;
+                        $resp['allOrders'][$count]['id'] = $order['id'];
+                        $resp['allOrders'][$count]['customer'] = $order['billing_address']['first_name'] . ' ' . $order['billing_address']['last_name'];
+                        $resp['allOrders'][$count]['date_created'] = date("m/d/Y", strtotime($order['date_created']));
+                        $resp['allOrders'][$count]['status'] = $order['status'];
+                        $resp['allOrders'][$count]['total_inc_tax'] = '$' . number_format((float)$order['total_inc_tax'], 2, '.', '');
+                        $resp['allOrders'][$count]['items_total'] = $order['items_total'];
+                    }
+                }
             }
         }
 
