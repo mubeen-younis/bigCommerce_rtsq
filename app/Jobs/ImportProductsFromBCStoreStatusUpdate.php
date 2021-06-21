@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Mail\SyncProductNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -9,6 +10,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use App\Models\ImportProducts as ImportProductsModel;
+use Illuminate\Support\Facades\Mail;
 
 class ImportProductsFromBCStoreStatusUpdate implements ShouldQueue
 {
@@ -20,9 +22,11 @@ class ImportProductsFromBCStoreStatusUpdate implements ShouldQueue
      * @return void
      */
     public $id;
-    public function __construct($id)
+    public $email;
+    public function __construct($id, $email)
     {
         $this->id = $id;
+        $this->email = $email;
     }
 
     /**
@@ -33,5 +37,6 @@ class ImportProductsFromBCStoreStatusUpdate implements ShouldQueue
     public function handle()
     {
         ImportProductsModel::where('id', $this->id)->update(['status'=>2]);
+        Mail::to($this->email)->send(new SyncProductNotification());
     }
 }

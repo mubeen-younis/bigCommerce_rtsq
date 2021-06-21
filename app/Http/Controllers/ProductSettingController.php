@@ -36,7 +36,6 @@ class ProductSettingController extends Controller
             $data['store_hash'] = $request['store_hash'];
             $data['store_token'] = $this->mainController->getCustAccessTok($request['store_id']);
             $data['store_id'] = $request['store_id'];
-
             $data['perpage'] = 250;
             $totalpages = $this->importProductsGetPages($data);
             $delay = 0;
@@ -45,7 +44,7 @@ class ProductSettingController extends Controller
                 $data['page'] = $page;
                 ImportProductsFromBCStore::dispatch($data)->delay(Carbon::now()->addSecond(($delay++) * 20));
             }
-            ImportProductsFromBCStoreStatusUpdate::dispatch($insertedId)->delay(Carbon::now()->addSecond(($delay++) * 20));
+            ImportProductsFromBCStoreStatusUpdate::dispatch($insertedId, $request['email'])->delay(Carbon::now()->addSecond(($delay++) * 20));
             \Artisan::call('queue:work');
         }
 
