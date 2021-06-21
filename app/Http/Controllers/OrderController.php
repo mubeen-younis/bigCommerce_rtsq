@@ -99,35 +99,39 @@ class OrderController extends Controller
                     if(isset($ws->binPackagingData) && !empty($ws->binPackagingData)){
                         $sbsData = $ws->binPackagingData->response;
                         if(isset($sbsData->errors) && empty($sbsData->errors)) {
-                            $binPacked = $sbsData->bins_packed[0];
-                            $type = '';
-                            if(isset($binPacked->bin_data->type) && $binPacked->bin_data->type == 'item' ){
-                                $type = 'item';
-                            }
-                            $count = 0;
-                            foreach($binPacked->items as $item){
-                                $orderWidget[$zip]['sbs']['type'] = $type;
-                                $orderWidget[$zip]['sbs']['image_complete'] = $binPacked->image_complete;
-                                $orderWidget[$zip]['sbs']['w'] = $item->w . 'x';
-                                $orderWidget[$zip]['sbs']['h'] = $item->h . 'x';
-                                $orderWidget[$zip]['sbs']['d'] = $item->d;
+                            //$binPacked = $sbsData->bins_packed[0];
+                            foreach ($sbsData->bins_packed as $key => $binPacked) {
+                                $type = '';
+                                if (isset($binPacked->bin_data->type) && $binPacked->bin_data->type == 'item') {
+                                    $type = 'item';
+                                }
+                                $count = 0;
+                                foreach ($binPacked->items as $item) {
+                                    $orderWidget[$zip]['sbs'][$key]['type'] = $type;
+                                    $orderWidget[$zip]['sbs'][$key]['image_complete'] = $binPacked->image_complete;
+                                    $orderWidget[$zip]['sbs'][$key]['w'] = $binPacked->bin_data->w . 'x';
+                                    $orderWidget[$zip]['sbs'][$key]['h'] = $binPacked->bin_data->h . 'x';
+                                    $orderWidget[$zip]['sbs'][$key]['d'] = $binPacked->bin_data->d;
+                                    $orderWidget[$zip]['sbs'][$key]['nickname'] = $this->getBoxName($binPacked->bin_data->id, $request['store_id'], $order['rate_id'], $order['cart_id']);
+                                    $productid = $item->id;
+                                    $orderWidget[$zip]['sbs'][$key]['items'][$count]['product_name'] = $lineItem->items->$productid->lineItemName;
+                                    $orderWidget[$zip]['sbs'][$key]['items'][$count]['w'] = $item->w;
+                                    $orderWidget[$zip]['sbs'][$key]['items'][$count]['h'] = $item->h;
+                                    $orderWidget[$zip]['sbs'][$key]['items'][$count]['d'] = $item->d;
 
-                                $orderWidget[$zip]['sbs']['items'][$count]['w'] = $item->w;
-                                $orderWidget[$zip]['sbs']['items'][$count]['h'] = $item->h;
-                                $orderWidget[$zip]['sbs']['items'][$count]['d'] = $item->d;
+                                    $orderWidget[$zip]['sbs'][$key]['items'][$count]['image_separated'] = $item->image_separated;
+                                    $orderWidget[$zip]['sbs'][$key]['items'][$count]['image_sbs'] = $item->image_sbs;
+                                    $count++;
 
-                                $orderWidget[$zip]['sbs']['items'][$count]['image_separated'] = $item->image_separated;
-                                $orderWidget[$zip]['sbs']['items'][$count]['image_sbs'] = $item->image_sbs;
-                                $count++;
+                                }
+                                $orderWidget[$zip]['sbs'][$key]['number_of_items'] = $count;
                             }
-                            //echo "<pre>"; print_r($binPacked); exit;
+                            $totalBoxes = $key+1;
                         }
-                        //echo "<pre>"; print_r($sbsData->errors); exit;
                     }
                 }
             }
         }
-        //echo "<pre>"; print_r($orderWidget); exit;
         $origins = $lineItem->origin;
         $items = $lineItem->items;
 
@@ -139,10 +143,10 @@ class OrderController extends Controller
             $zip = $origin->senderZip ?? '';
             $orderWidget[$zip]['locationtype'] = $item->dropship_enabled == 'N' ? 'Warehouse' : 'Dropship';
             $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $zip;
+            $orderWidget[$zip]['totalBoxes'] = $totalBoxes;
             $orderWidget[$zip]['shipping_method'] = explode('(',$order['shipping_name'])[0];
             $orderWidget[$zip]['shipping_rate'] = '$'.$order['shipping_rate'];
             $orderWidget[$zip]['items'][] = $item->piecesOfLineItem.' X '.$item->lineItemName;
-            //$orderWidget[$zip]['accessories'][$key] = [];
             $orderWidget[$zip]['accessories'] = [];
             isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y' ? array_push($orderWidget[$zip]['accessories'], 'Hazardous Material') : '';
             isset($item->product_insurance_active) && $item->product_insurance_active == 'Y' ? array_push($orderWidget[$zip]['accessories'], 'Insurance') : '';
@@ -151,13 +155,28 @@ class OrderController extends Controller
             $count++;
         }
         $sbs = '';
-        //echo "<pre>"; print_r($orderWidget); exit;
-       // dd($orderWidget);
         $resp = [
             'widget' => $this->objectToArray( $orderWidget ),
             'sbs' => $sbs
         ];
         return $resp;
+    }
+
+    public function getBoxName($binId, $store_id, $rate_id, $cart_id){
+        $data = RequestData::where('rate_id', $rate_id)
+            ->where('cart_id', $cart_id)
+            ->where('store_id', $store_id)
+            ->first()->toArray();
+        $binId = (int) $binId;
+        $bins = json_decode($data['request'])->bins;
+        if(!empty($bins)){
+            foreach ($bins as $bin){
+                if($binId == $bin->id){
+                    return $bin->nickname;
+                }
+            }
+        }
+
     }
 
     public function objectToArray($orderWidget){

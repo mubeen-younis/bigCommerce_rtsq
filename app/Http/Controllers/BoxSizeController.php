@@ -15,7 +15,14 @@ class BoxSizeController extends Controller
      */
     public function index()
     {
-        return response()->json(['error' => false, 'data' => BoxSize::get()]);
+        //$boxes = BoxSize::get();
+        foreach (BoxSize::get() as $key => $box){
+
+            $boxes[$key] = $box;
+            $boxes[$key]['availability'] = $box['is_available'] ? 'Yes' : 'No';
+
+        }
+        return response()->json(['error' => false, 'data' => $boxes]);
     }
 
     /**
@@ -109,12 +116,13 @@ class BoxSizeController extends Controller
             $data = $request->except(['store_name', 'store_hash']);
 
             $boxsize = BoxSize::where('id', $request->id)->update($data);
-
+            $box = BoxSize::find($request->id);
+            $box['availability'] = $box['is_available']? 'Yes':'No';
             return response()->json(
                 [
                     'error' => false,
                     'message' => "Box Size updated successfully.",
-                    'data' => BoxSize::find($request->id),
+                    'data' => $box,//BoxSize::find($request->id),
                 ], 200);
         }
 
