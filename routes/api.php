@@ -5,6 +5,7 @@ use App\Http\Controllers\AddonsController;
 use App\Http\Controllers\CarrierController;
 use App\Http\Controllers\CarrierPlanController;
 use App\Http\Controllers\ConnectionController;
+use \App\Http\Controllers\Subscriptions;
 //use App\Http\Controllers\CsvController;
 use App\Http\Controllers\ExportImportProducts;
 use App\Http\Controllers\GetRatesController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\SBSController;
 use App\Http\Middleware\EnsureTokenIsValid;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -113,6 +115,10 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/exportProductsTemplate', [ExportImportProducts::class, 'exportProductsTemplate']);
     Route::get('/getRowHeaderImportedFile', [ExportImportProducts::class, 'getRowHeaderImportedFile']);
     Route::post('/importProducts', [ExportImportProducts::class, 'importProductsCsv']);
+
+
+    //subscription
+    Route::post('/create_subscription', [Subscriptions::class, 'createSubscription']);
 });
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);
