@@ -142,3 +142,8 @@ Route::get('downloadcsv/{hash}', [ExportImportProducts::class, 'downloadCsv'])->
 Route::post('/uploadcsv', [ExportImportProducts::class, 'uploadCsv'])->name('uploadcsv');
 
 Route::get('splitCSVinChunks', [ExportImportProducts::class, 'splitCSVinChunks']);
+
+
+
+//plans
+Route::get('/get_plans', [\App\Http\Controllers\PlansController::class, 'getPlans']);
