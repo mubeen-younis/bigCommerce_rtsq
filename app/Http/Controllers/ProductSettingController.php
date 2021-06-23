@@ -46,6 +46,7 @@ class ProductSettingController extends Controller
             }
             ImportProductsFromBCStoreStatusUpdate::dispatch($insertedId, $request['email'])->delay(Carbon::now()->addSecond(($delay++) * 20));
             \Artisan::call('queue:work');
+            
         }
 
     }
