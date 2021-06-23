@@ -17,6 +17,7 @@ use App\Http\Controllers\ProductSettingController;
 use App\Http\Controllers\QuoteSettingsController;
 use App\Http\Controllers\RADController;
 use App\Http\Controllers\SBSController;
+use App\Http\Controllers\StoreController;
 use App\Http\Middleware\EnsureTokenIsValid;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -119,6 +120,10 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
 
     //subscription
     Route::post('/create_subscription', [Subscriptions::class, 'createSubscription']);
+
+
+    //stores
+    Route::get('/store', [StoreController::class, 'index']);
 });
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);

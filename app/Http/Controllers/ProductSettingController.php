@@ -65,11 +65,39 @@ class ProductSettingController extends Controller
         $response = json_decode($response['response'], true);
         if (isset($response['data']) && count($response['data'])) {
             foreach ($response['data'] as $product) {
-                $this->saveProducts->saveProduct($product, $data['store_id']);
+                $this->getVariants($product, $data);
+                //$this->saveProducts->saveProduct($product, $data['store_id']);
             }
         }
     }
 
+    public function getVariants($product, $data){
+        $metaEndPoint = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products/'.$product['id'].'/variants?limit=250';
+        unset($headers);
+        $headers[] = 'X-Auth-Token: ' . $data['store_token'];
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $metaResponse = $this->curlRequest->enSingleCurlRequest($metaEndPoint, [], $headers, 'GET', true);
+        $metaResponse = json_decode($metaResponse['response'], true);
+        $total_pages = $metaResponse['meta']['total_pages'];
+        for($count = 1; $count<=$total_pages; $count++) {
+            $variantEndPoint = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products/'.$product['id'].'/variants?limit=250&page='.$count;
+            $response = $this->curlRequest->enSingleCurlRequest($variantEndPoint, [], $headers, 'GET', true);
+            $response = json_decode($response['response'], true);
+            if (isset($response['data']) && count($response['data'])) {
+                foreach ($response['data'] as $variant) {
+                    $product['price'] = $variant['price'];
+                    $product['weight'] = $variant['weight'];
+                    $product['depth'] = $variant['depth'];
+                    $product['width'] = $variant['width'];
+                    $product['height'] = $variant['height'];
+                    $product['sku'] = $variant['sku'];
+                    $product['base_variant_id'] = $variant['id'];
+                    $this->saveProducts->saveProduct($product, $data['store_id']);
+                }
+            }
+        }
+    }
     /*
      * return number of pages for all products
      */
