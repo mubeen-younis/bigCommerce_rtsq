@@ -66,7 +66,17 @@ class ProductSettingController extends Controller
         $response = json_decode($response['response'], true);
         if (isset($response['data']) && count($response['data'])) {
             foreach ($response['data'] as $product) {
-                $this->getVariants($product, $data);
+
+                /*
+                 * $product['base_variant_id'] = null mean this has variants and iterate those
+                 * otherwise base product is as a variant product
+                 * */
+                if($product['base_variant_id'] == null){
+                    $this->getVariants($product, $data);
+                }else{
+                    $this->saveProducts->saveProduct($product, $data['store_id']);
+                }
+
                 //$this->saveProducts->saveProduct($product, $data['store_id']);
             }
         }
