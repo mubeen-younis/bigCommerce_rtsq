@@ -435,7 +435,7 @@ class ProductSettingController extends Controller
              * */
             if($scope == "store/sku/created"){
                 if(ProductSetting::where('source_product_id', $productId)->where('store_id', $store->id)->count() == 1){
-                    ProductSetting::where('source_product_id', $productId)->where('store_id', $store->id)->update(['variant_id', null]);
+                    ProductSetting::where('source_product_id', $productId)->where('store_id', $store->id)->update(['variant_id' => null]);
                 }
             }
             $toRequest['store_id'] = $store->id;
