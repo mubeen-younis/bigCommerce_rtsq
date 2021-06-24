@@ -130,6 +130,9 @@ class ProductSettingController extends Controller
         $storeName = $request['store_name'] ?? '';
         $productId = $request['product_id'] ?? '';
         $storeToken = $this->mainController->getCustAccessTok($storeId);
+        $data['store_token'] = $storeToken;
+        $data['store_id'] = $storeId;
+        $data['store_hash'] = $storeName;
         if (isset($storeToken['status']) && $storeToken['status'] == false) {
             return response()->json(['error' => true,
                 'data' => [],
@@ -144,7 +147,12 @@ class ProductSettingController extends Controller
         $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
         $response = json_decode($response['response'], true);
         if (isset($response['data']) && count($response['data'])) {
-            $this->saveProducts->saveProduct($response['data'], $storeId);
+            $product = $response['data'];
+            if($product['variant_id'] == null){
+                $this->getVariants($product, $data);
+            }else{
+                $this->saveProducts->saveProduct($product, $storeId);
+            }
             return response()->json(['error' => false,
                 'data' => [],
                 'message' => 'Products Saved Succesfully',
@@ -157,8 +165,9 @@ class ProductSettingController extends Controller
         $storeId = $request['store_id'] ?? '';
         $storeHash = $request['store_hash'] ?? '';
         $source_product_id = $request['source_product_id'] ?? '';
+        $variant_id = (int) $request['variant_id'] ?? 0;
         $storeToken = $this->mainController->getCustAccessTok($storeId);
-        $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products/' . $source_product_id;
+        $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products/' . $source_product_id.'/variants/'.$variant_id;
         //$headers[] = 'X-Auth-Client: ' . $this->mainController->getAppClientId();
         $headers[] = 'X-Auth-Token: ' . $storeToken;
         $headers[] = 'Content-Type: application/json';
@@ -248,7 +257,7 @@ class ProductSettingController extends Controller
                 'message' => 'No Product Id',
             ], 404);
         }
-        $products = ProductSetting::where('id', $request->product_id)
+        $products = ProductSetting::where('source_product_id', $request->product_id)
             ->get();
         if ($products->isEmpty()) {
             return response()->json(['error' => true,
@@ -316,7 +325,8 @@ class ProductSettingController extends Controller
             ], 404);
         }
 
-        $product = ProductSetting::find($request->product_id);
+        $product = ProductSetting::where('source_product_id',$request->product_id)
+            ->where('variant_id', $request->variant_id)->first();
 
         if ($product === null) {
             return response()->json(['error' => true,
@@ -334,7 +344,7 @@ class ProductSettingController extends Controller
         $product->update();
         $this->updateSingleProductFromApi($request);
         return response()->json(['error' => false,
-            'data' => ProductSetting::find($request->product_id),
+            'data' => [],
             'message' => 'Product Updated Successfully',
         ], 200);
     }
