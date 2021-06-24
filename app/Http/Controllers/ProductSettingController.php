@@ -10,6 +10,7 @@ use App\Models\ImportProducts as ImportProductsModel;
 use Illuminate\Http\Request;
 use App\Models\Store;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class ProductSettingController extends Controller
 {
@@ -418,9 +419,13 @@ class ProductSettingController extends Controller
             $scope = $postData['scope'];
             $store = Store::where('hash', $storeHash)->first();
             //allow only create/update orders actions
+            if ($scope == "store/sku/deleted") {
+                ProductSetting::where('source_product_id', $productId)->where('variant_id', $variant_id)->where('store_id', $store->id)->delete();
+                return true;
+            }
             $onlyScopes = ['store/sku/created', 'store/sku/updated'];
             if (empty($store) || !in_array($scope, $onlyScopes)) {
-                return null;
+                return true;
             }
             $toRequest['store_id'] = $store->id;
             $toRequest['store_name'] = $storeHash;
