@@ -427,6 +427,15 @@ class ProductSettingController extends Controller
             if (empty($store) || !in_array($scope, $onlyScopes)) {
                 return true;
             }
+            /*
+             * Handle first time sku created
+             * need to set variant_id null for base product
+             * */
+            if($scope == "store/sku/created"){
+                if(ProductSetting::where('source_product_id', $productId)->get()->count() == 1){
+                    ProductSetting::where('source_product_id', $productId)->update(['variant_id', null]);
+                }
+            }
             $toRequest['store_id'] = $store->id;
             $toRequest['store_name'] = $storeHash;
             $toRequest['product_id'] = $productId;
