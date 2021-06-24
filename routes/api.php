@@ -39,6 +39,7 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 });
 Route::post('webhooks', [MainController::class, 'addAndUpdateProductFromWebHook']);
 Route::post('order/webhooks', [OrderController::class, 'orderFromWebhook']);
+Route::post('sku/webhooks', [ProductSettingController::class, 'skuFromWebhook']);
 // Ws Route For Adding Plan
 Route::post('/save_plan_detail', [CarrierPlanController::class, 'addPlanFromWs']);
 Route::middleware([EnsureTokenIsValid::class])->group(function () {

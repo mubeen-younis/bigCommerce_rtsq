@@ -148,7 +148,7 @@ class ProductSettingController extends Controller
         $response = json_decode($response['response'], true);
         if (isset($response['data']) && count($response['data'])) {
             $product = $response['data'];
-            if($product['variant_id'] == null){
+            if($product['base_variant_id'] == null){
                 $this->getVariants($product, $data);
             }else{
                 $this->saveProducts->saveProduct($product, $storeId);
@@ -398,6 +398,39 @@ class ProductSettingController extends Controller
         }
         return $image_src;
     }
+
+
+    /*
+     * webhook
+     * Update product when option/variants/sku creates/updated
+     * */
+
+    public function skuFromWebhook(Request $request){
+        try {
+            $postData = file_get_contents("php://input");
+            Log::info('sku data: ' . $postData);
+            $postData = json_decode($postData, true);
+            $storeHash = explode('/', $postData['producer']);
+            $storeHash = $storeHash[1];
+            $productId = $postData['data']['sku']['product_id'];
+            $variant_id = $postData['data']['sku']['variant_id'];
+            // Update,delete,create from  webhook
+            $scope = $postData['scope'];
+            $store = Store::where('hash', $storeHash)->first();
+            //allow only create/update orders actions
+            $onlyScopes = ['store/sku/created', 'store/sku/updated'];
+            if (empty($store) || !in_array($scope, $onlyScopes)) {
+                return null;
+            }
+            $toRequest['store_id'] = $store->id;
+            $toRequest['store_name'] = $storeHash;
+            $toRequest['product_id'] = $productId;
+            $this->getSingleProductFromApi($toRequest);
+        } catch (\Exception $exception) {
+            //  Have to LOg Here
+        }
+    }
+
 //
    /* public function getAllProducts(Request $request)
     {
