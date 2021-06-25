@@ -10,6 +10,7 @@ use App\Models\ImportProducts as ImportProductsModel;
 use Illuminate\Http\Request;
 use App\Models\Store;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class ProductSettingController extends Controller
 {
@@ -46,6 +47,7 @@ class ProductSettingController extends Controller
             }
             ImportProductsFromBCStoreStatusUpdate::dispatch($insertedId, $request['email'])->delay(Carbon::now()->addSecond(($delay++) * 20));
             \Artisan::call('queue:work');
+
         }
 
     }
@@ -65,11 +67,50 @@ class ProductSettingController extends Controller
         $response = json_decode($response['response'], true);
         if (isset($response['data']) && count($response['data'])) {
             foreach ($response['data'] as $product) {
-                $this->saveProducts->saveProduct($product, $data['store_id']);
+
+                /*
+                 * $product['base_variant_id'] = null mean this has variants and iterate those
+                 * otherwise base product is as a variant product
+                 * */
+                if($product['base_variant_id'] == null){
+                    $this->saveProducts->saveProduct($product, $data['store_id']);
+                    $this->getVariants($product, $data);
+                }else{
+                    $this->saveProducts->saveProduct($product, $data['store_id']);
+                }
+
+                //$this->saveProducts->saveProduct($product, $data['store_id']);
             }
         }
     }
 
+    public function getVariants($product, $data){
+        $metaEndPoint = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products/'.$product['id'].'/variants?limit=250';
+        unset($headers);
+        $headers[] = 'X-Auth-Token: ' . $data['store_token'];
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $metaResponse = $this->curlRequest->enSingleCurlRequest($metaEndPoint, [], $headers, 'GET', true);
+        $metaResponse = json_decode($metaResponse['response'], true);
+        $total_pages = $metaResponse['meta']['pagination']['total_pages'];
+        for($count = 1; $count<=$total_pages; $count++) {
+            $variantEndPoint = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products/'.$product['id'].'/variants?limit=250&page='.$count;
+            $response = $this->curlRequest->enSingleCurlRequest($variantEndPoint, [], $headers, 'GET', true);
+            $response = json_decode($response['response'], true);
+            if (isset($response['data']) && count($response['data'])) {
+                foreach ($response['data'] as $variant) {
+                    $product['price'] = $variant['price'];
+                    $product['weight'] = $variant['weight'];
+                    $product['depth'] = $variant['depth'];
+                    $product['width'] = $variant['width'];
+                    $product['height'] = $variant['height'];
+                    $product['sku'] = $variant['sku'];
+                    $product['base_variant_id'] = $variant['id'];
+                    $this->saveProducts->saveProduct($product, $data['store_id']);
+                }
+            }
+        }
+    }
     /*
      * return number of pages for all products
      */
@@ -91,6 +132,9 @@ class ProductSettingController extends Controller
         $storeName = $request['store_name'] ?? '';
         $productId = $request['product_id'] ?? '';
         $storeToken = $this->mainController->getCustAccessTok($storeId);
+        $data['store_token'] = $storeToken;
+        $data['store_id'] = $storeId;
+        $data['store_hash'] = $storeName;
         if (isset($storeToken['status']) && $storeToken['status'] == false) {
             return response()->json(['error' => true,
                 'data' => [],
@@ -105,7 +149,13 @@ class ProductSettingController extends Controller
         $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
         $response = json_decode($response['response'], true);
         if (isset($response['data']) && count($response['data'])) {
-            $this->saveProducts->saveProduct($response['data'], $storeId);
+            $product = $response['data'];
+            if($product['base_variant_id'] == null){
+                $this->saveProducts->saveProduct($product, $storeId);
+                $this->getVariants($product, $data);
+            }else{
+                $this->saveProducts->saveProduct($product, $storeId);
+            }
             return response()->json(['error' => false,
                 'data' => [],
                 'message' => 'Products Saved Succesfully',
@@ -118,8 +168,9 @@ class ProductSettingController extends Controller
         $storeId = $request['store_id'] ?? '';
         $storeHash = $request['store_hash'] ?? '';
         $source_product_id = $request['source_product_id'] ?? '';
+        $variant_id = (int) $request['variant_id'] ?? 0;
         $storeToken = $this->mainController->getCustAccessTok($storeId);
-        $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products/' . $source_product_id;
+        $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products/' . $source_product_id.'/variants/'.$variant_id;
         //$headers[] = 'X-Auth-Client: ' . $this->mainController->getAppClientId();
         $headers[] = 'X-Auth-Token: ' . $storeToken;
         $headers[] = 'Content-Type: application/json';
@@ -209,7 +260,7 @@ class ProductSettingController extends Controller
                 'message' => 'No Product Id',
             ], 404);
         }
-        $products = ProductSetting::where('id', $request->product_id)
+        $products = ProductSetting::where('source_product_id', $request->product_id)
             ->get();
         if ($products->isEmpty()) {
             return response()->json(['error' => true,
@@ -277,7 +328,8 @@ class ProductSettingController extends Controller
             ], 404);
         }
 
-        $product = ProductSetting::find($request->product_id);
+        $product = ProductSetting::where('source_product_id',$request->product_id)
+            ->where('variant_id', $request->variant_id)->first();
 
         if ($product === null) {
             return response()->json(['error' => true,
@@ -295,7 +347,7 @@ class ProductSettingController extends Controller
         $product->update();
         $this->updateSingleProductFromApi($request);
         return response()->json(['error' => false,
-            'data' => ProductSetting::find($request->product_id),
+            'data' => [],
             'message' => 'Product Updated Successfully',
         ], 200);
     }
@@ -349,6 +401,52 @@ class ProductSettingController extends Controller
         }
         return $image_src;
     }
+
+
+    /*
+     * webhook
+     * Update product when option/variants/sku creates/updated
+     * */
+
+    public function skuFromWebhook(Request $request){
+        try {
+            $postData = file_get_contents("php://input");
+            Log::info('sku data: ' . $postData);
+            $postData = json_decode($postData, true);
+            $storeHash = explode('/', $postData['producer']);
+            $storeHash = $storeHash[1];
+            $productId = $postData['data']['sku']['product_id'];
+            $variant_id = $postData['data']['sku']['variant_id'];
+            // Update,delete,create from  webhook
+            $scope = $postData['scope'];
+            $store = Store::where('hash', $storeHash)->first();
+            //allow only create/update orders actions
+            if ($scope == "store/sku/deleted") {
+                ProductSetting::where('source_product_id', $productId)->where('variant_id', $variant_id)->where('store_id', $store->id)->delete();
+                return true;
+            }
+            $onlyScopes = ['store/sku/created', 'store/sku/updated'];
+            if (empty($store) || !in_array($scope, $onlyScopes)) {
+                return true;
+            }
+            /*
+             * Handle first time sku created
+             * need to set variant_id null for base product
+             * */
+            if($scope == "store/sku/created"){
+                if(ProductSetting::where('source_product_id', $productId)->where('store_id', $store->id)->count() == 1){
+                    ProductSetting::where('source_product_id', $productId)->where('store_id', $store->id)->update(['variant_id' => null]);
+                }
+            }
+            $toRequest['store_id'] = $store->id;
+            $toRequest['store_name'] = $storeHash;
+            $toRequest['product_id'] = $productId;
+            $this->getSingleProductFromApi($toRequest);
+        } catch (\Exception $exception) {
+            //  Have to LOg Here
+        }
+    }
+
 //
    /* public function getAllProducts(Request $request)
     {

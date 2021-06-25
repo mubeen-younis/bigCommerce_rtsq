@@ -74,4 +74,31 @@ class WebHooksController extends Controller
 
         return true;
     }
+
+    public function registerSkuWebHook($request){
+        $storeId =  $request['store_id'] ?? '';
+        $storeHash =  $request['store_name'] ?? '';
+        $storeToken = $this->mainController->getCustAccessTok($storeId);
+        if (isset($storeToken['status']) && $storeToken['status'] == false) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'Token Not Found'
+            ], 200);
+        }
+        $headers[] = 'X-Auth-Client: ' . $this->mainController->getAppClientId();
+        $headers[] = 'X-Auth-Token: ' . $storeToken;
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        //https://api.bigcommerce.com/stores/uann2u/v2/shipping/carrier/connection
+        $endpoint = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/hooks';
+        $request = [
+            "scope" => "store/sku/*",
+            "destination" => URL::to('api/sku/webhooks'),
+            "is_active" => true
+        ];
+        $response = $this->curlRequest->enSingleCurlRequest($endpoint, json_encode($request), $headers, 'POST', false);
+        $response=json_decode($response['response'],true);
+
+        return true;
+    }
 }

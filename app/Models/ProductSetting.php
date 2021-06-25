@@ -19,7 +19,9 @@ class ProductSetting extends Model
         if (ProductSetting::where('source_product_id', $product['id'])
             ->where('variant_id', $product['base_variant_id'])
             ->where('store_id', $storeId)->exists()) {
-            $saveProduct = ProductSetting::where('source_product_id', $product['id'])->first();
+            $saveProduct = ProductSetting::where('source_product_id', $product['id'])
+                ->where('variant_id', $product['base_variant_id'])
+                ->where('store_id', $storeId)->first();
         } else {
             $saveProduct = new ProductSetting();
         }

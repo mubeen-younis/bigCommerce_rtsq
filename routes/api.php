@@ -17,6 +17,7 @@ use App\Http\Controllers\ProductSettingController;
 use App\Http\Controllers\QuoteSettingsController;
 use App\Http\Controllers\RADController;
 use App\Http\Controllers\SBSController;
+use App\Http\Controllers\StoreController;
 use App\Http\Middleware\EnsureTokenIsValid;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -38,6 +39,7 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 });
 Route::post('webhooks', [MainController::class, 'addAndUpdateProductFromWebHook']);
 Route::post('order/webhooks', [OrderController::class, 'orderFromWebhook']);
+Route::post('sku/webhooks', [ProductSettingController::class, 'skuFromWebhook']);
 // Ws Route For Adding Plan
 Route::post('/save_plan_detail', [CarrierPlanController::class, 'addPlanFromWs']);
 Route::middleware([EnsureTokenIsValid::class])->group(function () {
@@ -119,6 +121,10 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
 
     //subscription
     Route::post('/create_subscription', [Subscriptions::class, 'createSubscription']);
+
+
+    //stores
+    Route::get('/store', [StoreController::class, 'index']);
 });
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);
