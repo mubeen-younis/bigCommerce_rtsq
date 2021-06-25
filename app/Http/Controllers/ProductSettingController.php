@@ -170,7 +170,12 @@ class ProductSettingController extends Controller
         $source_product_id = $request['source_product_id'] ?? '';
         $variant_id = (int) $request['variant_id'] ?? 0;
         $storeToken = $this->mainController->getCustAccessTok($storeId);
-        $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products/' . $source_product_id.'/variants/'.$variant_id;
+        if($variant_id){
+            $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products/' . $source_product_id.'/variants/'.$variant_id;
+        }else{
+            $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products/' . $source_product_id;
+        }
+
         //$headers[] = 'X-Auth-Client: ' . $this->mainController->getAppClientId();
         $headers[] = 'X-Auth-Token: ' . $storeToken;
         $headers[] = 'Content-Type: application/json';
