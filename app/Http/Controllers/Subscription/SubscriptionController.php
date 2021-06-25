@@ -235,8 +235,12 @@ class SubscriptionController extends Controller
     // This function is used from Stripe WebHook and update the subsription details in DB
     //*************************************
     public function updateSubscriptionFromStripe(Request $request){
+
         $json = file_get_contents('php://input', true);
-        error_log('Subscription From Stripe Updated : '. $json);
+        error_log('Subscription From Stripe Updated : '. $json->id);
+       // echo $subscription->id;
+        die();
+        $subscription = isset($json->id) ? $json->id : json_encode([]);
         $data = [
             'stripe_id' => 'cus_JjSOzJRtn2I52D',
             'subscription_id' => 'sub_JjSOkuSFx5guJK',
@@ -252,22 +256,8 @@ class SubscriptionController extends Controller
     // This function is used to subscribe to Trial, Paid Plan, Updgrade or DownGrade plan
     //*************************************
     public function subscribeToPlan(Request $request){
-        /*$request = [
-            'store_id' => 2,
-            'card_number' => '4242424242424242',
-            'exp_month' => 10,
-            'exp_year' => 23,
-            'cvc' => 123,
-            'card_name' => 'Zeeshan Tanveer',
-            'email' => 'zeeshan@gmail.com',
-            'address' => 'St 200 Eve',
-            'city' => 'Troy',
-            'state' => 'OH',
-            'zip' => 45373,
-            'country'=> 'US',
-            'plan'=> '3'   //1,2,3,4
-        ];*/
-        if ($request['store_id'] != self::$trial){
+
+        if ($request['plan'] != self::$trial){
             $data = [
                 // 'card_number' => '4242424242424242',
                 'card_number' => $request['card_number'],
@@ -549,22 +539,43 @@ class SubscriptionController extends Controller
         return response()->json($responce);
     }
 
-    //*************************************
-    // This function is used to get the subscription details for the frontend
-    //*************************************
-    public function getSubscriptionDetail(){
-        $data = [
-            'store_id' => '2'
-        ];
-        $storeId = $data['store_id'];
-        $subscriptionDetail = DB::table('subscriptions as s')
+    public function subscriptionDetailFromDB($storeId){
+        $data = DB::table('subscriptions as s')
             ->leftJoin('carriers_counts as cc','cc.store_id','=','s.store_id')
             ->leftJoin('plans as pl','pl.id','=','s.plan_id')
             ->leftJoin('payment_methods as pm','pm.store_id','=','s.store_id')
             ->select('s.id as subscription_id','s.store_id','s.status','s.ends_at','s.plan_id','s.created_at','cc.carrier_counts as total_installed_carriers','s.amount_charged','pl.name','pm.last4','pm.is_default as is_default_payment_method')
-            ->where('s.store_id',$storeId)->where('s.status',1)->latest()->first();
-        $subscriptionDetail->last4 = decrypt($subscriptionDetail->last4);
+            ->where('s.store_id',$storeId)->latest()->first();
+        return $data;
+    }
+
+    //*************************************
+    // This function is used to get the subscription details for the frontend
+    //*************************************
+    public function getSubscriptionDetail(Request $request){
+
+        $storeId = $request['store_id'];
+        $subscriptionDetail = $this->subscriptionDetailFromDB($storeId);
+
+        if (empty($subscriptionDetail)){
+            return response()->json(['error' => false,
+                'data' => ['status' => false],
+                'message' => 'No active subscription is available.',
+            ], 200);
+        }
+
+        if (isset($subscriptionDetail->last4)){
+            $subscriptionDetail->last4 = decrypt($subscriptionDetail->last4);
+        }
+
         $subscriptionDetail = (array)$subscriptionDetail;
+        if ($subscriptionDetail['plan_id'] == self::$trial && Carbon::now() > Carbon::parse($subscriptionDetail['ends_at'])){
+            //If Trial is expired then update expired (2) status to DB
+            Subscription::where('id',$subscriptionDetail['subscription_id'])->update([
+                'status' => 2
+            ]);
+            $subscriptionDetail['status'] = 2; //Trial is expired
+        }
         $plan = Plan::find($subscriptionDetail['plan_id']);
         $subscriptionDetail['total_installed_carriers'] = $plan->carrier_count - $subscriptionDetail['total_installed_carriers'];
         return response()->json(['error' => false,

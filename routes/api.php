@@ -133,9 +133,11 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::get('/get-subscription-details', [SubscriptionController::class, 'getSubscriptionDetail']);
     Route::post('/add-carrier', [SubscriptionController::class, 'incrementCarrierCount']);
     Route::post('/remove-carrier', [SubscriptionController::class, 'decrementCarrierCount']);
-    Route::post('/update-subscription', [SubscriptionController::class, 'updateSubscriptionFromStripe']);
+
     //END: Subscription Routes
 });
+//Webhook
+Route::post('/update-subscription', [SubscriptionController::class, 'updateSubscriptionFromStripe']);
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);
 Route::get('/get_conn_settings', [ConnectionController::class, 'index']);
