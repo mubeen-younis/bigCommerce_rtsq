@@ -72,11 +72,3 @@ Route::any('/bc-api/{endpoint}', [MainController::class, 'proxyBigCommerceAPIReq
 
 Route::get('/getProducts', [MainController::class, 'getProducts']);
 
-//Start: Subscription Module Routes are given below
-Route::post('/subscribe-plan', [\App\Http\Controllers\Subscription\SubscriptionController::class, 'subscribeToPlan']);
-Route::post('/cancel-subscription', [\App\Http\Controllers\Subscription\SubscriptionController::class, 'cancelSubscriptionPlan']);
-Route::get('/get-subscription-details', [\App\Http\Controllers\Subscription\SubscriptionController::class, 'getSubscriptionDetail']);
-Route::post('/add-carrier', [\App\Http\Controllers\Subscription\SubscriptionController::class, 'incrementCarrierCount']);
-Route::post('/remove-carrier', [\App\Http\Controllers\Subscription\SubscriptionController::class, 'decrementCarrierCount']);
-Route::post('/update-subscription', [\App\Http\Controllers\Subscription\SubscriptionController::class, 'updateSubscriptionFromStripe']);
-//END: Subscription Routes

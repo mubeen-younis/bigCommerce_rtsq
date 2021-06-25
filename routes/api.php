@@ -18,6 +18,7 @@ use App\Http\Controllers\QuoteSettingsController;
 use App\Http\Controllers\RADController;
 use App\Http\Controllers\SBSController;
 use App\Http\Controllers\StoreController;
+use App\Http\Controllers\Subscription\SubscriptionController;
 use App\Http\Middleware\EnsureTokenIsValid;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -125,6 +126,15 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
 
     //stores
     Route::get('/store', [StoreController::class, 'index']);
+
+    //Start: Subscription Module Routes are given below
+    Route::post('/subscribe-plan', [SubscriptionController::class, 'subscribeToPlan']);
+    Route::post('/cancel-subscription', [SubscriptionController::class, 'cancelSubscriptionPlan']);
+    Route::get('/get-subscription-details', [SubscriptionController::class, 'getSubscriptionDetail']);
+    Route::post('/add-carrier', [SubscriptionController::class, 'incrementCarrierCount']);
+    Route::post('/remove-carrier', [SubscriptionController::class, 'decrementCarrierCount']);
+    Route::post('/update-subscription', [SubscriptionController::class, 'updateSubscriptionFromStripe']);
+    //END: Subscription Routes
 });
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);
