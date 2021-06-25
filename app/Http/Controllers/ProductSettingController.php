@@ -326,35 +326,38 @@ class ProductSettingController extends Controller
 
     public function updateProductDetail(Request $request)
     {
-        if (!$request->product_id || empty($request->product_id)) {
-            return response()->json(['error' => true,
-                'data' => [],
-                'message' => 'No Product Id',
-            ], 404);
+
+        foreach ($request->products as $prd) {
+            $product = ProductSetting::where('source_product_id', $prd['source_product_id'])
+                ->where('variant_id', $prd['variant_id'])->first();
+            $product->weight = $prd['weight'];
+            $product->length = $prd['length'];
+            $product->width = $prd['width'];
+            $product->height = $prd['height'];
+            $product->settings = json_encode($this->getSetting($prd));
+            /*json_encode($prd->only(['dropship_enabled', 'dropship_location', 'freight_class',
+                'hazardous_enabled', 'freight_enabled', 'parcel_enabled', 'insurance']));*/
+            $product->update();
+            $prd['store_id'] = $request['store_id'];
+            $prd['store_hash'] = $request['store_hash'];
+            $this->updateSingleProductFromApi($prd);
         }
-
-        $product = ProductSetting::where('source_product_id',$request->product_id)
-            ->where('variant_id', $request->variant_id)->first();
-
-        if ($product === null) {
-            return response()->json(['error' => true,
-                'data' => [],
-                'message' => 'No Product Found Against This Id',
-            ], 404);
-        }
-
-        $product->weight = $request->weight;
-        $product->length = $request->length;
-        $product->width = $request->width;
-        $product->height = $request->height;
-        $product->settings = json_encode($request->only(['dropship_enabled', 'dropship_location', 'freight_class',
-            'hazardous_enabled', 'freight_enabled', 'parcel_enabled', 'insurance']));
-        $product->update();
-        $this->updateSingleProductFromApi($request);
         return response()->json(['error' => false,
             'data' => [],
             'message' => 'Product Updated Successfully',
         ], 200);
+    }
+
+    public function getSetting($product){
+        $getOnly = ['dropship_enabled', 'dropship_location', 'freight_class',
+            'hazardous_enabled', 'freight_enabled', 'parcel_enabled', 'insurance'];
+        $settings = new \stdClass();
+        foreach($product as $key => $prd){
+            if(in_array($key, $getOnly)){
+                $settings->$key = $prd;
+            }
+        }
+        return $settings;
     }
 
 
