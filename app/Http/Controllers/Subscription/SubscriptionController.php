@@ -34,6 +34,7 @@ class SubscriptionController extends Controller
     public static $plansArray = [];
     public static $isTrial = false;
     public static $chargeAmount = 0;
+    public static $trial = 1;
     public static $plansData = [];
     public static $testUsers = [];
 
@@ -99,9 +100,9 @@ class SubscriptionController extends Controller
             'stripe_id' => $customerResponse->id ?? '',
             'subscription_id' => $subscriptionReponse->id ?? '',
             'quantity' => $subscriptionReponse->quantity ?? '',
-            'plan_id' => self::$plansData['plan_id'] ?? 1,
+            'plan_id' => self::$plansData['plan_id'] ?? self::$trial,
             'payment_method' => $customerResponse->default_source ?? null,
-            'status' => 1,
+            'status' => 1, //Active Subscription
             'trial_ends_at' => null,
             'charge_object' => json_encode($subscriptionReponse),
             'ends_at' => gmdate("Y-m-d\TH:i:s\Z", $subscriptionReponse->current_period_end),
@@ -123,7 +124,7 @@ class SubscriptionController extends Controller
         $carrierCounts = Hit::where('plan_id',$oldSubscription->plan_id)->where('subscription_id',$oldSubscription->id)->first();
 
         $oldSubscription->plan_id = self::$plansData['plan_id'];
-        $oldSubscription->status = 1;
+        $oldSubscription->status = 1; //Active Status
         $oldSubscription->ends_at = gmdate("Y-m-d\TH:i:s\Z", $subscriptionReponse->current_period_end);
         $oldSubscription->charge_object = json_encode($subscriptionReponse);
         $oldSubscription->amount_charged = self::$plansData['cost'];
@@ -198,7 +199,7 @@ class SubscriptionController extends Controller
     //*************************************
     // This function is used to subscribe to Trial, Paid Plan, Updgrade or DownGrade plan
     //*************************************
-    public function subscribeToPlan(){
+    public function subscribeToPlan(Request $request){
         $data = [
             'store_id' => 2,
             // 'card_number' => '4242424242424242',
@@ -272,7 +273,7 @@ class SubscriptionController extends Controller
             $subscription->store_id = $data['store_id'];
             $subscription->plan_id = self::$plansData['plan_id'];
             $subscription->name = isset($data['card_name']) ? $data['card_name'] : '';
-            $subscription->status = 1;
+            $subscription->status = 1; //Active Status
             $subscription->trial_ends_at = Carbon::now()->addDays(30);
             $subscription->ends_at = Carbon::now()->addDays(30);
             $subscription->save();
@@ -374,7 +375,7 @@ class SubscriptionController extends Controller
     //*************************************
     // This function will cancel the active subscription
     //*************************************
-    public function cancelSubscriptionPlan() {
+    public function cancelSubscriptionPlan(Request $request) {
         $data = [
             'subscription_id' => 'sub_JjJ08jrvi4KZhC',
             'store_id' => '2'
@@ -430,7 +431,7 @@ class SubscriptionController extends Controller
     //*************************************
     // This function will increment the installed carrier count
     //*************************************
-    public function incrementCarrierCount(){
+    public function incrementCarrierCount(Request $request){
         $data = [
             'store_id' => '2'
         ];
@@ -455,7 +456,7 @@ class SubscriptionController extends Controller
     //*************************************
     // This function will decrement the installed carrier count
     //*************************************
-    public function decrementCarrierCount(){
+    public function decrementCarrierCount(Request $request){
         $data = [
             'store_id' => '2'
         ];
