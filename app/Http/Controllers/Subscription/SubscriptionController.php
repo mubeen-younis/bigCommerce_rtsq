@@ -37,6 +37,7 @@ class SubscriptionController extends Controller
     public static $trial = 1;
     public static $plansData = [];
     public static $testUsers = [];
+    public static $_parcelAndLtlCarries = ['WWE'];
 
     public function __construct()
     {
@@ -235,39 +236,40 @@ class SubscriptionController extends Controller
     // This function is used from Stripe WebHook and update the subsription details in DB
     //*************************************
     public function updateSubscriptionFromStripe(Request $request){
+
         $json = file_get_contents('php://input', true);
         error_log('Subscription From Stripe Updated : '. $json);
+        $json = json_decode($json);
+
+        $subscription = isset($json->data->object) ? $json->data->object : json_encode([]);
+
         $data = [
-            'stripe_id' => 'cus_JjSOzJRtn2I52D',
-            'subscription_id' => 'sub_JjSOkuSFx5guJK',
-            'subscription' => isset($json['data']) ? $json['data'] : json_encode([])
+            'stripe_id' => $subscription->customer,
+            'subscription_id' => $subscription->id,
+            'subscription' => $subscription
         ];
         $updateSubResponse = $data['subscription'];
         //If there is already a subscription exists for the store_id then retrieve it
-        $oldSubscription = Subscription::where('subscription_id',$data['subscription_id'])->first();
-        $this->updateSubscriptionInDB($updateSubResponse,$oldSubscription);
-        return json_encode($updateSubResponse);
+        $oldSubscription = Subscription::where('subscription_id',$data['subscription_id'])->latest()->first();
+
+        if (!is_null($oldSubscription)){
+            $this->updateSubscriptionInDB($updateSubResponse,$oldSubscription);
+            return json_encode($updateSubResponse);
+        }else{
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'Subscription not found to be update.',
+            ]);
+        }
+
+
     }
     //*************************************
     // This function is used to subscribe to Trial, Paid Plan, Updgrade or DownGrade plan
     //*************************************
     public function subscribeToPlan(Request $request){
-        /*$request = [
-            'store_id' => 2,
-            'card_number' => '4242424242424242',
-            'exp_month' => 10,
-            'exp_year' => 23,
-            'cvc' => 123,
-            'card_name' => 'Zeeshan Tanveer',
-            'email' => 'zeeshan@gmail.com',
-            'address' => 'St 200 Eve',
-            'city' => 'Troy',
-            'state' => 'OH',
-            'zip' => 45373,
-            'country'=> 'US',
-            'plan'=> '3'   //1,2,3,4
-        ];*/
-        if ($request['store_id'] != self::$trial){
+
+        if ($request['plan'] != self::$trial){
             $data = [
                 // 'card_number' => '4242424242424242',
                 'card_number' => $request['card_number'],
@@ -291,7 +293,6 @@ class SubscriptionController extends Controller
         // Intializing Billing info for the stripe customer
         $data = [
             'store_id' => isset($data['store_id']) ? $data['store_id'] : '',
-            // 'card_number' => '4242424242424242',
             'cNumber' => isset($data['card_number']) ? $data['card_number'] : '',
             'cExpiryMonth' => isset($data['exp_month']) ? $data['exp_month'] : '',
             'cExpiryYear' => isset($data['exp_year']) ? $data['exp_year'] : '',
@@ -315,7 +316,8 @@ class SubscriptionController extends Controller
         if (!is_null($paymentMethod) && !is_null($oldSubscription) && $planId != null){
             $oldPaymentMethod = PaymentMethod::where('store_id',$data['store_id'])->first();
             $last4 = decrypt($oldPaymentMethod->last4);
-            if (substr($data['cNumber'], -4) != $last4){
+            //Update: the customer card if the defaultpayment is false OR the last4 digits of the current card does not match with the new given card
+            if ((isset($data['defaultpayment ']) && $data['defaultpayment '] == false) || substr($data['cNumber'], -4) != $last4){
                 $customerId = $oldSubscription->stripe_id;
                 $updateCustomerCardRes = $this->updateCustomerCard($customerId, $data);
                 if ($updateCustomerCardRes['error'] == true){
@@ -323,9 +325,9 @@ class SubscriptionController extends Controller
                 }
                 $this->savePaymentMethodInDB($updateCustomerCardRes['data'],$data['store_id']);
             }
-            if ($oldSubscription->status == 2){
+            if ($oldSubscription->status == 2){ //If the previous subscription is expired
                 $updateSubResponse = $this->createnewSubscriptionPlan($oldSubscription->stripe_id, $planId);
-            }else{
+            }else{ //If the previous subscription is active
                 $updateSubResponse = $this->updateSubscriptionPlan($oldSubscription->subscription_id, $planId);
             }
 
@@ -377,6 +379,32 @@ class SubscriptionController extends Controller
             'message' => 'The plan subscribed successfully.'
         ], 200);
     }
+
+    public function changePaymentMethod(Request $request){
+        $storeId = $request['store_id'];
+        $paymentMethod = PaymentMethod::where('store_id',$storeId)->first();
+        $customerId = decrypt($paymentMethod->stripe_id);
+        $data = [
+            'store_id' => isset($request['store_id']) ? $request['store_id'] : '',
+            'cNumber' => isset($request['card_number']) ? $request['card_number'] : '',
+            'cExpiryMonth' => isset($request['exp_month']) ? $request['exp_month'] : '',
+            'cExpiryYear' => isset($request['exp_year']) ? $request['exp_year'] : '',
+            'cCvc' => isset($request['cvc']) ? $request['cvc'] : '',
+            'cName' => isset($request['card_name']) ? $request['card_name'] : '',
+            'email' => isset($request['email']) ? $request['email'] : '',
+            'cAddress_line1' => isset($request['address']) ? $request['address'] : '',
+            'cAddress_city' => isset($request['city']) ? $request['city'] : '',
+            'cAddress_state' => isset($request['state']) ? $request['state'] : '',
+            'cAddress_zip' => isset($request['zip']) ? $request['zip'] : '',
+            'cAddress_country'=> isset($request['country']) ? $request['country'] : ''
+        ];
+        $updateCustomerCardRes = $this->updateCustomerCard($customerId, $data);
+        if ($updateCustomerCardRes['error'] == true){
+            return response()->json($updateCustomerCardRes);
+        }
+        $this->savePaymentMethodInDB($updateCustomerCardRes['data'],$data['store_id']);
+    }
+
     //*************************************
     // This function is used to update the customer card
     //*************************************
@@ -549,22 +577,43 @@ class SubscriptionController extends Controller
         return response()->json($responce);
     }
 
-    //*************************************
-    // This function is used to get the subscription details for the frontend
-    //*************************************
-    public function getSubscriptionDetail(){
-        $data = [
-            'store_id' => '2'
-        ];
-        $storeId = $data['store_id'];
-        $subscriptionDetail = DB::table('subscriptions as s')
+    public function subscriptionDetailFromDB($storeId){
+        $data = DB::table('subscriptions as s')
             ->leftJoin('carriers_counts as cc','cc.store_id','=','s.store_id')
             ->leftJoin('plans as pl','pl.id','=','s.plan_id')
             ->leftJoin('payment_methods as pm','pm.store_id','=','s.store_id')
             ->select('s.id as subscription_id','s.store_id','s.status','s.ends_at','s.plan_id','s.created_at','cc.carrier_counts as total_installed_carriers','s.amount_charged','pl.name','pm.last4','pm.is_default as is_default_payment_method')
-            ->where('s.store_id',$storeId)->where('s.status',1)->latest()->first();
-        $subscriptionDetail->last4 = decrypt($subscriptionDetail->last4);
+            ->where('s.store_id',$storeId)->latest()->first();
+        return $data;
+    }
+
+    //*************************************
+    // This function is used to get the subscription details for the frontend
+    //*************************************
+    public function getSubscriptionDetail(Request $request){
+
+        $storeId = $request['store_id'];
+        $subscriptionDetail = $this->subscriptionDetailFromDB($storeId);
+
+        if (empty($subscriptionDetail)){
+            return response()->json(['error' => false,
+                'data' => ['status' => false],
+                'message' => 'No active subscription is available.',
+            ], 200);
+        }
+
+        if (isset($subscriptionDetail->last4)){
+            $subscriptionDetail->last4 = decrypt($subscriptionDetail->last4);
+        }
+
         $subscriptionDetail = (array)$subscriptionDetail;
+        if ($subscriptionDetail['plan_id'] == self::$trial && Carbon::now() > Carbon::parse($subscriptionDetail['ends_at'])){
+            //If Trial is expired then update expired (2) status to DB
+            Subscription::where('id',$subscriptionDetail['subscription_id'])->update([
+                'status' => 2
+            ]);
+            $subscriptionDetail['status'] = 2; //Trial is expired
+        }
         $plan = Plan::find($subscriptionDetail['plan_id']);
         $subscriptionDetail['total_installed_carriers'] = $plan->carrier_count - $subscriptionDetail['total_installed_carriers'];
         return response()->json(['error' => false,
@@ -576,12 +625,16 @@ class SubscriptionController extends Controller
     // This function will increment the installed carrier count
     //*************************************
     public function incrementCarrierCount(Request $request){
-
+        $number = 1;
         $storeId = $request['store_id'];
+        $carrier = $request['carrier'];
+        if (in_array($carrier,self::$_parcelAndLtlCarries)){
+            $number = 2;
+        }
         $carrierCount = Hit::where('store_id',$storeId)->first();
         $plan = Plan::find($carrierCount->plan_id);
         if ($carrierCount->carrier_counts > 0){
-            $carrierCount->decrement('carrier_counts');
+            $carrierCount->decrement('carrier_counts',$number);
             return response()->json(['error' => false,
                 'data' => ['total_carriers_installed' => $plan->carrier_count-$carrierCount->carrier_counts],
                 'message' => 'Carrier is installed successfully.',
@@ -599,12 +652,16 @@ class SubscriptionController extends Controller
     // This function will decrement the installed carrier count
     //*************************************
     public function decrementCarrierCount(Request $request){
-
+        $number = 1;
         $storeId = $request['store_id'];
+        $carrier = $request['carrier'];
+        if (in_array($carrier,self::$_parcelAndLtlCarries)){
+            $number = 2;
+        }
         $carrierCount = Hit::where('store_id',$storeId)->first();
         $plan = Plan::find($carrierCount->plan_id);
         if ($carrierCount->carrier_counts < $plan->carrier_count){
-            $carrierCount->increment('carrier_counts');
+            $carrierCount->increment('carrier_counts',$number);
             return response()->json(['error' => false,
                 'data' => ['total_carriers_installed' => $plan->carrier_count-$carrierCount->carrier_counts],
                 'message' => 'Carrier is uninstalled successfully.',

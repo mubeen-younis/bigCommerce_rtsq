@@ -71,4 +71,3 @@ Route::any('/bc-api/{endpoint}', [MainController::class, 'proxyBigCommerceAPIReq
     ->where('endpoint', 'v2\/.*|v3\/.*');
 
 Route::get('/getProducts', [MainController::class, 'getProducts']);
-
