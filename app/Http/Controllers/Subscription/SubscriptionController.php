@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Subscription;
 
 use App\helpers\Helper;
 use App\Http\Controllers\Controller;
+use App\Jobs\UpdateSubscriptionStatus;
 use App\Models\Store;
 use App\Models\Subscription\Hit;
 use App\Models\Subscription\PaymentMethod;
@@ -121,9 +122,9 @@ class SubscriptionController extends Controller
         if ($oldSubscription != null){
             $newSubscription = Subscription::create($subscription);
         } else{
-            $newSubscription = Subscription::where('store_id',$storeId)->where('status',1)->update($subscription);
-
-            return $newSubscription;
+            $sub = Subscription::where('store_id',$storeId)->latest()->first();
+            Subscription::where('id',$sub->id)->update($subscription);
+            return $sub->id;
         }
         return $newSubscription->id;
     }
@@ -372,10 +373,8 @@ class SubscriptionController extends Controller
         //Else, it is trial and $subscriptionId will be null.
         if (!is_null($subscriptions)){
             $subscriptionId = $this->saveSubscriptionInDB($customerResponse['data'],$subscriptions,$paymentMethodId,$data['store_id'], $oldSubscription = null);
-            dd('bb',$subscriptionId);
         }else{
             $subscriptionId = isset($subscription->id) ? $subscription->id : null;
-            dd('aaa',$subscriptionId);
         }
 
         //Updating: carrier counts that will be allowed in case of trial of PAID plan
@@ -554,27 +553,31 @@ class SubscriptionController extends Controller
         }
         return $responce;
     }
-    //*************************************
-    // This function will cancel the active subscription
-    //*************************************
-    public function cancelSubscriptionPlan(Request $request) {
 
-        $storeId = $request['store_id'];
-        $oldSubscription = Subscription::where('store_id',$storeId)->where('status',1)->first();
-        $subscriptionId = $oldSubscription->subscription_id;
+    public function cencelStripeSubscription($subscriptionId){
         try {
-            $subscription = \Stripe\Subscription::retrieve($subscriptionId);
-            $responce = $subscription->cancel(array('at_period_end' => true));
+
+            /*$subscription = \Stripe\Subscription::retrieve($subscriptionId);
+            $responce = $subscription->cancel();*/
+
+            $responce = \Stripe\Subscription::update(
+                $subscriptionId, [
+                    'cancel_at_period_end' => true,
+                ]
+            );
+            //array('at_period_end' => true)
             $ends_at = gmdate("M-d-Y", $responce->cancel_at);
+
             $responce = [
                 'error' => false,
                 'message' => 'You subscription will be cancelled automatically at the end of the period on '.$ends_at.'.',
                 'data' => $responce,
             ];
 
-            $oldSubscription->status = 2;
-            $oldSubscription->update();
-            return response()->json($responce, 200);
+            /*$oldSubscription->update([
+                'status' => 2
+            ]);*/
+            return $responce;
         } catch (Exception $e) {
             $responce = [
                 'error'  => true,
@@ -582,7 +585,23 @@ class SubscriptionController extends Controller
                 'message'  => $e->getMessage()
             ];
         }
-        return response()->json($responce);
+        return $responce;
+    }
+    //*************************************
+    // This function will cancel the active subscription
+    //*************************************
+    public function cancelSubscriptionPlan(Request $request) {
+        $storeId = $request['store_id'];
+        $dbSub = Subscription::where('store_id',$storeId)->latest()->first();
+        $res = $this->cencelStripeSubscription($dbSub->subscription_id);
+        if (isset($res['error']) && $res['error'] == false){
+            //Because of simaltaneous execution of stripe and DB
+            sleep(2);
+            Subscription::where('id',$dbSub->id)->update([
+                'status' => 2
+            ]);
+        }
+        return response()->json($res);
     }
 
     public function subscriptionDetailFromDB($storeId){
