@@ -19,6 +19,7 @@ class VerifyCsrfToken extends Middleware
         'cancel-subscription',
         'add-carrier',
         'remove-carrier',
-        'update-subscription'
+        'update-subscription',
+        'change-payment-method'
     ];
 }

@@ -133,6 +133,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::get('/get-subscription-details', [SubscriptionController::class, 'getSubscriptionDetail']);
     Route::post('/add-carrier', [SubscriptionController::class, 'incrementCarrierCount']);
     Route::post('/remove-carrier', [SubscriptionController::class, 'decrementCarrierCount']);
+    Route::post('/change-payment-method', [SubscriptionController::class, 'changePaymentMethod']);
 
     //END: Subscription Routes
 });

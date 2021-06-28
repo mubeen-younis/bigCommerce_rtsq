@@ -37,6 +37,7 @@ class SubscriptionController extends Controller
     public static $trial = 1;
     public static $plansData = [];
     public static $testUsers = [];
+    public static $_parcelAndLtlCarries = ['WWE'];
 
     public function __construct()
     {
@@ -281,7 +282,6 @@ class SubscriptionController extends Controller
         // Intializing Billing info for the stripe customer
         $data = [
             'store_id' => isset($data['store_id']) ? $data['store_id'] : '',
-            // 'card_number' => '4242424242424242',
             'cNumber' => isset($data['card_number']) ? $data['card_number'] : '',
             'cExpiryMonth' => isset($data['exp_month']) ? $data['exp_month'] : '',
             'cExpiryYear' => isset($data['exp_year']) ? $data['exp_year'] : '',
@@ -305,7 +305,8 @@ class SubscriptionController extends Controller
         if (!is_null($paymentMethod) && !is_null($oldSubscription) && $planId != null){
             $oldPaymentMethod = PaymentMethod::where('store_id',$data['store_id'])->first();
             $last4 = decrypt($oldPaymentMethod->last4);
-            if (substr($data['cNumber'], -4) != $last4){
+            //Update: the customer card if the defaultpayment is false OR the last4 digits of the current card does not match with the new given card
+            if ((isset($data['defaultpayment ']) && $data['defaultpayment '] == false) || substr($data['cNumber'], -4) != $last4){
                 $customerId = $oldSubscription->stripe_id;
                 $updateCustomerCardRes = $this->updateCustomerCard($customerId, $data);
                 if ($updateCustomerCardRes['error'] == true){
@@ -313,9 +314,9 @@ class SubscriptionController extends Controller
                 }
                 $this->savePaymentMethodInDB($updateCustomerCardRes['data'],$data['store_id']);
             }
-            if ($oldSubscription->status == 2){
+            if ($oldSubscription->status == 2){ //If the previous subscription is expired
                 $updateSubResponse = $this->createnewSubscriptionPlan($oldSubscription->stripe_id, $planId);
-            }else{
+            }else{ //If the previous subscription is active
                 $updateSubResponse = $this->updateSubscriptionPlan($oldSubscription->subscription_id, $planId);
             }
 
@@ -367,6 +368,32 @@ class SubscriptionController extends Controller
             'message' => 'The plan subscribed successfully.'
         ], 200);
     }
+
+    public function changePaymentMethod(Request $request){
+        $storeId = $request['store_id'];
+        $paymentMethod = PaymentMethod::where('store_id',$storeId)->first();
+        $customerId = decrypt($paymentMethod->stripe_id);
+        $data = [
+            'store_id' => isset($request['store_id']) ? $request['store_id'] : '',
+            'cNumber' => isset($request['card_number']) ? $request['card_number'] : '',
+            'cExpiryMonth' => isset($request['exp_month']) ? $request['exp_month'] : '',
+            'cExpiryYear' => isset($request['exp_year']) ? $request['exp_year'] : '',
+            'cCvc' => isset($request['cvc']) ? $request['cvc'] : '',
+            'cName' => isset($request['card_name']) ? $request['card_name'] : '',
+            'email' => isset($request['email']) ? $request['email'] : '',
+            'cAddress_line1' => isset($request['address']) ? $request['address'] : '',
+            'cAddress_city' => isset($request['city']) ? $request['city'] : '',
+            'cAddress_state' => isset($request['state']) ? $request['state'] : '',
+            'cAddress_zip' => isset($request['zip']) ? $request['zip'] : '',
+            'cAddress_country'=> isset($request['country']) ? $request['country'] : ''
+        ];
+        $updateCustomerCardRes = $this->updateCustomerCard($customerId, $data);
+        if ($updateCustomerCardRes['error'] == true){
+            return response()->json($updateCustomerCardRes);
+        }
+        $this->savePaymentMethodInDB($updateCustomerCardRes['data'],$data['store_id']);
+    }
+
     //*************************************
     // This function is used to update the customer card
     //*************************************
@@ -587,12 +614,16 @@ class SubscriptionController extends Controller
     // This function will increment the installed carrier count
     //*************************************
     public function incrementCarrierCount(Request $request){
-
+        $number = 1;
         $storeId = $request['store_id'];
+        $carrier = $request['carrier'];
+        if (in_array($carrier,self::$_parcelAndLtlCarries)){
+            $number = 2;
+        }
         $carrierCount = Hit::where('store_id',$storeId)->first();
         $plan = Plan::find($carrierCount->plan_id);
         if ($carrierCount->carrier_counts > 0){
-            $carrierCount->decrement('carrier_counts');
+            $carrierCount->decrement('carrier_counts',$number);
             return response()->json(['error' => false,
                 'data' => ['total_carriers_installed' => $plan->carrier_count-$carrierCount->carrier_counts],
                 'message' => 'Carrier is installed successfully.',
@@ -610,12 +641,16 @@ class SubscriptionController extends Controller
     // This function will decrement the installed carrier count
     //*************************************
     public function decrementCarrierCount(Request $request){
-
+        $number = 1;
         $storeId = $request['store_id'];
+        $carrier = $request['carrier'];
+        if (in_array($carrier,self::$_parcelAndLtlCarries)){
+            $number = 2;
+        }
         $carrierCount = Hit::where('store_id',$storeId)->first();
         $plan = Plan::find($carrierCount->plan_id);
         if ($carrierCount->carrier_counts < $plan->carrier_count){
-            $carrierCount->increment('carrier_counts');
+            $carrierCount->increment('carrier_counts',$number);
             return response()->json(['error' => false,
                 'data' => ['total_carriers_installed' => $plan->carrier_count-$carrierCount->carrier_counts],
                 'message' => 'Carrier is uninstalled successfully.',
