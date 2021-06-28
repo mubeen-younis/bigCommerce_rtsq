@@ -238,20 +238,31 @@ class SubscriptionController extends Controller
     public function updateSubscriptionFromStripe(Request $request){
 
         $json = file_get_contents('php://input', true);
-        error_log('Subscription From Stripe Updated : '. $json->id);
-       // echo $subscription->id;
-        die();
-        $subscription = isset($json->id) ? $json->id : json_encode([]);
+        error_log('Subscription From Stripe Updated : '. $json);
+        $json = json_decode($json);
+
+        $subscription = isset($json->data->object) ? $json->data->object : json_encode([]);
+
         $data = [
-            'stripe_id' => 'cus_JjSOzJRtn2I52D',
-            'subscription_id' => 'sub_JjSOkuSFx5guJK',
-            'subscription' => isset($json['data']) ? $json['data'] : json_encode([])
+            'stripe_id' => $subscription->customer,
+            'subscription_id' => $subscription->id,
+            'subscription' => $subscription
         ];
         $updateSubResponse = $data['subscription'];
         //If there is already a subscription exists for the store_id then retrieve it
-        $oldSubscription = Subscription::where('subscription_id',$data['subscription_id'])->first();
-        $this->updateSubscriptionInDB($updateSubResponse,$oldSubscription);
-        return json_encode($updateSubResponse);
+        $oldSubscription = Subscription::where('subscription_id',$data['subscription_id'])->latest()->first();
+
+        if (!is_null($oldSubscription)){
+            $this->updateSubscriptionInDB($updateSubResponse,$oldSubscription);
+            return json_encode($updateSubResponse);
+        }else{
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'Subscription not found to be update.',
+            ]);
+        }
+
+
     }
     //*************************************
     // This function is used to subscribe to Trial, Paid Plan, Updgrade or DownGrade plan
