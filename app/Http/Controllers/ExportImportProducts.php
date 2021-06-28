@@ -60,7 +60,7 @@ class ExportImportProducts extends Controller
                 $folderNamePath[] = $filename;
                 $fp = fopen($filename, "w");
                 if (true) {
-                    $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (lbs), Length (in), Width (in), Height (in),Freight Enabled, Freight Class, Hazardous Enabled, Insurance, Dropship Enabled, Dropship Location, Parcel Enabled';
+                    $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (lbs), Length (in), Width (in), Height (in),Freight Enabled, Parcel Enabled, Freight Class, Hazardous Enabled, Insurance, Dropship Enabled, Dropship Location';
                     $line .= "\n";
                     fputs($fp, $line);
                 }
@@ -77,14 +77,12 @@ class ExportImportProducts extends Controller
 
                     $settings = json_decode($product->settings);
                     $line .=  isset($settings->freight_enabled)  ? $comma . $settings->freight_enabled : $comma . false;
-
+                    $line .=  isset($settings->parcel_enabled)  ? $comma . $settings->parcel_enabled : $comma;
                     $line .=  isset($settings->freight_class)  ? $comma . $settings->freight_class : $comma;
                     $line .=  isset($settings->hazardous_enabled)  ? $comma . $settings->hazardous_enabled : $comma . false;
                     $line .=  isset($settings->insurance)  ? $comma . $settings->insurance : $comma . false;
                     $line .=  isset($settings->dropship_enabled)  ? $comma . $settings->dropship_enabled : $comma . false;
                     $line .=  isset($settings->dropship_location)  ? $comma . $settings->dropship_location : $comma;
-                    $line .=  isset($settings->parcel_enabled)  ? $comma . $settings->parcel_enabled : $comma;
-
 
 
                     $line .= "\n";
@@ -245,15 +243,20 @@ class ExportImportProducts extends Controller
     }
     function getUpdateData($product, $indexes, $store_id, $access_token, $hash){
         $update = [];
-        if(isset($indexes['id']) && $indexes['id']){
+        if(isset($indexes['id']) && $indexes['id'] && isset($indexes['variant_id']) && $indexes['variant_id']){
             $key = $indexes['id'];
+            $variant_key = $indexes['variant_id'];
             //$source_product_id = (int) $product["$key"];
             $source_product_id = (int) filter_var($product["$key"], FILTER_SANITIZE_NUMBER_INT);
+
+            $variant_id = (int) filter_var($product["$variant_key"], FILTER_SANITIZE_NUMBER_INT);
             if(!ProductSetting::where('source_product_id', $source_product_id)
+                ->where('variant_id', $variant_id)
                 ->where('store_id', $store_id)->exists()) {
                 return true; // no action perform if product not exist
             }
             $oldSettings = ProductSetting::where('source_product_id', $source_product_id)
+                ->where('variant_id', $variant_id)
                 ->where('store_id', $store_id)->pluck('settings')->toArray();
             $update['settings'] = json_encode($this->getSettings($oldSettings, $product, $indexes));
         }
@@ -279,9 +282,10 @@ class ExportImportProducts extends Controller
         }
         if(!empty($update)){
             ProductSetting::where('source_product_id', $source_product_id)
+                ->where('variant_id', $variant_id)
                 ->where('store_id', $store_id)->update($update);
             unset($update['settings']);
-            $this->updateBCProduct($source_product_id, $store_id, $update,  $access_token, $hash);
+            $this->updateBCProduct($source_product_id, $variant_id, $store_id, $update,  $access_token, $hash);
         }
     }
     public function getSettings($oldSettings, $product, $indexes){
@@ -331,12 +335,16 @@ class ExportImportProducts extends Controller
         return $settings;
     }
 
-    public function updateBCProduct($source_product_id, $store_id, $update,  $access_token, $hash){
+    public function updateBCProduct($source_product_id, $variant_id, $store_id, $update,  $access_token, $hash){
         unset($headers);
         $headers[] = 'X-Auth-Token: ' . $access_token;
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
-        $endpoint = "https://api.bigcommerce.com/stores/".$hash."/v3/catalog/products/".$source_product_id;
+        if($variant_id){
+            $endpoint = 'https://api.bigcommerce.com/stores/' . $hash . '/v3/catalog/products/' . $source_product_id.'/variants/'.$variant_id;
+        }else {
+            $endpoint = "https://api.bigcommerce.com/stores/" . $hash . "/v3/catalog/products/" . $source_product_id;
+        }
         if(isset($update['length'])){
             $update['depth'] = $update['length'];
         }
