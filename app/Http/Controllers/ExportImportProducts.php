@@ -243,9 +243,9 @@ class ExportImportProducts extends Controller
     }
     function getUpdateData($product, $indexes, $store_id, $access_token, $hash){
         $update = [];
-        if(isset($indexes['id']) && $indexes['id'] && isset($indexes['variant_id']) && $indexes['variant_id']){
+        if(isset($indexes['id']) && $indexes['id'] && isset($indexes['variantid']) && $indexes['variantid']){
             $key = $indexes['id'];
-            $variant_key = $indexes['variant_id'];
+            $variant_key = $indexes['variantid'];
             //$source_product_id = (int) $product["$key"];
             $source_product_id = (int) filter_var($product["$key"], FILTER_SANITIZE_NUMBER_INT);
 
