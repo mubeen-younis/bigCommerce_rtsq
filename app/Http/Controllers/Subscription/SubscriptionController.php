@@ -283,11 +283,12 @@ class SubscriptionController extends Controller
                 'state' => $request['state'],
                 'zip' => $request['zip'],
                 'country'=> $request['country'],
+                'defaultpayment'=> $request['defaultpayment']
             ];
         }
         $data['store_id'] = $request['store_id'];
         $data['plan'] = $request['plan'];
-
+        $data['defaultpayment'] = (isset($request['defaultpayment']) && $request['defaultpayment'] == true) ? true : false;
         self::getPlansDetails($data['plan']);   //Getting Plan detail from DB
         $planId = self::$plansData['stripe_plan_id'];
         // Intializing Billing info for the stripe customer
@@ -304,6 +305,7 @@ class SubscriptionController extends Controller
             'cAddress_state' => isset($data['state']) ? $data['state'] : '',
             'cAddress_zip' => isset($data['zip']) ? $data['zip'] : '',
             'cAddress_country'=> isset($data['country']) ? $data['country'] : '',
+            'defaultpayment'=> isset($data['defaultpayment']) ? $data['defaultpayment'] : '',
             'stripePlanId'=> $planId
         ];
         //If the payment method already exists then retrieve it
@@ -317,8 +319,9 @@ class SubscriptionController extends Controller
             $oldPaymentMethod = PaymentMethod::where('store_id',$data['store_id'])->first();
             $last4 = decrypt($oldPaymentMethod->last4);
             //Update: the customer card if the defaultpayment is false OR the last4 digits of the current card does not match with the new given card
-            if ((isset($data['defaultpayment ']) && $data['defaultpayment '] == false) || substr($data['cNumber'], -4) != $last4){
+            if ((isset($data['defaultpayment']) && $data['defaultpayment'] == false) && substr($data['cNumber'], -4) != $last4){
                 $customerId = $oldSubscription->stripe_id;
+
                 $updateCustomerCardRes = $this->updateCustomerCard($customerId, $data);
                 if ($updateCustomerCardRes['error'] == true){
                     return response()->json($updateCustomerCardRes);
@@ -368,9 +371,12 @@ class SubscriptionController extends Controller
         //Else, it is trial and $subscriptionId will be null.
         if (!is_null($subscriptions)){
             $subscriptionId = $this->saveSubscriptionInDB($customerResponse['data'],$subscriptions,$paymentMethodId,$data['store_id'], $oldSubscription = null);
+           // dd('bb',$subscriptionId);
         }else{
-            $subscriptionId = null;
+            $subscriptionId = isset($subscription->id) ? $subscription->id : null;
+          //  dd('aaa',$subscriptionId);
         }
+
         //Updating: carrier counts that will be allowed in case of trial of PAID plan
         $this->updateCarrierCountsinDB($subscriptionId,$data['store_id']);
         return response()->json([
@@ -403,6 +409,7 @@ class SubscriptionController extends Controller
             return response()->json($updateCustomerCardRes);
         }
         $this->savePaymentMethodInDB($updateCustomerCardRes['data'],$data['store_id']);
+        return response()->json($updateCustomerCardRes);
     }
 
     //*************************************
@@ -601,9 +608,12 @@ class SubscriptionController extends Controller
                 'message' => 'No active subscription is available.',
             ], 200);
         }
+        try {
+            if (isset($subscriptionDetail->last4)){
+                $subscriptionDetail->last4 = decrypt($subscriptionDetail->last4);
+            }
+        }catch (\Exception $exception){
 
-        if (isset($subscriptionDetail->last4)){
-            $subscriptionDetail->last4 = decrypt($subscriptionDetail->last4);
         }
 
         $subscriptionDetail = (array)$subscriptionDetail;
@@ -615,7 +625,9 @@ class SubscriptionController extends Controller
             $subscriptionDetail['status'] = 2; //Trial is expired
         }
         $plan = Plan::find($subscriptionDetail['plan_id']);
+
         $subscriptionDetail['total_installed_carriers'] = $plan->carrier_count - $subscriptionDetail['total_installed_carriers'];
+        $subscriptionDetail['total_installable_carriers'] = $plan->carrier_count;
         return response()->json(['error' => false,
             'data' => $subscriptionDetail,
             'message' => '',
