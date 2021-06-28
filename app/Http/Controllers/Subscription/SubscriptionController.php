@@ -274,7 +274,7 @@ class SubscriptionController extends Controller
         if ($request['plan'] != self::$trial){
             $data = [
                 // 'card_number' => '4242424242424242',
-                'card_number' => $request['card_number'],
+                'card_number' => preg_replace("/\s+/", "", $request['card_number']),
                 'exp_month' => $request['exp_month'],
                 'exp_year' => $request['exp_year'],
                 'cvc' => $request['cvc'],
@@ -379,9 +379,11 @@ class SubscriptionController extends Controller
 
         //Updating: carrier counts that will be allowed in case of trial of PAID plan
         $this->updateCarrierCountsinDB($subscriptionId,$data['store_id']);
+        $subscriptionDetail = $this->subscriptionDetailFromDB($data['store_id']);
+
         return response()->json([
             'error' => false,
-            'data' => [],
+            'data' => $subscriptionDetail,
             'message' => 'The plan subscribed successfully.'
         ], 200);
     }
