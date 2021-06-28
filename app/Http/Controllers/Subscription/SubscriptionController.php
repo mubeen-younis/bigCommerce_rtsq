@@ -122,6 +122,7 @@ class SubscriptionController extends Controller
             $newSubscription = Subscription::create($subscription);
         } else{
             $newSubscription = Subscription::where('store_id',$storeId)->where('status',1)->update($subscription);
+
             return $newSubscription;
         }
         return $newSubscription->id;
@@ -371,10 +372,10 @@ class SubscriptionController extends Controller
         //Else, it is trial and $subscriptionId will be null.
         if (!is_null($subscriptions)){
             $subscriptionId = $this->saveSubscriptionInDB($customerResponse['data'],$subscriptions,$paymentMethodId,$data['store_id'], $oldSubscription = null);
-           // dd('bb',$subscriptionId);
+            dd('bb',$subscriptionId);
         }else{
             $subscriptionId = isset($subscription->id) ? $subscription->id : null;
-          //  dd('aaa',$subscriptionId);
+            dd('aaa',$subscriptionId);
         }
 
         //Updating: carrier counts that will be allowed in case of trial of PAID plan
@@ -604,7 +605,7 @@ class SubscriptionController extends Controller
 
         if (empty($subscriptionDetail)){
             return response()->json(['error' => false,
-                'data' => ['status' => false],
+                'data' => ['status' => 0],
                 'message' => 'No active subscription is available.',
             ], 200);
         }
