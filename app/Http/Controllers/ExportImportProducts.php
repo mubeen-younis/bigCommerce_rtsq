@@ -250,14 +250,20 @@ class ExportImportProducts extends Controller
             $source_product_id = (int) filter_var($product["$key"], FILTER_SANITIZE_NUMBER_INT);
 
             $variant_id = (int) filter_var($product["$variant_key"], FILTER_SANITIZE_NUMBER_INT);
-            if(!ProductSetting::where('source_product_id', $source_product_id)
+            /*if(!ProductSetting::where('source_product_id', $source_product_id)
                 ->where('variant_id', $variant_id)
                 ->where('store_id', $store_id)->exists()) {
                 return true; // no action perform if product not exist
+            }*/
+            if($variant_id) {
+                $oldSettings = ProductSetting::where('source_product_id', $source_product_id)
+                    ->where('variant_id', $variant_id)
+                    ->where('store_id', $store_id)->pluck('settings')->toArray();
+            }else{
+                $oldSettings = ProductSetting::where('source_product_id', $source_product_id)
+                    ->whereNull('variant_id')
+                    ->where('store_id', $store_id)->pluck('settings')->toArray();
             }
-            $oldSettings = ProductSetting::where('source_product_id', $source_product_id)
-                ->where('variant_id', $variant_id)
-                ->where('store_id', $store_id)->pluck('settings')->toArray();
             $update['settings'] = json_encode($this->getSettings($oldSettings, $product, $indexes));
         }
         if(isset($indexes['name']) && $indexes['name']){
@@ -281,9 +287,15 @@ class ExportImportProducts extends Controller
             $update['height'] = (float) $product["$key"];
         }
         if(!empty($update)){
-            ProductSetting::where('source_product_id', $source_product_id)
-                ->where('variant_id', $variant_id)
-                ->where('store_id', $store_id)->update($update);
+            if($variant_id) {
+                ProductSetting::where('source_product_id', $source_product_id)
+                    ->where('variant_id', $variant_id)
+                    ->where('store_id', $store_id)->update($update);
+            }else{
+                ProductSetting::where('source_product_id', $source_product_id)
+                    ->whereNull('variant_id')
+                    ->where('store_id', $store_id)->update($update);
+            }
             unset($update['settings']);
             $this->updateBCProduct($source_product_id, $variant_id, $store_id, $update,  $access_token, $hash);
         }
