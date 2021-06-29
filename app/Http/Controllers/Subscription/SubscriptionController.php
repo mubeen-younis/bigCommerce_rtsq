@@ -558,6 +558,7 @@ class SubscriptionController extends Controller
         try {
             $subscription = \Stripe\Subscription::retrieve($subId);
             $subscription->plan = $planId;
+            $subscription->cancel_at_period_end = false;
             $subscriptionRes = $subscription->save();
             $responce = [
                 'error'  => false,
