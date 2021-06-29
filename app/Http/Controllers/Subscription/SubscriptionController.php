@@ -652,6 +652,7 @@ class SubscriptionController extends Controller
         }catch (\Exception $exception){
             error_log('Card Decrypt'. $exception->getMessage());
         }
+        $data->ends_at = date('m/d/Y',strtotime($data->ends_at));
         return $data;
     }
 
@@ -682,7 +683,6 @@ class SubscriptionController extends Controller
 
         $subscriptionDetail['total_installed_carriers'] = $plan->carrier_count - $subscriptionDetail['total_installed_carriers'];
         $subscriptionDetail['total_installable_carriers'] = $plan->carrier_count;
-        $subscriptionDetail['ends_at'] = date('m/d/Y',strtotime($subscriptionDetail['ends_at']));
         return response()->json(['error' => false,
             'data' => $subscriptionDetail,
             'message' => '',
