@@ -559,11 +559,10 @@ class SubscriptionController extends Controller
             $subscription = \Stripe\Subscription::retrieve($subId);
             $subscription->plan = $planId;
             $subscriptionRes = $subscription->save();
-            error_log('SubscriptionReactivate : '.$subscriptionRes);
             $responce = [
                 'error'  => false,
                 'data' => $subscriptionRes,
-                'message'  => 'The subscription has reactivated successfully.'
+                'message'  => 'The subscription reactivated successfully.'
             ];
         } catch (\Exception $e) {
             $responce = [
@@ -619,18 +618,18 @@ class SubscriptionController extends Controller
             $res = $this->cencelStripeSubscription($dbSub->subscription_id);
             if (isset($res['error']) && $res['error'] == false){
                 //Because of simaltaneous execution of stripe and DB
-                sleep(2);
                 Subscription::where('id',$dbSub->id)->update([
                     'status' => 2
                 ]);
             }
         } else{
             $subId = $dbSub->subscription_id;
-            $planId = $dbSub->plan_id;
-            $res = $this->reActivateSubscriptionPlan($subId,$planId);
+            $planId = (int)$dbSub->plan_id;
+            $stripePlanId = Plan::find($planId)->stripe_plan_id;
+
+            $res = $this->reActivateSubscriptionPlan($subId,$stripePlanId);
             if (isset($res['error']) && $res['error'] == false){
                 //Because of simaltaneous execution of stripe and DB
-                sleep(2);
                 Subscription::where('id',$dbSub->id)->update([
                     'status' => 1
                 ]);
@@ -767,6 +766,7 @@ class SubscriptionController extends Controller
     }
 
     public function invoicePaymentFailed(){
+
         $input = @file_get_contents("php://input");
         $paymentDetail = json_decode($input);
         error_log('PaymentFailed: '.$input);
@@ -817,6 +817,7 @@ class SubscriptionController extends Controller
     }
 
     public function invoicePaymentSucceeded(){
+
         $input = @file_get_contents("php://input");
         $paymentDetail = json_decode($input);
 
