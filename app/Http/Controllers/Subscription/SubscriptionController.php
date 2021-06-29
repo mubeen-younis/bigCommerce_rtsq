@@ -463,7 +463,7 @@ class SubscriptionController extends Controller
                 $customer->save();
                 $responce = ['error' => false,
                     'data' => $customer,
-                    'message' => 'Your default payment method successfully changed.',
+                    'message' => 'Default payment method successfully changed.',
                 ];
             } catch (\Exception $e) {
                 $responce = ['error' => true,
