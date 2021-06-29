@@ -306,7 +306,7 @@ class SubscriptionController extends Controller
         $paymentMethod = PaymentMethod::where('store_id',$data['store_id'])->first();
         $paymentMethodId = isset($paymentMethod->id) ? $paymentMethod->id : null;
         //If there is already a subscription exists for the store_id then retrieve it
-        $oldSubscription = Subscription::where('store_id',$data['store_id'])->where('paymentMethod_id',$paymentMethodId)->latest()->first();
+        $oldSubscription = Subscription::where('store_id',$data['store_id'])->latest()->first();
 
         //Start: Upgrade or DownGrade Plans
         if (!is_null($paymentMethod) && !is_null($oldSubscription) && $planId != null){
@@ -322,6 +322,7 @@ class SubscriptionController extends Controller
                 }
                 $this->savePaymentMethodInDB($updateCustomerCardRes['data'],$data['store_id']);
             }
+
             if ($oldSubscription->status == 2){ //If the previous subscription is expired
                 $updateSubResponse = $this->createnewSubscriptionPlan($oldSubscription->stripe_id, $planId);
             }else{ //If the previous subscription is active
@@ -550,6 +551,35 @@ class SubscriptionController extends Controller
             ];
         }
         return $responce;
+    }
+
+    public function reActivateSubscriptionPlan(Request $request) {
+
+        //If there is already a subscription exists for the store_id then retrieve it
+        $oldSubscription = Subscription::where('store_id',$request['store_id'])->latest()->first();
+        $subId = $oldSubscription->subscription_id;
+        $planId = $oldSubscription->plan_id;
+        try {
+            $subscription = \Stripe\Subscription::retrieve($subId);
+            $subscription->plan = $planId;
+            $subscriptionRes = $subscription->save();
+            sleep(2);
+            Subscription::where('subscription_id',$subId)->update([
+                'status' => 1
+            ]);
+            $responce = [
+                'error'  => false,
+                'data' => $subscriptionRes,
+                'message'  => ''
+            ];
+        } catch (\Exception $e) {
+            $responce = [
+                'error'  => false,
+                'data' => [],
+                'message'  => $e->getMessage()
+            ];
+        }
+        return response()->json($responce);
     }
 
     public function cencelStripeSubscription($subscriptionId){
