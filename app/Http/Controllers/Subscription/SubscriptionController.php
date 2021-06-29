@@ -730,6 +730,7 @@ class SubscriptionController extends Controller
     public function invoicePaymentFailed(){
         $input = @file_get_contents("php://input");
         $paymentDetail = json_decode($input);
+        error_log('PaymentFailed: '.$input);
         $lineData = $paymentDetail->data->object->lines->data[0];
       //  $productPlan = $lineData->plan->name;
       //  $customerId = $paymentDetail->data->object->customer;
@@ -748,9 +749,9 @@ class SubscriptionController extends Controller
         $params = array(
             'period_end'=> $paymentDetail->data->object->period_end,
             'updated_date'=> $paymentDetail->data->object->webhooks_delivered_at,
-            'subscription'=> $paymentDetail->data->object->subscription
+            'subscriptionId'=> $paymentDetail->data->object->subscription
         );
-        $subscriptionId = $params['subscription']->subscription_id;
+        $subscriptionId = $params['subscriptionId'];
 
         //If there is already a subscription exists for the store_id then retrieve it
         $oldSubscription = Subscription::where('subscription_id',$subscriptionId)->latest()->first();
@@ -769,7 +770,7 @@ class SubscriptionController extends Controller
         $data = [];
         $email = 'zeeshantanveer199@gmail.com';
        // $this->notifyEmail($emailData);
-        Mail::to($email)->send(new PaymentFailedByWebHookEmail($data));
+    //    Mail::to($email)->send(new PaymentFailedByWebHookEmail($data));
         return response()->json(['error' => false,
             'data' => [],
             'message' => 'Subscription Failed.',
@@ -780,15 +781,24 @@ class SubscriptionController extends Controller
         $input = @file_get_contents("php://input");
         $paymentDetail = json_decode($input);
 
-        $stripeCustId = $paymentDetail->data->object->customer;
         $subscipId = $paymentDetail->data->object->subscription;
-        $customerSubscipId = $subscipId->subscription_id;
 
         $subscriptionPlanObj = $paymentDetail->data->object->lines->data[0];
-        Subscription::where('subscription_id',$customerSubscipId)->update([
-            'status'    => 1,
-            'ends_at' => gmdate("Y-m-d\TH:i:s\Z", $subscriptionPlanObj->period->end)
-        ]);
+        //If there is already a subscription exists for the store_id then retrieve it
+        $oldSubscription = Subscription::where('subscription_id',$subscipId)->latest()->first();
+        if (!is_null($oldSubscription)){
+            //status 3, means subscription expired from the stripe due to payment failed.
+            $oldSubscription->update([
+                'status' => 1,
+                'ends_at' => gmdate("Y-m-d\TH:i:s\Z", $subscriptionPlanObj->period->end)
+            ]);
+        }else{
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'Subscription not found to be update.',
+            ]);
+        }
+
         return response()->json(['error' => false,
             'data' => [],
             'message' => 'Subscription Succeeded.',
