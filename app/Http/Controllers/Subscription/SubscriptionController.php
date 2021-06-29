@@ -635,7 +635,8 @@ class SubscriptionController extends Controller
                 ]);
             }
         }
-
+        $subscriptionDetail = $this->subscriptionDetailFromDB($storeId);
+        $res['data'] = $subscriptionDetail;
         return response()->json($res);
     }
 
