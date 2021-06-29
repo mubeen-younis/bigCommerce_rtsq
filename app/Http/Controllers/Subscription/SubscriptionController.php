@@ -3,31 +3,21 @@
 namespace App\Http\Controllers\Subscription;
 
 
-use App\helpers\Helper;
 use App\Http\Controllers\Controller;
-use App\Jobs\UpdateSubscriptionStatus;
-use App\Models\Store;
-use App\Models\Subscription\Hit;
+use App\Mail\PaymentFailedByWebHookEmail;
+use App\Models\Subscription\CarrierCount;
 use App\Models\Subscription\PaymentMethod;
 use App\Models\Subscription\Plan;
 use App\Models\Subscription\Subscription;
-use App\Models\Subscription\SubscriptionStatus;
-use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
 use PHPUnit\Exception;
-use Stripe\Charge;
-use Stripe\Customer;
-use Stripe\Exception\ApiConnectionException;
-use Stripe\Exception\CardException;
-use Stripe\Exception\InvalidRequestException;
-use Stripe\InvoiceItem;
 use Stripe\Stripe;
-use Stripe\Token;
 
 class SubscriptionController extends Controller
 {
@@ -107,7 +97,7 @@ class SubscriptionController extends Controller
         $subscription = [
             'store_id' => $storeId,
             'paymentMethod_id' => $paymentMethodId,
-            'name' => $customerResponse->name ?? 'Trial User',
+            'name' => $customerResponse->name ?? '',
             'stripe_id' => $customerResponse->id ?? '',
             'subscription_id' => $subscriptionReponse->id ?? '',
             'quantity' => $subscriptionReponse->quantity ?? '',
@@ -119,7 +109,7 @@ class SubscriptionController extends Controller
             'ends_at' => gmdate("Y-m-d\TH:i:s\Z", $subscriptionReponse->current_period_end),
             'amount_charged' => self::$plansData['cost'] ?? 0
         ];
-        if ($oldSubscription != null){
+        if ($oldSubscription == null){
             $newSubscription = Subscription::create($subscription);
         } else{
             $sub = Subscription::where('store_id',$storeId)->latest()->first();
@@ -152,7 +142,7 @@ class SubscriptionController extends Controller
             $this->updateCarrierCountsinDB($newSubscription->id, $oldSubscription->store_id);
             return $newSubscription->id;
         }
-        $carrierCounts = Hit::where('plan_id',$oldSubscription->plan_id)->where('subscription_id',$oldSubscription->id)->first();
+        $carrierCounts = CarrierCount::where('plan_id',$oldSubscription->plan_id)->where('subscription_id',$oldSubscription->id)->first();
         $oldSubscription->plan_id = self::$plansData['plan_id'];
         $oldSubscription->status = 1; //Active Status
         $oldSubscription->ends_at = gmdate("Y-m-d\TH:i:s\Z", $subscriptionReponse->current_period_end);
@@ -170,14 +160,14 @@ class SubscriptionController extends Controller
     // This function is used to create or update the carrier counts for new subscription and change subscription
     //*************************************
     public function updateCarrierCountsinDB($subscriptionId, $storeId){
-        if (Hit::where('store_id',$storeId)->exists()){
-            Hit::where('store_id',$storeId)->update([
+        if (CarrierCount::where('store_id',$storeId)->exists()){
+            CarrierCount::where('store_id',$storeId)->update([
                 'plan_id' => self::$plansData['plan_id'],
                 'subscription_id' => $subscriptionId,
                 'carrier_counts' => self::$plansData['carrier_count'],
             ]);
         }else{
-            Hit::create([
+            CarrierCount::create([
                 'store_id' => $storeId,
                 'plan_id' => self::$plansData['plan_id'],
                 'subscription_id' => $subscriptionId,
@@ -220,6 +210,7 @@ class SubscriptionController extends Controller
             $subscription->plan = $planId;
             $subscription->proration_behavior = 'always_invoice';
             $subResponce = $subscription->save();
+
             $responce = [
                 'error' => false,
                 'message' => 'Subscription updated successfully.',
@@ -293,6 +284,7 @@ class SubscriptionController extends Controller
         $data['defaultpayment'] = (isset($request['defaultpayment']) && $request['defaultpayment'] == true) ? true : false;
         self::getPlansDetails($data['plan']);   //Getting Plan detail from DB
         $planId = self::$plansData['stripe_plan_id'];
+
         // Intializing Billing info for the stripe customer
         $data = [
             'store_id' => isset($data['store_id']) ? $data['store_id'] : '',
@@ -340,6 +332,8 @@ class SubscriptionController extends Controller
                 return response()->json($updateSubResponse);
             }
             $this->updateSubscriptionInDB($updateSubResponse['data'],$oldSubscription);
+            //Getting Current Plan Detail
+            $updateSubResponse['data'] = $this->subscriptionDetailFromDB($data['store_id']);
             return response()->json($updateSubResponse,200);
         }
         //END: Upgrade or DownGrade Plans
@@ -514,9 +508,9 @@ class SubscriptionController extends Controller
 
         $cardArray = array(
             "number" => $cNumber,
-            "exp_month" => $cExpiryMonth,
-            "exp_year" => $cExpiryYear,
-            "cvc" => $cCvc,
+            "exp_month" => (int)$cExpiryMonth,
+            "exp_year" => (int)$cExpiryYear,
+            "cvc" => (int)$cCvc,
             "name" => $cName,
             "address_line1" => $cAddress_line1,
             "address_city" => $cAddress_city,
@@ -547,6 +541,8 @@ class SubscriptionController extends Controller
                 'message'  => ''
             ];
         } catch (\Exception $e) {
+            error_log('Create Card Error: '.$e->getMessage());
+            error_log('Card Details: '.json_encode($cardArray));
             $responce = [
                 'error'  => true,
                 'data' => [],
@@ -613,6 +609,13 @@ class SubscriptionController extends Controller
             ->leftJoin('payment_methods as pm','pm.store_id','=','s.store_id')
             ->select('s.id as subscription_id','s.store_id','s.status','s.ends_at','s.plan_id','s.created_at','cc.carrier_counts as total_installed_carriers','s.amount_charged','pl.name','pm.last4','pm.is_default as is_default_payment_method')
             ->where('s.store_id',$storeId)->latest()->first();
+        try {
+            if (isset($data->last4)){
+                $data->last4 = decrypt($data->last4);
+            }
+        }catch (\Exception $exception){
+            error_log('Card Decrypt'. $exception->getMessage());
+        }
         return $data;
     }
 
@@ -626,16 +629,9 @@ class SubscriptionController extends Controller
 
         if (empty($subscriptionDetail)){
             return response()->json(['error' => false,
-                'data' => ['status' => 0],
+                'data' => ['status' => 0,'plan_id'=> 0],
                 'message' => 'No active subscription is available.',
             ], 200);
-        }
-        try {
-            if (isset($subscriptionDetail->last4)){
-                $subscriptionDetail->last4 = decrypt($subscriptionDetail->last4);
-            }
-        }catch (\Exception $exception){
-
         }
 
         $subscriptionDetail = (array)$subscriptionDetail;
@@ -665,7 +661,7 @@ class SubscriptionController extends Controller
         if (in_array($carrier,self::$_parcelAndLtlCarries)){
             $number = 2;
         }
-        $carrierCount = Hit::where('store_id',$storeId)->first();
+        $carrierCount = CarrierCount::where('store_id',$storeId)->first();
         $plan = Plan::find($carrierCount->plan_id);
         if ($carrierCount->carrier_counts > 0){
             $carrierCount->decrement('carrier_counts',$number);
@@ -692,7 +688,7 @@ class SubscriptionController extends Controller
         if (in_array($carrier,self::$_parcelAndLtlCarries)){
             $number = 2;
         }
-        $carrierCount = Hit::where('store_id',$storeId)->first();
+        $carrierCount = CarrierCount::where('store_id',$storeId)->first();
         $plan = Plan::find($carrierCount->plan_id);
         if ($carrierCount->carrier_counts < $plan->carrier_count){
             $carrierCount->increment('carrier_counts',$number);
@@ -729,6 +725,74 @@ class SubscriptionController extends Controller
             ];
         }
         return $responce;
+    }
+
+    public function invoicePaymentFailed(){
+        $input = @file_get_contents("php://input");
+        $paymentDetail = json_decode($input);
+        $lineData = $paymentDetail->data->object->lines->data[0];
+      //  $productPlan = $lineData->plan->name;
+      //  $customerId = $paymentDetail->data->object->customer;
+
+       /* $emailData = array(
+            'receiverEmail'     => $userEmail,
+            'receiverName'      => $fName.' '.$lNname,
+            'fname'             => $fName.' '.$lNname,
+            'product_name'      => $product_name,
+            'product_subtitle'  => $product_subtitle,
+            'domain_name'       => $domain_name,
+            'pakg_type'         => $package_type,
+            'action'            => 'IPF'       // Invoice Payment Failed
+        );*/
+
+        $params = array(
+            'period_end'=> $paymentDetail->data->object->period_end,
+            'updated_date'=> $paymentDetail->data->object->webhooks_delivered_at,
+            'subscription'=> $paymentDetail->data->object->subscription
+        );
+        $subscriptionId = $params['subscription']->subscription_id;
+
+        //If there is already a subscription exists for the store_id then retrieve it
+        $oldSubscription = Subscription::where('subscription_id',$subscriptionId)->latest()->first();
+
+        if (!is_null($oldSubscription)){
+            //status 3, means subscription expired from the stripe due to payment failed.
+            $oldSubscription->update([
+                'status' => 3
+            ]);
+        }else{
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'Subscription not found to be update.',
+            ]);
+        }
+        $data = [];
+        $email = 'zeeshantanveer199@gmail.com';
+       // $this->notifyEmail($emailData);
+        Mail::to($email)->send(new PaymentFailedByWebHookEmail($data));
+        return response()->json(['error' => false,
+            'data' => [],
+            'message' => 'Subscription Failed.',
+        ],200);
+    }
+
+    public function invoicePaymentSucceeded(){
+        $input = @file_get_contents("php://input");
+        $paymentDetail = json_decode($input);
+
+        $stripeCustId = $paymentDetail->data->object->customer;
+        $subscipId = $paymentDetail->data->object->subscription;
+        $customerSubscipId = $subscipId->subscription_id;
+
+        $subscriptionPlanObj = $paymentDetail->data->object->lines->data[0];
+        Subscription::where('subscription_id',$customerSubscipId)->update([
+            'status'    => 1,
+            'ends_at' => gmdate("Y-m-d\TH:i:s\Z", $subscriptionPlanObj->period->end)
+        ]);
+        return response()->json(['error' => false,
+            'data' => [],
+            'message' => 'Subscription Succeeded.',
+        ],200);
     }
 
 

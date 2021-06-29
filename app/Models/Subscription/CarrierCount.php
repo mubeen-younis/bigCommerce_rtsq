@@ -4,7 +4,7 @@ namespace App\Models\Subscription;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Hit extends Model
+class CarrierCount extends Model
 {
     //
     protected $table = 'carriers_counts';

@@ -138,6 +138,8 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     //END: Subscription Routes
 });
 //Webhook
+Route::post('/bc-payment-failed', [SubscriptionController::class, 'invoicePaymentFailed']);
+Route::post('/bc-payment-succeeded', [SubscriptionController::class, 'invoicePaymentSucceeded']);
 Route::post('/update-subscription', [SubscriptionController::class, 'updateSubscriptionFromStripe']);
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);
