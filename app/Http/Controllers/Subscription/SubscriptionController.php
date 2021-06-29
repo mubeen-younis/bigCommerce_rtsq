@@ -553,20 +553,12 @@ class SubscriptionController extends Controller
         return $responce;
     }
 
-    public function reActivateSubscriptionPlan(Request $request) {
+    public function reActivateSubscriptionPlan($subId,$planId) {
 
-        //If there is already a subscription exists for the store_id then retrieve it
-        $oldSubscription = Subscription::where('store_id',$request['store_id'])->latest()->first();
-        $subId = $oldSubscription->subscription_id;
-        $planId = $oldSubscription->plan_id;
         try {
             $subscription = \Stripe\Subscription::retrieve($subId);
             $subscription->plan = $planId;
             $subscriptionRes = $subscription->save();
-            sleep(2);
-            Subscription::where('subscription_id',$subId)->update([
-                'status' => 1
-            ]);
             $responce = [
                 'error'  => false,
                 'data' => $subscriptionRes,
@@ -579,7 +571,7 @@ class SubscriptionController extends Controller
                 'message'  => $e->getMessage()
             ];
         }
-        return response()->json($responce);
+        return $responce;
     }
 
     public function cencelStripeSubscription($subscriptionId){
@@ -621,14 +613,29 @@ class SubscriptionController extends Controller
     public function cancelSubscriptionPlan(Request $request) {
         $storeId = $request['store_id'];
         $dbSub = Subscription::where('store_id',$storeId)->latest()->first();
-        $res = $this->cencelStripeSubscription($dbSub->subscription_id);
-        if (isset($res['error']) && $res['error'] == false){
-            //Because of simaltaneous execution of stripe and DB
-            sleep(2);
-            Subscription::where('id',$dbSub->id)->update([
-                'status' => 2
-            ]);
+
+        if (isset($request['cancel']) && $request['cancel'] == 1){
+            $res = $this->cencelStripeSubscription($dbSub->subscription_id);
+            if (isset($res['error']) && $res['error'] == false){
+                //Because of simaltaneous execution of stripe and DB
+                sleep(2);
+                Subscription::where('id',$dbSub->id)->update([
+                    'status' => 2
+                ]);
+            }
+        } else{
+            $subId = $dbSub->subscription_id;
+            $planId = $dbSub->plan_id;
+            $res = $this->reActivateSubscriptionPlan($subId,$planId);
+            if (isset($res['error']) && $res['error'] == false){
+                //Because of simaltaneous execution of stripe and DB
+                sleep(2);
+                Subscription::where('id',$dbSub->id)->update([
+                    'status' => 1
+                ]);
+            }
         }
+
         return response()->json($res);
     }
 

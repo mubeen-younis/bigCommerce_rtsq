@@ -129,7 +129,6 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
 
     //Start: Subscription Module Routes are given below
     Route::post('/subscribe-plan', [SubscriptionController::class, 'subscribeToPlan']);
-    Route::post('/reactivate-subscription', [SubscriptionController::class, 'reActivateSubscriptionPlan']);
     Route::post('/cancel-subscription', [SubscriptionController::class, 'cancelSubscriptionPlan']);
     Route::get('/get-subscription-details', [SubscriptionController::class, 'getSubscriptionDetail']);
     Route::post('/add-carrier', [SubscriptionController::class, 'incrementCarrierCount']);
