@@ -394,7 +394,6 @@ class SubscriptionController extends Controller
             'cExpiryYear' => isset($request['exp_year']) ? $request['exp_year'] : '',
             'cCvc' => isset($request['cvc']) ? $request['cvc'] : '',
             'cName' => isset($request['card_name']) ? $request['card_name'] : '',
-            'email' => isset($request['email']) ? $request['email'] : '',
             'cAddress_line1' => isset($request['address']) ? $request['address'] : '',
             'cAddress_city' => isset($request['city']) ? $request['city'] : '',
             'cAddress_state' => isset($request['state']) ? $request['state'] : '',
@@ -402,10 +401,14 @@ class SubscriptionController extends Controller
             'cAddress_country'=> isset($request['country']) ? $request['country'] : ''
         ];
         $updateCustomerCardRes = $this->updateCustomerCard($customerId, $data);
+       // $subscriptionDetail = $this->subscriptionDetailFromDB($storeId);
+
         if ($updateCustomerCardRes['error'] == true){
+         //   $updateCustomerCardRes['data'] = $subscriptionDetail;
             return response()->json($updateCustomerCardRes);
         }
         $this->savePaymentMethodInDB($updateCustomerCardRes['data'],$data['store_id']);
+       // $updateCustomerCardRes['data'] = $subscriptionDetail;
         return response()->json($updateCustomerCardRes);
     }
 
@@ -460,7 +463,7 @@ class SubscriptionController extends Controller
                 $customer->save();
                 $responce = ['error' => false,
                     'data' => $customer,
-                    'message' => '',
+                    'message' => 'Your default payment method successfully changed.',
                 ];
             } catch (\Exception $e) {
                 $responce = ['error' => true,
@@ -578,9 +581,6 @@ class SubscriptionController extends Controller
     public function cencelStripeSubscription($subscriptionId){
         try {
 
-            /*$subscription = \Stripe\Subscription::retrieve($subscriptionId);
-            $responce = $subscription->cancel();*/
-
             $responce = \Stripe\Subscription::update(
                 $subscriptionId, [
                     'cancel_at_period_end' => true,
@@ -595,9 +595,6 @@ class SubscriptionController extends Controller
                 'data' => $responce,
             ];
 
-            /*$oldSubscription->update([
-                'status' => 2
-            ]);*/
             return $responce;
         } catch (Exception $e) {
             $responce = [
@@ -685,6 +682,7 @@ class SubscriptionController extends Controller
 
         $subscriptionDetail['total_installed_carriers'] = $plan->carrier_count - $subscriptionDetail['total_installed_carriers'];
         $subscriptionDetail['total_installable_carriers'] = $plan->carrier_count;
+        $subscriptionDetail['ends_at'] = date('m/d/Y',strtotime($subscriptionDetail['ends_at']));
         return response()->json(['error' => false,
             'data' => $subscriptionDetail,
             'message' => '',
@@ -845,7 +843,6 @@ class SubscriptionController extends Controller
             'message' => 'Subscription Succeeded.',
         ],200);
     }
-
 
 
 }
