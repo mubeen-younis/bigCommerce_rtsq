@@ -559,10 +559,11 @@ class SubscriptionController extends Controller
             $subscription = \Stripe\Subscription::retrieve($subId);
             $subscription->plan = $planId;
             $subscriptionRes = $subscription->save();
+            error_log('SubscriptionReactivate : '.$subscriptionRes);
             $responce = [
                 'error'  => false,
                 'data' => $subscriptionRes,
-                'message'  => ''
+                'message'  => 'The subscription has reactivated successfully.'
             ];
         } catch (\Exception $e) {
             $responce = [
