@@ -17,9 +17,11 @@ class PaymentFailedByWebHookEmail extends Mailable
      * @return void
      */
     private $subscriptionDetails;
-    public function __construct($subscriptionDetails)
+    private $paymentStatus;
+    public function __construct($subscriptionDetails,$paymentStatus)
     {
         $this->subscriptionDetails = $subscriptionDetails;
+        $this->paymentStatus = $paymentStatus;
     }
 
     /**
@@ -29,6 +31,6 @@ class PaymentFailedByWebHookEmail extends Mailable
      */
     public function build()
     {
-        return $this->subject('Payment Failed')->view('emails.paymentfailed',['data' => $this->subscriptionDetails, 'paymentfailed'=>true]);
+        return $this->subject('Payment Failed')->view('emails.paymentfailed',['data' => $this->subscriptionDetails, 'paymentStatus'=>$this->paymentStatus]);
     }
 }

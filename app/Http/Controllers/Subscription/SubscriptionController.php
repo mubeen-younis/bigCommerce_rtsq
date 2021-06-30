@@ -798,53 +798,97 @@ class SubscriptionController extends Controller
         return $responce;
     }
 
-    public function invoicePaymentFailed(){
-
-        $input = @file_get_contents("php://input");
-        $paymentDetail = json_decode($input);
-        error_log('PaymentFailed: '.$input);
-        $lineData = $paymentDetail->data->object->lines->data[0];
-      //  $productPlan = $lineData->plan->name;
+    public function invoicePaymentActionByWebHook($paymentDetail,$planDetail, $paymentStatus){
         $customerId = $paymentDetail->data->object->customer;
-        $planDetail = DB::table('subscriptions as s')->leftJoin('plans as p','p.id','=','s.plan_id')
-            ->select('s.stripe_id','s.plan_id','p.name')->get();
-        $customer = \Stripe\Customer::retrieve($customerId);
-        $emailData = array(
-            'receiverEmail'     => $customer->email,
-            'receiverName'      => $customer->name,
-            'productName'      => 'Real-time Shipping Quotes',
-            'planName'         => $planDetail->name,
-            'action'            => 'OCE'
-        );
+        if ($paymentStatus == 1){
+            $subscriptionPlanObj = $paymentDetail->data->object->lines->data[0];
+        }
 
+        $customer = \Stripe\Customer::retrieve($customerId);
+
+        $email = $customer->email;
+        $email = 'zeeshantanveer199@gmail.com';
         $params = array(
             'period_end'=> $paymentDetail->data->object->period_end,
             'updated_date'=> $paymentDetail->data->object->webhooks_delivered_at,
             'subscriptionId'=> $paymentDetail->data->object->subscription
         );
-        $subscriptionId = $params['subscriptionId'];
 
+        $subscriptionId = $params['subscriptionId'];
         //If there is already a subscription exists for the store_id then retrieve it
         $oldSubscription = Subscription::where('subscription_id',$subscriptionId)->latest()->first();
-
-        if (!is_null($oldSubscription)){
+        if ($paymentStatus == 1){
+            $emailData = array(
+                'receiverEmail'     => $customer->email,
+                'receiverName'      => $customer->name,
+                'productName'      => 'Real-time Shipping Quotes',
+                'planName'         => $planDetail->name,
+                'action'            => 'OCE'
+            );
             //status 3, means subscription expired from the stripe due to payment failed.
+            $oldSubscription->update([
+                'status' => 1,
+                'ends_at' => gmdate("Y-m-d\TH:i:s\Z", $subscriptionPlanObj->period->end)
+            ]);
+            Mail::to($email)->send(new PaymentFailedByWebHookEmail($emailData,$paymentStatus));
+        } elseif ($paymentStatus == 2){
+            $emailData = array(
+                'receiverEmail'     => $customer->email,
+                'receiverName'      => $customer->name,
+                'productName'      => 'Real-time Shipping Quotes',
+                'planName'         => $planDetail->name,
+                'action'            => 'IPF'       // Invoice Payment Failed
+            );
             $oldSubscription->update([
                 'status' => 3
             ]);
-        }else{
-            return response()->json(['error' => true,
-                'data' => [],
-                'message' => 'Subscription not found to be update.',
+            Mail::to($email)->send(new PaymentFailedByWebHookEmail($emailData,$paymentStatus));
+        } elseif ($paymentStatus == 0){
+            $emailData = array(
+                'receiverEmail'     => $customer->email,
+                'receiverName'      => $customer->name,
+                'productName'      => 'Real-time Shipping Quotes',
+                'planName'         => $planDetail->name,
+                'action'            => 'IPF'       // Invoice Payment Failed
+            );
+            $oldSubscription->update([
+                'status' => 3
             ]);
+            Mail::to($email)->send(new PaymentFailedByWebHookEmail($emailData,$paymentStatus));
         }
-        $email = $customer->email;
-        $email = 'zeeshantanveer199@gmail.com';
+    }
+    public function subscriptionDeleted($paymentDetail,$planDetail){
 
-        Mail::to($email)->send(new PaymentFailedByWebHookEmail($emailData));
+    }
+    public function invoicePaymentFailed(){
+
+        $msg = '';
+        $input = @file_get_contents("php://input");
+        $paymentDetail = json_decode($input);
+        $eventType = $paymentDetail->type;
+        if ($eventType != 'customer.subscription.deleted' || $eventType != 'invoice.payment_succeeded' || $eventType != 'invoice.payment_failed'){
+            return '';
+        }
+
+        $planDetail = DB::table('subscriptions as s')->leftJoin('plans as p','p.id','=','s.plan_id')
+            ->select('s.stripe_id','s.plan_id','p.name')->get();
+
+        if ($eventType == 'customer.subscription.deleted'){
+            $msg = 'Subscription has been cancelled';
+            $this->invoicePaymentActionByWebHook($paymentDetail,$planDetail, 2);
+        }elseif ($eventType == 'invoice.payment_succeeded'){
+            $msg = 'Subscription successful';
+            $this->invoicePaymentActionByWebHook($paymentDetail,$planDetail, 1);
+        }elseif ($eventType == 'invoice.payment_failed'){
+            $msg = 'Subscription Failed';
+            $this->invoicePaymentActionByWebHook($paymentDetail,$planDetail, 0);
+        } else{
+            //Do Nothing
+        }
+
         return response()->json(['error' => false,
             'data' => [],
-            'message' => 'Subscription Failed.',
+            'message' => $msg,
         ],200);
     }
 
