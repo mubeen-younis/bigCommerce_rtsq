@@ -33,7 +33,6 @@ class SubscriptionController extends Controller
     public function __construct()
     {
         Stripe::setApiKey(config('app.stripe_secret'));
-        //self::getTrialPlans();
     }
 
     public function validateRequest($request)
@@ -591,7 +590,7 @@ class SubscriptionController extends Controller
 
             $responce = [
                 'error' => false,
-                'message' => 'You subscription will be cancelled automatically at the end of the period on '.$ends_at.'.',
+                'message' => 'Your subscription will be cancelled automatically at the end of the period on '.$ends_at.'.',
                 'data' => $responce,
             ];
 
@@ -643,7 +642,7 @@ class SubscriptionController extends Controller
             ->leftJoin('carriers_counts as cc','cc.store_id','=','s.store_id')
             ->leftJoin('plans as pl','pl.id','=','s.plan_id')
             ->leftJoin('payment_methods as pm','pm.store_id','=','s.store_id')
-            ->select('s.id as subscription_id','s.store_id','s.status','s.ends_at','s.plan_id','s.created_at','cc.carrier_counts as total_installed_carriers','s.amount_charged','pl.name','pm.last4','pm.is_default as is_default_payment_method')
+            ->select('s.id as subscription_id','s.store_id','s.status','s.ends_at','s.plan_id','s.created_at','cc.carrier_counts as total_installed_carriers','s.amount_charged','pl.name','pl.carrier_count as total_allowed_carriers','pm.last4','pm.is_default as is_default_payment_method')
             ->where('s.store_id',$storeId)->latest()->first();
         try {
             if (isset($data->last4)){
@@ -691,28 +690,29 @@ class SubscriptionController extends Controller
     //*************************************
     // This function will increment the installed carrier count
     //*************************************
-    public function incrementCarrierCount(Request $request){
+    public function changeCarrierCount($request){
         $number = 1;
         $storeId = $request['store_id'];
-        $carrier = $request['carrier'];
+        $carrier = isset($request['carrier']) ? $request['carrier'] : '';
         if (in_array($carrier,self::$_parcelAndLtlCarries)){
             $number = 2;
         }
         $carrierCount = CarrierCount::where('store_id',$storeId)->first();
         $plan = Plan::find($carrierCount->plan_id);
-        if ($carrierCount->carrier_counts > 0){
-            $carrierCount->decrement('carrier_counts',$number);
-            return response()->json(['error' => false,
-                'data' => ['total_carriers_installed' => $plan->carrier_count-$carrierCount->carrier_counts],
-                'message' => 'Carrier is installed successfully.',
-            ], 200);
-        }else{
-            return response()->json(['error' => true,
-                'data' => ['total_carriers_installed' => $plan->carrier_count-$carrierCount->carrier_counts],
-                'message' => 'You have reached upto the subscription limit.',
-            ]);
-        }
 
+        if ($request['action'] == 1){
+            $carrierCount->increment('carrier_counts',$number);
+            return [
+                'total_carriers_installed' => $plan->carrier_count-$carrierCount->carrier_counts,
+                'total_remaining_carriers' => $carrierCount->carrier_counts
+            ];
+        } else{
+            $carrierCount->decrement('carrier_counts',$number);
+            return [
+                'total_carriers_installed' => $plan->carrier_count-$carrierCount->carrier_counts,
+                'total_remaining_carriers' => $carrierCount->carrier_counts
+            ];
+        }
     }
 
     //*************************************
