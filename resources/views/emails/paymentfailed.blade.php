@@ -1,5 +1,12 @@
 <div>
-    It is to be notified that, the payment failed due to unavailability of funds.
+    {{--When payment failed--}}
+    @if($paymentfailed)
+    You are subscribed to the Monthly {{$data['planName']}} Plan of the Eniture product '{{$data['productName']}}'. But your subscription's recurring payment is failed. That's why you received a 'Failed Payment Alert' from the Eniture. If you want to continue using this subscription then you should update your credit card information in your BigCommerce store on {{$data['productName']}}'s Plans page.
+    @endif
+    {{--When payment is not failed (Success case)--}}
+    @if(!$paymentfailed)
+        You are subscribed to the Monthly {{$data['planName']}} Plan of the Eniture product '{{$data['productName']}}' and using this Eniture App on your BigCommerce store.
+    @endif
     <br/>
 
     <p>Sincerely,<br />

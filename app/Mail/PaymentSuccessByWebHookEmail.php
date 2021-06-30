@@ -7,7 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class PaymentFailedByWebHookEmail extends Mailable
+class PaymentSuccessByWebHookEmail extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -29,6 +29,6 @@ class PaymentFailedByWebHookEmail extends Mailable
      */
     public function build()
     {
-        return $this->subject('Payment Failed')->view('emails.paymentfailed',['data' => $this->subscriptionDetails, 'paymentfailed'=>true]);
+        return $this->subject('Payment Succeeded')->view('emails.paymentfailed',['data' => $this->subscriptionDetails,'paymentfailed' => false]);
     }
 }
