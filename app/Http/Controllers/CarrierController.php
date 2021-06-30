@@ -224,6 +224,10 @@ class CarrierController extends Controller
                     'message' => $res['message'],
                 ], 200);
             }
+        }else{
+            $subscirption = new SubscriptionController();
+            $changeCount = ['store_id' => $request['store_id'], 'action' => 0];
+            $subscirption->changeCarrierCount($changeCount);
         }
         $carrier = InstalledCarrier::find($request->carrier_id);
 
