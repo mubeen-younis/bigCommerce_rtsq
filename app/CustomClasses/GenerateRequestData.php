@@ -167,6 +167,7 @@ class GenerateRequestData
             'carriers' => $carriers,
             'receiverAddress' => $receiverAddress,
             'commdityDetails' => $itemsArr,
+            'dont_auth' => 1
         ];
 
         if ($this->storeData['installed_addon_sbs']) {
