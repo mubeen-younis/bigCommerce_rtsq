@@ -149,9 +149,13 @@ class SubscriptionController extends Controller
         $oldSubscription->amount_charged = self::$plansData['cost'];
         $oldSubscription->update();
 
+        //Get: Previous Plan Allowed Carrier Limit
+        $previousPlan = Plan::find($carrierCounts->plan_id);
+        $installedCarrier = $previousPlan->carrier_count-$carrierCounts->carrier_counts; //10-7
+        //$installedCarrier is the current installed carriers
         $carrierCounts->plan_id = self::$plansData['plan_id'];
         $carrierCounts->subscription_id = $oldSubscription->id;
-        $carrierCounts->carrier_counts = self::$plansData['carrier_count'];
+        $carrierCounts->carrier_counts = self::$plansData['carrier_count']-$installedCarrier; //Sustain the current install value
         $carrierCounts->update();
         return $oldSubscription->id;
     }
@@ -160,11 +164,15 @@ class SubscriptionController extends Controller
     //*************************************
     public function updateCarrierCountsinDB($subscriptionId, $storeId){
         if (CarrierCount::where('store_id',$storeId)->exists()){
-            CarrierCount::where('store_id',$storeId)->update([
-                'plan_id' => self::$plansData['plan_id'],
-                'subscription_id' => $subscriptionId,
-                'carrier_counts' => self::$plansData['carrier_count'],
-            ]);
+            $carrierCount = CarrierCount::where('store_id',$storeId)->first();
+            //Get: Previous Plan Allowed Carrier Limit
+            $previousPlan = Plan::find($carrierCount->plan_id);
+            $installedCarrier = $previousPlan->carrier_count-$carrierCount->carrier_counts;
+            //$installedCarrier is the current installed carriers
+            $carrierCount->plan_id = self::$plansData['plan_id'];
+            $carrierCount->subscription_id = $subscriptionId;
+            $carrierCount->carrier_counts = self::$plansData['carrier_count']-$installedCarrier; //Sustain the current install value
+            $carrierCount->save();
         }else{
             CarrierCount::create([
                 'store_id' => $storeId,
