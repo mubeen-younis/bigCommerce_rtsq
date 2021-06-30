@@ -266,7 +266,7 @@ class SubscriptionController extends Controller
         $newPlanAllowedCarriers = self::$plansData['carrier_count'];
         if (!is_null($currentSubscriptionDetail) && $currentSubscriptionDetail->total_installed_carriers > $newPlanAllowedCarriers){
             return response()->json([
-                'error'  => false,
+                'error'  => true,
                 'data'  => [],
                 'message'  => 'You enabled more carriers than the allowed carriers limit ('.self::$plansData['carrier_count'].') in '.self::$plansData['name'].' Plan. So, you need to disabled some carriers to downgrade your subscription plan'
             ],200);
