@@ -9,6 +9,7 @@ use App\Models\InstalledCarrier;
 use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Subscription;
 
 class CarrierController extends Controller
 {
@@ -123,6 +124,15 @@ class CarrierController extends Controller
 
     public function installCarrier(Request $request)
     {
+        $subscirption = New Subscription();
+        $changeCount = ['store_id'=> $request['store_id'], 'action'=>1];
+        $res = $subscirption->changeCarrierCount($changeCount);
+        if($res['error']){
+            return response()->json([
+                'error' => true,
+                'message' => $res['message'],
+            ], 200);
+        }
         $store_id = $request->store_id;
 
         if (empty($request->carrier_id)) {
