@@ -707,6 +707,24 @@ class SubscriptionController extends Controller
     public function changeCarrierCount($request){
         $number = 1;
         $storeId = $request['store_id'];
+
+        //Check: If current carriers installed are more than the choosed plan then return with message
+        $currentSubscriptionDetail = $this->subscriptionDetailFromDB($storeId);
+
+        if (is_null($currentSubscriptionDetail) || ($currentSubscriptionDetail->total_remaining_carriers == 0) || ($currentSubscriptionDetail->status == 3)){
+            $msg = 'You have reached to the subscription carriers limit';
+            if (is_null($currentSubscriptionDetail)){
+                $msg = "You didn't have any plan to install or enable the carrier";
+            }elseif ($currentSubscriptionDetail->status == 3){
+                $msg = "Your subscription has been expired";
+            }
+            return [
+                'error'  => true,
+                'data'  => [],
+                'message'  => $msg
+            ];
+        }
+
         $carrier = isset($request['carrier']) ? $request['carrier'] : '';
         if (in_array($carrier,self::$_parcelAndLtlCarries)){
             $number = 2;
