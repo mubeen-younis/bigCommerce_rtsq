@@ -261,6 +261,17 @@ class SubscriptionController extends Controller
     //*************************************
     public function subscribeToPlan(Request $request){
 
+        $currentSubscriptionDetail = $this->subscriptionDetailFromDB($request['store_id']);
+        self::getPlansDetails($request['plan']);   //Getting Plan detail from DB
+        $newPlanAllowedCarriers = self::$plansData['carrier_count'];
+        $currentSubscriptionDetail->total_installed_carriers = 100;
+        if ($currentSubscriptionDetail->total_installed_carriers > $newPlanAllowedCarriers){
+            return response()->json([
+                'error'  => false,
+                'data'  => [],
+                'message'  => 'You enabled more carriers than the allowed carriers limit ('.self::$plansData['carrier_count'].') in '.self::$plansData['name'].' Plan. So, you need to disabled some carriers to downgrade your subscription plan'
+            ],200);
+        }
         if ($request['plan'] != self::$trial){
             $data = [
                 // 'card_number' => '4242424242424242',
@@ -281,7 +292,7 @@ class SubscriptionController extends Controller
         $data['store_id'] = $request['store_id'];
         $data['plan'] = $request['plan'];
         $data['defaultpayment'] = (isset($request['defaultpayment']) && $request['defaultpayment'] == true) ? true : false;
-        self::getPlansDetails($data['plan']);   //Getting Plan detail from DB
+
         $planId = self::$plansData['stripe_plan_id'];
 
         // Intializing Billing info for the stripe customer
@@ -642,7 +653,7 @@ class SubscriptionController extends Controller
             ->leftJoin('carriers_counts as cc','cc.store_id','=','s.store_id')
             ->leftJoin('plans as pl','pl.id','=','s.plan_id')
             ->leftJoin('payment_methods as pm','pm.store_id','=','s.store_id')
-            ->select('s.id as subscription_id','s.store_id','s.status','s.ends_at','s.plan_id','s.created_at','cc.carrier_counts as total_installed_carriers','s.amount_charged','pl.name','pl.carrier_count as total_allowed_carriers','pm.last4','pm.is_default as is_default_payment_method')
+            ->select('s.id as subscription_id','s.store_id','s.status','s.ends_at','s.plan_id','s.created_at','cc.carrier_counts as total_remaining_carriers','s.amount_charged','pl.name','pl.carrier_count as total_allowed_carriers','pm.last4','pm.is_default as is_default_payment_method')
             ->where('s.store_id',$storeId)->latest()->first();
         try {
             if (isset($data->last4)){
@@ -651,6 +662,8 @@ class SubscriptionController extends Controller
         }catch (\Exception $exception){
             error_log('Card Decrypt'. $exception->getMessage());
         }
+        //total_installed_carriers
+        $data->total_installed_carriers = $data->total_allowed_carriers-$data->total_remaining_carriers;
         $data->ends_at = date('m/d/Y',strtotime($data->ends_at));
         return $data;
     }
