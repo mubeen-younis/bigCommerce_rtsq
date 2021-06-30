@@ -711,7 +711,7 @@ class SubscriptionController extends Controller
         //Check: If current carriers installed are more than the choosed plan then return with message
         $currentSubscriptionDetail = $this->subscriptionDetailFromDB($storeId);
 
-        if (is_null($currentSubscriptionDetail) || ($currentSubscriptionDetail->total_remaining_carriers == 0) || ($currentSubscriptionDetail->status == 3)){
+        if (($request['action'] == 1) && (is_null($currentSubscriptionDetail) || ($currentSubscriptionDetail->total_remaining_carriers == 0) || ($currentSubscriptionDetail->status == 3))){
             $msg = 'You have reached to the subscription carriers limit';
             if (is_null($currentSubscriptionDetail)){
                 $msg = "You didn't have any plan to install or enable the carrier";
