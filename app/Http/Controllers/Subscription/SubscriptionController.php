@@ -733,14 +733,14 @@ class SubscriptionController extends Controller
         $plan = Plan::find($carrierCount->plan_id);
 
         if ($request['action'] == 1){
-            $carrierCount->increment('carrier_counts',$number);
+            $carrierCount->decrement('carrier_counts',$number);
             return [
                 'error'  => false,
                 'total_carriers_installed' => $plan->carrier_count-$carrierCount->carrier_counts,
                 'total_remaining_carriers' => $carrierCount->carrier_counts
             ];
         } else{
-            $carrierCount->decrement('carrier_counts',$number);
+            $carrierCount->increment('carrier_counts',$number);
             return [
                 'error'  => false,
                 'total_carriers_installed' => $plan->carrier_count-$carrierCount->carrier_counts,
