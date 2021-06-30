@@ -319,7 +319,7 @@ class SubscriptionController extends Controller
         $oldSubscription = Subscription::where('store_id',$data['store_id'])->latest()->first();
 
         //Start: Upgrade or DownGrade Plans
-        if (!is_null($paymentMethod) && !is_null($oldSubscription) && $planId != null){
+        if (!is_null($paymentMethod) && !is_null($oldSubscription) && $planId != null && $oldSubscription->subscription_id != null){
             $oldPaymentMethod = PaymentMethod::where('store_id',$data['store_id'])->first();
             $last4 = decrypt($oldPaymentMethod->last4);
             //Update: the customer card if the defaultpayment is false OR the last4 digits of the current card does not match with the new given card
