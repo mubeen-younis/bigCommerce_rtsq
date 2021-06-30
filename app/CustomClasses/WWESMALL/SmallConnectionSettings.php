@@ -28,7 +28,8 @@ class SmallConnectionSettings
             'authentication_key' => $data->authentication_key,
             'world_wide_express_account_number' => $data->account_number,
             'plugin_domain_name' => 'store-uann2u.mybigcommerce.com',
-            'plugin_licence_key' => $data->license_key,
+            'plugin_licence_key' => $data->license_key ?? '',
+            'dont_auth' => 1
         ];
 
         $queryString = http_build_query($params);
