@@ -735,12 +735,14 @@ class SubscriptionController extends Controller
         if ($request['action'] == 1){
             $carrierCount->increment('carrier_counts',$number);
             return [
+                'error'  => false,
                 'total_carriers_installed' => $plan->carrier_count-$carrierCount->carrier_counts,
                 'total_remaining_carriers' => $carrierCount->carrier_counts
             ];
         } else{
             $carrierCount->decrement('carrier_counts',$number);
             return [
+                'error'  => false,
                 'total_carriers_installed' => $plan->carrier_count-$carrierCount->carrier_counts,
                 'total_remaining_carriers' => $carrierCount->carrier_counts
             ];
