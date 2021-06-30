@@ -860,7 +860,7 @@ class SubscriptionController extends Controller
     public function subscriptionDeleted($paymentDetail,$planDetail){
 
     }
-    public function invoicePaymentFailed(){
+    public function paymentByStripeWebHook(){
 
         $msg = '';
         $input = @file_get_contents("php://input");
