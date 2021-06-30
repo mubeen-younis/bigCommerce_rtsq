@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use App\CustomClasses\Origin;
 use App\Models\ProductSetting;
 use App\CustomClasses\Shipping;
+use App\Models\Subscription\Subscription;
 use Illuminate\Support\Facades\Log;
 
 class GetRatesController extends Controller
@@ -46,8 +47,12 @@ class GetRatesController extends Controller
         Log::info('Request ' . json_encode($request->all()));
         $storeHash = $request->base_options['store_id'] ?? null;
         $storeData = $this->getStoreData($storeHash);
+        //echo "<pre>"; print_r($storeData['store']['id']); exit;
 
         if ($storeData == null) {
+            return [];
+        }
+        if(!$this->storePlanStatus($storeData['store']['id'])){
             return [];
         }
         //echo "<pre>"; print_r($storeData['installed_carriers'][0]['store_id']); exit;
@@ -77,7 +82,18 @@ class GetRatesController extends Controller
         $originWarehouse->getNearestWarehouse($formatReq);
     }
 
+    /*
+     * Check plan status of store to process quote request
+     * **/
 
+    public function storePlanStatus($store_id){
+        $subsciption = Subscription::where('store_id', $store_id)->latest()->first();
+        if(empty($subsciption) || $subsciption->status === 3){ // not plan or expired plan
+            return false;
+        }else{
+            return true;
+        }
+    }
 
 
 
