@@ -22,6 +22,7 @@ class VerifyCsrfToken extends Middleware
         'update-subscription',
         'change-payment-method',
         'bc-payment-failed',
-        'bc-payment-succeeded'
+        'bc-payment-succeeded',
+        'bc-subscription-update'
     ];
 }

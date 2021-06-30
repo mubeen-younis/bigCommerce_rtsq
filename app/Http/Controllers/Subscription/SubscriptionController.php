@@ -798,23 +798,31 @@ class SubscriptionController extends Controller
         return $responce;
     }
 
-    public function invoicePaymentActionByWebHook($paymentDetail,$planDetail, $paymentStatus){
+    public function invoicePaymentActionByWebHook($paymentDetail, $paymentStatus){
         $customerId = $paymentDetail->data->object->customer;
-        if ($paymentStatus == 1){
+        if ($paymentStatus == 1 || $paymentStatus == 0){
             $subscriptionPlanObj = $paymentDetail->data->object->lines->data[0];
+            $params = array(
+                'period_end'=> $paymentDetail->data->object->period_end,
+                'updated_date'=> $paymentDetail->data->object->webhooks_delivered_at,
+                'subscriptionId'=> $paymentDetail->data->object->subscription
+            );
+        }else{
+            $params = array(
+                'subscriptionId'=> $paymentDetail->data->object->items->data[0]->subscription
+            );
         }
-
         $customer = \Stripe\Customer::retrieve($customerId);
 
         $email = $customer->email;
         $email = 'zeeshantanveer199@gmail.com';
-        $params = array(
-            'period_end'=> $paymentDetail->data->object->period_end,
-            'updated_date'=> $paymentDetail->data->object->webhooks_delivered_at,
-            'subscriptionId'=> $paymentDetail->data->object->subscription
-        );
+
 
         $subscriptionId = $params['subscriptionId'];
+        $planDetail = DB::table('subscriptions as s')
+            ->leftJoin('plans as p','p.id','=','s.plan_id')
+            ->select('s.stripe_id','s.plan_id','p.name')->where('s.subscription_id',$subscriptionId)->first();
+
         //If there is already a subscription exists for the store_id then retrieve it
         $oldSubscription = Subscription::where('subscription_id',$subscriptionId)->latest()->first();
         if ($paymentStatus == 1){
@@ -861,27 +869,24 @@ class SubscriptionController extends Controller
 
     }
     public function paymentByStripeWebHook(){
-
         $msg = '';
         $input = @file_get_contents("php://input");
         $paymentDetail = json_decode($input);
         $eventType = $paymentDetail->type;
-        if ($eventType != 'customer.subscription.deleted' || $eventType != 'invoice.payment_succeeded' || $eventType != 'invoice.payment_failed'){
+
+        if ($eventType != 'customer.subscription.deleted' && $eventType != 'invoice.payment_succeeded' && $eventType != 'invoice.payment_failed'){
             return '';
         }
 
-        $planDetail = DB::table('subscriptions as s')->leftJoin('plans as p','p.id','=','s.plan_id')
-            ->select('s.stripe_id','s.plan_id','p.name')->get();
-
         if ($eventType == 'customer.subscription.deleted'){
             $msg = 'Subscription has been cancelled';
-            $this->invoicePaymentActionByWebHook($paymentDetail,$planDetail, 2);
+            $re = $this->invoicePaymentActionByWebHook($paymentDetail, 2);
         }elseif ($eventType == 'invoice.payment_succeeded'){
             $msg = 'Subscription successful';
-            $this->invoicePaymentActionByWebHook($paymentDetail,$planDetail, 1);
+            $this->invoicePaymentActionByWebHook($paymentDetail, 1);
         }elseif ($eventType == 'invoice.payment_failed'){
             $msg = 'Subscription Failed';
-            $this->invoicePaymentActionByWebHook($paymentDetail,$planDetail, 0);
+            $this->invoicePaymentActionByWebHook($paymentDetail, 0);
         } else{
             //Do Nothing
         }
