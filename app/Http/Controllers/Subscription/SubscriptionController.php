@@ -89,7 +89,7 @@ class SubscriptionController extends Controller
     //*************************************
     // This function is used to save the new subscription in DB or update the existing subscription when plan is upgraded or downgraded
     //*************************************
-    public function saveSubscriptionInDB($customerResponse,$subscriptionReponse,$paymentMethodId,$storeId, $oldSubscription){
+    public function saveSubscriptionInDB($customerResponse,$subscriptionReponse,$paymentMethodId,$storeId, $oldSubscription = null){
 
         $subscriptionReponse = isset($subscriptionReponse->data[0]) ? $subscriptionReponse->data[0] :$subscriptionReponse;
         $newSubscription = null;
@@ -377,7 +377,7 @@ class SubscriptionController extends Controller
         //If the plan if subcribed successfully, then it must be a PAID Stripe plan
         //Else, it is trial and $subscriptionId will be null.
         if (!is_null($subscriptions)){
-            $subscriptionId = $this->saveSubscriptionInDB($customerResponse['data'],$subscriptions,$paymentMethodId,$data['store_id'], $oldSubscription = null);
+            $subscriptionId = $this->saveSubscriptionInDB($customerResponse['data'],$subscriptions,$paymentMethodId,$data['store_id'], $oldSubscription);
         }else{
             $subscriptionId = isset($subscription->id) ? $subscription->id : null;
         }
