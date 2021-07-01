@@ -97,6 +97,7 @@ class OrderController extends Controller
                     $liftGateStatus = $ws->liftGateStatus ?? 'n';
                     //$binPackagingData = $ws['binPackagingData']['response']['']
                     $isSmallrate = substr($order['cart_id'], 0, 9) == 'parcel_12' ? true : false;
+                    $totalBoxes = 0;
                     if(isset($ws->binPackagingData) && !empty($ws->binPackagingData) && $isSmallrate){
                         $sbsData = $ws->binPackagingData->response;
                         if(isset($sbsData->errors) && empty($sbsData->errors)) {
