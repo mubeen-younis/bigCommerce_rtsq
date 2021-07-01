@@ -823,7 +823,6 @@ class SubscriptionController extends Controller
         $customer = \Stripe\Customer::retrieve($customerId);
 
         $email = $customer->email;
-        $email = 'zeeshantanveer199@gmail.com';
 
 
         $subscriptionId = $params['subscriptionId'];
@@ -929,7 +928,6 @@ class SubscriptionController extends Controller
 
 
         $email = $customer->email;
-        $email = 'zeeshantanveer199@gmail.com';
 
         if (!is_null($oldSubscription)){
             //status 3, means subscription expired from the stripe due to payment failed.

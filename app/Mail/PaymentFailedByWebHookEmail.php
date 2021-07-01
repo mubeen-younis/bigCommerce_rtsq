@@ -31,6 +31,14 @@ class PaymentFailedByWebHookEmail extends Mailable
      */
     public function build()
     {
-        return $this->subject('Payment Failed')->view('emails.paymentfailed',['data' => $this->subscriptionDetails, 'paymentStatus'=>$this->paymentStatus]);
+        $subject = '';
+        if ($this->paymentStatus == 0){
+            $subject = 'Real-time Shipping Quotes Subscription Payment Failed';
+        } elseif($this->paymentStatus == 1){
+            $subject = 'Real-time Shipping Quotes Subscription Payment Successful';
+        } elseif($this->paymentStatus == 2){
+            $subject = 'Real-time Shipping Quotes Subscription Expired';
+        }
+        return $this->subject($subject)->view('emails.paymentfailed',['data' => $this->subscriptionDetails, 'paymentStatus'=>$this->paymentStatus]);
     }
 }

@@ -119,7 +119,6 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::get('/getRowHeaderImportedFile', [ExportImportProducts::class, 'getRowHeaderImportedFile']);
     Route::post('/importProducts', [ExportImportProducts::class, 'importProductsCsv']);
 
-
     //subscription
     Route::post('/create_subscription', [Subscriptions::class, 'createSubscription']);
 
