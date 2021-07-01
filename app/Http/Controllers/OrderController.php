@@ -89,8 +89,9 @@ class OrderController extends Controller
         $binPackagingData = '';
         $orderWidget = [];
         foreach($responseFromWS as $carrrierName => $WsResp){
+            //print_r($WsResp); exit;
             foreach($WsResp as $zip => $ws){
-                //echo "<pre>"; print_r($ws);// exit;
+                //print_r($ws); exit;
                 if( !(isset($ws->severity) && $ws->severity == 'ERROR') ){
                     $autoResidentialsStatus = $ws->autoResidentialsStatus ?? 'n';
                     $liftGateStatus = $ws->liftGateStatus ?? 'n';
@@ -101,6 +102,7 @@ class OrderController extends Controller
                         if(isset($sbsData->errors) && empty($sbsData->errors)) {
                             //$binPacked = $sbsData->bins_packed[0];
                             foreach ($sbsData->bins_packed as $key => $binPacked) {
+
                                 $type = '';
                                 if (isset($binPacked->bin_data->type) && $binPacked->bin_data->type == 'item') {
                                     $type = 'item';
@@ -136,11 +138,12 @@ class OrderController extends Controller
         $items = $lineItem->items;
 
         $count = 0;
+        //print_r($origins); exit;
         foreach($origins as $key => $origin){
             $item =  $items->$key;
             $city = $origin->senderCity ? $origin->senderCity.',': '';
             $state = $origin->senderState ?? '';
-            $zip = $origin->senderZip ?? '';
+            $zip = $origin->locationId != '' ? $origin->locationId : $origin->senderZip;
             $orderWidget[$zip]['locationtype'] = $item->dropship_enabled == 'N' ? 'Warehouse' : 'Dropship';
             $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $zip;
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes;
@@ -155,6 +158,7 @@ class OrderController extends Controller
             $count++;
         }
         $sbs = '';
+         //print_r($orderWidget); exit;
         $resp = [
             'widget' => $this->objectToArray( $orderWidget ),
             'sbs' => $sbs
