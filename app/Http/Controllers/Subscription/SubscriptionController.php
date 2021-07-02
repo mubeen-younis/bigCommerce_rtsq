@@ -295,6 +295,7 @@ class SubscriptionController extends Controller
                 'country'=> $request['country'],
             ];
         }
+
         $data['store_id'] = $request['store_id'];
         $data['plan'] = $request['plan'];
         $data['email'] = $request['email'];
@@ -303,7 +304,7 @@ class SubscriptionController extends Controller
         $planId = self::$plansData['stripe_plan_id'];
 
         // Intializing Billing info for the stripe customer
-        /*$data = [
+        $data = [
             'store_id' => isset($data['store_id']) ? $data['store_id'] : '',
             'cNumber' => isset($data['card_number']) ? $data['card_number'] : '',
             'cExpiryMonth' => isset($data['exp_month']) ? $data['exp_month'] : '',
@@ -318,7 +319,8 @@ class SubscriptionController extends Controller
             'cAddress_country'=> isset($data['country']) ? $data['country'] : '',
             'defaultpayment'=> isset($data['defaultpayment']) ? $data['defaultpayment'] : '',
             'stripePlanId'=> $planId
-        ];*/
+        ];
+
         //If the payment method already exists then retrieve it
         $paymentMethod = PaymentMethod::where('store_id',$data['store_id'])->first();
         $paymentMethodId = isset($paymentMethod->id) ? $paymentMethod->id : null;
@@ -391,7 +393,7 @@ class SubscriptionController extends Controller
         //Updating: carrier counts that will be allowed in case of trial of PAID plan
         $this->updateCarrierCountsinDB($subscriptionId,$data['store_id']);
         $subscriptionDetail = $this->subscriptionDetailFromDB($data['store_id']);
-        if ($planId == null && $data['plan'] == self::$trial){ // if planId is null then it's a trial and we need to send an email for trial
+        if ($request['plan'] == self::$trial){ // if planId is null then it's a trial and we need to send an email for trial
             $emailData = array(
                 'receiverEmail'     => $data['email'],
                 'productName'      => 'Real-time Shipping Quotes',
