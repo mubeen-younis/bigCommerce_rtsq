@@ -577,9 +577,14 @@ class CompileQuotes
         $RADplan = $RADController->getPlans($request)->original['data']['current_plan'];
 
         $now = Carbon::createFromFormat('Y-d-m H:i:s', now());
-        $expiry = Carbon::createFromFormat('Y-d-m H:i:s', $RADplan->status->subscriptionInfo->expiryTime);
+        if(isset($RADplan->status->subscriptionInfo->expiryTime)){
+            $expiry = Carbon::createFromFormat('Y-d-m H:i:s', $RADplan->status->subscriptionInfo->expiryTime);
 
-        $isRadNotActive = $RADplan->severity !== 'SUCCESS' || $now->gt($expiry) || $RADplan->status->subscriptionInfo->subscriptionStatus != 1;
+            $isRadNotActive = $RADplan->severity !== 'SUCCESS' || $now->gt($expiry) || $RADplan->status->subscriptionInfo->subscriptionStatus != 1;
+        }else{
+            $isRadNotActive = true;
+        }
+
         if($isRadNotActive){
             return [];
         }else{
@@ -790,7 +795,7 @@ class CompileQuotes
                     $price = $this->wweSmallQuoteRes->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup']);
 
                     $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $data['transitTime'], $data['serviceType'], $this->quoteSettings, $this->isResi);
-                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = $data['serviceType'] . $access;
+                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12'.$data['serviceType'] . $access;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
                 }

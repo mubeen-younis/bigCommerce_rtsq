@@ -203,6 +203,8 @@ class WweLTLShipmentPackage
         $originAddress = $this->changeWarehouseIdKey($originAddress);
         $post = [
             'acessLevel' => 'MultiDistance',
+            'platform' => 'bigcommerce',
+            'dont_auth' => 1,
             'address' => $originAddress,
             'originAddresses' => $originAddress,
             'destinationAddress' => [

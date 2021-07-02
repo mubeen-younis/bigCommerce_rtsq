@@ -160,6 +160,7 @@ class GenerateRequestData
         $requestArr = [
             'apiVersion' => '2.0',
             'platform' => 'bigcommerce',
+            'dont_auth' => 1,
             'binPackagingMultiCarrier' => $this->storeData['installed_addon_sbs'],
             'autoResidentials' => $autoResidential,
             'liftGateWithAutoResidentials' => $liftGateWithAuto,
@@ -167,7 +168,7 @@ class GenerateRequestData
             'carriers' => $carriers,
             'receiverAddress' => $receiverAddress,
             'commdityDetails' => $itemsArr,
-            'dont_auth' => 1
+
         ];
 
         if ($this->storeData['installed_addon_sbs']) {
