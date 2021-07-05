@@ -212,57 +212,76 @@ class PackageSubscriptionController extends Controller
     // This method handling different scnarios and end purpose is to consume required number of hits
     //***********************************
     public function consumeSbsHits($data){
+        $updateSubscription = 0;
         $histToBeConsumed = $data['hits'];
         $currentPackageSub = DB::table('package_subscriptions as ps')
         ->leftjoin('packages as p','ps.package_id','=','p.id')
             ->select('ps.id','ps.package_id as package_id','ps.expiry_time','ps.status','ps.created_at','ps.total_count as consumed_hits','p.htis as total_hits')
             ->where('store_id',self::$storeId)->where('p.addon_type',self::$addonTypeSBS)->latest()->first();
-        if ($currentPackageSub->status == 0){
+        if ($currentPackageSub->status == 0) { //If the package subscription is expired
             return [
-                'error' => true,
-                'data' => $this->getSbsDetails(),
-                'message' => 'Your SBS addon is suspended to use.',
+                'status' => false,
             ];
         }
-        if ($currentPackageSub->status == 2){
+        if ($currentPackageSub->status == 3){ //If the package subscription is suspended
+            return [
+                'status' => false,
+            ];
+        }
+        /*if ($currentPackageSub->status == 2){ //If the Charge has been failed
             return [
                 'error' => true,
                 'data' => $this->getSbsDetails(),
                 'message' => 'Your SBS addon has been expired due to charge failed.',
             ];
-        }
+        }*/
         //If current subscription is active
-        if (!is_null($currentPackageSub) && $currentPackageSub->status == 1 && Carbon::parse($currentPackageSub->expiry_time) > Carbon::now()){
-            $packageSub = Subscription::where('store_id',self::$storeId)->latest()->first();
+        if (!is_null($currentPackageSub) && $currentPackageSub->status == 1 && (($currentPackageSub->consumed_hits+$histToBeConsumed) <= $currentPackageSub->total_hits) && Carbon::parse($currentPackageSub->expiry_time) > Carbon::now()){
+            $packageSub = PackageSubscription::where('store_id',self::$storeId)->latest()->first();
             $packageSub->increment('total_count',$histToBeConsumed);
             return [
-                'error' => false,
-                'data' => $this->getSbsDetails(),
-                'message' => 'The hits successfully consumed.',
+                'status' => true,
             ];
-        }elseif (!is_null($currentPackageSub) && ($currentPackageSub->status != 1 || Carbon::parse($currentPackageSub->expiry_time) < Carbon::now())){
+        } elseif (!is_null($currentPackageSub) && ($currentPackageSub->status != 1 || Carbon::parse($currentPackageSub->expiry_time) < Carbon::now())){
             //If current subscription expired
             $updateSubscription = self::$updateFullSubscription;
         }
+
+        if (!is_null($currentPackageSub) && $currentPackageSub->status == 1 && (($currentPackageSub->consumed_hits+$histToBeConsumed) >= $currentPackageSub->total_hits)){
+            $packageSub = PackageSubscription::where('store_id',self::$storeId)->latest()->first();
+            //If the trials Hits has consumed then Update the package subscription status to zero
+            if ($currentPackageSub->package_id == self::$trialSBS){
+                $packageSub->update([
+                    'status' => 0
+                ]);
+                return [
+                    'status' => false,
+                ];
+            }
+        }
+        //Get the main subscription to get the stripe customer ID and Payment method
         $mainSubscription = DB::table('subscriptions as s')
             ->leftJoin('payment_methods as p','p.store_id','=','s.store_id')
             ->select('s.stripe_id as stripe_customer_id','s.payment_method','s.plan_id','s.created_at','p.id as payment_method_id')
             ->where('s.store_id',self::$storeId)->latest()->first();
-        $paymentMethod = isset($mainSubscription->payment_method_id) ? $mainSubscription->payment_method_id : null;
-        $package = Package::find($data['package']);
 
-        if ($data['package'] != self::$trialSBS || $updateSubscription == self::$updateFullSubscription){
+        $paymentMethod = isset($mainSubscription->payment_method_id) ? $mainSubscription->payment_method_id : null;
+        $package = Package::find($currentPackageSub->package_id);
+
+        if ($currentPackageSub->package_id != self::$trialSBS || $updateSubscription == self::$updateFullSubscription){
             $chargeResponse = $this->createStripeChargeForPackage($package,$mainSubscription);
         }
         if (!empty($chargeResponse['error']) && $chargeResponse['error'] == true){
             // If charge is not successfull then update status = 2 to identify (Charge failed)
-            if (PackageSubscription::where('store_id',self::$storeId)->exists()){
-                PackageSubscription::where('store_id',self::$storeId)->update([
-                    'status' => 2
-                ]);
-            }
-
-            return $chargeResponse;
+            $packageSub = PackageSubscription::where('store_id',self::$storeId)->latest()->first();
+            //If the trials Hits has consumed then Update the package subscription status to zero
+            $packageSub->update([
+                'status' => 0
+            ]);
+            return [
+                'status' => false,
+            ];
+            //return $chargeResponse;
         }else{
             $chargeId = isset($chargeResponse['data']['chargeId']) ? $chargeResponse['data']['chargeId'] : null;
         }
@@ -273,12 +292,12 @@ class PackageSubscriptionController extends Controller
         //Consuming Hits after recharge
         $packageSub = Subscription::where('store_id',self::$storeId)->latest()->first();
         $packageSub->increment('total_count',$histToBeConsumed);
+        $packageSub->update([
+            'subscription_time' => Carbon::now()
+        ]);
         //Get the current package details after updating the package subscription
-        $currentPackageDetails = $this->getSbsDetails();
         return [
-            'error' => false,
-            'data' => $currentPackageDetails,
-            'message' => 'The hits successfully consumed.',
+            'status' => true,
         ];
     }
     //***********************************
@@ -321,10 +340,15 @@ class PackageSubscriptionController extends Controller
             $currentPackageSub->consumed_hits_in_per = ($currentPackageSub->consumed_hits / $currentPackageSub->total_allowed_hits) * 100;
             $currentPackageSub->subscription_start_date = date('M,d,Y', strtotime($currentPackageSub->subscription_time));
             $currentPackageSub->expiry_time = date('M,d,Y', strtotime($currentPackageSub->expiry_time));
+            $currentPackageSub->currentPlanText = $currentPkg->htis.'/'.lcfirst(substr($currentPackageSub->current_package_period,0,2)).' ($'.number_format($currentPackageSub->current_package_cost,2).')';
             //To Be Charge package Details
             $currentPackageSub->to_be_charge_package_name = $toBeChargepkg->name;
             $currentPackageSub->to_be_charge_package_period = $toBeChargepkg->period;
             $currentPackageSub->to_be_charge_package_cost = $toBeChargepkg->cost;
+            $currentPackageSub->total_allowed_hits_in_to_be_charge = $toBeChargepkg->htis;
+            $currentPackageSub->toBeChargeDropdownText = $toBeChargepkg->htis.'/'.lcfirst(substr($currentPackageSub->to_be_charge_package_period,0,2)).' ($'.number_format($currentPackageSub->to_be_charge_package_cost,2).')';
+
+            $currentPackageSub->last_update_time = $currentPkg->subscription_time;
 
         }
         return $currentPackageSub;
@@ -353,7 +377,7 @@ class PackageSubscriptionController extends Controller
     // This method is updating the suspend or un-suspend status in DB
     //***********************************
     public function suspendSbsUsage($data){
-        //For Suspend = 0
+        //For Suspend = 3
         //For No Suspend = 1
         PackageSubscription::where('store_id',self::$storeId)->update([
             'status' => $data['suspend']
