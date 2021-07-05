@@ -3,7 +3,7 @@
 namespace App\CustomClasses;
 
 use Illuminate\Support\Facades\DB;
-
+use App\CustomClasses\Bin3D\Bin3D;
 /**
  * class that generated request data
  */
@@ -95,7 +95,7 @@ class GenerateRequestData
     {
         //dd($connSettings['quote_settings']);
         return [
-            'licenseKey' => $connSettings['creds']['license_key'],//$this->connectionSettings['license_key'],
+            'licenseKey' => $connSettings['creds']['license_key'] ?? '',//$this->connectionSettings['license_key'],
             'serverName' => "https://" . $this->storeData['store']['name'],//"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
@@ -157,6 +157,28 @@ class GenerateRequestData
             $autoResidential = '1';
             $liftGateWithAuto = '1';
         }
+        print_r([
+            'apiVersion' => '2.0',
+            'platform' => 'bigcommerce',
+            'dont_auth' => 1,
+            'binPackagingMultiCarrier' => $this->storeData['installed_addon_sbs'],
+            'autoResidentials' => $autoResidential,
+            'liftGateWithAutoResidentials' => $liftGateWithAuto,
+            'requestKey' => md5(microtime() . rand()),
+            'carriers' => $carriers,
+            'receiverAddress' => $receiverAddress,
+            'commdityDetails' => $itemsArr,
+        ]);
+        if ($this->storeData['installed_addon_sbs'])
+        {
+            if(isset($carriers['wweSmall'])){
+                $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriers['wweSmall']['originAddress'] );
+                $itemsArr = $sbsResponse['items'] ?? $itemsArr;
+                $carriers['wweSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriers['wweSmall']['originAddress'];
+            }
+
+        }
+
         $requestArr = [
             'apiVersion' => '2.0',
             'platform' => 'bigcommerce',
@@ -168,12 +190,8 @@ class GenerateRequestData
             'carriers' => $carriers,
             'receiverAddress' => $receiverAddress,
             'commdityDetails' => $itemsArr,
-
         ];
-
-        if ($this->storeData['installed_addon_sbs']) {
-            $requestArr['bins'] = $this->getStoreBoxes($this->storeData['store']->id);
-        }
+        print_r($requestArr); exit;
         return $requestArr;
     }
 
@@ -264,8 +282,22 @@ class GenerateRequestData
         return $apiArray;
     }
 
-    public function getStoreBoxes($storeId)
+    public function getStoreBoxes($storeId, $itemsArr, $origins)
     {
+        $items = [];
+
+        foreach ($origins as $key => $origin){
+            $items[$origin['locationId']][] = [
+                "variant_id" => $key,
+                "id" => $key,
+                "wg" => $itemsArr[$key]['lineItemWeight'] ?? 0,
+                "h" => $itemsArr[$key]['lineItemHeight'] ?? 0,
+                "d" => $itemsArr[$key]['lineItemLength'] ?? 0,
+                "w" => $itemsArr[$key]['lineItemWidth'] ?? 0,
+                "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
+                "vr" => 0 //vertical 0 or 1
+            ];
+        }
         $bins = [];
         $boxes = DB::table('box_sizes')->where('store_id', $storeId)
             ->where('is_available', 1)->get();
@@ -280,9 +312,45 @@ class GenerateRequestData
                 'box_weight' => $box->box_weight,
             );
         }
-        return $bins;
+        $hits = count($items);
+        //print_r($items); exit;
+        $Bin3D = new Bin3D();
+        $binResponse = $Bin3D->getBinResponse($storeId, $bins, $items, $hits);
+        print_r($binResponse);
+        //todo we have to save $binResponse for order widget
+
+        foreach ($items as $locationId => $item) {
+            foreach ($item as $itm) {
+                $origin = $itm['variant_id'];
+                $bins = $binResponse[$locationId]->bins_packed ?? [];
+                $hasBins = false;
+                foreach ($bins as $key => $bin) {
+                    $newkey = $origin . $key;
+                    $origins[$newkey] = $origins[$origin];
+                    $itemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin);
+                    $hasBins = true;
+                }
+                if ($hasBins) {
+                    unset($origins[$origin]);
+                    unset($itemsArr[$origin]);
+                }
+                break;
+            }
+        }
+        $resp['items'] = $itemsArr;
+        $resp['originAddress'] = $origins;
+        return $resp;
 
     }
+
+    public function updatCommdityDetails($item, $bin){
+        $item['lineItemLength'] = $bin->bin_data->d ?? 0;
+        $item['lineItemWidth'] = $bin->bin_data->w ?? 0;
+        $item['lineItemHeight'] = $bin->bin_data->h ?? 0;
+        $item['lineItemWeight'] = $bin->bin_data->weight ?? 0;
+        return $item;
+    }
+
 
     /**
      * This function returns Receiver Data Array
