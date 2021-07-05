@@ -26,6 +26,15 @@ class PackageSubscriptionController extends Controller
     public function __construct(){
         Stripe::setApiKey(config('app.stripe_secret'));
     }
+
+    public function getAllSbsPackages(){
+        $sbsPackages = PackageSubscription::where('addon_type',self::$addonTypeSBS)->get();
+        return respose()->json([
+            'error' => false,
+            'data' => $sbsPackages,
+            'message' => ''
+        ]);
+    }
     //***********************************
     // This method deciding which addon type package we need to subscribe
     //***********************************
