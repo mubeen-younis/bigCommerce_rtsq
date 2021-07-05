@@ -88,8 +88,11 @@ class PackageSubscriptionController extends Controller
         $paymentMethod = isset($mainSubscription->payment_method_id) ? $mainSubscription->payment_method_id : null;
 
         $currentPackageSub = PackageSubscription::where('store_id',self::$storeId)->latest()->first();
-        //If current subscription is active
-        if (!is_null($currentPackageSub) && $currentPackageSub->status == 1 && Carbon::parse($currentPackageSub->expiry_time) > Carbon::now()){
+        //If current subscription is active and it is trial
+        if (!is_null($currentPackageSub) && $currentPackageSub->status == 1 && $currentPackageSub->package_id == 1 && Carbon::parse($currentPackageSub->expiry_time) > Carbon::now()){
+            $updateSubscription = self::$updateFullSubscription;
+        } elseif (!is_null($currentPackageSub) && $currentPackageSub->status == 1 && Carbon::parse($currentPackageSub->expiry_time) > Carbon::now()){
+            //If current subscription is active
             $updateSubscription = self::$updateToBeChargeonly;
         }elseif (!is_null($currentPackageSub) && ($currentPackageSub->status != 1 || Carbon::parse($currentPackageSub->expiry_time) < Carbon::now())){
             //If current subscription expired
