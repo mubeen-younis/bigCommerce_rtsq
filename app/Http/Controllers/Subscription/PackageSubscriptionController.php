@@ -33,10 +33,7 @@ class PackageSubscriptionController extends Controller
 
         return response()->json([
             'error' => false,
-            'data' => [
-                'allSbsPackages' => $sbsPackages,
-                'currentPackage' => $this->getSbsDetails()
-            ],
+            'data' => $this->getSbsDetails(),
             'message' => ''
         ]);
     }
@@ -370,7 +367,11 @@ class PackageSubscriptionController extends Controller
             $currentPackageSub->last_update_time = $currentPkg->subscription_time;
 
         }
-        return $currentPackageSub;
+        $sbsPackages = Package::where('addon_type',self::$addonTypeSBS)->where('id','!=',self::$trialSBS)->get();
+        return [
+            'allSbsPackages' => $sbsPackages,
+            'currentPackage' => $currentPackageSub
+        ];
     }
     //***********************************
     // This method is used to decide to suspend the SBS or RAD Addon
