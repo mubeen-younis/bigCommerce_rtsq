@@ -27,8 +27,11 @@ class PackageSubscriptionController extends Controller
         Stripe::setApiKey(config('app.stripe_secret'));
     }
 
-    public function getAllSbsPackages(){
+    public function getAllPackagesList(Request $request){
+        self::$storeId = $request['store_id'];
+        self::$addonTypeSBS = $request['addon_type'];
         $sbsPackages = Package::where('addon_type',self::$addonTypeSBS)->where('id','!=',self::$trialSBS)->get();
+
         return response()->json([
             'error' => false,
             'data' => [
@@ -344,6 +347,7 @@ class PackageSubscriptionController extends Controller
             ->leftjoin('package_sub_to_be_charge as pstbc','pstbc.subscription_id','=','ps.id')
             ->select('ps.id','ps.package_id as package_id','ps.subscription_time','ps.expiry_time','ps.status','ps.created_at','ps.total_count as consumed_hits','p.htis as total_hits','pstbc.package_id as pacakgeId_to_be_charge','pstbc.status as package_to_be_charge_status')
             ->where('ps.store_id',self::$storeId)->where('p.addon_type',self::$addonTypeSBS)->latest()->first();
+
         if (!is_null($currentPackageSub)){
             $currentPkg = Package::where('id',$currentPackageSub->package_id)->first();
             $toBeChargepkg = Package::where('id',$currentPackageSub->pacakgeId_to_be_charge)->first();
