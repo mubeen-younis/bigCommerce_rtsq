@@ -19,6 +19,8 @@ class PackageSubscription extends Model
         'expiry_time',
         'total_count',
         'sub_activated',
-        'trial_available'
+        'trial_available',
+        'stripe_charge_id',
+        'charge_cost',
     ];
 }

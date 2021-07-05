@@ -135,6 +135,9 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     //END: Subscription Routes
     //Start: SBS Routes
     Route::post('/subscribe-package', [PackageSubscriptionController::class, 'subscribeToPackage']);
+    Route::post('/consume-hits', [PackageSubscriptionController::class, 'consumeHits']);
+    Route::get('/get-sbs-details', [PackageSubscriptionController::class, 'getSbsPackageDetails']);
+    Route::post('/suspend-use-addon', [PackageSubscriptionController::class, 'suspendAddonUse']);
     //END: SBS Routes
 });
 //Webhook

@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
 use PHPUnit\Exception;
+use Stripe\Charge;
 use Stripe\Stripe;
 
 class SubscriptionController extends Controller
@@ -320,7 +321,6 @@ class SubscriptionController extends Controller
             'defaultpayment'=> isset($data['defaultpayment']) ? $data['defaultpayment'] : '',
             'stripePlanId'=> $planId
         ];
-
         //If the payment method already exists then retrieve it
         $paymentMethod = PaymentMethod::where('store_id',$data['store_id'])->first();
         $paymentMethodId = isset($paymentMethod->id) ? $paymentMethod->id : null;
@@ -536,7 +536,6 @@ class SubscriptionController extends Controller
         $cAddress_state = isset($data['cAddress_state']) ? $data['cAddress_state'] : '';
         $cAddress_country = isset($data['cAddress_country']) ? $data['cAddress_country'] : '';
         $metadata = isset($data['metadata']) ? $data['metadata'] : '';
-
         $cardArray = array(
             "number" => $cNumber,
             "exp_month" => (int)$cExpiryMonth,
@@ -560,7 +559,7 @@ class SubscriptionController extends Controller
             $responce = \Stripe\Customer::create(array(
                 "name" => $cName,
                 "email" => $email,
-                "plan" => $stripePlanId,
+             //   "plan" => $stripePlanId,
                 "description" => $stripeDescription,
                 "metadata" => $metadata,
                 "source" => $token
