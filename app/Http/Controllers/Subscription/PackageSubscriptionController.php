@@ -29,7 +29,6 @@ class PackageSubscriptionController extends Controller
 
     public function getAllPackagesList(Request $request){
         self::$storeId = $request['store_id'];
-        self::$addonTypeSBS = $request['addon_type'];
         $sbsPackages = Package::where('addon_type',self::$addonTypeSBS)->where('id','!=',self::$trialSBS)->get();
 
         return response()->json([
