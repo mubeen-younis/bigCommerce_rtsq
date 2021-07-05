@@ -204,7 +204,7 @@ class WweLTLShipmentPackage
         $post = [
             'acessLevel' => 'MultiDistance',
             'platform' => 'bigcommerce',
-            'dont_auth' => 1,
+            'dontAuth' => 1,
             'address' => $originAddress,
             'originAddresses' => $originAddress,
             'destinationAddress' => [
@@ -303,7 +303,7 @@ class WweLTLShipmentPackage
                     continue;
                 }
                 $connectionSettings = json_decode($connectionSettings->value);
-                $licenseKey = $connectionSettings->license_key;
+                $licenseKey = $connectionSettings->license_key ?? '';
                 $store = Store::find($c1->store_id);
 
                 $query = array(

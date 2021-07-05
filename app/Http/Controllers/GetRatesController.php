@@ -123,9 +123,9 @@ class GetRatesController extends Controller
 
                 $originAddress = $this->shipmentPkg->wweLTLOriginAddress($details, $product_settings, $details['destination']['zip'], $storeData, $this->connectionSettings);
 
-
-                $details['origin'][$product['product_id']] = $originAddress;
-                $details['items'][$product['product_id']] = [
+                $key = $product['variant_id'] ?? $product['product_id'];
+                $details['origin'][$key] = $originAddress;
+                $details['items'][$key] = [
                     'product_id' => $product['product_id'] ?? '',
                     'variant_id' => $product['variant_id'] ?? '',
                     'sku' => $product['sku'] ?? '',
@@ -197,7 +197,7 @@ class GetRatesController extends Controller
     {
         $settings = [];
         $productSetting = ProductSetting::select('settings')
-            ->where(['source_product_id' => $productId /*, 'variant_id' => $variantId*/])
+            ->where(['source_product_id' => $productId , 'variant_id' => $variantId])
             ->first();
         if (!empty($productSetting)) {
             $productSetting->toArray();
