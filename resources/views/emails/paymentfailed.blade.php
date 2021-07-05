@@ -10,6 +10,9 @@
     {{--When payment is not failed (Success case)--}}
     @if($paymentStatus == 1)
         You are subscribed to the Monthly {{$data['planName']}} Plan of the Eniture product '{{$data['productName']}}' and using this Eniture App on your BigCommerce store.
+    @endif{{--When payment is not failed (Trial case)--}}
+    @if($paymentStatus == 3)
+        You are subscribed to the {{$data['planName']}} for the Eniture product '{{$data['productName']}}'. Your trial will be ended at {{$data['endsAt']}}.
     @endif
     <br/>
 

@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
 use PHPUnit\Exception;
+use Stripe\Charge;
 use Stripe\Stripe;
 
 class SubscriptionController extends Controller
@@ -288,17 +289,17 @@ class SubscriptionController extends Controller
                 'exp_year' => $request['exp_year'],
                 'cvc' => $request['cvc'],
                 'card_name' => $request['card_name'],
-                'email' => $request['email'],
                 'address' => $request['address'],
                 'city' => $request['city'],
                 'state' => $request['state'],
                 'zip' => $request['zip'],
                 'country'=> $request['country'],
-                'defaultpayment'=> $request['defaultpayment']
             ];
         }
+
         $data['store_id'] = $request['store_id'];
         $data['plan'] = $request['plan'];
+        $data['email'] = $request['email'];
         $data['defaultpayment'] = (isset($request['defaultpayment']) && $request['defaultpayment'] == true) ? true : false;
 
         $planId = self::$plansData['stripe_plan_id'];
@@ -389,11 +390,19 @@ class SubscriptionController extends Controller
         }else{
             $subscriptionId = isset($subscription->id) ? $subscription->id : null;
         }
-
         //Updating: carrier counts that will be allowed in case of trial of PAID plan
         $this->updateCarrierCountsinDB($subscriptionId,$data['store_id']);
         $subscriptionDetail = $this->subscriptionDetailFromDB($data['store_id']);
-
+        if ($request['plan'] == self::$trial){ // if planId is null then it's a trial and we need to send an email for trial
+            $emailData = array(
+                'receiverEmail'     => $data['email'],
+                'productName'      => 'Real-time Shipping Quotes',
+                'planName'         => self::$plansData['name'],
+                'endsAt'         => $subscriptionDetail->ends_at,
+                'action'            => 'IPF'       // Invoice Payment Failed
+            );
+            Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData,3));
+        }
         return response()->json([
             'error' => false,
             'data' => $subscriptionDetail,
@@ -527,7 +536,6 @@ class SubscriptionController extends Controller
         $cAddress_state = isset($data['cAddress_state']) ? $data['cAddress_state'] : '';
         $cAddress_country = isset($data['cAddress_country']) ? $data['cAddress_country'] : '';
         $metadata = isset($data['metadata']) ? $data['metadata'] : '';
-
         $cardArray = array(
             "number" => $cNumber,
             "exp_month" => (int)$cExpiryMonth,
@@ -551,7 +559,7 @@ class SubscriptionController extends Controller
             $responce = \Stripe\Customer::create(array(
                 "name" => $cName,
                 "email" => $email,
-                "plan" => $stripePlanId,
+             //   "plan" => $stripePlanId,
                 "description" => $stripeDescription,
                 "metadata" => $metadata,
                 "source" => $token

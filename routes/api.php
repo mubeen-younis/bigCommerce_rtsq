@@ -19,6 +19,7 @@ use App\Http\Controllers\RADController;
 use App\Http\Controllers\SBSController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\Subscription\SubscriptionController;
+use App\Http\Controllers\Subscription\PackageSubscriptionController;
 use App\Http\Middleware\EnsureTokenIsValid;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -130,11 +131,14 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/subscribe-plan', [SubscriptionController::class, 'subscribeToPlan']);
     Route::post('/cancel-subscription', [SubscriptionController::class, 'cancelSubscriptionPlan']);
     Route::get('/get-subscription-details', [SubscriptionController::class, 'getSubscriptionDetail']);
-   /* Route::post('/add-carrier', [SubscriptionController::class, 'incrementCarrierCount']);
-    Route::post('/remove-carrier', [SubscriptionController::class, 'decrementCarrierCount']);*/
     Route::post('/change-payment-method', [SubscriptionController::class, 'changePaymentMethod']);
-
     //END: Subscription Routes
+    //Start: SBS Routes
+    Route::post('/subscribe-package', [PackageSubscriptionController::class, 'subscribeToPackage']);
+    Route::post('/consume-hits', [PackageSubscriptionController::class, 'consumeHits']);
+    Route::get('/get-sbs-details', [PackageSubscriptionController::class, 'getSbsPackageDetails']);
+    Route::post('/suspend-use-addon', [PackageSubscriptionController::class, 'suspendAddonUse']);
+    //END: SBS Routes
 });
 //Webhook
 Route::post('/bc-subscription-update', [SubscriptionController::class, 'paymentByStripeWebHook']);

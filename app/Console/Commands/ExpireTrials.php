@@ -47,6 +47,7 @@ class ExpireTrials extends Command
                     'status' => 2
                 ]);
             }
+            error_log('TRAIL CRON',json_encode($trial->id));
         }
         return 0;
     }
