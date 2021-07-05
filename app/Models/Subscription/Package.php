@@ -16,6 +16,6 @@ class Package extends Model
         'cost',
         'status',
         'sort_by',
-        'package_type',
+        'addon_type',
     ];
 }

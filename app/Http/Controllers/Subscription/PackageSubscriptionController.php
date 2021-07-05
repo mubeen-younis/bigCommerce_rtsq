@@ -216,7 +216,7 @@ class PackageSubscriptionController extends Controller
         $currentPackageSub = DB::table('package_subscriptions as ps')
         ->leftjoin('packages as p','ps.package_id','=','p.id')
             ->select('ps.id','ps.package_id as package_id','ps.expiry_time','ps.status','ps.created_at','ps.total_count as consumed_hits','p.htis as total_hits')
-            ->where('store_id',self::$storeId)->latest()->first();
+            ->where('store_id',self::$storeId)->where('p.addon_type',self::$addonTypeSBS)->latest()->first();
         if ($currentPackageSub->status == 0){
             return [
                 'error' => true,
@@ -309,7 +309,7 @@ class PackageSubscriptionController extends Controller
             ->leftjoin('packages as p','ps.package_id','=','p.id')
             ->leftjoin('package_sub_to_be_charge as pstbc','pstbc.subscription_id','=','ps.id')
             ->select('ps.id','ps.package_id as package_id','ps.subscription_time','ps.expiry_time','ps.status','ps.created_at','ps.total_count as consumed_hits','p.htis as total_hits','pstbc.package_id as pacakgeId_to_be_charge','pstbc.status as package_to_be_charge_status')
-            ->where('ps.store_id',self::$storeId)->latest()->first();
+            ->where('ps.store_id',self::$storeId)->where('p.addon_type',self::$addonTypeSBS)->latest()->first();
         if (!is_null($currentPackageSub)){
             $currentPkg = Package::where('id',$currentPackageSub->package_id)->first();
             $toBeChargepkg = Package::where('id',$currentPackageSub->pacakgeId_to_be_charge)->first();
