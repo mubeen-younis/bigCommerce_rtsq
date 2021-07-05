@@ -360,6 +360,7 @@ class PackageSubscriptionController extends Controller
             $currentPackageSub->expiry_time = date('M,d,Y', strtotime($currentPackageSub->expiry_time));
             $currentPackageSub->currentPlanText = $currentPkg->htis.'/'.lcfirst(substr($currentPackageSub->current_package_period,0,2)).' ($'.number_format($currentPackageSub->current_package_cost,2).')';
             //To Be Charge package Details
+            $currentPackageSub->to_be_charge_package_id = $toBeChargepkg->id;
             $currentPackageSub->to_be_charge_package_name = $toBeChargepkg->name;
             $currentPackageSub->to_be_charge_package_period = $toBeChargepkg->period;
             $currentPackageSub->to_be_charge_package_cost = $toBeChargepkg->cost;
