@@ -29,7 +29,7 @@ class PackageSubscriptionController extends Controller
 
     public function getAllSbsPackages(){
         $sbsPackages = Package::where('addon_type',self::$addonTypeSBS)->get();
-        return respose()->json([
+        return response()->json([
             'error' => false,
             'data' => $sbsPackages,
             'message' => ''
