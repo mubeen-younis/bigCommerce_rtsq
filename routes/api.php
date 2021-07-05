@@ -134,7 +134,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/change-payment-method', [SubscriptionController::class, 'changePaymentMethod']);
     //END: Subscription Routes
     //Start: SBS Routes
-    Route::post('/get-all-sbs-pacakges', [PackageSubscriptionController::class, 'getAllSbsPackages']);
+    Route::get('/get-all-sbs-pacakges', [PackageSubscriptionController::class, 'getAllSbsPackages']);
     Route::post('/subscribe-package', [PackageSubscriptionController::class, 'subscribeToPackage']);
     Route::post('/consume-hits', [PackageSubscriptionController::class, 'consumeHits']);
     Route::get('/get-sbs-details', [PackageSubscriptionController::class, 'getSbsPackageDetails']);

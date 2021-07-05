@@ -28,7 +28,7 @@ class PackageSubscriptionController extends Controller
     }
 
     public function getAllSbsPackages(){
-        $sbsPackages = PackageSubscription::where('addon_type',self::$addonTypeSBS)->get();
+        $sbsPackages = Package::where('addon_type',self::$addonTypeSBS)->get();
         return respose()->json([
             'error' => false,
             'data' => $sbsPackages,
