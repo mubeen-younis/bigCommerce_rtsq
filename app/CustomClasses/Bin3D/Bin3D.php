@@ -3,6 +3,7 @@
 
 namespace App\CustomClasses\Bin3D;
 use App\Constants\Constant;
+use App\Http\Controllers\Subscription\PackageSubscriptionController;
 
 class Bin3D
 {
@@ -23,7 +24,10 @@ class Bin3D
     public function getBinResponse($storeId, $bins, $items, $hits)
     {
         //loop for each bin request
-
+        $sbsStatus = $this->consumeHits($storeId,$hits);
+        if(!$sbsStatus){
+            return [];
+        }
         foreach ($items as $key => $item) {
             $binRequest[$key] = $this->generateBinRequest($bins, $item);
         }
@@ -31,7 +35,17 @@ class Bin3D
         $sbsCompiledResponse = $this->handleNotPacked($responseFromSBS);
         return $sbsCompiledResponse;
     }
-
+/*
+ * Consume hits will check is sbs not suspend and has hits for consume
+ * response true or false;
+ * **/
+    private function consumeHits($storeId,$hits){
+       $PackageSubscriptionController = new PackageSubscriptionController();
+       $param = ['store_id' => $storeId, 'hits'=>$hits, 'addon_type'=>'SBS'];
+       $resp = $PackageSubscriptionController->consumeHits($param);
+       dd($resp);
+       return $resp;
+    }
     /*
     * Generate formated request for bin
      * $bins -> available boxes in db for any store
