@@ -168,16 +168,21 @@ class GenerateRequestData
             'carriers' => $carriers,
             'receiverAddress' => $receiverAddress,
             'commdityDetails' => $itemsArr,
-        ]);*/
-
+        ]);
+*/
         if (1/*$this->storeData['installed_addon_sbs']*/)
         {
             if(isset($carriers['wweSmall'])){
+                $olditemsArr = $itemsArr;
                 $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriers['wweSmall']['originAddress'] );
                 $itemsArr = $sbsResponse['items'] ?? $itemsArr;
                 $carriers['wweSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriers['wweSmall']['originAddress'];
             }
-
+            //print_r($olditemsArr); print_r($itemsArr);
+            if(isset($carriers['wweLTL'])){
+                $itemsArr = $olditemsArr + $itemsArr;
+            }
+            //print_r($itemsArr); exit;
         }
 
         $requestArr = [
@@ -299,11 +304,11 @@ class GenerateRequestData
                 "vr" => 0 //vertical 0 or 1
             ];
         }
-        $bins = [];
+        $boxBins = [];
         $boxes = DB::table('box_sizes')->where('store_id', $storeId)
             ->where('is_available', 1)->get();
         foreach ($boxes as $box) {
-            $bins[] = array(
+            $boxBins[$box->id] = array(
                 'nickname' => $box->nickname,
                 'w' => $box->width,
                 'h' => $box->height,
@@ -314,30 +319,34 @@ class GenerateRequestData
             );
         }
         $hits = count($items);
-        //print_r($items);
         $Bin3D = new Bin3D();
-        $binResponse = $Bin3D->getBinResponse($storeId, $bins, $items, $hits);
+        $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $hits);
 
         //print_r($binResponse);
         //todo we have to save $binResponse for order widget
-        $newOrigins = $newitemsArr = [];
-        foreach ($items as $locationId => $item) {
-            foreach ($item as $itm) {
-                $origin = $itm['variant_id'];
-                $bins = $binResponse[$locationId]->bins_packed ?? [];
-                $hasBins = false;
-                foreach ($bins as $key => $bin) {
-                    $newkey = $origin . $key;
-                    $newOrigins[$newkey] = $origins[$origin];
-                    $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin);
-                    $hasBins = true;
+        if(count($binResponse)) {
+            $newOrigins = $newitemsArr = [];
+            foreach ($items as $locationId => $item) {
+                foreach ($item as $itm) {
+                    $origin = $itm['variant_id'];
+                    $bins = $binResponse[$locationId]->bins_packed ?? [];
+                    $hasBins = false;
+                    foreach ($bins as $key => $bin) {
+                        $newkey = $origin . $key;
+                        $newOrigins[$newkey] = $origins[$origin];
+                        $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins);
+                        $hasBins = true;
+                    }
+                    /*if ($hasBins) {
+                        unset($origins[$origin]);
+                        unset($itemsArr[$origin]);
+                    }*/
+                    break;
                 }
-                /*if ($hasBins) {
-                    unset($origins[$origin]);
-                    unset($itemsArr[$origin]);
-                }*/
-                break;
             }
+        }else{
+            $newOrigins = $origins;
+            $newitemsArr = $itemsArr;
         }
         $resp['items'] = $newitemsArr;
         $resp['originAddress'] = $newOrigins;
@@ -345,11 +354,15 @@ class GenerateRequestData
 
     }
 
-    public function updatCommdityDetails($item, $bin){
+    public function updatCommdityDetails($item, $bin, $boxBins){
+        $boxWeight = 0;
+        if(isset($bin->bin_data->id) && isset($boxBins[$bin->bin_data->id])){
+            $boxWeight = $boxBins[$bin->bin_data->id]['box_weight'];
+        }
         $item['lineItemLength'] = $bin->bin_data->d ?? 0;
         $item['lineItemWidth'] = $bin->bin_data->w ?? 0;
         $item['lineItemHeight'] = $bin->bin_data->h ?? 0;
-        $item['lineItemWeight'] = $bin->bin_data->weight ?? 0;
+        $item['lineItemWeight'] = $bin->bin_data->weight + $boxWeight;
         $item['piecesOfLineItem'] = 1 ?? 0;
         $item['shipItemAlone'] = 1;
         if(isset($bin->bin_data->type) && $bin->bin_data->type == 'item' && isset($bin->bin_data->id)) {
