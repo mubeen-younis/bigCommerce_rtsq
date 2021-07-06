@@ -45,7 +45,6 @@ class PackageSubscriptionController extends Controller
         $data['package'] = $request['package'];
         $data['email'] = $request['email'];
         $addonType = $request['addon_type'];
-
         if ($addonType == self::$addonTypeSBS){
             $responce = $this->subscribeToSBSPackage($data);
         } elseif($addonType == self::$addonTypeRAD){
@@ -205,9 +204,10 @@ class PackageSubscriptionController extends Controller
     //***********************************
     // This method is used to decide which Addon Hits are to be consumed
     //***********************************
-    public function consumeHits(Request $request){
+    public function consumeHits($request){
         self::$storeId = $data['store_id'] = $request['store_id'];
         $data['hits'] = $request['hits'];
+        //dd($request->all());
         $addonType = $request['addon_type'];
         if ($addonType == self::$addonTypeSBS){
             $responce = $this->consumeSbsHits($data);

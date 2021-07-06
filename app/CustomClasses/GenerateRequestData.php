@@ -157,7 +157,7 @@ class GenerateRequestData
             $autoResidential = '1';
             $liftGateWithAuto = '1';
         }
-        print_r([
+       print_r([
             'apiVersion' => '2.0',
             'platform' => 'bigcommerce',
             'dont_auth' => 1,
@@ -169,7 +169,8 @@ class GenerateRequestData
             'receiverAddress' => $receiverAddress,
             'commdityDetails' => $itemsArr,
         ]);
-        if ($this->storeData['installed_addon_sbs'])
+
+        if (1/*$this->storeData['installed_addon_sbs']*/)
         {
             if(isset($carriers['wweSmall'])){
                 $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriers['wweSmall']['originAddress'] );
@@ -316,6 +317,7 @@ class GenerateRequestData
         //print_r($items); exit;
         $Bin3D = new Bin3D();
         $binResponse = $Bin3D->getBinResponse($storeId, $bins, $items, $hits);
+
         print_r($binResponse);
         //todo we have to save $binResponse for order widget
 
