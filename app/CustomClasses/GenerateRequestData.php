@@ -314,13 +314,13 @@ class GenerateRequestData
             );
         }
         $hits = count($items);
-        //print_r($items); exit;
+        print_r($items);
         $Bin3D = new Bin3D();
         $binResponse = $Bin3D->getBinResponse($storeId, $bins, $items, $hits);
 
         print_r($binResponse);
         //todo we have to save $binResponse for order widget
-
+        $newOrigins = $newitemsArr = [];
         foreach ($items as $locationId => $item) {
             foreach ($item as $itm) {
                 $origin = $itm['variant_id'];
@@ -328,19 +328,19 @@ class GenerateRequestData
                 $hasBins = false;
                 foreach ($bins as $key => $bin) {
                     $newkey = $origin . $key;
-                    $origins[$newkey] = $origins[$origin];
-                    $itemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin);
+                    $newOrigins[$newkey] = $origins[$origin];
+                    $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin);
                     $hasBins = true;
                 }
-                if ($hasBins) {
+                /*if ($hasBins) {
                     unset($origins[$origin]);
                     unset($itemsArr[$origin]);
-                }
+                }*/
                 break;
             }
         }
-        $resp['items'] = $itemsArr;
-        $resp['originAddress'] = $origins;
+        $resp['items'] = $newitemsArr;
+        $resp['originAddress'] = $newOrigins;
         return $resp;
 
     }
@@ -350,6 +350,10 @@ class GenerateRequestData
         $item['lineItemWidth'] = $bin->bin_data->w ?? 0;
         $item['lineItemHeight'] = $bin->bin_data->h ?? 0;
         $item['lineItemWeight'] = $bin->bin_data->weight ?? 0;
+        $item['piecesOfLineItem'] = 1 ?? 0;
+        if(isset($bin->bin_data->type) && $bin->bin_data->type == 'item' && isset($bin->bin_data->id)) {
+            $item['variant_id'] = $bin->bin_data->id ?? 0;
+        }
         return $item;
     }
 

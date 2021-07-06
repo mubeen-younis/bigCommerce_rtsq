@@ -43,7 +43,7 @@ class Bin3D
        $PackageSubscriptionController = new PackageSubscriptionController();
        $param = ['store_id' => $storeId, 'hits'=>$hits, 'addon_type'=>'SBS'];
        $resp = $PackageSubscriptionController->consumeHits($param);
-       dd($resp);
+
        return $resp;
     }
     /*
