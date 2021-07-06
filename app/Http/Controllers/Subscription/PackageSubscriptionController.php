@@ -67,11 +67,11 @@ class PackageSubscriptionController extends Controller
         $chargeId = null;
         $updateSubscription = 0;
         $package = Package::find($data['package']);
-
         $mainSubscription = DB::table('subscriptions as s')
             ->leftJoin('payment_methods as p','p.store_id','=','s.store_id')
             ->select('s.stripe_id as stripe_customer_id','s.payment_method','s.plan_id','s.created_at','p.id as payment_method_id')
             ->where('s.store_id',self::$storeId)->latest()->first();
+
         if (is_null($mainSubscription) && $data['package'] != self::$trialSBS){
             return [
                 'error' => true,
@@ -101,7 +101,9 @@ class PackageSubscriptionController extends Controller
         }
 
         if (($data['package'] != self::$trialSBS && $data['package'] != self::$disableSBS) || $updateSubscription == self::$updateFullSubscription){
-            $chargeResponse = $this->createStripeChargeForPackage($package,$mainSubscription);
+            if ($updateSubscription != self::$updateToBeChargeonly){
+                $chargeResponse = $this->createStripeChargeForPackage($package,$mainSubscription);
+            }
         }
         if (!empty($chargeResponse['error']) && $chargeResponse['error'] == true){
             return $chargeResponse;
@@ -129,7 +131,6 @@ class PackageSubscriptionController extends Controller
     // This method updating Package subscription detail and Package to be charge in database
     //***********************************
     public function updatePackageSubscriptionInDB($data,$package,$paymentMethod,$chargeId,$currentPackageSub, $updateSubscription){
-
         $package_id = $currentPackageSub->package_id;
         $currentPackageSub = PackageSubscription::find($currentPackageSub->id);
         if ($updateSubscription == self::$updateFullSubscription){
@@ -147,6 +148,7 @@ class PackageSubscriptionController extends Controller
             ]);
         }
         if ((!isset($data['package']) || (!isset($data['package']) && $data['package'] != self::$disableSBS)) && ($updateSubscription == self::$updateToBeChargeonly || $updateSubscription == self::$updateFullSubscription)){
+
             PackageToBeCharge::where('subscription_id',$currentPackageSub->id)->update([
                 'package_id' => $package_id,
                 'status' => ($package_id != self::$trialSBS && $package_id != self::$disableSBS) ? 1 : 0,
@@ -155,6 +157,13 @@ class PackageSubscriptionController extends Controller
         }
         if (isset($data['package']) && $data['package'] == self::$disableSBS && $updateSubscription == self::$updateToBeChargeonly){
             PackageToBeCharge::where('subscription_id',$currentPackageSub->id)->update([
+                'status' => ($data['package'] != self::$trialSBS && $data['package'] != self::$disableSBS) ? 1 : 0,
+                'requested_date' => now(),
+            ]);
+        }
+        if (isset($data['package']) && $data['package'] != self::$disableSBS && $updateSubscription == self::$updateToBeChargeonly){
+            PackageToBeCharge::where('subscription_id',$currentPackageSub->id)->update([
+                'package_id' => $data['package'],
                 'status' => ($data['package'] != self::$trialSBS && $data['package'] != self::$disableSBS) ? 1 : 0,
                 'requested_date' => now(),
             ]);
