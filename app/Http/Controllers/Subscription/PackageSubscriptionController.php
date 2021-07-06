@@ -241,7 +241,7 @@ class PackageSubscriptionController extends Controller
                 'data' => $request->all(),
             ];
         }
-        return response()->json($responce);
+        return $responce;
     }
     //***********************************
     // This method handling different scnarios and end purpose is to consume required number of hits

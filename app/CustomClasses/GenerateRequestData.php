@@ -157,7 +157,7 @@ class GenerateRequestData
             $autoResidential = '1';
             $liftGateWithAuto = '1';
         }
-       print_r([
+       /*print_r([
             'apiVersion' => '2.0',
             'platform' => 'bigcommerce',
             'dont_auth' => 1,
@@ -168,7 +168,7 @@ class GenerateRequestData
             'carriers' => $carriers,
             'receiverAddress' => $receiverAddress,
             'commdityDetails' => $itemsArr,
-        ]);
+        ]);*/
 
         if (1/*$this->storeData['installed_addon_sbs']*/)
         {
@@ -192,7 +192,7 @@ class GenerateRequestData
             'receiverAddress' => $receiverAddress,
             'commdityDetails' => $itemsArr,
         ];
-        print_r($requestArr); exit;
+        //print_r($requestArr); exit;
         return $requestArr;
     }
 
@@ -314,11 +314,11 @@ class GenerateRequestData
             );
         }
         $hits = count($items);
-        print_r($items);
+        //print_r($items);
         $Bin3D = new Bin3D();
         $binResponse = $Bin3D->getBinResponse($storeId, $bins, $items, $hits);
 
-        print_r($binResponse);
+        //print_r($binResponse);
         //todo we have to save $binResponse for order widget
         $newOrigins = $newitemsArr = [];
         foreach ($items as $locationId => $item) {
