@@ -129,6 +129,7 @@ class PackageSubscriptionController extends Controller
     // This method updating Package subscription detail and Package to be charge in database
     //***********************************
     public function updatePackageSubscriptionInDB($data,$package,$paymentMethod,$chargeId,$currentPackageSub, $updateSubscription){
+
         $package_id = $currentPackageSub->package_id;
         $currentPackageSub = PackageSubscription::find($currentPackageSub->id);
         if ($updateSubscription == self::$updateFullSubscription){
@@ -215,7 +216,7 @@ class PackageSubscriptionController extends Controller
     //***********************************
     // This method is used to decide which Addon Hits are to be consumed
     //***********************************
-    public function consumeHits(Request $request){
+    public function consumeHits($request){
         self::$storeId = $data['store_id'] = $request['store_id'];
         $data['hits'] = $request['hits'];
         //dd($request->all());
@@ -386,7 +387,7 @@ class PackageSubscriptionController extends Controller
             //To Be Charge package Details
             $currentPackageSub->to_be_charge_package_id = $toBeChargepkg->id;
 
-            if ($toBeChargepkg->status == 0){
+            if ($currentPackageSub->package_to_be_charge_status == 0){
                 $currentPackageSub->package_to_be_charge_status = 'disable';
             }
 
