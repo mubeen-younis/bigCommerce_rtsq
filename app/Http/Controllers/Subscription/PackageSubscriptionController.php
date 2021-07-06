@@ -72,7 +72,7 @@ class PackageSubscriptionController extends Controller
             ->select('s.stripe_id as stripe_customer_id','s.payment_method','s.plan_id','s.created_at','p.id as payment_method_id')
             ->where('s.store_id',self::$storeId)->latest()->first();
 
-        if (is_null($mainSubscription) && $data['package'] != self::$trialSBS){
+        if (is_null($mainSubscription)){
             return [
                 'error' => true,
                 'data' => [],
