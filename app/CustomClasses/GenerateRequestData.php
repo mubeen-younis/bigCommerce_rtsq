@@ -351,6 +351,7 @@ class GenerateRequestData
         $item['lineItemHeight'] = $bin->bin_data->h ?? 0;
         $item['lineItemWeight'] = $bin->bin_data->weight ?? 0;
         $item['piecesOfLineItem'] = 1 ?? 0;
+        $item['shipItemAlone'] = 1;
         if(isset($bin->bin_data->type) && $bin->bin_data->type == 'item' && isset($bin->bin_data->id)) {
             $item['variant_id'] = $bin->bin_data->id ?? 0;
         }
