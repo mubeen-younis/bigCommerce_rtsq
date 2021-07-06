@@ -29,7 +29,6 @@ class PackageSubscriptionController extends Controller
 
     public function getAllPackagesList(Request $request){
         self::$storeId = $request['store_id'];
-        $sbsPackages = Package::where('addon_type',self::$addonTypeSBS)->where('id','!=',self::$trialSBS)->get();
 
         return response()->json([
             'error' => false,
@@ -405,7 +404,7 @@ class PackageSubscriptionController extends Controller
         return [
             'error' => false,
             'data' => $this->getSbsDetails(),
-            'message' => ($data['suspend'] == 0) ? 'The SBS addon has been suspended' : 'The SBS addon has been reactivated',
+            'message' => ($data['suspend'] == 3) ? 'The SBS addon has been suspended' : 'The SBS addon has been reactivated',
         ];
     }
 }
