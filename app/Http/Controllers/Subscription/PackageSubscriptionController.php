@@ -396,7 +396,7 @@ class PackageSubscriptionController extends Controller
             //To Be Charge package Details
             $currentPackageSub->to_be_charge_package_id = $toBeChargepkg->id;
 
-            if ($currentPackageSub->package_to_be_charge_status == 0){
+            if ($currentPackageSub->to_be_charge_package_id != 1 && $currentPackageSub->package_to_be_charge_status == 0){
                 $currentPackageSub->package_to_be_charge_status = 'disable';
             }
 
