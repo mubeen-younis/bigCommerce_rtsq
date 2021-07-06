@@ -365,6 +365,9 @@ class PackageSubscriptionController extends Controller
 
             $currentPackageSub->last_update_time = $currentPkg->subscription_time;
 
+        }else{
+            $currentPackageSub = new \stdClass();
+            $currentPackageSub->to_be_charge_package_id = 'disabled';
         }
         $sbsPackages = Package::where('addon_type',self::$addonTypeSBS)->where('id','!=',self::$trialSBS)->get();
         return [
