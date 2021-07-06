@@ -25,7 +25,7 @@ class Bin3D
     {
         //loop for each bin request
         $sbsStatus = $this->consumeHits($storeId,$hits);
-        if(!$sbsStatus){
+        if(!$sbsStatus['status']){
             return [];
         }
         foreach ($items as $key => $item) {
