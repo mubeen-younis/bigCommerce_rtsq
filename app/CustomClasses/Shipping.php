@@ -92,7 +92,7 @@ Log::info('after addBinResponseToQuotes '. json_encode($quotes));
         }
         //dd($requestArr,$quotes);
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $hazmatAllItems);
-
+//print_r($finalQuotes); exit;
         $finalQuotes = $this->addRateId($finalQuotes);
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
         $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins);
