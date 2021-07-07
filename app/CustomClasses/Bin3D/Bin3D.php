@@ -4,6 +4,7 @@
 namespace App\CustomClasses\Bin3D;
 use App\Constants\Constant;
 use App\Http\Controllers\Subscription\PackageSubscriptionController;
+use App\Models\BinRequestLog;
 
 class Bin3D
 {
@@ -21,7 +22,7 @@ class Bin3D
      */
     private $endURL = Constant::BIN_URL;
 
-    public function getBinResponse($storeId, $bins, $items, $hits)
+    public function getBinResponse($storeId, $bins, $items, $hits, $cartInfo)
     {
         //loop for each bin request
         $sbsStatus = $this->consumeHits($storeId,$hits);
@@ -31,7 +32,7 @@ class Bin3D
         foreach ($items as $key => $item) {
             $binRequest[$key] = $this->generateBinRequest($bins, $item);
         }
-        $responseFromSBS = $this->binRequest($binRequest);
+        $responseFromSBS = $this->binRequest($binRequest, $storeId, $hits, $cartInfo);
         $sbsCompiledResponse = $this->handleNotPacked($responseFromSBS);
         return $sbsCompiledResponse;
     }
@@ -86,9 +87,18 @@ class Bin3D
      * Send request to bin
      * $binRequest-> formated data which need to send bins endpoint
      * */
-    private function binRequest($binRequest){
-        $endpoint = $this->endURL;
+    private function binRequest($binRequest, $storeId, $hits, $cartInfo){
+        $binRequestLog = new BinRequestLog();
+        $binRequestLog->store_id = $storeId;
+        $binRequestLog->cart_id = $cartInfo['cartId'];
+        $binRequestLog->request = json_encode($binRequest);
+        $binRequestLog->request_hash = '';
+        $binRequestLog->request_time = now();
+        $binRequestLog->hits = $hits;
+        $binRequestLog->save();
+        $binRequestLogId = $binRequestLog->id;
 
+        $endpoint = $this->endURL;
         // create array for curl handles
         $chs = [];
         // create array for responses
@@ -134,6 +144,10 @@ class Bin3D
         }
         // close multi handle
         curl_multi_close($mh);
+        $binRequestLog = BinRequestLog::find($binRequestLogId);
+        $binRequestLog->api_response = json_encode($responses);
+        $binRequestLog->response_time = now();
+        $binRequestLog->save();
         return $responses;
     }
 

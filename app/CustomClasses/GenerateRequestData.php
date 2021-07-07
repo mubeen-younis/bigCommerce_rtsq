@@ -132,7 +132,7 @@ class GenerateRequestData
      * @param $itemsArr
      * @return array|bool
      */
-    public function generateRequestArray($request, $carriersArray, $itemsArr)
+    public function generateRequestArray($request, $carriersArray, $itemsArr, $cartInfo)
     {
  /*       if (count($carriersArray['originAddress']) > 1) {
             $whIDs = [];
@@ -175,7 +175,7 @@ class GenerateRequestData
         {
             if(isset($carriers['wweSmall'])){
                 $olditemsArr = $itemsArr;
-                $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriers['wweSmall']['originAddress'] );
+                $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriers['wweSmall']['originAddress'], $cartInfo );
                 $itemsArr = $sbsResponse['items'] ?? $itemsArr;
                 $carriers['wweSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriers['wweSmall']['originAddress'];
                 $binReponse = $sbsResponse['binResponse'];
@@ -293,7 +293,7 @@ class GenerateRequestData
         return $apiArray;
     }
 
-    public function getStoreBoxes($storeId, $itemsArr, $origins)
+    public function getStoreBoxes($storeId, $itemsArr, $origins, $cartInfo)
     {
         $items = [];
 
@@ -325,7 +325,7 @@ class GenerateRequestData
         }
         $hits = count($items);
         $Bin3D = new Bin3D();
-        $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $hits);
+        $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $hits, $cartInfo);
 //print_r($binResponse);
         //print_r($binResponse);
         //todo we have to save $binResponse for order widget

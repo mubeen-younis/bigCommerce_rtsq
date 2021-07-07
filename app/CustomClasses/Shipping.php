@@ -63,7 +63,7 @@ class Shipping
             }
         }
 // Genearting final request Array
-        $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items']);
+        $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
 
         /*  echo json_encode($requestArr);die();*/
 
