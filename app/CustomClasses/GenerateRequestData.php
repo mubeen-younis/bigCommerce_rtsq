@@ -170,18 +170,21 @@ class GenerateRequestData
             'commdityDetails' => $itemsArr,
         ]);
 */
-        if (1/*$this->storeData['installed_addon_sbs']*/)
+        $binReponse = [];
+        if ($this->storeData['installed_addon_sbs'])
         {
             if(isset($carriers['wweSmall'])){
                 $olditemsArr = $itemsArr;
                 $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriers['wweSmall']['originAddress'] );
                 $itemsArr = $sbsResponse['items'] ?? $itemsArr;
                 $carriers['wweSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriers['wweSmall']['originAddress'];
+                $binReponse = $sbsResponse['binResponse'];
+                if(isset($carriers['wweLTL'])){
+                    $itemsArr = $olditemsArr + $itemsArr;
+                }
             }
             //print_r($olditemsArr); print_r($itemsArr);
-            if(isset($carriers['wweLTL'])){
-                $itemsArr = $olditemsArr + $itemsArr;
-            }
+
             //print_r($itemsArr); exit;
         }
 
@@ -189,7 +192,7 @@ class GenerateRequestData
             'apiVersion' => '2.0',
             'platform' => 'bigcommerce',
             'dont_auth' => 1,
-            'binPackagingMultiCarrier' => $this->storeData['installed_addon_sbs'],
+            //'binPackagingMultiCarrier' => $this->storeData['installed_addon_sbs'],
             'autoResidentials' => $autoResidential,
             'liftGateWithAutoResidentials' => $liftGateWithAuto,
             'requestKey' => md5(microtime() . rand()),
@@ -198,7 +201,8 @@ class GenerateRequestData
             'commdityDetails' => $itemsArr,
         ];
         //print_r($requestArr); exit;
-        return $requestArr;
+        $resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse];
+        return $resp;
     }
 
     /**
@@ -321,7 +325,7 @@ class GenerateRequestData
         $hits = count($items);
         $Bin3D = new Bin3D();
         $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $hits);
-
+//print_r($binResponse);
         //print_r($binResponse);
         //todo we have to save $binResponse for order widget
         if(count($binResponse)) {
@@ -350,6 +354,7 @@ class GenerateRequestData
         }
         $resp['items'] = $newitemsArr;
         $resp['originAddress'] = $newOrigins;
+        $resp['binResponse'] = $binResponse;
         return $resp;
 
     }

@@ -70,9 +70,14 @@ class Shipping
             return false;
         }
         $url = Constant::QUOTES_URL;
-
-        $quotes = $this->sendCurlRequest($url, $requestArr);
-
+//print_r($requestArr);
+        //$resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse];
+        $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
+        if(isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])){
+            $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes);
+        }
+Log::info('after addBinResponseToQuotes '. json_encode($quotes));
+//echo "<pre>"; print_r($quotes); exit;
         // Debug point will print data if en_print_query=1
         if (isset($_GET['DEBUG_ON'])) {
             $printData = [
@@ -92,6 +97,12 @@ class Shipping
         return $resp;
     }
 
+    private function addBinResponseToQuotes($binReponse, $quotes){
+        foreach ($binReponse as $locationId => $bin){
+            $quotes['wweSmall'][$locationId]['binPackagingData']['response'] = $bin;
+        }
+        return $quotes;
+    }
     public function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo){
         //print_r($cartId); print_r($requestArr); print_r($quotes); print_r($finalQuotes); print_r($resp); exit;
 
