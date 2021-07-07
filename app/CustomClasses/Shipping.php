@@ -47,6 +47,7 @@ class Shipping
 
         // Checking if any productis hazardous
         $hazmatAllItems = $this->isHazmatMaterial($package);
+
         if ($this->isHazmat == 'Y') {
             foreach($carriersArray['carriers'] as $key => $carriers){
                 $carriersArray['carriers'][$key]['api']['lineItemHazmatInfo'] = [
@@ -153,13 +154,14 @@ Log::info('after addBinResponseToQuotes '. json_encode($quotes));
      */
     public function isHazmatMaterial($items)
     {
+
         $hazmatAllItems = [];
         foreach ($items['items'] as $key => $item) {
             if (isset($item['isHazmatLineItem']) && $item['isHazmatLineItem'] == 'Y') {
                 $this->isHazmat = 'Y';
-                $hazmatAllItems[$items['origin'][$key]['senderZip']] = 'Y';
+                $hazmatAllItems[$items['origin'][$key]['locationId']] = 'Y';
             }else{
-                $hazmatAllItems[$items['origin'][$key]['senderZip']] = 'N';
+                $hazmatAllItems[$items['origin'][$key]['locationId']] = 'N';
             }
         }
         return $hazmatAllItems;

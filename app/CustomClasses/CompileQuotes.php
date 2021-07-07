@@ -748,7 +748,7 @@ class CompileQuotes
                 if (isset($quote['dismissedProduct'])) {
                     continue;
                 }
-               
+
                 return [];
             }
             if ($count == 0) { //To be checked only once
