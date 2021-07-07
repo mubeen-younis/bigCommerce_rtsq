@@ -47,6 +47,7 @@ class Shipping
 
         // Checking if any productis hazardous
         $hazmatAllItems = $this->isHazmatMaterial($package);
+
         if ($this->isHazmat == 'Y') {
             foreach($carriersArray['carriers'] as $key => $carriers){
                 $carriersArray['carriers'][$key]['api']['lineItemHazmatInfo'] = [
@@ -62,7 +63,7 @@ class Shipping
             }
         }
 // Genearting final request Array
-        $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items']);
+        $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
 
         /*  echo json_encode($requestArr);die();*/
 
@@ -70,9 +71,16 @@ class Shipping
             return false;
         }
         $url = Constant::QUOTES_URL;
+//print_r($requestArr);
+        //$resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse];
+        $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
 
-        $quotes = $this->sendCurlRequest($url, $requestArr);
-
+        $boxbins = $requestArr['boxBins'] ?? [];
+        if(isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])){
+            $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes);
+        }
+Log::info('after addBinResponseToQuotes '. json_encode($quotes));
+//echo "<pre>"; print_r($quotes); exit;
         // Debug point will print data if en_print_query=1
         if (isset($_GET['DEBUG_ON'])) {
             $printData = [
@@ -85,14 +93,20 @@ class Shipping
         }
         //dd($requestArr,$quotes);
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $hazmatAllItems);
-
+//print_r($finalQuotes); exit;
         $finalQuotes = $this->addRateId($finalQuotes);
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
-        $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo);
+        $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins);
         return $resp;
     }
 
-    public function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo){
+    private function addBinResponseToQuotes($binReponse, $quotes){
+        foreach ($binReponse as $locationId => $bin){
+            $quotes['wweSmall'][$locationId]['binPackagingData']['response'] = $bin;
+        }
+        return $quotes;
+    }
+    public function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins){
         //print_r($cartId); print_r($requestArr); print_r($quotes); print_r($finalQuotes); print_r($resp); exit;
 
         foreach ($finalQuotes as $finalQuote){
@@ -104,6 +118,7 @@ class Shipping
             $RequestTempData->store_id = $cartInfo['store_id'];
             $RequestTempData->rate_id = $finalQuote['rate_id'];
             $RequestTempData->cart_id = $cartInfo['cartId'];
+            $RequestTempData->box_bins = json_encode($boxbins);
             $RequestTempData->save();
         }
     }
@@ -139,13 +154,14 @@ class Shipping
      */
     public function isHazmatMaterial($items)
     {
+
         $hazmatAllItems = [];
         foreach ($items['items'] as $key => $item) {
             if (isset($item['isHazmatLineItem']) && $item['isHazmatLineItem'] == 'Y') {
                 $this->isHazmat = 'Y';
-                $hazmatAllItems[$items['origin'][$key]['senderZip']] = 'Y';
+                $hazmatAllItems[$items['origin'][$key]['locationId']] = 'Y';
             }else{
-                $hazmatAllItems[$items['origin'][$key]['senderZip']] = 'N';
+                $hazmatAllItems[$items['origin'][$key]['locationId']] = 'N';
             }
         }
         return $hazmatAllItems;

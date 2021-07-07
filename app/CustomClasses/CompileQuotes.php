@@ -742,11 +742,13 @@ class CompileQuotes
         $originQuotes = [];
         $shipmentCount = 0;
         $count = 0;
+
         foreach ($shipments as $origin => $quote) {
             if (isset($quote['severity'])) {
                 if (isset($quote['dismissedProduct'])) {
                     continue;
                 }
+
                 return [];
             }
             if ($count == 0) { //To be checked only once
@@ -755,6 +757,7 @@ class CompileQuotes
                 unset($quote['InstorPickupLocalDelivery']);
             }
             $lowestAmount = 0;
+
             if (isset($quote['q'])) {
                 foreach ($quote['q'] as $key => $data) {
                     // Check if service type is checked to show
@@ -803,6 +806,7 @@ class CompileQuotes
             $shipmentCount++;
         }
         // Check for mukti shipment finding lowest price in each shipment and adding them for multi shipment
+
         if ($this->isMultiShipment) {
             $originQuotesMulti = [];
             $multiShipPrice = 0;
