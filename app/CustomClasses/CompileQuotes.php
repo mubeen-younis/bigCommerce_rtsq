@@ -748,10 +748,8 @@ class CompileQuotes
                 if (isset($quote['dismissedProduct'])) {
                     continue;
                 }
-                /**
-                * Commented return [] because was creating issue
-                 */
-                //return [];
+               
+                return [];
             }
             if ($count == 0) { //To be checked only once
                 $this->getAutoResidentialTitle('');
