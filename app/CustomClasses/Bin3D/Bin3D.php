@@ -5,6 +5,8 @@ namespace App\CustomClasses\Bin3D;
 use App\Constants\Constant;
 use App\Http\Controllers\Subscription\PackageSubscriptionController;
 use App\Models\BinRequestLog;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Crypt;
 
 class Bin3D
 {
@@ -88,11 +90,21 @@ class Bin3D
      * $binRequest-> formated data which need to send bins endpoint
      * */
     private function binRequest($binRequest, $storeId, $hits, $cartInfo){
+        $requestHash = $this->get_encrypted_params(json_encode($binRequest));
+
+        /*
+         * Check hash if available same request in last 24 hours then no need to send request to 3dbin
+         * **/
+        if(BinRequestLog::where('request_hash', '=', $requestHash)->where('created_at', '>', Carbon::now()->subDay(1))->exists()){
+           $response = BinRequestLog::select('api_response')->where('request_hash', '=', $requestHash)->where('created_at', '>', Carbon::now()->subDay(1))->first();
+           return json_decode($response['api_response']);
+        }
+//dd(1);
         $binRequestLog = new BinRequestLog();
         $binRequestLog->store_id = $storeId;
         $binRequestLog->cart_id = $cartInfo['cartId'];
         $binRequestLog->request = json_encode($binRequest);
-        $binRequestLog->request_hash = '';
+        $binRequestLog->request_hash = $requestHash;
         $binRequestLog->request_time = now();
         $binRequestLog->hits = $hits;
         $binRequestLog->save();
@@ -202,5 +214,18 @@ class Bin3D
         return $itemPackage;
     }
 
+    private  function get_encrypted_params($string) {
+        $key = "address_validation"; //key to encrypt and decrypt
+        $result = '';
+        $test = "";
+        for ($i = 0; $i < strlen($string); $i++) {
+            $char = substr($string, $i, 1);
+            $keychar = substr($key, ($i % strlen($key)) - 1, 1);
+            $char = chr(ord($char) + ord($keychar));
+            $result .= $char;
+        }
+
+        return urlencode(base64_encode($result));
+    }
 
 }
