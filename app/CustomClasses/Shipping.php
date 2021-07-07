@@ -73,7 +73,8 @@ class Shipping
 //print_r($requestArr);
         //$resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse];
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
-        $boxbins = $requestArr['boxbins'] ?? [];
+
+        $boxbins = $requestArr['boxBins'] ?? [];
         if(isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])){
             $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes);
         }
