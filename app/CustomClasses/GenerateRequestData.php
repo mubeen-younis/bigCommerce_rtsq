@@ -170,7 +170,7 @@ class GenerateRequestData
             'commdityDetails' => $itemsArr,
         ]);
 */
-        $binReponse = [];
+        $binReponse = $boxBins =[];
         if ($this->storeData['installed_addon_sbs'])
         {
             if(isset($carriers['wweSmall'])){
@@ -179,6 +179,7 @@ class GenerateRequestData
                 $itemsArr = $sbsResponse['items'] ?? $itemsArr;
                 $carriers['wweSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriers['wweSmall']['originAddress'];
                 $binReponse = $sbsResponse['binResponse'];
+                $boxBins = $sbsResponse['boxBins'];
                 if(isset($carriers['wweLTL'])){
                     $itemsArr = $olditemsArr + $itemsArr;
                 }
@@ -201,7 +202,7 @@ class GenerateRequestData
             'commdityDetails' => $itemsArr,
         ];
         //print_r($requestArr); exit;
-        $resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse];
+        $resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse, 'boxBins' => $boxBins];
         return $resp;
     }
 
@@ -355,6 +356,7 @@ class GenerateRequestData
         $resp['items'] = $newitemsArr;
         $resp['originAddress'] = $newOrigins;
         $resp['binResponse'] = $binResponse;
+        $resp['boxBins'] = $boxBins;
         return $resp;
 
     }

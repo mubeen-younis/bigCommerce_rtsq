@@ -91,17 +91,21 @@ class OrderController extends Controller
         foreach($responseFromWS as $carrrierName => $WsResp){
             //print_r($WsResp); exit;
             foreach($WsResp as $zip => $ws){
-                //print_r($ws); exit;
+
                 if( !(isset($ws->severity) && $ws->severity == 'ERROR') ){
                     $autoResidentialsStatus = $ws->autoResidentialsStatus ?? 'n';
                     $liftGateStatus = $ws->liftGateStatus ?? 'n';
                     //$binPackagingData = $ws['binPackagingData']['response']['']
-                    $isSmallrate = substr($order['cart_id'], 0, 9) == 'parcel_12' ? true : false;
+                    $isSmallrate = substr($order['rate_id'], 0, 9) == 'parcel_12' ? true : false;
                     $totalBoxes = 0;
+                   // dd($order['rate_id'],$isSmallrate);
+                    //print_r($ws->binPackagingData); exit;
                     if(isset($ws->binPackagingData) && !empty($ws->binPackagingData) && $isSmallrate){
                         $sbsData = $ws->binPackagingData->response;
+
                         if(isset($sbsData->errors) && empty($sbsData->errors)) {
                             //$binPacked = $sbsData->bins_packed[0];
+
                             foreach ($sbsData->bins_packed as $key => $binPacked) {
 
                                 $type = '';
@@ -139,7 +143,7 @@ class OrderController extends Controller
         $items = $lineItem->items;
 
         $count = 0;
-        //print_r($origins); exit;
+        //print_r($orderWidget); exit;
         foreach($origins as $key => $origin){
             $item =  $items->$key;
             $city = $origin->senderCity ? $origin->senderCity.',': '';
@@ -173,7 +177,7 @@ class OrderController extends Controller
             ->where('store_id', $store_id)
             ->first()->toArray();
         $binId = (int) $binId;
-        $bins = json_decode($data['request'])->bins;
+        $bins = json_decode($data['box_bins']);
         if(!empty($bins)){
             foreach ($bins as $bin){
                 if($binId == $bin->id){
@@ -181,7 +185,6 @@ class OrderController extends Controller
                 }
             }
         }
-
     }
 
     public function objectToArray($orderWidget){

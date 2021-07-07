@@ -73,6 +73,7 @@ class Shipping
 //print_r($requestArr);
         //$resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse];
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
+        $boxbins = $requestArr['boxbins'] ?? [];
         if(isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])){
             $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes);
         }
@@ -93,7 +94,7 @@ Log::info('after addBinResponseToQuotes '. json_encode($quotes));
 
         $finalQuotes = $this->addRateId($finalQuotes);
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
-        $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo);
+        $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins);
         return $resp;
     }
 
@@ -103,7 +104,7 @@ Log::info('after addBinResponseToQuotes '. json_encode($quotes));
         }
         return $quotes;
     }
-    public function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo){
+    public function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins){
         //print_r($cartId); print_r($requestArr); print_r($quotes); print_r($finalQuotes); print_r($resp); exit;
 
         foreach ($finalQuotes as $finalQuote){
@@ -115,6 +116,7 @@ Log::info('after addBinResponseToQuotes '. json_encode($quotes));
             $RequestTempData->store_id = $cartInfo['store_id'];
             $RequestTempData->rate_id = $finalQuote['rate_id'];
             $RequestTempData->cart_id = $cartInfo['cartId'];
+            $RequestTempData->box_bins = json_encode($boxbins);
             $RequestTempData->save();
         }
     }
