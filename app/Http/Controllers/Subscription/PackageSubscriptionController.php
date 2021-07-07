@@ -103,12 +103,13 @@ class PackageSubscriptionController extends Controller
         }*/
         //$packageSub = PackageSubscription::where('store_id',self::$storeId)->latest()->first();
         if (is_null($currentPackageSub)){
-            $sbsPackages = Package::where('addon_type',$addonType)->orderBy('sort_by','ASC')->get();
+            $addonPackages = Package::where('addon_type',$addonType)->orderBy('sort_by','ASC')->get();
         }else{
-            $sbsPackages = Package::where('addon_type',$addonType)->where('id','!=',self::$dynamicTrial)->orderBy('sort_by','ASC')->get();
+            $addonPackages = Package::where('addon_type',$addonType)->where('id','!=',self::$dynamicTrial)->orderBy('sort_by','ASC')->get();
         }
+        $addonPkgParam = ($addonType == self::$addonTypeSBS) ? 'allSbsPackages' : 'allRadPackages';
         return [
-            'allSbsPackages' => $sbsPackages,
+            $addonPkgParam => $addonPackages,
             'currentPackage' => $currentPackageSub
         ];
     }
@@ -158,7 +159,7 @@ class PackageSubscriptionController extends Controller
                 'message' => "You didn't have any Quoting Plan to subscribe to the Addon",
             ];
         }
-        if (isset($mainSubscription->plan_id) && $mainSubscription->plan_id == self::$mainSubTrial && $data['package'] != self::$trialSBS){
+        if (isset($mainSubscription->plan_id) && $mainSubscription->plan_id == self::$mainSubTrial && $data['package'] != self::$dynamicTrial){
             return [
                 'error' => true,
                 'data' => [],
@@ -171,17 +172,21 @@ class PackageSubscriptionController extends Controller
             ->where('store_id',self::$storeId)->where('addon_type',$addonType)
             ->select('package_subscriptions.id','package_subscriptions.created_at','package_subscriptions.package_id','package_subscriptions.payment_method_id','package_subscriptions.status','package_subscriptions.subscription_time','package_subscriptions.update_time','package_subscriptions.expiry_time','package_subscriptions.total_count','package_subscriptions.stripe_charge_id','package_subscriptions.charge_cost')
             ->latest()->first();
+
         //If current subscription is active and it is trial
         if (!is_null($currentPackageSub) && $currentPackageSub->status == 1 && $currentPackageSub->package_id == self::$dynamicTrial && Carbon::parse($currentPackageSub->expiry_time) > Carbon::now()){
             $updateSubscription = self::$updateFullSubscription;
         } elseif (!is_null($currentPackageSub) && $currentPackageSub->status == 1 && Carbon::parse($currentPackageSub->expiry_time) > Carbon::now()){
             //If current subscription is active
             $updateSubscription = self::$updateToBeChargeonly;
-        }elseif (!is_null($currentPackageSub) && ($currentPackageSub->status != 1 || Carbon::parse($currentPackageSub->expiry_time) < Carbon::now())){
+        }elseif (!is_null($currentPackageSub) && ($currentPackageSub->status == 0 || Carbon::parse($currentPackageSub->expiry_time) < Carbon::now())){
             //If current subscription expired
             $updateSubscription = self::$updateFullSubscription;
+        }elseif (!is_null($currentPackageSub) && ($currentPackageSub->status == 3 || Carbon::parse($currentPackageSub->expiry_time) < Carbon::now())){
+            //If current subscription suspended
+            $updateSubscription = self::$updateToBeChargeonly;
         }
-        if (($data['package'] != self::$trialSBS && $data['package'] != self::$disableAddon) || $updateSubscription == self::$updateFullSubscription){
+        if (($data['package'] != self::$dynamicTrial && $data['package'] != self::$disableAddon) || $updateSubscription == self::$updateFullSubscription){
             if ($updateSubscription == self::$updateFullSubscription){
                 $chargeResponse = $this->createStripeChargeForPackage($package,$mainSubscription,$addonType);
             }
@@ -343,12 +348,7 @@ class PackageSubscriptionController extends Controller
         ->leftjoin('packages as p','ps.package_id','=','p.id')
             ->select('ps.id','ps.package_id as package_id','ps.expiry_time','ps.status','ps.created_at','ps.total_count as consumed_hits','p.htis as total_hits','pstbc.status as package_to_to_charge_status','pstbc.package_id as to_be_charge_package_id')
             ->where('store_id',self::$storeId)->where('p.addon_type',$addonType)->latest()->first();
-        if ($currentPackageSub->status == 0) { //If the package subscription is expired
-            return [
-                'status' => false,
-            ];
-        }
-        if ($currentPackageSub->status == 3){ //If the package subscription is suspended
+        if ($currentPackageSub->status == 0 || $currentPackageSub->status == 3) { //If the package subscription is expired || suspended
             return [
                 'status' => false,
             ];
