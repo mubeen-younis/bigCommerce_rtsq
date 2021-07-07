@@ -96,7 +96,7 @@ class OrderController extends Controller
                     $autoResidentialsStatus = $ws->autoResidentialsStatus ?? 'n';
                     $liftGateStatus = $ws->liftGateStatus ?? 'n';
                     //$binPackagingData = $ws['binPackagingData']['response']['']
-                    $isSmallrate = substr($order['rate_id'], 0, 9) == 'parcel_12' ? true : false;
+                    $isSmallrate = substr($order['rate_id'], 0, 9) == 'parcel_12' || substr($order['rate_id'], 0, 5) == 'Multi'  ? true : false;
                     $totalBoxes = 0;
                    // dd($order['rate_id'],$isSmallrate);
                     //print_r($ws->binPackagingData); exit;
