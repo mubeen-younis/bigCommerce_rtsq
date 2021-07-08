@@ -168,14 +168,14 @@ class PackageSubscriptionController extends Controller
             return [
                 'error' => true,
                 'data' => [],
-                'message' => "You didn't have any Quoting Plan to subscribe to the Addon",
+                'message' => "You didn't have any Real-time Shipping Quotes Plan to subscribe to the Addon",
             ];
         }
         if (isset($mainSubscription->plan_id) && $mainSubscription->plan_id == self::$mainSubTrial && $data['package'] != self::$dynamicTrial){
             return [
                 'error' => true,
                 'data' => [],
-                'message' => "You must subscribe to the Paid Plan for the Quoting to buy the Addon",
+                'message' => "You must subscribe to the paid plan for the Real-time Shipping Quotes to buy the Addon",
             ];
         }
         $paymentMethod = isset($mainSubscription->payment_method_id) ? $mainSubscription->payment_method_id : null;
@@ -306,7 +306,7 @@ class PackageSubscriptionController extends Controller
                 'amount' => bcmul($package->cost, 100),
                 'currency' => 'usd',
                 'customer' => $stripeCustomerId,
-                "description" => 'Real-time Shipping Quotes ('.$addonType.') Charge',
+                "description" => 'Real-time Shipping Quotes (BigCommerce '.$addonType.') Charge',
                 'source' => $mainSubscription->payment_method,
             ]);
             $response = [
@@ -469,7 +469,7 @@ class PackageSubscriptionController extends Controller
     //***********************************
     // This method returning the complete details to show on Frontend via route
     //***********************************
-    public function getSbsPackageDetails(Request $request){
+    public function getAddonPackageDetails(Request $request){
         self::$storeId = $request['store_id'];
         $addonType = $request['addon_type'];
 

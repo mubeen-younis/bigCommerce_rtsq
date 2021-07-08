@@ -137,7 +137,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::get('/get-all-pacakges', [PackageSubscriptionController::class, 'getAllPackagesList']);
     Route::post('/subscribe-package', [PackageSubscriptionController::class, 'subscribeToPackage']);
     Route::get('/consume-hits', [PackageSubscriptionController::class, 'consumeHits']);
-    Route::get('/get-sbs-details', [PackageSubscriptionController::class, 'getSbsPackageDetails']);
+    Route::get('/get-addon-details', [PackageSubscriptionController::class, 'getAddonPackageDetails']);
     Route::post('/suspend-use-addon', [PackageSubscriptionController::class, 'suspendAddonUse']);
     //END: SBS Routes
 });
