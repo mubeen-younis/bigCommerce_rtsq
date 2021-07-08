@@ -197,6 +197,9 @@ class PackageSubscriptionController extends Controller
         }elseif (!is_null($currentPackageSub) && ($currentPackageSub->status == 3 || Carbon::parse($currentPackageSub->expiry_time) < Carbon::now())){
             //If current subscription suspended
             $updateSubscription = self::$updateToBeChargeonly;
+        }elseif (is_null($currentPackageSub) && isset($data['package']) && $data['package'] != self::$dynamicTrial && $data['package'] != self::$disableAddon){
+            // if No Current subscription exist and selected package is not a trial or disable
+            $updateSubscription = self::$updateFullSubscription;
         }
         if (($data['package'] != self::$dynamicTrial && $data['package'] != self::$disableAddon) || $updateSubscription == self::$updateFullSubscription){
             if ($updateSubscription == self::$updateFullSubscription){
@@ -211,7 +214,7 @@ class PackageSubscriptionController extends Controller
         if ($chargeId == null && $data['package'] == self::$disableAddon){
             $updateSubscription = self::$updateToBeChargeonly;
         }
-        if ($updateSubscription == self::$updateToBeChargeonly || $updateSubscription == self::$updateFullSubscription){
+        if (!is_null($currentPackageSub) && ($updateSubscription == self::$updateToBeChargeonly || $updateSubscription == self::$updateFullSubscription)){
             //Updating the current package Subscription in database
             $this->updatePackageSubscriptionInDB($data,$package,$paymentMethod,$chargeId,$currentPackageSub, $updateSubscription);
         }else{
