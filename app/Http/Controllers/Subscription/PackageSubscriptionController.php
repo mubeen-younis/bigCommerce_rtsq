@@ -486,13 +486,13 @@ class PackageSubscriptionController extends Controller
             return response()->json([
                 'error' => false,
                 'data' => ['status' => 0],
-                'message' => 'No current subscribed SBS addon is available'
+                'message' => 'No current subscribed '.$addonType.' addon is available'
             ]);
         }else{
             return response()->json([
                 'error' => false,
                 'data' => $currentPackageSub,
-                'message' => 'SBS addon subscription details found'
+                'message' => $addonType.' addon subscription details found'
             ]);
         }
     }
@@ -534,7 +534,7 @@ class PackageSubscriptionController extends Controller
         return [
             'error' => false,
             'data' => $this->getPkgDetails($addonType),
-            'message' => ($data['suspend'] == 3) ? 'The SBS addon has been suspended' : 'The SBS addon has been reactivated',
+            'message' => ($data['suspend'] == 3) ? 'The '.$addonType.' addon has been suspended' : 'The '.$addonType.' addon has been reactivated',
         ];
     }
 }
