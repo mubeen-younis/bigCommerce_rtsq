@@ -63,39 +63,46 @@ class PackageSubscriptionController extends Controller
         $currentPackageSub = DB::table('package_subscriptions as ps')
             ->leftjoin('packages as p','ps.package_id','=','p.id')
             ->leftjoin('package_sub_to_be_charge as pstbc','pstbc.subscription_id','=','ps.id')
-            ->select('ps.id','ps.package_id as package_id','ps.subscription_time','ps.expiry_time','ps.status','ps.created_at','ps.total_count as consumed_hits','p.htis as total_hits','pstbc.package_id as pacakgeId_to_be_charge','pstbc.status as package_to_be_charge_status')
+            ->select('ps.id','ps.package_id as package_id','ps.subscription_time','ps.update_time','ps.expiry_time','ps.status','ps.created_at','ps.total_count as consumed_hits','p.htis as total_hits','pstbc.package_id as pacakgeId_to_be_charge','pstbc.status as package_to_be_charge_status')
             ->where('ps.store_id',self::$storeId)->where('p.addon_type',$addonType)->latest()->first();
 
         if (!is_null($currentPackageSub)){
             $currentPkg = Package::where('id',$currentPackageSub->package_id)->first();
             $toBeChargepkg = Package::where('id',$currentPackageSub->pacakgeId_to_be_charge)->first();
-
             //Current package Details
             $currentPackageSub->current_package_name = $currentPkg->name;
             $currentPackageSub->current_package_period = $currentPkg->period;
             $currentPackageSub->current_package_cost = $currentPkg->cost;
             $currentPackageSub->total_allowed_hits = $currentPkg->htis;
             $currentPackageSub->consumed_hits_in_per = number_format(($currentPackageSub->consumed_hits / $currentPackageSub->total_allowed_hits) * 100,2);
+            if ($addonType == self::$addonTypeRAD && $currentPackageSub->current_package_name == 'Extreme'){
+                $currentPackageSub->total_allowed_hits = 'Unlimited';
+                $currentPackageSub->consumed_hits_in_per = '';
+            }
             $currentPackageSub->subscription_start_date = date('M,d,Y', strtotime($currentPackageSub->subscription_time));
             $currentPackageSub->expiry_time = date('M,d,Y', strtotime($currentPackageSub->expiry_time));
-            $currentPackageSub->currentPlanText = $currentPkg->htis.'/'.lcfirst(substr($currentPackageSub->current_package_period,0,2)).' ($'.number_format($currentPackageSub->current_package_cost,2).')';
+            $currentPackageSub->currentPlanText = $currentPackageSub->total_allowed_hits.'/'.lcfirst(substr($currentPackageSub->current_package_period,0,2)).' ($'.number_format($currentPackageSub->current_package_cost,2).')';
             //To Be Charge package Details
             $currentPackageSub->to_be_charge_package_id = $toBeChargepkg->id;
 
             if ($currentPackageSub->package_to_be_charge_status == 0){
                 $currentPackageSub->package_to_be_charge_status = 'disable';
             }
-            if ($currentPackageSub->to_be_charge_package_id == 1){
+            if ($currentPackageSub->to_be_charge_package_id == self::$dynamicTrial){
                 $currentPackageSub->package_to_be_charge_status = 'Trial';
             }
-
             $currentPackageSub->to_be_charge_package_name = $toBeChargepkg->name;
             $currentPackageSub->to_be_charge_package_period = $toBeChargepkg->period;
             $currentPackageSub->to_be_charge_package_cost = $toBeChargepkg->cost;
             $currentPackageSub->total_allowed_hits_in_to_be_charge = $toBeChargepkg->htis;
-            $currentPackageSub->toBeChargeDropdownText = $toBeChargepkg->htis.'/'.lcfirst(substr($currentPackageSub->to_be_charge_package_period,0,2)).' ($'.number_format($currentPackageSub->to_be_charge_package_cost,2).')';
+            if ($addonType == self::$addonTypeRAD && $currentPackageSub->to_be_charge_package_name == 'Extreme'){
+                $currentPackageSub->total_allowed_hits_in_to_be_charge = 'Unlimited';
+                $currentPackageSub->consumed_hits_in_per = '';
+            }
 
-            $currentPackageSub->last_update_time = $currentPkg->subscription_time;
+            $currentPackageSub->toBeChargeDropdownText = $currentPackageSub->total_allowed_hits_in_to_be_charge.'/'.lcfirst(substr($currentPackageSub->to_be_charge_package_period,0,2)).' ($'.number_format($currentPackageSub->to_be_charge_package_cost,2).')';
+
+            $currentPackageSub->last_update_time = $currentPackageSub->update_time;
 
         }/*else{
             $currentPackageSub = new \stdClass();
@@ -107,7 +114,12 @@ class PackageSubscriptionController extends Controller
         }else{
             $addonPackages = Package::where('addon_type',$addonType)->where('id','!=',self::$dynamicTrial)->orderBy('sort_by','ASC')->get();
         }
-        $addonPkgParam = ($addonType == self::$addonTypeSBS) ? 'allSbsPackages' : 'allRadPackages';
+        $addonPkgParam = 'allSbsPackages';
+        if ($addonType == self::$addonTypeRAD){
+            $addonPackages->where('name','Extreme')->first()->htis = 'Unlimited';
+            $addonPkgParam = 'allRadPackages';
+        }
+
         return [
             $addonPkgParam => $addonPackages,
             'currentPackage' => $currentPackageSub
@@ -368,6 +380,9 @@ class PackageSubscriptionController extends Controller
                 ->select('package_subscriptions.id','package_subscriptions.created_at','package_subscriptions.package_id','package_subscriptions.payment_method_id','package_subscriptions.status','package_subscriptions.subscription_time','package_subscriptions.update_time','package_subscriptions.expiry_time','package_subscriptions.total_count','package_subscriptions.stripe_charge_id','package_subscriptions.charge_cost')
                 ->latest()->first();
             $packageSub->increment('total_count',$histToBeConsumed);
+            $packageSub->update([
+                'update_time' => Carbon::now()
+            ]);
             return [
                 'status' => true,
             ];
