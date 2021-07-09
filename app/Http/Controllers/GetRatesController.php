@@ -238,12 +238,21 @@ class GetRatesController extends Controller
                     'addons.short_code' => 'SBS',
                 ])
                 ->exists();
+            $installedAddonRad = InstalledAddon::join('addons', 'addons.id', 'installed_addons.addon_id')
+                ->where(['installed_addons.store_id' => $store->id,
+                    'installed_addons.is_enabled' => 1,
+                    //'installed_addons.is_suspend' => 0,
+                    //'installed_addons.is_expired' => 0,
+                    'addons.short_code' => 'RAD',
+                ])
+                ->exists();
             if (!empty($installedCarriers) && count($installedCarriers)) {
                 return [
                     'installed_carriers' => $installedCarriers,
                     'installed_addons' => $installedAddons,
                     'store' => $store,
-                    'installed_addon_sbs' => $installedAddonSbs
+                    'installed_addon_sbs' => $installedAddonSbs,
+                    'installed_addon_rad' => $installedAddonRad
                 ];
             }
         }

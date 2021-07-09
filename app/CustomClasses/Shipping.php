@@ -43,7 +43,8 @@ class Shipping
         // Disabling instore pickup if there is multi shipment case
         $originAddress = $this->checkInstorePickup($package['origin']);
         // Generating carrier creds and origin array
-        $carriersArray = $generateReqData->generateEnitureArray($originAddress);
+        $destination = $request['lineItemData']['destination'] ?? [];
+        $carriersArray = $generateReqData->generateEnitureArray($originAddress, $destination);
 
         // Checking if any productis hazardous
         $hazmatAllItems = $this->isHazmatMaterial($package);
@@ -64,7 +65,7 @@ class Shipping
         }
 // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
-
+//dd($requestArr);
         /*  echo json_encode($requestArr);die();*/
 
         if (empty($requestArr)) {
