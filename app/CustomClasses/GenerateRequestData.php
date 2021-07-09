@@ -24,7 +24,7 @@ class GenerateRequestData
     public $storeData;
 
     public $radHitConsumed = 0;
-
+    public $resiCarrier = [];
     public $residential = "N";
 
     /**
@@ -92,7 +92,7 @@ class GenerateRequestData
                     break;
             }
         }
-        return $carriersArr;
+        return ['carriersArr' => $carriersArr, 'residential' => $this->resiCarrier];
 
     }
 
@@ -238,7 +238,8 @@ class GenerateRequestData
         /*
          * Check if rad hit not consumed and residential is enables
          * **/
-        if( $this->storeData['installed_addon_rad']){
+        //autoDetectedResidentialAddresses  //autoDetectedResidentialAddressesLfg
+        if( $this->storeData['installed_addon_rad'] && ($connSettings['quote_settings']['autoDetectedResidentialAddresses'] || $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg'])){
             if($this->radHitConsumed == 0){
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -255,6 +256,7 @@ class GenerateRequestData
         }
 
 
+        $this->resiCarrier['wweLtl'] = $residential;
 
         $residentialPickup = ($connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
         //print_r($connSettings); dd($liftGate, $residentialPickup);exit;
@@ -303,7 +305,8 @@ class GenerateRequestData
         } else {
             $residential = ($connSettings['quote_settings']['alwaysResidentialDelivery']) ? 'Y' : 'N';
         }*/
-        if( $this->storeData['installed_addon_rad']){
+        //autoDetectedResidentialAddresses
+        if( $this->storeData['installed_addon_rad'] && ($connSettings['quote_settings']['autoDetectedResidentialAddresses'])){
             if($this->radHitConsumed == 0){
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -317,6 +320,7 @@ class GenerateRequestData
             $residential = ($connSettings['quote_settings']['alwaysResidentialDelivery']) ? 'Y' : 'N';
         }
 
+        $this->resiCarrier['wweSmall'] = $residential;
         $apiArray = [
             'speed_ship_username' => $connSettings['creds']['username'],
             'speed_ship_password' => $connSettings['creds']['password'],
@@ -359,7 +363,7 @@ class GenerateRequestData
                 "vr" => 0 //vertical 0 or 1
             ];
         }
-        $boxBins = [];
+        $boxBins = $newOrigins = $newitemsArr = [];
         $boxes = DB::table('box_sizes')->where('store_id', $storeId)
             ->where('is_available', 1)->get();
         foreach ($boxes as $box) {
@@ -374,34 +378,26 @@ class GenerateRequestData
             );
         }
         $hits = count($items);
-        $Bin3D = new Bin3D();
-        $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $hits, $cartInfo);
-//print_r($binResponse);
-        //print_r($binResponse);
-        //todo we have to save $binResponse for order widget
-        if(count($binResponse)) {
-            $newOrigins = $newitemsArr = [];
-            foreach ($items as $locationId => $item) {
-                foreach ($item as $itm) {
-                    $origin = $itm['variant_id'];
-                    $bins = $binResponse[$locationId]->bins_packed ?? [];
-                    $hasBins = false;
-                    foreach ($bins as $key => $bin) {
-                        $newkey = $origin . $key;
-                        $newOrigins[$newkey] = $origins[$origin];
-                        $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins);
-                        $hasBins = true;
+        if($hits && count($boxBins)) {
+            $Bin3D = new Bin3D();
+            $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $hits, $cartInfo);
+            if (count($binResponse)) {
+                foreach ($items as $locationId => $item) {
+                    foreach ($item as $itm) {
+                        $origin = $itm['variant_id'];
+                        $bins = $binResponse[$locationId]->bins_packed ?? [];
+                        foreach ($bins as $key => $bin) {
+                            $newkey = $origin . $key;
+                            $newOrigins[$newkey] = $origins[$origin];
+                            $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins);
+                        }
+                        break;
                     }
-                    /*if ($hasBins) {
-                        unset($origins[$origin]);
-                        unset($itemsArr[$origin]);
-                    }*/
-                    break;
                 }
+            } else {
+                $newOrigins = $origins;
+                $newitemsArr = $itemsArr;
             }
-        }else{
-            $newOrigins = $origins;
-            $newitemsArr = $itemsArr;
         }
         $resp['items'] = $newitemsArr;
         $resp['originAddress'] = $newOrigins;

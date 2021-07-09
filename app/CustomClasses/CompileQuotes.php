@@ -54,6 +54,7 @@ class CompileQuotes
      */
     private $isResi = false;
 
+    public $residential = [];
     private $residentialDelivery;
     private $residentialDlvry;
     /**
@@ -544,7 +545,7 @@ class CompileQuotes
      */
     public function getAutoResidentialTitle($resi)
     {
-        //Todo: check RAD is enabled or not
+       // Todo: check RAD is enabled or not
         $isRadEnabled = $this->isRADEnabledandActive();
         // dd($isRadEnabled, $resi);
         if (!empty($isRadEnabled) && $isRadEnabled['is_enabled'] && $isRadEnabled['is_suspend'] !== 1) {
@@ -610,8 +611,16 @@ class CompileQuotes
      * @info: This function will compile all quotes according to the origin.
      * After getting from quotes almost all type of compilation happened in this function
      */
-    public function newGetQuotesResults($quotes, $connectionSettings, $allOrigins, $isHazmat, $hazmatAllItems)
+    public function newGetQuotesResults($quotes, $connectionSettings, $allOrigins, $isHazmat, $hazmatAllItems, $residential)
     {
+        $this->residential = $residential;
+        /*if($residential == 'Y'){
+            $this->isResi = true;
+            $this->residentialDlvry = 1;
+        }else{
+            $this->isResi = false;
+            $this->residentialDlvry = 0;
+        }*/
         if ($quotes == null) {
             return [];
         }
@@ -637,6 +646,13 @@ class CompileQuotes
 
     public function compileWweLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
+        if($this->residential['wweLtl'] == 'Y'){
+            $this->isResi = true;
+            $this->residentialDlvry = 1;
+        }else{
+            $this->isResi = false;
+            $this->residentialDlvry = 0;
+        }
         $this->quoteSettings = $connectionSettings['ltl-quotes']['quote_settings'];
         $allConfigServices = $connectionSettings['ltl-quotes']['carrier_services'] ?? [];
         $this->quoteSettingsData();
@@ -659,7 +675,7 @@ class CompileQuotes
                 $isRad = $quote['autoResidentialsStatus'] ?? '';
                 //$resi = $this->isResi ? $this->resiLabel : '';
                 //dd($isRad, $resi);
-                $this->getAutoResidentialTitle($isRad);
+                //$this->getAutoResidentialTitle($isRad);
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
                 unset($quote['InstorPickupLocalDelivery']);
                 $lgQuotes = $this->quoteSettings['alwaysLiftGateDelivery'] || $this->quoteSettings['offerLiftGateDelivery'] || ($this->quoteSettings['alwaysResidentialDelivery'] && $this->quoteSettings['autoDetectedResidentialAddressesLfg']);
@@ -725,6 +741,13 @@ class CompileQuotes
 
     public function compileWweSmallQuotes($shipments, $connectionSettings, $allOrigins, $isHazmat, $hazmatAllItems)
     {
+        if($this->residential['wweSmall'] == 'Y'){
+            $this->isResi = true;
+            $this->residentialDlvry = 1;
+        }else{
+            $this->isResi = false;
+            $this->residentialDlvry = 0;
+        }
         $this->quoteSettings = [];
         $isHazmat = $isHazmat == "Y" ? true : false;
         $this->quoteSettings = $connectionSettings['small-package']['quote_settings'];
@@ -752,7 +775,7 @@ class CompileQuotes
                 return [];
             }
             if ($count == 0) { //To be checked only once
-                $this->getAutoResidentialTitle('');
+               // $this->getAutoResidentialTitle('');
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
                 unset($quote['InstorPickupLocalDelivery']);
             }
@@ -1204,7 +1227,7 @@ class CompileQuotes
             }
             if ($counter == 0) { //To be checked only once
                 $isRad = $quote->autoResidentialsStatus ?? '';
-                $this->getAutoResidentialTitle($isRad);
+                //$this->getAutoResidentialTitle($isRad);
                 $resi = $this->isResi ? $this->resiLabel : '';
                 if ($this->residentialDlvry || $this->isResi) {
                     $resiArr = ['residential' => true, 'label' => $resi];
