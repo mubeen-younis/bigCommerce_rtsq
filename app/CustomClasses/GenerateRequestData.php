@@ -4,6 +4,7 @@ namespace App\CustomClasses;
 
 use Illuminate\Support\Facades\DB;
 use App\CustomClasses\Bin3D\Bin3D;
+use App\CustomClasses\SmartyStreet\SmartyStreet;
 /**
  * class that generated request data
  */
@@ -21,6 +22,10 @@ class GenerateRequestData
      * @var Object
      */
     public $storeData;
+
+    public $radHitConsumed = 0;
+
+    public $isRadActive = 0;
 
     /**
      * constructor of class that accepts request object
@@ -43,14 +48,14 @@ class GenerateRequestData
      * function that generates Wwe array
      * @return array
      */
-    public function generateEnitureArray($origin)
+    public function generateEnitureArray($origin, $destination)
     {
         $carriersArr['carriers'] = [];
         //dd($this->connectionSettings);
         foreach ($this->connectionSettings as $key => $con1) {
             switch ($key) {
                 case "ltl-quotes":
-                    $wweLtlArr = $this->wweLtlEnitArr($con1);
+                    $wweLtlArr = $this->wweLtlEnitArr($con1, $destination);
                     $wweLtlArr['originAddress'] = $origin;
                     if (count($wweLtlArr['originAddress']) > 1) {
                         $whIDs = [];
@@ -68,7 +73,7 @@ class GenerateRequestData
                     $carriersArr['carriers']['wweLTL'] = $wweLtlArr;
                     break;
                 case "small-package":
-                    $wweLtlArr = $this->wweSmallEnitArr($con1);
+                    $wweLtlArr = $this->wweSmallEnitArr($con1, $destination);
                     $wweLtlArr['originAddress'] = $origin;
                     if (count($wweLtlArr['originAddress']) > 1) {
                         $whIDs = [];
@@ -91,7 +96,7 @@ class GenerateRequestData
 
     }
 
-    public function wweLtlEnitArr($connSettings)
+    public function wweLtlEnitArr($connSettings, $destination)
     {
         //dd($connSettings['quote_settings']);
         return [
@@ -104,14 +109,14 @@ class GenerateRequestData
             'returnQuotesOnExceedWeight' => 1,
 
             'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'],
-            'api' => $this->getApiInfoArrWweLtl($connSettings),
+            'api' => $this->getApiInfoArrWweLtl($connSettings, $destination),
             'getDistance' => 0,
         ];
     }
 
     // WWE SMALL QUOTE SETTINGS AND CREDENTIALS
 
-    public function wweSmallEnitArr($connSettings)
+    public function wweSmallEnitArr($connSettings, $destination)
     {
         // TODO: Need to set dynamic parameters of wwe small
         return [
@@ -120,7 +125,7 @@ class GenerateRequestData
             'carrierMode' => 'pro',
             'quotestType' => 'small', // ltl / small
             'version' => '2.0.4',
-            'api' => $this->getApiInfoArrWweSmall($connSettings),
+            'api' => $this->getApiInfoArrWweSmall($connSettings, $destination),
             'getDistance' => 0,
         ];
     }
@@ -194,8 +199,8 @@ class GenerateRequestData
             'platform' => 'bigcommerce',
             'dont_auth' => 1,
             //'binPackagingMultiCarrier' => $this->storeData['installed_addon_sbs'],
-            'autoResidentials' => $autoResidential,
-            'liftGateWithAutoResidentials' => $liftGateWithAuto,
+           // 'autoResidentials' => $autoResidential,
+           // 'liftGateWithAutoResidentials' => $liftGateWithAuto,
             'requestKey' => md5(microtime() . rand()),
             'carriers' => $carriers,
             'receiverAddress' => $receiverAddress,
@@ -210,9 +215,10 @@ class GenerateRequestData
      * function that returns API array
      * @return array
      */
-    public function getApiInfoArrWweLtl($connSettings)
+    public function getApiInfoArrWweLtl($connSettings, $destination)
     {
         //Todo: need to review this function
+        //print_r($destination); exit;
         $accessorials = [];
         if (isset($this->storeData['installed_addons']['RAD']) && !$this->storeData['installed_addons']['RAD']) {
             ($connSettings['quote_settings']['residentialDlvry']) ? array_push($accessorials, 'RESDEL') : '';
@@ -225,11 +231,19 @@ class GenerateRequestData
             $residential = ($connSettings['quote_settings']['alwaysResidentialDelivery']) ? 'Y' : 'N';
         }
 
+        /*
+         * Check if rad hit not consumed and residential is enables
+         * **/
+        if($this->radHitConsumed == 0 && $this->storeData['installed_addon_rad']){
+            $this->radHitConsumed = 1;
+            $radStatus = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+        }
+
         $liftGate = ($connSettings['quote_settings']['alwaysLiftGateDelivery'] ||
             $connSettings['quote_settings']['offerLiftGateDelivery']) ? 'Y' : 'N';
 
         $residentialPickup = ($connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
-
+        //print_r($connSettings); dd($liftGate, $residentialPickup);exit;
         $apiArray = [
             'speed_freight_username' => $connSettings['creds']['username'],
             'speed_freight_password' => $connSettings['creds']['password'],
@@ -257,7 +271,16 @@ class GenerateRequestData
         return $apiArray;
     }
 
-    public function getApiInfoArrWweSmall($connSettings)
+    /*
+     * checkRadStatus to check Rad plan if enabled and
+     * **/
+
+    private function checkRadStatus($storeId, $address){
+        $smarty = new SmartyStreet();
+        $smarty->getSmartyResponse($storeId, $address);
+    }
+
+    public function getApiInfoArrWweSmall($connSettings, $destination)
     {
         //dd($connSettings);
         //Todo: need to review this function
