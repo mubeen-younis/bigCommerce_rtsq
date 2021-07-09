@@ -12,6 +12,7 @@ class Subscription extends Model
     protected $fillable = [
         'store_id',
         'name',
+        'email',
         'stripe_id',
         'stripe_status',
         'stripe_plan',
