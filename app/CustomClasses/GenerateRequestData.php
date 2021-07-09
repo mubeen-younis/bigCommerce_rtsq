@@ -326,7 +326,7 @@ class GenerateRequestData
             'speed_ship_password' => $connSettings['creds']['password'],
             'authentication_key' => $connSettings['creds']['authentication_key'],
             'world_wide_express_account_number' => $connSettings['creds']['account_number'],
-            'residential_delivery' => $residential,
+            'residentials_delivery' => $residential == 'Y' ? 'yes':'no',
             'prefferedCurrency' => 'USD',
             'includeDeclaredValue' => "1"
         ];
