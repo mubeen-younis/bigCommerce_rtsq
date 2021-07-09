@@ -72,7 +72,7 @@ class Shipping
             return false;
         }
         $url = Constant::QUOTES_URL;
-//print_r($requestArr);
+//print_r($requestArr); exit;
         //$resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse];
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
 

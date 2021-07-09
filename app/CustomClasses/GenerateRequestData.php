@@ -25,7 +25,7 @@ class GenerateRequestData
 
     public $radHitConsumed = 0;
 
-    public $isRadActive = 0;
+    public $residential = "N";
 
     /**
      * constructor of class that accepts request object
@@ -219,28 +219,42 @@ class GenerateRequestData
     {
         //Todo: need to review this function
         //print_r($destination); exit;
-        $accessorials = [];
+        /*$accessorials = [];
         if (isset($this->storeData['installed_addons']['RAD']) && !$this->storeData['installed_addons']['RAD']) {
             ($connSettings['quote_settings']['residentialDlvry']) ? array_push($accessorials, 'RESDEL') : '';
         }
-        ($connSettings['quote_settings']['alwaysLiftGateDelivery']) ? array_push($accessorials, 'LFTGATDEST') : '';
 
-        if (isset($this->storeData['installed_addons']['RAD']) && $this->storeData['installed_addons']['RAD']) {
+        ($connSettings['quote_settings']['alwaysLiftGateDelivery']) ? array_push($accessorials, 'LFTGATDEST') : '';*/
+
+        /*if (isset($this->storeData['installed_addons']['RAD']) && $this->storeData['installed_addons']['RAD']) {
             $residential = 'N';
         } else {
             $residential = ($connSettings['quote_settings']['alwaysResidentialDelivery']) ? 'Y' : 'N';
-        }
+        }*/
 
-        /*
-         * Check if rad hit not consumed and residential is enables
-         * **/
-        if($this->radHitConsumed == 0 && $this->storeData['installed_addon_rad']){
-            $this->radHitConsumed = 1;
-            $radStatus = $this->checkRadStatus($this->storeData['store']['id'], $destination);
-        }
 
         $liftGate = ($connSettings['quote_settings']['alwaysLiftGateDelivery'] ||
             $connSettings['quote_settings']['offerLiftGateDelivery']) ? 'Y' : 'N';
+        /*
+         * Check if rad hit not consumed and residential is enables
+         * **/
+        if( $this->storeData['installed_addon_rad']){
+            if($this->radHitConsumed == 0){
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+
+            }else{
+                $residential = $this->residential;
+            }
+            if($liftGate != 'Y'){
+                $liftGate = ($residential == 'Y' && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
+            }
+        }else{
+            $residential = ($connSettings['quote_settings']['alwaysResidentialDelivery']) ? 'Y' : 'N';
+        }
+
+
 
         $residentialPickup = ($connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
         //print_r($connSettings); dd($liftGate, $residentialPickup);exit;
@@ -277,16 +291,29 @@ class GenerateRequestData
 
     private function checkRadStatus($storeId, $address){
         $smarty = new SmartyStreet();
-        $smarty->getSmartyResponse($storeId, $address);
+        return $smarty->getSmartyResponse($storeId, $address);
     }
 
     public function getApiInfoArrWweSmall($connSettings, $destination)
     {
         //dd($connSettings);
         //Todo: need to review this function
-        if (isset($this->storeData['installed_addons']['RAD']) && $this->storeData['installed_addons']['RAD']) {
+        /*if (isset($this->storeData['installed_addons']['RAD']) && $this->storeData['installed_addons']['RAD']) {
             $residential = 'N';
         } else {
+            $residential = ($connSettings['quote_settings']['alwaysResidentialDelivery']) ? 'Y' : 'N';
+        }*/
+        if( $this->storeData['installed_addon_rad']){
+            if($this->radHitConsumed == 0){
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+
+            }else{
+                $residential = $this->residential;
+            }
+
+        }else{
             $residential = ($connSettings['quote_settings']['alwaysResidentialDelivery']) ? 'Y' : 'N';
         }
 

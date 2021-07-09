@@ -28,7 +28,7 @@ class SmartyStreet
     public function getSmartyResponse($storeId, $address){
         $radStatus = $this->consumeHits($storeId);
         if(!$radStatus['status']){
-            return "n";
+            return "N";
         }
         $addressStatus = $this->address_validated($address);
         if($addressStatus == "n"){
@@ -42,6 +42,7 @@ class SmartyStreet
                 $addressStatus = ($addonSettings === 1) ? "r" : "c";
             }
         }
+        $addressStatus = $addressStatus == 'r' ? 'Y' : 'N';
         return $addressStatus;
     }
 
