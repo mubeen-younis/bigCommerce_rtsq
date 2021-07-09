@@ -31,8 +31,9 @@ class AddonPackageUpdateMail extends Mailable
      */
     public function build()
     {
-        return $this->subject($this->addonType.' Addon Package Subscription')
+        $addonName = ($this->addonType == 'SBS') ? 'Standard Box Sizes' : 'Residential Address Detection';
+        return $this->subject($addonName.' Addon Subscription')
             ->replyTo(['support@eniture.com'])
-            ->view('emails.addonpackage',['addon' => $this->addonType, 'subscriptionDetail'=>$this->subscriptionDetail]);
+            ->view('emails.addonpackage',['addon' => $addonName, 'subscriptionDetail'=>$this->subscriptionDetail]);
     }
 }
