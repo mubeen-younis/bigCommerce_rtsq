@@ -27,6 +27,7 @@ class SubscriptionController extends Controller
     public static $isTrial = false;
     public static $chargeAmount = 0;
     public static $trial = 1;
+    public static $email = '';
     public static $plansData = [];
     public static $testUsers = [];
     public static $_parcelAndLtlCarries = ['WWE'];
@@ -98,6 +99,7 @@ class SubscriptionController extends Controller
             'store_id' => $storeId,
             'paymentMethod_id' => $paymentMethodId,
             'name' => $customerResponse->name ?? '',
+            'email' => self::$email ?? null,
             'stripe_id' => $customerResponse->id ?? '',
             'subscription_id' => $subscriptionReponse->id ?? '',
             'quantity' => $subscriptionReponse->quantity ?? '',
@@ -126,7 +128,8 @@ class SubscriptionController extends Controller
             $subscription = [
                 'store_id' => $oldSubscription->store_id,
                 'paymentMethod_id' => $oldSubscription->paymentMethod_id,
-                'name' => $oldSubscription->name ?? 'Trial User',
+                'name' => $oldSubscription->name ?? '',
+                'email' => self::$email ?? null,
                 'stripe_id' => $oldSubscription->stripe_id ?? '',
                 'subscription_id' => $subscriptionReponse->id ?? '',
                 'quantity' => $subscriptionReponse->quantity ?? '',
@@ -299,7 +302,7 @@ class SubscriptionController extends Controller
 
         $data['store_id'] = $request['store_id'];
         $data['plan'] = $request['plan'];
-        $data['email'] = $request['email'];
+        self::$email = $data['email'] = $request['email'];
         $data['defaultpayment'] = (isset($request['defaultpayment']) && $request['defaultpayment'] == true) ? true : false;
 
         $planId = self::$plansData['stripe_plan_id'];
@@ -378,6 +381,7 @@ class SubscriptionController extends Controller
             $subscription->store_id = $data['store_id'];
             $subscription->plan_id = self::$plansData['plan_id'];
             $subscription->name = isset($data['card_name']) ? $data['card_name'] : '';
+            $subscription->email = self::$email;
             $subscription->status = 1; //Active Status
             $subscription->trial_ends_at = Carbon::now()->addDays(30);
             $subscription->ends_at = Carbon::now()->addDays(30);

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Subscription;
 
 use App\Http\Controllers\Controller;
+use App\Mail\AddonPackageUpdateMail;
 use App\Models\Subscription\Package;
 use App\Models\Subscription\PackageSubscription;
 use App\Models\Subscription\PackageToBeCharge;
@@ -10,6 +11,7 @@ use App\Models\Subscription\Subscription;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Stripe\Charge;
 use Stripe\Stripe;
 use function GuzzleHttp\Promise\all;
@@ -72,7 +74,7 @@ class PackageSubscriptionController extends Controller
             //Current package Details
             $currentPackageSub->current_package_name = $currentPkg->name;
             $currentPackageSub->current_package_period = $currentPkg->period;
-            $currentPackageSub->current_package_cost = $currentPkg->cost;
+            $currentPackageSub->current_package_cost = number_format($currentPkg->cost,2);
             $currentPackageSub->total_allowed_hits = $currentPkg->htis;
             $currentPackageSub->consumed_hits_in_per = number_format(($currentPackageSub->consumed_hits / $currentPackageSub->total_allowed_hits) * 100,2);
             if ($addonType == self::$addonTypeRAD && $currentPackageSub->current_package_name == 'Extreme'){
@@ -147,6 +149,7 @@ class PackageSubscriptionController extends Controller
                 'data' => $request->all(),
             ];
         }
+
         return response()->json($responce);
     }
     //***********************************
@@ -161,7 +164,7 @@ class PackageSubscriptionController extends Controller
         $package = Package::find($data['package']);
         $mainSubscription = DB::table('subscriptions as s')
             ->leftJoin('payment_methods as p','p.store_id','=','s.store_id')
-            ->select('s.stripe_id as stripe_customer_id','s.payment_method','s.plan_id','s.created_at','p.id as payment_method_id')
+            ->select('s.stripe_id as stripe_customer_id','s.payment_method','s.plan_id','s.email','s.created_at','p.id as payment_method_id')
             ->where('s.store_id',self::$storeId)->latest()->first();
 
         if (is_null($mainSubscription)){
@@ -222,6 +225,9 @@ class PackageSubscriptionController extends Controller
             $this->createPackageSubscriptionInDB($data,$package,$paymentMethod,$chargeId);
         }
         $currentPackageDetails = $this->getPkgDetails($addonType);
+        if ($updateSubscription == self::$updateFullSubscription && !empty($mainSubscription->email)){
+            Mail::to($mainSubscription->email)->send(new AddonPackageUpdateMail($addonType,$currentPackageDetails['currentPackage']));
+        }
         return [
             'error' => false,
             'data' => $currentPackageDetails,
@@ -424,7 +430,7 @@ class PackageSubscriptionController extends Controller
         //Get the main subscription to get the stripe customer ID and Payment method
         $mainSubscription = DB::table('subscriptions as s')
             ->leftJoin('payment_methods as p','p.store_id','=','s.store_id')
-            ->select('s.stripe_id as stripe_customer_id','s.payment_method','s.plan_id','s.created_at','p.id as payment_method_id')
+            ->select('s.stripe_id as stripe_customer_id','s.payment_method','s.email','s.plan_id','s.created_at','p.id as payment_method_id')
             ->where('s.store_id',self::$storeId)->latest()->first();
 
         $paymentMethod = isset($mainSubscription->payment_method_id) ? $mainSubscription->payment_method_id : null;
@@ -452,6 +458,7 @@ class PackageSubscriptionController extends Controller
             //Updating the current package Subscription in database
             $this->updatePackageSubscriptionInDB($data,$package,$paymentMethod,$chargeId,$currentPackageSub, $updateSubscription);
         }
+
         $histToBeConsumed = $histToBeConsumed - $previousPkgRemainingHits;
         //Consuming Hits after recharge
         //$packageSub = PackageSubscription::where('store_id',self::$storeId)->latest()->first();
@@ -465,6 +472,10 @@ class PackageSubscriptionController extends Controller
             'update_time' => Carbon::now()
         ]);
         //Get the current package details after updating the package subscription
+        $currentPackageDetails = $this->getPkgDetails($addonType);
+        if ($updateSubscription == self::$updateFullSubscription && !empty($mainSubscription->email)){
+            Mail::to($mainSubscription->email)->send(new AddonPackageUpdateMail($addonType,$currentPackageDetails['currentPackage']));
+        }
         return [
             'status' => true,
         ];
