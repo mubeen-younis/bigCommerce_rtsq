@@ -32,10 +32,18 @@ class ExportImportProducts extends Controller
     public function exportProductsTemplate(Request $request)
     {
         if (isset($request['onlyResponse']) && $request['onlyResponse'] === true) {
-           return response()->json(['error' => false,
-                'data' => [],
-                'message' => 'The import CSV template will be emailed to ' . $request['email'],
-            ], 200);
+            $productsChunk = ProductSetting::where('store_id', $request['store_id']);
+            if(!$productsChunk->count()){
+                return response()->json(['error' => true,
+                    'data' => [],
+                    'message' => 'Products not avaialble for import template',
+                ], 200);
+            }else {
+                return response()->json(['error' => false,
+                    'data' => [],
+                    'message' => 'The import CSV template will be emailed to ' . $request['email'],
+                ], 200);
+            }
         } else {
             $this->createExportData($request);
         }
@@ -43,6 +51,9 @@ class ExportImportProducts extends Controller
 
     public function createExportData($request){
         $productsChunk = ProductSetting::where('store_id', $request['store_id']);
+        if(!$productsChunk->count()){
+            return [];
+        }
         $comma = ",";
         if(!isset($request['rerunrequest'])) {
             $fileName = '/export_files/' . $request['store_hash'] . '/' . time();
