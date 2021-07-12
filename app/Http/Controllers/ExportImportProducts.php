@@ -36,7 +36,7 @@ class ExportImportProducts extends Controller
             if(!$productsChunk->count()){
                 return response()->json(['error' => true,
                     'data' => [],
-                    'message' => 'Products not avaialble for import template',
+                    'message' => 'Products not available for import template',
                 ], 200);
             }else {
                 return response()->json(['error' => false,
