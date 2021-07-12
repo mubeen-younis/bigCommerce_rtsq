@@ -563,7 +563,7 @@ class SubscriptionController extends Controller
             $responce = \Stripe\Customer::create(array(
                 "name" => $cName,
                 "email" => $email,
-             //   "plan" => $stripePlanId,
+                "plan" => $stripePlanId,
                 "description" => $stripeDescription,
                 "metadata" => $metadata,
                 "source" => $token
