@@ -24,8 +24,8 @@ class GenerateRequestData
     public $storeData;
 
     public $radHitConsumed = 0;
-
-    public $isRadActive = 0;
+    public $resiCarrier = [];
+    public $residential = "N";
 
     /**
      * constructor of class that accepts request object
@@ -92,7 +92,7 @@ class GenerateRequestData
                     break;
             }
         }
-        return $carriersArr;
+        return ['carriersArr' => $carriersArr, 'residential' => $this->resiCarrier];
 
     }
 
@@ -219,28 +219,44 @@ class GenerateRequestData
     {
         //Todo: need to review this function
         //print_r($destination); exit;
-        $accessorials = [];
+        /*$accessorials = [];
         if (isset($this->storeData['installed_addons']['RAD']) && !$this->storeData['installed_addons']['RAD']) {
             ($connSettings['quote_settings']['residentialDlvry']) ? array_push($accessorials, 'RESDEL') : '';
         }
-        ($connSettings['quote_settings']['alwaysLiftGateDelivery']) ? array_push($accessorials, 'LFTGATDEST') : '';
 
-        if (isset($this->storeData['installed_addons']['RAD']) && $this->storeData['installed_addons']['RAD']) {
+        ($connSettings['quote_settings']['alwaysLiftGateDelivery']) ? array_push($accessorials, 'LFTGATDEST') : '';*/
+
+        /*if (isset($this->storeData['installed_addons']['RAD']) && $this->storeData['installed_addons']['RAD']) {
             $residential = 'N';
         } else {
             $residential = ($connSettings['quote_settings']['alwaysResidentialDelivery']) ? 'Y' : 'N';
-        }
+        }*/
 
-        /*
-         * Check if rad hit not consumed and residential is enables
-         * **/
-        if($this->radHitConsumed == 0 && $this->storeData['installed_addon_rad']){
-            $this->radHitConsumed = 1;
-            $radStatus = $this->checkRadStatus($this->storeData['store']['id'], $destination);
-        }
 
         $liftGate = ($connSettings['quote_settings']['alwaysLiftGateDelivery'] ||
             $connSettings['quote_settings']['offerLiftGateDelivery']) ? 'Y' : 'N';
+        /*
+         * Check if rad hit not consumed and residential is enables
+         * **/
+        //autoDetectedResidentialAddresses  //autoDetectedResidentialAddressesLfg
+        if( $this->storeData['installed_addon_rad'] && ($connSettings['quote_settings']['autoDetectedResidentialAddresses'] || $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg'])){
+            if($this->radHitConsumed == 0){
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+
+            }else{
+                $residential = $this->residential;
+            }
+            if($liftGate != 'Y'){
+                $liftGate = ($residential == 'Y' && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
+            }
+        }else{
+            $residential = ($connSettings['quote_settings']['alwaysResidentialDelivery']) ? 'Y' : 'N';
+        }
+
+
+        $this->resiCarrier['wweLtl'] = $residential;
 
         $residentialPickup = ($connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
         //print_r($connSettings); dd($liftGate, $residentialPickup);exit;
@@ -277,25 +293,40 @@ class GenerateRequestData
 
     private function checkRadStatus($storeId, $address){
         $smarty = new SmartyStreet();
-        $smarty->getSmartyResponse($storeId, $address);
+        return $smarty->getSmartyResponse($storeId, $address);
     }
 
     public function getApiInfoArrWweSmall($connSettings, $destination)
     {
         //dd($connSettings);
         //Todo: need to review this function
-        if (isset($this->storeData['installed_addons']['RAD']) && $this->storeData['installed_addons']['RAD']) {
+        /*if (isset($this->storeData['installed_addons']['RAD']) && $this->storeData['installed_addons']['RAD']) {
             $residential = 'N';
         } else {
             $residential = ($connSettings['quote_settings']['alwaysResidentialDelivery']) ? 'Y' : 'N';
+        }*/
+        //autoDetectedResidentialAddresses
+        if( $this->storeData['installed_addon_rad'] && ($connSettings['quote_settings']['autoDetectedResidentialAddresses'])){
+            if($this->radHitConsumed == 0){
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+
+            }else{
+                $residential = $this->residential;
+            }
+
+        }else{
+            $residential = ($connSettings['quote_settings']['alwaysResidentialDelivery']) ? 'Y' : 'N';
         }
 
+        $this->resiCarrier['wweSmall'] = $residential;
         $apiArray = [
             'speed_ship_username' => $connSettings['creds']['username'],
             'speed_ship_password' => $connSettings['creds']['password'],
             'authentication_key' => $connSettings['creds']['authentication_key'],
             'world_wide_express_account_number' => $connSettings['creds']['account_number'],
-            'residential_delivery' => $residential,
+            'residentials_delivery' => $residential == 'Y' ? 'yes':'no',
             'prefferedCurrency' => 'USD',
             'includeDeclaredValue' => "1"
         ];
@@ -332,7 +363,7 @@ class GenerateRequestData
                 "vr" => 0 //vertical 0 or 1
             ];
         }
-        $boxBins = [];
+        $boxBins = $newOrigins = $newitemsArr = [];
         $boxes = DB::table('box_sizes')->where('store_id', $storeId)
             ->where('is_available', 1)->get();
         foreach ($boxes as $box) {
@@ -347,34 +378,26 @@ class GenerateRequestData
             );
         }
         $hits = count($items);
-        $Bin3D = new Bin3D();
-        $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $hits, $cartInfo);
-//print_r($binResponse);
-        //print_r($binResponse);
-        //todo we have to save $binResponse for order widget
-        if(count($binResponse)) {
-            $newOrigins = $newitemsArr = [];
-            foreach ($items as $locationId => $item) {
-                foreach ($item as $itm) {
-                    $origin = $itm['variant_id'];
-                    $bins = $binResponse[$locationId]->bins_packed ?? [];
-                    $hasBins = false;
-                    foreach ($bins as $key => $bin) {
-                        $newkey = $origin . $key;
-                        $newOrigins[$newkey] = $origins[$origin];
-                        $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins);
-                        $hasBins = true;
+        if($hits && count($boxBins)) {
+            $Bin3D = new Bin3D();
+            $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $hits, $cartInfo);
+            if (count($binResponse)) {
+                foreach ($items as $locationId => $item) {
+                    foreach ($item as $itm) {
+                        $origin = $itm['variant_id'];
+                        $bins = $binResponse[$locationId]->bins_packed ?? [];
+                        foreach ($bins as $key => $bin) {
+                            $newkey = $origin . $key;
+                            $newOrigins[$newkey] = $origins[$origin];
+                            $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins);
+                        }
+                        break;
                     }
-                    /*if ($hasBins) {
-                        unset($origins[$origin]);
-                        unset($itemsArr[$origin]);
-                    }*/
-                    break;
                 }
+            } else {
+                $newOrigins = $origins;
+                $newitemsArr = $itemsArr;
             }
-        }else{
-            $newOrigins = $origins;
-            $newitemsArr = $itemsArr;
         }
         $resp['items'] = $newitemsArr;
         $resp['originAddress'] = $newOrigins;

@@ -44,8 +44,11 @@ class Shipping
         $originAddress = $this->checkInstorePickup($package['origin']);
         // Generating carrier creds and origin array
         $destination = $request['lineItemData']['destination'] ?? [];
-        $carriersArray = $generateReqData->generateEnitureArray($originAddress, $destination);
-
+        $resp = $generateReqData->generateEnitureArray($originAddress, $destination);
+        $residential = $resp['residential'];
+        $carriersArray = $resp['carriersArr'];
+        //dd($residential);
+        //['carriersArr' => $carriersArr, 'residential' => $this->residential];
         // Checking if any productis hazardous
         $hazmatAllItems = $this->isHazmatMaterial($package);
 
@@ -72,10 +75,11 @@ class Shipping
             return false;
         }
         $url = Constant::QUOTES_URL;
-//print_r($requestArr);
+//print_r($requestArr); exit;
         //$resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse];
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
-
+//print_r($requestArr['requestArr']); exit;
+//echo "<pre>"; print_r($quotes); exit;
         $boxbins = $requestArr['boxBins'] ?? [];
         if(isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])){
             $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes);
@@ -93,7 +97,8 @@ Log::info('after addBinResponseToQuotes '. json_encode($quotes));
             dd($printData);
         }
         //dd($requestArr,$quotes);
-        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $hazmatAllItems);
+        //print_r($requestArr); print_r($quotes); exit;
+        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $hazmatAllItems, $residential);
 //print_r($finalQuotes); exit;
         $finalQuotes = $this->addRateId($finalQuotes);
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
