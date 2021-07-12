@@ -83,8 +83,10 @@ class OrderController extends Controller
             return [];
         }
         //echo "<pre>"; print_r($data); exit;
+        $isSmallrate = substr($order['rate_id'], 0, 9) == 'parcel_12' || substr($order['rate_id'], 0, 5) == 'Multi'  ? true : false;
         $lineItem = json_decode($data['lineitems'])->lineItemData;
         $responseFromWS = json_decode($data['quotes']);
+        $requestToWS = json_decode($data['request']);
         $autoResidentialsStatus = 'n';
         $binPackagingData = '';
         $orderWidget = [];
@@ -93,10 +95,15 @@ class OrderController extends Controller
             foreach($WsResp as $zip => $ws){
 
                 if( !(isset($ws->severity) && $ws->severity == 'ERROR') ){
-                    $autoResidentialsStatus = $ws->autoResidentialsStatus ?? 'n';
-                    $liftGateStatus = $ws->liftGateStatus ?? 'n';
+
+                    $liftResidentialStatus = $this->getLiftResidentialStatus($requestToWS, $isSmallrate);
+                    $liftGateStatus = $liftResidentialStatus['liftG'] ?? 'n';
+                    $autoResidentialsStatus = $liftResidentialStatus['resi'] ?? 'n';
+
+                    //$autoResidentialsStatus = $ws->autoResidentialsStatus ?? 'n';
+
                     //$binPackagingData = $ws['binPackagingData']['response']['']
-                    $isSmallrate = substr($order['rate_id'], 0, 9) == 'parcel_12' || substr($order['rate_id'], 0, 5) == 'Multi'  ? true : false;
+
                     $totalBoxes = 0;
                    // dd($order['rate_id'],$isSmallrate);
                     //print_r($ws->binPackagingData); exit;
@@ -149,8 +156,9 @@ class OrderController extends Controller
             $city = $origin->senderCity ? $origin->senderCity.',': '';
             $state = $origin->senderState ?? '';
             $zip = $origin->locationId != '' ? $origin->locationId : $origin->senderZip;
+            $senderZip = $origin->senderZip ?? '';
             $orderWidget[$zip]['locationtype'] = $item->dropship_enabled == 'N' ? 'Warehouse' : 'Dropship';
-            $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $zip;
+            $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes;
             $orderWidget[$zip]['shipping_method'] = explode('(',$order['shipping_name'])[0];
             $orderWidget[$zip]['shipping_rate'] = '$'.$order['shipping_rate'];
@@ -171,6 +179,28 @@ class OrderController extends Controller
         return $resp;
     }
 
+
+    public function getLiftResidentialStatus($requestToWS, $isSmallrate){
+       // print_r($requestToWS); exit;
+        $response = ['resi' => 'n', 'liftG' => 'n'];
+        if($isSmallrate){
+            $checkResi = isset($requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery) && $requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery == 'Y';
+            if($checkResi){
+                $response['resi'] = 'Y';
+            }
+        }else {
+            $checkResi = isset($requestToWS->requestArr->carriers->wweLTL->api->speed_freight_residential_delivery) && $requestToWS->requestArr->carriers->wweLTL->api->speed_freight_residential_delivery == 'Y';
+            if($checkResi){
+               $response['resi'] = 'Y';
+            }
+
+            $checkLift = isset($requestToWS->requestArr->carriers->wweLTL->api->speed_freight_lift_gate_delivery) && $requestToWS->requestArr->carriers->wweLTL->api->speed_freight_lift_gate_delivery == 'Y';
+            if($checkLift){
+                $response['liftG'] = 'Y';
+            }
+        }
+        return $response;
+    }
     public function getBoxName($binId, $store_id, $rate_id, $cart_id){
         $data = RequestData::where('rate_id', $rate_id)
             ->where('cart_id', $cart_id)
