@@ -184,17 +184,17 @@ class OrderController extends Controller
        // print_r($requestToWS); exit;
         $response = ['resi' => 'n', 'liftG' => 'n'];
         if($isSmallrate){
-            $checkResi = isset($requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery) && $requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery == 'Y';
+            $checkResi = isset($requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery) && ($requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery == 'Y' || $requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery == 'yes' );
             if($checkResi){
                 $response['resi'] = 'Y';
             }
         }else {
-            $checkResi = isset($requestToWS->requestArr->carriers->wweLTL->api->speed_freight_residential_delivery) && $requestToWS->requestArr->carriers->wweLTL->api->speed_freight_residential_delivery == 'Y';
+            $checkResi = isset($requestToWS->requestArr->carriers->wweLTL->api->speed_freight_residential_delivery) && ($requestToWS->requestArr->carriers->wweLTL->api->speed_freight_residential_delivery == 'Y' || $requestToWS->requestArr->carriers->wweLTL->api->speed_freight_residential_delivery == 'yes');
             if($checkResi){
                $response['resi'] = 'Y';
             }
 
-            $checkLift = isset($requestToWS->requestArr->carriers->wweLTL->api->speed_freight_lift_gate_delivery) && $requestToWS->requestArr->carriers->wweLTL->api->speed_freight_lift_gate_delivery == 'Y';
+            $checkLift = isset($requestToWS->requestArr->carriers->wweLTL->api->speed_freight_lift_gate_delivery) && ($requestToWS->requestArr->carriers->wweLTL->api->speed_freight_lift_gate_delivery == 'Y' || $requestToWS->requestArr->carriers->wweLTL->api->speed_freight_lift_gate_delivery == 'yes');
             if($checkLift){
                 $response['liftG'] = 'Y';
             }
