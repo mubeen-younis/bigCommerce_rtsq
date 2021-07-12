@@ -107,6 +107,7 @@ class MainController extends BaseController
                     $store = new Store();
                 }
                 $store->name = 'store-'.$storeHash.'.mybigcommerce.com';
+                $store->url = 'store-'.$storeHash.'.mybigcommerce.com';
                 $store->access_token = $data['access_token'];
                 $store->token = $toAppendHash;
                 $store->hash = $storeHash;
