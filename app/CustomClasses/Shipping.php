@@ -132,7 +132,7 @@ Log::info('after addBinResponseToQuotes '. json_encode($quotes));
     public function addRateId($finalQuotes){
         $time = time();
         foreach($finalQuotes as $key => $finalQuote){
-            $finalQuotes[$key]['rate_id'] = $finalQuote['code'].$time;
+            $finalQuotes[$key]['rate_id'] = isset($finalQuote['code']) ? $finalQuote['code'].$time : $time;
         }
         return $finalQuotes;
     }

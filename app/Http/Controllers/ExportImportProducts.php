@@ -313,10 +313,12 @@ class ExportImportProducts extends Controller
     }
     public function getSettings($oldSettings, $product, $indexes){
         $settings = $oldSettings[0] ? json_decode($oldSettings[0]) : new \stdClass();
+        $freightUpdate = false;
         if(isset($indexes['freight_enabled']) && $indexes['freight_enabled']){
             $key = $indexes['freight_enabled'];
             if(array_key_exists($key, $product)){
                 $settings->freight_enabled = (bool) $product["$key"];
+                $freightUpdate = true;
             }
         }
         if(isset($indexes['parcel_enabled']) && $indexes['parcel_enabled']){
@@ -324,6 +326,13 @@ class ExportImportProducts extends Controller
             if(array_key_exists($key, $product)){
                 $settings->parcel_enabled = (bool) $product["$key"];;
             }
+            if(isset($settings->parcel_enabled) && $settings->parcel_enabled === true && isset($settings->freight_enabled) && $settings->freight_enabled === true) {
+                $settings->parcel_enabled = false;
+            }
+            $freightUpdate = false;
+        }
+        if($freightUpdate && isset($settings->parcel_enabled) && $settings->parcel_enabled === true){
+            $settings->freight_enabled = false;
         }
         if(isset($indexes['freight_class']) && $indexes['freight_class']){
             $key = $indexes['freight_class'];

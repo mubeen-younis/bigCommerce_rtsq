@@ -545,7 +545,7 @@ class CompileQuotes
      */
     public function getAutoResidentialTitle($resi)
     {
-       // Todo: check RAD is enabled or not
+        // Todo: check RAD is enabled or not
         $isRadEnabled = $this->isRADEnabledandActive();
         // dd($isRadEnabled, $resi);
         if (!empty($isRadEnabled) && $isRadEnabled['is_enabled'] && $isRadEnabled['is_suspend'] !== 1) {
@@ -678,7 +678,7 @@ class CompileQuotes
                 //$this->getAutoResidentialTitle($isRad);
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
                 unset($quote['InstorPickupLocalDelivery']);
-                $lgQuotes = $this->quoteSettings['alwaysLiftGateDelivery'] || $this->quoteSettings['offerLiftGateDelivery'] || ($this->quoteSettings['alwaysResidentialDelivery'] && $this->quoteSettings['autoDetectedResidentialAddressesLfg']);
+                $lgQuotes = (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery']) || (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']) || ( ( isset($this->quoteSettings['alwaysResidentialDelivery']) && $this->quoteSettings['alwaysResidentialDelivery']) && (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']));
             }
 
             $originQuotes = [];
@@ -775,7 +775,7 @@ class CompileQuotes
                 return [];
             }
             if ($count == 0) { //To be checked only once
-               // $this->getAutoResidentialTitle('');
+                // $this->getAutoResidentialTitle('');
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
                 unset($quote['InstorPickupLocalDelivery']);
             }
@@ -949,8 +949,13 @@ class CompileQuotes
      */
     public function calculateHandlingFee($cost)
     {
-        $handlingFeeMarkup = (float)$this->quoteSettings['handling_free_markup'] ?? 0;
-        $symbolicHandlingFee = strpos($this->quoteSettings['handling_free_markup'], '%') ? '%' : '';
+        $handlingFeeMarkup = 0;
+        $symbolicHandlingFee = '';
+        if(isset($this->quoteSettings['handling_free_markup'])){
+            $handlingFeeMarkup = (float)$this->quoteSettings['handling_free_markup'] ?? 0;
+            $symbolicHandlingFee = strpos($this->quoteSettings['handling_free_markup'], '%') ? '%' : '';
+        }
+
 
         if (strlen($handlingFeeMarkup) > 0) {
             if ($symbolicHandlingFee === '%') {
@@ -1167,7 +1172,7 @@ class CompileQuotes
             return $serviceTitle;
         }
         // Here  Making Delivery estimate title
-        $deliveryEstimateLabel = (!empty($deliveryEstimate) && $this->quoteSettings['showDeliveryEstimate']) ? ' (Estimated transit time of ' . $deliveryEstimate . ' business days)' : '';
+        $deliveryEstimateLabel = (!empty($deliveryEstimate) && ( isset($this->quoteSettings['showDeliveryEstimate']) && $this->quoteSettings['showDeliveryEstimate']) ) ? ' (Estimated transit time of ' . $deliveryEstimate . ' business days)' : '';
         // Here  Making Access title
         $accessTitle = '';
 

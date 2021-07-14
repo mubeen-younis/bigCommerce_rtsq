@@ -108,7 +108,7 @@ class GenerateRequestData
             // 'returnQuotesOnExceedWeight' => $connSettings['quote_settings']['weightExeeds'],
             'returnQuotesOnExceedWeight' => 1,
 
-            'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'],
+            'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
             'api' => $this->getApiInfoArrWweLtl($connSettings, $destination),
             'getDistance' => 0,
         ];
@@ -120,7 +120,7 @@ class GenerateRequestData
     {
         // TODO: Need to set dynamic parameters of wwe small
         return [
-            'licenseKey' => $connSettings['creds']['license_key'],//$this->connectionSettings['license_key'],
+            'licenseKey' => $connSettings['creds']['license_key'] ?? '',//$this->connectionSettings['license_key'],
             'serverName' => "https://" . $this->storeData['store']['name'],//"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
             'carrierMode' => 'pro',
             'quotestType' => 'small', // ltl / small
@@ -139,20 +139,20 @@ class GenerateRequestData
      */
     public function generateRequestArray($request, $carriersArray, $itemsArr, $cartInfo)
     {
- /*       if (count($carriersArray['originAddress']) > 1) {
-            $whIDs = [];
-            foreach ($carriersArray['originAddress'] as $wh) {
-                $whIDs[] = $wh['locationId'];
-            }
-            if (count(array_unique($whIDs)) > 1) {
-                foreach ($carriersArray['originAddress'] as $id => $wh) {
-                    if (isset($wh['InstorPickupLocalDelivery'])) {
-                        $carriersArray['originAddress'][$id]['InstorPickupLocalDelivery'] = [];
-                    }
-                }
-            }
-        }*/
-       // $carriers = $this->registry->registry('enitureCarriers');
+        /*       if (count($carriersArray['originAddress']) > 1) {
+                   $whIDs = [];
+                   foreach ($carriersArray['originAddress'] as $wh) {
+                       $whIDs[] = $wh['locationId'];
+                   }
+                   if (count(array_unique($whIDs)) > 1) {
+                       foreach ($carriersArray['originAddress'] as $id => $wh) {
+                           if (isset($wh['InstorPickupLocalDelivery'])) {
+                               $carriersArray['originAddress'][$id]['InstorPickupLocalDelivery'] = [];
+                           }
+                       }
+                   }
+               }*/
+        // $carriers = $this->registry->registry('enitureCarriers');
         $carriers = $carriersArray['carriers'];
         $receiverAddress = $this->getReceiverData($request);
 
@@ -162,19 +162,19 @@ class GenerateRequestData
             $autoResidential = '1';
             $liftGateWithAuto = '1';
         }
-       /*print_r([
-            'apiVersion' => '2.0',
-            'platform' => 'bigcommerce',
-            'dont_auth' => 1,
-            'binPackagingMultiCarrier' => $this->storeData['installed_addon_sbs'],
-            'autoResidentials' => $autoResidential,
-            'liftGateWithAutoResidentials' => $liftGateWithAuto,
-            'requestKey' => md5(microtime() . rand()),
-            'carriers' => $carriers,
-            'receiverAddress' => $receiverAddress,
-            'commdityDetails' => $itemsArr,
-        ]);
-*/
+        /*print_r([
+             'apiVersion' => '2.0',
+             'platform' => 'bigcommerce',
+             'dont_auth' => 1,
+             'binPackagingMultiCarrier' => $this->storeData['installed_addon_sbs'],
+             'autoResidentials' => $autoResidential,
+             'liftGateWithAutoResidentials' => $liftGateWithAuto,
+             'requestKey' => md5(microtime() . rand()),
+             'carriers' => $carriers,
+             'receiverAddress' => $receiverAddress,
+             'commdityDetails' => $itemsArr,
+         ]);
+ */
         $binReponse = $boxBins =[];
         if ($this->storeData['installed_addon_sbs'])
         {
@@ -199,8 +199,8 @@ class GenerateRequestData
             'platform' => 'bigcommerce',
             'dont_auth' => 1,
             //'binPackagingMultiCarrier' => $this->storeData['installed_addon_sbs'],
-           // 'autoResidentials' => $autoResidential,
-           // 'liftGateWithAutoResidentials' => $liftGateWithAuto,
+            // 'autoResidentials' => $autoResidential,
+            // 'liftGateWithAutoResidentials' => $liftGateWithAuto,
             'requestKey' => md5(microtime() . rand()),
             'carriers' => $carriers,
             'receiverAddress' => $receiverAddress,
@@ -233,13 +233,13 @@ class GenerateRequestData
         }*/
 
 
-        $liftGate = ($connSettings['quote_settings']['alwaysLiftGateDelivery'] ||
-            $connSettings['quote_settings']['offerLiftGateDelivery']) ? 'Y' : 'N';
+        $liftGate = ( (isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
+            (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
         /*
          * Check if rad hit not consumed and residential is enables
          * **/
         //autoDetectedResidentialAddresses  //autoDetectedResidentialAddressesLfg
-        if( $this->storeData['installed_addon_rad'] && ($connSettings['quote_settings']['autoDetectedResidentialAddresses'] || $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg'])){
+        if( $this->storeData['installed_addon_rad'] && ( (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']) || (isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']))){
             if($this->radHitConsumed == 0){
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -249,16 +249,16 @@ class GenerateRequestData
                 $residential = $this->residential;
             }
             if($liftGate != 'Y'){
-                $liftGate = ($residential == 'Y' && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
+                $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
         }else{
-            $residential = ($connSettings['quote_settings']['alwaysResidentialDelivery']) ? 'Y' : 'N';
+            $residential = (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? 'Y' : 'N';
         }
 
 
         $this->resiCarrier['wweLtl'] = $residential;
 
-        $residentialPickup = ($connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
+        $residentialPickup = ( isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
         //print_r($connSettings); dd($liftGate, $residentialPickup);exit;
         $apiArray = [
             'speed_freight_username' => $connSettings['creds']['username'],
@@ -398,10 +398,13 @@ class GenerateRequestData
                 $newOrigins = $origins;
                 $newitemsArr = $itemsArr;
             }
+        }else{
+            $newOrigins = $origins;
+            $newitemsArr = $itemsArr;
         }
         $resp['items'] = $newitemsArr;
         $resp['originAddress'] = $newOrigins;
-        $resp['binResponse'] = $binResponse;
+        $resp['binResponse'] = $binResponse ?? [];
         $resp['boxBins'] = $boxBins;
         return $resp;
 

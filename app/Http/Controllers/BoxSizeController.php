@@ -16,6 +16,7 @@ class BoxSizeController extends Controller
     public function index()
     {
         //$boxes = BoxSize::get();
+        $boxes = [];
         foreach (BoxSize::get() as $key => $box){
 
             $boxes[$key] = $box;
