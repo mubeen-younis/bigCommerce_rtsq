@@ -790,7 +790,7 @@ class CompileQuotes
                     //  CHeck FOr Ups ground transit days
                     if ($data['serviceType'] == "GND") {
                         // TODO: ALso We have to check plan here
-                        if ($this->quoteSettings['number_of_transit_days'] != null && $this->quoteSettings['ground_metric'] != null) {
+                        if (isset($this->quoteSettings['number_of_transit_days']) && $this->quoteSettings['number_of_transit_days'] != null && $this->quoteSettings['ground_metric'] != null) {
                             $islimited = $this->wweSmallQuoteRes->checkGroundTransit($data, $this->quoteSettings);
                             if ($islimited) {
                                 continue;

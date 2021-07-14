@@ -306,7 +306,7 @@ class GenerateRequestData
             $residential = ($connSettings['quote_settings']['alwaysResidentialDelivery']) ? 'Y' : 'N';
         }*/
         //autoDetectedResidentialAddresses
-        if( $this->storeData['installed_addon_rad'] && ($connSettings['quote_settings']['autoDetectedResidentialAddresses'])){
+        if( $this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])){
             if($this->radHitConsumed == 0){
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -317,7 +317,7 @@ class GenerateRequestData
             }
 
         }else{
-            $residential = ($connSettings['quote_settings']['alwaysResidentialDelivery']) ? 'Y' : 'N';
+            $residential = (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? 'Y' : 'N';
         }
 
         $this->resiCarrier['wweSmall'] = $residential;
