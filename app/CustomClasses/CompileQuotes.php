@@ -1532,7 +1532,7 @@ class CompileQuotes
         $simplePrice = $this->getAveragePrice($sliced, $options);
         $serviceName = $this->customLabel('Freight');
         $averageRateService[0]['simple'] = [
-            'title' => $serviceName,
+            'title' => $this->getTitle($serviceName, $lgQuotes),//$serviceName,
             'code' => 'AVG' . $this->getAccessorialCode(),
             'rate' => $simplePrice,
         ];
