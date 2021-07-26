@@ -64,11 +64,12 @@ class BoxSizeController extends Controller
 
         $boxsize = BoxSize::create($data);
         $boxsize->save();
-
+        $boxsize->is_available = $boxsize->is_available === true ? 1:0;
+        $boxsize->availability = $boxsize->is_available ===1 ? 'Yes' : 'No';
         return response()->json(
             [
                 'error' => false,
-                'message' => "Box Size added successfully.",
+                'message' => "Box added successfully.",
                 'data' => $boxsize,
             ], 200);
     }
@@ -122,14 +123,14 @@ class BoxSizeController extends Controller
             return response()->json(
                 [
                     'error' => false,
-                    'message' => "Box Size updated successfully.",
+                    'message' => "Box updated successfully.",
                     'data' => $box,//BoxSize::find($request->id),
                 ], 200);
         }
 
         return response()->json([
             'error' => true,
-            'message' => 'Box size could not be updated successfully.',
+            'message' => 'Box could not be updated successfully.',
         ]);
     }
 

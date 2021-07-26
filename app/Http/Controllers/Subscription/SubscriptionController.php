@@ -732,9 +732,9 @@ class SubscriptionController extends Controller
         $currentSubscriptionDetail = $this->subscriptionDetailFromDB($storeId);
 
         if (($request['action'] == 1) && (is_null($currentSubscriptionDetail) || ($currentSubscriptionDetail->total_remaining_carriers == 0) || ($currentSubscriptionDetail->status == 3))){
-            $msg = 'You have reached to the subscription carriers limit';
+            $msg = 'You have reached the subscription carriers limit';
             if (is_null($currentSubscriptionDetail)){
-                $msg = "You didn't have any plan to install or enable the carrier";
+                $msg = "You don't have any plan to install or enable the carrier";
             }elseif ($currentSubscriptionDetail->status == 3){
                 $msg = "Your subscription has been expired";
             }

@@ -352,16 +352,19 @@ class GenerateRequestData
         $items = [];
 
         foreach ($origins as $key => $origin){
-            $items[$origin['locationId']][] = [
-                "variant_id" => $key,
-                "id" => $key,
-                "wg" => $itemsArr[$key]['lineItemWeight'] ?? 0,
-                "h" => $itemsArr[$key]['lineItemHeight'] ?? 0,
-                "d" => $itemsArr[$key]['lineItemLength'] ?? 0,
-                "w" => $itemsArr[$key]['lineItemWidth'] ?? 0,
-                "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
-                "vr" => 0 //vertical 0 or 1
-            ];
+            $isNotLtl = !(isset($itemsArr[$key]['freightClass']) && $itemsArr[$key]['freightClass'] === 'ltl');
+            if($isNotLtl) {
+                $items[$origin['locationId']][] = [
+                    "variant_id" => $key,
+                    "id" => $key,
+                    "wg" => $itemsArr[$key]['lineItemWeight'] ?? 0,
+                    "h" => $itemsArr[$key]['lineItemHeight'] ?? 0,
+                    "d" => $itemsArr[$key]['lineItemLength'] ?? 0,
+                    "w" => $itemsArr[$key]['lineItemWidth'] ?? 0,
+                    "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
+                    "vr" => 0 //vertical 0 or 1
+                ];
+            }
         }
         $boxBins = $newOrigins = $newitemsArr = [];
         $boxes = DB::table('box_sizes')->where('store_id', $storeId)

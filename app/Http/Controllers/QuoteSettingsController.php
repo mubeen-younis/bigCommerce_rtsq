@@ -21,7 +21,7 @@ class QuoteSettingsController extends Controller
         $quoteSettings->installed_carrier_id = $request->carrierId;
         $quoteSettings->value = json_encode($request->all());
         $quoteSettings->save();
-        return response()->json(['error' => false, 'message' => 'Quote settings has been successfully saved.', 'data' => $quoteSettings]);
+        return response()->json(['error' => false, 'message' => 'Quote settings have been saved successfully.', 'data' => $quoteSettings]);
     }
 
 }

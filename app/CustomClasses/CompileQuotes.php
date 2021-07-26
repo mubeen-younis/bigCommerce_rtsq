@@ -790,7 +790,7 @@ class CompileQuotes
                     //  CHeck FOr Ups ground transit days
                     if ($data['serviceType'] == "GND") {
                         // TODO: ALso We have to check plan here
-                        if (isset($this->quoteSettings['number_of_transit_days']) && $this->quoteSettings['number_of_transit_days'] != null && $this->quoteSettings['ground_metric'] != null) {
+                        if (isset($this->quoteSettings['number_of_transit_days']) && $this->quoteSettings['number_of_transit_days'] != null && isset($this->quoteSettings['ground_metric']) && $this->quoteSettings['ground_metric'] != null) {
                             $islimited = $this->wweSmallQuoteRes->checkGroundTransit($data, $this->quoteSettings);
                             if ($islimited) {
                                 continue;
@@ -798,7 +798,7 @@ class CompileQuotes
                         }
                     }
                     //  CHecks FOr Only quote ground service if hazardous
-                    if ($isHazmat && $this->quoteSettings['ground_service_for_hazardous_material']) {
+                    if ($isHazmat && isset($this->quoteSettings['ground_service_for_hazardous_material']) && $this->quoteSettings['ground_service_for_hazardous_material']) {
                         if ($data['serviceType'] != "GND") {
                             continue;
                         }
@@ -989,10 +989,10 @@ class CompileQuotes
         if (empty($quotes)) {
             return [];
         }
-        $lfg = $this->quoteSettings['alwaysLiftGateDelivery'] == 1 || ($this->isResi && $this->quoteSettings['autoDetectedResidentialAddressesLfg']);
+        $lfg = (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery'] == 1) || ($this->isResi && isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']);
         //echo "<pre>"; print_r($quotes); print_r($this->quoteSettings); exit;
         if ($this->isMultiShipment == false) {
-            if (isset($quotes['liftgate']) && $this->quoteSettings['offerLiftGateDelivery'] == 1 && ($this->quoteSettings['autoDetectedResidentialAddressesLfg'] == 0 || $this->isResi == 0)) {
+            if (isset($quotes['liftgate']) && (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery'] == 1) && (( isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'] == 0) || $this->isResi == 0)) {
                 /**
                  * Condition for lift gate as an option
                  * */

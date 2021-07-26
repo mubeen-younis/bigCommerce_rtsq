@@ -166,7 +166,12 @@ class LocationsController extends Controller
             }
         } else {
             $location = new Locations();
-            if (Locations::where('zip_code', $request->zip_code)->where('type', 2)->exists()) {
+            if (empty($request->nickname)) {
+                $nickname = $request->zip_code . '_' . $request->city . '_' . $request->state;
+            } else {
+                $nickname = $request->nickname;
+            }
+            if (Locations::where('zip_code', $request->zip_code)->where('nickname', $nickname)->where('type', 2)->exists()) {
                 return ['error' => true,
                     'data' => [],
                     'message' => 'Error! Zip code already exists',

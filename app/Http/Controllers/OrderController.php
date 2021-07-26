@@ -79,15 +79,19 @@ class OrderController extends Controller
             ->where('store_id', $request['store_id'])
             ->first()->toArray();
         //dd($data);
+        //print($order['rate_id']); exit;
         if(empty($data)){
             return [];
         }
         //echo "<pre>"; print_r($data); exit;
         $isSmallrate = substr($order['rate_id'], 0, 9) == 'parcel_12' || substr($order['rate_id'], 0, 5) == 'Multi'  ? true : false;
+        $isLG = strpos($order['rate_id'], '+LG');
         $lineItem = json_decode($data['lineitems'])->lineItemData;
         $responseFromWS = json_decode($data['quotes']);
         $requestToWS = json_decode($data['request']);
         $autoResidentialsStatus = 'n';
+        $residentialsPickup = 'n';
+        $liftGateStatus = 'n';
         $binPackagingData = '';
         $orderWidget = [];
         foreach($responseFromWS as $carrrierName => $WsResp){
@@ -97,9 +101,11 @@ class OrderController extends Controller
                 if( !(isset($ws->severity) && $ws->severity == 'ERROR') ){
 
                     $liftResidentialStatus = $this->getLiftResidentialStatus($requestToWS, $isSmallrate);
-                    $liftGateStatus = $liftResidentialStatus['liftG'] ?? 'n';
+                    if($isLG) {
+                        $liftGateStatus = $liftResidentialStatus['liftG'] ?? 'n';
+                    }
                     $autoResidentialsStatus = $liftResidentialStatus['resi'] ?? 'n';
-
+                    $residentialsPickup = $liftResidentialStatus['resiPickup'] ?? 'n';
                     //$autoResidentialsStatus = $ws->autoResidentialsStatus ?? 'n';
 
                     //$binPackagingData = $ws['binPackagingData']['response']['']
@@ -151,6 +157,7 @@ class OrderController extends Controller
 
         $count = 0;
         //print_r($orderWidget); exit;
+        $addedInsurance = false;
         foreach($origins as $key => $origin){
             $item =  $items->$key;
             $city = $origin->senderCity ? $origin->senderCity.',': '';
@@ -160,13 +167,25 @@ class OrderController extends Controller
             $orderWidget[$zip]['locationtype'] = $item->dropship_enabled == 'N' ? 'Warehouse' : 'Dropship';
             $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes;
-            $orderWidget[$zip]['shipping_method'] = explode('(',$order['shipping_name'])[0];
+            $shipping_name = explode('(',$order['shipping_name']);
+            $sName = $shipping_name[0] ?? '';
+            $sMethod = isset($shipping_name[1]) ? '('.$shipping_name[1] : '';
+            $orderWidget[$zip]['shipping_method'] = $sName.$sMethod;
             $orderWidget[$zip]['shipping_rate'] = '$'.$order['shipping_rate'];
             $orderWidget[$zip]['items'][] = $item->piecesOfLineItem.' X '.$item->lineItemName;
             $orderWidget[$zip]['accessories'] = [];
             isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y' ? array_push($orderWidget[$zip]['accessories'], 'Hazardous Material') : '';
-            isset($item->product_insurance_active) && $item->product_insurance_active == 'Y' ? array_push($orderWidget[$zip]['accessories'], 'Insurance') : '';
+
+
+            if(isset($item->product_insurance_active) && $item->product_insurance_active == 'Y'){
+                array_push($orderWidget[$zip]['accessories'], 'Insurance');
+                $addedInsurance = true;
+            }else if($addedInsurance){
+                array_push($orderWidget[$zip]['accessories'], 'Insurance');
+            }
+
             $autoResidentialsStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Delivery') : '';
+            $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Pickup Delivery') : '';
             $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Delivery') : '';
             $count++;
         }
@@ -182,7 +201,7 @@ class OrderController extends Controller
 
     public function getLiftResidentialStatus($requestToWS, $isSmallrate){
        // print_r($requestToWS); exit;
-        $response = ['resi' => 'n', 'liftG' => 'n'];
+        $response = ['resi' => 'n', 'liftG' => 'n', 'resiPickup' => 'n'];
         if($isSmallrate){
             $checkResi = isset($requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery) && ($requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery == 'Y' || $requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery == 'yes' );
             if($checkResi){
@@ -197,6 +216,11 @@ class OrderController extends Controller
             $checkLift = isset($requestToWS->requestArr->carriers->wweLTL->api->speed_freight_lift_gate_delivery) && ($requestToWS->requestArr->carriers->wweLTL->api->speed_freight_lift_gate_delivery == 'Y' || $requestToWS->requestArr->carriers->wweLTL->api->speed_freight_lift_gate_delivery == 'yes');
             if($checkLift){
                 $response['liftG'] = 'Y';
+            }
+
+            $checkResiPickup = isset($requestToWS->requestArr->carriers->wweLTL->api->speed_freight_residential_pickup) && ($requestToWS->requestArr->carriers->wweLTL->api->speed_freight_residential_pickup == 'Y' || $requestToWS->requestArr->carriers->wweLTL->api->speed_freight_residential_pickup == 'yes');
+            if($checkResiPickup){
+                $response['resiPickup'] = 'Y';
             }
         }
         return $response;

@@ -67,7 +67,7 @@ class PackageSubscriptionController extends Controller
             ->leftjoin('package_sub_to_be_charge as pstbc','pstbc.subscription_id','=','ps.id')
             ->select('ps.id','ps.package_id as package_id','ps.subscription_time','ps.update_time','ps.expiry_time','ps.status','ps.created_at','ps.total_count as consumed_hits','p.htis as total_hits','pstbc.package_id as pacakgeId_to_be_charge','pstbc.status as package_to_be_charge_status')
             ->where('ps.store_id',self::$storeId)->where('p.addon_type',$addonType)->latest()->first();
-
+//dd($currentPackageSub);
         if (!is_null($currentPackageSub)){
             $currentPkg = Package::where('id',$currentPackageSub->package_id)->first();
             $toBeChargepkg = Package::where('id',$currentPackageSub->pacakgeId_to_be_charge)->first();
@@ -99,7 +99,7 @@ class PackageSubscriptionController extends Controller
             $currentPackageSub->total_allowed_hits_in_to_be_charge = $toBeChargepkg->htis;
             if ($addonType == self::$addonTypeRAD && $currentPackageSub->to_be_charge_package_name == 'Extreme'){
                 $currentPackageSub->total_allowed_hits_in_to_be_charge = 'Unlimited';
-                $currentPackageSub->consumed_hits_in_per = '';
+                //$currentPackageSub->consumed_hits_in_per = '';
             }
 
             $currentPackageSub->toBeChargeDropdownText = $currentPackageSub->total_allowed_hits_in_to_be_charge.'/'.lcfirst(substr($currentPackageSub->to_be_charge_package_period,0,2)).' ($'.number_format($currentPackageSub->to_be_charge_package_cost,2).')';
@@ -171,7 +171,7 @@ class PackageSubscriptionController extends Controller
             return [
                 'error' => true,
                 'data' => [],
-                'message' => "You didn't have any Real-time Shipping Quotes Plan to subscribe to the Addon",
+                'message' => "You don't have any Real-time Shipping Quotes Plan to subscribe the Addon",
             ];
         }
         if (isset($mainSubscription->plan_id) && $mainSubscription->plan_id == self::$mainSubTrial && $data['package'] != self::$dynamicTrial){
@@ -542,10 +542,11 @@ class PackageSubscriptionController extends Controller
             ->latest()->first();
         $currentPackageSub->status = $data['suspend'];
         $currentPackageSub->save();
+        $addonName = $addonType === 'SBS' ? 'Standard box sizes' : 'Residential Address detection';
         return [
             'error' => false,
             'data' => $this->getPkgDetails($addonType),
-            'message' => ($data['suspend'] == 3) ? 'The '.$addonType.' addon has been suspended' : 'The '.$addonType.' addon has been reactivated',
+            'message' => ($data['suspend'] == 3) ? 'The '.$addonName.' addon has been suspended' : 'The '.$addonName.' addon has been reactivated',
         ];
     }
 }
