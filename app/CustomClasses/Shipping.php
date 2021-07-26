@@ -7,6 +7,7 @@ use App\CustomClasses\CompileQuotes;
 use Illuminate\Support\Facades\Log;
 use App\Models\RequestTempData;
 use App\Models\Store;
+use App\Models\BoxSize;
 use Carbon\Carbon;
 class Shipping
 {
@@ -84,7 +85,7 @@ class Shipping
         if(isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])){
             $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes);
         }
-Log::info('after addBinResponseToQuotes '. json_encode($quotes));
+        Log::info('after addBinResponseToQuotes '. json_encode($quotes));
 //echo "<pre>"; print_r($quotes); exit;
         // Debug point will print data if en_print_query=1
         if (isset($_GET['DEBUG_ON'])) {
@@ -107,11 +108,49 @@ Log::info('after addBinResponseToQuotes '. json_encode($quotes));
     }
 
     private function addBinResponseToQuotes($binReponse, $quotes){
+        $boxFee = 0;
         foreach ($binReponse as $locationId => $bin){
             $quotes['wweSmall'][$locationId]['binPackagingData']['response'] = $bin;
+            $boxFee += $this->getCumulativeBoxFee($bin);
+        }
+        if($boxFee > 0){
+            $quotes = $this->addBoxFeeToQuotes($quotes, $boxFee);
         }
         return $quotes;
     }
+
+    private function addBoxFeeToQuotes(array $quotes, float $boxFee) : array
+    {
+        if(isset($quotes['wweSmall']) && !empty($quotes['wweSmall'])){
+            foreach ($quotes['wweSmall'] as $locId => $q){
+                foreach($q['q'] as $key=>$qs){
+                    if(isset($qs['totalNetCharge']['Amount'])){
+                        $quotes['wweSmall'][$locId]['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $boxFee;
+                    }
+                }
+            }
+        }
+
+        return $quotes;
+    }
+
+    private function getCumulativeBoxFee(object $bins):float
+    {
+        $boxFee = 0;
+        if(!empty($bins->bins_packed)){
+            foreach($bins->bins_packed as $pack){
+                $boxId = $pack->bin_data->id;
+                $boxFee += $this->BoxFeeByID($boxId);
+            }
+        }
+        return $boxFee;
+    }
+
+    private function BoxFeeByID(int $boxId):float
+    {
+        return BoxSize::find($boxId)->pluck('box_fee')->first();
+    }
+
     public function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins){
         //print_r($cartId); print_r($requestArr); print_r($quotes); print_r($finalQuotes); print_r($resp); exit;
 
