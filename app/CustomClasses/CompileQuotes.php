@@ -807,6 +807,8 @@ class CompileQuotes
                     $access = '';
                     // Adding Markup in services if enabled
                     $price = $this->wweSmallQuoteRes->getServiceRate($data['totalNetCharge']['Amount'], $data['serviceType'], $this->quoteSettings);
+                    $quoteSettings = $this->quoteSettings;
+                    $price = $this->wweSmallQuoteRes->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup']);
                     // Checking hazmat and adding hazmat amounts in services
                     if ($isHazmat) {
                         if($this->isMultiShipment){
@@ -817,8 +819,7 @@ class CompileQuotes
                             $price = $this->wweSmallQuoteRes->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
                         }
                     }
-                    $quoteSettings = $this->quoteSettings;
-                    $price = $this->wweSmallQuoteRes->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup']);
+
 
                     $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $data['transitTime'], $data['serviceType'], $this->quoteSettings, $this->isResi);
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12'.$data['serviceType'] . $access;
