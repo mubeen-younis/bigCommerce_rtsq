@@ -113,7 +113,7 @@ class Shipping
         $isShippingTitleExist = array_search('Shipping', $finalTitles);
         $freightCode = '';
         $finalCost = 0;
-        if ((gettype($isFreightTitleExist) == 'integer') && (gettype($isFreightTitleExist) == 'integer')){
+        if ((gettype($isFreightTitleExist) == 'integer') && (gettype($isShippingTitleExist) == 'integer')){
 
             foreach ($finalQuotes as $key=>$_quote){
                 if ($_quote['title'] == 'Freight' || $_quote['title'] == 'Shipping'){
