@@ -105,6 +105,7 @@ class Shipping
         //dd($requestArr,$quotes);
         //print_r($requestArr); print_r($quotes); exit;
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $hazmatAllItems, $residential);
+
         //When one
         $_finalQuotes = [];
         $finalTitles = array_column($finalQuotes, 'title');
@@ -137,6 +138,7 @@ class Shipping
         //print_r($finalQuotes); exit;
         $finalQuotes = $this->addRateId($finalQuotes);
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
+
         $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins);
         return $resp;
     }
