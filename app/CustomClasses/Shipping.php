@@ -74,7 +74,6 @@ class Shipping
         }
 // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
-//dd($requestArr);
         /*  echo json_encode($requestArr);die();*/
 
         if (empty($requestArr)) {
@@ -84,6 +83,7 @@ class Shipping
 //print_r($requestArr); exit;
         //$resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse];
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
+
 //print_r($requestArr['requestArr']); exit;
 //echo "<pre>"; print_r($quotes); exit;
         $boxbins = $requestArr['boxBins'] ?? [];
@@ -105,7 +105,36 @@ class Shipping
         //dd($requestArr,$quotes);
         //print_r($requestArr); print_r($quotes); exit;
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $hazmatAllItems, $residential);
-//print_r($finalQuotes); exit;
+        $_finalQuotes = [];
+
+        $finalTitles = array_column($finalQuotes, 'title');
+
+        $isFreightTitleExist = array_search('Freight', $finalTitles);
+        $isShippingTitleExist = array_search('Shipping', $finalTitles);
+        $freightCode = '';
+        $finalCost = 0;
+        if ((gettype($isFreightTitleExist) == 'integer') && (gettype($isFreightTitleExist) == 'integer')){
+
+            foreach ($finalQuotes as $key=>$_quote){
+                if ($_quote['title'] == 'Freight' || $_quote['title'] == 'Shipping'){
+                    $finalCost += $_quote['rate'];
+                    $freightCode = ($_quote['code'] != 'Multi') ? $_quote['code'] : $freightCode;
+                }
+                if($_quote['title'] != 'Freight' && $_quote['title'] != 'Shipping'){
+                    $_finalQuotes[$key]['code'] = $_quote['code'];
+                    $_finalQuotes[$key]['rate'] = $_quote['rate'];
+                    $_finalQuotes[$key]['title'] = $_quote['title'];
+                }
+            }
+        }
+        if (!empty($_finalQuotes)){
+            $_finalQuotes[$key]['code'] = $freightCode;
+            $_finalQuotes[$key]['title'] = 'Freight';
+            $_finalQuotes[$key]['rate'] = $finalCost;
+            $_finalQuotes = array_values($_finalQuotes);
+            $finalQuotes = $_finalQuotes;
+        }
+        //print_r($finalQuotes); exit;
         $finalQuotes = $this->addRateId($finalQuotes);
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
         $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins);

@@ -634,7 +634,8 @@ class CompileQuotes
                     }
                     break;
                 case "wweSmall":
-                    $quotesRes = array_merge($quotesRes, $this->compileWweSmallQuotes($shipment, $connectionSettings, $allOrigins, $isHazmat, $hazmatAllItems));
+                    $resp = $this->compileWweSmallQuotes($shipment, $connectionSettings, $allOrigins, $isHazmat, $hazmatAllItems);
+                    $quotesRes = array_merge($quotesRes, $resp);
                     break;
             }
         }
@@ -661,7 +662,6 @@ class CompileQuotes
         $lgQuotes = false;
         $this->isMultiShipment = false;
         $this->isMultiShipment = is_countable($shipments) && count($shipments) > 1;
-
         foreach ($shipments as $origin => $quote) {
             if (isset($quote['severity'])) {
                 if (isset($quote['dismissedProduct'])) {
