@@ -129,9 +129,10 @@ class OrderController extends Controller
                                 foreach ($binPacked->items as $item) {
                                     $orderWidget[$zip]['sbs'][$key]['type'] = $type;
                                     $orderWidget[$zip]['sbs'][$key]['image_complete'] = $binPacked->image_complete;
+                                    $orderWidget[$zip]['sbs'][$key]['d'] = $binPacked->bin_data->d. 'x';
                                     $orderWidget[$zip]['sbs'][$key]['w'] = $binPacked->bin_data->w . 'x';
-                                    $orderWidget[$zip]['sbs'][$key]['h'] = $binPacked->bin_data->h . 'x';
-                                    $orderWidget[$zip]['sbs'][$key]['d'] = $binPacked->bin_data->d;
+                                    $orderWidget[$zip]['sbs'][$key]['h'] = $binPacked->bin_data->h;
+
                                     $orderWidget[$zip]['sbs'][$key]['nickname'] = $this->getBoxName($binPacked->bin_data->id, $request['store_id'], $order['rate_id'], $order['cart_id']);
                                     $productid = $item->id;
                                     $orderWidget[$zip]['sbs'][$key]['items'][$count]['product_name'] = $lineItem->items->$productid->lineItemName;
