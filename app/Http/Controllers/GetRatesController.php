@@ -114,7 +114,7 @@ class GetRatesController extends Controller
         if (count($data['base_options']['items'])) {
             foreach ($data['base_options']['items'] as $product) {
                 $product_settings = $this->getProductSetting($product['product_id'], $product['variant_id']);
-
+                $product_price = $this->getProductPrice($product['product_id'], $product['variant_id']);
                 $weight = (isset($product['weight']['value']) && isset($product['weight']['units'])) ? $this->convertWeight($product['weight']['value'], strtolower($product['weight']['units'])) : 0;
                 // $weight=148;
 
@@ -132,6 +132,7 @@ class GetRatesController extends Controller
                     'piecesOfLineItem' => $product['quantity'] ?? ''
                     ,
                     'lineItemId' => $product['product_id'] ?? '',
+                    'lineItemPrice' => $product_price ?? 0,
                     'lineItemName' => $product['name'] ?? '',
                     'lineItemLength' => $product['length']['value'] ? number_format($product['length']['value'], 2, '.', '') : '',
                     'lineItemWidth' => $product['width']['value'] ? number_format($product['width']['value'], 2, '.', '') : '',
@@ -204,6 +205,11 @@ class GetRatesController extends Controller
             $settings = isset($productSetting['settings']) ? json_decode($productSetting['settings'], true) : [];
         }
         return $settings;
+    }
+
+    private function getProductPrice($productId, $variantId){
+        return ProductSetting::where(['source_product_id' => $productId , 'variant_id' => $variantId])
+            ->pluck('price')->first();
     }
 
     public function convertWeight($value, $unit)

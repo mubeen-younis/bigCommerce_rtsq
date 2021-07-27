@@ -182,7 +182,10 @@ class Shipping
 
     private function BoxFeeByID(int $boxId):float
     {
-        return BoxSize::find($boxId)->pluck('box_fee')->first();
+        if(BoxSize::where('id',$boxId)->exists()){
+            return BoxSize::find($boxId)->pluck('box_fee')->first();
+        }
+        return 0;
     }
 
     public function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins){
