@@ -105,10 +105,9 @@ class Shipping
         //dd($requestArr,$quotes);
         //print_r($requestArr); print_r($quotes); exit;
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $hazmatAllItems, $residential);
+        //When one
         $_finalQuotes = [];
-
         $finalTitles = array_column($finalQuotes, 'title');
-
         $isFreightTitleExist = array_search('Freight', $finalTitles);
         $isShippingTitleExist = array_search('Shipping', $finalTitles);
         $freightCode = '';
@@ -134,6 +133,7 @@ class Shipping
             $_finalQuotes = array_values($_finalQuotes);
             $finalQuotes = $_finalQuotes;
         }
+
         //print_r($finalQuotes); exit;
         $finalQuotes = $this->addRateId($finalQuotes);
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
