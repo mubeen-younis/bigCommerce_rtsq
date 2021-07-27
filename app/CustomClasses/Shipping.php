@@ -20,7 +20,7 @@ class Shipping
     private $isHazmat = 'N';
 
     private $compileQuotes;
-
+    private $isInsurance = 'N';
     public function __construct()
     {
         $this->shipmentPkg = new WweLTLShipmentPackage();
@@ -52,7 +52,7 @@ class Shipping
         //['carriersArr' => $carriersArr, 'residential' => $this->residential];
         // Checking if any productis hazardous
         $hazmatAllItems = $this->isHazmatMaterial($package);
-
+        $this->isInsurance($package);
         if ($this->isHazmat == 'Y') {
             foreach($carriersArray['carriers'] as $key => $carriers){
                 $carriersArray['carriers'][$key]['api']['lineItemHazmatInfo'] = [
@@ -65,6 +65,11 @@ class Shipping
                         'lineItemHazmatPackagingGroup' => 'I',
                     ],
                 ];
+            }
+        }
+        if($this->isInsurance === 'Y'){
+            foreach($carriersArray['carriers'] as $key => $carriers){
+                $carriersArray['carriers'][$key]['api']['insureShipment'] = 1;
             }
         }
 // Genearting final request Array
@@ -210,6 +215,18 @@ class Shipping
             }
         }
         return $hazmatAllItems;
+    }
+
+    /**
+     * to enable insurance property for Api
+     */
+    public function isInsurance($items)
+    {
+        foreach ($items['items'] as $key => $item) {
+            if (isset($item['product_insurance_active']) && $item['product_insurance_active'] === 'Y') {
+                $this->isInsurance = 'Y';
+            }
+        }
     }
 
     /**

@@ -217,6 +217,7 @@ class GenerateRequestData
      */
     public function getApiInfoArrWweLtl($connSettings, $destination)
     {
+        //print_r($connSettings); exit;
         //Todo: need to review this function
         //print_r($destination); exit;
         /*$accessorials = [];
@@ -261,6 +262,18 @@ class GenerateRequestData
 
         $residentialPickup = ( isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
         //print_r($connSettings); dd($liftGate, $residentialPickup);exit;
+
+        $insurance = [
+            'code' => '',
+            'value' => ''
+        ];
+        if(isset($connSettings['quote_settings']['insurance_category'])){
+            $insuranceCategory = explode('-', $connSettings['quote_settings']['insurance_category']);
+            $insurance = [
+                'code' => $insuranceCategory[0] ?? '',
+                'value' => $insuranceCategory[1] ?? ''
+            ];
+        }
         $apiArray = [
             'speed_freight_username' => $connSettings['creds']['username'],
             'speed_freight_password' => $connSettings['creds']['password'],
@@ -269,6 +282,8 @@ class GenerateRequestData
             'speed_freight_residential_delivery' => $residential,
             'speed_freight_lift_gate_delivery' => $liftGate,
             'speed_freight_residential_pickup' => $residentialPickup,
+            'insureShipment' => 0,
+            'insuranceCategory' => $insurance
         ];
 
         //Todo: need to review this functionality
