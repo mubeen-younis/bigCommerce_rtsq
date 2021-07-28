@@ -772,7 +772,7 @@ class CompileQuotes
 
         $this->isMultiShipment = false;
         $this->isMultiShipment = count($shipments) > 1;
-        $originQuotes = [];
+        $originQuotes = $multiShipmentQuotes = [];
         $shipmentCount = 0;
         $count = 0;
 
@@ -835,12 +835,14 @@ class CompileQuotes
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12'.$data['serviceType'] . $access;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
+                    $multiShipmentQuotes['simple'][$origin] = $originQuotes[$shipmentCount]['shipment'][$key]['simple'];
                 }
             }
             $shipmentCount++;
         }
+      //  dd($originQuotes,'dds',$this->isMultiShipment);
+       // $multiShipmentQuotes
         // Check for mukti shipment finding lowest price in each shipment and adding them for multi shipment
-
         if ($this->isMultiShipment) {
             $originQuotesMulti = [];
             $multiShipPrice = 0;
@@ -853,7 +855,10 @@ class CompileQuotes
                 $originQuotesMulti[0]['title'] = $this->isResi ? 'Shipping ( R ) ' : 'Shipping';
 
             }
-            return $originQuotesMulti;
+            return [
+                'checkoutQuotes' => $originQuotesMulti,
+                'multiShipmentQuotes' => $multiShipmentQuotes,
+            ];
         }
         // Doing For SIngle Shipment
         if (!empty($originQuotes)) {
