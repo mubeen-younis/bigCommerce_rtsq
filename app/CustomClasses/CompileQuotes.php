@@ -625,7 +625,6 @@ class CompileQuotes
             return [];
         }
         $quotesRes = [];
-
         foreach ($quotes as $key => $shipment) {
             switch ($key) {
                 case "wweLTL":
@@ -668,7 +667,14 @@ class CompileQuotes
         $count = 0;
         $lgQuotes = false;
         $this->isMultiShipment = false;
-        $this->isMultiShipment = is_countable($shipments) && count($shipments) > 1;
+        $numberOfShipments = 0;
+        foreach ($shipments as $ship){
+            if (!isset($ship['severity'])) {
+                $numberOfShipments++;
+            }
+        }
+      //  $this->isMultiShipment = is_countable($shipments) && count($shipments) > 1;
+        $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         foreach ($shipments as $origin => $quote) {
 
             if (isset($quote['severity'])) {
@@ -743,7 +749,6 @@ class CompileQuotes
         }
         //s$this->setOrderDetailWidgetData($odwArr, $hazShipmentArr);
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
-
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
@@ -753,6 +758,7 @@ class CompileQuotes
                 'multiShipmentQuotes' => $multiShipmentQuotes
             ];
         }
+
         return $this->arrangeOwnFreight($allQuotes);
     }
 
@@ -778,7 +784,15 @@ class CompileQuotes
         // dd($allConfigServices, $enabledServices, $shipments,$this->quoteSettings);
 
         $this->isMultiShipment = false;
-        $this->isMultiShipment = count($shipments) > 1;
+        $numberOfShipments = 0;
+        foreach ($shipments as $ship){
+            if (!isset($ship['severity'])) {
+                $numberOfShipments++;
+            }
+        }
+
+        $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
+
         $originQuotes = $multiShipmentQuotes = [];
         $shipmentCount = 0;
         $count = 0;
@@ -860,7 +874,6 @@ class CompileQuotes
                 $originQuotesMulti[0]['code'] = 'Multi';
                 $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
                 $originQuotesMulti[0]['title'] = $this->isResi ? 'Shipping ( R ) ' : 'Shipping';
-
             }
             return [
                 'checkoutQuotes' => $originQuotesMulti,
