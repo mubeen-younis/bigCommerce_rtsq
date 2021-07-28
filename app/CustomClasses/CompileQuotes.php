@@ -657,7 +657,7 @@ class CompileQuotes
         $this->quoteSettings = $connectionSettings['ltl-quotes']['quote_settings'];
         $allConfigServices = $connectionSettings['ltl-quotes']['carrier_services'] ?? [];
         $this->quoteSettingsData();
-        $allQuotes = $odwArr = $hazShipmentArr = [];
+        $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
         $lgQuotes = false;
         $this->isMultiShipment = false;
@@ -670,7 +670,6 @@ class CompileQuotes
                 }
                 return [];
             }
-
 
             if ($count == 0) { //To be checked only once
                 $isRad = $quote['autoResidentialsStatus'] ?? '';
@@ -711,17 +710,20 @@ class CompileQuotes
             }
             //Todo: function naming according to the functionality
             $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
+
 //echo "<pre>"; print_r($compiledQuotes); exit;
             if ($compiledQuotes !== null) {
                 if (count($compiledQuotes) > 1) {
                     foreach ($compiledQuotes as $k => $service) {
                         $allQuotes['simple'][] = $service['simple'];
+                        $multiShipmentQuotes['simple'][$origin] = $service['simple'];
                         $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
                         //$allQuotes['liftgate'][] = $service['simple'];
                     }
                 } else {
                     $service = reset($compiledQuotes);
                     $allQuotes['simple'][] = $service['simple'] ?? '';
+                    $multiShipmentQuotes['simple'][$origin] = $service['simple'] ?? '';
                     $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
                     //$allQuotes['liftgate'][] = $service['simple'];
                 }
@@ -734,8 +736,15 @@ class CompileQuotes
         }
         //s$this->setOrderDetailWidgetData($odwArr, $hazShipmentArr);
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
+
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
+        }
+        if (!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1){
+            return [
+                'checkoutQuotes' => $this->arrangeOwnFreight($allQuotes),
+                'multiShipmentQuotes' => $multiShipmentQuotes
+            ];
         }
         return $this->arrangeOwnFreight($allQuotes);
     }
