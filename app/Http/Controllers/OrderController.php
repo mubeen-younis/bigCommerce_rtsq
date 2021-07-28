@@ -89,6 +89,7 @@ class OrderController extends Controller
         $lineItem = json_decode($data['lineitems'])->lineItemData;
         $responseFromWS = json_decode($data['quotes']);
         $requestToWS = json_decode($data['request']);
+        $multiShipmentresponse = json_decode($data['multiShipmentresponse']);
         $autoResidentialsStatus = 'n';
         $residentialsPickup = 'n';
         $liftGateStatus = 'n';
@@ -168,11 +169,17 @@ class OrderController extends Controller
             $orderWidget[$zip]['locationtype'] = $item->dropship_enabled == 'N' ? 'Warehouse' : 'Dropship';
             $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes;
+            $sRate = $order['shipping_rate'];
+            if($multiShipmentresponse != null && !empty($multiShipmentresponse)){
+                $order['shipping_name'] = $multiShipmentresponse->simple->$zip->title;
+                $sRate = $multiShipmentresponse->simple->$zip->rate;
+            }
             $shipping_name = explode('(',$order['shipping_name']);
             $sName = $shipping_name[0] ?? '';
             $sMethod = isset($shipping_name[1]) ? '('.$shipping_name[1] : '';
+
             $orderWidget[$zip]['shipping_method'] = $sName.$sMethod;
-            $orderWidget[$zip]['shipping_rate'] = '$'.$order['shipping_rate'];
+            $orderWidget[$zip]['shipping_rate'] = '$'.$sRate;
             $orderWidget[$zip]['items'][] = $item->piecesOfLineItem.' X '.$item->lineItemName;
             $orderWidget[$zip]['accessories'] = [];
             isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y' ? array_push($orderWidget[$zip]['accessories'], 'Hazardous Material') : '';
