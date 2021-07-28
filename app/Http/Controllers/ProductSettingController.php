@@ -284,11 +284,12 @@ class ProductSettingController extends Controller
         $page = $request['page'] ?? 1;
         $perPage = $request['perpage'] ?? 50;
         $search = $request['search'] ?? null;
+        $sortProd = $request['sortProd'] == "true" ? 'DESC':'ASC';
         $count = ProductSetting::where('store_id', $request->store_id)
-            ->groupBy('source_product_id')->where('name','LIKE','%'.$search.'%')->get()->count();
+            ->groupBy('source_product_id')->where('name','LIKE','%'.$search.'%')->orderBy('name', $sortProd)->get()->count();
 
         $products = ProductSetting::where('store_id', $request->store_id)
-            ->groupBy('source_product_id')->orderBy('source_product_id','DESC')->where('name','LIKE','%'.$search.'%')->skip(($page-1)*$perPage)->take($perPage)->get();
+            ->groupBy('source_product_id')->orderBy('name', $sortProd)->where('name','LIKE','%'.$search.'%')->skip(($page-1)*$perPage)->take($perPage)->get();
         if ($products->isEmpty()) {
             return response()->json(['error' => true,
                 'data' => [],
