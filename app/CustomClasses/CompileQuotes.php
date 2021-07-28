@@ -625,17 +625,24 @@ class CompileQuotes
             return [];
         }
         $quotesRes = [];
+
         foreach ($quotes as $key => $shipment) {
             switch ($key) {
                 case "wweLTL":
                     $resp = $this->compileWweLtlQuotes($shipment, $connectionSettings, $allOrigins);
-                    if (!empty($resp)) {
+                    if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))){
                         $quotesRes = array_merge($quotesRes, $resp);
                     }
+                    /*if (!empty($resp)) {
+                        $quotesRes = array_merge($quotesRes, $resp);
+                    }*/
                     break;
                 case "wweSmall":
                     $resp = $this->compileWweSmallQuotes($shipment, $connectionSettings, $allOrigins, $isHazmat, $hazmatAllItems);
-                    $quotesRes = array_merge($quotesRes, $resp);
+                    if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))){
+                        $quotesRes = array_merge($quotesRes, $resp);
+                    }
+                    //$quotesRes = array_merge($quotesRes, $resp);
                     break;
             }
         }
