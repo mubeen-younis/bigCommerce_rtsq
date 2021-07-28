@@ -881,6 +881,7 @@ class CompileQuotes
             ];
         }
         // Doing For SIngle Shipment
+        //dd($originQuotes);
         if (!empty($originQuotes)) {
             $originQuotes = array_column(array_values($originQuotes), 'shipment');
             $originQuotes = reset($originQuotes);
@@ -891,6 +892,14 @@ class CompileQuotes
                 return $allQuotes;
             }
             return $originQuotes;
+        }
+        /**
+        * get quotes if supress is enables
+         * refferce issue: https://eniture.atlassian.net/browse/QA-5458
+         */
+        if (!$this->isMultiShipment && isset($inStoreLdData) && $inStoreLdData) {
+            $allQuotes = $this->inStoreLocalDeliveryQuotes($quote, $inStoreLdData, $allOrigins);
+            return $allQuotes;
         }
 
         return [];
