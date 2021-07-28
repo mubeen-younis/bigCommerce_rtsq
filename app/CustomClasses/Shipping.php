@@ -36,7 +36,7 @@ class Shipping
      */
     public function collectRates($request, $storeData, $connectionSettings, $cartInfo)
     {
-        $quoteSettings = [];
+        $quoteSettings = $multiShipmentQuotes = [];
         $generateReqData = new GenerateRequestData();
         //   init is a function to to call it explixitlitly rather constructor
         $generateReqData->_init($quoteSettings, $connectionSettings, $storeData);
@@ -105,7 +105,10 @@ class Shipping
         //dd($requestArr,$quotes);
         //print_r($requestArr); print_r($quotes); exit;
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $hazmatAllItems, $residential);
-
+        if (!empty($finalQuotes['multiShipmentQuotes'])){
+            $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
+            $finalQuotes = $finalQuotes['checkoutQuotes'];
+        }
         //When one
         $_finalQuotes = [];
         $finalTitles = array_column($finalQuotes, 'title');
@@ -138,8 +141,8 @@ class Shipping
         //print_r($finalQuotes); exit;
         $finalQuotes = $this->addRateId($finalQuotes);
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
-
-        $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins);
+       // dd($resp, $this->);
+        $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
         return $resp;
     }
 
@@ -190,7 +193,7 @@ class Shipping
         return 0;
     }
 
-    public function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins){
+    public function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null){
         //print_r($cartId); print_r($requestArr); print_r($quotes); print_r($finalQuotes); print_r($resp); exit;
 
         foreach ($finalQuotes as $finalQuote){
@@ -199,6 +202,7 @@ class Shipping
             $RequestTempData->lineitems = json_encode($lineItems);
             $RequestTempData->quotes = json_encode($quotes);
             $RequestTempData->response = json_encode($resp);
+            $RequestTempData->multiShipmentresponse = json_encode($multiShipmentQuotes);
             $RequestTempData->store_id = $cartInfo['store_id'];
             $RequestTempData->rate_id = $finalQuote['rate_id'];
             $RequestTempData->cart_id = $cartInfo['cartId'];
