@@ -35,7 +35,7 @@ class Bin3D
             $binRequest[$key] = $this->generateBinRequest($bins, $item);
         }
         $responseFromSBS = $this->binRequest($binRequest, $storeId, $hits, $cartInfo);
-        $sbsCompiledResponse = $this->handleNotPacked($responseFromSBS);
+        $sbsCompiledResponse = $this->handleNotPacked($responseFromSBS, $items);
         return $sbsCompiledResponse;
     }
 /*
@@ -163,15 +163,19 @@ class Bin3D
         return $responses;
     }
 
-    private function handleNotPacked($responseFromSBS){
+    private function handleNotPacked($responseFromSBS, $items){
         foreach ($responseFromSBS as $key => $SBSResp){
             $data[$key] = json_decode($SBSResp)->response;
             $resp = json_decode($SBSResp);
             $not_packed_items = $resp->response->not_packed_items;
             if(count($not_packed_items)){
-                foreach ($not_packed_items as $not_packed_item) {
-                    $not_packed_item = (array) $not_packed_item;
-                    array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
+                foreach ($items[$key] as $itemKey=>$item) {
+                    for ($i = 1; $i <= $item['q']; $i++) {
+                        foreach ($not_packed_items as $not_packed_item) {
+                            $not_packed_item = (array)$not_packed_item;
+                            array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
+                        }
+                    }
                 }
             }
         }
