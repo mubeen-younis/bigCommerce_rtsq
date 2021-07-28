@@ -663,6 +663,7 @@ class CompileQuotes
         $this->isMultiShipment = false;
         $this->isMultiShipment = is_countable($shipments) && count($shipments) > 1;
         foreach ($shipments as $origin => $quote) {
+
             if (isset($quote['severity'])) {
                 if (isset($quote['dismissedProduct'])) {
                     continue;
@@ -1511,7 +1512,17 @@ class CompileQuotes
             return [];
         }
         asort($arraySorting['simple']);
-        $options = ($this->quoteSettings['method'] > 1 && $this->isMultiShipment == false) ? (int)$this->quoteSettings['number_of_options'] : 1;
+
+        if ($this->quoteSettings['method'] == 2 && $this->isMultiShipment == false){ //Cheapest method
+            $options = (int)$this->quoteSettings['number_of_options'];
+        }elseif ($this->quoteSettings['method'] == 3){ //Average rate
+            $options = (int)$this->quoteSettings['number_of_options'];
+        }else{
+            $options = 1;
+        }
+
+       // $options = ($this->quoteSettings['method'] > 1 && $this->isMultiShipment == false) ? (int)$this->quoteSettings['number_of_options'] : 1;
+
         $sliced = array_slice($arraySorting['simple'], 0, $options, true);
 
         if ($this->quoteSettings['method'] == 3) {
@@ -1531,6 +1542,7 @@ class CompileQuotes
     {
         $sliced = array_slice($ratesArray['simple'], 0, $options, true);
         $simplePrice = $this->getAveragePrice($sliced, $options);
+
         $serviceName = $this->customLabel('Freight');
         $averageRateService[0]['simple'] = [
             'title' => $this->getTitle($serviceName, $lgQuotes),//$serviceName,
