@@ -112,11 +112,11 @@ class OrderController extends Controller
 
                     $totalBoxes = 0;
                    // dd($order['rate_id'],$isSmallrate);
-                    //print_r($ws->binPackagingData); exit;
+                    //print_r($ws); exit;
                     if(isset($ws->binPackagingData) && !empty($ws->binPackagingData) && $isSmallrate){
                         $sbsData = $ws->binPackagingData->response;
-
-                        if(isset($sbsData->errors) && empty($sbsData->errors)) {
+                        //print_r($sbsData);
+                        if(1/*isset($sbsData->errors) && empty($sbsData->errors)*/) {
                             //$binPacked = $sbsData->bins_packed[0];
 
                             foreach ($sbsData->bins_packed as $key => $binPacked) {

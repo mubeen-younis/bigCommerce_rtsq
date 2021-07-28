@@ -162,9 +162,11 @@ class Shipping
     {
         if(isset($quotes['wweSmall']) && !empty($quotes['wweSmall'])){
             foreach ($quotes['wweSmall'] as $locId => $q){
-                foreach($q['q'] as $key=>$qs){
-                    if(isset($qs['totalNetCharge']['Amount'])){
-                        $quotes['wweSmall'][$locId]['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $boxFee;
+                if(isset($q['q'])) {
+                    foreach ($q['q'] as $key => $qs) {
+                        if (isset($qs['totalNetCharge']['Amount'])) {
+                            $quotes['wweSmall'][$locId]['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $boxFee;
+                        }
                     }
                 }
             }
