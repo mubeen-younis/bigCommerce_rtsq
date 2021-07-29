@@ -93,10 +93,10 @@ class PackageSubscriptionController extends Controller
             if ($currentPackageSub->to_be_charge_package_id == self::$dynamicTrial){
                 $currentPackageSub->package_to_be_charge_status = 'Trial';
             }
-            $currentPackageSub->to_be_charge_package_name = $toBeChargepkg->name;
-            $currentPackageSub->to_be_charge_package_period = $toBeChargepkg->period;
-            $currentPackageSub->to_be_charge_package_cost = $toBeChargepkg->cost;
-            $currentPackageSub->total_allowed_hits_in_to_be_charge = $toBeChargepkg->htis;
+            $currentPackageSub->to_be_charge_package_name = $toBeChargepkg->name ?? '';
+            $currentPackageSub->to_be_charge_package_period = $toBeChargepkg->period ?? '';
+            $currentPackageSub->to_be_charge_package_cost = $toBeChargepkg->cost ?? '';
+            $currentPackageSub->total_allowed_hits_in_to_be_charge = $toBeChargepkg->htis ?? '';
             if ($addonType == self::$addonTypeRAD && $currentPackageSub->to_be_charge_package_name == 'Extreme'){
                 $currentPackageSub->total_allowed_hits_in_to_be_charge = 'Unlimited';
                 //$currentPackageSub->consumed_hits_in_per = '';
