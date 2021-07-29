@@ -101,7 +101,7 @@ class PackageSubscriptionController extends Controller
                 $currentPackageSub->total_allowed_hits_in_to_be_charge = 'Unlimited';
                 //$currentPackageSub->consumed_hits_in_per = '';
             }
-            $currentPackageSub_to_be_charge_package_cost = isset($currentPackageSub->to_be_charge_package_cost) ? number_format($currentPackageSub->to_be_charge_package_cost,2):0.00;
+            $currentPackageSub_to_be_charge_package_cost = isset($currentPackageSub->to_be_charge_package_cost) && $currentPackageSub->to_be_charge_package_cost != "" ? number_format($currentPackageSub->to_be_charge_package_cost,2):0.00;
             $currentPackageSub->toBeChargeDropdownText = $currentPackageSub->total_allowed_hits_in_to_be_charge.'/'.lcfirst(substr($currentPackageSub->to_be_charge_package_period,0,2)).' ($'.number_format($currentPackageSub_to_be_charge_package_cost,2).')';
 
             $currentPackageSub->last_update_time = $currentPackageSub->update_time;
