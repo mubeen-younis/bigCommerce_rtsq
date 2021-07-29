@@ -85,7 +85,7 @@ class PackageSubscriptionController extends Controller
             $currentPackageSub->expiry_time = date('M,d,Y', strtotime($currentPackageSub->expiry_time));
             $currentPackageSub->currentPlanText = $currentPackageSub->total_allowed_hits.'/'.lcfirst(substr($currentPackageSub->current_package_period,0,2)).' ($'.number_format($currentPackageSub->current_package_cost,2).')';
             //To Be Charge package Details
-            $currentPackageSub->to_be_charge_package_id = $toBeChargepkg->id;
+            $currentPackageSub->to_be_charge_package_id = $toBeChargepkg->id ?? '';
 
             if ($currentPackageSub->package_to_be_charge_status == 0){
                 $currentPackageSub->package_to_be_charge_status = 'disable';
