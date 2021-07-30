@@ -147,9 +147,9 @@ class WweLTLShipmentPackage
             if (count($warehouseList) == 1) {
                 $warehouseList = reset($warehouseList);
                 return $this->wweLTLOriginArray($warehouseList, $receiverZipCode, $planNumber);
-            } elseif (count($warehouseList) > 1 && ($planNumber == 0 || $planNumber == 1)) {
+            }/*elseif (count($warehouseList) > 1 && ($planNumber == 0 || $planNumber == 1)) {
                 return $this->wweLTLOriginArray($warehouseList[0], $receiverZipCode, $planNumber);
-            }
+            }*/
 
             $response = (object)$this->wweLTLAddress($warehouseList, $planLicenseKey);
 
