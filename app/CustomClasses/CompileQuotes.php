@@ -1538,9 +1538,9 @@ class CompileQuotes
 
     public function customLabel($serviceName)
     {
-        if ($this->isMultiShipment) {
+        /*if ($this->isMultiShipment) {
             return 'Freight';
-        }
+        }*/
         $this->quoteSettings['method'] = $this->quoteSettings['method'] ?? 1;
         return (($this->quoteSettings['method'] == 1 || $this->quoteSettings['method'] == 3) && (isset($this->quoteSettings['label_as']) && $this->quoteSettings['label_as'] != null)) ? $this->quoteSettings['label_as'] : $serviceName;
     }
