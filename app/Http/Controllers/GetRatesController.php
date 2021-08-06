@@ -73,7 +73,6 @@ class GetRatesController extends Controller
 
             return [];
         }
-
         $quotes = $this->shipping->collectRates($formatReq, $storeData, $this->connectionSettings, $cartInfo);
         return $quotes;
        // return $this->generateQuoteFormatResponse($quotes);
@@ -119,7 +118,6 @@ class GetRatesController extends Controller
                 // $weight=148;
 
                 $ltlCheck = $product_settings['freight_enabled'] ?? false;
-
 
                 $originAddress = $this->shipmentPkg->wweLTLOriginAddress($details, $product_settings, $details['destination']['zip'], $storeData, $this->connectionSettings);
 

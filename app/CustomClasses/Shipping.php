@@ -74,25 +74,20 @@ class Shipping
         }
 // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
-        /*  echo json_encode($requestArr);die();*/
+
 
         if (empty($requestArr)) {
             return false;
         }
         $url = Constant::QUOTES_URL;
-//print_r($requestArr); exit;
-        //$resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse];
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
 
-//print_r($requestArr['requestArr']); exit;
-//echo "<pre>"; print_r($quotes); exit;
         $boxbins = $requestArr['boxBins'] ?? [];
         if(isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])){
             $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes);
         }
         Log::info('after addBinResponseToQuotes '. json_encode($quotes));
-//echo "<pre>"; print_r($quotes); exit;
-        // Debug point will print data if en_print_query=1
+
         if (isset($_GET['DEBUG_ON'])) {
             $printData = [
                 'url' => $url,
@@ -102,8 +97,6 @@ class Shipping
             ];
             dd($printData);
         }
-        //dd($requestArr,$quotes);
-        //print_r($requestArr); print_r($quotes); exit;
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $hazmatAllItems, $residential);
         if (!empty($finalQuotes['multiShipmentQuotes'])){
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
@@ -138,19 +131,20 @@ class Shipping
             $finalQuotes = $_finalQuotes;
         }
 
-        //print_r($finalQuotes); exit;
         $finalQuotes = $this->addRateId($finalQuotes);
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
-       // dd($resp, $this->);
         $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
         return $resp;
     }
 
     private function addBinResponseToQuotes($binReponse, $quotes){
+        //echo "<pre>"; print_r($quotes); exit;
         $boxFee = 0;
+        //echo "<pre>"; print_r($binReponse); exit;
         foreach ($binReponse as $locationId => $bin){
             $quotes['wweSmall'][$locationId]['binPackagingData']['response'] = $bin;
             $boxFee += $this->getCumulativeBoxFee($bin);
+            break;
         }
         if($boxFee > 0){
             $quotes = $this->addBoxFeeToQuotes($quotes, $boxFee);
@@ -187,7 +181,7 @@ class Shipping
         return $boxFee;
     }
 
-    private function BoxFeeByID(int $boxId):float
+    private function BoxFeeByID(int $boxId)
     {
         if(BoxSize::where('id',$boxId)->exists()){
             return BoxSize::find($boxId)->pluck('box_fee')->first();
@@ -196,7 +190,6 @@ class Shipping
     }
 
     public function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null){
-        //print_r($cartId); print_r($requestArr); print_r($quotes); print_r($finalQuotes); print_r($resp); exit;
 
         foreach ($finalQuotes as $finalQuote){
             $RequestTempData = new RequestTempData();
@@ -298,7 +291,7 @@ class Shipping
                     'code' => $quote['code'],
                     'rate_id' => $quote['rate_id'],
                     'display_name' => $this->limitTitle($quote),
-                    'cost' => ['currency' => 'USD', 'amount' => $quote['rate']],
+                    'cost' => ['currency' => 'USD', 'amount' => str_replace(',','',$quote['rate'])],
                     'dispatch_date' => "$current"
                     //'cost' => ['currency' => 'USD', 'amount' => number_format($quote['rate'], 2, '.', ',')],
                     //'transit_time' => ['units' => 'BUSINESS_DAYS', 'duration' => 1],

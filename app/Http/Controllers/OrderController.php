@@ -79,7 +79,7 @@ class OrderController extends Controller
             ->where('store_id', $request['store_id'])
             ->first()->toArray();
         //dd($data);
-        //print($order['rate_id']); exit;
+        print($order['rate_id']); exit;
         if(empty($data)){
             return [];
         }
@@ -174,6 +174,7 @@ class OrderController extends Controller
                 $order['shipping_name'] = $multiShipmentresponse->simple->$zip->title;
                 $sRate = $multiShipmentresponse->simple->$zip->rate;
             }
+            //dd($order['shipping_name']);
             $shipping_name = explode('(',$order['shipping_name']);
             $sName = $shipping_name[0] ?? '';
             $sMethod = isset($shipping_name[1]) ? '('.$shipping_name[1] : '';
@@ -193,7 +194,7 @@ class OrderController extends Controller
             }
 
             $autoResidentialsStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Delivery') : '';
-            $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Pickup Delivery') : '';
+            $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Pickup') : '';
             $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Delivery') : '';
             $count++;
         }
@@ -294,6 +295,7 @@ class OrderController extends Controller
         $page = $request['page'] ?? 1;
         $perPage = $request['perpage'] ?? 50;
         $status = $request['status'] ?? '';
+        $sortProd = (isset($request['sortOrder']) && $request['sortOrder'] == "true") ? 'asc':'desc';
         //dd($status);
         $search = (int) $request['search'] ?? 0;
         $headers[] = 'X-Auth-Token: ' . $store->access_token;
@@ -315,6 +317,7 @@ class OrderController extends Controller
             }
             $response = $this->curlRequest->enSingleCurlRequest($countEndPoint, [], $headers, 'GET', false);
             $total = (int) ceil(json_decode($response['response'])->count);
+
             if($status !== ''){
                 $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders?sort=id:desc&status_id=".$status."&limit=".$perPage."&page=".$page;
             }else{
@@ -332,6 +335,9 @@ class OrderController extends Controller
             //dd($endpoint,$response);
             if( !(isset($response[0]['status']) && $search)){
                 $orders = $search ? [$response] : $response;
+
+                $orders = $sortProd ==='desc' ? $orders : array_reverse($orders);
+
                 $count = 0;
                 if($orders) {
                     foreach ($orders as $count => $order) {

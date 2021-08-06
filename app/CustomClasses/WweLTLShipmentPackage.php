@@ -112,7 +112,7 @@ class WweLTLShipmentPackage
                echo '</pre>';
                die();*/
             $originLoca[$key]['warehouse_id'] = $ori->id ?? '';
-
+            $originLoca[$key]['type'] = $ori->type ?? '';
             $originLoca[$key]['city'] = $ori->city ?? '';
             $originLoca[$key]['state'] = $ori->state ?? '';
             $originLoca[$key]['zip'] = $ori->zip_code ?? '';
@@ -137,26 +137,21 @@ class WweLTLShipmentPackage
     {
         // Here we are getting plans f carriers and seeing if any of carrier has standard or advance plan
         // if they have and origin address is more then 1 then we are firing multiwarehouse request
-        $planInfo = $this->getPlanNumberFromInstalledCarriers($this->storeData['installed_carriers']);
-        $planNumber = $planInfo['pkg'] ?? 1;
-        $planLicenseKey = $planInfo['license_key'] ?? '';
-        //$planNumber=1;
-        // $planNumber = $this->dataHelper->planInfo()['planNumber'];
+
+        $planLicenseKey = '';
         if (!empty($warehouseList)) {
 
             if (count($warehouseList) == 1) {
                 $warehouseList = reset($warehouseList);
-                return $this->wweLTLOriginArray($warehouseList, $receiverZipCode, $planNumber);
-            }/*elseif (count($warehouseList) > 1 && ($planNumber == 0 || $planNumber == 1)) {
-                return $this->wweLTLOriginArray($warehouseList[0], $receiverZipCode, $planNumber);
-            }*/
+                return $this->wweLTLOriginArray($warehouseList, $receiverZipCode);
+            }
 
             $response = (object)$this->wweLTLAddress($warehouseList, $planLicenseKey);
 
             if (!empty($response)) {
                 $originWithMinDist = (isset($response->origin_with_min_dist) && !empty($response->origin_with_min_dist)) ? (array)$response->origin_with_min_dist : [];
                 $originWithMinDist['type'] = 1;
-                return $this->wweLTLOriginArray($originWithMinDist, $receiverZipCode, $planNumber);
+                return $this->wweLTLOriginArray($originWithMinDist, $receiverZipCode);
             }
         }
     }
@@ -165,10 +160,9 @@ class WweLTLShipmentPackage
      * function that returns shortest origin managed array
      * @param $shortOrigin
      * @param $receiverZipCode
-     * @param $planNumber
      * @return array
      */
-    public function wweLTLOriginArray($shortOrigin, $receiverZipCode, $planNumber)
+    public function wweLTLOriginArray($shortOrigin, $receiverZipCode)
     {
         if (isset($shortOrigin) && count($shortOrigin)) {
             //$origin = reset($origin);
@@ -186,7 +180,7 @@ class WweLTLShipmentPackage
                 'senderCity' => $city,
                 'senderState' => $state,
                 'senderCountryCode' => $country,
-                'InstorPickupLocalDelivery' => $planNumber == 3 ? $this->instorePickupLdData($origin, $receiverZipCode) : '',
+                'InstorPickupLocalDelivery' => $this->instorePickupLdData($origin, $receiverZipCode),
             ];
             $origin = reset($origin);
             return $data;

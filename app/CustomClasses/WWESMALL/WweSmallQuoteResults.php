@@ -58,12 +58,12 @@ class WweSmallQuoteResults
     {
         // Adding hazmat fee to Ground Service
         if ($serviceCode == "GND") {
-            if (is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
+            if ( isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
                 $amount = $amount + $quoteSettings['ground_hazardous_material_fee'];
             }
             // Adding hazmat fee to Air Services
         } else {
-            if (is_numeric($quoteSettings['air_hazardous_material_fee']) && !empty($quoteSettings['air_hazardous_material_fee'])) {
+            if (isset($quoteSettings['air_hazardous_material_fee']) && is_numeric($quoteSettings['air_hazardous_material_fee']) && !empty($quoteSettings['air_hazardous_material_fee'])) {
                 $amount = $amount + $quoteSettings['air_hazardous_material_fee'];
             }
         }

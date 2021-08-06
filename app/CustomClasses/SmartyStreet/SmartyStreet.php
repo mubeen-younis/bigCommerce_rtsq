@@ -40,6 +40,9 @@ class SmartyStreet
             if(!empty($addonSettings)) {
                 $addonSettings = json_decode(($addonSettings->value))->unconfirmed_default ?? 1;
                 $addressStatus = ($addonSettings === 1) ? "r" : "c";
+            }else{
+                //default set address to residentials
+                $addressStatus = "r";
             }
         }
         $addressStatus = $addressStatus == 'r' ? 'Y' : 'N';

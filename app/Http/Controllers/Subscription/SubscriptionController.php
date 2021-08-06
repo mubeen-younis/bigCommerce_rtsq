@@ -432,14 +432,15 @@ class SubscriptionController extends Controller
             'cAddress_country'=> isset($request['country']) ? $request['country'] : ''
         ];
         $updateCustomerCardRes = $this->updateCustomerCard($customerId, $data);
-       // $subscriptionDetail = $this->subscriptionDetailFromDB($storeId);
 
         if ($updateCustomerCardRes['error'] == true){
-         //   $updateCustomerCardRes['data'] = $subscriptionDetail;
+            //   $updateCustomerCardRes['data'] = $subscriptionDetail;
             return response()->json($updateCustomerCardRes);
         }
         $this->savePaymentMethodInDB($updateCustomerCardRes['data'],$data['store_id']);
-       // $updateCustomerCardRes['data'] = $subscriptionDetail;
+        $subscriptionDetail = $this->subscriptionDetailFromDB($storeId);
+        $updateCustomerCardRes['data'] = $subscriptionDetail;
+        // $updateCustomerCardRes['data'] = $this->getSubscriptionDetail($request);
         return response()->json($updateCustomerCardRes);
     }
 
