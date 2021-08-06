@@ -79,7 +79,7 @@ class OrderController extends Controller
             ->where('store_id', $request['store_id'])
             ->first()->toArray();
         //dd($data);
-        print($order['rate_id']); exit;
+        //print($order['rate_id']); exit;
         if(empty($data)){
             return [];
         }
@@ -172,7 +172,7 @@ class OrderController extends Controller
             $sRate = $order['shipping_rate'];
             if($multiShipmentresponse != null && !empty($multiShipmentresponse)){
                 $order['shipping_name'] = $multiShipmentresponse->simple->$zip->title;
-                $sRate = $multiShipmentresponse->simple->$zip->rate;
+                $sRate = $isLG ? $multiShipmentresponse->simple->$zip->rate : $multiShipmentresponse->liftgate->$zip->rate;
             }
             //dd($order['shipping_name']);
             $shipping_name = explode('(',$order['shipping_name']);

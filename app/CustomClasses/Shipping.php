@@ -81,7 +81,7 @@ class Shipping
         }
         $url = Constant::QUOTES_URL;
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
-
+//echo "<pre>"; print_r($quotes); exit;
         $boxbins = $requestArr['boxBins'] ?? [];
         if(isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])){
             $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes);
@@ -190,7 +190,7 @@ class Shipping
     }
 
     public function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null){
-
+//dd($multiShipmentQuotes);
         foreach ($finalQuotes as $finalQuote){
             $RequestTempData = new RequestTempData();
             $RequestTempData->request = json_encode($requestArr);
