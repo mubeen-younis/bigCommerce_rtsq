@@ -86,6 +86,7 @@ class OrderController extends Controller
         //echo "<pre>"; print_r($data); exit;
         $isSmallrate = substr($order['rate_id'], 0, 9) == 'parcel_12' || substr($order['rate_id'], 0, 5) == 'Multi'  ? true : false;
         $isLG = strpos($order['rate_id'], '+LG');
+
         $lineItem = json_decode($data['lineitems'])->lineItemData;
         $responseFromWS = json_decode($data['quotes']);
         $requestToWS = json_decode($data['request']);
@@ -172,7 +173,8 @@ class OrderController extends Controller
             $sRate = $order['shipping_rate'];
             if($multiShipmentresponse != null && !empty($multiShipmentresponse)){
                 $order['shipping_name'] = $multiShipmentresponse->simple->$zip->title;
-                $sRate = $isLG ? $multiShipmentresponse->simple->$zip->rate : $multiShipmentresponse->liftgate->$zip->rate;
+
+                $sRate = $isLG ?  $multiShipmentresponse->liftgate->$zip->rate : $multiShipmentresponse->simple->$zip->rate;
             }
             //dd($order['shipping_name']);
             $shipping_name = explode('(',$order['shipping_name']);
