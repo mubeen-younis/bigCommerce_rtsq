@@ -750,6 +750,8 @@ class CompileQuotes
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
         if ( (!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1 ) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1 )){
+
+            $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $this->arrangeOwnFreight($allQuotes),
                 'multiShipmentQuotes' => $multiShipmentQuotes
@@ -758,6 +760,17 @@ class CompileQuotes
         }
 
         return $this->arrangeOwnFreight($allQuotes);
+    }
+
+    private function forceChangeTitle($allQuotes){
+        if(!empty($allQuotes)){
+            foreach ($allQuotes as $key=>$quote){
+                $title = explode('(',$quote['title']);
+                $title[0] = 'Freight';
+                $allQuotes[$key]['title'] = implode(' (', $title);
+            }
+        }
+        return $allQuotes;
     }
 
     public function compileWweSmallQuotes($shipments, $connectionSettings, $allOrigins, $isHazmat, $hazmatAllItems)

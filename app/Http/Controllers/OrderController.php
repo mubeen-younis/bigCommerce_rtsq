@@ -90,6 +90,7 @@ class OrderController extends Controller
         $lineItem = json_decode($data['lineitems'])->lineItemData;
         $responseFromWS = json_decode($data['quotes']);
         $requestToWS = json_decode($data['request']);
+        //echo "<pre>"; print_r($requestToWS); exit;
         $multiShipmentresponse = json_decode($data['multiShipmentresponse']);
         $autoResidentialsStatus = 'n';
         $residentialsPickup = 'n';
@@ -160,9 +161,11 @@ class OrderController extends Controller
 
         $count = 0;
         //print_r($orderWidget); exit;
-        $addedInsurance = false;
+        $addedInsurance = $addHazmat = false;
+        //echo "<pre>"; print_r($items); print_r($origins); exit;
         foreach($origins as $key => $origin){
             $item =  $items->$key;
+            //dd($item);
             $city = $origin->senderCity ? $origin->senderCity.',': '';
             $state = $origin->senderState ?? '';
             $zip = $origin->locationId != '' ? $origin->locationId : $origin->senderZip;
@@ -185,9 +188,13 @@ class OrderController extends Controller
             $orderWidget[$zip]['shipping_rate'] = '$'.$sRate;
             $orderWidget[$zip]['items'][] = $item->piecesOfLineItem.' X '.$item->lineItemName;
             $orderWidget[$zip]['accessories'] = [];
-            isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y' ? array_push($orderWidget[$zip]['accessories'], 'Hazardous Material') : '';
 
-
+            if(isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') {
+                array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
+                $addHazmat = true;
+            }else if($addHazmat){
+                array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
+            }
             if(isset($item->product_insurance_active) && $item->product_insurance_active == 'Y'){
                 array_push($orderWidget[$zip]['accessories'], 'Insurance');
                 $addedInsurance = true;
@@ -201,7 +208,6 @@ class OrderController extends Controller
             $count++;
         }
         $sbs = '';
-         //print_r($orderWidget); exit;
         $resp = [
             'widget' => $this->objectToArray( $orderWidget ),
             'sbs' => $sbs
@@ -234,6 +240,7 @@ class OrderController extends Controller
                 $response['resiPickup'] = 'Y';
             }
         }
+        //dd($response);
         return $response;
     }
     public function getBoxName($binId, $store_id, $rate_id, $cart_id){
