@@ -21,6 +21,7 @@ class Shipping
 
     private $compileQuotes;
     private $isInsurance = 'N';
+    private $isRequestMultishipment = false;
     public function __construct()
     {
         $this->shipmentPkg = new WweLTLShipmentPackage();
@@ -80,6 +81,9 @@ class Shipping
             return false;
         }
         $url = Constant::QUOTES_URL;
+        //echo "<pre>"; print_r($requestArr['requestArr']); exit;
+        $this->checkIsRequestMiltiShipment($requestArr['requestArr']);
+
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
 //echo "<pre>"; print_r($quotes); exit;
         $boxbins = $requestArr['boxBins'] ?? [];
@@ -129,12 +133,99 @@ class Shipping
             $_finalQuotes[$key]['rate'] = $finalCost;
             $_finalQuotes = array_values($_finalQuotes);
             $finalQuotes = $_finalQuotes;
+        }else {
+            if($this->isRequestMultishipment) {
+                $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes);
+                $finalQuotes = $finalQuotesMulti['checkoutQuotes'];
+                $multiShipmentQuotes = $finalQuotesMulti['multiShipmentQuotes'];
+            }
         }
-
         $finalQuotes = $this->addRateId($finalQuotes);
+
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
         $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
         return $resp;
+    }
+
+    private function checkIsRequestMiltiShipment($request){
+        $carriers = $request['carriers'] ?? [];
+        foreach ($carriers as $carrier){
+            if(count($carrier['originAddress']) > 1) {
+                $this->isRequestMultishipment = true;
+                break;
+            }
+        }
+    }
+
+    private function makeMultishipmentSmallLtl($quotes){
+        //print_r($quotes); exit;
+        $parcel = $ltl = $ltlLG = [];
+        $isResi = $isLG =false;
+        foreach ($quotes as $quote){
+            if(!empty($quote)) {
+                if (!$isResi && (strpos($quote['code'], '+R') !== false)) {
+                    $isResi = true;
+                }
+                if (strpos($quote['code'], 'parcel_12') !== false) {
+                    $parcel[] = $quote;
+                } else {
+                    if (strpos($quote['code'], '+LG') !== false) {
+                        $ltlLG[] = $quote;
+                    } else {
+                        $ltl[] = $quote;
+                    }
+                }
+            }
+        }
+        $isLG = count($ltlLG) > 1;
+        $parcel = !empty($parcel) ? $this->getSmallest($parcel) : [];
+        $ltl = !empty($ltl) ? $this->getSmallest($ltl) : [];
+        $ltlLG = !empty($ltlLG) ? $this->getSmallest($ltlLG) : [];
+
+        $parcelRate = $parcel['rate'] ?? 0;
+        $ltlRate = $ltl['rate'] ?? 0;
+        $ltlLGRate = $ltlLG['rate'] ?? 0;
+        $rCode = $isResi ? '+R':'';
+        $rtitle = $isResi ? ' ( R )':'';
+        $newQuotes[] = [
+            'code' => 'multi'.$rCode,
+            'rate' => $parcelRate+$ltlRate,
+            'title' => 'Freight'.$rtitle
+        ];
+        if($isLG){
+            $rtitle = $isResi ? ' ( R | L )':' ( L )';
+            $newQuotes[] = [
+                'code' => 'multi'.$rCode.'+LG',
+                'rate' => $parcelRate+$ltlLGRate,
+                'title' => 'Freight'.$rtitle
+            ];
+        }
+        $multiShipmentQuotes = $this->createOrderWidgetRates($parcel, $ltl, $ltlLG);
+        return [
+            'multiShipmentQuotes' => $multiShipmentQuotes,
+            'checkoutQuotes' => $newQuotes
+        ];
+    }
+
+    private function createOrderWidgetRates($parcel, $ltl, $ltlLG){
+        $orderWidgetRates = [];
+        $orderWidgetRates['simple'] = [
+            $parcel,
+            $ltl
+        ];
+        if(!empty($ltlLG)){
+            $orderWidgetRates['liftgate'] = [
+                $parcel,
+                $ltlLG
+            ];
+        }
+        return $orderWidgetRates;
+    }
+    private function getSmallest($quotes){
+        usort($quotes, function($a, $b) {
+            return $a['rate'] <=> $b['rate'];
+        });
+        return $quotes[0];
     }
 
     private function addBinResponseToQuotes($binReponse, $quotes){

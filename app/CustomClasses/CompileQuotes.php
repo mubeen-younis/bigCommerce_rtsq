@@ -640,6 +640,7 @@ class CompileQuotes
                     break;
             }
         }
+
         // Removing duplicate respone of quotes
         $quotesRes = array_map("unserialize", array_unique(array_map("serialize", $quotesRes)));
         return $quotesRes;

@@ -304,7 +304,7 @@ class OrderController extends Controller
         $page = $request['page'] ?? 1;
         $perPage = $request['perpage'] ?? 50;
         $status = $request['status'] ?? '';
-        $sortProd = (isset($request['sortOrder']) && $request['sortOrder'] == "true") ? 'asc':'desc';
+        $sortProd = (isset($request['sortOrder']) && $request['sortOrder'] === "true") ? 'desc':'asc';
         //dd($status);
         $search = (int) $request['search'] ?? 0;
         $headers[] = 'X-Auth-Token: ' . $store->access_token;
