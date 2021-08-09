@@ -190,6 +190,7 @@ class Shipping
     }
 
     public function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null){
+        echo "<pre>"; print_r($requestArr); print_r($quotes);  exit;
         foreach ($finalQuotes as $finalQuote){
             $RequestTempData = new RequestTempData();
             $RequestTempData->request = json_encode($requestArr);
@@ -255,7 +256,7 @@ class Shipping
     public function isInsurance($items)
     {
         foreach ($items['items'] as $key => $item) {
-            if (isset($item['product_insurance_active']) && $item['product_insurance_active'] === 'Y') {
+            if (isset($item['product_insurance_active']) && $item['product_insurance_active'] === 1) {
                 $this->isInsurance = 'Y';
             }
         }

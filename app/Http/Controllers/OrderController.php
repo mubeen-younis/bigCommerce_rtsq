@@ -195,7 +195,7 @@ class OrderController extends Controller
             }else if($addHazmat){
                 array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
             }
-            if(isset($item->product_insurance_active) && $item->product_insurance_active == 'Y'){
+            if(isset($item->product_insurance_active) && $item->product_insurance_active == 1){
                 array_push($orderWidget[$zip]['accessories'], 'Insurance');
                 $addedInsurance = true;
             }else if($addedInsurance){
@@ -330,7 +330,8 @@ class OrderController extends Controller
             if($status !== ''){
                 $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders?sort=id:desc&status_id=".$status."&limit=".$perPage."&page=".$page;
             }else{
-                $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders?sort=id:desc&limit=".$perPage."&page=".$page;
+                /*$endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders?sort=id:desc&limit=".$perPage."&page=".$page;*/
+                $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders?sort=id:".$sortProd."&limit=".$perPage."&page=".$page;
             }
 
         }
@@ -345,7 +346,7 @@ class OrderController extends Controller
             if( !(isset($response[0]['status']) && $search)){
                 $orders = $search ? [$response] : $response;
 
-                $orders = $sortProd ==='desc' ? $orders : array_reverse($orders);
+               // $orders = $sortProd ==='desc' ? $orders : array_reverse($orders);
 
                 $count = 0;
                 if($orders) {

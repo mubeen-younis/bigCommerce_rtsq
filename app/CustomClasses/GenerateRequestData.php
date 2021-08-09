@@ -241,6 +241,7 @@ class GenerateRequestData
          * **/
         //autoDetectedResidentialAddresses  //autoDetectedResidentialAddressesLfg
         $residential = 'N';
+        $alwaysResi = false;
         if( $this->storeData['installed_addon_rad'] && ( (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']) /*||  (isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg'])*/)){
             if($this->radHitConsumed == 0){
                 $this->radHitConsumed = 1;
@@ -254,7 +255,7 @@ class GenerateRequestData
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
         }else{
-            /*$residential = (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? 'Y' : 'N';*/
+            $alwaysResi = (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
         }
 
 
@@ -279,7 +280,7 @@ class GenerateRequestData
             'speed_freight_password' => $connSettings['creds']['password'],
             'speed_freight_authentication_key' => $connSettings['creds']['authentication_key'],
             'speed_freight_account_number' => $connSettings['creds']['account_number'],
-            'speed_freight_residential_delivery' => $residential,
+            'speed_freight_residential_delivery' => $alwaysResi ? 'Y' : $residential,
             'speed_freight_lift_gate_delivery' => $liftGate,
             'speed_freight_residential_pickup' => $residentialPickup,
             'insureShipment' => 0,
@@ -323,6 +324,7 @@ class GenerateRequestData
         }*/
         //autoDetectedResidentialAddresses
         $residential = 'N';
+        $alwaysResi = false;
         if( $this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])){
             if($this->radHitConsumed == 0){
                 $this->radHitConsumed = 1;
@@ -333,9 +335,9 @@ class GenerateRequestData
                 $residential = $this->residential;
             }
 
-        }/*else{
-            $residential = (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? 'Y' : 'N';
-        }*/
+        }else{
+            $alwaysResi = (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
+        }
 
         $this->resiCarrier['wweSmall'] = $residential;
         $apiArray = [
@@ -343,7 +345,7 @@ class GenerateRequestData
             'speed_ship_password' => $connSettings['creds']['password'],
             'authentication_key' => $connSettings['creds']['authentication_key'],
             'world_wide_express_account_number' => $connSettings['creds']['account_number'],
-            'residentials_delivery' => $residential == 'Y' ? 'yes':'no',
+            'residentials_delivery' =>  ( $alwaysResi ? 'Y' : $residential == 'Y' ) ? 'yes':'no',
             'prefferedCurrency' => 'USD',
             'includeDeclaredValue' => "1"
         ];
