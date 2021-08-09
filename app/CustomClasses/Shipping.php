@@ -209,9 +209,9 @@ class Shipping
 
     private function createOrderWidgetRates($parcel, $ltl, $ltlLG){
         $orderWidgetRates = [];
-        $orderWidgetRates['simple'] = [ '0'=> $parcel, '1'=>$ltl];
+        $orderWidgetRates['simple'] = [ '1'=> $parcel, '2'=>$ltl];
         if(!empty($ltlLG)){
-            $orderWidgetRates['liftgate'] = [ '0'=>$parcel, '1'=>$ltlLG];
+            $orderWidgetRates['liftgate'] = [ '1'=>$parcel, '2'=>$ltlLG];
         }
         return $orderWidgetRates;
     }
