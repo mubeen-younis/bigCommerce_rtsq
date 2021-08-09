@@ -209,15 +209,9 @@ class Shipping
 
     private function createOrderWidgetRates($parcel, $ltl, $ltlLG){
         $orderWidgetRates = [];
-        $orderWidgetRates['simple'] = [
-            $parcel,
-            $ltl
-        ];
+        $orderWidgetRates['simple'] = [ '0'=> $parcel, '1'=>$ltl];
         if(!empty($ltlLG)){
-            $orderWidgetRates['liftgate'] = [
-                $parcel,
-                $ltlLG
-            ];
+            $orderWidgetRates['liftgate'] = [ '0'=>$parcel, '1'=>$ltlLG];
         }
         return $orderWidgetRates;
     }
@@ -288,7 +282,7 @@ class Shipping
             $RequestTempData->lineitems = json_encode($lineItems);
             $RequestTempData->quotes = json_encode($quotes);
             $RequestTempData->response = json_encode($resp);
-            $RequestTempData->multiShipmentresponse = json_encode($multiShipmentQuotes);
+            $RequestTempData->multiShipmentresponse = json_encode($multiShipmentQuotes, JSON_FORCE_OBJECT);
             $RequestTempData->store_id = $cartInfo['store_id'];
             $RequestTempData->rate_id = $finalQuote['rate_id'];
             $RequestTempData->cart_id = $cartInfo['cartId'];
