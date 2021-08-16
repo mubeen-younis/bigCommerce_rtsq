@@ -91,7 +91,7 @@ class OrderController extends Controller
         $responseFromWS = json_decode($data['quotes']);
         $requestToWS = json_decode($data['request']);
         //echo "<pre>"; print_r($requestToWS); exit;
-        $multiShipmentresponse = json_decode($data['multiShipmentresponse']);
+        $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
         $autoResidentialsStatus = 'n';
         $residentialsPickup = 'n';
         $liftGateStatus = 'n';
@@ -162,7 +162,7 @@ class OrderController extends Controller
         $count = 0;
         //print_r($orderWidget); exit;
         $addedInsurance = $addHazmat = false;
-        //echo "<pre>"; print_r($items); print_r($origins); exit;
+        //echo "<pre>"; print_r($items);  print_r($origins); print_r($multiShipmentresponse); exit;
         foreach($origins as $key => $origin){
             $item =  $items->$key;
             //dd($item);
@@ -328,7 +328,7 @@ class OrderController extends Controller
             $total = (int) ceil(json_decode($response['response'])->count);
 
             if($status !== ''){
-                $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders?sort=id:desc&status_id=".$status."&limit=".$perPage."&page=".$page;
+                $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders?sort=id:".$sortProd."&status_id=".$status."&limit=".$perPage."&page=".$page;
             }else{
                 /*$endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders?sort=id:desc&limit=".$perPage."&page=".$page;*/
                 $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders?sort=id:".$sortProd."&limit=".$perPage."&page=".$page;

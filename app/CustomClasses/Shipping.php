@@ -107,12 +107,15 @@ class Shipping
             $finalQuotes = $finalQuotes['checkoutQuotes'];
         }
         //When one
+
         $_finalQuotes = [];
         $finalTitles = array_column($finalQuotes, 'title');
+        //dd($finalQuotes);
         $isFreightTitleExist = array_search('Freight', $finalTitles);
         $isShippingTitleExist = array_search('Shipping', $finalTitles);
         $freightCode = '';
         $finalCost = 0;
+        //dd($finalTitles,$finalQuotes, $isShippingTitleExist, $isFreightTitleExist);
         if ((gettype($isFreightTitleExist) == 'integer') && (gettype($isShippingTitleExist) == 'integer')){
 
             foreach ($finalQuotes as $key=>$_quote){
@@ -127,6 +130,7 @@ class Shipping
                 }
             }
         }
+        //dd($finalQuotes, (gettype($isFreightTitleExist) == 'integer'), (gettype($isShippingTitleExist) == 'integer'));
         if (!empty($_finalQuotes)){
             $_finalQuotes[$key]['code'] = $freightCode;
             $_finalQuotes[$key]['title'] = 'Freight';
@@ -134,7 +138,8 @@ class Shipping
             $_finalQuotes = array_values($_finalQuotes);
             $finalQuotes = $_finalQuotes;
         }else {
-            if($this->isRequestMultishipment) {
+            $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
+            if($this->isRequestMultishipment && !$isShippingOrFreight) {
                 $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes);
                 $finalQuotes = $finalQuotesMulti['checkoutQuotes'];
                 $multiShipmentQuotes = $finalQuotesMulti['multiShipmentQuotes'];
@@ -148,21 +153,34 @@ class Shipping
     }
 
     private function checkIsRequestMiltiShipment($request){
+
+
         $carriers = $request['carriers'] ?? [];
+
+        if(!isset($carriers['wweLTL'])  || !isset($carriers['wweSmall']) ){
+            return false;
+        }
         foreach ($carriers as $carrier){
-            if(count($carrier['originAddress']) > 1) {
+            $output= $this->multi_unique($carrier['originAddress']);
+            if(count($output) > 1) {
                 $this->isRequestMultishipment = true;
                 break;
             }
         }
     }
 
+    private function multi_unique($src){
+        $output = array_map("unserialize",
+            array_unique(array_map("serialize", $src)));
+        return $output;
+    }
+
     private function makeMultishipmentSmallLtl($quotes){
         //print_r($quotes); exit;
-        $parcel = $ltl = $ltlLG = [];
+        $parcel = $ltl = $ltlLG = $ownArrangement =  [];
         $isResi = $isLG =false;
         foreach ($quotes as $quote){
-            if(!empty($quote)) {
+            if(!empty($quote) && $quote['code'] !== 'own_arrangement') {
                 if (!$isResi && (strpos($quote['code'], '+R') !== false)) {
                     $isResi = true;
                 }
@@ -175,6 +193,8 @@ class Shipping
                         $ltl[] = $quote;
                     }
                 }
+            }else if($quote['code'] === 'own_arrangement'){
+                $ownArrangement = $quote;
             }
         }
         $isLG = count($ltlLG) > 1;
@@ -187,6 +207,9 @@ class Shipping
         $ltlLGRate = $ltlLG['rate'] ?? 0;
         $rCode = $isResi ? '+R':'';
         $rtitle = $isResi ? ' ( R )':'';
+
+        $parcelRate = (float) str_replace(',','',$parcelRate);
+        $ltlRate = (float) str_replace(',','',$ltlRate);
         $newQuotes[] = [
             'code' => 'multi'.$rCode,
             'rate' => $parcelRate+$ltlRate,
@@ -201,6 +224,9 @@ class Shipping
             ];
         }
         $multiShipmentQuotes = $this->createOrderWidgetRates($parcel, $ltl, $ltlLG);
+        if(!empty($ownArrangement)){
+            $newQuotes[count($newQuotes)] = $ownArrangement;
+        }
         return [
             'multiShipmentQuotes' => $multiShipmentQuotes,
             'checkoutQuotes' => $newQuotes
@@ -275,7 +301,7 @@ class Shipping
     }
 
     public function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null){
-        //echo "<pre>"; print_r($requestArr); print_r($quotes);  exit;
+        //echo "<pre>"; print_r($requestArr); print_r($quotes); print_r($multiShipmentQuotes);  exit;
         foreach ($finalQuotes as $finalQuote){
             $RequestTempData = new RequestTempData();
             $RequestTempData->request = json_encode($requestArr);

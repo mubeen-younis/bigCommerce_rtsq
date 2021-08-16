@@ -115,6 +115,12 @@ class BoxSizeController extends Controller
         $box_size = BoxSize::find($request->id);
 
         if ($box_size) {
+            if(BoxSize::where('nickname', $request->nickname)->where('store_id', $request->store_id)->where('id','!=',$request->id)->exists()){
+                return response()->json([
+                        'error' => true,
+                        'message' => "The nickname has already been taken."
+                    ]);
+            }
             $data = $request->except(['store_name', 'store_hash']);
 
             $boxsize = BoxSize::where('id', $request->id)->update($data);

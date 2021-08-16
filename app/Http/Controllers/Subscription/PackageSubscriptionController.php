@@ -311,13 +311,15 @@ class PackageSubscriptionController extends Controller
 
         $stripeCustomerId = $mainSubscription->stripe_customer_id;
         try {
-            $charge = Charge::create([
+            $chargeData = [
                 'amount' => bcmul($package->cost, 100),
                 'currency' => 'usd',
                 'customer' => $stripeCustomerId,
                 "description" => 'Real-time Shipping Quotes (BigCommerce '.$addonType.') Charge',
-                'source' => $mainSubscription->payment_method,
-            ]);
+                'source' => $mainSubscription->payment_method
+            ];
+            $charge = Charge::create($chargeData);
+
             $response = [
                 'chargeId' => $charge->id
             ];
@@ -542,7 +544,7 @@ class PackageSubscriptionController extends Controller
             ->latest()->first();
         $currentPackageSub->status = $data['suspend'];
         $currentPackageSub->save();
-        $addonName = $addonType === 'SBS' ? 'Standard box sizes' : 'Residential Address detection';
+        $addonName = $addonType === 'SBS' ? 'Standard Box Sizes' : 'Residential Address Detection';
         return [
             'error' => false,
             'data' => $this->getPkgDetails($addonType),

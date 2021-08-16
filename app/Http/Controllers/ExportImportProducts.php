@@ -187,9 +187,11 @@ class ExportImportProducts extends Controller
     public function getRowHeaderImportedFile(Request $request){
         $path = public_path('import_files/'.$request['store_hash'].'/'.$request['filename']);
         $csv = array_map('str_getcsv', file($path));
-        array_walk($csv, function(&$a) use ($csv) {
+        //dd($csv[0]);
+        /*array_walk($csv, function(&$a) use ($csv) {
             $a = array_combine($csv[0], $a);
-        });
+        });*/
+
         if( isset($request['hasheaders']) && $request['hasheaders'] === "false"){
             $heading = range('A','ZZ');
         }else{

@@ -265,10 +265,10 @@ class CompileQuotes
     public function inStoreLocalDeliveryQuotes($quotesArray, $inStoreLd, $allOrigins)
     {
         // dd($allOrigins);
-        if (empty($quotesArray)) {
+        /*if (empty($quotesArray)) {
             return [];
         }
-        /*    if (count($allOrigins) > 1) {
+            if (count($allOrigins) > 1) {
                 return $quotesArray;
             }*/
         $count = 0;
@@ -866,6 +866,7 @@ class CompileQuotes
 
 
                     $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $data['transitTime'], $data['serviceType'], $this->quoteSettings, $this->isResi);
+                    $price = (float) str_replace(',','',$price);
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12'.$data['serviceType'] . $access;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
@@ -1105,7 +1106,7 @@ class CompileQuotes
     public function getLiftGateCost($quotes, $getCost = false)
     {
         $lgCost = 0;
-        if (!(($this->isResi && $this->quoteSettings['autoDetectedResidentialAddressesLfg']) || ( isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery'] == '1')) || $getCost) {
+        if (!(($this->isResi && isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']) || ( isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery'] == '1')) || $getCost) {
             if (isset($quotes['surcharges']) && isset($quotes['surcharges']['liftgateFee'])) {
                 $lgCost = $quotes['surcharges']['liftgateFee'];
             }
