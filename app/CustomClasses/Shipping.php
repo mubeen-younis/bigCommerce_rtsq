@@ -253,13 +253,16 @@ class Shipping
     }
 
     private function addBinResponseToQuotes($binReponse, $quotes){
-        //echo "<pre>"; print_r($quotes); exit;
+        //echo "<pre>"; print_r($quotes);
         $boxFee = 0;
         //echo "<pre>"; print_r($binReponse); exit;
+        $addedFee = false;
         foreach ($binReponse as $locationId => $bin){
             $quotes['wweSmall'][$locationId]['binPackagingData']['response'] = $bin;
-            $boxFee += $this->getCumulativeBoxFee($bin);
-            break;
+            if(!$addedFee) {
+                $boxFee += $this->getCumulativeBoxFee($bin);
+                $addedFee = true;
+            }
         }
         if($boxFee > 0){
             $quotes = $this->addBoxFeeToQuotes($quotes, $boxFee);

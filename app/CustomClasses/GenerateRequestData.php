@@ -206,7 +206,7 @@ class GenerateRequestData
             'receiverAddress' => $receiverAddress,
             'commdityDetails' => $itemsArr,
         ];
-        //print_r($requestArr); exit;
+        //print_r($binReponse); exit;
         $resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse, 'boxBins' => $boxBins];
         return $resp;
     }
