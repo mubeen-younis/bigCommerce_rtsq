@@ -73,6 +73,7 @@ class SubscriptionController extends Controller
                 'last4' => $last4,
                 'is_default' => 1
             ]);
+            Subscription::where('store_id',$storeId)->where('status', 1)->update(['payment_method' => $returnCustomer->default_source]);
             return $paymentMethodId;
         }else{
             $paymentMethod = PaymentMethod::create([
