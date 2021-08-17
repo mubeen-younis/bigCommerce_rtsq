@@ -110,9 +110,12 @@ class Shipping
 
         $_finalQuotes = [];
         $finalTitles = array_column($finalQuotes, 'title');
-        //dd($finalQuotes);
-        $isFreightTitleExist = array_search('Freight', $finalTitles);
-        $isShippingTitleExist = array_search('Shipping', $finalTitles);
+        //dd($finalTitles);
+        foreach ($finalTitles as $key=>$finalTitle ){
+            $finalTitlesTemp[$key] = explode(' ', $finalTitle)[0];
+        }
+        $isFreightTitleExist = array_search('Freight', $finalTitlesTemp);
+        $isShippingTitleExist = array_search('Shipping', $finalTitlesTemp);
         $freightCode = '';
         $finalCost = 0;
         //dd($finalTitles,$finalQuotes, $isShippingTitleExist, $isFreightTitleExist);
@@ -138,6 +141,7 @@ class Shipping
             $_finalQuotes = array_values($_finalQuotes);
             $finalQuotes = $_finalQuotes;
         }else {
+
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
             if($this->isRequestMultishipment && !$isShippingOrFreight) {
                 $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes);

@@ -300,7 +300,7 @@ class PackageSubscriptionController extends Controller
         PackageToBeCharge::create([
             'subscription_id' => $packageSub->id,
             'package_id' => $data['package'],
-            'status' => ($data['package'] != self::$dynamicTrial) ? $data['package'] : 0,
+            'status' => ($data['package'] != self::$dynamicTrial) ? 1 : 0,
             'requested_date' => now(),
         ]);
     }
