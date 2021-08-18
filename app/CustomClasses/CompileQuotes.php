@@ -687,9 +687,21 @@ class CompileQuotes
                 //$this->getAutoResidentialTitle($isRad);
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
                 unset($quote['InstorPickupLocalDelivery']);
-                $lgQuotes = (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery']) || (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']) || ( ( isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) && (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']));
+                /*$lgQuotes =
+                    (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery']) ||
+                    (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']) ||
+                    ( ( isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
+                        (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']));*/
+                $lgQuotes =
+                    (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery']) ||
+                    (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
+                if(!$lgQuotes){
+                    $lgQuotes = ( ( isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
+                        (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                }
+                //dd($this->isResi);
             }
-
+//dd($this->quoteSettings['alwaysLiftGateDelivery'], $this->quoteSettings['offerLiftGateDelivery'], $this->quoteSettings['autoDetectedResidentialAddresses'], $this->quoteSettings['autoDetectedResidentialAddressesLfg']);
             $originQuotes = [];
             $arraySorting = [];
             if (isset($quote['q'])) {
@@ -718,10 +730,10 @@ class CompileQuotes
                 }
             }
             //Todo: function naming according to the functionality
+
             $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
 
-
-            if ($compiledQuotes !== null) {
+            if ($compiledQuotes !== null && !empty($compiledQuotes)) {
                 if (count($compiledQuotes) > 1) {
                     foreach ($compiledQuotes as $k => $service) {
                         $allQuotes['simple'][] = $service['simple'];
@@ -746,7 +758,9 @@ class CompileQuotes
             $count++;
         }
         //echo "<pre>"; print_r($allQuotes); print_r($multiShipmentQuotes);exit;
+        //print_r($allQuotes); //exit;
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
+       // print_r($allQuotes); exit;
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }

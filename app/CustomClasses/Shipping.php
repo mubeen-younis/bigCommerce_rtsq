@@ -108,7 +108,7 @@ class Shipping
         }
         //When one
 
-        $_finalQuotes = [];
+        $_finalQuotes = $finalTitlesTemp = [];
         $finalTitles = array_column($finalQuotes, 'title');
         //dd($finalTitles);
         foreach ($finalTitles as $key=>$finalTitle ){
@@ -308,7 +308,7 @@ class Shipping
     }
 
     public function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null){
-        //echo "<pre>"; print_r($requestArr); print_r($quotes); print_r($multiShipmentQuotes);  exit;
+        //echo "<pre>"; print_r($requestArr); print_r($quotes); exit;
         foreach ($finalQuotes as $finalQuote){
             $RequestTempData = new RequestTempData();
             $RequestTempData->request = json_encode($requestArr);
