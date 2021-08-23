@@ -57,7 +57,7 @@ class OrderController extends Controller
                 'message' => 'No Order Found',
             ], 404);
         }
-       // dd($order['cart_id'], $order['rate_id']); //echo "<pre>"; print_r($order); exit;
+        // dd($order['cart_id'], $order['rate_id']); //echo "<pre>"; print_r($order); exit;
         $orderWidget = $this->createOrderWidget($request, $order);
         if(empty($orderWidget)){
             return response()->json(['error' => true,
@@ -162,9 +162,14 @@ class OrderController extends Controller
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes;
             $sRate = $order['shipping_rate'];
             if($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement){
-                $order['shipping_name'] = $multiShipmentresponse->simple->$zip->title;
-
-                $sRate = $isLG ?  $multiShipmentresponse->liftgate->$zip->rate : $multiShipmentresponse->simple->$zip->rate;
+                if(isset($multiShipmentresponse->simple->$zip->title)){
+                    $order['shipping_name'] = $multiShipmentresponse->simple->$zip->title;
+                    $sRate = $isLG ?  $multiShipmentresponse->liftgate->$zip->rate : $multiShipmentresponse->simple->$zip->rate;
+                }else{
+                    $count2 = $count+1;
+                    $order['shipping_name'] = $multiShipmentresponse->simple->$count2->title;
+                    $sRate = $isLG ?  $multiShipmentresponse->liftgate->$count2->rate : $multiShipmentresponse->simple->$count2->rate;
+                }
             }
             $shipping_name = explode('(',$order['shipping_name']);
             $sName = $shipping_name[0] ?? '';
@@ -212,7 +217,7 @@ class OrderController extends Controller
         }else {
             $checkResi = isset($requestToWS->requestArr->carriers->wweLTL->api->speed_freight_residential_delivery) && ($requestToWS->requestArr->carriers->wweLTL->api->speed_freight_residential_delivery == 'Y' || $requestToWS->requestArr->carriers->wweLTL->api->speed_freight_residential_delivery == 'yes');
             if($checkResi){
-               $response['resi'] = 'Y';
+                $response['resi'] = 'Y';
             }
 
             $checkLift = isset($requestToWS->requestArr->carriers->wweLTL->api->speed_freight_lift_gate_delivery) && ($requestToWS->requestArr->carriers->wweLTL->api->speed_freight_lift_gate_delivery == 'Y' || $requestToWS->requestArr->carriers->wweLTL->api->speed_freight_lift_gate_delivery == 'yes');
@@ -330,7 +335,7 @@ class OrderController extends Controller
             if( !(isset($response[0]['status']) && $search)){
                 $orders = $search ? [$response] : $response;
 
-               // $orders = $sortProd ==='desc' ? $orders : array_reverse($orders);
+                // $orders = $sortProd ==='desc' ? $orders : array_reverse($orders);
 
                 $count = 0;
                 if($orders) {
