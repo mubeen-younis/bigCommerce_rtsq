@@ -78,19 +78,15 @@ class OrderController extends Controller
             ->where('cart_id', $order['cart_id'])
             ->where('store_id', $request['store_id'])
             ->first()->toArray();
-        //dd($data);
-        //print($order['rate_id']); exit;
         if(empty($data)){
             return [];
         }
-        //echo "<pre>"; print_r($data); exit;
         $isSmallrate = substr($order['rate_id'], 0, 9) == 'parcel_12' || substr($order['rate_id'], 0, 5) == 'Multi'  ? true : false;
         $isLG = strpos($order['rate_id'], '+LG');
-
+        $isOwnArrangement = strpos($order['rate_id'], 'own_arrangement') === 0 ? true : false;
         $lineItem = json_decode($data['lineitems'])->lineItemData;
         $responseFromWS = json_decode($data['quotes']);
         $requestToWS = json_decode($data['request']);
-        //echo "<pre>"; print_r($requestToWS); exit;
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
         $autoResidentialsStatus = 'n';
         $residentialsPickup = 'n';
@@ -98,7 +94,6 @@ class OrderController extends Controller
         $binPackagingData = '';
         $orderWidget = [];
         foreach($responseFromWS as $carrrierName => $WsResp){
-            //print_r($WsResp); exit;
             foreach($WsResp as $zip => $ws){
 
                 if( !(isset($ws->severity) && $ws->severity == 'ERROR') ){
@@ -109,18 +104,13 @@ class OrderController extends Controller
                     }
                     $autoResidentialsStatus = $liftResidentialStatus['resi'] ?? 'n';
                     $residentialsPickup = $liftResidentialStatus['resiPickup'] ?? 'n';
-                    //$autoResidentialsStatus = $ws->autoResidentialsStatus ?? 'n';
-
-                    //$binPackagingData = $ws['binPackagingData']['response']['']
 
                     $totalBoxes = 0;
-                   // dd($order['rate_id'],$isSmallrate);
-                    //print_r($ws); exit;
                     if(isset($ws->binPackagingData) && !empty($ws->binPackagingData) && $isSmallrate){
                         $sbsData = $ws->binPackagingData->response;
-                        //print_r($sbsData);
+
                         if(1/*isset($sbsData->errors) && empty($sbsData->errors)*/) {
-                            //$binPacked = $sbsData->bins_packed[0];
+
 
                             foreach ($sbsData->bins_packed as $key => $binPacked) {
 
@@ -160,12 +150,9 @@ class OrderController extends Controller
         $items = $lineItem->items;
 
         $count = 0;
-        //print_r($orderWidget); exit;
         $addedInsurance = $addHazmat = false;
-        //echo "<pre>"; print_r($items);  print_r($origins); print_r($multiShipmentresponse); exit;
         foreach($origins as $key => $origin){
             $item =  $items->$key;
-            //dd($item);
             $city = $origin->senderCity ? $origin->senderCity.',': '';
             $state = $origin->senderState ?? '';
             $zip = $origin->locationId != '' ? $origin->locationId : $origin->senderZip;
@@ -174,12 +161,11 @@ class OrderController extends Controller
             $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes;
             $sRate = $order['shipping_rate'];
-            if($multiShipmentresponse != null && !empty($multiShipmentresponse)){
+            if($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement){
                 $order['shipping_name'] = $multiShipmentresponse->simple->$zip->title;
 
                 $sRate = $isLG ?  $multiShipmentresponse->liftgate->$zip->rate : $multiShipmentresponse->simple->$zip->rate;
             }
-            //dd($order['shipping_name']);
             $shipping_name = explode('(',$order['shipping_name']);
             $sName = $shipping_name[0] ?? '';
             $sMethod = isset($shipping_name[1]) ? '('.$shipping_name[1] : '';
@@ -217,7 +203,6 @@ class OrderController extends Controller
 
 
     public function getLiftResidentialStatus($requestToWS, $isSmallrate){
-       // print_r($requestToWS); exit;
         $response = ['resi' => 'n', 'liftG' => 'n', 'resiPickup' => 'n'];
         if($isSmallrate){
             $checkResi = isset($requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery) && ($requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery == 'Y' || $requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery == 'yes' );
@@ -240,7 +225,6 @@ class OrderController extends Controller
                 $response['resiPickup'] = 'Y';
             }
         }
-        //dd($response);
         return $response;
     }
     public function getBoxName($binId, $store_id, $rate_id, $cart_id){

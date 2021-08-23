@@ -253,37 +253,34 @@ class Shipping
     }
 
     private function addBinResponseToQuotes($binReponse, $quotes){
-        //echo "<pre>"; print_r($quotes);
-        $boxFee = 0;
-        //echo "<pre>"; print_r($binReponse); exit;
+        $boxFee = [];
         $addedFee = false;
         foreach ($binReponse as $locationId => $bin){
             $quotes['wweSmall'][$locationId]['binPackagingData']['response'] = $bin;
             if(!$addedFee) {
-                $boxFee += $this->getCumulativeBoxFee($bin);
-                $addedFee = true;
+                $boxFee[$locationId] = $this->getCumulativeBoxFee($bin);
+                //$addedFee = true;
             }
         }
-        if($boxFee > 0){
+        if(!empty($boxFee)){
             $quotes = $this->addBoxFeeToQuotes($quotes, $boxFee);
         }
         return $quotes;
     }
 
-    private function addBoxFeeToQuotes(array $quotes, float $boxFee) : array
+    private function addBoxFeeToQuotes(array $quotes, array $boxFee) : array
     {
         if(isset($quotes['wweSmall']) && !empty($quotes['wweSmall'])){
             foreach ($quotes['wweSmall'] as $locId => $q){
                 if(isset($q['q'])) {
                     foreach ($q['q'] as $key => $qs) {
                         if (isset($qs['totalNetCharge']['Amount'])) {
-                            $quotes['wweSmall'][$locId]['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $boxFee;
+                            $quotes['wweSmall'][$locId]['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $boxFee[$locId];
                         }
                     }
                 }
             }
         }
-
         return $quotes;
     }
 
