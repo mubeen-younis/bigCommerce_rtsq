@@ -996,7 +996,7 @@ class CompileQuotes
                 /**
                  * Condition for Always lift gate and lift gate for residential (Single Shipment)
                  * */
-                return $quotes['simple'];
+                return $quotes['liftgate'] ?? $quotes['simple'];
             } else {
                 return $quotes['simple'];
             }
