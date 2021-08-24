@@ -108,14 +108,18 @@ class Shipping
         }
         //When one
 
-        $_finalQuotes = $finalTitlesTemp = [];
+        $_finalQuotes = $finalTitlesTemp = $finalCodesTemp = [];
         $finalTitles = array_column($finalQuotes, 'title');
-        //dd($finalTitles);
+        $finalCodes = array_column($finalQuotes, 'code');
         foreach ($finalTitles as $key=>$finalTitle ){
             $finalTitlesTemp[$key] = explode(' ', $finalTitle)[0];
         }
+        foreach ($finalCodes as $key=>$finalCode ){
+            $finalCodesTemp[$key] = explode('+', $finalCode)[0];
+        }
         $isFreightTitleExist = array_search('Freight', $finalTitlesTemp);
         $isShippingTitleExist = array_search('Shipping', $finalTitlesTemp);
+        $isAVGCodeExist = gettype(array_search('AVG', $finalCodesTemp)) == 'integer';
         $freightCode = '';
         $finalCost = 0;
         //dd($finalTitles,$finalQuotes, $isShippingTitleExist, $isFreightTitleExist);
@@ -142,6 +146,10 @@ class Shipping
             $finalQuotes = $_finalQuotes;
         }else {
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
+
+            if($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && $isAVGCodeExist){
+                $isShippingOrFreight = false;
+            }
             if($this->isRequestMultishipment && !$isShippingOrFreight) {
                 $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings,  $residential);
                 $finalQuotes = $finalQuotesMulti['checkoutQuotes'] ?? [];
@@ -179,25 +187,20 @@ class Shipping
     }
 
     private function makeMultishipmentSmallLtl($quotes, $connectionSettings,  $residential){
-        //print_r($quotes); exit;
+
         $quoteSettings = $connectionSettings['ltl-quotes']['quote_settings'];
         $isResi = $residential['wweLtl'] == 'Y' ? true:false;
-        $lgQuotes = ( ( isset($quoteSettings['autoDetectedResidentialAddresses']) && $quoteSettings['autoDetectedResidentialAddresses']) &&
-                (isset($quoteSettings['autoDetectedResidentialAddressesLfg']) && $quoteSettings['autoDetectedResidentialAddressesLfg'])) && $isResi;
-        if($lgQuotes){
-            $lgQuotes = false;
-        }else {
-            $lgQuotes =
-                (isset($quoteSettings['offerLiftGateDelivery']) && $quoteSettings['offerLiftGateDelivery']);
-        }
+        $lgQuotesAlways =
+            (isset($quoteSettings['alwaysLiftGateDelivery']) && $quoteSettings['alwaysLiftGateDelivery']);
+
         $parcel = $ltl = $ltlLG = $ownArrangement =  [];
-        //dd($lgQuotes, $isResi);
+
         foreach ($quotes as $quote){
             if(!empty($quote) && $quote['code'] !== 'own_arrangement') {
                 if (strpos($quote['code'], 'parcel_12') !== false) {
                     $parcel[] = $quote;
                 } else {
-                    if ($lgQuotes && strpos($quote['code'], '+LG') !== false) {
+                    if (strpos($quote['code'], '+LG') !== false) {
                         $ltlLG[] = $quote;
                     } else {
                         $ltl[] = $quote;
@@ -209,10 +212,10 @@ class Shipping
         }
 
         //print_r($quotes); print_r($parcel); print_r($ltl); print_r($ltlLG); exit;
-        if(empty($parcel) || empty($ltl)){
+        if(empty($parcel) || (empty($ltl) && empty($ltlLG))){
             return ['checkoutQuotes' => $quotes];
         }
-        $isLG = count($ltlLG) > 1;
+        $isLG = count($ltlLG) > 0;
         $parcel = !empty($parcel) ? $this->getSmallest($parcel) : [];
         $ltl = !empty($ltl) ? $this->getSmallest($ltl) : [];
         $ltlLG = !empty($ltlLG) ? $this->getSmallest($ltlLG) : [];
@@ -225,13 +228,17 @@ class Shipping
 
         $parcelRate = (float) str_replace(',','',$parcelRate);
         $ltlRate = (float) str_replace(',','',$ltlRate);
-        $newQuotes[] = [
-            'code' => 'multi'.$rCode,
-            'rate' => $parcelRate+$ltlRate,
-            'title' => 'Freight'.$rtitle
-        ];
+        if(!empty($ltl)) {
+            $newQuotes[] = [
+                'code' => 'multi' . $rCode,
+                'rate' => $parcelRate + $ltlRate,
+                'title' => 'Freight' . $rtitle
+            ];
+        }
         if($isLG){
-            $rtitle = $isResi ? ' ( R | L )':' ( L )';
+            if(!$lgQuotesAlways) {
+                $rtitle = $isResi ? ' ( R | L )' : ' ( L )';
+            }
             $newQuotes[] = [
                 'code' => 'multi'.$rCode.'+LG',
                 'rate' => $parcelRate+$ltlLGRate,
@@ -251,7 +258,9 @@ class Shipping
 
     private function createOrderWidgetRates($parcel, $ltl, $ltlLG){
         $orderWidgetRates = [];
-        $orderWidgetRates['simple'] = [ '1'=> $parcel, '2'=>$ltl];
+        if(!empty($parcel) && !empty($ltl)) {
+            $orderWidgetRates['simple'] = ['1' => $parcel, '2' => $ltl];
+        }
         if(!empty($ltlLG)){
             $orderWidgetRates['liftgate'] = [ '1'=>$parcel, '2'=>$ltlLG];
         }

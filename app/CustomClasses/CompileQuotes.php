@@ -1541,7 +1541,7 @@ class CompileQuotes
 
         $serviceName = $this->customLabel('Freight');
         $averageRateService[0]['simple'] = [
-            'title' => $this->getTitle($serviceName, $lgQuotes),//$serviceName,
+            'title' => $this->getTitle($serviceName, false),//$serviceName,
             'code' => 'AVG' . $this->getAccessorialCode(),
             'rate' => $simplePrice,
         ];
