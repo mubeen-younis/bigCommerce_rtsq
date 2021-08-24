@@ -216,7 +216,7 @@ class Shipping
         if(empty($parcel) || (empty($ltl) && empty($ltlLG))){
             return ['checkoutQuotes' => $quotes];
         }
-        $indexes = $this->indexesOfQuotes($quotesFromWs['wweSmall']);
+        $indexes = $this->indexesOfQuotes($quotesFromWs);
 
         $isLG = count($ltlLG) > 0;
         $parcel = !empty($parcel) ? $this->getSmallest($parcel) : [];
@@ -256,14 +256,20 @@ class Shipping
             'multiShipmentQuotes' => $multiShipmentQuotes,
             'checkoutQuotes' => $newQuotes
         ];
-        //print_r($resp); print_r($indexes); exit;
         return $resp;
     }
 
     private function indexesOfQuotes($quotes){
         $indexes = [];
-        foreach ($quotes as $key=>$quote){
-            $indexes[]=$key;
+        $count = 0;
+        foreach ($quotes['wweLTL'] as $key=>$quote){
+            $indexes[$count]=$key;
+            $count++;
+        }
+        $count = 0;
+        foreach ($quotes['wweSmall'] as $key=>$quote){
+            $indexes[$count]=$key;
+            $count++;
         }
         return $indexes;
     }
