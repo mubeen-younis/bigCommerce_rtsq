@@ -101,6 +101,7 @@ class Shipping
             ];
             dd($printData);
         }
+        $quotesFromWs = $quotes ?? [];
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $hazmatAllItems, $residential);
         if (!empty($finalQuotes['multiShipmentQuotes'])){
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
@@ -151,7 +152,7 @@ class Shipping
                 $isShippingOrFreight = false;
             }
             if($this->isRequestMultishipment && !$isShippingOrFreight) {
-                $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings,  $residential);
+                $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings,  $residential, $quotesFromWs);
                 $finalQuotes = $finalQuotesMulti['checkoutQuotes'] ?? [];
                 $multiShipmentQuotes = $finalQuotesMulti['multiShipmentQuotes'] ?? [];
             }
@@ -186,7 +187,7 @@ class Shipping
         return $output;
     }
 
-    private function makeMultishipmentSmallLtl($quotes, $connectionSettings,  $residential){
+    private function makeMultishipmentSmallLtl($quotes, $connectionSettings,  $residential, $quotesFromWs){
 
         $quoteSettings = $connectionSettings['ltl-quotes']['quote_settings'];
         $isResi = $residential['wweLtl'] == 'Y' ? true:false;
@@ -215,6 +216,8 @@ class Shipping
         if(empty($parcel) || (empty($ltl) && empty($ltlLG))){
             return ['checkoutQuotes' => $quotes];
         }
+        $indexes = $this->indexesOfQuotes($quotesFromWs['wweSmall']);
+
         $isLG = count($ltlLG) > 0;
         $parcel = !empty($parcel) ? $this->getSmallest($parcel) : [];
         $ltl = !empty($ltl) ? $this->getSmallest($ltl) : [];
@@ -245,7 +248,7 @@ class Shipping
                 'title' => 'Freight'.$rtitle
             ];
         }
-        $multiShipmentQuotes = $this->createOrderWidgetRates($parcel, $ltl, $ltlLG);
+        $multiShipmentQuotes = $this->createOrderWidgetRates($parcel, $ltl, $ltlLG, $indexes);
         if(!empty($ownArrangement)){
             $newQuotes[count($newQuotes)] = $ownArrangement;
         }
@@ -253,16 +256,25 @@ class Shipping
             'multiShipmentQuotes' => $multiShipmentQuotes,
             'checkoutQuotes' => $newQuotes
         ];
+        //print_r($resp); print_r($indexes); exit;
         return $resp;
     }
 
-    private function createOrderWidgetRates($parcel, $ltl, $ltlLG){
+    private function indexesOfQuotes($quotes){
+        $indexes = [];
+        foreach ($quotes as $key=>$quote){
+            $indexes[]=$key;
+        }
+        return $indexes;
+    }
+
+    private function createOrderWidgetRates($parcel, $ltl, $ltlLG, $indexes){
         $orderWidgetRates = [];
         if(!empty($parcel) && !empty($ltl)) {
-            $orderWidgetRates['simple'] = ['1' => $parcel, '2' => $ltl];
+            $orderWidgetRates['simple'] = [$indexes[0] => $parcel, $indexes[1] => $ltl];
         }
         if(!empty($ltlLG)){
-            $orderWidgetRates['liftgate'] = [ '1'=>$parcel, '2'=>$ltlLG];
+            $orderWidgetRates['liftgate'] = [ $indexes[0]=>$parcel, $indexes[1]=>$ltlLG];
         }
         return $orderWidgetRates;
     }

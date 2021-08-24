@@ -163,13 +163,12 @@ class OrderController extends Controller
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes;
             $sRate = $order['shipping_rate'];
             if($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement){
-                if(isset($multiShipmentresponse->simple->$zip->title)){
+                if($isLG) {
+                    $sRate = $multiShipmentresponse->liftgate->$zip->rate;
+                    $order['shipping_name'] = $multiShipmentresponse->liftgate->$zip->title ?? $multiShipmentresponse->simple->$zip->title;
+                }else {
+                    $sRate = $multiShipmentresponse->simple->$zip->rate;
                     $order['shipping_name'] = $multiShipmentresponse->simple->$zip->title ?? $multiShipmentresponse->liftgate->$zip->title;
-                    $sRate = $isLG ?  $multiShipmentresponse->liftgate->$zip->rate : $multiShipmentresponse->simple->$zip->rate;
-                }else{
-                    $count2 = $count+1;
-                    $order['shipping_name'] = $multiShipmentresponse->simple->$count2->title ?? $multiShipmentresponse->liftgate->$count2->title;
-                    $sRate = $isLG ?  $multiShipmentresponse->liftgate->$count2->rate : $multiShipmentresponse->simple->$count2->rate;
                 }
             }
             $shipping_name = explode('(',$order['shipping_name']);
