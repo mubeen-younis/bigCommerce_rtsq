@@ -216,6 +216,7 @@ class Shipping
         if(empty($parcel) || (empty($ltl) && empty($ltlLG))){
             return ['checkoutQuotes' => $quotes];
         }
+
         $indexes = $this->indexesOfQuotes($quotesFromWs);
 
         $isLG = count($ltlLG) > 0;
@@ -256,22 +257,19 @@ class Shipping
             'multiShipmentQuotes' => $multiShipmentQuotes,
             'checkoutQuotes' => $newQuotes
         ];
+        print_r($resp); print_r($indexes); exit;
         return $resp;
     }
 
     private function indexesOfQuotes($quotes){
         $indexes = [];
-        $count = 0;
         foreach ($quotes['wweLTL'] as $key=>$quote){
-            $indexes[$count]=$key;
-            $count++;
+            $indexes[]=$key;
         }
-        $count = 0;
         foreach ($quotes['wweSmall'] as $key=>$quote){
-            $indexes[$count]=$key;
-            $count++;
+            $indexes[]=$key;
         }
-        return $indexes;
+        return array_unique($indexes);
     }
 
     private function createOrderWidgetRates($parcel, $ltl, $ltlLG, $indexes){
@@ -344,7 +342,7 @@ class Shipping
     }
 
     public function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null){
-        //echo "<pre>"; print_r($requestArr); print_r($quotes); exit;
+        //echo "<pre>"; print_r($multiShipmentQuotes); print_r($quotes); exit;
         foreach ($finalQuotes as $finalQuote){
             $RequestTempData = new RequestTempData();
             $RequestTempData->request = json_encode($requestArr);
