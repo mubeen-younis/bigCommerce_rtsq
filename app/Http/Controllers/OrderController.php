@@ -163,11 +163,11 @@ class OrderController extends Controller
             $sRate = $order['shipping_rate'];
             if($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement){
                 if(isset($multiShipmentresponse->simple->$zip->title)){
-                    $order['shipping_name'] = $multiShipmentresponse->simple->$zip->title;
+                    $order['shipping_name'] = $multiShipmentresponse->simple->$zip->title ?? $multiShipmentresponse->liftgate->$zip->title;
                     $sRate = $isLG ?  $multiShipmentresponse->liftgate->$zip->rate : $multiShipmentresponse->simple->$zip->rate;
                 }else{
                     $count2 = $count+1;
-                    $order['shipping_name'] = $multiShipmentresponse->simple->$count2->title;
+                    $order['shipping_name'] = $multiShipmentresponse->simple->$count2->title ?? $multiShipmentresponse->liftgate->$count2->title;
                     $sRate = $isLG ?  $multiShipmentresponse->liftgate->$count2->rate : $multiShipmentresponse->simple->$count2->rate;
                 }
             }
