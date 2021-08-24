@@ -151,6 +151,7 @@ class OrderController extends Controller
 
         $count = 0;
         $addedInsurance = $addHazmat = false;
+
         foreach($origins as $key => $origin){
             $item =  $items->$key;
             $city = $origin->senderCity ? $origin->senderCity.',': '';
@@ -192,10 +193,12 @@ class OrderController extends Controller
             }else if($addedInsurance){
                 array_push($orderWidget[$zip]['accessories'], 'Insurance');
             }
-
+            $isSmall = $this->isSmallQuote($sName);
             $autoResidentialsStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Delivery') : '';
-            $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Pickup') : '';
-            $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Delivery') : '';
+            if(!$isSmall) {
+                $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Pickup') : '';
+                $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Delivery') : '';
+            }
             $count++;
         }
         $sbs = '';
@@ -650,4 +653,18 @@ class OrderController extends Controller
             }
         }
     }
+
+    private function isSmallQuote($quote){
+        $small = [
+            'UPS Ground',
+            'UPS 3 Day Select',
+            'UPS 2nd Day Air',
+            'UPS 2nd Day Air Saver',
+            'UPS Next Day Air Saver',
+            'UPS Next Day Air',
+            'UPS Next Day Air Early'
+        ];
+        return in_array($quote, $small);
+    }
+
 }
