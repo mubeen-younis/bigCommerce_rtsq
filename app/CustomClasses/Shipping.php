@@ -85,7 +85,7 @@ class Shipping
         $this->checkIsRequestMiltiShipment($requestArr['requestArr']);
 
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
-//echo "<pre>"; print_r($quotes); exit;
+
         $boxbins = $requestArr['boxBins'] ?? [];
         if(isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])){
             $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes);
@@ -141,12 +141,11 @@ class Shipping
             $_finalQuotes = array_values($_finalQuotes);
             $finalQuotes = $_finalQuotes;
         }else {
-
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
             if($this->isRequestMultishipment && !$isShippingOrFreight) {
-                $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes);
-                $finalQuotes = $finalQuotesMulti['checkoutQuotes'];
-                $multiShipmentQuotes = $finalQuotesMulti['multiShipmentQuotes'];
+                $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings,  $residential);
+                $finalQuotes = $finalQuotesMulti['checkoutQuotes'] ?? [];
+                $multiShipmentQuotes = $finalQuotesMulti['multiShipmentQuotes'] ?? [];
             }
         }
         $finalQuotes = $this->addRateId($finalQuotes);
@@ -179,19 +178,26 @@ class Shipping
         return $output;
     }
 
-    private function makeMultishipmentSmallLtl($quotes){
+    private function makeMultishipmentSmallLtl($quotes, $connectionSettings,  $residential){
         //print_r($quotes); exit;
+        $quoteSettings = $connectionSettings['ltl-quotes']['quote_settings'];
+        $isResi = $residential['wweLtl'] == 'Y' ? true:false;
+        $lgQuotes = ( ( isset($quoteSettings['autoDetectedResidentialAddresses']) && $quoteSettings['autoDetectedResidentialAddresses']) &&
+                (isset($quoteSettings['autoDetectedResidentialAddressesLfg']) && $quoteSettings['autoDetectedResidentialAddressesLfg'])) && $isResi;
+        if($lgQuotes){
+            $lgQuotes = false;
+        }else {
+            $lgQuotes =
+                (isset($quoteSettings['offerLiftGateDelivery']) && $quoteSettings['offerLiftGateDelivery']);
+        }
         $parcel = $ltl = $ltlLG = $ownArrangement =  [];
-        $isResi = $isLG =false;
+        //dd($lgQuotes, $isResi);
         foreach ($quotes as $quote){
             if(!empty($quote) && $quote['code'] !== 'own_arrangement') {
-                if (!$isResi && (strpos($quote['code'], '+R') !== false)) {
-                    $isResi = true;
-                }
                 if (strpos($quote['code'], 'parcel_12') !== false) {
                     $parcel[] = $quote;
                 } else {
-                    if (strpos($quote['code'], '+LG') !== false) {
+                    if ($lgQuotes && strpos($quote['code'], '+LG') !== false) {
                         $ltlLG[] = $quote;
                     } else {
                         $ltl[] = $quote;
@@ -200,6 +206,11 @@ class Shipping
             }else if($quote['code'] === 'own_arrangement'){
                 $ownArrangement = $quote;
             }
+        }
+
+        //print_r($quotes); print_r($parcel); print_r($ltl); print_r($ltlLG); exit;
+        if(empty($parcel) || empty($ltl)){
+            return ['checkoutQuotes' => $quotes];
         }
         $isLG = count($ltlLG) > 1;
         $parcel = !empty($parcel) ? $this->getSmallest($parcel) : [];
@@ -231,10 +242,11 @@ class Shipping
         if(!empty($ownArrangement)){
             $newQuotes[count($newQuotes)] = $ownArrangement;
         }
-        return [
+        $resp = [
             'multiShipmentQuotes' => $multiShipmentQuotes,
             'checkoutQuotes' => $newQuotes
         ];
+        return $resp;
     }
 
     private function createOrderWidgetRates($parcel, $ltl, $ltlLG){
