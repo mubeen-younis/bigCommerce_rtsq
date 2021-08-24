@@ -257,7 +257,6 @@ class Shipping
             'multiShipmentQuotes' => $multiShipmentQuotes,
             'checkoutQuotes' => $newQuotes
         ];
-        print_r($resp); print_r($indexes); exit;
         return $resp;
     }
 
