@@ -83,7 +83,7 @@ class PackageSubscriptionController extends Controller
             }
             $currentPackageSub->subscription_start_date = date('M,d,Y', strtotime($currentPackageSub->subscription_time));
             $currentPackageSub->expiry_time = date('M,d,Y', strtotime($currentPackageSub->expiry_time));
-            $currentPackageSub->currentPlanText = $currentPackageSub->total_allowed_hits.'/'.lcfirst(substr($currentPackageSub->current_package_period,0,2)).' ($'.number_format($currentPackageSub->current_package_cost,2).')';
+            $currentPackageSub->currentPlanText = $currentPackageSub->total_allowed_hits.'/'.lcfirst(substr($currentPackageSub->current_package_period,0,2)).' ($'.$currentPackageSub->current_package_cost.')';
             //To Be Charge package Details
             $currentPackageSub->to_be_charge_package_id = $toBeChargepkg->id ?? '';
 
