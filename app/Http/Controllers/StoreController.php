@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Store;
 use Illuminate\Http\Request;
+use App\CurlRequest;
 
 class StoreController extends Controller
 {
@@ -12,9 +13,28 @@ class StoreController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public $curlRequest;
+
+    public function __construct()
     {
-        //
+        $this->curlRequest = new CurlRequest();
+    }
+    public function index(Request $request)
+    {
+        $store = Store::where('hash', $request['store_hash'])->first();
+        if(empty($store)){
+            return [];
+        }
+        $headers[] = 'X-Auth-Token: ' . $store->access_token;
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/store";
+        $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
+
+        $response = json_decode($response['response'], true);
+        return response()->json(['error' => false,
+            'data' => $response,
+        ], 200);
     }
 
     /**

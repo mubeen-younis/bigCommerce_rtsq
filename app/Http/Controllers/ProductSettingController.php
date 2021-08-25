@@ -3,8 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\CurlRequest;
+use App\Jobs\ImportProductsFromBCStore;
+use App\Jobs\ImportProductsFromBCStoreStatusUpdate;
 use App\Models\ProductSetting;
+use App\Models\ImportProducts as ImportProductsModel;
 use Illuminate\Http\Request;
+use App\Models\Store;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class ProductSettingController extends Controller
 {
@@ -21,19 +27,34 @@ class ProductSettingController extends Controller
 
     public function importProducts(Request $request)
     {
-        $storeId = isset($request->store_id) ? $request->store_id : 1;
-        $storeName = isset($request->store_name) ? $request->store_name : 'uann2u';
-        $storeHash = isset($request->store_hash) ? $request->store_hash : 'uann2u';
-        $storeToken = $this->mainController->getCustAccessTok($storeId);
-        if (isset($storeToken['status']) && $storeToken['status'] == false) {
-            return response()->json(['error' => true,
-                'data' => [],
-                'message' => 'Token Not Found',
-            ], 200);
+        //dd($request->all());
+        if(!ImportProductsModel::where('store_id', $request['store_id'])->where('status', '=',1)->exists()) {
+            $importPrdModel = new ImportProductsModel();
+            $importPrdModel->store_id = $request['store_id'];
+            $importPrdModel->status = 1;
+            $importPrdModel->save();
+            $insertedId = $importPrdModel->id;
+            $data['store_hash'] = $request['store_hash'];
+            $data['store_token'] = $this->mainController->getCustAccessTok($request['store_id']);
+            $data['store_id'] = $request['store_id'];
+            $data['perpage'] = 250;
+            $totalpages = $this->importProductsGetPages($data);
+            $delay = 0;
+
+            for ($page = 0; $page <= $totalpages; $page++) {
+                $data['page'] = $page;
+                ImportProductsFromBCStore::dispatch($data)->delay(Carbon::now()->addSecond(($delay++) * 20));
+            }
+            ImportProductsFromBCStoreStatusUpdate::dispatch($insertedId, $request['email'])->delay(Carbon::now()->addSecond(($delay++) * 20));
+            \Artisan::call('queue:work');
+
         }
-        $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products';
-        $headers[] = 'X-Auth-Client: ' . $this->mainController->getAppClientId();
-        $headers[] = 'X-Auth-Token: ' . $storeToken;
+
+    }
+    public function importProductsJob($data){
+        $storeUrl = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products?limit='.$data['perpage'].'&page='.$data['page'];
+        unset($headers);
+        $headers[] = 'X-Auth-Token: ' . $data['store_token'];
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
         $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
@@ -46,22 +67,63 @@ class ProductSettingController extends Controller
         $response = json_decode($response['response'], true);
         if (isset($response['data']) && count($response['data'])) {
             foreach ($response['data'] as $product) {
-                $imageEndPoint = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products/'.$product['id'].'/images';
-                $image = $this->curlRequest->enSingleCurlRequest($imageEndPoint, [], $headers, 'GET', true);
-                if (isset($image['status']) && $image['status'] == true) {
-                    $image = json_decode($image['response'], true);
-                    if (isset($image['data']) && count($image['data'])) {
-                        $product['image'] = $image['data'][0]['url_tiny'] ?? '';
-                    }
-                }
-                $this->saveProducts->saveProduct($product, $storeId);
-            }
-            return response()->json(['error' => false,
-                'data' => $this->getStoreProductsFromDb($request),
-                'message' => 'Products Syncronized Succesfully',
-            ], 200);
-        }
 
+                /*
+                 * $product['base_variant_id'] = null mean this has variants and iterate those
+                 * otherwise base product is as a variant product
+                 * */
+                if($product['base_variant_id'] == null){
+                    $this->saveProducts->saveProduct($product, $data['store_id']);
+                    $this->getVariants($product, $data);
+                }else{
+                    $this->saveProducts->saveProduct($product, $data['store_id']);
+                }
+
+                //$this->saveProducts->saveProduct($product, $data['store_id']);
+            }
+        }
+    }
+
+    public function getVariants($product, $data){
+        $metaEndPoint = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products/'.$product['id'].'/variants?limit=250';
+        unset($headers);
+        $headers[] = 'X-Auth-Token: ' . $data['store_token'];
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $metaResponse = $this->curlRequest->enSingleCurlRequest($metaEndPoint, [], $headers, 'GET', true);
+        $metaResponse = json_decode($metaResponse['response'], true);
+        $total_pages = $metaResponse['meta']['pagination']['total_pages'];
+        for($count = 1; $count<=$total_pages; $count++) {
+            $variantEndPoint = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products/'.$product['id'].'/variants?limit=250&page='.$count;
+            $response = $this->curlRequest->enSingleCurlRequest($variantEndPoint, [], $headers, 'GET', true);
+            $response = json_decode($response['response'], true);
+            if (isset($response['data']) && count($response['data'])) {
+                foreach ($response['data'] as $variant) {
+                    $product['price'] = $variant['price'];
+                    $product['weight'] = $variant['weight'];
+                    $product['depth'] = $variant['depth'];
+                    $product['width'] = $variant['width'];
+                    $product['height'] = $variant['height'];
+                    $product['sku'] = $variant['sku'];
+                    $product['base_variant_id'] = $variant['id'];
+                    $this->saveProducts->saveProduct($product, $data['store_id']);
+                }
+            }
+        }
+    }
+    /*
+     * return number of pages for all products
+     */
+
+    public function importProductsGetPages($data){
+        $storeUrl = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products?limit='.$data['perpage'].'&page=0';
+        $headers[] = 'X-Auth-Token: ' . $data['store_token'];
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
+        $response = json_decode($response['response'], true);
+        //dd($response['meta']['pagination']['total_pages']);
+        return $response['meta']['pagination']['total_pages'];
     }
 
     public function getSingleProductFromApi($request)
@@ -70,6 +132,9 @@ class ProductSettingController extends Controller
         $storeName = $request['store_name'] ?? '';
         $productId = $request['product_id'] ?? '';
         $storeToken = $this->mainController->getCustAccessTok($storeId);
+        $data['store_token'] = $storeToken;
+        $data['store_id'] = $storeId;
+        $data['store_hash'] = $storeName;
         if (isset($storeToken['status']) && $storeToken['status'] == false) {
             return response()->json(['error' => true,
                 'data' => [],
@@ -84,7 +149,13 @@ class ProductSettingController extends Controller
         $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
         $response = json_decode($response['response'], true);
         if (isset($response['data']) && count($response['data'])) {
-            $this->saveProducts->saveProduct($response['data'], $storeId);
+            $product = $response['data'];
+            if($product['base_variant_id'] == null){
+                $this->saveProducts->saveProduct($product, $storeId);
+                $this->getVariants($product, $data);
+            }else{
+                $this->saveProducts->saveProduct($product, $storeId);
+            }
             return response()->json(['error' => false,
                 'data' => [],
                 'message' => 'Products Saved Succesfully',
@@ -97,8 +168,14 @@ class ProductSettingController extends Controller
         $storeId = $request['store_id'] ?? '';
         $storeHash = $request['store_hash'] ?? '';
         $source_product_id = $request['source_product_id'] ?? '';
+        $variant_id = (int) $request['variant_id'] ?? 0;
         $storeToken = $this->mainController->getCustAccessTok($storeId);
-        $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products/' . $source_product_id;
+        if($variant_id){
+            $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products/' . $source_product_id.'/variants/'.$variant_id;
+        }else{
+            $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products/' . $source_product_id;
+        }
+
         //$headers[] = 'X-Auth-Client: ' . $this->mainController->getAppClientId();
         $headers[] = 'X-Auth-Token: ' . $storeToken;
         $headers[] = 'Content-Type: application/json';
@@ -112,6 +189,74 @@ class ProductSettingController extends Controller
         $this->curlRequest->enSingleCurlRequest($storeUrl, json_encode($data), $headers, 'PUT', true);
     }
 
+
+    /*public function getSingleProductDetail(Request $request)
+    {
+        if (empty($request->product_id)) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'No Product Id',
+            ], 404);
+        }
+        $products = ProductSetting::where('id', $request->product_id)->get();
+        //$products = $this->getBCProductByID($request);
+        return response()->json(['error' => false,
+            'data' => $products,
+            'message' => '',
+        ], 200);
+    }*/
+
+    public function getBCProductByID($request){
+        $store = Store::where('hash', $request['store_hash'])->first();
+        if(empty($store)){
+            return [];
+        }
+        $headers[] = 'X-Auth-Token: ' . $store->access_token;
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v3/catalog/products/".$request['product_id'];
+        $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
+        $prd = [];
+        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+            $product = json_decode($response['response'], true)['data'];
+            $prd['weight'] = number_format($product['weight'], 2);
+            $prd['width'] = number_format($product['width'], 2);
+            $prd['length'] = number_format($product['depth'], 2);
+            $prd['height'] = number_format($product['height'], 2);
+            $prdSettings = $this->getProductSettings($request , $store->access_token);
+            $prd['settings'] = json_encode($prdSettings);
+            $prd['id'] = $product['id'];
+            //echo "<pre>"; print_r($prd); exit;
+        }
+        return $prd;
+    }
+
+    public function getProductSettings($request, $token){
+        $headers[] = 'X-Auth-Token: ' . $token;
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v3/catalog/products/".$request['product_id']."/custom-fields?limit=250";
+        $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
+        $settings = [];
+        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+            $customFields = json_decode($response['response'], true);
+
+            foreach($customFields['data'] as $field){
+                $boolIndex = ['dropship_enabled', 'hazardous_enabled', 'freight_enabled', 'insurance'];
+                $name = strtolower($field['name']);
+                $value = strtolower($field['value']);
+                if(in_array( $name, $boolIndex)){
+                    $settings[$name] = ($value == 'true') ? true : false;
+                }else{
+                    $settings[$name] = $value;
+                }
+
+            }
+        }
+        return $settings;
+    }
+
+
     public function getSingleProductDetail(Request $request)
     {
         if (empty($request->product_id)) {
@@ -120,7 +265,7 @@ class ProductSettingController extends Controller
                 'message' => 'No Product Id',
             ], 404);
         }
-        $products = ProductSetting::where('id', $request->product_id)
+        $products = ProductSetting::where('source_product_id', $request->product_id)
             ->get();
         if ($products->isEmpty()) {
             return response()->json(['error' => true,
@@ -136,8 +281,15 @@ class ProductSettingController extends Controller
 
     public function getStoreProductsFromDb(Request $request)
     {
+        $page = $request['page'] ?? 1;
+        $perPage = $request['perpage'] ?? 50;
+        $search = $request['search'] ?? null;
+        $sortProd = $request['sortProd'] == "true" ? 'DESC':'ASC';
+        $count = ProductSetting::where('store_id', $request->store_id)
+            ->groupBy('source_product_id')->where('name','LIKE','%'.$search.'%')->orderBy('name', $sortProd)->get()->count();
+
         $products = ProductSetting::where('store_id', $request->store_id)
-            ->groupBy('source_product_id')->get();
+            ->groupBy('source_product_id')->orderBy('name', $sortProd)->where('name','LIKE','%'.$search.'%')->skip(($page-1)*$perPage)->take($perPage)->get();
         if ($products->isEmpty()) {
             return response()->json(['error' => true,
                 'data' => [],
@@ -146,6 +298,7 @@ class ProductSettingController extends Controller
         }
         return response()->json(['error' => false,
             'data' => $products,
+            'meta' => ['total'=>$count, 'current' => $page, 'perpage'=>$perPage],
             'message' => '',
         ], 200);
     }
@@ -174,40 +327,139 @@ class ProductSettingController extends Controller
 
     public function updateProductDetail(Request $request)
     {
-        if (!$request->product_id || empty($request->product_id)) {
-            return response()->json(['error' => true,
-                'data' => [],
-                'message' => 'No Product Id',
-            ], 404);
+
+        foreach ($request->products as $prd) {
+            $product = ProductSetting::where('source_product_id', $prd['source_product_id'])
+                ->where('variant_id', $prd['variant_id'])->first();
+            $product->weight = $prd['weight'];
+            $product->length = $prd['length'];
+            $product->width = $prd['width'];
+            $product->height = $prd['height'];
+            $product->settings = json_encode($this->getSetting($prd));
+            /*json_encode($prd->only(['dropship_enabled', 'dropship_location', 'freight_class',
+                'hazardous_enabled', 'freight_enabled', 'parcel_enabled', 'insurance']));*/
+            $product->update();
+            $prd['store_id'] = $request['store_id'];
+            $prd['store_hash'] = $request['store_hash'];
+            $this->updateSingleProductFromApi($prd);
         }
-
-        $product = ProductSetting::find($request->product_id);
-
-        if ($product === null) {
-            return response()->json(['error' => true,
-                'data' => [],
-                'message' => 'No Product Found Against This Id',
-            ], 404);
-        }
-
-        $product->weight = $request->weight;
-        $product->length = $request->length;
-        $product->width = $request->width;
-        $product->height = $request->height;
-        $product->settings = json_encode($request->only(['dropship_enabled', 'dropship_location', 'freight_class',
-            'hazardous_enabled', 'freight_enabled', 'insurance']));
-        $product->update();
-        $this->updateSingleProductFromApi($request);
         return response()->json(['error' => false,
-            'data' => ProductSetting::find($request->product_id),
+            'data' => [],
             'message' => 'Product Updated Successfully',
         ], 200);
     }
 
+    public function getSetting($product){
+        $getOnly = ['dropship_enabled', 'dropship_location', 'freight_class',
+            'hazardous_enabled', 'freight_enabled', 'parcel_enabled', 'insurance'];
+        $settings = new \stdClass();
+        foreach($product as $key => $prd){
+            if(in_array($key, $getOnly)){
+                $settings->$key = $prd;
+            }
+        }
+        return $settings;
+    }
+
+
+    public function getAllProducts(Request $request){
+        $store = Store::where('hash', $request['store_hash'])->first();
+        if(empty($store)){
+            return [];
+        }
+        $headers[] = 'X-Auth-Token: ' . $store->access_token;
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v3/catalog/products";
+        $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
+        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+            $allProducts = json_decode($response['response'], true);
+            //$allowed = ['id', 'sku', 'name', 'price'];
+            $filteredPrds = [];
+            $productsMeta = $allProducts['meta'];
+            foreach ($allProducts['data'] as $key=>$product){
+                $filteredPrds[$key]['id'] = $product['id'];
+                $filteredPrds[$key]['name'] = $product['name'];
+                $filteredPrds[$key]['sku'] = $product['sku'];
+                $filteredPrds[$key]['price'] = $product['price'];
+                //$filteredPrds[$key]['image_src'] = $this->getProductImageByID($product['id'], $request, $store->access_token );
+            };
+        }
+        return response()->json(
+            [
+                'error' => false,
+                'data' => $filteredPrds,
+                'meta' => $productsMeta,
+                'message' => '',
+            ]
+        );
+    }
+
+    public function getProductImageByID($id, $request, $token){
+        $imageEndPoint = 'https://api.bigcommerce.com/stores/' .$request['store_hash']. '/v3/catalog/products/'.$id.'/images';
+        $headers[] = 'X-Auth-Token: ' . $token;
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $image_src = '';
+        $image = $this->curlRequest->enSingleCurlRequest($imageEndPoint, [], $headers, 'GET', true);
+        if (isset($image['status']) && $image['status'] == true) {
+            $image = json_decode($image['response'], true);
+            if (isset($image['data']) && count($image['data'])) {
+                $image_src = $image['data'][0]['url_tiny'] ?? '';
+            }
+        }
+        return $image_src;
+    }
+
+
+    /*
+     * webhook
+     * Update product when option/variants/sku creates/updated
+     * */
+
+    public function skuFromWebhook(Request $request){
+        try {
+            $postData = file_get_contents("php://input");
+            Log::info('sku data: ' . $postData);
+            $postData = json_decode($postData, true);
+            $storeHash = explode('/', $postData['producer']);
+            $storeHash = $storeHash[1];
+            $productId = $postData['data']['sku']['product_id'];
+            $variant_id = $postData['data']['sku']['variant_id'];
+            // Update,delete,create from  webhook
+            $scope = $postData['scope'];
+            $store = Store::where('hash', $storeHash)->first();
+            //allow only create/update orders actions
+            if ($scope == "store/sku/deleted") {
+                ProductSetting::where('source_product_id', $productId)->where('variant_id', $variant_id)->where('store_id', $store->id)->delete();
+                return true;
+            }
+            $onlyScopes = ['store/sku/created', 'store/sku/updated'];
+            if (empty($store) || !in_array($scope, $onlyScopes)) {
+                return true;
+            }
+            /*
+             * Handle first time sku created
+             * need to set variant_id null for base product
+             * */
+            if($scope == "store/sku/created"){
+                if(ProductSetting::where('source_product_id', $productId)->where('store_id', $store->id)->count() == 1){
+                    ProductSetting::where('source_product_id', $productId)->where('store_id', $store->id)->update(['variant_id' => null]);
+                }
+            }
+            $toRequest['store_id'] = $store->id;
+            $toRequest['store_name'] = $storeHash;
+            $toRequest['product_id'] = $productId;
+            $this->getSingleProductFromApi($toRequest);
+        } catch (\Exception $exception) {
+            //  Have to LOg Here
+        }
+    }
+
 //
-    /*    public function getAllProducts(Request $request)
+   /* public function getAllProducts(Request $request)
     {
-    $this->getProductsFromBC();
+        $this->getProductsFromBC();
     }
 
     public function getProductsFromBC()

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Constants\Constant;
 use App\CurlRequest;
 use App\Models\AddonSettings;
 use App\Models\Connection;
@@ -159,7 +160,7 @@ class RADController extends Controller
                         'serverName' => $request->store_name,
                     ];
 
-                    $response = $this->curlRequest->sendPostRequest('https://eniture-qa.com/ws/addon/rad/index.php', $requestData);
+                    $response = $this->curlRequest->sendPostRequest(Constant::RAD_PLAN_URL, $requestData);
 
                     return [
                         'response' => $response,

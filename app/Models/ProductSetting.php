@@ -19,14 +19,16 @@ class ProductSetting extends Model
         if (ProductSetting::where('source_product_id', $product['id'])
             ->where('variant_id', $product['base_variant_id'])
             ->where('store_id', $storeId)->exists()) {
-            $saveProduct = ProductSetting::where('source_product_id', $product['id'])->first();
+            $saveProduct = ProductSetting::where('source_product_id', $product['id'])
+                ->where('variant_id', $product['base_variant_id'])
+                ->where('store_id', $storeId)->first();
         } else {
             $saveProduct = new ProductSetting();
         }
         $saveProduct->name = $product['name'];
         $saveProduct->source_product_id = $product['id'];
         $saveProduct->variant_id = $product['base_variant_id'];
-        $saveProduct->image_src = $product['image'] ?? '';
+        $saveProduct->image_src = '';
         $saveProduct->product_type = $product['type'];
         $saveProduct->sku = $product['sku'];
         $saveProduct->weight = $product['weight'];
@@ -37,7 +39,7 @@ class ProductSetting extends Model
         $product_settings = new stdClass();
         $product_settings->insurance = false;
         $product_settings->freight_enabled = false;
-        $saveProduct->settings = json_encode($product_settings);
+        //$saveProduct->settings = json_encode($product_settings);
         $saveProduct->store_id = $storeId;
         $saveProduct->save();
     }
