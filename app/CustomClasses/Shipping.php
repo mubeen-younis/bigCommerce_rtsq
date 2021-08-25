@@ -195,9 +195,6 @@ class Shipping
             $alwaysResi = (isset($requestArr['carriers']['wweSmall']['api']['residentials_delivery']) && $requestArr['carriers']['wweSmall']['api']['residentials_delivery'] == 'yes') ||
                 (isset($requestArr['carriers']['wweLTL']['api']['speed_freight_residential_delivery']) && $requestArr['carriers']['wweLTL']['api']['speed_freight_residential_delivery'] == 'Y');
         }
-        //dd($requestArr['carriers']['wweLTL']['api']['speed_freight_residential_delivery'], );
-        //print_r($requestArr);
-        //dd($alwaysResi);
         $lgQuotesAlways =
             (isset($quoteSettings['alwaysLiftGateDelivery']) && $quoteSettings['alwaysLiftGateDelivery']);
 

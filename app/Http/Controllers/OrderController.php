@@ -81,9 +81,10 @@ class OrderController extends Controller
         if(empty($data)){
             return [];
         }
+        $isSmallLtlrate = substr($order['rate_id'], 0, 5) == 'multi'  ? true : false;
         $order['rate_id'] = strtolower($order['rate_id']);
         $isSmallrate = substr($order['rate_id'], 0, 9) == 'parcel_12' || substr($order['rate_id'], 0, 5) == 'multi'  ? true : false;
-        $isLG = strpos($order['rate_id'], '+LG');
+        $isLG = strpos($order['rate_id'], '+lg');
         $isOwnArrangement = strpos($order['rate_id'], 'own_arrangement') === 0 ? true : false;
         $lineItem = json_decode($data['lineitems'])->lineItemData;
         $responseFromWS = json_decode($data['quotes']);
@@ -99,7 +100,8 @@ class OrderController extends Controller
 
                 if( !(isset($ws->severity) && $ws->severity == 'ERROR') ){
 
-                    $liftResidentialStatus = $this->getLiftResidentialStatus($requestToWS, $isSmallrate);
+                    $liftResidentialStatus = $this->getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate);
+                    //dd($liftResidentialStatus);
                     if($isLG) {
                         $liftGateStatus = $liftResidentialStatus['liftG'] ?? 'n';
                     }
@@ -207,8 +209,10 @@ class OrderController extends Controller
                 }
             }
             $isSmall = $this->isSmallQuote($sName);
+
             $autoResidentialsStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Delivery') : '';
             if(!$isSmall) {
+
                 $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Pickup') : '';
                 $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Delivery') : '';
             }
@@ -223,9 +227,10 @@ class OrderController extends Controller
     }
 
 
-    public function getLiftResidentialStatus($requestToWS, $isSmallrate){
+    public function getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate){
+        //dd($isSmallLtlrate);
         $response = ['resi' => 'n', 'liftG' => 'n', 'resiPickup' => 'n'];
-        if($isSmallrate){
+        if($isSmallrate && !$isSmallLtlrate){
             $checkResi = isset($requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery) && ($requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery == 'Y' || $requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery == 'yes' );
             if($checkResi){
                 $response['resi'] = 'Y';
@@ -235,7 +240,6 @@ class OrderController extends Controller
             if($checkResi){
                 $response['resi'] = 'Y';
             }
-
             $checkLift = isset($requestToWS->requestArr->carriers->wweLTL->api->speed_freight_lift_gate_delivery) && ($requestToWS->requestArr->carriers->wweLTL->api->speed_freight_lift_gate_delivery == 'Y' || $requestToWS->requestArr->carriers->wweLTL->api->speed_freight_lift_gate_delivery == 'yes');
             if($checkLift){
                 $response['liftG'] = 'Y';
