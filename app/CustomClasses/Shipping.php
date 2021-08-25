@@ -152,7 +152,7 @@ class Shipping
                 $isShippingOrFreight = false;
             }
             if($this->isRequestMultishipment && !$isShippingOrFreight) {
-                $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings,  $residential, $quotesFromWs);
+                $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings,  $residential, $quotesFromWs, $requestArr['requestArr']);
                 $finalQuotes = $finalQuotesMulti['checkoutQuotes'] ?? [];
                 $multiShipmentQuotes = $finalQuotesMulti['multiShipmentQuotes'] ?? [];
             }
@@ -187,10 +187,17 @@ class Shipping
         return $output;
     }
 
-    private function makeMultishipmentSmallLtl($quotes, $connectionSettings,  $residential, $quotesFromWs){
-
+    private function makeMultishipmentSmallLtl($quotes, $connectionSettings,  $residential, $quotesFromWs, $requestArr){
         $quoteSettings = $connectionSettings['ltl-quotes']['quote_settings'];
-        $isResi = $residential['wweLtl'] == 'Y' ? true:false;
+        $isResi = ($residential['wweLtl'] == 'Y' || $residential['wweSmall'] == 'Y') ? true : false;
+        $alwaysResi = false;
+        if(!$isResi){
+            $alwaysResi = (isset($requestArr['carriers']['wweSmall']['api']['residentials_delivery']) && $requestArr['carriers']['wweSmall']['api']['residentials_delivery'] == 'yes') ||
+                (isset($requestArr['carriers']['wweLTL']['api']['speed_freight_residential_delivery']) && $requestArr['carriers']['wweLTL']['api']['speed_freight_residential_delivery'] == 'Y');
+        }
+        //dd($requestArr['carriers']['wweLTL']['api']['speed_freight_residential_delivery'], );
+        //print_r($requestArr);
+        //dd($alwaysResi);
         $lgQuotesAlways =
             (isset($quoteSettings['alwaysLiftGateDelivery']) && $quoteSettings['alwaysLiftGateDelivery']);
 
@@ -227,8 +234,8 @@ class Shipping
         $parcelRate = $parcel['rate'] ?? 0;
         $ltlRate = $ltl['rate'] ?? 0;
         $ltlLGRate = $ltlLG['rate'] ?? 0;
-        $rCode = $isResi ? '+R':'';
-        $rtitle = $isResi ? ' ( R )':'';
+        $rCode = $isResi || $alwaysResi ? '+R':'';
+        $rtitle = $isResi  ? ' ( R )':'';
 
         $parcelRate = (float) str_replace(',','',$parcelRate);
         $ltlRate = (float) str_replace(',','',$ltlRate);
