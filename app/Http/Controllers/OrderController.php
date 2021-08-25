@@ -152,7 +152,8 @@ class OrderController extends Controller
 
         $count = 0;
         $addedInsurance = $addHazmat = false;
-
+//print_r($items); exit;
+        $isMulti = false;
         foreach($origins as $key => $origin){
             $item =  $items->$key;
             $city = $origin->senderCity ? $origin->senderCity.',': '';
@@ -171,6 +172,7 @@ class OrderController extends Controller
                     $sRate = $multiShipmentresponse->simple->$zip->rate ?? $multiShipmentresponse->liftgate->$zip->rate;
                     $order['shipping_name'] = $multiShipmentresponse->simple->$zip->title ?? $multiShipmentresponse->liftgate->$zip->title;
                 }
+                $isMulti = true;
             }
             $shipping_name = explode('(',$order['shipping_name']);
             $sName = $shipping_name[0] ?? '';
@@ -181,17 +183,28 @@ class OrderController extends Controller
             $orderWidget[$zip]['items'][] = $item->piecesOfLineItem.' X '.$item->lineItemName;
             $orderWidget[$zip]['accessories'] = [];
 
-            if(isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') {
-                array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
-                $addHazmat = true;
-            }else if($addHazmat){
-                array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
-            }
-            if(isset($item->product_insurance_active) && $item->product_insurance_active == 1){
-                array_push($orderWidget[$zip]['accessories'], 'Insurance');
-                $addedInsurance = true;
-            }else if($addedInsurance){
-                array_push($orderWidget[$zip]['accessories'], 'Insurance');
+
+            if(!$isMulti){
+                if(isset($item->product_insurance_active) && $item->product_insurance_active == 1){
+                    array_push($orderWidget[$zip]['accessories'], 'Insurance');
+                    $addedInsurance = true;
+                }else if($addedInsurance){
+                    array_push($orderWidget[$zip]['accessories'], 'Insurance');
+                }
+                if(isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') {
+                    array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
+                    $addHazmat = true;
+                }else if($addHazmat){
+                    array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
+                }
+            }else{
+                if(isset($item->product_insurance_active) && $item->product_insurance_active == 1){
+                    array_push($orderWidget[$zip]['accessories'], 'Insurance');
+                }
+                if(isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') {
+                    array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
+                    $addHazmat = true;
+                }
             }
             $isSmall = $this->isSmallQuote($sName);
             $autoResidentialsStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Delivery') : '';
