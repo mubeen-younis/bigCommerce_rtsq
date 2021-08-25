@@ -606,7 +606,7 @@ class CompileQuotes
      * @info: This function will compile all quotes according to the origin.
      * After getting from quotes almost all type of compilation happened in this function
      */
-    public function newGetQuotesResults($quotes, $connectionSettings, $allOrigins, $isHazmat, $hazmatAllItems, $residential)
+    public function newGetQuotesResults($quotes, $connectionSettings, $allOrigins, $isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
         $this->residential = $residential;
         /*if($residential == 'Y'){
@@ -632,7 +632,7 @@ class CompileQuotes
                     }*/
                     break;
                 case "wweSmall":
-                    $resp = $this->compileWweSmallQuotes($shipment, $connectionSettings, $allOrigins, $isHazmat, $hazmatAllItems);
+                    $resp = $this->compileWweSmallQuotes($shipment, $connectionSettings, $allOrigins, $isHazmat,$smalLtlHazmat, $hazmatAllItems);
                     if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))){
                         $quotesRes = array_merge($quotesRes, $resp);
                     }
@@ -788,7 +788,7 @@ class CompileQuotes
         return $allQuotes;
     }
 
-    public function compileWweSmallQuotes($shipments, $connectionSettings, $allOrigins, $isHazmat, $hazmatAllItems)
+    public function compileWweSmallQuotes($shipments, $connectionSettings, $allOrigins, $isHazmat, $smalLtlHazmat, $hazmatAllItems)
     {
         if($this->residential['wweSmall'] == 'Y'){
             $this->isResi = true;
@@ -798,7 +798,8 @@ class CompileQuotes
             $this->residentialDlvry = 0;
         }
         $this->quoteSettings = [];
-        $isHazmat = $isHazmat == "Y" ? true : false;
+        //$isHazmat = $isHazmat == "Y" ? true : false;
+        $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
         $this->quoteSettings = $connectionSettings['small-package']['quote_settings'] ?? '';
         $allConfigServices = $connectionSettings['small-package']['quote_settings']['carrier_services'] ?? [];
         // Removing Markup indexes from services

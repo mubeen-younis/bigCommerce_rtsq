@@ -84,6 +84,7 @@ class Shipping
         //echo "<pre>"; print_r($requestArr['requestArr']); exit;
         $this->checkIsRequestMiltiShipment($requestArr['requestArr']);
 
+        $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
 
         $boxbins = $requestArr['boxBins'] ?? [];
@@ -102,7 +103,7 @@ class Shipping
             dd($printData);
         }
         $quotesFromWs = $quotes ?? [];
-        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $hazmatAllItems, $residential);
+        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential);
         if (!empty($finalQuotes['multiShipmentQuotes'])){
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];
@@ -394,7 +395,6 @@ class Shipping
      */
     public function isHazmatMaterial($items)
     {
-
         $hazmatAllItems = [];
         foreach ($items['items'] as $key => $item) {
             if (isset($item['isHazmatLineItem']) && $item['isHazmatLineItem'] == 'Y') {
@@ -405,6 +405,33 @@ class Shipping
             }
         }
         return $hazmatAllItems;
+    }
+
+    private function checkIndividualHazmat($request){
+        $smallOrigins = $marketItemSmall = $request['carriers']['wweSmall']['originAddress'] ?? [];
+        $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? [];
+        $items = $request['commdityDetails'] ?? [];
+        $smallHazmat = $ltlHazmat = false;
+        if(!empty($smallOrigins)){
+            foreach ($smallOrigins as $key=>$origin){
+                if(isset($items[$key]['isHazmatLineItem']) && $items[$key]['isHazmatLineItem'] == 'Y'){
+                    $smallHazmat = true;
+                    $marketItemSmall[] = $items[$key]['product_id'].$items[$key]['variant_id'];
+                }
+            }
+            foreach ($ltlOrigins as $key=>$origin){
+                $id = $items[$key]['product_id'].$items[$key]['variant_id'];
+                if(isset($items[$key]['isHazmatLineItem']) && $items[$key]['isHazmatLineItem'] == 'Y' && !in_array($id, $marketItemSmall)){
+                    $ltlHazmat = true;
+                    break;
+                }
+            }
+        }
+        $resp = [
+            'smallHazmat' => $smallHazmat,
+            'ltlHazmat' => $ltlHazmat
+        ];
+        return $resp;
     }
 
     /**
