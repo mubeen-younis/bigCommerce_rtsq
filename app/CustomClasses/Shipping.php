@@ -261,23 +261,25 @@ class Shipping
     }
 
     private function indexesOfQuotes($quotes){
-        $indexes = [];
+        $small = $ltl = [];
         foreach ($quotes['wweLTL'] as $key=>$quote){
-            $indexes[]=$key;
+            $ltl[]=$key;
         }
         foreach ($quotes['wweSmall'] as $key=>$quote){
-            $indexes[]=$key;
+            $small[]=$key;
         }
-        return array_unique($indexes);
+        $indexes['small'] = $small;
+        $indexes['ltl'] = $ltl;
+        return $indexes;
     }
 
     private function createOrderWidgetRates($parcel, $ltl, $ltlLG, $indexes){
         $orderWidgetRates = [];
         if(!empty($parcel) && !empty($ltl)) {
-            $orderWidgetRates['simple'] = [$indexes[0] => $parcel, $indexes[1] => $ltl];
+            $orderWidgetRates['simple'] = [$indexes['small'][0] => $parcel, $indexes['ltl'][0] => $ltl];
         }
         if(!empty($ltlLG)){
-            $orderWidgetRates['liftgate'] = [ $indexes[0]=>$parcel, $indexes[1]=>$ltlLG];
+            $orderWidgetRates['liftgate'] = [ $indexes['small'][0]=>$parcel, $indexes['ltl'][0]=>$ltlLG];
         }
         return $orderWidgetRates;
     }

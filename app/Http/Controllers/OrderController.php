@@ -654,6 +654,8 @@ class OrderController extends Controller
     }
 
     private function isSmallQuote($quote){
+        $quote = explode('(', $quote)[0];
+        $quote = trim($quote);
         $small = [
             'UPS Ground',
             'UPS 3 Day Select',
