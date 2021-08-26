@@ -301,8 +301,7 @@ class ProductSettingController extends Controller
         }
         Log::info('295 request after $count: '.json_encode($count));
         $products = ProductSetting::where('store_id', $request->store_id)
-            ->orderBy('name', $sortProd)->where('name','LIKE','%'.$search.'%')->skip(($page-1)*$perPage)->take($perPage)->get()->groupBy('source_product_id');
-
+            ->groupBy('source_product_id')->orderBy('name', $sortProd)->where('name','LIKE','%'.$search.'%')->skip(($page-1)*$perPage)->take($perPage)->get();
         Log::info('298 request after $products: '.json_encode($products));
         if ($products->isEmpty()) {
             Log::info('300 request after isEmpty');
