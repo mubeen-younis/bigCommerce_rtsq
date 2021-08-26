@@ -10,6 +10,7 @@ use App\Models\ImportProducts as ImportProductsModel;
 use Illuminate\Http\Request;
 use App\Models\Store;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ProductSettingController extends Controller
@@ -290,11 +291,45 @@ class ProductSettingController extends Controller
         Log::info('290 request after search: '.$search);
         $sortProd = $request['sortProd'] == "true" ? 'DESC':'ASC';
         Log::info('292 request after $sortProd: '.$sortProd);
-        $count = ProductSetting::where('store_id', $request->store_id)
-            ->groupBy('source_product_id')->where('name','LIKE','%'.$search.'%')->orderBy('name', $sortProd)->get()->count();
+        /*$count = ProductSetting::where('store_id', $request->store_id)
+            ->where('name','LIKE','%'.$search.'%')->orderBy('name', $sortProd)->get()->groupBy('source_product_id')->count();*/
+
+        DB::connection()->enableQueryLog();
+        if($search === null || $search == ''){
+            Log::info('if count not search');
+            $count = ProductSetting::where('store_id', $request->store_id)
+                ->orderBy('name', $sortProd)->get();
+        }else{
+            Log::info('else count search');
+            $count = ProductSetting::where('store_id', $request->store_id)
+                ->where('name','LIKE','%'.$search.'%')->orderBy('name', $sortProd)->get();
+        }
+
+        $queries = DB::getQueryLog();
+        $last_query = end($queries);
+        Log::info('count query: '. json_encode($last_query));
+        if($count->count()){
+            Log::info('if ');
+            $count = $count->groupBy('source_product_id')->count();
+        }else{
+            Log::info('else ');
+            $count = 0;
+        }
         Log::info('295 request after $count: '.json_encode($count));
-        $products = ProductSetting::where('store_id', $request->store_id)
-            ->groupBy('source_product_id')->orderBy('name', $sortProd)->where('name','LIKE','%'.$search.'%')->skip(($page-1)*$perPage)->take($perPage)->get();
+        if($search === null || $search == ''){
+            Log::info('if not search');
+            $products = ProductSetting::where('store_id', $request->store_id)
+                ->groupBy('source_product_id')->orderBy('name', $sortProd)->skip(($page-1)*$perPage)->take($perPage)->get();
+        }else{
+            Log::info('else search');
+            $products = ProductSetting::where('store_id', $request->store_id)
+                ->groupBy('source_product_id')->orderBy('name', $sortProd)->where('name','LIKE','%'.$search.'%')->skip(($page-1)*$perPage)->take($perPage)->get();
+        }
+
+        $queries = DB::getQueryLog();
+        $last_query = end($queries);
+        Log::info('products query: '. json_encode($last_query));
+
         Log::info('298 request after $products: '.json_encode($products));
         if ($products->isEmpty()) {
             Log::info('300 request after isEmpty');
