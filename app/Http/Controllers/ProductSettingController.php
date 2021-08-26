@@ -291,7 +291,7 @@ class ProductSettingController extends Controller
         $sortProd = $request['sortProd'] == "true" ? 'DESC':'ASC';
         Log::info('292 request after $sortProd: '.$sortProd);
         $count = ProductSetting::where('store_id', $request->store_id)
-            ->groupBy('source_product_id')->where('name','LIKE','%'.$search.'%')->orderBy('name', $sortProd)->get()->count();
+            ->where('name','LIKE','%'.$search.'%')->orderBy('name', $sortProd)->get()->groupBy('source_product_id')->count();
         Log::info('295 request after $count: '.json_encode($count));
         $products = ProductSetting::where('store_id', $request->store_id)
             ->groupBy('source_product_id')->orderBy('name', $sortProd)->where('name','LIKE','%'.$search.'%')->skip(($page-1)*$perPage)->take($perPage)->get();
