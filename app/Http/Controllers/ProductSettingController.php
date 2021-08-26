@@ -281,26 +281,38 @@ class ProductSettingController extends Controller
 
     public function getStoreProductsFromDb(Request $request)
     {
+        Log::info('284 request reached at getStoreProductsFromDb');
         $page = $request['page'] ?? 1;
+        Log::info('286 request after page: '.$page);
         $perPage = $request['perpage'] ?? 50;
+        Log::info('288 request after perpage: '.$perPage);
         $search = $request['search'] ?? null;
+        Log::info('290 request after search: '.$search);
         $sortProd = $request['sortProd'] == "true" ? 'DESC':'ASC';
+        Log::info('292 request after $sortProd: '.$sortProd);
         $count = ProductSetting::where('store_id', $request->store_id)
             ->groupBy('source_product_id')->where('name','LIKE','%'.$search.'%')->orderBy('name', $sortProd)->get()->count();
-
+        Log::info('295 request after $count: '.json_encode($count));
         $products = ProductSetting::where('store_id', $request->store_id)
             ->groupBy('source_product_id')->orderBy('name', $sortProd)->where('name','LIKE','%'.$search.'%')->skip(($page-1)*$perPage)->take($perPage)->get();
+        Log::info('298 request after $products: '.json_encode($products));
         if ($products->isEmpty()) {
+            Log::info('300 request after isEmpty');
             return response()->json(['error' => true,
                 'data' => [],
                 'message' => 'No Products Available',
             ], 200);
         }
-        return response()->json(['error' => false,
+        Log::info('306 request before response');
+        Log::info('307 complete products'. json_encode($products));
+        $resp = response()->json(['error' => false,
             'data' => $products,
             'meta' => ['total'=>$count, 'current' => $page, 'perpage'=>$perPage],
             'message' => '',
         ], 200);
+
+        Log::info('314 complete response'. $resp);
+        return $resp;
     }
 
     public function editProduct(Request $request)
