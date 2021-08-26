@@ -290,11 +290,19 @@ class ProductSettingController extends Controller
         Log::info('290 request after search: '.$search);
         $sortProd = $request['sortProd'] == "true" ? 'DESC':'ASC';
         Log::info('292 request after $sortProd: '.$sortProd);
+        /*$count = ProductSetting::where('store_id', $request->store_id)
+            ->where('name','LIKE','%'.$search.'%')->orderBy('name', $sortProd)->get()->groupBy('source_product_id')->count();*/
         $count = ProductSetting::where('store_id', $request->store_id)
-            ->where('name','LIKE','%'.$search.'%')->orderBy('name', $sortProd)->get()->groupBy('source_product_id')->count();
+            ->where('name','LIKE','%'.$search.'%')->orderBy('name', $sortProd)->get();
+        if($count->count()){
+            $count = $count->groupBy('source_product_id')->count();
+        }else{
+            $count = 0;
+        }
         Log::info('295 request after $count: '.json_encode($count));
         $products = ProductSetting::where('store_id', $request->store_id)
-            ->groupBy('source_product_id')->orderBy('name', $sortProd)->where('name','LIKE','%'.$search.'%')->skip(($page-1)*$perPage)->take($perPage)->get();
+            ->orderBy('name', $sortProd)->where('name','LIKE','%'.$search.'%')->skip(($page-1)*$perPage)->take($perPage)->get()->groupBy('source_product_id');
+
         Log::info('298 request after $products: '.json_encode($products));
         if ($products->isEmpty()) {
             Log::info('300 request after isEmpty');
