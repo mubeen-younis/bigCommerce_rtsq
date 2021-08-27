@@ -15,7 +15,7 @@ class AdditionalCarrierTabSettingController extends Controller
      */
     public function index()
     {
-        $services = CarrierServices::where('app_id', 1)->get();
+        $services = CarrierServices::where('app_id', 1)->orderBy('speed_freight_carrierName')->get();
         return response()->json(['error' => false, 'data' => $services]);
     }
 
@@ -44,7 +44,7 @@ class AdditionalCarrierTabSettingController extends Controller
         $settings->value = json_encode($request->services);
         $settings->save();
 
-        return response()->json(['error' => false, 'message' => 'Carriers have been successfully saved.', 'data' => $settings]);
+        return response()->json(['error' => false, 'message' => 'Carriers has been saved successfully.', 'data' => $settings]);
     }
 
     /**

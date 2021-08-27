@@ -14,8 +14,9 @@ use Illuminate\Http\Request;
 use App\CustomClasses\Origin;
 use App\Models\ProductSetting;
 use App\CustomClasses\Shipping;
+use App\Models\Subscription\Subscription;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
+
 class GetRatesController extends Controller
 {
     public $shipping = null;
@@ -41,15 +42,22 @@ class GetRatesController extends Controller
 
     public function returnRates(Request $request)
     {
+        //echo "<pr>"; print_r($request->all()); exit;
+
         Log::info('Request ' . json_encode($request->all()));
         $storeHash = $request->base_options['store_id'] ?? null;
         $storeData = $this->getStoreData($storeHash);
-
+        //echo "<pre>"; print_r($storeData['store']['id']); exit;
 
         if ($storeData == null) {
             return [];
         }
-
+        if(!$this->storePlanStatus($storeData['store']['id'])){
+            return [];
+        }
+        //echo "<pre>"; print_r($storeData['installed_carriers'][0]['store_id']); exit;
+        $cartInfo['cartId'] = $request->base_options['request_context']['reference_values'][0]['value'] ?? 0;
+        $cartInfo['store_id'] = $storeData['installed_carriers'][0]['store_id'] ?? 0;
 // Getting installed carriers there quote settings and services
         $this->getCarrierSettings($storeData['installed_carriers']);
 
@@ -65,57 +73,28 @@ class GetRatesController extends Controller
 
             return [];
         }
-
-        $quotes = $this->shipping->collectRates($formatReq, $storeData, $this->connectionSettings);
-
-        return $this->generateQuoteFormatResponse($quotes);
+        $quotes = $this->shipping->collectRates($formatReq, $storeData, $this->connectionSettings, $cartInfo);
+        return $quotes;
+       // return $this->generateQuoteFormatResponse($quotes);
         exit;
         $originWarehouse = new Origin();
         $originWarehouse->getNearestWarehouse($formatReq);
     }
 
-    public function limitTitle($quote){
-        $res = $quote['title'];
-        if( strlen($quote['title']) > 100 ){
-            $res = explode("(Estimated", $quote['title'])[0];
-        }else if( $quote['title'] == "" ){
-            $res = $quote['code'];
+    /*
+     * Check plan status of store to process quote request
+     * **/
+
+    public function storePlanStatus($store_id){
+        $subsciption = Subscription::where('store_id', $store_id)->latest()->first();
+        if(empty($subsciption) || $subsciption->status === 3){ // not plan or expired plan
+            return false;
+        }else{
+            return true;
         }
-        return $res;
     }
 
-    public function generateQuoteFormatResponse($quotes)
-    {
-        //echo "<pre>"; print_r($quotes); exit;
-        $current = str_replace(' ', 'T', Carbon::now())."-00:00";
-        if (!empty(array_filter($quotes))) {
-            $resp['quote_id'] = (string) rand(1,9);// need to change
-            $resp['messages'] = [];// need to change
-            $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'usps_pitney_bowes', 'display_name' => $this->limitTitle($quotes[0])]];
-            foreach ($quotes as $key => $quote) {
-                $rate_id = $quote['code'].time();
-                $resp['carrier_quotes'][0]['quotes'][$key] = [
-                    'code' => $quote['code'],
-                    'rate_id' => "$rate_id",
-                    'display_name' => $this->limitTitle($quote),
-                    'cost' => ['currency' => 'USD', 'amount' => $quote['rate']],
-                    'dispatch_date' => "$current"
-                    //'cost' => ['currency' => 'USD', 'amount' => number_format($quote['rate'], 2, '.', ',')],
-                    //'transit_time' => ['units' => 'BUSINESS_DAYS', 'duration' => 1],
-                    // TODO: Will be set
 
-                ];
-            }
-        } else {
-            $resp = [];
-        }
-        //$resp = '{"quote_id":"1","messages":[],"carrier_quotes":[{"carrier_info":{"code":"usps_pitney_bowes","display_name":"R & L Carriers Inc (Estimated transit time of 2 business days)"},"quotes":[{"code":"RLCA","rate_id":"RLCA1621237116","display_name":"R & L Carriers Inc (Estimated transit time of 2 business days)","cost":{"currency":"USD","amount":"245.83"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"EXLA","rate_id":"EXLA1621237116","display_name":"Estes Express Lines (Estimated transit time of 2 business days)","cost":{"currency":"USD","amount":"266.48"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"SEFL","rate_id":"SEFL1621237116","display_name":"Southeastern Freight Lines (Estimated transit time of 2 business days)","cost":{"currency":"USD","amount":"246.43"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"UPGF","rate_id":"UPGF1621237116","display_name":"TForce Freight (Estimated transit time of 2 business days)","cost":{"currency":"USD","amount":"253.65"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"RLCA+LG","rate_id":"RLCA+LG1621237116","display_name":"R & L Carriers Inc (Estimated transit time of 2 business days) (L)","cost":{"currency":"USD","amount":"245.83"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"EXLA+LG","rate_id":"EXLA+LG1621237116","display_name":"Estes Express Lines (Estimated transit time of 2 business days) (L)","cost":{"currency":"USD","amount":"291.48"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"SEFL+LG","rate_id":"SEFL+LG1621237116","display_name":"Southeastern Freight Lines (Estimated transit time of 2 business days) (L)","cost":{"currency":"USD","amount":"306.43"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"UPGF+LG","rate_id":"UPGF+LG1621237116","display_name":"TForce Freight (Estimated transit time of 2 business days) (L)","cost":{"currency":"USD","amount":"318.65"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"INSP","rate_id":"INSP1621237116","display_name":"INSP","cost":{"currency":"USD","amount":"0.00"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"LOCDEL","rate_id":"LOCDEL1621237116","display_name":"LOCDEL","cost":{"currency":"USD","amount":"0.00"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"own_arrangement","rate_id":"own_arrangement1621237116","display_name":"I shall arrange by own way","cost":{"currency":"USD","amount":"0.00"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"1DM","rate_id":"1DM1621237116","display_name":"UPS Next Day Air Early","cost":{"currency":"USD","amount":"1,499.87"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"1DA","rate_id":"1DA1621237116","display_name":"UPS Next Day Air","cost":{"currency":"USD","amount":"622.18"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"2DA","rate_id":"2DA1621237116","display_name":"UPS 2nd Day Air","cost":{"currency":"USD","amount":"307.22"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"3DS","rate_id":"3DS1621237116","display_name":"UPS 3 Day Select","cost":{"currency":"USD","amount":"253.61"},"dispatch_date":"2021-05-17T07:38:36-00:00"},{"code":"GND","rate_id":"GND1621237116","display_name":"UPS Ground","cost":{"currency":"USD","amount":"150.43"},"dispatch_date":"2021-05-17T07:38:36-00:00"}]}]}';
-        /*  echo "<pre>";
-          print_r($resp);
-          exit;*/
-        Log::info('$resp '. json_encode($resp));
-        return $resp;
-    }
 
     public function formatRequest($data, $storeData)
     {
@@ -134,34 +113,36 @@ class GetRatesController extends Controller
         if (count($data['base_options']['items'])) {
             foreach ($data['base_options']['items'] as $product) {
                 $product_settings = $this->getProductSetting($product['product_id'], $product['variant_id']);
-
+                $product_price = $this->getProductPrice($product['product_id'], $product['variant_id']);
                 $weight = (isset($product['weight']['value']) && isset($product['weight']['units'])) ? $this->convertWeight($product['weight']['value'], strtolower($product['weight']['units'])) : 0;
                 // $weight=148;
 
                 $ltlCheck = $product_settings['freight_enabled'] ?? false;
 
-
                 $originAddress = $this->shipmentPkg->wweLTLOriginAddress($details, $product_settings, $details['destination']['zip'], $storeData, $this->connectionSettings);
 
-
-                $details['origin'][$product['product_id']] = $originAddress;
-                $details['items'][$product['product_id']] = [
+                $key = $product['variant_id'] ?? $product['product_id'];
+                $details['origin'][$key] = $originAddress;
+                $details['items'][$key] = [
                     'product_id' => $product['product_id'] ?? '',
                     'variant_id' => $product['variant_id'] ?? '',
                     'sku' => $product['sku'] ?? '',
                     'piecesOfLineItem' => $product['quantity'] ?? ''
                     ,
                     'lineItemId' => $product['product_id'] ?? '',
+                    'lineItemPrice' => $product_price ?? 0,
                     'lineItemName' => $product['name'] ?? '',
-                    'lineItemLength' => $product['length']['value'] ?? '',
-                    'lineItemWidth' => $product['width']['value'] ?? '',
-                    'lineItemHeight' => $product['height']['value'] ?? '',
-                    'lineItemWeight' => $weight,
+                    'lineItemLength' => $product['length']['value'] ? number_format($product['length']['value'], 2, '.', '') : '',
+                    'lineItemWidth' => $product['width']['value'] ? number_format($product['width']['value'], 2, '.', '') : '',
+                    'lineItemHeight' => $product['height']['value'] ? number_format($product['height']['value'], 2, '.', '') : '',
+                    'lineItemWeight' => number_format($weight, 2, '.', ''),
                     'freight_enabled' => isset($product_settings['freight_enabled']) && $product_settings['freight_enabled'] ? 'Y' : 'N',
+                    'shipBinAlone' => isset($product_settings['ship_bin_alone']) && $product_settings['ship_bin_alone'] ? '1' : '0',
+                    'vertical_rotation' => isset($product_settings['vertical_rotation']) && $product_settings['vertical_rotation'] ? '1' : '0',
                     'isHazmatLineItem' => isset($product_settings['hazardous_enabled']) && $product_settings['hazardous_enabled'] ? 'Y' : 'N',
                     'dropship_enabled' => isset($product_settings['dropship_enabled']) && $product_settings['dropship_enabled'] ? 'Y' : 'N',
                     'dropship' => $product_settings['dropship'] ?? '',
-                    'product_insurance_active' => isset($product_settings['insurance']) && $product_settings['insurance'] ? 'Y' : 'N',
+                    'product_insurance_active' => isset($product_settings['insurance']) && $product_settings['insurance'] ? 1 : 0,
                     'freightClass' => $this->isLTL($weight, $ltlCheck) ? 'ltl' : '', //ltl for testing
                     //'freightClass' => '',
                     'lineItemClass' => isset($product_settings['freight_class']) ? $this->getLineItemClass($product_settings['freight_class']) : '',
@@ -215,13 +196,18 @@ class GetRatesController extends Controller
     {
         $settings = [];
         $productSetting = ProductSetting::select('settings')
-            ->where(['source_product_id' => $productId /*, 'variant_id' => $variantId*/])
+            ->where(['source_product_id' => $productId , 'variant_id' => $variantId])
             ->first();
         if (!empty($productSetting)) {
             $productSetting->toArray();
             $settings = isset($productSetting['settings']) ? json_decode($productSetting['settings'], true) : [];
         }
         return $settings;
+    }
+
+    private function getProductPrice($productId, $variantId){
+        return ProductSetting::where(['source_product_id' => $productId , 'variant_id' => $variantId])
+            ->pluck('price')->first();
     }
 
     public function convertWeight($value, $unit)
@@ -251,10 +237,17 @@ class GetRatesController extends Controller
             $installedAddonSbs = InstalledAddon::join('addons', 'addons.id', 'installed_addons.addon_id')
                 ->where(['installed_addons.store_id' => $store->id,
                     'installed_addons.is_enabled' => 1,
-                    'installed_addons.is_suspend' => 0,
-                    'installed_addons.is_expired' => 0,
+                    //'installed_addons.is_suspend' => 0,
+                    //'installed_addons.is_expired' => 0,
                     'addons.short_code' => 'SBS',
-
+                ])
+                ->exists();
+            $installedAddonRad = InstalledAddon::join('addons', 'addons.id', 'installed_addons.addon_id')
+                ->where(['installed_addons.store_id' => $store->id,
+                    'installed_addons.is_enabled' => 1,
+                    //'installed_addons.is_suspend' => 0,
+                    //'installed_addons.is_expired' => 0,
+                    'addons.short_code' => 'RAD',
                 ])
                 ->exists();
             if (!empty($installedCarriers) && count($installedCarriers)) {
@@ -262,7 +255,8 @@ class GetRatesController extends Controller
                     'installed_carriers' => $installedCarriers,
                     'installed_addons' => $installedAddons,
                     'store' => $store,
-                    'installed_addon_sbs' => $installedAddonSbs
+                    'installed_addon_sbs' => $installedAddonSbs,
+                    'installed_addon_rad' => $installedAddonRad
                 ];
             }
         }

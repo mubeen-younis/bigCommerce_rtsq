@@ -58,22 +58,23 @@ class WweSmallQuoteResults
     {
         // Adding hazmat fee to Ground Service
         if ($serviceCode == "GND") {
-            if (is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
+            if ( isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
                 $amount = $amount + $quoteSettings['ground_hazardous_material_fee'];
             }
             // Adding hazmat fee to Air Services
         } else {
-            if (is_numeric($quoteSettings['air_hazardous_material_fee']) && !empty($quoteSettings['air_hazardous_material_fee'])) {
+            if (isset($quoteSettings['air_hazardous_material_fee']) && is_numeric($quoteSettings['air_hazardous_material_fee']) && !empty($quoteSettings['air_hazardous_material_fee'])) {
                 $amount = $amount + $quoteSettings['air_hazardous_material_fee'];
             }
         }
-       // $amount = $this->addHandlingMarkupOfHazmat($amount, $quoteSettings['handling_fee_markup']);
+        // $amount = $this->addHandlingMarkupOfHazmat($amount, $quoteSettings['handling_fee_markup']);
         return number_format($amount, 2);
 
     }
 
     public function addHandlingMarkupOfHazmat($amount, $markupValue)
     {
+        $amount = (float) str_replace(',', '', $amount);
         if (strpbrk($markupValue, '%') !== FALSE) {
             $amount = $this->getvalueFromPercent($amount, str_replace('%', '', $markupValue));
         } else {
@@ -93,7 +94,7 @@ class WweSmallQuoteResults
 
     public function getServiceTitle($title, $transitTime, $serviceCode, $quoteSettings, $isResi = false)
     {
-        if ($quoteSettings['showDeliveryEstimate'] == true) {
+        if (isset($quoteSettings['showDeliveryEstimate']) && $quoteSettings['showDeliveryEstimate'] == true) {
             $title = $title . ' (Delivery ' . $transitTime . ')';
         }
         $resiTitle = '';

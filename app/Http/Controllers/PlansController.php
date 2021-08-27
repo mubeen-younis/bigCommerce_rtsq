@@ -4,13 +4,14 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Plans;
+use App\Models\PlansInfo;
 
 class PlansController extends Controller
 {
     public function getPlansInfo(Request $request){
         $store = $request->store;
         if($store !== null) {
-            $plans = Plans::select('plans_info.value')
+            $plans = PlansInfo::select('plans_info.value')
                 ->join('installed_carriers', 'installed_carriers.id', '=', 'plans_info.installed_carrier_id')
                 ->join('stores', 'stores.id', '=', 'installed_carriers.store_id')
                 ->where('installed_carriers.is_enabled', 1)
@@ -26,5 +27,12 @@ class PlansController extends Controller
                 'status' => 400
             ];
         }
+    }
+
+    public function getPlans(){
+        return ['error' => false,
+                'data' => Plans::all(),
+                'status' => 200
+            ];
     }
 }

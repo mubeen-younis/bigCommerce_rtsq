@@ -5,16 +5,25 @@ use App\Http\Controllers\AddonsController;
 use App\Http\Controllers\CarrierController;
 use App\Http\Controllers\CarrierPlanController;
 use App\Http\Controllers\ConnectionController;
+use \App\Http\Controllers\Subscriptions;
+//use App\Http\Controllers\CsvController;
+use App\Http\Controllers\ExportImportProducts;
 use App\Http\Controllers\GetRatesController;
 use App\Http\Controllers\InstalledCarrierController;
 use App\Http\Controllers\LocationsController;
 use App\Http\Controllers\MainController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductSettingController;
 use App\Http\Controllers\QuoteSettingsController;
 use App\Http\Controllers\RADController;
+use App\Http\Controllers\SBSController;
+use App\Http\Controllers\StoreController;
+use App\Http\Controllers\Subscription\SubscriptionController;
+use App\Http\Controllers\Subscription\PackageSubscriptionController;
 use App\Http\Middleware\EnsureTokenIsValid;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -31,6 +40,8 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
 Route::post('webhooks', [MainController::class, 'addAndUpdateProductFromWebHook']);
+Route::post('order/webhooks', [OrderController::class, 'orderFromWebhook']);
+Route::post('sku/webhooks', [ProductSettingController::class, 'skuFromWebhook']);
 // Ws Route For Adding Plan
 Route::post('/save_plan_detail', [CarrierPlanController::class, 'addPlanFromWs']);
 Route::middleware([EnsureTokenIsValid::class])->group(function () {
@@ -71,6 +82,11 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/rad/changeDefaultAddress', [RADController::class, 'setDefaultAddress']);
     Route::get('/rad/getAddonAdressSettings', [RADController::class, 'getDefaultAddress']);
 
+    /* SBS routes */
+    Route::get('/sbs/get_plans', [SBSController::class, 'getPlans']);
+    Route::post('/sbsb/change_plan', [RADController::class, 'changePlan']);
+    Route::post('/sbs/change_status', [RADController::class, 'changeStatus']);
+
     //=========Addons
     Route::get('/getAllAddons', [AddonsController::class, 'index']);
     Route::get('/get_installed_addons', [AddonsController::class, 'getAddons']);
@@ -94,8 +110,44 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/update_boxsize', 'App\Http\Controllers\BoxSizeController@update');
     Route::delete('boxsize/delete/{id}', 'App\Http\Controllers\BoxSizeController@destroy');
 
+
     Route::post('/submit_connection_settings', [ConnectionController::class, 'store']);
+
+    // Orders
+    Route::get('/get_orders', [OrderController::class, 'index']);
+    Route::get('/get_order_widget', [OrderController::class, 'getOrderWidget']);
+    Route::post('/update_order', [OrderController::class, 'update']);
+
+    //import export csv
+    Route::post('/exportProductsTemplate', [ExportImportProducts::class, 'exportProductsTemplate']);
+    Route::get('/getRowHeaderImportedFile', [ExportImportProducts::class, 'getRowHeaderImportedFile']);
+    Route::post('/importProducts', [ExportImportProducts::class, 'importProductsCsv']);
+
+    //subscription
+    Route::post('/create_subscription', [Subscriptions::class, 'createSubscription']);
+
+
+    //stores
+    Route::get('/store', [StoreController::class, 'index']);
+
+    //Start: Subscription Module Routes are given below
+    Route::post('/subscribe-plan', [SubscriptionController::class, 'subscribeToPlan']);
+    Route::post('/cancel-subscription', [SubscriptionController::class, 'cancelSubscriptionPlan']);
+    Route::get('/get-subscription-details', [SubscriptionController::class, 'getSubscriptionDetail']);
+    Route::post('/change-payment-method', [SubscriptionController::class, 'changePaymentMethod']);
+    //END: Subscription Routes
+    //Start: SBS Routes
+    Route::get('/get-all-pacakges', [PackageSubscriptionController::class, 'getAllPackagesList']);
+    Route::post('/subscribe-package', [PackageSubscriptionController::class, 'subscribeToPackage']);
+    Route::get('/consume-hits', [PackageSubscriptionController::class, 'consumeHits']);
+    Route::get('/get-addon-details', [PackageSubscriptionController::class, 'getAddonPackageDetails']);
+    Route::post('/suspend-use-addon', [PackageSubscriptionController::class, 'suspendAddonUse']);
+    //END: SBS Routes
 });
+//Webhook
+Route::post('/bc-subscription-update', [SubscriptionController::class, 'paymentByStripeWebHook']);
+//Route::post('/bc-payment-succeeded', [SubscriptionController::class, 'invoicePaymentSucceeded']);
+//Route::post('/update-subscription', [SubscriptionController::class, 'updateSubscriptionFromStripe']);
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);
 Route::get('/get_conn_settings', [ConnectionController::class, 'index']);
@@ -119,3 +171,14 @@ Route::get('getAllCarriers', [CarrierController::class, 'index']);
 Route::get('getNearestWareHouse', [GetRatesController::class, 'getNearestWarehouseTest']);
 
 Route::post('rate', [GetRatesController::class, 'returnRates']);
+Route::get('downloadcsv/{hash}', [ExportImportProducts::class, 'downloadCsv'])->name('downloadcsv');
+Route::post('/uploadcsv', [ExportImportProducts::class, 'uploadCsv'])->name('uploadcsv');
+
+Route::get('splitCSVinChunks', [ExportImportProducts::class, 'splitCSVinChunks']);
+
+
+
+//plans
+Route::get('/get_plans', [\App\Http\Controllers\PlansController::class, 'getPlans']);
+
+Route::get('/test_bin', [App\CustomClasses\Bin3D\Bin3D::class, 'getBinResponse']);
