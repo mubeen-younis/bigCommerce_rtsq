@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Constants\Constant;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -42,7 +43,7 @@ class PaymentFailedByWebHookEmail extends Mailable
             $subject = 'Real-time Shipping Quotes Trial Activated';
         }
         return $this->subject($subject)
-            ->replyTo(['support@eniture.com'])
+            ->replyTo([Constant::ENITURE_SUPPORT_EMAIL])
             ->view('emails.paymentfailed',['data' => $this->subscriptionDetails, 'paymentStatus'=>$this->paymentStatus]);
     }
 }

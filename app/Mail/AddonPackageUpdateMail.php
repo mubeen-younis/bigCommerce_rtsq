@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Constants\Constant;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -33,7 +34,7 @@ class AddonPackageUpdateMail extends Mailable
     {
         $addonName = ($this->addonType == 'SBS') ? 'Standard Box Sizes' : 'Residential Address Detection';
         return $this->subject($addonName.' Addon Subscription')
-            ->replyTo(['support@eniture.com'])
+            ->replyTo([Constant::ENITURE_SUPPORT_EMAIL])
             ->view('emails.addonpackage',['addon' => $addonName, 'subscriptionDetail'=>$this->subscriptionDetail]);
     }
 }
