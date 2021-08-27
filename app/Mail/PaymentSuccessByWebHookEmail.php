@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Constants\Constant;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -29,6 +30,8 @@ class PaymentSuccessByWebHookEmail extends Mailable
      */
     public function build()
     {
-        return $this->subject('Payment Succeeded')->view('emails.paymentfailed',['data' => $this->subscriptionDetails,'paymentfailed' => false]);
+        return $this->subject('Payment Succeeded')
+            ->replyTo([Constant::ENITURE_SUPPORT_EMAIL])
+            ->view('emails.paymentfailed',['data' => $this->subscriptionDetails,'paymentfailed' => false]);
     }
 }
