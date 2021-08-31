@@ -20,7 +20,7 @@ class SmallConnectionSettings
             'error' => true,
             'message' => 'Something went wrong!',
         ];
-        $url = 'https://eniture-qa.com/ws/carriers/wwe-small/speedshipTest.php'; //Constant::TEST_CONN_URL;
+        $url = 'https://eniture.com/ws/carriers/wwe-small/speedshipTest.php'; //Constant::TEST_CONN_URL;
         $params = [
             'platform' => 'bigcommerce',
             'speed_freight_username' => $data->username,

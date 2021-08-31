@@ -24,12 +24,13 @@ class UpsLtlConnectionSettings
             'carrierName' => 'ups',
             'carrier_mode' => 'test',
             'accessLevel' => $data->access_level, //test or pro
-            'AccountNumber' => $data->account_number,
-            'UserName' => $data->username,
-            'Password' => $data->password,
-            'APIKey' => $data->ups_api_access_key,
-            'licence_key' => $data->license_key,
-            'server_name' => $data->store_name,
+            'AccountNumber' => $data->account_number ?? '',
+            'UserName' => $data->username ?? '',
+            'Password' => $data->password ?? '',
+            'APIKey' => $data->ups_api_access_key ?? '',
+            'licence_key' => $data->license_key ?? '',
+            'server_name' => $data->store_name ?? '',
+            'dont_auth' => 1
         );
 
         $queryString = http_build_query($params);
