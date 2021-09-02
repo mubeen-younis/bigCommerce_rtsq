@@ -62,7 +62,9 @@ class ConnectionController extends Controller
         //            return response()->json($validator->errors(), 400);
         //        }
 
-        $checkCarrierType = DB::table('carriers')->leftJoin('installed_carriers', 'carriers.id', 'installed_carriers.carrier_id')
+        $checkCarrierType = DB::table('carriers')->select('slug', 'stores.name')
+            ->leftJoin('installed_carriers', 'carriers.id', 'installed_carriers.carrier_id')
+            ->leftJoin('stores', 'stores.id','=','installed_carriers.store_id')
             ->where('installed_carriers.id', $request->carrierId)
             ->first();
 
@@ -74,13 +76,13 @@ class ConnectionController extends Controller
         if (!empty($request->testType)) {
             switch ($checkCarrierType->slug) {
                 case "ltl-quotes":
-                    $response = $this->wweLtlTestCon->testLtlConnection($request);
+                    $response = $this->wweLtlTestCon->testLtlConnection($request, $checkCarrierType->name);
                     return response()->json($response);
                 case "small-package":
-                    $response = $this->wweSmallTestCon->testSmallConnection($request);
+                    $response = $this->wweSmallTestCon->testSmallConnection($request, $checkCarrierType->name);
                     return response()->json($response);
                 case 'ups-ltl':
-                    $response = $this->upsLtlTestCon->testUpsLtlConnection($request);
+                    $response = $this->upsLtlTestCon->testUpsLtlConnection($request, $checkCarrierType->name);
                     return response()->json($response);
                 default:
                     return response()->json(["error" => true, "data" => [],
