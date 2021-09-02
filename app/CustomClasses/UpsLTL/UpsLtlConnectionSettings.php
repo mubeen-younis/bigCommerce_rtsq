@@ -8,7 +8,6 @@ class UpsLtlConnectionSettings
 {
     public function __construct()
     {
-
         $this->curlRequest = new CurlRequest();
     }
 

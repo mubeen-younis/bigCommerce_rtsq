@@ -49,8 +49,7 @@ class Shipping
         $resp = $generateReqData->generateEnitureArray($originAddress, $destination);
         $residential = $resp['residential'];
         $carriersArray = $resp['carriersArr'];
-        //dd($residential);
-        //['carriersArr' => $carriersArr, 'residential' => $this->residential];
+
         // Checking if any productis hazardous
         $hazmatAllItems = $this->isHazmatMaterial($package);
 
@@ -82,12 +81,12 @@ class Shipping
             return false;
         }
         $url = Constant::QUOTES_URL;
-        //echo "<pre>"; print_r($requestArr['requestArr']); exit;
         $this->checkIsRequestMiltiShipment($requestArr['requestArr']);
 
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
+        echo "<pre>"; print_r($requestArr['requestArr']); //exit;
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
-
+echo "<pre>"; print_r($quotes); exit;
         $boxbins = $requestArr['boxBins'] ?? [];
         if(isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])){
             $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes);

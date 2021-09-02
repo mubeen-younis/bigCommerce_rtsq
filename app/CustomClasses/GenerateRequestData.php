@@ -101,7 +101,7 @@ class GenerateRequestData
                     break;
 
                 case "ups-ltl":
-                    $wweLtlArr = $this->upsLtlEnitArr($con1);
+                    $wweLtlArr = $this->upsLtlEnitArr($con1, $destination);
                     $wweLtlArr['originAddress'] = $origin;
 
                     if (count($wweLtlArr['originAddress']) > 1) {
@@ -152,9 +152,7 @@ class GenerateRequestData
 
     public function wweSmallEnitArr($connSettings, $destination)
     {
-        // TODO: Need to set dynamic parameters of wwe small
         return [
-
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',//$this->connectionSettings['license_key'],
             'serverName' => "https://" . $this->storeData['store']['name'],//"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
             'carrierMode' => 'pro',
@@ -165,15 +163,15 @@ class GenerateRequestData
         ];
     }
 
-    public function upsLtlEnitArr($connSettings)
+    public function upsLtlEnitArr($connSettings, $destination)
     {
         return [
-            'licenseKey' => $connSettings['creds']['license_key'], //$this->connectionSettings['license_key'],
+            'licenseKey' => $connSettings['creds']['license_key'] ?? '', //$this->connectionSettings['license_key'],
             'serverName' => "https://" . $this->storeData['store']['name'], //"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
-            'api' => $this->getApiInfoArrUpsLtl($connSettings),
+            'api' => $this->getApiInfoArrUpsLtl($connSettings, $destination),
             'getDistance' => 0,
         ];
     }
@@ -187,22 +185,6 @@ class GenerateRequestData
      */
     public function generateRequestArray($request, $carriersArray, $itemsArr, $cartInfo)
     {
-        /*if (count($carriersArray['originAddress']) > 1) {
-
-               $whIDs = [];
-               foreach ($carriersArray['originAddress'] as $wh) {
-                   $whIDs[] = $wh['locationId'];
-               }
-               if (count(array_unique($whIDs)) > 1) {
-                   foreach ($carriersArray['originAddress'] as $id => $wh) {
-                       if (isset($wh['InstorPickupLocalDelivery'])) {
-                           $carriersArray['originAddress'][$id]['InstorPickupLocalDelivery'] = [];
-                       }
-                   }
-               }
-           }*/
-
-        // $carriers = $this->registry->registry('enitureCarriers');
         $carriers = $carriersArray['carriers'];
         $receiverAddress = $this->getReceiverData($request);
 
@@ -212,19 +194,6 @@ class GenerateRequestData
             $autoResidential = '1';
             $liftGateWithAuto = '1';
         }
-        /*print_r([
-             'apiVersion' => '2.0',
-             'platform' => 'bigcommerce',
-             'dont_auth' => 1,
-             'binPackagingMultiCarrier' => $this->storeData['installed_addon_sbs'],
-             'autoResidentials' => $autoResidential,
-             'liftGateWithAutoResidentials' => $liftGateWithAuto,
-             'requestKey' => md5(microtime() . rand()),
-             'carriers' => $carriers,
-             'receiverAddress' => $receiverAddress,
-             'commdityDetails' => $itemsArr,
-         ]);
- */
         $binReponse = $boxBins =[];
         if ($this->storeData['installed_addon_sbs'])
         {
@@ -267,33 +236,15 @@ class GenerateRequestData
      */
     public function getApiInfoArrWweLtl($connSettings, $destination)
     {
-        //print_r($connSettings); exit;
-        //Todo: need to review this function
-        //print_r($destination); exit;
-        /*$accessorials = [];
-        if (isset($this->storeData['installed_addons']['RAD']) && !$this->storeData['installed_addons']['RAD']) {
-            ($connSettings['quote_settings']['residentialDlvry']) ? array_push($accessorials, 'RESDEL') : '';
-        }
-
-        ($connSettings['quote_settings']['alwaysLiftGateDelivery']) ? array_push($accessorials, 'LFTGATDEST') : '';*/
-
-        /*if (isset($this->storeData['installed_addons']['RAD']) && $this->storeData['installed_addons']['RAD']) {
-            $residential = 'N';
-        } else {
-            $residential = ($connSettings['quote_settings']['alwaysResidentialDelivery']) ? 'Y' : 'N';
-        }*/
-
-
         $liftGate = ( (isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
         /*
          * Check if rad hit not consumed and residential is enables
          * **/
-        //autoDetectedResidentialAddresses  //autoDetectedResidentialAddressesLfg
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
-        if( $this->storeData['installed_addon_rad'] && ( (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']) /*||  (isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg'])*/)){
+        if( $this->storeData['installed_addon_rad'] && ( (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))){
             if($this->radHitConsumed == 0){
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -313,7 +264,6 @@ class GenerateRequestData
         $this->resiCarrier['wweLtl'] = $residential;
 
         $residentialPickup = ( isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
-        //print_r($connSettings); dd($liftGate, $residentialPickup);exit;
 
         $insurance = [
             'code' => '',
@@ -338,19 +288,6 @@ class GenerateRequestData
             'insuranceCategory' => $insurance
         ];
 
-        //Todo: need to review this functionality
-        /*
-         * $shipperRelation = $this->getConfigData('shipperRelation');
-         * if ($shipperRelation == 'ThirdParty') {
-        $apiArray['payerAddress'] = [
-        'name' => 'name',
-        'addressLine' => 'addressLine',
-        'country' => $this->getConfigData('thirdPartyCountry'),
-        'zip' => $this->getConfigData('thirdPartyPostalCode'),
-        'state' => $this->getConfigData('thirdPartyState'),
-        'city' => $this->getConfigData('thirdPartyCity')
-        ];
-        }*/
 
         return $apiArray;
     }
@@ -366,14 +303,6 @@ class GenerateRequestData
 
     public function getApiInfoArrWweSmall($connSettings, $destination)
     {
-        //dd($connSettings);
-        //Todo: need to review this function
-        /*if (isset($this->storeData['installed_addons']['RAD']) && $this->storeData['installed_addons']['RAD']) {
-            $residential = 'N';
-        } else {
-            $residential = ($connSettings['quote_settings']['alwaysResidentialDelivery']) ? 'Y' : 'N';
-        }*/
-        //autoDetectedResidentialAddresses
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
@@ -401,44 +330,44 @@ class GenerateRequestData
             'prefferedCurrency' => 'USD',
             'includeDeclaredValue' => "1",
         ];
-        //Todo: need to review this functionality
-        /*
-         * $shipperRelation = $this->getConfigData('shipperRelation');
-         * if ($shipperRelation == 'ThirdParty') {
-        $apiArray['payerAddress'] = [
-        'name' => 'name',
-        'addressLine' => 'addressLine',
-        'country' => $this->getConfigData('thirdPartyCountry'),
-        'zip' => $this->getConfigData('thirdPartyPostalCode'),
-        'state' => $this->getConfigData('thirdPartyState'),
-        'city' => $this->getConfigData('thirdPartyCity')
-        ];
-        }*/
 
         return $apiArray;
     }
 
 
-    public function getApiInfoArrUpsLtl($connSettings)
+    public function getApiInfoArrUpsLtl($connSettings, $destination)
     {
+        $liftGate = ( (isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
+            (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+        /*
+         * Check if rad hit not consumed and residential is enables
+         */
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
-        if( $this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])){
+        if( $this->storeData['installed_addon_rad'] && ( (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))){
             if($this->radHitConsumed == 0){
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
                 $this->residential = $residential;
-
             }else{
                 $residential = $this->residential;
             }
-
+            if($liftGate != 'Y'){
+                $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
+            }
         }else{
             $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
         }
 
-        $this->resiCarrier['wweSmall'] = $residential;
+
+        $this->resiCarrier['wweLtl'] = $residential;
+
+        $residentialPickup = ( isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
+        //print_r($connSettings); dd($liftGate, $residentialPickup);exit;
+
+
+        $this->resiCarrier['upsLtl'] = $residential;
 
         $apiArray = [
             'accessLevel' => $connSettings['creds']['access_level'],
@@ -449,13 +378,13 @@ class GenerateRequestData
             'paymentCode' => '10',
             'paymentDescription' => 'PREPAID',
             'paymentType' => $connSettings['quote_settings']['shipper_relationship'],
-            'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'],
-            'maxWeightPerHandlingUnit' => '',
+            //'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'],
+            //'maxWeightPerHandlingUnit' => '',
             'serviceCode' => '308',
             'serviceCodeDescription' => 'UPS Freight LTL',
             'timeInTransitIndicator' => 'N',
             'accessorial' => [
-                'liftgateDelivery' => $connSettings['quote_settings']['alwaysLiftGateDelivery'] ? 'Y' : 'N',
+                'liftgateDelivery' => $liftGate,
                 'residentialDelivery' => $alwaysResi ? 'Y' : $residential,
             ],
             'payerAddress' => [
