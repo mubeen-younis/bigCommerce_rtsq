@@ -43,7 +43,7 @@ class GetRatesController extends Controller
     public function returnRates(Request $request)
     {
         //echo "<pr>"; print_r($request->all()); exit;
-        return $testQuotes = $this->testQuotes();
+        //return $testQuotes = $this->testQuotes();
         Log::info('Request ' . json_encode($request->all()));
         $storeHash = $request->base_options['store_id'] ?? null;
         $storeData = $this->getStoreData($storeHash);
@@ -83,7 +83,7 @@ class GetRatesController extends Controller
 
     function testQuotes(){
         $resp = '{"quote_id":"9","messages":[],"carrier_quotes":[{"carrier_info":{"code":"usps_pitney_bowes","display_name":"Freight"},"quotes":[{"code":"upsltl","rate_id":"upsltlidx+01631074742","display_name":"Freight","cost":{"currency":"USD","amount":"181.78"},"dispatch_date":"2021-09-08T04:19:02-00:00"},{"code":"AVG+LG","rate_id":"AVG+LGidx+11631074742","display_name":"Freight","cost":{"currency":"USD","amount":"288.884"},"dispatch_date":"2021-09-08T04:19:02-00:00"},{"code":"fredf","rate_id":"freights21631074742","display_name":"Freight","cost":{"currency":"USD","amount":"10"},"dispatch_date":"2021-09-08T04:19:02-00:00"}]}]}';
-        
+
         Log::info('testQuotes ' . $resp);
         return json_decode($resp);
     }
