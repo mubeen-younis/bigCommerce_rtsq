@@ -131,17 +131,15 @@ class GenerateRequestData
 
     public function wweLtlEnitArr($connSettings, $destination)
     {
-        //dd($connSettings['quote_settings']);
         return [
 
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '',//$this->connectionSettings['license_key'],
-            'serverName' => "https://" . $this->storeData['store']['name'],//"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
+            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'serverName' => "https://" . $this->storeData['store']['name'],
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
             // 'returnQuotesOnExceedWeight' => $connSettings['quote_settings']['weightExeeds'],
             'returnQuotesOnExceedWeight' => 1,
-
             'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
             'api' => $this->getApiInfoArrWweLtl($connSettings, $destination),
             'getDistance' => 0,
@@ -153,8 +151,8 @@ class GenerateRequestData
     public function wweSmallEnitArr($connSettings, $destination)
     {
         return [
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '',//$this->connectionSettings['license_key'],
-            'serverName' => "https://" . $this->storeData['store']['name'],//"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
+            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'serverName' => "https://" . $this->storeData['store']['name'],
             'carrierMode' => 'pro',
             'quotestType' => 'small', // ltl / small
             'version' => '2.0.4',
@@ -361,7 +359,7 @@ class GenerateRequestData
         }
 
 
-        $this->resiCarrier['wweLtl'] = $residential;
+        //$this->resiCarrier['wweLtl'] = $residential;
 
         $residentialPickup = ( isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
         //print_r($connSettings); dd($liftGate, $residentialPickup);exit;
@@ -377,7 +375,7 @@ class GenerateRequestData
             'Password' => $connSettings['creds']['password'],
             'paymentCode' => '10',
             'paymentDescription' => 'PREPAID',
-            'paymentType' => $connSettings['quote_settings']['shipper_relationship'],
+            'paymentType' => $connSettings['quote_settings']['shipper_relationship'] ?? 'shipper',
             //'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'],
             //'maxWeightPerHandlingUnit' => '',
             'serviceCode' => '308',
@@ -389,14 +387,16 @@ class GenerateRequestData
             ],
             'payerAddress' => [
                 'payerName' => 'name',
-                'payerAddressLine' => 'addressLine',
-                'payerCountryCode' => 'US',
-                'payerZip' => '12205',
-                'payerState' => 'NY',
-                'payerCity' => 'Albany',
+                'payerAddressLine' => 'address',
+                'payerCountryCode' => $connSettings['quote_settings']['third_party_country'] ?? '',
+                'payerZip' => $connSettings['quote_settings']['third_party_zip'] ?? '',
+                'payerState' => $connSettings['quote_settings']['third_party_state'] ?? '',
+                'payerCity' => $connSettings['quote_settings']['third_party_city'] ?? '',
             ],
         ];
-
+        if($apiArray['paymentType'] === 'shipper'){
+            unset($apiArray['payerAddress']);
+        }
         return $apiArray;
     }
 

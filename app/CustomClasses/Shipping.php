@@ -81,30 +81,24 @@ class Shipping
             return false;
         }
         $url = Constant::QUOTES_URL;
-        $this->checkIsRequestMiltiShipment($requestArr['requestArr']);
+
 
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
-        echo "<pre>"; print_r($requestArr['requestArr']); //exit;
+         // exit;
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
-echo "<pre>"; print_r($quotes); exit;
+        $this->checkIsRequestMiltiShipment($requestArr['requestArr'], $quotes);
+        //print_r($requestArr['requestArr']); print_r($quotes); exit;
         $boxbins = $requestArr['boxBins'] ?? [];
         if(isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])){
             $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes);
         }
         Log::info('after addBinResponseToQuotes '. json_encode($quotes));
 
-        if (isset($_GET['DEBUG_ON'])) {
-            $printData = [
-                'url' => $url,
-                'buildQuery' => http_build_query($requestArr),
-                'request' => $requestArr,
-                'quotes' => $quotes,
-            ];
-            dd($printData);
-        }
-
         $quotesFromWs = $quotes ?? [];
+
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential);
+        //print_r($quotes);
+        //($finalQuotes);
         if (!empty($finalQuotes['multiShipmentQuotes'])){
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];
@@ -123,6 +117,7 @@ echo "<pre>"; print_r($quotes); exit;
         $isFreightTitleExist = array_search('Freight', $finalTitlesTemp);
         $isShippingTitleExist = array_search('Shipping', $finalTitlesTemp);
         $isAVGCodeExist = gettype(array_search('AVG', $finalCodesTemp)) == 'integer';
+        $isUpsLtlCodeExist = gettype(array_search('upsltl', $finalCodesTemp)) == 'integer';
         $freightCode = '';
         $finalCost = 0;
         //dd($finalTitles,$finalQuotes, $isShippingTitleExist, $isFreightTitleExist);
@@ -141,6 +136,7 @@ echo "<pre>"; print_r($quotes); exit;
             }
         }
         //dd($finalQuotes, (gettype($isFreightTitleExist) == 'integer'), (gettype($isShippingTitleExist) == 'integer'));
+
         if (!empty($_finalQuotes)){
             $_finalQuotes[$key]['code'] = $freightCode;
             $_finalQuotes[$key]['title'] = 'Freight';
@@ -159,28 +155,47 @@ echo "<pre>"; print_r($quotes); exit;
                 $multiShipmentQuotes = $finalQuotesMulti['multiShipmentQuotes'] ?? [];
             }
         }
+
         $finalQuotes = $this->addRateId($finalQuotes);
 
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
+
         $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
         return $resp;
     }
 
-    private function checkIsRequestMiltiShipment($request){
+    private function checkIsRequestMiltiShipment($request, $quotes){
 
 
         $carriers = $request['carriers'] ?? [];
-
+        $isMulti = false;
         if(!isset($carriers['wweLTL'])  || !isset($carriers['wweSmall']) ){
             return false;
         }
         foreach ($carriers as $carrier){
             $output= $this->multi_unique($carrier['originAddress']);
             if(count($output) > 1) {
-                $this->isRequestMultishipment = true;
+                $isMulti = true;
                 break;
             }
         }
+        $ltl = $small = false;
+        if($isMulti){
+            foreach ($quotes['wweLTL'] as $quote){
+                if(!isset($quote['severity'])){
+                    $ltl = true;
+                    break;
+                }
+            }
+            foreach ($quotes['wweSmall'] as $quote){
+                if(!isset($quote['severity'])){
+                    $small = true;
+                    break;
+                }
+            }
+            $isMulti = $ltl && $small;
+        }
+        $this->isRequestMultishipment = $isMulti;
     }
 
     private function multi_unique($src){
@@ -369,7 +384,7 @@ echo "<pre>"; print_r($quotes); exit;
     public function addRateId($finalQuotes){
         $time = time();
         foreach($finalQuotes as $key => $finalQuote){
-            $finalQuotes[$key]['rate_id'] = isset($finalQuote['code']) ? $finalQuote['code'].$time : $time;
+            $finalQuotes[$key]['rate_id'] = isset($finalQuote['code']) ? $finalQuote['code'].'idx+'.$key.$time : $time;
         }
         return $finalQuotes;
     }

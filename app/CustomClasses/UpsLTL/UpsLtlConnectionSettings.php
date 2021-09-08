@@ -6,19 +6,19 @@ use App\CustomClasses\CurlRequest;
 
 class UpsLtlConnectionSettings
 {
+    private $testConnectionUrl = 'https://eniture-qa.com/ws/index.php';
     public function __construct()
     {
         $this->curlRequest = new CurlRequest();
     }
 
-    public function testUpsLtlConnection($data)
+    public function testUpsLtlConnection($data, $storeName)
     {
         $response = [
             'error' => true,
             'message' => 'Something went wrong!',
         ];
-
-        $url = 'https://eniture-qa.com/ws/index.php';
+        $url = $this->testConnectionUrl;
         $params = array(
             'carrierName' => 'ups',
             'carrier_mode' => 'test',
@@ -28,7 +28,7 @@ class UpsLtlConnectionSettings
             'Password' => $data->password ?? '',
             'APIKey' => $data->ups_api_access_key ?? '',
             'licence_key' => $data->license_key ?? '',
-            'server_name' => $data->store_name ?? '',
+            'server_name' => $storeName ?? '',
             'dont_auth' => 1
         );
 
