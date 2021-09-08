@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\CustomClasses\UpsLTL\UpsLtlConnectionSettings;
 use App\CustomClasses\WweLTL\WweLtlConnectionSettings;
 use App\CustomClasses\WWESMALL\SmallConnectionSettings;
+use App\CustomClasses\UpsSmall\ConnectionSettings;
 use App\Models\Connection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,7 @@ class ConnectionController extends Controller
         $this->wweSmallTestCon = new SmallConnectionSettings();
         $this->wweLtlTestCon = new WweLtlConnectionSettings();
         $this->upsLtlTestCon = new UpsLtlConnectionSettings();
+        $this->upsSmallTestCon = new ConnectionSettings();
     }
 
     public function index(Request $request)
@@ -83,6 +85,9 @@ class ConnectionController extends Controller
                     return response()->json($response);
                 case 'ups-ltl':
                     $response = $this->upsLtlTestCon->testUpsLtlConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'ups-small':
+                    $response = $this->upsSmallTestCon->testUpsLtlConnection($request, $checkCarrierType->name);
                     return response()->json($response);
                 default:
                     return response()->json(["error" => true, "data" => [],

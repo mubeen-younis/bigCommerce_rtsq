@@ -1,12 +1,12 @@
 <?php
 
-namespace App\CustomClasses\UpsLtl;
+namespace App\CustomClasses\UpsSmall;
 
 use App\CustomClasses\CurlRequest;
 
-class UpsLtlConnectionSettings
+class ConnectionSettings
 {
-    private $testConnectionUrl = 'https://eniture-qa.com/ws/index.php';
+    private $testConnectionUrl = 'https://eniture.com/ws/s/ups/auth.php';
     public function __construct()
     {
         $this->curlRequest = new CurlRequest();
@@ -19,7 +19,7 @@ class UpsLtlConnectionSettings
             'message' => 'Something went wrong!',
         ];
         $url = $this->testConnectionUrl;
-        $params = array(
+        /*$params = array(
             'carrierName' => 'ups',
             'carrier_mode' => 'test',
             'accessLevel' => $data->access_level, //test or pro
@@ -30,10 +30,19 @@ class UpsLtlConnectionSettings
             'licence_key' => $data->license_key ?? '',
             'server_name' => $storeName ?? '',
             'dont_auth' => 1
+        );*/
+        $params = array(
+            'dont_auth' => '1',
+            'platform' => 'bigcommerce',
+            'ups_username' => $data->username ?? '',
+            'ups_password' => $data->password ?? '',
+            'ups_license_key' => $data->ups_api_access_key ?? '',
+            'ups_account_number' => $data->account_number ?? '',
+            'ups_domain_name' => $storeName ?? '',
+            'plugin_licence_key' => $data->license_key ?? '',
         );
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
-
 
 
         if (isset($output['status']) && $output['status'] == false) {
@@ -42,19 +51,17 @@ class UpsLtlConnectionSettings
                 'message' => $output['response'],
             ];
         }
-
         $output = json_decode($output['response'], true);
-
-        if (isset($output['q']['TotalShipmentCharge']['MonetaryValue'])) {
+        if (isset($output['error']) && $output['error'] == 1) {
+            $response = [
+                'error' => true,
+                'message' => 'Invalid authentication info',
+            ];
+        } elseif (isset($output['success'])) {
             $response = [
                 'error' => false,
                 'message' => 'Test connection successful.',
                 'data' => [],
-            ];
-        } else if(isset($output['error'])) {
-            $response = [
-                'error' => true,
-                'message' => $output['error']['Description'] ?? $output['error'],
             ];
         }
 
