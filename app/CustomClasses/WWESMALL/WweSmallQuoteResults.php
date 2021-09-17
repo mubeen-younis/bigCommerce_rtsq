@@ -153,8 +153,7 @@ class WweSmallQuoteResults
         return false;
     }
 
-    public
-    function getMarkupIndexFromServiceCode($serviceCode)
+    public function getMarkupIndexFromServiceCode($serviceCode)
     {
         switch ($serviceCode) {
             case "GND":

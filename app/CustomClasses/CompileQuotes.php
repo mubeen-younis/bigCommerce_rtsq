@@ -3,6 +3,7 @@
 namespace App\CustomClasses;
 
 use App\Constants\Constant;
+use App\CustomClasses\UpsSmall\QuotesResults as upsSmallQuotesResults;
 use App\CustomClasses\WWESMALL\WweSmallQuoteResults;
 use App\Models\Locations;
 use Illuminate\Support\Facades\DB;
@@ -91,8 +92,8 @@ class CompileQuotes
 
     public function __construct()
     {
-
         $this->wweSmallQuoteRes = new WweSmallQuoteResults();
+       // $this->upsSmallQuotesResults = new upsSmallQuotesResults();
     }
 
     /**
@@ -608,14 +609,8 @@ class CompileQuotes
      */
     public function newGetQuotesResults($quotes, $connectionSettings, $allOrigins, $isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
+        //print_r($quotes); exit;
         $this->residential = $residential;
-        /*if($residential == 'Y'){
-            $this->isResi = true;
-            $this->residentialDlvry = 1;
-        }else{
-            $this->isResi = false;
-            $this->residentialDlvry = 0;
-        }*/
         if ($quotes == null) {
             return [];
         }
@@ -646,11 +641,18 @@ class CompileQuotes
                         $quotesRes = array_merge($quotesRes, $resp);
                     }
                     break;
+                case "upsSmall":
+                    $resp = $this->compileUpsSmallQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential);
+                    $quotesTemp['upsSmall'] = $resp;
+                    if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))){
+                        $quotesRes = array_merge($quotesRes, $resp);
+                    }
+                    break;
             }
         }
 
         // Removing duplicate respone of quotes
-        //print_r($quotesTemp);  exit;
+       // print_r($quotesTemp);  exit;
         $quotesRes = $this->handleMultiCarrResp($quotesTemp);
         //print_r($quotesRes); exit;
         $quotesRes = array_map("unserialize", array_unique(array_map("serialize", $quotesRes)));
@@ -668,7 +670,11 @@ class CompileQuotes
                 foreach ($quote['checkoutQuotes'] as $key => $quot){
                     $position = !empty($newQuotes) ? array_search($quot['title'], array_column($newQuotes['checkoutQuotes'], 'title')) : false;
                     if($quot['code'] !== 'own_arrangement') {
-                        if ($position !== false) {
+                        /**
+                         * following code taking the cheapest rate for same title but now we have to show quotes
+                         * on checkout page with duplicate titles(display name)
+                         */
+                        /*if ($position !== false) {
                            if ($quot['rate'] < $newQuotes['checkoutQuotes'][$position]['rate']) {
                                $newQuotes['checkoutQuotes'][$position] = $quot;
                                $newQuotes['multiShipmentQuotes'][$position] = $quote['multiShipmentQuotes'];
@@ -676,7 +682,10 @@ class CompileQuotes
                         } else {
                             array_push($newQuotes['checkoutQuotes'], $quot);
                             array_push($newQuotes['multiShipmentQuotes'], $quote['multiShipmentQuotes']);
-                        }
+                        }*/
+
+                        array_push($newQuotes['checkoutQuotes'], $quot);
+                        array_push($newQuotes['multiShipmentQuotes'], $quote['multiShipmentQuotes']);
                     }else{
                         $ownArrangement = $quot;
                     }
@@ -689,14 +698,15 @@ class CompileQuotes
         }else {
             foreach ($quotes as $car => $quote) {
                 foreach ($quote as $key => $quot) {
-                    $position = array_search($quot['title'], array_column($newQuotes, 'title'));
+                    /*$position = array_search($quot['title'], array_column($newQuotes, 'title'));
                     if ($position !== false) {
                         if ($quot['rate'] < $newQuotes[$position]['rate']) {
                             $newQuotes[$position] = $quot;
                         }
                     } else {
                         $newQuotes[] = $quot;
-                    }
+                    }*/
+                    $newQuotes[] = $quot;
                 }
             }
         }
@@ -718,14 +728,15 @@ class CompileQuotes
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
         $lgQuotes = false;
-        $this->isMultiShipment = false;
         $numberOfShipments = 0;
         foreach ($shipments as $ship){
             if (!isset($ship['severity'])) {
                 $numberOfShipments++;
             }
         }
-        $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
+        if(!$this->isMultiShipment) {
+            $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
+        }
         foreach ($shipments as $origin => $quote) {
 
             if (isset($quote['severity'])) {
@@ -824,8 +835,25 @@ class CompileQuotes
         return $allQuotes;
     }
 
+    public function compileUpsSmallQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential){
+        $this->upsSmallQuotesResults = new upsSmallQuotesResults();
+        if($residential['upsSmall'] == 'Y'){
+            $this->isResi = true;
+            $this->residentialDlvry = 1;
+        }else{
+            $this->isResi = false;
+            $this->residentialDlvry = 0;
+        }
+        $res = $this->upsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $this->isMultiShipment);
+        if(!$this->isMultiShipment) {
+            $this->isMultiShipment = $res['isMultiShipment'];
+        }
+        return $res['resp'];
+    }
+
     public function compileWweSmallQuotes($shipments, $connectionSettings, $allOrigins, $isHazmat, $smalLtlHazmat, $hazmatAllItems)
     {
+        //print_r($shipments); exit;
         if($this->residential['wweSmall'] == 'Y'){
             $this->isResi = true;
             $this->residentialDlvry = 1;
@@ -844,23 +872,23 @@ class CompileQuotes
         if (empty($enabledServices)) {
             return [];
         }
-        // dd($allConfigServices, $enabledServices, $shipments,$this->quoteSettings);
 
-        $this->isMultiShipment = false;
         $numberOfShipments = 0;
         foreach ($shipments as $ship){
             if (!isset($ship['severity'])) {
                 $numberOfShipments++;
             }
         }
-
-        $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
+        if(!$this->isMultiShipment) {
+            $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
+        }
 
         $originQuotes = $multiShipmentQuotes = [];
         $shipmentCount = 0;
         $count = 0;
-
+//print_r($shipments); exit;
         foreach ($shipments as $origin => $quote) {
+
             if (isset($quote['severity'])) {
                 continue;
             }
@@ -924,6 +952,7 @@ class CompileQuotes
         }
         //  dd($originQuotes,'dds',$this->isMultiShipment);
         // $multiShipmentQuotes
+        //print_r($originQuotes); print_r($multiShipmentQuotes); exit;
         // Check for mukti shipment finding lowest price in each shipment and adding them for multi shipment
         if ($this->isMultiShipment) {
             $originQuotesMulti = [];
@@ -932,7 +961,7 @@ class CompileQuotes
                 $netChargeArray = array_column($shipment['shipment'], 'simple');
                 $minValueFromNetChargeArr = min(array_column($netChargeArray, 'rate'));
                 $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
-                $originQuotesMulti[0]['code'] = 'Multi';
+                $originQuotesMulti[0]['code'] = $this->isResi ? 'Multi+R':'Multi';
                 $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
                 $originQuotesMulti[0]['title'] = $this->isResi ? 'Shipping ( R ) ' : 'Shipping';
             }
@@ -983,7 +1012,6 @@ class CompileQuotes
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
         $lgQuotes = false;
-        $this->isMultiShipment = false;
         $numberOfShipments = 0;
 
         foreach ($shipments as $ship){
@@ -991,8 +1019,9 @@ class CompileQuotes
                 $numberOfShipments++;
             }
         }
-
-        $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
+        if(!$this->isMultiShipment) {
+            $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
+        }
         $lableAs = $this->quoteSettings['label_as'] ?? 'Freight';
         $key = 1;
         //print_r($shipments);

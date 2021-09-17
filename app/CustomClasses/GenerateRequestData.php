@@ -50,83 +50,55 @@ class GenerateRequestData
     public function generateEnitureArray($origin, $destination)
     {
         $carriersArr['carriers'] = [];
-        //dd($this->connectionSettings);
+
+        $enitOrigin = $this->getEnitOrigin($origin);
         foreach ($this->connectionSettings as $key => $con1) {
             switch ($key) {
                 case "ltl-quotes":
                     $wweLtlArr = $this->wweLtlEnitArr($con1, $destination);
-                    $wweLtlArr['originAddress'] = $origin;
-
-                    if (count($wweLtlArr['originAddress']) > 1) {
-                        $whIDs = [];
-                        foreach ($wweLtlArr['originAddress'] as $wh) {
-                            if (isset($wh['locationId'])) {
-                                $whIDs[] = $wh['locationId'];
-                            }
-                        }
-
-                        if (count(array_unique($whIDs)) > 1) {
-                            foreach ($wweLtlArr['originAddress'] as $id => $wh) {
-                                if (isset($wh['InstorPickupLocalDelivery'])) {
-                                    $wweLtlArr['originAddress'][$id]['InstorPickupLocalDelivery'] = [];
-                                }
-                            }
-                        }
-                    }
+                    $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['wweLTL'] = $wweLtlArr;
                     break;
-
                 case "small-package":
                     $wweLtlArr = $this->wweSmallEnitArr($con1, $destination);
-                    $wweLtlArr['originAddress'] = $origin;
-
-                    if (count($wweLtlArr['originAddress']) > 1) {
-                        $whIDs = [];
-
-                        foreach ($wweLtlArr['originAddress'] as $wh) {
-                            if (isset($wh['locationId'])) {
-                                $whIDs[] = $wh['locationId'];
-                            }
-                        }
-
-                        if (count(array_unique($whIDs)) > 1) {
-                            foreach ($wweLtlArr['originAddress'] as $id => $wh) {
-                                if (isset($wh['InstorPickupLocalDelivery'])) {
-                                    $wweLtlArr['originAddress'][$id]['InstorPickupLocalDelivery'] = [];
-                                }
-                            }
-                        }
-                    }
+                    $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['wweSmall'] = $wweLtlArr;
                     break;
-
                 case "ups-ltl":
                     $wweLtlArr = $this->upsLtlEnitArr($con1, $destination);
-                    $wweLtlArr['originAddress'] = $origin;
-
-                    if (count($wweLtlArr['originAddress']) > 1) {
-                        $whIDs = [];
-
-                        foreach ($wweLtlArr['originAddress'] as $wh) {
-                            if (isset($wh['locationId'])) {
-                                $whIDs[] = $wh['locationId'];
-                            }
-                        }
-
-                        if (count(array_unique($whIDs)) > 1) {
-                            foreach ($wweLtlArr['originAddress'] as $id => $wh) {
-                                if (isset($wh['InstorPickupLocalDelivery'])) {
-                                    $wweLtlArr['originAddress'][$id]['InstorPickupLocalDelivery'] = [];
-                                }
-                            }
-                        }
-                    }
-
+                    $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['upsLTL'] = $wweLtlArr;
+                    break;
+                case "ups-small":
+                    $wweLtlArr = $this->upsSmallEnitArr($con1, $destination);
+                    $wweLtlArr['originAddress'] = $enitOrigin;
+                    $carriersArr['carriers']['upsSmall'] = $wweLtlArr;
                     break;
             }
         }
         return ['carriersArr' => $carriersArr, 'residential' => $this->resiCarrier];
+    }
+
+    public function getEnitOrigin($origin){
+        $wweLtlArr1['originAddress'] = $origin;
+
+        if (count($wweLtlArr1['originAddress']) > 1) {
+            $whIDs = [];
+            foreach ($wweLtlArr1['originAddress'] as $wh) {
+                if (isset($wh['locationId'])) {
+                    $whIDs[] = $wh['locationId'];
+                }
+            }
+
+            if (count(array_unique($whIDs)) > 1) {
+                foreach ($wweLtlArr1['originAddress'] as $id => $wh) {
+                    if (isset($wh['InstorPickupLocalDelivery'])) {
+                        $wweLtlArr1['originAddress'][$id]['InstorPickupLocalDelivery'] = [];
+                    }
+                }
+            }
+        }
+        return $wweLtlArr1['originAddress'];
     }
 
     public function wweLtlEnitArr($connSettings, $destination)
@@ -174,6 +146,18 @@ class GenerateRequestData
         ];
     }
 
+    public function upsSmallEnitArr($connSettings, $destination){
+        return [
+            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'serverName' => "https://" . $this->storeData['store']['name'],
+            'carrierMode' => 'pro',
+            'quotestType' => 'small', // ltl / small
+            'version' => '1.0.0',
+            'api' => $this->getApiInfoArrUpsSmall($connSettings, $destination),
+            'getDistance' => 0,
+        ];
+    }
+
     /**
      * function for generate request array
      * @param $request
@@ -195,20 +179,23 @@ class GenerateRequestData
         $binReponse = $boxBins =[];
         if ($this->storeData['installed_addon_sbs'])
         {
-            if(isset($carriers['wweSmall'])){
+            if(isset($carriers['wweSmall']) || isset($carriers['upsSmall'])){
                 $olditemsArr = $itemsArr;
-                $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriers['wweSmall']['originAddress'], $cartInfo );
+                $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'];
+                $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo );
                 $itemsArr = $sbsResponse['items'] ?? $itemsArr;
-                $carriers['wweSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriers['wweSmall']['originAddress'];
+                if(isset($carriers['wweSmall'])) {
+                    $carriers['wweSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
+                }
+                if(isset($carriers['upsSmall'])) {
+                    $carriers['upsSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
+                }
                 $binReponse = $sbsResponse['binResponse'];
                 $boxBins = $sbsResponse['boxBins'];
-                if(isset($carriers['wweLTL'])){
+                if(isset($carriers['wweLTL'])  || isset($carriers['upsLTL'])){
                     $itemsArr = $olditemsArr + $itemsArr;
                 }
             }
-            //print_r($olditemsArr); print_r($itemsArr);
-
-            //print_r($itemsArr); exit;
         }
 
         $requestArr = [
@@ -332,6 +319,87 @@ class GenerateRequestData
         return $apiArray;
     }
 
+    public function getApiInfoArrUpsSmall($connSettings, $destination){
+        $residential = 'N';
+        $alwaysResi = false;
+        $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
+        if( $this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])){
+            if($this->radHitConsumed == 0){
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+
+            }else{
+                $residential = $this->residential;
+            }
+
+        }else{
+            $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
+        }
+       // print_r($connSettings['quote_settings']); exit;
+        $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
+        $this->resiCarrier['upsSmall'] = $residential;
+        $apiArray = [
+            'ups_small_pkg_username' => $connSettings['creds']['username'],
+            'ups_small_pkg_password' => $connSettings['creds']['password'],
+            'ups_small_pkg_authentication_key' => $connSettings['creds']['ups_api_access_key'],
+            'ups_small_pkg_account_number' => $connSettings['creds']['account_number'],
+
+            'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
+            'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
+            'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
+            'storeDateTime' => date("Y-m-d H:i:s"), //2020-10-22 14:00:00
+            'shipmentWeekDays' => $this->getDays($connSettings['quote_settings']['week_days']), //array('1','2','3','4','5'),
+
+            'ups_small_pkg_resid_delivery' =>  ( $alwaysResi ? 'Y' : $residential == 'Y' ) ? 'yes':'no',
+            'prefferedCurrency' => 'USD',
+            'services'=>[
+                'ups_small_pkg_Ground' => $this->issetIndex($carrierServices, 'ups_ground'),
+                'ups_small_pkg_3_Day_Select' => $this->issetIndex($carrierServices, 'ups_3_day_select'),
+
+                'ups_small_pkg_2nd_Day_Air' => $this->issetIndex($carrierServices, 'ups_2nd_day_air'),
+                'ups_small_pkg_2nd_Day_Air_AM' => $this->issetIndex($carrierServices, 'ups_2nd_day_air_am'),
+
+                'ups_small_pkg_Next_Day_Air' => $this->issetIndex($carrierServices, 'ups_next_day_air'),
+                'ups_small_pkg_Next_Day_Air_Saver' => $this->issetIndex($carrierServices, 'ups_next_day_air_saver'),
+                'ups_small_pkg_Next_Day_Air_Early_AM' => $this->issetIndex($carrierServices, 'ups_next_day_air_early'),
+
+                "ups_small_surepost_less_than_1LB" => $this->issetIndex($carrierServices, 'ups_surepost_less_than_1lb'),
+                "ups_small_surepost_1LB_or_greater" => $this->issetIndex($carrierServices, 'ups_surepost_1lb_or_greater'),
+                "ups_small_surepost_bpm" => $this->issetIndex($carrierServices, 'ups_surepost_bound_printed_matter'),
+                "ups_small_surepost_media_mail" => $this->issetIndex($carrierServices, 'ups_surepost_media_mail'),
+                "ups_small_pkg_Ground_Freight_Pricing" => $this->issetIndex($carrierServices, 'ups_ground_with_freight_pricing'),
+
+                'ups_small_pkg_Standard' => $this->issetIndex($carrierServices, 'ups_standard'),
+                'ups_small_pkg_Worldwide_Express' => $this->issetIndex($carrierServices, 'ups_worldwide_express'),
+                'ups_small_pkg_Worldwide_Express_Plus' => $this->issetIndex($carrierServices, 'ups_worldwide_express_plus'),
+                'ups_small_pkg_Worldwide_Expedited' => $this->issetIndex($carrierServices, 'ups_worldwide_expedited'),
+                'ups_small_pkg_Saver' => $this->issetIndex($carrierServices, 'ups_worldwide_saver'),
+                'ups_small_pkg_aditional_handling' => $this->issetIndex($carrierServices, 'ups_ground_with_freight_pricing')
+            ],
+        ];
+        return $apiArray;
+    }
+
+    private function getDays($days){
+        $daysNameKey = ['Monday'=>1, 'Tuesday'=>2, 'Wednesday'=>3, 'Thursday'=>4, 'Friday' => 5];
+        $selectedDays = [];
+        foreach ($days as $dayName=>$day){
+            if(isset($daysNameKey[$day])){
+                array_push($selectedDays, $daysNameKey[$day]);
+            }
+        }
+        return $selectedDays;
+    }
+
+    private function issetIndex($quoteSettings, $index){
+        $resp = 'N';
+        if(isset($quoteSettings[$index]) && $quoteSettings[$index] === true) {
+            $resp = 'yes';
+        }
+        return $resp;
+    }
+
 
     public function getApiInfoArrUpsLtl($connSettings, $destination)
     {
@@ -419,7 +487,7 @@ class GenerateRequestData
     public function getStoreBoxes($storeId, $itemsArr, $origins, $cartInfo)
     {
         $items = [];
-
+        //print_r($itemsArr); exit;
         foreach ($origins as $key => $origin){
             $isNotLtl = !(isset($itemsArr[$key]['freightClass']) && $itemsArr[$key]['freightClass'] === 'ltl');
             if($isNotLtl) {
