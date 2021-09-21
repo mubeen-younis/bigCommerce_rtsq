@@ -1366,10 +1366,10 @@ class CompileQuotes
             if ($lgOption && $this->quoteSettings['alwaysLiftGateDelivery'] == '0') {
                 $accessTitle = $this->isResi ? $this->resiLgLabel : $this->lgLabel;
             }
-            if ($this->quoteSettings['alwaysLiftGateDelivery'] && $this->isResi) {
+            if (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery'] && $this->isResi) {
                 $accessTitle = $this->resiLabel;
             }
-            if ($this->quoteSettings['autoDetectedResidentialAddressesLfg'] && $this->isResi) {
+            if (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'] && $this->isResi) {
                 $accessTitle = $this->resiLgLabel;
             }
         } elseif ($this->isResi) {
