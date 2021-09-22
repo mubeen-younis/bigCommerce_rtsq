@@ -666,28 +666,32 @@ class CompileQuotes
         if($this->isMultiShipment){
             $newQuotes['checkoutQuotes'] = $newQuotes['multiShipmentQuotes'] = [];
             foreach ($quotes as $car => $quote){
-                foreach ($quote['checkoutQuotes'] as $key => $quot){
-                    $position = !empty($newQuotes) ? array_search($quot['title'], array_column($newQuotes['checkoutQuotes'], 'title')) : false;
-                    if($quot['code'] !== 'own_arrangement') {
-                        /**
-                         * following code taking the cheapest rate for same title but now we have to show quotes
-                         * on checkout page with duplicate titles(display name)
-                         */
-                        /*if ($position !== false) {
-                           if ($quot['rate'] < $newQuotes['checkoutQuotes'][$position]['rate']) {
-                               $newQuotes['checkoutQuotes'][$position] = $quot;
-                               $newQuotes['multiShipmentQuotes'][$position] = $quote['multiShipmentQuotes'];
-                            }
-                        } else {
+                if(isset($quote['checkoutQuotes'])) {
+                    foreach ($quote['checkoutQuotes'] as $key => $quot) {
+                        /*$position = !empty($newQuotes) ? array_search($quot['title'], array_column($newQuotes['checkoutQuotes'], 'title')) : false;*/
+                        if ($quot['code'] !== 'own_arrangement') {
+                            /**
+                             * following code taking the cheapest rate for same title but now we have to show quotes
+                             * on checkout page with duplicate titles(display name)
+                             */
+                            /*if ($position !== false) {
+                               if ($quot['rate'] < $newQuotes['checkoutQuotes'][$position]['rate']) {
+                                   $newQuotes['checkoutQuotes'][$position] = $quot;
+                                   $newQuotes['multiShipmentQuotes'][$position] = $quote['multiShipmentQuotes'];
+                                }
+                            } else {
+                                array_push($newQuotes['checkoutQuotes'], $quot);
+                                array_push($newQuotes['multiShipmentQuotes'], $quote['multiShipmentQuotes']);
+                            }*/
+
                             array_push($newQuotes['checkoutQuotes'], $quot);
                             array_push($newQuotes['multiShipmentQuotes'], $quote['multiShipmentQuotes']);
-                        }*/
-
-                        array_push($newQuotes['checkoutQuotes'], $quot);
-                        array_push($newQuotes['multiShipmentQuotes'], $quote['multiShipmentQuotes']);
-                    }else{
-                        $ownArrangement = $quot;
+                        } else {
+                            $ownArrangement = $quot;
+                        }
                     }
+                }else{
+                    $ownArrangement = $quote[0];
                 }
             }
             //print_r($newQuotes); exit;
