@@ -277,7 +277,9 @@ class QuotesResults
                     $shipments[$shipment]['q'][$key]['serviceDesc'] = $servicesDesc[$key];
                     $shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] = $shipments[$shipment]['q'][$key]['GuaranteedDaysToDelivery'];
                     if($shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] === ''){
-                        $shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] = $this->calenderDays($servicesDesc[$key], $quotes['tnt']['TransitResponse']['ServiceSummary']);
+                        if(isset($quotes['tnt']['TransitResponse']['ServiceSummary'])) {
+                            $shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] = $this->calenderDays($servicesDesc[$key], $quotes['tnt']['TransitResponse']['ServiceSummary']);
+                        }
                     }
                 }else{
                     unset($shipments[$shipment]['q'][$key]);
