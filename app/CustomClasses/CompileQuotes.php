@@ -609,7 +609,6 @@ class CompileQuotes
      */
     public function newGetQuotesResults($quotes, $connectionSettings, $allOrigins, $isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
-        //print_r($quotes); exit;
         $this->residential = $residential;
         if ($quotes == null) {
             return [];
@@ -1261,6 +1260,7 @@ class CompileQuotes
      */
     public function getAccessorialCode($lgOption = false)
     {
+        //dd($this->residentialDlvry);
         $access = '';
         if ($this->residentialDlvry == '1' || $this->isResi) {
             $access .= '+R';
