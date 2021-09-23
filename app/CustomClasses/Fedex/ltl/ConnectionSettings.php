@@ -44,32 +44,6 @@ class ConnectionSettings
             'physicalPostalCode' => $data->physical_zip ?? '',
             'third_party_account' => $data->third_party_account ?? '',
         );
-        /*$params = array (
-            'testConnectionCarrier' => 'fedex',
-            'AccountNumber' => '337176828',
-            'MeterNumber' => '110649551',
-            'password' => 'VdLIMFlQLmmue66wjN9kvAf1V',
-            'key' => 'qpnfALPWMLAYIj39',
-            'shippingChargesAccount' => '322517297',
-            'billingLineAddress' => '2525 N. LOCH LOMOND CT',
-            'billingCountry' => 'US',
-            'billingCity' => 'Wichita',
-            'billingState' => 'KS',
-            'billingZip' => '67228',
-//  'physicalAddress' => '2525 N. LOCH LOMOND CT',
-            'physicalCountry' => 'US',
-            'physicalAddress' => '15500 E 590 ROAD',
-            'physicalCity' => 'INOLA',
-            'physicalStateOrProvinceCode' => 'OK',
-            'physicalPostalCode' => '74036',
-            'third_party_account' => '',
-            'dont_auth' => '1',
-            'plateform' => 'bigcommerce',
-            'carrier_mode' => 'test',
-            'carrierName' => 'fedex',
-            'sever_name' => 'store-uann2u.mybigcommerce.com',
-            'accountType' => 'shipper',
-        );*/
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
 
