@@ -105,7 +105,7 @@ class OrderController extends Controller
 
                 if( !(isset($ws->severity) && $ws->severity == 'ERROR') ){
 
-                    $liftResidentialStatus = $this->getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate);
+                    $liftResidentialStatus = $this->getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate,$order['rate_id'] );
                     //dd($liftResidentialStatus);
                     if($isLG) {
                         $liftGateStatus = $liftResidentialStatus['liftG'] ?? 'n';
@@ -232,7 +232,7 @@ class OrderController extends Controller
     }
 
 
-    public function getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate){
+    public function getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate,$rateId){
         //dd($isSmallLtlrate);
         $response = ['resi' => 'n', 'liftG' => 'n', 'resiPickup' => 'n'];
         if($isSmallrate && !$isSmallLtlrate){
@@ -255,6 +255,8 @@ class OrderController extends Controller
                 $response['resiPickup'] = 'Y';
             }
         }
+        $response['resi'] = strpos($rateId, '+r') ? 'Y' : 'n';
+        $response['liftG'] = strpos($rateId, '+lg') ? 'Y' : 'n';
         return $response;
     }
     public function getBoxName($binId, $store_id, $rate_id, $cart_id){
