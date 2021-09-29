@@ -936,7 +936,7 @@ class CompileQuotes
                         $title = $this->getTitle($data['serviceDesc'], false, false, $data['transitTime']);
 
                         $arraySorting['simple'][$key] = $price;
-                        $originQuotes[$key]['simple']['code'] = 'fedexltl'.$data['serviceType'] . $access;
+                        $originQuotes[$key]['simple']['code'] = 'fedexltl' . $access;
                         $originQuotes[$key]['simple']['rate'] = $price;
                         $originQuotes[$key]['simple']['title'] = $title;
                         if ($lgQuotes) {
@@ -944,7 +944,7 @@ class CompileQuotes
                             $lgPrice = $this->calculatePrice($data, true);
                             $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['transitTime']);
                             $arraySorting['liftgate'][$key] = $lgPrice;
-                            $originQuotes[$key]['liftgate']['code'] = 'fedexltl'.$data['serviceType'] . $lgAccess;
+                            $originQuotes[$key]['liftgate']['code'] = 'fedexltl' . $lgAccess;
                             $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
                             $originQuotes[$key]['liftgate']['title'] = $lgTitle;
                         }
