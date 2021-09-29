@@ -107,7 +107,7 @@ class QuotesResults
 
 
 
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $isMultiShipment){
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment){
         //print_r($shipments); exit;
         $shipments = $this->formateQuoteBeforeCompile($shipments);
         //print_r($shipments); exit;
@@ -165,7 +165,6 @@ class QuotesResults
                         }
                     }
 
-                    $access = '';
                     // Adding Markup in services if enabled
                     $price = $this->getServiceRate($data, $data['serviceDesc'], $this->quoteSettings);
                     $quoteSettings = $this->quoteSettings;
