@@ -143,12 +143,36 @@ class Shipping
                 $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings,  $residential, $quotesFromWs, $requestArr['requestArr']);
                 $finalQuotes = $finalQuotesMulti['checkoutQuotes'] ?? [];
                 $multiShipmentQuotes = $finalQuotesMulti['multiShipmentQuotes'] ?? [];
+            }else{
+                $finalQuotes = $this->removeParcelIfLtl($finalQuotes);
             }
         }
         $finalQuotes = $this->addRateId($finalQuotes);
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
         $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
         return $resp;
+    }
+
+    private function removeParcelIfLtl($finalQuotes){
+        $hasLtl = false;
+        $hasParcel = false;
+        foreach ($finalQuotes as $quote){
+            if(strpos($quote['code'], 'own_arrangement') === false) {
+                if (strpos($quote['code'], 'parcel_12') === 0) {
+                    $hasParcel = true;
+                } else {
+                    $hasLtl = true;
+                }
+            }
+        }
+        if($hasLtl && $hasParcel){
+            foreach ($finalQuotes as $key => $quote){
+                if (strpos($quote['code'], 'parcel') === 0) {
+                    unset($finalQuotes[$key]);
+                }
+            }
+        }
+        return $finalQuotes;
     }
 
     private function makeMultishipmentSmallLtl($quotes, $connectionSettings,  $residential, $quotesFromWs, $requestArr){
