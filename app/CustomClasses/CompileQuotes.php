@@ -673,14 +673,14 @@ class CompileQuotes
         $quotes = array_filter($quotes);
         $ownArrangement = [];
         $shipping = new Shipping();
-        $hasLtlQuotes = false;
+       /* $hasLtlQuotes = false;
         //print_r($quotes); exit;
         foreach ($quotes as $car => $quote) {
             if ($shipping->isLtlCarrier($car)) {
                 $hasLtlQuotes = true;
                 break;
             }
-        }
+        }*/
         if($this->isMultiShipment){
             $newQuotes['checkoutQuotes'] = $newQuotes['multiShipmentQuotes'] = [];
             foreach ($quotes as $car => $quote){
@@ -718,15 +718,15 @@ class CompileQuotes
             }
         }else {
             foreach ($quotes as $car => $quote) {
-                $allow = false;
+                /*$allow = false;
                 if($hasLtlQuotes){
                     if(!$shipping->isSmallCarrier($car)){
                         $allow = true;
                     }
                 }else{
                     $allow = true;
-                }
-                if ($allow) {
+                }*/
+                //if ($allow) {
                     foreach ($quote as $key => $quot) {
                         /*$position = array_search($quot['title'], array_column($newQuotes, 'title'));
                         if ($position !== false) {
@@ -738,7 +738,7 @@ class CompileQuotes
                         }*/
                         $newQuotes[] = $quot;
                     }
-                }
+                //}
             }
         }
         return $newQuotes;
