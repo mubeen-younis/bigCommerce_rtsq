@@ -786,6 +786,7 @@ class CompileQuotes
                     $lgQuotes = ( ( isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
                         (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
                 }
+                $resiPickup = isset($this->quoteSettings['residentialPickup']) && $this->quoteSettings['residentialPickup'] ? '+pu' : '';
             }
             $originQuotes = [];
             $arraySorting = [];
@@ -795,7 +796,7 @@ class CompileQuotes
                 }
                 foreach ($quote['q'] as $key => $data) {
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) && isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y' ) {
-                        $access = $this->getAccessorialCode();
+                        $access = $this->getAccessorialCode().$resiPickup;
                         $price = $this->calculatePrice($data);
                         $title = $this->getTitle($data['serviceDesc'], false, false, $data['transitTime']);
                         $arraySorting['simple'][$key] = $price;
@@ -803,7 +804,7 @@ class CompileQuotes
                         $originQuotes[$key]['simple']['rate'] = $price;
                         $originQuotes[$key]['simple']['title'] = $title;
                         if ($lgQuotes) {
-                            $lgAccess = $this->getAccessorialCode(true);
+                            $lgAccess = $this->getAccessorialCode(true).$resiPickup;
                             $lgPrice = $this->calculatePrice($data, true);
                             $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['transitTime']);
                             $arraySorting['liftgate'][$key] = $lgPrice;

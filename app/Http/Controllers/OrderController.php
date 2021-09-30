@@ -235,7 +235,7 @@ class OrderController extends Controller
     public function getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate,$rateId){
         //dd($isSmallLtlrate);
         $response = ['resi' => 'n', 'liftG' => 'n', 'resiPickup' => 'n'];
-        if($isSmallrate && !$isSmallLtlrate){
+        /*if($isSmallrate && !$isSmallLtlrate){
             $checkResi = isset($requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery) && ($requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery == 'Y' || $requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery == 'yes' );
             if($checkResi){
                 $response['resi'] = 'Y';
@@ -254,9 +254,10 @@ class OrderController extends Controller
             if($checkResiPickup){
                 $response['resiPickup'] = 'Y';
             }
-        }
+        }*/
         $response['resi'] = strpos($rateId, '+r') ? 'Y' : 'n';
         $response['liftG'] = strpos($rateId, '+lg') ? 'Y' : 'n';
+        $response['resiPickup'] = strpos($rateId, '+pu') ? 'Y' : 'n';
         return $response;
     }
     public function getBoxName($binId, $store_id, $rate_id, $cart_id){
