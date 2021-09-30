@@ -173,12 +173,21 @@ class Shipping
         return $quotes;
     }
 
-    private function isSmallCarrier($carrierName){
+    public function isSmallCarrier($carrierName){
         $smallCarriers = [
           'wweSmall',
           'upsSmall'
         ];
         return in_array($carrierName, $smallCarriers);
+    }
+
+    public function isLtlCarrier($carrierName){
+        $ltlCarriers = [
+            'wweLTL',
+            'upsLTL',
+            'fedexLTL'
+        ];
+        return in_array($carrierName, $ltlCarriers);
     }
 
     private function addBoxFeeToQuotes(array $quotes, array $boxFee) : array

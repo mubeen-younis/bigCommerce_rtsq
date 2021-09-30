@@ -6,6 +6,7 @@ use App\Constants\Constant;
 use App\CustomClasses\UpsSmall\QuotesResults as upsSmallQuotesResults;
 use App\CustomClasses\Fedex\ltl\QuotesResults as fedexLtlQuotesResults;
 use App\CustomClasses\WWESMALL\WweSmallQuoteResults;
+use App\CustomClasses\Shipping;
 use App\Models\Locations;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\RADController;
@@ -671,6 +672,15 @@ class CompileQuotes
         $newQuotes = [];
         $quotes = array_filter($quotes);
         $ownArrangement = [];
+        $shipping = new Shipping();
+        $hasLtlQuotes = false;
+        //print_r($quotes); exit;
+        foreach ($quotes as $car => $quote) {
+            if ($shipping->isLtlCarrier($car)) {
+                $hasLtlQuotes = true;
+                break;
+            }
+        }
         if($this->isMultiShipment){
             $newQuotes['checkoutQuotes'] = $newQuotes['multiShipmentQuotes'] = [];
             foreach ($quotes as $car => $quote){
@@ -708,16 +718,26 @@ class CompileQuotes
             }
         }else {
             foreach ($quotes as $car => $quote) {
-                foreach ($quote as $key => $quot) {
-                    /*$position = array_search($quot['title'], array_column($newQuotes, 'title'));
-                    if ($position !== false) {
-                        if ($quot['rate'] < $newQuotes[$position]['rate']) {
-                            $newQuotes[$position] = $quot;
-                        }
-                    } else {
+                $allow = false;
+                if($hasLtlQuotes){
+                    if(!$shipping->isSmallCarrier($car)){
+                        $allow = true;
+                    }
+                }else{
+                    $allow = true;
+                }
+                if ($allow) {
+                    foreach ($quote as $key => $quot) {
+                        /*$position = array_search($quot['title'], array_column($newQuotes, 'title'));
+                        if ($position !== false) {
+                            if ($quot['rate'] < $newQuotes[$position]['rate']) {
+                                $newQuotes[$position] = $quot;
+                            }
+                        } else {
+                            $newQuotes[] = $quot;
+                        }*/
                         $newQuotes[] = $quot;
-                    }*/
-                    $newQuotes[] = $quot;
+                    }
                 }
             }
         }
@@ -1953,6 +1973,5 @@ class CompileQuotes
     {
         return $this->alwaysResi || $this->isResi ? '+R' : '';
     }
-
 
 }
