@@ -7,6 +7,7 @@ use App\CustomClasses\WweLTL\WweLtlConnectionSettings;
 use App\CustomClasses\WWESMALL\SmallConnectionSettings;
 use App\CustomClasses\UpsSmall\ConnectionSettings;
 use App\CustomClasses\Fedex\ltl\ConnectionSettings as FedexLtlConnectionSettings;
+use App\CustomClasses\Fedex\small\FedexSmallConnectionSettings;
 use App\Models\Connection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +27,7 @@ class ConnectionController extends Controller
         $this->upsLtlTestCon = new UpsLtlConnectionSettings();
         $this->upsSmallTestCon = new ConnectionSettings();
         $this->fedexLtlTestCon = new FedexLtlConnectionSettings();
+        $this->fedexSmallTestCon = new FedexSmallConnectionSettings();
     }
 
     public function index(Request $request)
@@ -93,6 +95,9 @@ class ConnectionController extends Controller
                     return response()->json($response);
                 case 'fedex-ltl':
                     $response = $this->fedexLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'fedex-small':
+                    $response = $this->fedexSmallTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
                 default:
                     return response()->json(["error" => true, "data" => [],
