@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\CustomClasses\UpsLTL\UpsLtlConnectionSettings;
 use App\CustomClasses\WweLTL\WweLtlConnectionSettings;
 use App\CustomClasses\WWESMALL\SmallConnectionSettings;
+use App\CustomClasses\UpsSmall\ConnectionSettings;
+use App\CustomClasses\Fedex\ltl\ConnectionSettings as FedexLtlConnectionSettings;
 use App\Models\Connection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +23,9 @@ class ConnectionController extends Controller
     {
         $this->wweSmallTestCon = new SmallConnectionSettings();
         $this->wweLtlTestCon = new WweLtlConnectionSettings();
-
+        $this->upsLtlTestCon = new UpsLtlConnectionSettings();
+        $this->upsSmallTestCon = new ConnectionSettings();
+        $this->fedexLtlTestCon = new FedexLtlConnectionSettings();
     }
 
     public function index(Request $request)
@@ -47,17 +52,16 @@ class ConnectionController extends Controller
      */
     public function store(Request $request)
     {
+        /* $rules = [
+        'billing_account_no' => 'required',
+        'meter_number' => 'required',
+        'password' => 'required',
+        'auth_key' => 'required',
+        'shipper_account_no' => 'required',
+        'billing_address' => 'required',
+        ]; */
 
-        $rules = [
-            'billing_account_no' => 'required',
-            'meter_number' => 'required',
-            'password' => 'required',
-            'auth_key' => 'required',
-            'shipper_account_no' => 'required',
-            'billing_address' => 'required',
-        ];
-
-//        $validator = Validator::make($request->all(), $rules);
+        //        $validator = Validator::make($request->all(), $rules);
         //        if ($validator->fails()) {
         //            return response()->json($validator->errors(), 400);
         //        }
@@ -67,6 +71,7 @@ class ConnectionController extends Controller
             ->leftJoin('stores', 'stores.id','=','installed_carriers.store_id')
             ->where('installed_carriers.id', $request->carrierId)
             ->first();
+
         if ($checkCarrierType === null) {
             return response()->json(["error" => true, "data" => [],
                 'message' => 'Carrier Not Found']);
@@ -80,11 +85,21 @@ class ConnectionController extends Controller
                 case "small-package":
                     $response = $this->wweSmallTestCon->testSmallConnection($request, $checkCarrierType->name);
                     return response()->json($response);
+                case 'ups-ltl':
+                    $response = $this->upsLtlTestCon->testUpsLtlConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'ups-small':
+                    $response = $this->upsSmallTestCon->testUpsLtlConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'fedex-ltl':
+                    $response = $this->fedexLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
                 default:
                     return response()->json(["error" => true, "data" => [],
                         'message' => 'No carrier Matches']);
             }
         }
+
         $con = Connection::firstOrNew(['installed_carrier_id' => $request->carrierId]);
         $con->value = json_encode($request->all());
         $con->installed_carrier_id = $request->carrierId;

@@ -110,6 +110,9 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/update_boxsize', 'App\Http\Controllers\BoxSizeController@update');
     Route::delete('boxsize/delete/{id}', 'App\Http\Controllers\BoxSizeController@destroy');
 
+
+    Route::post('/submit_connection_settings', [ConnectionController::class, 'store']);
+
     // Orders
     Route::get('/get_orders', [OrderController::class, 'index']);
     Route::get('/get_order_widget', [OrderController::class, 'getOrderWidget']);
@@ -148,7 +151,6 @@ Route::post('/bc-subscription-update', [SubscriptionController::class, 'paymentB
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);
 Route::get('/get_conn_settings', [ConnectionController::class, 'index']);
-Route::post('/submit_connection_settings', [ConnectionController::class, 'store']);
 Route::get('/get_qoute_settings/{carrierId}', [QuoteSettingsController::class, 'getSettings']);
 Route::post('/submit_quote_settings', [QuoteSettingsController::class, 'saveSettings']);
 
