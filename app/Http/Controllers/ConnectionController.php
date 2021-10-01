@@ -7,7 +7,7 @@ use App\CustomClasses\WweLTL\WweLtlConnectionSettings;
 use App\CustomClasses\WWESMALL\SmallConnectionSettings;
 use App\CustomClasses\UpsSmall\ConnectionSettings;
 use App\CustomClasses\Fedex\ltl\ConnectionSettings as FedexLtlConnectionSettings;
-use App\CustomClasses\Fedex\small\FedexSmallConnectionSettings;
+use App\CustomClasses\Fedex\small\ConnectionSettings as FedexSmallConnectionSettings;
 use App\Models\Connection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;

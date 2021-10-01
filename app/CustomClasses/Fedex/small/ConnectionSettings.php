@@ -1,10 +1,10 @@
 <?php
 
-namespace App\CustomClasses\Fedex\ltl;
+namespace App\CustomClasses\Fedex\small;
 
 use App\CustomClasses\CurlRequest;
 
-class FedexSmallConnectionSettings
+class ConnectionSettings
 {
     private $testConnectionUrl = 'https://eniture-qa.com/ws/s/fedex/fedex_shipment_rates_test.php';
     public function __construct()
@@ -26,30 +26,29 @@ class FedexSmallConnectionSettings
             'fedex_password' => $data->password ?? '',
             'fedex_account_number' => $data->account_number ?? '',
             'fedex_meter_number' => $data->meter_number ?? '',
-           // 'licence_key' => $data->api_access_key ?? '',
+            'licence_key' =>  '',
             'platform' => 'bigcommerce',
             'server_name' => $storeName, // $_SERVER['SERVER_NAME'];
         );
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
-
-        if (isset($output['severity']) && $output['severity'] === 'ERROR') {
+        if (isset($output['status']) && $output['status'] == false) {
             $response = [
                 'error' => true,
-                'message' => $output['message'],
+                'message' => $output['response'],
             ];
         }
         $output = json_decode($output['response'], true);
-        if (isset($output['severity']) && $output['severity'] === 'SUCCESS') {
+        if (isset($output['error']) && isset($output['Message'])) {
+            $response = [
+                'error' => true,
+                'message' => $output['Message'],
+            ];
+        } elseif (isset($output['success'])) {
             $response = [
                 'error' => false,
                 'message' => 'Test connection successful.',
                 'data' => [],
-            ];
-        } else{
-            $response = [
-                'error' => true,
-                'message' => 'Invalid authentication info',
             ];
         }
 
