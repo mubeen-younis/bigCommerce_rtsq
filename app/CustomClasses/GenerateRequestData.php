@@ -78,6 +78,11 @@ class GenerateRequestData
                     $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['fedexLTL'] = $wweLtlArr;
                     break;
+                case "fedex-small":
+                    $wweLtlArr = $this->fedexSmallEnitArr($con1, $destination, $enitOrigin);
+                    $wweLtlArr['originAddress'] = $enitOrigin;
+                    $carriersArr['carriers']['fedexSmall'] = $wweLtlArr;
+                    break;
             }
         }
         //print_r($carriersArr); exit;
@@ -163,6 +168,18 @@ class GenerateRequestData
         ];
     }
 
+    public function fedexSmallEnitArr($connSettings, $destination){
+        return [
+            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'serverName' => "https://" . $this->storeData['store']['name'],
+            'carrierMode' => 'pro',
+            'quotestType' => 'small', // ltl / small
+            'version' => '1.0.0',
+            'api' => $this->getApiInfoArrFedexSmall($connSettings, $destination),
+            'getDistance' => 0,
+        ];
+    }
+
     public function fedexLtlEnitArr($connSettings, $destination, $enitOrigin)
     {
         return [
@@ -197,7 +214,7 @@ class GenerateRequestData
         $binReponse = $boxBins =[];
         if ($this->storeData['installed_addon_sbs'])
         {
-            if(isset($carriers['wweSmall']) || isset($carriers['upsSmall'])){
+            if(isset($carriers['wweSmall']) || isset($carriers['upsSmall']) || isset($carriers['upsSmall'])){
                 $olditemsArr = $itemsArr;
                 $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'];
                 $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo );
@@ -207,6 +224,9 @@ class GenerateRequestData
                 }
                 if(isset($carriers['upsSmall'])) {
                     $carriers['upsSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
+                }
+                if(isset($carriers['upsSmall'])) {
+                    $carriers['fedexSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                 }
                 $binReponse = $sbsResponse['binResponse'];
                 $boxBins = $sbsResponse['boxBins'];
@@ -500,6 +520,47 @@ class GenerateRequestData
                 'ups_small_pkg_Saver' => $this->issetIndex($carrierServices, 'ups_worldwide_saver'),
                 'ups_small_pkg_aditional_handling' => $this->issetIndex($carrierServices, 'ups_ground_with_freight_pricing')
             ],
+        ];
+        return $apiArray;
+    }
+
+    function getApiInfoArrFedexSmall($connSettings, $destination){
+        $residential = 'N';
+        $alwaysResi = false;
+        $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
+        if( $this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])){
+            if($this->radHitConsumed == 0){
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+
+            }else{
+                $residential = $this->residential;
+            }
+
+        }else{
+            $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
+        }
+        $this->resiCarrier['fedexSmall'] = $residential;
+        $this->resiCarrier['alwaysResi']['fedexSmall'] = $alwaysResi;
+        $apiArray = [
+
+            'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
+            'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
+            'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
+            'storeDateTime' => date("Y-m-d H:i:s"), //2020-10-22 14:00:00
+            'shipmentWeekDays' => $this->getDays($connSettings['quote_settings']['week_days']), //array('1','2','3','4','5'),
+
+            'residentialDelivery' =>  ( $alwaysResi ? 'Y' : $residential == 'Y' ) ? 'on':'off',
+
+            'MeterNumber' => $connSettings['creds']['meter_number'],
+            'password' => $connSettings['creds']['password'],
+            'key' => $connSettings['creds']['api_access_key'],
+            'AccountNumber' => $connSettings['creds']['account_number'],
+            'prefferedCurrency' => 'USD',
+            'includeDeclaredValue' => '1', //insurance active with sbs active 0 or 1
+            'pkgType' => '00',
+            'saturdayDelivery' => 'on',
         ];
         return $apiArray;
     }
