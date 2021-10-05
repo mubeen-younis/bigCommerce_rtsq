@@ -19,26 +19,37 @@ class ConnectionSettings
             'message' => 'Something went wrong!',
         ];
         $url = $this->testConnectionUrl;
-
-        $params  =array (
-            '//requestKey' => '9e75216a3b07dasdasd5d2ceqweqw22a',
+        $params = [];
+        if($data->api_type === 'cerasis'){
+            $data = $data->cerasis;
+            $params['carrierName'] = 'cerasis';
+            $params['shipperID'] = $data->customer_id ?? '';
+        }else{
+            $data = $data->gtz;
+            $params['carrierName'] = 'globalTranz';
+            $params['customerId'] = $data->customer_id ?? '';
+        }
+        $params  = [
             'platform' => 'bigcommerce',
             'carrier_mode' => 'test',
             'accessLevel' => 'pro', // pro , test
             'version' => '2.0',
-            'carrierName' => 'globalTranz',
-            'customerId' => $data->customer_id ?? '',
             'username' => $data->user_name ?? '',
             'password' => $data->password ?? '',
             'accessKey' => $data->access_key ?? '',
-            //'unique_key' => '299c408137ae554d3f2qwqeq47',
             'dont_auth' => '1',
             'serverName' => $storeName ?? '',
-        );
+        ];
+        if($data->api_type === 'cerasis'){
+            $params['shipperID'] = $data->customer_id ?? '';
+            $params['carrierName'] = 'cerasis';
+        }
+
+
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
         $output = json_decode($output['response'], true);
-        
+
         if (isset($output['severity']) && $output['severity'] === 'SUCCESS') {
             $response = [
                 'error' => false,
