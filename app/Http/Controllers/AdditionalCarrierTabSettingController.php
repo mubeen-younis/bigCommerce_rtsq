@@ -18,7 +18,7 @@ class AdditionalCarrierTabSettingController extends Controller
      */
     public function index(Request $request)
     {
-        $installed_carrier = $request->app_id;
+        $installed_carrier = $request->installed_carrier_id;
 
         $carrier = DB::table('installed_carriers')
             ->select('slug')
@@ -29,7 +29,7 @@ class AdditionalCarrierTabSettingController extends Controller
             $services = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
                 ->where('installed_carriers.id', $installed_carrier)
                 ->orderBy('speed_freight_carrierName')->get();
-        }else{
+        }else if($carrier->slug == 'gtz-ltl'){
             $storeId = null;
             $carrierType = $request->carrierType ?? 'gtz';
             if($carrierType === 'cerasis'){

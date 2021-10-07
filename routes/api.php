@@ -146,6 +146,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
 
     Route::post('/syncGTZCerasisProviders', [AdditionalCarrierTabSettingController::class, 'syncGTZCerasisProviders']);
 
+    Route::post('/get_carrier_services', [AdditionalCarrierTabSettingController::class, 'index']);
 });
 //Webhook
 Route::post('/bc-subscription-update', [SubscriptionController::class, 'paymentByStripeWebHook']);
@@ -158,7 +159,7 @@ Route::get('/get_qoute_settings/{carrierId}', [QuoteSettingsController::class, '
 Route::post('/submit_quote_settings', [QuoteSettingsController::class, 'saveSettings']);
 
 /*------Services tab-------*/
-Route::post('/get_carrier_services', [AdditionalCarrierTabSettingController::class, 'index']);
+
 
 Route::get('/get_warehouse', 'LocationsController@warehouse');
 Route::get('/get_dropships', 'LocationsController@dropships');
