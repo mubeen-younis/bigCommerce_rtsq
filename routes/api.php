@@ -21,6 +21,7 @@ use App\Http\Controllers\StoreController;
 use App\Http\Controllers\Subscription\SubscriptionController;
 use App\Http\Controllers\Subscription\PackageSubscriptionController;
 use App\Http\Middleware\EnsureTokenIsValid;
+use App\Models\CarrierServices;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -188,14 +189,13 @@ Route::get('/get_plans', [\App\Http\Controllers\PlansController::class, 'getPlan
 Route::get('/test_bin', [App\CustomClasses\Bin3D\Bin3D::class, 'getBinResponse']);
 
 Route::get('/providerData', function (Request $request) {
-    echo $path = asset('public/assets/aagtz.csv');
-    $row = 1;
-    $csv = array_map('str_getcsv', file($path));
-    //print_r($csv[0]); exit;
-    /*foreach ($csv[0] as $key=> $val){
-        $heading[] = trim($val);
+    /*$services = CarrierServices::where('app_id', 3)
+        ->where('shopify_freights.store_id', null)
+        ->orderBy('speed_freight_carrierName')->get()->toArray();
+    foreach ($services as $service){
+        $carrier_logo = strtolower($service['speed_freight_carrierSCAC']).'.png';
+        CarrierServices::where('id', $service['id'])->update(['carrier_logo'=> $carrier_logo]);
     }*/
-
 });
 
 
