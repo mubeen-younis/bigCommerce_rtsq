@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\CarrierServices;
 use App\Models\AdditionalCarrierTabSetting;
+use Illuminate\Support\Facades\DB;
+use App\CustomClasses\GTZ\ltl\ConnectionSettings;
 
 class AdditionalCarrierTabSettingController extends Controller
 {
@@ -13,9 +15,32 @@ class AdditionalCarrierTabSettingController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function index()
+    public function index(Request $request)
     {
-        $services = CarrierServices::where('app_id', 1)->orderBy('speed_freight_carrierName')->get();
+        $installed_carrier = $request->app_id;
+
+        $carrier = DB::table('installed_carriers')
+            ->select('slug')
+            ->join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
+            ->where('installed_carriers.id', $installed_carrier)->first();
+
+        if($carrier->slug == 'ltl-quotes'){
+            $services = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
+                ->where('installed_carriers.id', $installed_carrier)
+                ->orderBy('speed_freight_carrierName')->get();
+        }else{
+            $storeId = null;
+            $carrierType = $request->carrierType ?? 'gtz';
+            if($carrierType === 'cerasis'){
+                $storeId = $request['store_id'] ?? null;
+            }
+            $storeId = $request->store_id ?? null;
+            $services = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
+                ->where('installed_carriers.id', $installed_carrier)
+                ->where('shopify_freights.store_id', $storeId)
+                ->orderBy('speed_freight_carrierName')->get();
+        }
+
         return response()->json(['error' => false, 'data' => $services]);
     }
 
@@ -132,5 +157,10 @@ class AdditionalCarrierTabSettingController extends Controller
             'data' => $addTabSettings,
             'message' => "Settings Found",
         ], 200);
+    }
+
+    public function syncGTZCerasisProviders(Request $request){
+        $ConnectionSettings = new ConnectionSettings();
+        $ConnectionSettings->getCerasisProviders($request['store_id']);
     }
 }

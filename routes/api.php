@@ -143,6 +143,9 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::get('/get-addon-details', [PackageSubscriptionController::class, 'getAddonPackageDetails']);
     Route::post('/suspend-use-addon', [PackageSubscriptionController::class, 'suspendAddonUse']);
     //END: SBS Routes
+
+    Route::post('/syncGTZCerasisProviders', [AdditionalCarrierTabSettingController::class, 'syncGTZCerasisProviders']);
+
 });
 //Webhook
 Route::post('/bc-subscription-update', [SubscriptionController::class, 'paymentByStripeWebHook']);
@@ -155,7 +158,7 @@ Route::get('/get_qoute_settings/{carrierId}', [QuoteSettingsController::class, '
 Route::post('/submit_quote_settings', [QuoteSettingsController::class, 'saveSettings']);
 
 /*------Services tab-------*/
-Route::get('/get_carrier_services', [AdditionalCarrierTabSettingController::class, 'index']);
+Route::post('/get_carrier_services', [AdditionalCarrierTabSettingController::class, 'index']);
 
 Route::get('/get_warehouse', 'LocationsController@warehouse');
 Route::get('/get_dropships', 'LocationsController@dropships');
@@ -182,3 +185,16 @@ Route::get('splitCSVinChunks', [ExportImportProducts::class, 'splitCSVinChunks']
 Route::get('/get_plans', [\App\Http\Controllers\PlansController::class, 'getPlans']);
 
 Route::get('/test_bin', [App\CustomClasses\Bin3D\Bin3D::class, 'getBinResponse']);
+
+Route::get('/providerData', function (Request $request) {
+    echo $path = asset('public/assets/aagtz.csv');
+    $row = 1;
+    $csv = array_map('str_getcsv', file($path));
+    //print_r($csv[0]); exit;
+    /*foreach ($csv[0] as $key=> $val){
+        $heading[] = trim($val);
+    }*/
+
+});
+
+

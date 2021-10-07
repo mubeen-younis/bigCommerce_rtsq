@@ -1,8 +1,9 @@
 <?php
 
-namespace App\CustomClasses\Fedex\small;
+namespace App\CustomClasses\GTZ\small;
 
 use App\CustomClasses\CurlRequest;
+use Illuminate\Support\Facades\DB;
 
 class ConnectionSettings
 {
@@ -54,4 +55,6 @@ class ConnectionSettings
 
         return $response;
     }
+
+
 }
