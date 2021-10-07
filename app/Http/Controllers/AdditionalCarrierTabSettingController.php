@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Carrier;
 use Illuminate\Http\Request;
 use App\Models\CarrierServices;
 use App\Models\AdditionalCarrierTabSetting;
@@ -160,7 +161,37 @@ class AdditionalCarrierTabSettingController extends Controller
     }
 
     public function syncGTZCerasisProviders(Request $request){
+        $storeId = $request['store_id'];
         $ConnectionSettings = new ConnectionSettings();
-        $ConnectionSettings->getCerasisProviders($request['store_id']);
+        $gtzLtlId = Carrier::select('id')->where('slug', 'gtz-ltl')->pluck('id')->toArray()[0] ?? '';
+        $resp = $ConnectionSettings->getCerasisProviders($storeId, $gtzLtlId);
+        if($resp){
+            $insert = [];
+            foreach ($resp['carriers'] as $carrier){
+                $insert = [
+                    'speed_freight_carrierSCAC' => $carrier['CarrierName'] ?? '',
+                    'speed_freight_carrierName' => $carrier['CarrierSCAC'] ?? '',
+                    'carrier_logo' => $carrier['CarrierLogoUrl'] ?? '',
+                    'app_id' => $gtzLtlId,
+                    'store_id' => $request['store_id']
+                ];
+                $Added = CarrierServices::where('speed_freight_carrierSCAC', $insert['speed_freight_carrierSCAC'])
+                    ->where('speed_freight_carrierName', $insert['speed_freight_carrierName'])
+                    ->where('app_id', $insert['app_id'])
+                    ->where('store_id', $insert['store_id'])->exists();
+                if(!$Added){
+                    CarrierServices::insert($insert);
+                    unset($insert);
+                }
+            }
+        }
+        $services = CarrierServices::where('shopify_freights.app_id', $gtzLtlId)
+            ->where('shopify_freights.store_id', $storeId)
+            ->orderBy('speed_freight_carrierName')->get();
+
+        return response()->json(['error' => false,
+            'data' => $services,
+            'message' => "Success! Carriers list updated successfully.",
+        ], 200);
     }
 }
