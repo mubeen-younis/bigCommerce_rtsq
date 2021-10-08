@@ -34,22 +34,17 @@ class AdditionalCarrierTabSettingController extends Controller
             $carrierType = $request->carrier_type ?? 'gtz';
             //dd($carrierType);
             if($carrierType === 'CRS'){
-                $services = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
-                    ->where('installed_carriers.id', $installed_carrier)
-                    ->whereNull('shopify_freights.store_id')
-                    ->orderBy('speed_freight_carrierName')->get();
-            }else{
                 $storeId = $request['store_id'] ?? null;
                 $services = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
                     ->where('installed_carriers.id', $installed_carrier)
                     ->where('shopify_freights.store_id', $storeId)
                     ->orderBy('speed_freight_carrierName')->get();
+            }else{
+                $services = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
+                    ->where('installed_carriers.id', $installed_carrier)
+                    ->whereNull('shopify_freights.store_id')
+                    ->orderBy('speed_freight_carrierName')->get();
             }
-            //dd();
-            //$storeId = $request->store_id ?? null;
-
-
-
         }
 
         return response()->json(['error' => false, 'data' => $services]);
