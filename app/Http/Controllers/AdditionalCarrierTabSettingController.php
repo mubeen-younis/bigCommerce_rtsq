@@ -31,7 +31,7 @@ class AdditionalCarrierTabSettingController extends Controller
                 ->orderBy('speed_freight_carrierName')->get();
         }else if($carrier->slug == 'gtz-ltl'){
             $storeId = null;
-            $carrierType = $request->carrierType ?? 'gtz';
+            $carrierType = $request->carrier_type ?? 'gtz';
             if($carrierType === 'CRS'){
                 $storeId = $request['store_id'] ?? null;
             }
