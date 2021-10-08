@@ -32,7 +32,7 @@ class AdditionalCarrierTabSettingController extends Controller
         }else if($carrier->slug == 'gtz-ltl'){
             $storeId = null;
             $carrierType = $request->carrierType ?? 'gtz';
-            if($carrierType === 'cerasis'){
+            if($carrierType === 'CRS'){
                 $storeId = $request['store_id'] ?? null;
             }
             $storeId = $request->store_id ?? null;
