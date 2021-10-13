@@ -50,7 +50,7 @@ class GenerateRequestData
     public function generateEnitureArray($origin, $destination)
     {
         $carriersArr['carriers'] = [];
-
+        //print_r($this->connectionSettings); exit;
         $enitOrigin = $this->getEnitOrigin($origin);
         foreach ($this->connectionSettings as $key => $con1) {
             switch ($key) {
@@ -78,11 +78,19 @@ class GenerateRequestData
                     $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['fedexLTL'] = $wweLtlArr;
                     break;
+                case "gtz-ltl":
+                    $carName = isset($con1['creds']['api_type']) && $con1['creds']['api_type'] === 'CRS' ? 'cerasis' : 'globalTranz';
+                    $wweLtlArr = $this->gtzLtlEnitArr($con1, $destination, $enitOrigin, $carName);
+
+                    $wweLtlArr['originAddress'] = $enitOrigin;
+
+                    $carriersArr['carriers'][$carName] = $wweLtlArr;
+                    break;
             }
         }
-        //print_r($carriersArr); exit;
         return ['carriersArr' => $carriersArr, 'residential' => $this->resiCarrier];
     }
+
 
     public function getEnitOrigin($origin){
         $wweLtlArr1['originAddress'] = $origin;
@@ -119,6 +127,21 @@ class GenerateRequestData
             'returnQuotesOnExceedWeight' => 1,
             'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
             'api' => $this->getApiInfoArrWweLtl($connSettings, $destination),
+            'getDistance' => 0,
+        ];
+    }
+
+    function gtzLtlEnitArr($connSettings, $destination, $enitOrigin, $carName){
+        $api = $this->getApiInfoArrGTZLtl($connSettings, $destination, $carName);
+        return [
+            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'serverName' => "https://" . $this->storeData['store']['name'],
+            'carrierMode' => 'pro',
+            'quotestType' => 'ltl', // ltl / small
+            'version' => '1.0.0',
+            'returnQuotesOnExceedWeight' => 1,
+            'liftGateAsAnOption' => isset($api['accessorial']['LFTGATDEST']) ? 1 : 0,
+            'api' => $api,
             'getDistance' => 0,
         ];
     }
@@ -186,6 +209,7 @@ class GenerateRequestData
     public function generateRequestArray($request, $carriersArray, $itemsArr, $cartInfo)
     {
         $carriers = $carriersArray['carriers'];
+        //print_r($carriersArray); exit;
         $receiverAddress = $this->getReceiverData($request);
 
         $autoResidential = $liftGateWithAuto = '0';
@@ -210,7 +234,12 @@ class GenerateRequestData
                 }
                 $binReponse = $sbsResponse['binResponse'];
                 $boxBins = $sbsResponse['boxBins'];
-                if(isset($carriers['wweLTL'])  || isset($carriers['upsLTL']) || isset($carriers['fedexLTL'])){
+                $isLtl = isset($carriers['wweLTL'])
+                    || isset($carriers['upsLTL'])
+                    || isset($carriers['fedexLTL'])
+                    || isset($carriers['cerasis'])
+                    || isset($carriers['globalTranz']);
+                if($isLtl){
                     $itemsArr = $olditemsArr + $itemsArr;
                 }
             }
@@ -252,7 +281,6 @@ class GenerateRequestData
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
                 $this->residential = $residential;
-
             }else{
                 $residential = $this->residential;
             }
@@ -262,7 +290,6 @@ class GenerateRequestData
         }else{
             $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
         }
-
 
         $this->resiCarrier['wweLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['wweLtl'] = $alwaysResi;
@@ -291,8 +318,109 @@ class GenerateRequestData
             'insureShipment' => 0,
             'insuranceCategory' => $insurance
         ];
+        return $apiArray;
+    }
+
+    public function getApiInfoArrGTZLtl($connSettings, $destination, $carName){
+        //print_r($connSettings['quote_settings']['show_guaranteed_options']); exit;
+        $liftGate = ( (isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
+            (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+        /*
+         * Check if rad hit not consumed and residential is enables
+         * **/
+        $residential = 'N';
+        $alwaysResi = false;
+        $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
+
+        if( $this->storeData['installed_addon_rad'] && ( (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))){
+
+            if($this->radHitConsumed == 0){
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+
+            }else{
+                $residential = $this->residential;
+            }
+            if($liftGate != 'Y'){
+                $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
+            }
+        }else{
+            $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
+        }
 
 
+        $this->resiCarrier['gtzLtl'] = $residential;
+        $this->resiCarrier['alwaysResi']['gtzLtl'] = $alwaysResi;
+
+        $residentialPickup = ( isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
+
+        $insurance = [
+            'code' => '',
+            'value' => ''
+        ];
+        if(isset($connSettings['quote_settings']['insurance_category'])){
+            $insuranceCategory = explode('-', $connSettings['quote_settings']['insurance_category']);
+            $insurance = [
+                'code' => $insuranceCategory[0] ?? '',
+                'value' => $insuranceCategory[1] ?? ''
+            ];
+        }
+        $accessorial = [];
+
+        if($carName === 'globalTranz'){ // for globaltranz
+            $notify = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']);
+            $limitedAccess = $connSettings['quote_settings']['offer_limited_access_delivery'] ?? false;
+            if($residential === 'Y' || $alwaysResi) {
+                $accessorial['RSD'] = 14;
+            }
+            if($liftGate === 'Y') {
+                $accessorial['LGD'] = 12;
+            }
+            if($notify){
+                $accessorial['NBD'] = 17;
+            }
+            if($limitedAccess){
+                $accessorial['LAD'] = 139;
+            }
+            $connSettings['creds'] = $connSettings['creds']['global_tranz'];
+            $guaranteedService = isset($connSettings['quote_settings']['show_guaranteed_options']) && $connSettings['quote_settings']['show_guaranteed_options'] && isset($connSettings['quote_settings']['showDeliveryEstimate']) && $connSettings['quote_settings']['showDeliveryEstimate'];
+            $apiArray = [
+                'username' => $connSettings['creds']['user_name'],
+                'password' => $connSettings['creds']['password'],
+                'accessKey' => $connSettings['creds']['access_key'],
+                'customerId' => $connSettings['creds']['customer_id'],
+                'version' => '2.0',
+                'accessLevel' => 'pro',
+                'billingType' => 'Prepaid',
+                'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? '',
+                'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? '',
+                'accessorial' => $accessorial,
+                'guaranteedRates' => $guaranteedService
+            ];
+        }else { // for cerasis
+            if($residential === 'Y' || $alwaysResi) {
+                $accessorial['RESDEL'] = 'RESDEL';
+            }
+            if($liftGate === 'Y') {
+                $accessorial['LFTGATDEST'] = 'LFTGATDEST';
+            }
+            $connSettings['creds'] = $connSettings['creds']['cerasis'];
+            $apiArray = [
+                'username' => $connSettings['creds']['user_name'],
+                'password' => $connSettings['creds']['password'],
+                'accessKey' => $connSettings['creds']['access_key'],
+                'shipperID' => $connSettings['creds']['customer_id'],
+                //'isFinalMile' => '0',
+                //'finalMileService' => 'PREMIUM_FM',
+                'cerasisApiVersion' => '2.0',
+                'direction' => 'Dropship',
+                'billingType' => 'Prepaid',
+                'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? '',
+                'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? '',
+                'accessorial' => $accessorial
+            ];
+        }
         return $apiArray;
     }
 
@@ -698,7 +826,6 @@ class GenerateRequestData
      */
     public function getReceiverData(array $request)
     {
-        //$addressType = $this->scopeConfig->getValue($addressTypePath, ScopeInterface::SCOPE_STORE);
         return [
             'addressLine' => $request['lineItemData']['destination']['street_1'],
             'receiverCity' => $request['lineItemData']['destination']['city'],

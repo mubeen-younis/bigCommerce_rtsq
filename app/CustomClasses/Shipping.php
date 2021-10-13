@@ -95,6 +95,7 @@ class Shipping
         }
         Log::info('after addBinResponseToQuotes '. json_encode($quotes));
         $quotesFromWs = $quotes ?? [];
+        //print_r($quotes);
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential);
         if (!empty($finalQuotes['multiShipmentQuotes'])){
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
