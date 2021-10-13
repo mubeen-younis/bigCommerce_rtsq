@@ -67,6 +67,8 @@ class LocationsController extends Controller
             'zip_code' => 'required',
             'country' => 'required',
             'location_type' => 'required',
+            'address' => 'required',
+            'phone' => 'required',
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -196,6 +198,8 @@ class LocationsController extends Controller
             $location->nickname = $nickname;
             $location->store_id = $request->store_id;
             $location->type = $request->location_type;
+            $location->address = $request->address;
+            $location->phone = $request->phone;
             $location->zip_code = $request->zip_code;
             $location->city = $request->city;
             $location->state = $request->state;
