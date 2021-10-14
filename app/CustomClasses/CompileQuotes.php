@@ -337,6 +337,8 @@ class CompileQuotes
         }
         if(strlen($address) > 20){
             $address = substr(trim($address), 0, 17).'...,';
+        }else{
+            $address = $address.',';
         }
         return $address;
     }

@@ -376,6 +376,7 @@ class Shipping
 
     public function generateQuoteFormatResponse($quotes)
     {
+        $quotes = array_values($quotes);
         $current = str_replace(' ', 'T', Carbon::now())."-00:00";
         if (!empty(array_filter($quotes))) {
             $resp['quote_id'] = (string) rand(1,9);// need to change
