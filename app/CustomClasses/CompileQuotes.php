@@ -267,6 +267,9 @@ class CompileQuotes
      */
     public function inStoreLocalDeliveryQuotes($quotesArray, $inStoreLd, $allOrigins)
     {
+        /*print_r($quotesArray);
+        print_r($inStoreLd);
+        print_r($allOrigins); exit;
         // dd($allOrigins);
         /*if (empty($quotesArray)) {
             return [];
@@ -298,11 +301,21 @@ class CompileQuotes
             }
             /* dd(2,$inStoreLd);*/
             if (isset($inStoreLd['inStorePickup']['status']) && $inStoreLd['inStorePickup']['status'] == 1) {
+                $title = $warehouseData['inStoreTitle'] ?? '';
+
+                if(isset($inStoreLd['totalDistance']) && $inStoreLd['totalDistance'] > 0){
+                    $title .= " | ".$inStoreLd['totalDistance']." away ";
+                }
+                $title .= " | ".$this->getShortStreetAddress($array['address'])." ".$array['senderCity'].", ". $array['senderState'].", ". $array['senderZip'];
+
+                if(isset($array['phone']) && $array['phone']){
+                    $title .= " | ".$array['phone'];
+                }
                 $quotesArray[] = [
                     'code' => 'INSP',
                     'rate' => 0,
                     'transitTime' => '',
-                    'title' => $warehouseData['inStoreTitle'] ?? '',
+                    'title' => $title,
                 ];
             }
 
@@ -316,6 +329,16 @@ class CompileQuotes
             }
         }
         return $quotesArray;
+    }
+
+    function getShortStreetAddress($address){
+        if(!$address){
+            return '';
+        }
+        if(strlen($address) > 20){
+            $address = substr(trim($address), 0, 17).'...,';
+        }
+        return $address;
     }
 
     /**
