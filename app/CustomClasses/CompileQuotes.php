@@ -918,13 +918,13 @@ class CompileQuotes
         $shipments = $this->GTZLtlQuotesResults->formateQuoteBeforeCompile($shipments);
 
         $this->quoteSettings = $connectionSettings['gtz-ltl']['quote_settings'] ?? [];
-        //print_r($this->quoteSettings); exit;
+        //print_r($shipments); exit;
         $allConfigServices = $connectionSettings['gtz-ltl']['carrier_services'] ?? [];
         $this->quoteSettingsData();
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
         //print_r($this->quoteSettings); exit;
-        $lgQuotes = false;
+        $lgQuotes = $notify = $laccess = false;
         $numberOfShipments = 0;
         foreach ($shipments as $ship){
             if (!isset($ship['severity'])) {
@@ -944,13 +944,20 @@ class CompileQuotes
                 $isRad = $quote['autoResidentialsStatus'] ?? '';
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
                 unset($quote['InstorPickupLocalDelivery']);
+                //print_r($this->quoteSettings); exit;
                 $lgQuotes =
                     (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery']) ||
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
                 if(!$lgQuotes){
                     $lgQuotes = ( ( isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
                             (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+
                 }
+
+                $notify = (isset($this->quoteSettings['always_quote_notify']) && $this->quoteSettings['always_quote_notify']) ||
+                    (isset($this->quoteSettings['offer_notify_as_option']) && $this->quoteSettings['offer_notify_as_option']);
+
+                $laccess = (isset($this->quoteSettings['offer_limited_access_delivery']) && $this->quoteSettings['offer_limited_access_delivery']);
 
             }
             $originQuotes = [];
@@ -977,10 +984,28 @@ class CompileQuotes
                             $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
                             $originQuotes[$key]['liftgate']['title'] = $lgTitle;
                         }
+                        /*if ($notify) {
+                            $nAccess = $this->getAccessorialCode(true).'+NBD';
+                            $nPrice = $this->calculatePrice($data, true);
+                            $nTitle = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays']);
+                            $arraySorting['notify'][$key] = $lgPrice;
+                            $originQuotes[$key]['notify']['code'] = $data['serviceType'] . $nAccess;
+                            $originQuotes[$key]['notify']['rate'] = $nPrice;
+                            $originQuotes[$key]['notify']['title'] = $nTitle;
+                        }
+                        if($laccess){
+                            $lAccess = $this->getAccessorialCode(true).'+LAD';
+                            $lPrice = $this->calculatePrice($data, true);
+                            $lTitle = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays']);
+                            $arraySorting['lacsess'][$key] = $lPrice;
+                            $originQuotes[$key]['lacsess']['code'] = $data['serviceType'] . $lAccess;
+                            $originQuotes[$key]['lacsess']['rate'] = $lPrice;
+                            $originQuotes[$key]['lacsess']['title'] = $lTitle;
+                        }*/
                     }
                 }
             }
-
+            print_r($originQuotes); exit;
 
             $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
 
