@@ -81,6 +81,10 @@ class OrderController extends Controller
         if(empty($data)){
             return [];
         }
+        $index = explode('idx+',$order['rate_id'])[1];
+        if(!empty($index)){
+            $index = (int) substr($index, 0, 1);
+        }
         $isSmallLtlrate = substr($order['rate_id'], 0, 5) == 'multi'  ? true : false;
         $order['rate_id'] = strtolower($order['rate_id']);
         $isSmallrate = substr($order['rate_id'], 0, 9) == 'parcel_12' || substr($order['rate_id'], 0, 5) == 'multi'  ? true : false;
@@ -90,6 +94,7 @@ class OrderController extends Controller
         $responseFromWS = json_decode($data['quotes']);
         $requestToWS = json_decode($data['request']);
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
+        //dd($order['rate_id'],$multiShipmentresponse);
         $autoResidentialsStatus = 'n';
         $residentialsPickup = 'n';
         $liftGateStatus = 'n';
@@ -100,7 +105,7 @@ class OrderController extends Controller
 
                 if( !(isset($ws->severity) && $ws->severity == 'ERROR') ){
 
-                    $liftResidentialStatus = $this->getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate);
+                    $liftResidentialStatus = $this->getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate,$order['rate_id'] );
                     //dd($liftResidentialStatus);
                     if($isLG) {
                         $liftGateStatus = $liftResidentialStatus['liftG'] ?? 'n';
@@ -168,11 +173,11 @@ class OrderController extends Controller
             $sRate = $order['shipping_rate'];
             if($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement){
                 if($isLG) {
-                    $sRate = $multiShipmentresponse->liftgate->$zip->rate ?? $multiShipmentresponse->simple->$zip->rate ?? 0;
-                    $order['shipping_name'] = $multiShipmentresponse->liftgate->$zip->title ?? $multiShipmentresponse->simple->$zip->title ?? '';
+                    $sRate = $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0;
+                    $order['shipping_name'] = $multiShipmentresponse->$index->liftgate->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
                 }else {
-                    $sRate = $multiShipmentresponse->simple->$zip->rate ?? $multiShipmentresponse->liftgate->$zip->rate;
-                    $order['shipping_name'] = $multiShipmentresponse->simple->$zip->title ?? $multiShipmentresponse->liftgate->$zip->title;
+                    $sRate = $multiShipmentresponse->$index->simple->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? 0;
+                    $order['shipping_name'] = $multiShipmentresponse->$index->simple->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? '';
                 }
                 $isMulti = true;
             }
@@ -227,10 +232,10 @@ class OrderController extends Controller
     }
 
 
-    public function getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate){
+    public function getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate,$rateId){
         //dd($isSmallLtlrate);
         $response = ['resi' => 'n', 'liftG' => 'n', 'resiPickup' => 'n'];
-        if($isSmallrate && !$isSmallLtlrate){
+        /*if($isSmallrate && !$isSmallLtlrate){
             $checkResi = isset($requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery) && ($requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery == 'Y' || $requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery == 'yes' );
             if($checkResi){
                 $response['resi'] = 'Y';
@@ -249,7 +254,10 @@ class OrderController extends Controller
             if($checkResiPickup){
                 $response['resiPickup'] = 'Y';
             }
-        }
+        }*/
+        $response['resi'] = strpos($rateId, '+r') ? 'Y' : 'n';
+        $response['liftG'] = strpos($rateId, '+lg') ? 'Y' : 'n';
+        $response['resiPickup'] = strpos($rateId, '+pu') ? 'Y' : 'n';
         return $response;
     }
     public function getBoxName($binId, $store_id, $rate_id, $cart_id){

@@ -21,6 +21,7 @@ class SmallConnectionSettings
             'error' => true,
             'message' => 'Something went wrong!',
         ];
+
         $url = $this->testConnectionUrl; //Constant::TEST_CONN_URL;
         $params = [
             'platform' => 'bigcommerce',
@@ -32,7 +33,6 @@ class SmallConnectionSettings
             'plugin_licence_key' => $data->license_key ?? '',
             'dont_auth' => 1
         ];
-
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
         if (isset($output['status']) && $output['status'] == false) {

@@ -196,6 +196,8 @@ class LocationsController extends Controller
             $location->nickname = $nickname;
             $location->store_id = $request->store_id;
             $location->type = $request->location_type;
+            $location->address = $request->address;
+            $location->phone = $request->phone;
             $location->zip_code = $request->zip_code;
             $location->city = $request->city;
             $location->state = $request->state;
