@@ -9,6 +9,7 @@ use App\Models\InstalledCarrier;
 use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Subscription\SubscriptionController;
 
 class CarrierController extends Controller
 {
@@ -123,6 +124,15 @@ class CarrierController extends Controller
 
     public function installCarrier(Request $request)
     {
+        $subscirption = new SubscriptionController();
+        $changeCount = ['store_id'=> $request['store_id'], 'action'=>1];
+        $res = $subscirption->changeCarrierCount($changeCount);
+        if($res['error']){
+            return response()->json([
+                'error' => true,
+                'message' => $res['message'],
+            ], 200);
+        }
         $store_id = $request->store_id;
 
         if (empty($request->carrier_id)) {
@@ -203,6 +213,22 @@ class CarrierController extends Controller
 
     public function changeCarrierStatus(Request $request)
     {
+        $installedCarrier = InstalledCarrier::where('id', $request->carrier_id)->first();
+        if(!$installedCarrier->is_enabled) {
+            $subscirption = new SubscriptionController();
+            $changeCount = ['store_id' => $request['store_id'], 'action' => 1];
+            $res = $subscirption->changeCarrierCount($changeCount);
+            if ($res['error']) {
+                return response()->json([
+                    'error' => true,
+                    'message' => $res['message'],
+                ], 200);
+            }
+        }else{
+            $subscirption = new SubscriptionController();
+            $changeCount = ['store_id' => $request['store_id'], 'action' => 0];
+            $subscirption->changeCarrierCount($changeCount);
+        }
         $carrier = InstalledCarrier::find($request->carrier_id);
 
         if ($carrier) {

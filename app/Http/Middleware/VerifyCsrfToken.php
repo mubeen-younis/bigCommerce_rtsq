@@ -13,6 +13,16 @@ class VerifyCsrfToken extends Middleware
      */
     protected $except = [
         'api/*',
-        'webhooks'
+        'webhooks',
+        'order/webhooks',
+        'subscribe-plan',
+        'cancel-subscription',
+        'add-carrier',
+        'remove-carrier',
+        'update-subscription',
+        'change-payment-method',
+        'bc-payment-failed',
+        'bc-payment-succeeded',
+        'bc-subscription-update'
     ];
 }

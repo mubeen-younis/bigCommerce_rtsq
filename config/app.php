@@ -15,6 +15,7 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+    'log' => 'daily',
     /*
     |--------------------------------------------------------------------------
     | Application Environment
@@ -55,7 +56,7 @@ return [
     'url' => env('APP_URL', 'http://localhost'),
 
     'asset_url' => env('ASSET_URL', null),
-
+    'stripe_secret' => env('STRIPE_SECRET'),
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

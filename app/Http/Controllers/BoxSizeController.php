@@ -15,7 +15,15 @@ class BoxSizeController extends Controller
      */
     public function index()
     {
-        return response()->json(['error' => false, 'data' => BoxSize::get()]);
+        //$boxes = BoxSize::get();
+        $boxes = [];
+        foreach (BoxSize::get() as $key => $box){
+
+            $boxes[$key] = $box;
+            $boxes[$key]['availability'] = $box['is_available'] ? 'Yes' : 'No';
+
+        }
+        return response()->json(['error' => false, 'data' => $boxes]);
     }
 
     /**
@@ -56,11 +64,12 @@ class BoxSizeController extends Controller
 
         $boxsize = BoxSize::create($data);
         $boxsize->save();
-
+        $boxsize->is_available = $boxsize->is_available === true ? 1:0;
+        $boxsize->availability = $boxsize->is_available ===1 ? 'Yes' : 'No';
         return response()->json(
             [
                 'error' => false,
-                'message' => "Box Size added successfully.",
+                'message' => "Box added successfully.",
                 'data' => $boxsize,
             ], 200);
     }
@@ -106,21 +115,28 @@ class BoxSizeController extends Controller
         $box_size = BoxSize::find($request->id);
 
         if ($box_size) {
+            if(BoxSize::where('nickname', $request->nickname)->where('store_id', $request->store_id)->where('id','!=',$request->id)->exists()){
+                return response()->json([
+                        'error' => true,
+                        'message' => "The nickname has already been taken."
+                    ]);
+            }
             $data = $request->except(['store_name', 'store_hash']);
 
             $boxsize = BoxSize::where('id', $request->id)->update($data);
-
+            $box = BoxSize::find($request->id);
+            $box['availability'] = $box['is_available']? 'Yes':'No';
             return response()->json(
                 [
                     'error' => false,
-                    'message' => "Box Size updated successfully.",
-                    'data' => BoxSize::find($request->id),
+                    'message' => "Box updated successfully.",
+                    'data' => $box,//BoxSize::find($request->id),
                 ], 200);
         }
 
         return response()->json([
             'error' => true,
-            'message' => 'Box size could not be updated successfully.',
+            'message' => 'Box could not be updated successfully.',
         ]);
     }
 
@@ -136,7 +152,7 @@ class BoxSizeController extends Controller
         $boxsize->delete();
 
         return response()->json(['error' => false,
-            'message' => "Box Size deleted Successfully",
+            'message' => "Box deleted Successfully",
             'data' => $id]);
     }
 }

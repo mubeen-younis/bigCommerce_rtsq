@@ -115,7 +115,7 @@ class LocationsController extends Controller
             // Checking if zipcode matches with current location saved record
             // its important when updating to know whether a zip exists on any other record or not
             if ($location->zip_code != $request->zip_code) {
-                if (Locations::where('zip_code', $request->zip_code)->where('type', 1)->exists()) {
+                if (Locations::where('zip_code', $request->zip_code)->where('store_id', $request->store_id)->where('type', 1)->exists()) {
                     return ['error' => true,
                         'data' => [],
                         'message' => 'Error! Zip code already exists.',
@@ -126,7 +126,7 @@ class LocationsController extends Controller
         } else {
             $location = new Locations();
 
-            if (Locations::where('zip_code', $request->zip_code)->where('type', 1)->exists()) {
+            if (Locations::where('zip_code', $request->zip_code)->where('store_id', $request->store_id)->where('type', 1)->exists()) {
                 return ['error' => true,
                     'data' => [],
                     'message' => 'Error! Zip code already exists',
@@ -145,7 +145,7 @@ class LocationsController extends Controller
 
         if (!empty($request->location_id)) {
             $method = "updated";
-            $location = Locations::where('id', $request->location_id)->where('type', 2)->first();
+            $location = Locations::where('id', $request->location_id)->where('store_id', $request->store_id)->where('type', 2)->first();
             if ($location === null) {
                 return ['error' => true,
                     'data' => [],
@@ -156,7 +156,7 @@ class LocationsController extends Controller
             // Checking if zipcode matches with current location saved record
             // its important when updating to know whether a zip exists on any other record or not
             if ($location->zip_code != $request->zip_code) {
-                if (Locations::where('zip_code', $request->zip_code)->where('type', 2)->exists()) {
+                if (Locations::where('zip_code', $request->zip_code)->where('store_id', $request->store_id)->where('type', 2)->exists()) {
                     return ['error' => true,
                         'data' => [],
                         'message' => 'Error! Zip code already exists.',
@@ -166,7 +166,12 @@ class LocationsController extends Controller
             }
         } else {
             $location = new Locations();
-            if (Locations::where('zip_code', $request->zip_code)->where('type', 2)->exists()) {
+            if (empty($request->nickname)) {
+                $nickname = $request->zip_code . '_' . $request->city . '_' . $request->state;
+            } else {
+                $nickname = $request->nickname;
+            }
+            if (Locations::where('zip_code', $request->zip_code)->where('store_id', $request->store_id)->where('nickname', $nickname)->where('type', 2)->exists()) {
                 return ['error' => true,
                     'data' => [],
                     'message' => 'Error! Zip code already exists',
@@ -191,6 +196,8 @@ class LocationsController extends Controller
             $location->nickname = $nickname;
             $location->store_id = $request->store_id;
             $location->type = $request->location_type;
+            $location->address = $request->address;
+            $location->phone = $request->phone;
             $location->zip_code = $request->zip_code;
             $location->city = $request->city;
             $location->state = $request->state;
