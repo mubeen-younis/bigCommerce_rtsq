@@ -93,12 +93,12 @@ class QuotesResults
         // Check limited to carrier transit days
         if ($quoteSettings['ground_metric'] == 1) {
             //  2>3
-            if (isset($quote['totalTransitTimeInDays']) && isset($quoteSettings['number_of_transit_days']) && $quote['totalTransitTimeInDays'] > $quoteSettings['number_of_transit_days']) {
+            if (isset($quote['transitTimeInDays']) && isset($quoteSettings['number_of_transit_days']) && $quote['transitTimeInDays'] > $quoteSettings['number_of_transit_days']) {
                 return true;
             }
             // Check by calendar days
         } else {
-            if ( isset($quote['CalenderDaysInTransit']) && isset($quoteSettings['number_of_transit_days']) && $quote['CalenderDaysInTransit'] > $quoteSettings['number_of_transit_days']) {
+            if ( isset($quote['calenderDaysInTransit']) && isset($quoteSettings['number_of_transit_days']) && $quote['calenderDaysInTransit'] > $quoteSettings['number_of_transit_days']) {
                 return true;
             }
         }
@@ -108,7 +108,6 @@ class QuotesResults
 
 
     public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment){
-        //print_r($shipments); exit;
         $shipments = $this->formateQuoteBeforeCompile($shipments);
         //print_r($shipments); exit;
         $this->quoteSettings = [];
@@ -259,6 +258,7 @@ class QuotesResults
 
 
     private function formateQuoteBeforeCompile($shipments){
+        //print_r($shipments); exit;
         $servicesDesc = [];
         foreach ($shipments as $quote){
             if(isset($quote['ups_services'])) {
@@ -272,11 +272,13 @@ class QuotesResults
             }
             foreach ($quotes['q'] as $key => $quote){
                 if(!isset($quote['severity'])) {
-                    $shipments[$shipment]['q'][$key]['serviceDesc'] = $servicesDesc[$key];
+                    $servicesDescKey = $servicesDesc[$key] ?? '';
+                    $shipments[$shipment]['q'][$key]['serviceDesc'] = $servicesDescKey;
                     $shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] = $shipments[$shipment]['q'][$key]['GuaranteedDaysToDelivery'];
                     if($shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] === ''){
                         if(isset($quotes['tnt']['TransitResponse']['ServiceSummary'])) {
-                            $shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] = $this->calenderDays($servicesDesc[$key], $quotes['tnt']['TransitResponse']['ServiceSummary']);
+
+                            $shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] = $this->calenderDays($servicesDescKey, $quotes['tnt']['TransitResponse']['ServiceSummary']);
                         }
                     }
                 }else{
@@ -284,6 +286,7 @@ class QuotesResults
                 }
             }
         }
+        //print_r($shipments); exit;
         return $shipments;
     }
 

@@ -700,10 +700,12 @@ class CompileQuotes
         }
 
         // Removing duplicate respone of quotes
-       // print_r($quotesTemp);  exit;
+
         $quotesRes = $this->handleMultiCarrResp($quotesTemp);
+
         //print_r($quotesRes); exit;
         $quotesRes = array_map("unserialize", array_unique(array_map("serialize", $quotesRes)));
+        //print_r($quotesRes);  exit;
         return $quotesRes;
 
     }
@@ -793,8 +795,9 @@ class CompileQuotes
             $this->isResi = false;
             $this->residentialDlvry = 0;
         }
-        $this->alwaysResi = $residential['alwaysResi']['wweLtl'] ?? false;
+        $this->alwaysResi = $this->residential['alwaysResi']['wweLtl'] ?? false;
         $this->quoteSettings = $connectionSettings['ltl-quotes']['quote_settings'] ?? [];
+        //print_r($this->quoteSettings); exit;
         $allConfigServices = $connectionSettings['ltl-quotes']['carrier_services'] ?? [];
         $this->quoteSettingsData();
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
@@ -916,8 +919,7 @@ class CompileQuotes
             $this->isResi = false;
             $this->residentialDlvry = 0;
         }
-        $this->alwaysResi = $residential['alwaysResi']['upsSmall'] ?? false;
-        //dd($residential, $this->alwaysResi);
+        $this->alwaysResi = $this->residential['alwaysResi']['upsSmall'] ?? false;
         $access = $this->getAccessorialCodeSmall();
         $res = $this->upsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment);
 
@@ -936,7 +938,7 @@ class CompileQuotes
             $this->isResi = false;
             $this->residentialDlvry = 0;
         }
-        $this->alwaysResi = $residential['alwaysResi']['gtzLtl'] ?? false;
+        $this->alwaysResi = $this->residential['alwaysResi']['gtzLtl'] ?? false;
 
 
         $access = $this->getAccessorialCodeSmall();
@@ -1083,7 +1085,7 @@ class CompileQuotes
             $this->isResi = false;
             $this->residentialDlvry = 0;
         }
-        $this->alwaysResi = $residential['alwaysResi']['fedexLtl'] ?? false;
+        $this->alwaysResi = $this->residential['alwaysResi']['fedexLtl'] ?? false;
 
         $shipments = $fedexLtl->formateQuoteBeforeCompile($shipments);
         $this->quoteSettings = $connectionSettings['fedex-ltl']['quote_settings'] ?? [];
@@ -1212,7 +1214,7 @@ class CompileQuotes
             $this->isResi = false;
             $this->residentialDlvry = 0;
         }
-        $this->alwaysResi = $residential['alwaysResi']['wweSmall'] ?? false;
+        $this->alwaysResi = $this->residential['alwaysResi']['wweSmall'] ?? false;
         $this->quoteSettings = [];
         //$isHazmat = $isHazmat == "Y" ? true : false;
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
@@ -1358,7 +1360,7 @@ class CompileQuotes
             $this->isResi = false;
             $this->residentialDlvry = 0;
         }
-        $this->alwaysResi = $residential['alwaysResi']['upsLtl'] ?? false;
+        $this->alwaysResi = $this->residential['alwaysResi']['upsLtl'] ?? false;
         $this->quoteSettings = $connectionSettings['ups-ltl']['quote_settings'] ?? [];
         $this->quoteSettingsData();
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
@@ -1709,11 +1711,12 @@ class CompileQuotes
         }
         //print_r($quoteSetting); exit; dd(2,$quoteSetting);
         $serviceTitle = $this->customLabel($serviceName);
+        $deliveryEstimateLabel = (!empty($deliveryEstimate) && ( isset($this->quoteSettings['showDeliveryEstimate']) && $this->quoteSettings['showDeliveryEstimate']) ) ? ' (Estimated transit time of ' . $deliveryEstimate . ' business days)' : '';
         if ($this->isMultiShipment && $from == false) {
-            return $serviceTitle;
+            return $serviceTitle.$deliveryEstimateLabel;
         }
         // Here  Making Delivery estimate title
-        $deliveryEstimateLabel = (!empty($deliveryEstimate) && ( isset($this->quoteSettings['showDeliveryEstimate']) && $this->quoteSettings['showDeliveryEstimate']) ) ? ' (Estimated transit time of ' . $deliveryEstimate . ' business days)' : '';
+
         // Here  Making Access title
         $accessTitle = '';
 

@@ -169,6 +169,7 @@ class GenerateRequestData
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
+            'returnQuotesOnExceedWeight' => 1,
             'api' => $this->getApiInfoArrUpsLtl($connSettings, $destination),
             'getDistance' => 0,
         ];
@@ -194,6 +195,7 @@ class GenerateRequestData
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
+            'returnQuotesOnExceedWeight' => 1,
             'api' => $this->getApiInfoArrFedexLtl($connSettings, $destination, $enitOrigin),
             'getDistance' => 0,
         ];
@@ -600,7 +602,7 @@ class GenerateRequestData
             'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
             'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
             'storeDateTime' => date("Y-m-d H:i:s"), //2020-10-22 14:00:00
-            'shipmentWeekDays' => $this->getDays($connSettings['quote_settings']['week_days']), //array('1','2','3','4','5'),
+            'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
 
             'ups_small_pkg_resid_delivery' =>  ( $alwaysResi ? 'Y' : $residential == 'Y' ) ? 'yes':'no',
             'prefferedCurrency' => 'USD',
@@ -686,6 +688,7 @@ class GenerateRequestData
 
         $this->resiCarrier['upsLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['upsLtl'] = $alwaysResi;
+        $paymentType = isset($connSettings['quote_settings']['shipper_relationship']) && $connSettings['quote_settings']['shipper_relationship'] === 'third_party' ? 'ThirdParty':'shipper';
         $apiArray = [
             'accessLevel' => $connSettings['creds']['access_level'],
             'APIKey' => $connSettings['creds']['ups_api_access_key'],
@@ -694,7 +697,7 @@ class GenerateRequestData
             'Password' => $connSettings['creds']['password'],
             'paymentCode' => '10',
             'paymentDescription' => 'PREPAID',
-            'paymentType' => $connSettings['quote_settings']['shipper_relationship'] ?? 'shipper',
+            'paymentType' => $paymentType,
             //'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'],
             //'maxWeightPerHandlingUnit' => '',
             'serviceCode' => '308',
