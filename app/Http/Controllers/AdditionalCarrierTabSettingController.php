@@ -199,4 +199,23 @@ class AdditionalCarrierTabSettingController extends Controller
             'message' => "Success! Carriers list updated successfully.",
         ], 200);
     }
+
+    public function hasInsurance(Request $request){
+        $storeId = $request['store_id'];
+        $installed_carrier = $request->installed_carrier_id;
+        $carrier = DB::table('installed_carriers')
+            ->select('slug')
+            ->join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
+            ->where('installed_carriers.id', $installed_carrier)
+            ->where('installed_carriers.store_id', $storeId)->first();
+
+        return response()->json(['error' => false,
+            'data' => $this->isInusreCarrier($carrier->slug)
+        ], 200);
+    }
+
+    public function isInusreCarrier($slug){
+        $insureCarrier = ['ltl-quotes', 'small-package', 'ups-small'];
+        return in_array($slug, $insureCarrier);
+    }
 }

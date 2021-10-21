@@ -473,6 +473,7 @@ class GenerateRequestData
                 }
             }
         }
+        //print_r($connSettings['creds']['meter_number']); exit;
         $apiArray = [
             'AccountNumber' => $connSettings['creds']['account_number'] ?? '',
             'MeterNumber' => $connSettings['creds']['meter_number'] ?? '',
