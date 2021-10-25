@@ -50,5 +50,35 @@ class QuotesResults
         return $shipments;
     }
 
+    public function calculatePrice($data, $uoteSettings, $lgOption = false, $notify = false, $laccess = false)
+    {
+        $lgCost = $lgOption ? 0 : $data['surcharges']['liftgateFee'] ?? 0;
+        $nCost = $notify ? 0 : $data['surcharges']['notifyDeliveryFee'] ?? 0;
+        $laCost = $laccess ? 0 : $data['surcharges']['limitedAccessDeliveryFee'] ?? 0;
+        $basePrice = (float)$data['totalNetCharge']['Amount'];
+        $basePrice = $basePrice - $lgCost - $nCost - $laCost;
+        $basePrice = $this->CompileQuotes->calculateHandlingFee($basePrice, $uoteSettings);
+        return $basePrice;
+    }
+
+    public function getAccessorialCode($isResi = false, $lgOption = false, $notify = false, $laccess = false){
+        $access = '';
+        if ($isResi) {
+            $access .= '+R';
+        }
+        if ($lgOption) {
+            $access .= '+LG';
+        }
+        if ($notify) {
+            $access .= '+N';
+        }
+        if ($laccess) {
+            $access .= '+LA';
+        }
+        return $access;
+    }
+
+
+
 
 }
