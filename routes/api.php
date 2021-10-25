@@ -21,6 +21,7 @@ use App\Http\Controllers\StoreController;
 use App\Http\Controllers\Subscription\SubscriptionController;
 use App\Http\Controllers\Subscription\PackageSubscriptionController;
 use App\Http\Middleware\EnsureTokenIsValid;
+use App\Models\Locations;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -143,6 +144,8 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::get('/get-addon-details', [PackageSubscriptionController::class, 'getAddonPackageDetails']);
     Route::post('/suspend-use-addon', [PackageSubscriptionController::class, 'suspendAddonUse']);
     //END: SBS Routes
+
+
 });
 //Webhook
 Route::post('/bc-subscription-update', [SubscriptionController::class, 'paymentByStripeWebHook']);
@@ -182,3 +185,14 @@ Route::get('splitCSVinChunks', [ExportImportProducts::class, 'splitCSVinChunks']
 Route::get('/get_plans', [\App\Http\Controllers\PlansController::class, 'getPlans']);
 
 Route::get('/test_bin', [App\CustomClasses\Bin3D\Bin3D::class, 'getBinResponse']);
+
+
+Route::get('/createExportData', function (){
+    $locations = Locations::where('store_id', 1)->where('type', 2)->get()->toArray();
+    dd($locations);
+    $dropShips = [];
+    foreach ($locations as $location){
+        $dropShips[$location['id']] = $location;
+    }
+    echo "<pre>"; print_r($dropShips); exit;
+});

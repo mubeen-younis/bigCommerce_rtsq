@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Jobs\ImportProducts as ImportProductsJob;
 use App\Jobs\ImportProductsNotification;
+use App\Models\Locations;
 use App\Models\ProductSetting;
 use App\Models\ExportProducts as ExportProductsModel;
 use App\Mail\ExportProducts as ExportProductsEmail;
@@ -50,6 +51,12 @@ class ExportImportProducts extends Controller
     }
 
     public function createExportData($request){
+        $locations = Locations::where('store_id', $request['store_id'])->where('type', 2)->get()->toArray();
+        $dropShips = [];
+        foreach ($locations as $location){
+            $dropShips[$location['id']] = $location;
+        }
+
         $productsChunk = ProductSetting::where('store_id', $request['store_id']);
         if(!$productsChunk->count()){
             return [];
@@ -65,13 +72,13 @@ class ExportImportProducts extends Controller
         $folderName = $request['folderName'];
         $folderNamePath = [];
         try {
-            $productsChunk->chunk(2500, function ($products, $chunkCount = 0) use ($comma, $folderName) {
+            $productsChunk->chunk(2500, function ($products, $chunkCount = 0) use ($comma, $folderName, $dropShips) {
                 $fileName = $chunkCount++ . '-export.csv';
                 $filename = $folderName . '/' . $fileName;
                 $folderNamePath[] = $filename;
                 $fp = fopen($filename, "w");
                 if (true) {
-                    $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (lbs), Length (in), Width (in), Height (in),Freight Enabled, Parcel Enabled, Freight Class, Hazardous Enabled, Insurance, Dropship Enabled, Dropship Location';
+                    $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (lbs), Length (in), Width (in), Height (in), Quote Method, Freight Class, Hazardous Enabled, Insurance, Dropship Nickname, Dropship Zipcode, Dropship City, Dropship State, Dropship Country, Ships Alone, Vertical Rotation';
                     $line .= "\n";
                     fputs($fp, $line);
                 }
@@ -85,16 +92,36 @@ class ExportImportProducts extends Controller
                     $line .= $comma . $product->width;
                     $line .= $comma . $product->height;
 
-
                     $settings = json_decode($product->settings);
-                    $line .=  isset($settings->freight_enabled)  ? $comma . $settings->freight_enabled : $comma . false;
-                    $line .=  isset($settings->parcel_enabled)  ? $comma . $settings->parcel_enabled : $comma;
+                    $quoteMethod = '';
+                    if(isset($settings->freight_enabled) && $settings->freight_enabled){
+                        $quoteMethod = 'L';
+                    }else if(isset($settings->parcel_enabled) && $settings->parcel_enabled){
+                        $quoteMethod = 'S';
+                    }
+                    $line .=  $comma . $quoteMethod;
                     $line .=  isset($settings->freight_class)  ? $comma . $settings->freight_class : $comma;
-                    $line .=  isset($settings->hazardous_enabled)  ? $comma . $settings->hazardous_enabled : $comma . false;
-                    $line .=  isset($settings->insurance)  ? $comma . $settings->insurance : $comma . false;
-                    $line .=  isset($settings->dropship_enabled)  ? $comma . $settings->dropship_enabled : $comma . false;
-                    $line .=  isset($settings->dropship_location)  ? $comma . $settings->dropship_location : $comma;
-
+                    $line .=  isset($settings->hazardous_enabled) && $settings->hazardous_enabled ? $comma . 1 : $comma . 0;
+                    $line .=  isset($settings->insurance) && $settings->insurance  ? $comma . 1 : $comma . 0;
+                    $nickname = $zip = $city = $state = $country = '';
+                    if(isset($settings->dropship_enabled) && $settings->dropship_enabled){
+                        $location = $settings->dropship_location ?? false;
+                        if($location){
+                            $dropShip = $dropShips[$location] ?? [];
+                            $nickname = $dropShip['nickname'] ?? '';
+                            $city = $dropShip['city'] ?? '';
+                            $state = $dropShip['state'] ?? '';
+                            $zip = $dropShip['zip_code'] ?? '';
+                            $country = $dropShip['country'] ?? '';
+                        }
+                    }
+                    $line .=  $comma . $nickname;
+                    $line .=  $comma . $zip;
+                    $line .=  $comma . $city;
+                    $line .=  $comma . $state;
+                    $line .=  $comma . $country;
+                    $line .=  isset($settings->allow_vertical) && $settings->allow_vertical  ? $comma . 1 : $comma . 0;
+                    $line .=  isset($settings->ship_own_package) && $settings->ship_own_package ? $comma . 1 : $comma . 0;
 
                     $line .= "\n";
                     fputs($fp, $line);
@@ -277,7 +304,7 @@ class ExportImportProducts extends Controller
                     ->whereNull('variant_id')
                     ->where('store_id', $store_id)->pluck('settings')->toArray();
             }
-            $update['settings'] = json_encode($this->getSettings($oldSettings, $product, $indexes));
+            $update['settings'] = json_encode($this->getSettings($oldSettings, $product, $indexes, $store_id));
         }
         if(isset($indexes['name']) && $indexes['name']){
             $key = $indexes['name'];
@@ -313,9 +340,9 @@ class ExportImportProducts extends Controller
             $this->updateBCProduct($source_product_id, $variant_id, $store_id, $update,  $access_token, $hash);
         }
     }
-    public function getSettings($oldSettings, $product, $indexes){
+    public function getSettings($oldSettings, $product, $indexes, $store_id){
         $settings = $oldSettings[0] ? json_decode($oldSettings[0]) : new \stdClass();
-        $freightUpdate = false;
+        /*$freightUpdate = false;
         if(isset($indexes['freight_enabled']) && $indexes['freight_enabled']){
             $key = $indexes['freight_enabled'];
             if(array_key_exists($key, $product)){
@@ -335,6 +362,19 @@ class ExportImportProducts extends Controller
         }
         if($freightUpdate && isset($settings->parcel_enabled) && $settings->parcel_enabled === true){
             $settings->freight_enabled = false;
+        }*/
+        if(isset($indexes['quote_method']) && $indexes['quote_method']){
+            $key = $indexes['quote_method'];
+            $quoteMethod = strtolower($product["$key"]);
+            if(array_key_exists($key, $product)) {
+                $settings->parcel_enabled = false;
+                $settings->freight_enabled = false;
+                if($quoteMethod === 's'){
+                    $settings->parcel_enabled = true;
+                }else if($quoteMethod === 'l'){
+                    $settings->freight_enabled = true;
+                }
+            }
         }
         if(isset($indexes['freight_class']) && $indexes['freight_class']){
             $key = $indexes['freight_class'];
@@ -342,16 +382,16 @@ class ExportImportProducts extends Controller
                 $settings->freight_class = (string)$product["$key"];
             }
         }
-        if(isset($indexes['dropship_enabled']) && $indexes['dropship_enabled']){
-            $key = $indexes['dropship_enabled'];
+        if(isset($indexes['ship_alone']) && $indexes['ship_alone']){
+            $key = $indexes['ship_alone'];
             if(array_key_exists($key, $product)) {
-                $settings->dropship_enabled = (bool)$product["$key"];
+                $settings->ship_alone = (bool)$product["$key"];
             }
         }
-        if(isset($indexes['dropship_location']) && $indexes['dropship_location']){
-            $key = $indexes['dropship_location'];
+        if(isset($indexes['vertical_rotation']) && $indexes['vertical_rotation']){
+            $key = $indexes['vertical_rotation'];
             if(array_key_exists($key, $product)) {
-                $settings->dropship_location = (int)$product["$key"];
+                $settings->vertical_rotation = (bool)$product["$key"];
             }
         }
         if(isset($indexes['insurance']) && $indexes['insurance']){
@@ -366,7 +406,110 @@ class ExportImportProducts extends Controller
                 $settings->hazardous_enabled = (bool)$product["$key"];
             }
         }
+        $dropShipId = $this->updateDropShip($oldSettings, $product, $indexes, $store_id);
+        $settings->dropship_enabled = false;
+        $settings->dropship_location = false;
+        if($dropShipId){
+            $settings->dropship_enabled = true;
+            $settings->dropship_location = $dropShipId;
+        }
+        /*if(isset($indexes['dropship_enabled']) && $indexes['dropship_enabled']){
+            $key = $indexes['dropship_enabled'];
+            if(array_key_exists($key, $product)) {
+                $settings->dropship_enabled = (bool)$product["$key"];
+            }
+        }
+        if(isset($indexes['dropship_location']) && $indexes['dropship_location']){
+            $key = $indexes['dropship_location'];
+            if(array_key_exists($key, $product)) {
+                $settings->dropship_location = (int)$product["$key"];
+            }
+        }*/
         return $settings;
+    }
+
+    public function updateDropShip($oldSettings, $product, $indexes, $store_id){
+        $dropShipId = false;
+        $isDropShip = isset($indexes['drop_ship_nickname']) && $indexes['drop_ship_nickname']
+            && isset($indexes['drop_ship_city']) && $indexes['drop_ship_city']
+            && isset($indexes['drop_ship_state']) && $indexes['drop_ship_state']
+            && isset($indexes['drop_ship_zip']) && $indexes['drop_ship_zip']
+            && isset($indexes['drop_ship_country']) && $indexes['drop_ship_country'];
+        if($isDropShip){
+            $dropship = true;
+            if(array_key_exists($indexes['drop_ship_city'], $product)) {
+                $drop_ship_city = $product[$indexes['drop_ship_city']];
+            }else{
+                $dropship = false;
+            }
+            if(array_key_exists($indexes['drop_ship_state'], $product)) {
+                $drop_ship_state = $product[$indexes['drop_ship_state']];
+            }else{
+                $dropship = false;
+            }
+            if(array_key_exists($indexes['drop_ship_zip'], $product)) {
+                $drop_ship_zip = $product[$indexes['drop_ship_zip']];
+            }else{
+                $dropship = false;
+            }
+            if(array_key_exists($indexes['drop_ship_country'], $product)) {
+                $drop_ship_country = $product[$indexes['drop_ship_country']];
+            }else{
+                $dropship = false;
+            }
+            if(array_key_exists($indexes['drop_ship_nickname'], $product)) {
+                $drop_ship_nickname = $product[$indexes['drop_ship_nickname']];
+            }else{
+                $dropship = false;
+            }
+            if( !($drop_ship_nickname && $drop_ship_country && $drop_ship_zip && $drop_ship_state && $drop_ship_city)){
+                $dropship = false;
+            }
+
+            if($dropship) {
+                $location = Locations::where('city', $drop_ship_city)
+                    ->where('state', $drop_ship_state)
+                    ->where('zip_code', $drop_ship_zip)
+                    ->where('country', $drop_ship_country)
+                    ->where('nickname', $drop_ship_nickname)
+                    ->where('store_id', $store_id)
+                    ->where('type', 2)
+                    ->get()->toArray();
+                if (!empty($location)) {
+                    $dropShipId = $location[0]['id'] ?? false;
+                } else {
+                    // drop ship insert
+                    $location = new Locations();
+                    $location->nickname = $drop_ship_nickname;
+                    $location->store_id = $store_id;
+                    $location->type = 2;
+                    $location->zip_code = $drop_ship_zip;
+                    $location->city = $drop_ship_city;
+                    $location->state = $drop_ship_state;
+                    $location->country = $drop_ship_country;
+                    $additionals = [
+                        'instore_pickup' => '',
+                        'local_delivery' => '',
+                        'ld_enable_supress' => '',
+                        'instore_pickup_data' => [
+                            'miles' => '',
+                            'postalCodes' => '',
+                            'checkout_description' => '',
+                        ],
+                        'local_delivery_data' => [
+                            'miles' => '',
+                            'postalCodes' => '',
+                            'local_delivery_fee' => '',
+                            'checkout_description' => '',
+                        ],
+                    ];
+                    $location->additionals = json_encode($additionals);
+                    $location->save();
+                    $dropShipId = $location->id;
+                }
+            }
+        }
+        return $dropShipId;
     }
 
     public function updateBCProduct($source_product_id, $variant_id, $store_id, $update,  $access_token, $hash){
