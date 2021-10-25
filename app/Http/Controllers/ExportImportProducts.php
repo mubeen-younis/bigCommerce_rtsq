@@ -120,9 +120,9 @@ class ExportImportProducts extends Controller
                     $line .=  $comma . $city;
                     $line .=  $comma . $state;
                     $line .=  $comma . $country;
-                    $line .=  isset($settings->allow_vertical) && $settings->allow_vertical  ? $comma . 1 : $comma . 0;
                     $line .=  isset($settings->ship_own_package) && $settings->ship_own_package ? $comma . 1 : $comma . 0;
-
+                    $line .=  isset($settings->allow_vertical) && $settings->allow_vertical  ? $comma . 1 : $comma . 0;
+                    
                     $line .= "\n";
                     fputs($fp, $line);
                 }
@@ -385,13 +385,13 @@ class ExportImportProducts extends Controller
         if(isset($indexes['ship_alone']) && $indexes['ship_alone']){
             $key = $indexes['ship_alone'];
             if(array_key_exists($key, $product)) {
-                $settings->ship_alone = (bool)$product["$key"];
+                $settings->ship_own_package= (bool)$product["$key"];
             }
         }
         if(isset($indexes['vertical_rotation']) && $indexes['vertical_rotation']){
             $key = $indexes['vertical_rotation'];
             if(array_key_exists($key, $product)) {
-                $settings->vertical_rotation = (bool)$product["$key"];
+                $settings->allow_vertical = (bool)$product["$key"];
             }
         }
         if(isset($indexes['insurance']) && $indexes['insurance']){
