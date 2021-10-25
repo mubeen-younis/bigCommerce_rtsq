@@ -2087,12 +2087,12 @@ class CompileQuotes
      */
     public function getCompiledQuotes($services, $arraySorting, $lgQuotes)
     {
-
+       // print_r($services); print_r($arraySorting); exit;
         if (empty($arraySorting) || empty($services)) {
             return [];
         }
 
-        print_r($this->quoteSettings); exit;
+        //print_r($this->quoteSettings); exit;
         asort($arraySorting['simple']);
         $this->quoteSettings['method'] = $this->quoteSettings['method'] ?? 1;
         if ($this->quoteSettings['method'] == 2 && $this->isMultiShipment == false){ //Cheapest method
@@ -2112,34 +2112,7 @@ class CompileQuotes
         $resp = array_intersect_key($services, $sliced);
         return $resp;
     }
-
-
-    public function getGCompiledQuotes($originQuotes, $arraySorting, $lgQuotes, $notify, $laccess)
-    {
-        if (empty($arraySorting) || empty($services)) {
-            return [];
-        }
-        asort($arraySorting['simple']);
-        $this->quoteSettings['method'] = $this->quoteSettings['method'] ?? 1;
-        if ($this->quoteSettings['method'] == 2 && $this->isMultiShipment == false){ //Cheapest method
-            $options = (int)$this->quoteSettings['number_of_options'];
-        }elseif ($this->quoteSettings['method'] == 3){ //Average rate
-            $options = (int)$this->quoteSettings['number_of_options'];
-        }else{
-            $options = 1;
-        }
-        // $options = ($this->quoteSettings['method'] > 1 && $this->isMultiShipment == false) ? (int)$this->quoteSettings['number_of_options'] : 1;
-
-        $sliced = array_slice($arraySorting['simple'], 0, $options, true);
-
-        if ($this->quoteSettings['method'] == 3) {
-            return $this->averageRattingMethod($arraySorting, $options, $lgQuotes);
-        }
-        $resp = array_intersect_key($services, $sliced);
-        return $resp;
-    }
-
-
+    
 
     /**
      * @param $ratesArray
