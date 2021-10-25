@@ -22,6 +22,7 @@ use App\Http\Controllers\Subscription\SubscriptionController;
 use App\Http\Controllers\Subscription\PackageSubscriptionController;
 use App\Http\Middleware\EnsureTokenIsValid;
 use App\Models\CarrierServices;
+use App\Models\Locations;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -145,10 +146,13 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/suspend-use-addon', [PackageSubscriptionController::class, 'suspendAddonUse']);
     //END: SBS Routes
 
+
     Route::post('/syncGTZCerasisProviders', [AdditionalCarrierTabSettingController::class, 'syncGTZCerasisProviders']);
 
     Route::post('/get_carrier_services', [AdditionalCarrierTabSettingController::class, 'index']);
     Route::post('/has_insurance', [AdditionalCarrierTabSettingController::class, 'hasInsurance']);
+
+
 });
 //Webhook
 Route::post('/bc-subscription-update', [SubscriptionController::class, 'paymentByStripeWebHook']);
@@ -189,6 +193,7 @@ Route::get('/get_plans', [\App\Http\Controllers\PlansController::class, 'getPlan
 
 Route::get('/test_bin', [App\CustomClasses\Bin3D\Bin3D::class, 'getBinResponse']);
 
+
 Route::get('/providerData', function (Request $request) {
     /*$services = CarrierServices::where('app_id', 3)
         ->where('shopify_freights.store_id', null)
@@ -200,3 +205,14 @@ Route::get('/providerData', function (Request $request) {
 });
 
 
+
+
+Route::get('/createExportData', function (){
+    $locations = Locations::where('store_id', 1)->where('type', 2)->get()->toArray();
+    dd($locations);
+    $dropShips = [];
+    foreach ($locations as $location){
+        $dropShips[$location['id']] = $location;
+    }
+    echo "<pre>"; print_r($dropShips); exit;
+});
