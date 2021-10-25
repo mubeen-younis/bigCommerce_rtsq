@@ -122,7 +122,7 @@ class ExportImportProducts extends Controller
                     $line .=  $comma . $country;
                     $line .=  isset($settings->ship_own_package) && $settings->ship_own_package ? $comma . 1 : $comma . 0;
                     $line .=  isset($settings->allow_vertical) && $settings->allow_vertical  ? $comma . 1 : $comma . 0;
-                    
+
                     $line .= "\n";
                     fputs($fp, $line);
                 }
@@ -385,25 +385,25 @@ class ExportImportProducts extends Controller
         if(isset($indexes['ship_alone']) && $indexes['ship_alone']){
             $key = $indexes['ship_alone'];
             if(array_key_exists($key, $product)) {
-                $settings->ship_own_package= (bool)$product["$key"];
+                $settings->ship_own_package= ($product["$key"] == 1) ? true : false;
             }
         }
         if(isset($indexes['vertical_rotation']) && $indexes['vertical_rotation']){
             $key = $indexes['vertical_rotation'];
             if(array_key_exists($key, $product)) {
-                $settings->allow_vertical = (bool)$product["$key"];
+                $settings->allow_vertical = ($product["$key"] == 1) ? true : false;;
             }
         }
         if(isset($indexes['insurance']) && $indexes['insurance']){
             $key = $indexes['insurance'];
             if(array_key_exists($key, $product)) {
-                $settings->insurance = (bool)$product["$key"];
+                $settings->insurance = ($product["$key"] == 1) ? true : false;;
             }
         }
         if(isset($indexes['hazardous_enabled']) && $indexes['hazardous_enabled']){
             $key = $indexes['hazardous_enabled'];
             if(array_key_exists($key, $product)) {
-                $settings->hazardous_enabled = (bool)$product["$key"];
+                $settings->hazardous_enabled = ($product["$key"] == 1) ? true : false;;
             }
         }
         $dropShipId = $this->updateDropShip($oldSettings, $product, $indexes, $store_id);
