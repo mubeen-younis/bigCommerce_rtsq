@@ -996,43 +996,52 @@ class CompileQuotes
                         $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings);
                         $title = $this->getGTitle($data['serviceDesc'], false,false, false ,false, $data['totalTransitTimeInDays'], $this->quoteSettings);
                         $arraySorting['simple'][$key] = $price;
+                        $arraySorting['quickest']['simple'][$key] = $data['totalTransitTimeInDays'];
                         $originQuotes[$key]['simple']['code'] = $data['serviceType'] . $access;
                         $originQuotes[$key]['simple']['rate'] = $price;
                         $originQuotes[$key]['simple']['title'] = $title;
                         if ($lgQuotes) {
-                            $lgAccess = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi,true);
-                            $lgPrice = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings, true);
-                            $lgTitle = $this->getGTitle($data['serviceDesc'], true, false, false, false, $data['totalTransitTimeInDays'], $this->quoteSettings);
-                            $arraySorting['liftgate'][$key] = $lgPrice;
-                            $originQuotes[$key]['liftgate']['code'] = $data['serviceType'] . $lgAccess;
-                            $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
-                            $originQuotes[$key]['liftgate']['title'] = $lgTitle;
+                            $access = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi,true);
+                            $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings, true);
+                            $title = $this->getGTitle($data['serviceDesc'], true, false, false, false, $data['totalTransitTimeInDays'], $this->quoteSettings);
+                            $arraySorting['liftgate'][$key] = $price;
+                            $arraySorting['quickest']['liftgate'][$key] = $data['totalTransitTimeInDays'];
+                            $originQuotes[$key]['liftgate']['code'] = $data['serviceType'] . $access;
+                            $originQuotes[$key]['liftgate']['rate'] = $price;
+                            $originQuotes[$key]['liftgate']['title'] = $title;
                         }
-                        if ($notify) {
-                            $nAccess = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi,false, true);
-                            $nPrice = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings,  false, true);
-                            $nTitle = $this->getGTitle($data['serviceDesc'], false, true, false, false, $data['totalTransitTimeInDays'], $this->quoteSettings);
-                            $arraySorting['notify'][$key] = $lgPrice;
-                            $originQuotes[$key]['notify']['code'] = $data['serviceType'] . $nAccess;
-                            $originQuotes[$key]['notify']['rate'] = $nPrice;
-                            $originQuotes[$key]['notify']['title'] = $nTitle;
+                        /*if ($notify) {
+                            $access = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi,false, true);
+                            $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings,  false, true);
+                            $title = $this->getGTitle($data['serviceDesc'], false, true, false, false, $data['totalTransitTimeInDays'], $this->quoteSettings);
+                            $arraySorting['notify'][$key] = $price;
+                            $originQuotes[$key]['notify']['code'] = $data['serviceType'] . $access;
+                            $originQuotes[$key]['notify']['rate'] = $price;
+                            $originQuotes[$key]['notify']['title'] = $title;
                         }
                         if($laccess){
-                            $lAccess = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi,false, false, true);
-                            $lPrice = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings, false, false, true);
-                            $lTitle = $this->getGTitle($data['serviceDesc'], false, false, true, true, $data['totalTransitTimeInDays'], $this->quoteSettings);
-                            $arraySorting['lacsess'][$key] = $lPrice;
-                            $originQuotes[$key]['lacsess']['code'] = $data['serviceType'] . $lAccess;
-                            $originQuotes[$key]['lacsess']['rate'] = $lPrice;
-                            $originQuotes[$key]['lacsess']['title'] = $lTitle;
+                            $access = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi,false, false, true);
+                            $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings, false, false, true);
+                            $title = $this->getGTitle($data['serviceDesc'], false, false, true, true, $data['totalTransitTimeInDays'], $this->quoteSettings);
+                            $arraySorting['lacsess'][$key] = $price;
+                            $originQuotes[$key]['lacsess']['code'] = $data['serviceType'] . $access;
+                            $originQuotes[$key]['lacsess']['rate'] = $price;
+                            $originQuotes[$key]['lacsess']['title'] = $title;
                         }
+                        if($lgQuotes && $notify){
+                            $access = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi,true, true, false);
+                            $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings, true, true, false);
+                            $title = $this->getGTitle($data['serviceDesc'], true, true, false, true, $data['totalTransitTimeInDays'], $this->quoteSettings);
+                            $arraySorting['notify_liftgate'][$key] = $price;
+                            $originQuotes[$key]['notify_liftgate']['code'] = $data['serviceType'] . $access;
+                            $originQuotes[$key]['notify_liftgate']['rate'] = $price;
+                            $originQuotes[$key]['notify_liftgate']['title'] = $title;
+                        }*/
                     }
                 }
             }
-            //print_r($originQuotes); exit;
 
-            $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
-            //print_r($originQuotes); exit;
+            $compiledQuotes = $this->getGCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
                 if (count($compiledQuotes) > 1) {
                     foreach ($compiledQuotes as $k => $service) {
@@ -1056,6 +1065,7 @@ class CompileQuotes
             $count++;
         }
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
+
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
@@ -1068,6 +1078,7 @@ class CompileQuotes
             ];
             return $resp;
         }
+
         return $allQuotes;
     }
 
@@ -1529,6 +1540,7 @@ class CompileQuotes
         }
         return $this->organizeQuotesArray($quotes);
     }
+
 
     public function organizeQuotesArray($quotes)
     {
@@ -2087,14 +2099,23 @@ class CompileQuotes
      *
      * @info: This function will compile quotes according the selected rating method.
      */
+    public function getGCompiledQuotes($services, $arraySorting, $lgQuotes)
+    {
+        if(isset($this->quoteSettings['method']) && $this->quoteSettings['method'] === 0){
+            if(isset($arraySorting['quickest']['simple'])){
+                $minIndex = array_search(min($arraySorting['quickest']['simple']), $arraySorting['quickest']['simple']);
+                $quickest = $services[$minIndex];
+                unset($services);
+                $services[0] = $quickest;
+            }
+        }
+        return $this->getCompiledQuotes($services, $arraySorting, $lgQuotes);
+    }
     public function getCompiledQuotes($services, $arraySorting, $lgQuotes)
     {
-       // print_r($services); print_r($arraySorting); exit;
         if (empty($arraySorting) || empty($services)) {
             return [];
         }
-
-        //print_r($this->quoteSettings); exit;
         asort($arraySorting['simple']);
         $this->quoteSettings['method'] = $this->quoteSettings['method'] ?? 1;
         if ($this->quoteSettings['method'] == 2 && $this->isMultiShipment == false){ //Cheapest method
