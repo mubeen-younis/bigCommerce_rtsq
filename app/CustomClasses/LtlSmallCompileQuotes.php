@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 class LtlSmallCompileQuotes{
     public function compileQuotes($quotes, $connectionSettings,  $residential, $quotesFromWs, $requestArr)
     {
+        //print_r($residential); exit;
         $quoteSettings = $connectionSettings['ltl-quotes']['quote_settings'] ?? [];
         $lgQuotesAlways =
             (isset($quoteSettings['alwaysLiftGateDelivery']) && $quoteSettings['alwaysLiftGateDelivery']);
@@ -43,6 +44,17 @@ class LtlSmallCompileQuotes{
                         $quotesCarrier['ltl']['ups']['LG'][] = $quote;
                     } else {
                         $quotesCarrier['ltl']['ups']['simple'][] = $quote;
+                    }
+                }
+                else if(strpos($quote['code'], 'gtzltl') !== false){
+
+                    $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
+                    $quote['isResi'] = $residential['gtzLtl'] == 'Y';
+//dd($quote['isResi'], $quote['alwaysResi']);
+                    if (strpos($quote['code'], '+LG') !== false) {
+                        $quotesCarrier['ltl']['gtz']['LG'][] = $quote;
+                    } else {
+                        $quotesCarrier['ltl']['gtz']['simple'][] = $quote;
                     }
                 }
                 else if(strpos($quote['code'], 'fedexltl') !== false){
@@ -196,7 +208,7 @@ class LtlSmallCompileQuotes{
 
     private function requestContainSmallLlt($carriers, $quotes){
         $smallCarriers = ['wweSmall','upsSmall'];
-        $ltlCarriers = ['wweLTL','upsLTL', 'fedexLTL'];
+        $ltlCarriers = ['wweLTL','upsLTL', 'fedexLTL', 'globalTranz'];
         $ltl = $small = false;
         foreach ($smallCarriers as $carName){
             if(isset($carriers[$carName]) && !$small){

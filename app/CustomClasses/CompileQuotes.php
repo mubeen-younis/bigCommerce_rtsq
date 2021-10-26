@@ -681,14 +681,14 @@ class CompileQuotes
                     break;
                 case "globalTranz":
                     $resp = $this->compileGlobalTranzLtlQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential);
-                    $quotesTemp['globalTranzLTL'] = $resp;
+                    $quotesTemp['globalTranz'] = $resp;
                     if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))){
                         $quotesRes = array_merge($quotesRes, $resp);
                     }
                     break;
                 case "cerasis":
                     $resp = $this->compileCerasisLtlQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential);
-                    $quotesTemp['cerasisLTL'] = $resp;
+                    $quotesTemp['cerasis'] = $resp;
                     if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))){
                         $quotesRes = array_merge($quotesRes, $resp);
                     }
@@ -939,7 +939,8 @@ class CompileQuotes
 
         $this->quoteSettings = $connectionSettings['gtz-ltl']['quote_settings'] ?? [];
 
-        $allConfigServices = $connectionSettings['gtz-ltl']['carrier_services'] ?? [];
+        $allConfigServices = $connectionSettings['gtz-ltl']['carrier_services']['GTZ'] ?? [];
+
         $this->quoteSettingsData();
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
@@ -984,13 +985,14 @@ class CompileQuotes
             }
             $originQuotes = [];
             $arraySorting = [];
+            $preCode = 'gtzltl';
             if (isset($quote['q'])) {
                 if (isset($quote['hazardousStatus'])) {
                     $hazShipmentArr[$origin] = $quote['hazardousStatus'] == 'y' ? 'Y' : 'N';
                 }
                 foreach ($quote['q'] as $key => $data) {
-                    if (1 /*isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) && isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y' */) {
-                        $access = $this->GTZLtlQuotesResults->getAccessorialCode($isResi);
+                    if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) /*&& isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y' */) {
+                        $access = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi);
                         $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings);
                         $title = $this->getGTitle($data['serviceDesc'], false,false, false ,false, $data['totalTransitTimeInDays'], $this->quoteSettings);
                         $arraySorting['simple'][$key] = $price;
@@ -998,7 +1000,7 @@ class CompileQuotes
                         $originQuotes[$key]['simple']['rate'] = $price;
                         $originQuotes[$key]['simple']['title'] = $title;
                         if ($lgQuotes) {
-                            $lgAccess = $this->GTZLtlQuotesResults->getAccessorialCode($isResi,true);
+                            $lgAccess = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi,true);
                             $lgPrice = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings, true);
                             $lgTitle = $this->getGTitle($data['serviceDesc'], true, false, false, false, $data['totalTransitTimeInDays'], $this->quoteSettings);
                             $arraySorting['liftgate'][$key] = $lgPrice;
@@ -1007,7 +1009,7 @@ class CompileQuotes
                             $originQuotes[$key]['liftgate']['title'] = $lgTitle;
                         }
                         if ($notify) {
-                            $nAccess = $this->GTZLtlQuotesResults->getAccessorialCode($isResi,false, true);
+                            $nAccess = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi,false, true);
                             $nPrice = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings,  false, true);
                             $nTitle = $this->getGTitle($data['serviceDesc'], false, true, false, false, $data['totalTransitTimeInDays'], $this->quoteSettings);
                             $arraySorting['notify'][$key] = $lgPrice;
@@ -1016,7 +1018,7 @@ class CompileQuotes
                             $originQuotes[$key]['notify']['title'] = $nTitle;
                         }
                         if($laccess){
-                            $lAccess = $this->GTZLtlQuotesResults->getAccessorialCode($isResi,false, false, true);
+                            $lAccess = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi,false, false, true);
                             $lPrice = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings, false, false, true);
                             $lTitle = $this->getGTitle($data['serviceDesc'], false, false, true, true, $data['totalTransitTimeInDays'], $this->quoteSettings);
                             $arraySorting['lacsess'][$key] = $lPrice;
@@ -1027,7 +1029,7 @@ class CompileQuotes
                     }
                 }
             }
-           // print_r($originQuotes); //exit;
+            //print_r($originQuotes); exit;
 
             $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
             //print_r($originQuotes); exit;
@@ -2112,7 +2114,7 @@ class CompileQuotes
         $resp = array_intersect_key($services, $sliced);
         return $resp;
     }
-    
+
 
     /**
      * @param $ratesArray

@@ -148,6 +148,7 @@ class Shipping
             if($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist)){
                 $isShippingOrFreight = false;
             }
+            //dd($this->isRequestMultishipment, $isShippingOrFreight);
             if($this->isRequestMultishipment && !$isShippingOrFreight) {
                 $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings,  $residential, $quotesFromWs, $requestArr['requestArr']);
                 $finalQuotes = $finalQuotesMulti['checkoutQuotes'] ?? [];
@@ -220,7 +221,8 @@ class Shipping
         $ltlCarriers = [
             'wweLTL',
             'upsLTL',
-            'fedexLTL'
+            'fedexLTL',
+            'globalTranz'
         ];
         return in_array($carrierName, $ltlCarriers);
     }
@@ -268,7 +270,7 @@ class Shipping
     }
 
     public function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null){
-        //echo "<pre>"; print_r($multiShipmentQuotes); print_r($resp); exit;
+        echo "<pre>"; print_r($multiShipmentQuotes); print_r($resp); exit;
         foreach ($finalQuotes as $finalQuote){
             $RequestTempData = new RequestTempData();
             $RequestTempData->request = json_encode($requestArr);
@@ -392,7 +394,7 @@ class Shipping
         if (!empty(array_filter($quotes))) {
             $resp['quote_id'] = (string) rand(1,9);// need to change
             $resp['messages'] = [];// need to change
-            $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'usps_pitney_bowes', 'display_name' => $this->limitTitle($quotes[0])]];
+            $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'eniture_quotes', 'display_name' => $this->limitTitle($quotes[0])]];
             foreach ($quotes as $key => $quote) {
                 $resp['carrier_quotes'][0]['quotes'][$key] = [
                     'code' => $quote['code'],
