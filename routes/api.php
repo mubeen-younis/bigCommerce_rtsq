@@ -186,13 +186,3 @@ Route::get('/get_plans', [\App\Http\Controllers\PlansController::class, 'getPlan
 
 Route::get('/test_bin', [App\CustomClasses\Bin3D\Bin3D::class, 'getBinResponse']);
 
-
-Route::get('/createExportData', function (){
-    $locations = Locations::where('store_id', 1)->where('type', 2)->get()->toArray();
-    dd($locations);
-    $dropShips = [];
-    foreach ($locations as $location){
-        $dropShips[$location['id']] = $location;
-    }
-    echo "<pre>"; print_r($dropShips); exit;
-});
