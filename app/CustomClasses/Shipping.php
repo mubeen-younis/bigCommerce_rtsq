@@ -270,7 +270,7 @@ class Shipping
     }
 
     public function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null){
-        echo "<pre>"; print_r($multiShipmentQuotes); print_r($resp); exit;
+        //echo "<pre>"; print_r($multiShipmentQuotes); print_r($resp); exit;
         foreach ($finalQuotes as $finalQuote){
             $RequestTempData = new RequestTempData();
             $RequestTempData->request = json_encode($requestArr);
