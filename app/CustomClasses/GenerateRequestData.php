@@ -407,14 +407,24 @@ class GenerateRequestData
             if($liftGate === 'Y') {
                 $accessorial['LFTGATDEST'] = 'LFTGATDEST';
             }
+            $finalMileService = '';
+            if(isset($connSettings['quote_settings']['final_mile_service_level']) && $connSettings['quote_settings']['final_mile_service_level']){
+                if($connSettings['quote_settings']['final_mile_service_level'] == 'premium'){
+                    $finalMileService = 'PREMIUM_FM';
+                }else if($connSettings['quote_settings']['final_mile_service_level'] == 'threshold'){
+                    $finalMileService = 'THRSHLD_FM';
+                }else if($connSettings['quote_settings']['final_mile_service_level'] == 'room_of_choice'){
+                    $finalMileService = 'ROOMCHC_FM';
+                }
+            }
             $connSettings['creds'] = $connSettings['creds']['cerasis'];
             $apiArray = [
                 'username' => $connSettings['creds']['user_name'],
                 'password' => $connSettings['creds']['password'],
                 'accessKey' => $connSettings['creds']['access_key'],
                 'shipperID' => $connSettings['creds']['customer_id'],
-                //'isFinalMile' => '0',
-                //'finalMileService' => 'PREMIUM_FM',
+                'isFinalMile' => isset($connSettings['quote_settings']['shipping_service']) && $connSettings['quote_settings']['shipping_service'] == 'final_mile' ? 1:0,
+                'finalMileService' => $finalMileService,
                 'cerasisApiVersion' => '2.0',
                 'direction' => 'Dropship',
                 'billingType' => 'Prepaid',
