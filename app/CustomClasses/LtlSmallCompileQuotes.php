@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 class LtlSmallCompileQuotes{
     public function compileQuotes($quotes, $connectionSettings,  $residential, $quotesFromWs, $requestArr)
     {
-        //print_r($residential); exit;
+        //print_r($quotes); exit;
         $quoteSettings = $connectionSettings['ltl-quotes']['quote_settings'] ?? [];
         $lgQuotesAlways =
             (isset($quoteSettings['alwaysLiftGateDelivery']) && $quoteSettings['alwaysLiftGateDelivery']);
@@ -65,6 +65,16 @@ class LtlSmallCompileQuotes{
                         $quotesCarrier['ltl']['gtz']['LG'][] = $quote;
                     } else {
                         $quotesCarrier['ltl']['gtz']['simple'][] = $quote;
+                    }
+                }
+                else if(strpos($quote['code'], 'cerasisltl') !== false){
+                    $quote['alwaysResi'] = false;
+                    $quote['isResi'] = false;
+//dd($quote['isResi'], $quote['alwaysResi']);
+                    if (strpos($quote['code'], '+LG') !== false) {
+                        $quotesCarrier['ltl']['cerasis']['LG'][] = $quote;
+                    } else {
+                        $quotesCarrier['ltl']['cerasis']['simple'][] = $quote;
                     }
                 }
                 else {
@@ -169,7 +179,7 @@ class LtlSmallCompileQuotes{
 
     private function indexesOfQuotes($quotes){
         $small = $ltl = [];
-        $ltlQuotes = $quotes['wweLTL'] ?? $quotes['upsLTL'] ?? $quotes['fedexLTL'] ?? $quotes['globalTranz'] ?? [];
+        $ltlQuotes = $quotes['wweLTL'] ?? $quotes['upsLTL'] ?? $quotes['fedexLTL'] ?? $quotes['globalTranz'] ?? $quotes['cerasis'] ?? [];
         foreach ($ltlQuotes as $key => $quote) {
             $ltl[] = $key;
         }
@@ -209,7 +219,7 @@ class LtlSmallCompileQuotes{
 
     private function requestContainSmallLlt($carriers, $quotes){
         $smallCarriers = ['wweSmall','upsSmall'];
-        $ltlCarriers = ['wweLTL','upsLTL', 'fedexLTL', 'globalTranz'];
+        $ltlCarriers = ['wweLTL','upsLTL', 'fedexLTL', 'globalTranz', 'cerasis'];
         $ltl = $small = false;
         foreach ($smallCarriers as $carName){
             if(isset($carriers[$carName]) && !$small){

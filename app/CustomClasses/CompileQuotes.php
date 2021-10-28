@@ -1114,6 +1114,7 @@ class CompileQuotes
                 $numberOfShipments++;
             }
         }
+        $isShippingFinalMile = isset($this->quoteSettings['shipping_service']) && $this->quoteSettings['shipping_service'] == 'final_mile';
         if(!$this->isMultiShipment) {
             $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
@@ -1136,7 +1137,10 @@ class CompileQuotes
                             (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
 
                 }
-
+                if($isShippingFinalMile){
+                    $lgQuotes = $this->alwaysResi = $this->isResi = $isResi = false;
+                    $this->residentialDlvry = 0;
+                }
             }
             $originQuotes = [];
             $arraySorting = [];
