@@ -194,25 +194,4 @@ Route::get('/get_plans', [\App\Http\Controllers\PlansController::class, 'getPlan
 Route::get('/test_bin', [App\CustomClasses\Bin3D\Bin3D::class, 'getBinResponse']);
 
 
-Route::get('/providerData', function (Request $request) {
-    /*$services = CarrierServices::where('app_id', 3)
-        ->where('shopify_freights.store_id', null)
-        ->orderBy('speed_freight_carrierName')->get()->toArray();
-    foreach ($services as $service){
-        $carrier_logo = strtolower($service['speed_freight_carrierSCAC']).'.png';
-        CarrierServices::where('id', $service['id'])->update(['carrier_logo'=> $carrier_logo]);
-    }*/
-});
 
-
-
-
-Route::get('/createExportData', function (){
-    $locations = Locations::where('store_id', 1)->where('type', 2)->get()->toArray();
-    dd($locations);
-    $dropShips = [];
-    foreach ($locations as $location){
-        $dropShips[$location['id']] = $location;
-    }
-    echo "<pre>"; print_r($dropShips); exit;
-});
