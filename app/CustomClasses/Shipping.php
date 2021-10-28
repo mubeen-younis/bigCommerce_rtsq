@@ -120,6 +120,7 @@ class Shipping
         $isShippingTitleExist = array_search('Shipping', $finalTitlesTemp);
         $isAVGCodeExist = gettype(array_search('AVG', $finalCodesTemp)) == 'integer';
         $isUpsLtlCodeExist = gettype(array_search('upsltl', $finalCodesTemp)) == 'integer';
+        $isFedexLtlCodeExist = gettype(array_search('fedexltl', $finalCodesTemp)) == 'integer';
         $freightCode = '';
         $finalCost = 0;
 
@@ -145,7 +146,7 @@ class Shipping
             $finalQuotes = $_finalQuotes;
         }else {
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
-            if($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist)){
+            if($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist)){
                 $isShippingOrFreight = false;
             }
             //dd($this->isRequestMultishipment, $isShippingOrFreight);

@@ -50,7 +50,6 @@ class GenerateRequestData
     public function generateEnitureArray($origin, $destination)
     {
         $carriersArr['carriers'] = [];
-        //print_r($this->connectionSettings); exit;
         $enitOrigin = $this->getEnitOrigin($origin);
         foreach ($this->connectionSettings as $key => $con1) {
             switch ($key) {
@@ -73,6 +72,7 @@ class GenerateRequestData
                     $wweLtlArr = $this->upsSmallEnitArr($con1, $destination);
                     $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['upsSmall'] = $wweLtlArr;
+                    break;
                 case "fedex-ltl":
                     $wweLtlArr = $this->fedexLtlEnitArr($con1, $destination, $enitOrigin);
                     $wweLtlArr['originAddress'] = $enitOrigin;
@@ -437,6 +437,7 @@ class GenerateRequestData
     }
 
     public function getApiInfoArrFedexLtl($connSettings, $destination, $enitOrigin){
+        //print_r($connSettings); exit;
         $liftGate = ( (isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
         /*
@@ -483,7 +484,7 @@ class GenerateRequestData
                 }
             }
         }
-        //print_r($connSettings['creds']['meter_number']); exit;
+        //print_r($connSettings['creds']); exit;
         $apiArray = [
             'AccountNumber' => $connSettings['creds']['account_number'] ?? '',
             'MeterNumber' => $connSettings['creds']['meter_number'] ?? '',
