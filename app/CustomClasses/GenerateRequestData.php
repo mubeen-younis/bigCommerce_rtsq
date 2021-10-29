@@ -818,12 +818,15 @@ class GenerateRequestData
 
     public function updatCommdityDetails($item, $bin, $boxBins){
         $boxWeight = 0;
+        $quantityPacked = 1;
         if(isset($bin->bin_data->id) && isset($boxBins[$bin->bin_data->id])){
             $boxWeight = $boxBins[$bin->bin_data->id]['box_weight'];
+            $quantityPacked = count($bin->items) ? count($bin->items) : 1;
         }
         $item['lineItemLength'] = $bin->bin_data->d ?? 0;
         $item['lineItemWidth'] = $bin->bin_data->w ?? 0;
         $item['lineItemHeight'] = $bin->bin_data->h ?? 0;
+        $item['lineItemPrice'] = $item['lineItemPrice']*$quantityPacked;
         $item['lineItemWeight'] = $bin->bin_data->weight + $boxWeight;
         $item['piecesOfLineItem'] = 1 ?? 0;
         $item['shipItemAlone'] = 1;

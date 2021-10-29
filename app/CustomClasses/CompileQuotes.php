@@ -1115,6 +1115,16 @@ class CompileQuotes
             }
         }
         $isShippingFinalMile = isset($this->quoteSettings['shipping_service']) && $this->quoteSettings['shipping_service'] == 'final_mile';
+        $labelAs = '';
+        if($isShippingFinalMile && isset($this->quoteSettings['final_mile_service_level'])){
+            if($this->quoteSettings['final_mile_service_level'] == 'premium'){
+                $labelAs = $this->quoteSettings['premium_label'] ?? '';
+            }else if($this->quoteSettings['final_mile_service_level'] == 'threshold'){
+                $labelAs = $this->quoteSettings['threshold_label'] ?? '';
+            }else if($this->quoteSettings['final_mile_service_level'] == 'room_of_choice'){
+                $labelAs = $this->quoteSettings['room_of_choice_label'] ?? '';
+            }
+        }
         if(!$this->isMultiShipment) {
             $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
@@ -1140,6 +1150,8 @@ class CompileQuotes
                 if($isShippingFinalMile){
                     $lgQuotes = $this->alwaysResi = $this->isResi = $isResi = false;
                     $this->residentialDlvry = 0;
+                    $this->quoteSettings['method'] = 1;
+                    $this->quoteSettings['label_as'] = $labelAs;
                 }
             }
             $originQuotes = [];
@@ -1172,6 +1184,7 @@ class CompileQuotes
             }
 
             $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
+
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
                 if (count($compiledQuotes) > 1) {
                     foreach ($compiledQuotes as $k => $service) {
