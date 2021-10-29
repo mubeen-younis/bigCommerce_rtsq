@@ -1279,6 +1279,7 @@ class CompileQuotes
             }
             $originQuotes = [];
             $arraySorting = [];
+
             if (isset($quote['q'])) {
                 if (isset($quote['hazardousStatus'])) {
                     $hazShipmentArr[$origin] = $quote['hazardousStatus'] == 'y' ? 'Y' : 'N';
@@ -1346,7 +1347,6 @@ class CompileQuotes
             ];
             return $resp;
         }
-
         return $this->arrangeOwnFreight($allQuotes);
     }
 

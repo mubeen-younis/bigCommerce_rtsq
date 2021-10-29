@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Log;
 class LtlSmallCompileQuotes{
     public function compileQuotes($quotes, $connectionSettings,  $residential, $quotesFromWs, $requestArr)
     {
-        //print_r($quotes); exit;
         $quoteSettings = $connectionSettings['ltl-quotes']['quote_settings'] ?? [];
         $lgQuotesAlways =
             (isset($quoteSettings['alwaysLiftGateDelivery']) && $quoteSettings['alwaysLiftGateDelivery']);
@@ -47,10 +46,9 @@ class LtlSmallCompileQuotes{
                     }
                 }
                 else if(strpos($quote['code'], 'fedexltl') !== false){
-
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
                     $quote['isResi'] = $residential['fedexLtl'] == 'Y';
-//dd($quote['isResi'], $quote['alwaysResi']);
+                    $quote['alwaysLG'] = isset($connectionSettings['fedex-ltl']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['fedex-ltl']['quote_settings']['alwaysLiftGateDelivery'];
                     if (strpos($quote['code'], '+LG') !== false) {
                         $quotesCarrier['ltl']['fedex']['LG'][] = $quote;
                     } else {
@@ -60,7 +58,7 @@ class LtlSmallCompileQuotes{
                 else if(strpos($quote['code'], 'gtzltl') !== false){
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
                     $quote['isResi'] = $residential['gtzLtl'] == 'Y';
-//dd($quote['isResi'], $quote['alwaysResi']);
+                    $quote['alwaysLG'] = isset($connectionSettings['wweLTL']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['wweLTL']['quote_settings']['alwaysLiftGateDelivery'];
                     if (strpos($quote['code'], '+LG') !== false) {
                         $quotesCarrier['ltl']['gtz']['LG'][] = $quote;
                     } else {
@@ -81,6 +79,7 @@ class LtlSmallCompileQuotes{
                     $alwaysResi = (isset($requestArr['carriers']['wweLTL']['api']['speed_freight_residential_delivery']) && $requestArr['carriers']['wweLTL']['api']['speed_freight_residential_delivery'] == 'Y');
                     $quote['alwaysResi'] = $alwaysResi;
                     $quote['isResi'] = $residential['wweLtl'] == 'Y';
+                    $quote['alwaysLG'] = isset($connectionSettings['ltl-quotes']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['ltl-quotes']['quote_settings']['alwaysLiftGateDelivery'];
                     if (strpos($quote['code'], '+LG') !== false) {
                         $quotesCarrier['ltl']['wwe']['LG'][] = $quote;
                     } else {
