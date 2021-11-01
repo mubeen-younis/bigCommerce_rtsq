@@ -266,26 +266,32 @@ class QuotesResults
             }
         }
         foreach ($shipments as $shipment => $quotes){
+            $temp = [];
             if(!isset($quotes['q'])){
                 continue;
             }
             foreach ($quotes['q'] as $key => $quote){
                 if(!isset($quote['severity']) && isset($servicesDesc[$key])) {
-                    $servicesDescKey = $servicesDesc[$key] ?? '';
-                    $shipments[$shipment]['q'][$key]['serviceDesc'] = $servicesDescKey;
-                    $shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] = $shipments[$shipment]['q'][$key]['GuaranteedDaysToDelivery'];
-                    if($shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] === ''){
-                        if(isset($quotes['tnt']['TransitResponse']['ServiceSummary'])) {
 
-                            $shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] = $this->calenderDays($servicesDescKey, $quotes['tnt']['TransitResponse']['ServiceSummary']);
+                    if(!in_array($quote['totalNetCharge']['Amount'], $temp)) {
+                        $temp[] = $quote['totalNetCharge']['Amount'] ?? 0;
+                        $servicesDescKey = $servicesDesc[$key] ?? '';
+                        $shipments[$shipment]['q'][$key]['serviceDesc'] = $servicesDescKey;
+                        $shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] = $shipments[$shipment]['q'][$key]['GuaranteedDaysToDelivery'];
+                        if ($shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] === '') {
+                            if (isset($quotes['tnt']['TransitResponse']['ServiceSummary'])) {
+
+                                $shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] = $this->calenderDays($servicesDescKey, $quotes['tnt']['TransitResponse']['ServiceSummary']);
+                            }
                         }
+                    }else{
+                        unset($shipments[$shipment]['q'][$key]);
                     }
                 }else{
                     unset($shipments[$shipment]['q'][$key]);
                 }
             }
         }
-        //print_r($shipments); exit;
         return $shipments;
     }
 
