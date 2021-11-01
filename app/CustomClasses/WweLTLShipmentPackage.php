@@ -118,7 +118,7 @@ class WweLTLShipmentPackage
             $originLoca[$key]['type'] = $ori->type ?? '';
             $originLoca[$key]['city'] = $ori->city ?? '';
             $originLoca[$key]['state'] = $ori->state ?? '';
-            $originLoca[$key]['zip'] = $ori->zip_code ?? '';
+            $originLoca[$key]['zip'] = isset($ori->zip_code) ? str_replace(' ', '',$ori->zip_code) : '';
             $originLoca[$key]['country'] = $ori->country ?? '';
             $originLoca[$key]['additionals'] = $ori->additionals ?? [];
         }
