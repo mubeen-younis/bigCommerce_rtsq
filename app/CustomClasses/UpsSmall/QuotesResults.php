@@ -142,7 +142,7 @@ class QuotesResults
             $lowestAmount = 0;
 
             if (isset($quote['q'])) {
-                //print_r($quote['q']); //exit;
+                //print_r($quote['q']); exit;
                 foreach ($quote['q'] as $key => $data) {
                     // Check if service type is checked to show
                     if (isset($data['severity'])) {
@@ -197,7 +197,7 @@ class QuotesResults
           //dd($originQuotes);
 
         //$multiShipmentQuotes = $this->sortByOrder($multiShipmentQuotes, 'rate');
-        //print_r($originQuotes); print_r($multiShipmentQuotes);  exit;
+        //print_r($originQuotes);  exit;
         // Check for mukti shipment finding lowest price in each shipment and adding them for multi shipment
 
         if ($isMultiShipment) {
@@ -258,7 +258,6 @@ class QuotesResults
 
 
     private function formateQuoteBeforeCompile($shipments){
-        //print_r($shipments); exit;
         $servicesDesc = [];
         foreach ($shipments as $quote){
             if(isset($quote['ups_services'])) {
@@ -271,7 +270,7 @@ class QuotesResults
                 continue;
             }
             foreach ($quotes['q'] as $key => $quote){
-                if(!isset($quote['severity'])) {
+                if(!isset($quote['severity']) && isset($servicesDesc[$key])) {
                     $servicesDescKey = $servicesDesc[$key] ?? '';
                     $shipments[$shipment]['q'][$key]['serviceDesc'] = $servicesDescKey;
                     $shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] = $shipments[$shipment]['q'][$key]['GuaranteedDaysToDelivery'];

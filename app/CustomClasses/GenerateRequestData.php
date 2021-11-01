@@ -818,6 +818,7 @@ class GenerateRequestData
 
     public function updatCommdityDetails($item, $bin, $boxBins, $itemsArr){
         $boxWeight = 0;
+        $price = $item['lineItemPrice'] ?? 0;
         if(isset($bin->bin_data->id) && isset($boxBins[$bin->bin_data->id])){
             $boxWeight = $boxBins[$bin->bin_data->id]['box_weight'];
             $price = 0;
