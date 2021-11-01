@@ -795,7 +795,7 @@ class GenerateRequestData
                         foreach ($bins as $key => $bin) {
                             $newkey = $origin . $key;
                             $newOrigins[$newkey] = $origins[$origin];
-                            $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins);
+                            $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins, $itemsArr);
                         }
                         break;
                     }
@@ -816,17 +816,21 @@ class GenerateRequestData
 
     }
 
-    public function updatCommdityDetails($item, $bin, $boxBins){
+    public function updatCommdityDetails($item, $bin, $boxBins, $itemsArr){
         $boxWeight = 0;
-        $quantityPacked = 1;
         if(isset($bin->bin_data->id) && isset($boxBins[$bin->bin_data->id])){
             $boxWeight = $boxBins[$bin->bin_data->id]['box_weight'];
-            $quantityPacked = count($bin->items) ? count($bin->items) : 1;
+            $price = 0;
+            if(isset($bin->items)) {
+                foreach ($bin->items as $itemData){
+                    $price += $itemsArr[$itemData->id]['lineItemPrice'] ?? 0;
+                }
+            }
         }
         $item['lineItemLength'] = $bin->bin_data->d ?? 0;
         $item['lineItemWidth'] = $bin->bin_data->w ?? 0;
         $item['lineItemHeight'] = $bin->bin_data->h ?? 0;
-        $item['lineItemPrice'] = $item['lineItemPrice']*$quantityPacked;
+        $item['lineItemPrice'] = $price;//$item['lineItemPrice']*$quantityPacked;
         $item['lineItemWeight'] = $bin->bin_data->weight + $boxWeight;
         $item['piecesOfLineItem'] = 1 ?? 0;
         $item['shipItemAlone'] = 1;
