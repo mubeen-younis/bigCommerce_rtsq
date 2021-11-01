@@ -1458,7 +1458,7 @@ class CompileQuotes
                 $netChargeArray = array_column($shipment['shipment'], 'simple');
                 $minValueFromNetChargeArr = min(array_column($netChargeArray, 'rate'));
                 $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
-                $originQuotesMulti[0]['code'] = $this->isResi ? 'Multi+R':'Multi';
+                $originQuotesMulti[0]['code'] = $this->isResi || $this->alwaysResi ? 'Multi+R':'Multi';
                 $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
                 $originQuotesMulti[0]['title'] = $this->isResi ? 'Shipping ( R ) ' : 'Shipping';
             }
