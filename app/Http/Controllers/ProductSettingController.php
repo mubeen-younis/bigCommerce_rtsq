@@ -309,7 +309,11 @@ class ProductSettingController extends Controller
                     ->groupBy('source_product_id')->orderBy('name', $sortProd)->skip(($page-1)*$perPage)->take($perPage)->get();
             }else{
                 $products = ProductSetting::where('store_id', $request->store_id)
-                    ->groupBy('source_product_id')->orderBy('name', $sortProd)->where('name','LIKE','%'.$search.'%')->skip(($page-1)*$perPage)->take($perPage)->get();
+                    ->groupBy('source_product_id')->orderBy('name', $sortProd)
+                    ->where('name','LIKE','%'.$search.'%')
+                    ->orWhere('variant_id', $search)
+                    ->orWhere('source_product_id', $search)
+                    ->skip(($page-1)*$perPage)->take($perPage)->get();
             }
             if ($products->isEmpty()) {
                 return response()->json(['error' => true,
@@ -377,7 +381,7 @@ class ProductSettingController extends Controller
 
     public function getSetting($product){
         $getOnly = ['dropship_enabled', 'dropship_location', 'freight_class',
-            'hazardous_enabled', 'freight_enabled', 'parcel_enabled', 'insurance'];
+            'hazardous_enabled', 'freight_enabled', 'parcel_enabled', 'insurance', 'allow_vertical', 'ship_own_package', 'ship_multiple_package'];
         $settings = new \stdClass();
         foreach($product as $key => $prd){
             if(in_array($key, $getOnly)){

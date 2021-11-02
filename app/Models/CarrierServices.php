@@ -9,4 +9,5 @@ class CarrierServices extends Model
 {
     use HasFactory;
     protected $table = 'shopify_freights';
+    public $timestamps = false;
 }
