@@ -165,8 +165,10 @@ class Bin3D
 
     private function handleNotPacked($responseFromSBS, $items){
         foreach ($responseFromSBS as $key => $SBSResp){
+
             $data[$key] = json_decode($SBSResp)->response;
             $resp = json_decode($SBSResp);
+            //print_r($resp); print_r($items); exit;
             $not_packed_items = $resp->response->not_packed_items;
             if(count($not_packed_items)){
                 foreach ($items[$key] as $itemKey=>$item) {

@@ -130,8 +130,8 @@ class OrderController extends Controller
                                 foreach ($binPacked->items as $item) {
                                     $orderWidget[$zip]['sbs'][$key]['type'] = $type;
                                     $orderWidget[$zip]['sbs'][$key]['image_complete'] = $binPacked->image_complete;
-                                    $orderWidget[$zip]['sbs'][$key]['d'] = $binPacked->bin_data->d. 'x';
-                                    $orderWidget[$zip]['sbs'][$key]['w'] = $binPacked->bin_data->w . 'x';
+                                    $orderWidget[$zip]['sbs'][$key]['d'] = $binPacked->bin_data->d. ' x ';
+                                    $orderWidget[$zip]['sbs'][$key]['w'] = $binPacked->bin_data->w . ' x ';
                                     $orderWidget[$zip]['sbs'][$key]['h'] = $binPacked->bin_data->h;
 
                                     $orderWidget[$zip]['sbs'][$key]['nickname'] = $this->getBoxName($binPacked->bin_data->id, $request['store_id'], $order['rate_id'], $order['cart_id']);
@@ -173,10 +173,10 @@ class OrderController extends Controller
             $sRate = $order['shipping_rate'];
             if($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement){
                 if($isLG) {
-                    $sRate = $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0;
+                    $sRate = $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->liftgate->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
                 }else {
-                    $sRate = $multiShipmentresponse->$index->simple->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? 0;
+                    $sRate = $multiShipmentresponse->$index->simple->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->simple->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? '';
                 }
                 $isMulti = true;
@@ -186,7 +186,7 @@ class OrderController extends Controller
             $sMethod = isset($shipping_name[1]) ? '('.$shipping_name[1] : '';
 
             $orderWidget[$zip]['shipping_method'] = $sName.$sMethod;
-            $orderWidget[$zip]['shipping_rate'] = '$'.$sRate;
+            $orderWidget[$zip]['shipping_rate'] = '$'. number_format((float)$sRate, 2, '.', '');
             $orderWidget[$zip]['items'][] = $item->piecesOfLineItem.' X '.$item->lineItemName;
             $orderWidget[$zip]['accessories'] = [];
 

@@ -21,6 +21,7 @@ use App\Http\Controllers\StoreController;
 use App\Http\Controllers\Subscription\SubscriptionController;
 use App\Http\Controllers\Subscription\PackageSubscriptionController;
 use App\Http\Middleware\EnsureTokenIsValid;
+use App\Models\CarrierServices;
 use App\Models\Locations;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -146,6 +147,12 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     //END: SBS Routes
 
 
+    Route::post('/syncGTZCerasisProviders', [AdditionalCarrierTabSettingController::class, 'syncGTZCerasisProviders']);
+
+    Route::post('/get_carrier_services', [AdditionalCarrierTabSettingController::class, 'index']);
+    Route::post('/has_insurance', [AdditionalCarrierTabSettingController::class, 'hasInsurance']);
+
+
 });
 //Webhook
 Route::post('/bc-subscription-update', [SubscriptionController::class, 'paymentByStripeWebHook']);
@@ -158,7 +165,7 @@ Route::get('/get_qoute_settings/{carrierId}', [QuoteSettingsController::class, '
 Route::post('/submit_quote_settings', [QuoteSettingsController::class, 'saveSettings']);
 
 /*------Services tab-------*/
-Route::get('/get_carrier_services', [AdditionalCarrierTabSettingController::class, 'index']);
+
 
 Route::get('/get_warehouse', 'LocationsController@warehouse');
 Route::get('/get_dropships', 'LocationsController@dropships');
@@ -185,4 +192,5 @@ Route::get('splitCSVinChunks', [ExportImportProducts::class, 'splitCSVinChunks']
 Route::get('/get_plans', [\App\Http\Controllers\PlansController::class, 'getPlans']);
 
 Route::get('/test_bin', [App\CustomClasses\Bin3D\Bin3D::class, 'getBinResponse']);
+
 

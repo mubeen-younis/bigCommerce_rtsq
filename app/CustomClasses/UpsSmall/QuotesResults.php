@@ -93,12 +93,12 @@ class QuotesResults
         // Check limited to carrier transit days
         if ($quoteSettings['ground_metric'] == 1) {
             //  2>3
-            if (isset($quote['totalTransitTimeInDays']) && isset($quoteSettings['number_of_transit_days']) && $quote['totalTransitTimeInDays'] > $quoteSettings['number_of_transit_days']) {
+            if (isset($quote['transitTimeInDays']) && isset($quoteSettings['number_of_transit_days']) && $quote['transitTimeInDays'] > $quoteSettings['number_of_transit_days']) {
                 return true;
             }
             // Check by calendar days
         } else {
-            if ( isset($quote['CalenderDaysInTransit']) && isset($quoteSettings['number_of_transit_days']) && $quote['CalenderDaysInTransit'] > $quoteSettings['number_of_transit_days']) {
+            if ( isset($quote['calenderDaysInTransit']) && isset($quoteSettings['number_of_transit_days']) && $quote['calenderDaysInTransit'] > $quoteSettings['number_of_transit_days']) {
                 return true;
             }
         }
@@ -108,7 +108,6 @@ class QuotesResults
 
 
     public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment){
-        //print_r($shipments); exit;
         $shipments = $this->formateQuoteBeforeCompile($shipments);
         //print_r($shipments); exit;
         $this->quoteSettings = [];
@@ -143,7 +142,7 @@ class QuotesResults
             $lowestAmount = 0;
 
             if (isset($quote['q'])) {
-                //print_r($quote['q']); //exit;
+                //print_r($quote['q']); exit;
                 foreach ($quote['q'] as $key => $data) {
                     // Check if service type is checked to show
                     if (isset($data['severity'])) {
@@ -198,7 +197,7 @@ class QuotesResults
           //dd($originQuotes);
 
         //$multiShipmentQuotes = $this->sortByOrder($multiShipmentQuotes, 'rate');
-        //print_r($originQuotes); print_r($multiShipmentQuotes);  exit;
+        //print_r($originQuotes);  exit;
         // Check for mukti shipment finding lowest price in each shipment and adding them for multi shipment
 
         if ($isMultiShipment) {
@@ -209,7 +208,7 @@ class QuotesResults
                 $minValueFromNetChargeArr = min(array_column($netChargeArray, 'rate'));
 
                 $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
-                $originQuotesMulti[0]['code'] = $residential ? 'Multiups+R' : 'Multiups';
+                $originQuotesMulti[0]['code'] = 'Multiups'.$access;
                 $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
                 $originQuotesMulti[0]['title'] = $residential ? 'Shipping ( R ) ' : 'Shipping';
             }
@@ -267,17 +266,26 @@ class QuotesResults
             }
         }
         foreach ($shipments as $shipment => $quotes){
+            $temp = [];
             if(!isset($quotes['q'])){
                 continue;
             }
             foreach ($quotes['q'] as $key => $quote){
-                if(!isset($quote['severity'])) {
-                    $shipments[$shipment]['q'][$key]['serviceDesc'] = $servicesDesc[$key];
-                    $shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] = $shipments[$shipment]['q'][$key]['GuaranteedDaysToDelivery'];
-                    if($shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] === ''){
-                        if(isset($quotes['tnt']['TransitResponse']['ServiceSummary'])) {
-                            $shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] = $this->calenderDays($servicesDesc[$key], $quotes['tnt']['TransitResponse']['ServiceSummary']);
+                if(!isset($quote['severity']) && isset($servicesDesc[$key])) {
+
+                    if(!in_array($quote['totalNetCharge']['Amount'], $temp)) {
+                        $temp[] = $quote['totalNetCharge']['Amount'] ?? 0;
+                        $servicesDescKey = $servicesDesc[$key] ?? '';
+                        $shipments[$shipment]['q'][$key]['serviceDesc'] = $servicesDescKey;
+                        $shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] = $shipments[$shipment]['q'][$key]['GuaranteedDaysToDelivery'];
+                        if ($shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] === '') {
+                            if (isset($quotes['tnt']['TransitResponse']['ServiceSummary'])) {
+
+                                $shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] = $this->calenderDays($servicesDescKey, $quotes['tnt']['TransitResponse']['ServiceSummary']);
+                            }
                         }
+                    }else{
+                        unset($shipments[$shipment]['q'][$key]);
                     }
                 }else{
                     unset($shipments[$shipment]['q'][$key]);
