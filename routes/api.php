@@ -157,6 +157,8 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     //Multiple packages
     Route::get('/getmultiplepackages', [BoxSizeController::class, 'getMultiplePackagingBoxes']);
     Route::post('/addmultiplepackages', [BoxSizeController::class, 'addMultiplePackagingBox']);
+    Route::post('/updatemultiplepackages', [BoxSizeController::class, 'updateMultiplePackagingBox']);
+    Route::post('/deletemultiplepackages', [BoxSizeController::class, 'deleteMultiplePackagingBox']);
 
 });
 //Webhook

@@ -166,9 +166,9 @@ class BoxSizeController extends Controller
         if(!empty($products)) {
             foreach ($products as $key => $product) {
                 $multiplePackages = MultiplePackagingBoxes::where('product_id', $product['id'])
+                    ->where('status', 1)
                     ->get()->toArray();
                 $products[$key]['boxes'] = $multiplePackages ?? [];
-
             }
         }
         return response()->json([
@@ -185,6 +185,31 @@ class BoxSizeController extends Controller
             return response()->json([
                 'error' => true,
                 'message' => "Box could not be added."
+            ]);
+        }
+    }
+
+    public function deleteMultiplePackagingBox(Request $request){
+        $id = $request->id;
+        if(MultiplePackagingBoxes::find($id)->delete()){
+            return $this->getMultiplePackagingBoxes($request);
+        }else{
+            return response()->json([
+                'error' => true,
+                'message' => "Box could not be deleted."
+            ]);
+        }
+    }
+
+    public function updateMultiplePackagingBox(Request $request){
+        $id = $request->id;
+        $update = $request->except(['store_name', 'store_hash', 'store_id', 'id']);
+        if(MultiplePackagingBoxes::find($id)->update($update)){
+            return $this->getMultiplePackagingBoxes($request);
+        }else{
+            return response()->json([
+                'error' => true,
+                'message' => "Box could not be updated."
             ]);
         }
     }
