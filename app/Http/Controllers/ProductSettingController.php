@@ -365,7 +365,7 @@ class ProductSettingController extends Controller
             $product->length = $prd['length'];
             $product->width = $prd['width'];
             $product->height = $prd['height'];
-            $product->ship_multiple_package = $prd['ship_multiple_package'] ?? false;
+            $product->ship_multiple_package = isset($prd['ship_multiple_package']) && $prd['ship_multiple_package'] ? 1 : 0;
 
             $product->settings = json_encode($this->getSetting($prd));
             /*json_encode($prd->only(['dropship_enabled', 'dropship_location', 'freight_class',
