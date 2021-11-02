@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Carrier;
 use Illuminate\Http\Request;
 use App\Models\CarrierServices;
 use App\Models\AdditionalCarrierTabSetting;
+use Illuminate\Support\Facades\DB;
+use App\CustomClasses\GTZ\ltl\ConnectionSettings;
 
 class AdditionalCarrierTabSettingController extends Controller
 {
@@ -13,9 +16,37 @@ class AdditionalCarrierTabSettingController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function index()
+    public function index(Request $request)
     {
-        $services = CarrierServices::where('app_id', 1)->orderBy('speed_freight_carrierName')->get();
+        $installed_carrier = $request->installed_carrier_id;
+
+        $carrier = DB::table('installed_carriers')
+            ->select('slug')
+            ->join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
+            ->where('installed_carriers.id', $installed_carrier)->first();
+
+        if($carrier->slug == 'ltl-quotes'){
+            $services = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
+                ->where('installed_carriers.id', $installed_carrier)
+                ->orderBy('speed_freight_carrierName')->get();
+        }else if($carrier->slug == 'gtz-ltl'){
+            $storeId = null;
+            $carrierType = $request->carrier_type ?? 'gtz';
+            //dd($carrierType);
+            if($carrierType === 'CRS'){
+                $storeId = $request['store_id'] ?? null;
+                $services = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
+                    ->where('installed_carriers.id', $installed_carrier)
+                    ->where('shopify_freights.store_id', $storeId)
+                    ->orderBy('speed_freight_carrierName')->get();
+            }else{
+                $services = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
+                    ->where('installed_carriers.id', $installed_carrier)
+                    ->whereNull('shopify_freights.store_id')
+                    ->orderBy('speed_freight_carrierName')->get();
+            }
+        }
+
         return response()->json(['error' => false, 'data' => $services]);
     }
 
@@ -132,5 +163,59 @@ class AdditionalCarrierTabSettingController extends Controller
             'data' => $addTabSettings,
             'message' => "Settings Found",
         ], 200);
+    }
+
+    public function syncGTZCerasisProviders(Request $request){
+        $storeId = $request['store_id'];
+        $ConnectionSettings = new ConnectionSettings();
+        $gtzLtlId = Carrier::select('id')->where('slug', 'gtz-ltl')->pluck('id')->toArray()[0] ?? '';
+        $resp = $ConnectionSettings->getCerasisProviders($storeId, $gtzLtlId);
+        if($resp){
+            $insert = [];
+            foreach ($resp['carriers'] as $carrier){
+                $insert = [
+                    'speed_freight_carrierSCAC' => $carrier['CarrierName'] ?? '',
+                    'speed_freight_carrierName' => $carrier['CarrierSCAC'] ?? '',
+                    'carrier_logo' => $carrier['CarrierLogoUrl'] ?? '',
+                    'app_id' => $gtzLtlId,
+                    'store_id' => $request['store_id']
+                ];
+                $Added = CarrierServices::where('speed_freight_carrierSCAC', $insert['speed_freight_carrierSCAC'])
+                    ->where('speed_freight_carrierName', $insert['speed_freight_carrierName'])
+                    ->where('app_id', $insert['app_id'])
+                    ->where('store_id', $insert['store_id'])->exists();
+                if(!$Added){
+                    CarrierServices::insert($insert);
+                    unset($insert);
+                }
+            }
+        }
+        $services = CarrierServices::where('shopify_freights.app_id', $gtzLtlId)
+            ->where('shopify_freights.store_id', $storeId)
+            ->orderBy('speed_freight_carrierName')->get();
+
+        return response()->json(['error' => false,
+            'data' => $services,
+            'message' => "Success! Carriers list updated successfully.",
+        ], 200);
+    }
+
+    public function hasInsurance(Request $request){
+        $storeId = $request['store_id'];
+        $installed_carrier = $request->installed_carrier_id;
+        $carrier = DB::table('installed_carriers')
+            ->select('slug')
+            ->join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
+            ->where('installed_carriers.id', $installed_carrier)
+            ->where('installed_carriers.store_id', $storeId)->first();
+
+        return response()->json(['error' => false,
+            'data' => $this->isInusreCarrier($carrier->slug)
+        ], 200);
+    }
+
+    public function isInusreCarrier($slug){
+        $insureCarrier = ['ltl-quotes', 'small-package', 'ups-small'];
+        return in_array($slug, $insureCarrier);
     }
 }
