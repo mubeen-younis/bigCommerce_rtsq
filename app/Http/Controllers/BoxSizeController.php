@@ -174,6 +174,7 @@ class BoxSizeController extends Controller
         return response()->json([
             'error' => false,
             'data' => $products,
+            'message' => 'Box added succesfully.'
         ]);
     }
 

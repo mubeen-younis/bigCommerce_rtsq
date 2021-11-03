@@ -9,4 +9,16 @@ class MultiplePackagingBoxes extends Model
 {
     use HasFactory;
     protected $table = 'multiple_packaging_boxes';
+
+    protected $fillable = [
+        'product_id',
+        'quantity',
+        'nickname',
+        'length',
+        'width',
+        'height',
+        'weight',
+        'box_fee',
+        'status'
+    ];
 }

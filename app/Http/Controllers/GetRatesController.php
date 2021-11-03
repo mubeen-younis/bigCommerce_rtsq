@@ -133,10 +133,12 @@ class GetRatesController extends Controller
                 $key = $product['variant_id'] ?? $product['product_id'];
                 $details['origin'][$key] = $originAddress;
                 $details['items'][$key] = [
+                    'id' => $product_settings['id'] ?? '',
                     'product_id' => $product['product_id'] ?? '',
                     'variant_id' => $product['variant_id'] ?? '',
                     'sku' => $product['sku'] ?? '',
                     'piecesOfLineItem' => $product['quantity'] ?? '',
+                    'shipMultiplePackage' => $product['ship_multiple_package'] ?? 0,
                     'lineItemId' => $product['product_id'] ?? '',
                     'lineItemPrice' => $product_price ?? 0,
                     'lineItemName' => $product['name'] ?? '',
@@ -203,12 +205,13 @@ class GetRatesController extends Controller
     public function getProductSetting($productId, $variantId)
     {
         $settings = [];
-        $productSetting = ProductSetting::select('settings')
+        $productSetting = ProductSetting::select('settings','id')
             ->where(['source_product_id' => $productId , 'variant_id' => $variantId])
             ->first();
         if (!empty($productSetting)) {
             $productSetting->toArray();
             $settings = isset($productSetting['settings']) ? json_decode($productSetting['settings'], true) : [];
+            $settings['id'] = $productSetting['id'];
         }
         return $settings;
     }
