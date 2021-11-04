@@ -82,6 +82,16 @@ class OrderController extends Controller
         return $items;
     }
 
+    public function formateOrigins($carriers){
+        $newOrigin = new \stdClass();
+        foreach ($carriers as $carrier){
+            foreach ($carrier->originAddress as $key => $origin){
+                $newOrigin->$key = $origin;
+            }
+        }
+        return $newOrigin;
+    }
+
     public function createOrderWidget($request, $order){
         $data = RequestData::where('rate_id', $order['rate_id'])
             ->where('cart_id', $order['cart_id'])
@@ -104,6 +114,7 @@ class OrderController extends Controller
 
         $requestToWS = json_decode($data['request']);
         $lineItem->items = $this->formateItems($requestToWS->requestArr->commdityDetails);
+        $lineItem->origins = $this->formateOrigins($requestToWS->requestArr->carriers);
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
         //dd($order['rate_id'],$multiShipmentresponse);
         $autoResidentialsStatus = 'n';
