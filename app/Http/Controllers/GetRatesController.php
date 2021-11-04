@@ -129,7 +129,8 @@ class GetRatesController extends Controller
                 $ltlCheck = $product_settings['freight_enabled'] ?? false;
 
                 $originAddress = $this->shipmentPkg->wweLTLOriginAddress($details, $product_settings, $details['destination']['zip'], $storeData, $this->connectionSettings);
-
+                $shipBinAlone = (isset($product_settings['ship_multiple_package']) && $product_settings['ship_multiple_package'])
+                    || (isset($product_settings['ship_own_package']) && $product_settings['ship_own_package']) ? 1 : 0;
                 $key = $product['variant_id'] ?? $product['product_id'];
                 $details['origin'][$key] = $originAddress;
                 $details['items'][$key] = [
@@ -138,7 +139,8 @@ class GetRatesController extends Controller
                     'variant_id' => $product['variant_id'] ?? '',
                     'sku' => $product['sku'] ?? '',
                     'piecesOfLineItem' => $product['quantity'] ?? '',
-                    'shipMultiplePackage' => $product['ship_multiple_package'] ?? 0,
+                    'shipMultiplePackage' => $product_settings['ship_multiple_package'] ?? 0,
+                    'shipBinAlone' => $shipBinAlone,
                     'lineItemId' => $product['product_id'] ?? '',
                     'lineItemPrice' => $product_price ?? 0,
                     'lineItemName' => $product['name'] ?? '',
@@ -147,7 +149,7 @@ class GetRatesController extends Controller
                     'lineItemHeight' => $product['height']['value'] ? number_format($product['height']['value'], 2, '.', '') : '',
                     'lineItemWeight' => number_format($weight, 2, '.', ''),
                     'freight_enabled' => isset($product_settings['freight_enabled']) && $product_settings['freight_enabled'] ? 'Y' : 'N',
-                    'shipBinAlone' => isset($product_settings['ship_own_package']) && $product_settings['ship_own_package'] ? '1' : '0',
+
                     'vertical_rotation' => isset($product_settings['allow_vertical']) && $product_settings['allow_vertical'] ? '1' : '0',
                     'isHazmatLineItem' => isset($product_settings['hazardous_enabled']) && $product_settings['hazardous_enabled'] ? 'Y' : 'N',
                     'dropship_enabled' => isset($product_settings['dropship_enabled']) && $product_settings['dropship_enabled'] ? 'Y' : 'N',
@@ -205,13 +207,14 @@ class GetRatesController extends Controller
     public function getProductSetting($productId, $variantId)
     {
         $settings = [];
-        $productSetting = ProductSetting::select('settings','id')
+        $productSetting = ProductSetting::select('settings','id', 'ship_multiple_package')
             ->where(['source_product_id' => $productId , 'variant_id' => $variantId])
             ->first();
         if (!empty($productSetting)) {
             $productSetting->toArray();
             $settings = isset($productSetting['settings']) ? json_decode($productSetting['settings'], true) : [];
             $settings['id'] = $productSetting['id'];
+            $settings['ship_multiple_package'] = $productSetting['ship_multiple_package'];
         }
         return $settings;
     }

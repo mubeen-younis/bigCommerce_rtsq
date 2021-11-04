@@ -165,9 +165,7 @@ class BoxSizeController extends Controller
             ->where('product_settings.store_id', $storeId)->get()->toArray();
         if(!empty($products)) {
             foreach ($products as $key => $product) {
-                $multiplePackages = MultiplePackagingBoxes::where('product_id', $product['id'])
-                    ->where('status', 1)
-                    ->get()->toArray();
+                $multiplePackages = $this->getBoxesByProductId($product['id']);
                 $products[$key]['boxes'] = $multiplePackages ?? [];
             }
         }
@@ -176,6 +174,12 @@ class BoxSizeController extends Controller
             'data' => $products,
             'message' => 'Box added succesfully.'
         ]);
+    }
+
+    public function getBoxesByProductId($productId){
+        return MultiplePackagingBoxes::where('product_id', $productId)
+            ->where('status', 1)
+            ->get()->toArray();
     }
 
     public function addMultiplePackagingBox(Request $request){

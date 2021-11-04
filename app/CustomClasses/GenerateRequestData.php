@@ -2,6 +2,7 @@
 
 namespace App\CustomClasses;
 
+use App\Http\Controllers\BoxSizeController;
 use Illuminate\Support\Facades\DB;
 use App\CustomClasses\Bin3D\Bin3D;
 use App\CustomClasses\SmartyStreet\SmartyStreet;
@@ -211,7 +212,6 @@ class GenerateRequestData
     public function generateRequestArray($request, $carriersArray, $itemsArr, $cartInfo)
     {
         $carriers = $carriersArray['carriers'];
-        //print_r($carriersArray); exit;
         $receiverAddress = $this->getReceiverData($request);
 
         $autoResidential = $liftGateWithAuto = '0';
@@ -221,6 +221,14 @@ class GenerateRequestData
             $liftGateWithAuto = '1';
         }
         $binReponse = $boxBins =[];
+        $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
+        //print_r($multiplePackaging); exit;
+        if(empty($multiplePackaging)){
+            return null;
+        }
+        $itemsArr = $multiplePackaging['itemsArr'];
+
+        $carriers = $multiplePackaging['carriers'];
         if ($this->storeData['installed_addon_sbs'])
         {
             if(isset($carriers['wweSmall']) || isset($carriers['upsSmall'])){
@@ -263,6 +271,59 @@ class GenerateRequestData
         $resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse, 'boxBins' => $boxBins];
         return $resp;
     }
+
+    /**
+     * ship as multiple packaging
+     * handle if item marked as ship as multiple packaging
+     * get box related to item id and re create items array according to boxes
+     */
+    public function handleShipAsMultiplePackaging($carriers, $itemsArr){
+
+        foreach ($carriers as $carrierName => $carrier){
+            foreach($carrier['originAddress'] as $varriantId => $origin){
+                $isShipAsMultiplePackage = $itemsArr[$varriantId]['shipMultiplePackage'] ?? false;
+                if($isShipAsMultiplePackage){
+                    $boxSizeController = new BoxSizeController();
+                    $getBoxes = $boxSizeController->getBoxesByProductId($itemsArr[$varriantId]['id']);
+                    if(empty($getBoxes)){
+                        return [];
+                    }else{
+                        foreach ($getBoxes as $key => $box){
+                            $key = substr(str_shuffle("0123456789"), 0, 5);
+                            $boxFee = $box['box_fee'] ?? 0;
+                            $variantId = $this->getPrice($itemsArr, 'id',$box['product_id']);
+                            $price = $itemsArr[$variantId]['lineItemPrice'] ?? 0;
+                            $price = (($price/count($getBoxes))/$box['quantity'])+$boxFee;
+                            $itemsArr[$key] = $itemsArr[$varriantId];
+                            $itemsArr[$key]['piecesOfLineItem'] = $itemsArr[$key]['piecesOfLineItem']*$box['quantity'];
+                            $itemsArr[$key]['lineItemLength'] = $box['length'] ?? 0;
+                            $itemsArr[$key]['lineItemWidth'] = $box['width'] ?? 0;
+                            $itemsArr[$key]['lineItemHeight'] = $box['height'] ?? 0;
+                            $itemsArr[$key]['lineItemWeight'] = $box['weight'] ?? 0;
+                            $itemsArr[$key]['lineItemPrice'] = $price;
+                            $itemsArr[$key]['shipBinAlone'] = 1;
+                            $carriers[$carrierName]['originAddress'][$key] = $origin;
+                        }
+                        unset($carriers[$carrierName]['originAddress'][$varriantId]);
+                    }
+                }
+            }
+        }
+        return [
+            'carriers' => $carriers,
+            'itemsArr' => $itemsArr
+        ];
+    }
+
+    public function getPrice($products, $field, $value){
+        foreach($products as $key => $product)
+        {
+            if ( $product[$field] === $value )
+                return $key;
+        }
+        return 0;
+    }
+
 
     /**
      * function that returns API array
@@ -752,21 +813,34 @@ class GenerateRequestData
 
     public function getStoreBoxes($storeId, $itemsArr, $origins, $cartInfo)
     {
-        $items = [];
-        //print_r($itemsArr); exit;
+        $items = $itemsAlone = [];
         foreach ($origins as $key => $origin){
             $isNotLtl = !(isset($itemsArr[$key]['freightClass']) && $itemsArr[$key]['freightClass'] === 'ltl');
+            $shipBinAlone = $itemsArr[$key]['shipBinAlone'] ?? false;
             if($isNotLtl) {
-                $items[$origin['locationId']][] = [
-                    "variant_id" => $key,
-                    "id" => $key,
-                    "wg" => $itemsArr[$key]['lineItemWeight'] ?? 0,
-                    "h" => $itemsArr[$key]['lineItemHeight'] ?? 0,
-                    "d" => $itemsArr[$key]['lineItemLength'] ?? 0,
-                    "w" => $itemsArr[$key]['lineItemWidth'] ?? 0,
-                    "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
-                    "vr" => 0 //vertical 0 or 1
-                ];
+                if($shipBinAlone){
+                    $itemsAlone[$origin['locationId']][] = [
+                        "variant_id" => $key,
+                        "id" => $key,
+                        "wg" => $itemsArr[$key]['lineItemWeight'] ?? 0,
+                        "h" => $itemsArr[$key]['lineItemHeight'] ?? 0,
+                        "d" => $itemsArr[$key]['lineItemLength'] ?? 0,
+                        "w" => $itemsArr[$key]['lineItemWidth'] ?? 0,
+                        "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
+                        "vr" => $itemsArr[$key]['vertical_rotation'] ?? 0 //vertical 0 or 1
+                    ];
+                }else {
+                    $items[$origin['locationId']][] = [
+                        "variant_id" => $key,
+                        "id" => $key,
+                        "wg" => $itemsArr[$key]['lineItemWeight'] ?? 0,
+                        "h" => $itemsArr[$key]['lineItemHeight'] ?? 0,
+                        "d" => $itemsArr[$key]['lineItemLength'] ?? 0,
+                        "w" => $itemsArr[$key]['lineItemWidth'] ?? 0,
+                        "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
+                        "vr" => $itemsArr[$key]['vertical_rotation'] ?? 0 //vertical 0 or 1
+                    ];
+                }
             }
         }
         $boxBins = $newOrigins = $newitemsArr = [];
@@ -784,10 +858,13 @@ class GenerateRequestData
             );
         }
         $hits = count($items);
-        if($hits && count($boxBins)) {
+        if((count($items) || count($itemsAlone) ) && count($boxBins)) {
             $Bin3D = new Bin3D();
-            $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $hits, $cartInfo);
+            $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $itemsAlone, $hits, $cartInfo);
             if (count($binResponse)) {
+                foreach ($itemsAlone as $key => $itemAlone){
+                    $items[$key] = $itemAlone;
+                }
                 foreach ($items as $locationId => $item) {
                     foreach ($item as $itm) {
                         $origin = $itm['variant_id'];
