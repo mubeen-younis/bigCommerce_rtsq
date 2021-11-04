@@ -73,6 +73,15 @@ class OrderController extends Controller
         );
     }
 
+    public function formateItems($items){
+        $tempItems = $items;
+        foreach ($tempItems as $item){
+            $variant_id = $item->variant_id;
+            $items->$variant_id = $item;
+        }
+        return $items;
+    }
+
     public function createOrderWidget($request, $order){
         $data = RequestData::where('rate_id', $order['rate_id'])
             ->where('cart_id', $order['cart_id'])
@@ -92,7 +101,9 @@ class OrderController extends Controller
         $isOwnArrangement = strpos($order['rate_id'], 'own_arrangement') === 0 ? true : false;
         $lineItem = json_decode($data['lineitems'])->lineItemData;
         $responseFromWS = json_decode($data['quotes']);
+
         $requestToWS = json_decode($data['request']);
+        $lineItem->items = $this->formateItems($requestToWS->requestArr->commdityDetails);
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
         //dd($order['rate_id'],$multiShipmentresponse);
         $autoResidentialsStatus = 'n';

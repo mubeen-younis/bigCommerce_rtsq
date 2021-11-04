@@ -44,7 +44,6 @@ class Bin3D
             $responseFromSBS = $this->generateShipAloneBinResponse($itemsAlone);
             $items = $itemsAlone;
         }
-
         $sbsCompiledResponse = $this->handleNotPacked($responseFromSBS, $items);
         return $sbsCompiledResponse;
     }
@@ -179,13 +178,10 @@ class Bin3D
             $resp = json_decode($SBSResp);
             $not_packed_items = $resp->response->not_packed_items;
             if(count($not_packed_items)){
-                foreach ($items[$key] as $itemKey=>$item) {
-                    for ($i = 1; $i <= $item['q']; $i++) {
-                        foreach ($not_packed_items as $not_packed_item) {
-                            $not_packed_item = (array)$not_packed_item;
-                            array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
-                            break;
-                        }
+                foreach ($not_packed_items as $not_packed_item) {
+                    $not_packed_item = (array)$not_packed_item;
+                    for ($i = 1; $i <= $not_packed_item['q']; $i++) {
+                        array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
                     }
                 }
             }
