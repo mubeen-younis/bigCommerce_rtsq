@@ -114,7 +114,7 @@ class OrderController extends Controller
 
         $requestToWS = json_decode($data['request']);
         $lineItem->items = $this->formateItems($requestToWS->requestArr->commdityDetails);
-        $lineItem->origins = $this->formateOrigins($requestToWS->requestArr->carriers);
+        $lineItem->origin = $this->formateOrigins($requestToWS->requestArr->carriers);
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
         //dd($order['rate_id'],$multiShipmentresponse);
         $autoResidentialsStatus = 'n';
