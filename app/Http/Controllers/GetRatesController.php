@@ -139,7 +139,7 @@ class GetRatesController extends Controller
                     'variant_id' => $product['variant_id'] ?? '',
                     'sku' => $product['sku'] ?? '',
                     'piecesOfLineItem' => $product['quantity'] ?? '',
-                    'originaPiecesOfLineItem' => $product['quantity'] ?? '',
+                    'originalPiecesOfLineItem' => $product['quantity'] ?? '',
                     'shipMultiplePackage' => $product_settings['ship_multiple_package'] ?? 0,
                     'shipBinAlone' => $shipBinAlone,
                     'lineItemId' => $product['product_id'] ?? '',
