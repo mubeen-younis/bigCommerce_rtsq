@@ -213,7 +213,7 @@ class OrderController extends Controller
             //print_r($item);
             if( (!in_array($item->id, $insertedIds)) ) {
                 $insertedIds[] = $item->id;
-                $orderWidget[$zip]['items'][] = $item->piecesOfLineItem . ' X ' . $item->lineItemName;
+                $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
             }
             $orderWidget[$zip]['accessories'] = [];
             if(!$isMulti){
