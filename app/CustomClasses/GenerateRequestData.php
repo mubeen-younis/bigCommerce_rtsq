@@ -227,14 +227,14 @@ class GenerateRequestData
             return null;
         }
         $itemsArr = $multiplePackaging['itemsArr'];
-
+        $isMultishipment = $multiplePackaging['isMultishipment'];
         $carriers = $multiplePackaging['carriers'];
         if ($this->storeData['installed_addon_sbs'])
         {
             if(isset($carriers['wweSmall']) || isset($carriers['upsSmall'])){
                 $olditemsArr = $itemsArr;
                 $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'];
-                $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo );
+                $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment );
                 $itemsArr = $sbsResponse['items'] ?? $itemsArr;
                 if(isset($carriers['wweSmall'])) {
                     $carriers['wweSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
@@ -278,10 +278,13 @@ class GenerateRequestData
      * get box related to item id and re create items array according to boxes
      */
     public function handleShipAsMultiplePackaging($carriers, $itemsArr){
-
+        $locationIds = [];
         foreach ($carriers as $carrierName => $carrier){
             foreach($carrier['originAddress'] as $varriantId => $origin){
                 $isShipAsMultiplePackage = $itemsArr[$varriantId]['shipMultiplePackage'] ?? false;
+                if(!in_array($origin['locationId'], $locationIds)){
+                    $locationIds[] = (int) $origin['locationId'];
+                }
                 if($isShipAsMultiplePackage){
                     $boxSizeController = new BoxSizeController();
                     $getBoxes = $boxSizeController->getBoxesByProductId($itemsArr[$varriantId]['id']);
@@ -311,7 +314,8 @@ class GenerateRequestData
         }
         return [
             'carriers' => $carriers,
-            'itemsArr' => $itemsArr
+            'itemsArr' => $itemsArr,
+            'isMultishipment' => count($locationIds) > 1 ? true: false
         ];
     }
 
@@ -811,7 +815,7 @@ class GenerateRequestData
         }
     }
 
-    public function getStoreBoxes($storeId, $itemsArr, $origins, $cartInfo)
+    public function getStoreBoxes($storeId, $itemsArr, $origins, $cartInfo, $isMultishipment)
     {
         $items = $itemsAlone = [];
         foreach ($origins as $key => $origin){
@@ -861,13 +865,13 @@ class GenerateRequestData
         $hits = count($items);
         if((count($items) || count($itemsAlone) ) && count($boxBins)) {
             $Bin3D = new Bin3D();
-            $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $itemsAlone, $hits, $cartInfo);
+            $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment);
             if (count($binResponse)) {
                 //print_r($itemsAlone); print_r($items); exit;
 
                 foreach ($itemsAlone as $key => $itemAlone) {
                     foreach ($itemAlone as $alone) {
-                        if(count($items)){
+                        if(count($items) && isset($items[$key])){
                             array_push($items[$key], $alone);
                         }else{
                             $items[$key][] = $alone;
