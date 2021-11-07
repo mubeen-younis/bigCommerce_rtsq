@@ -215,6 +215,7 @@ class OrderController extends Controller
                 $insertedIds[] = $item->id;
                 $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
             }
+            
             $orderWidget[$zip]['accessories'] = [];
             if(!$isMulti){
                 if(isset($item->product_insurance_active) && $item->product_insurance_active == 1){
