@@ -843,6 +843,7 @@ class GenerateRequestData
                 }
             }
         }
+        //print_r($itemsArr); print_r($items); print_r($itemsAlone); exit;
         $boxBins = $newOrigins = $newitemsArr = [];
         $boxes = DB::table('box_sizes')->where('store_id', $storeId)
             ->where('is_available', 1)->get();
@@ -862,9 +863,18 @@ class GenerateRequestData
             $Bin3D = new Bin3D();
             $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $itemsAlone, $hits, $cartInfo);
             if (count($binResponse)) {
-                foreach ($itemsAlone as $key => $itemAlone){
-                    $items[$key] = $itemAlone;
+                //print_r($itemsAlone); print_r($items); exit;
+
+                foreach ($itemsAlone as $key => $itemAlone) {
+                    foreach ($itemAlone as $alone) {
+                        if(count($items)){
+                            array_push($items[$key], $alone);
+                        }else{
+                            $items[$key][] = $alone;
+                        }
+                    }
                 }
+
                 foreach ($items as $locationId => $item) {
                     foreach ($item as $itm) {
                         $origin = $itm['variant_id'];
