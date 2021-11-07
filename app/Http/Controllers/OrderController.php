@@ -138,40 +138,40 @@ class OrderController extends Controller
                     $totalBoxes = 0;
                     if(isset($ws->binPackagingData) && !empty($ws->binPackagingData) && $isSmallrate){
                         $sbsData = $ws->binPackagingData->response;
+                        $itemCount = 0;
 
-                        if(1/*isset($sbsData->errors) && empty($sbsData->errors)*/) {
+                        foreach ($sbsData->bins_packed as $key => $binPacked) {
 
-
-                            foreach ($sbsData->bins_packed as $key => $binPacked) {
-
-                                $type = '';
-                                if (isset($binPacked->bin_data->type) && $binPacked->bin_data->type == 'item') {
-                                    $type = 'item';
-                                }
-                                $count = 0;
-                                foreach ($binPacked->items as $item) {
-                                    $orderWidget[$zip]['sbs'][$key]['type'] = $type;
-                                    $orderWidget[$zip]['sbs'][$key]['image_complete'] = $binPacked->image_complete;
-                                    $orderWidget[$zip]['sbs'][$key]['d'] = $binPacked->bin_data->d. ' x ';
-                                    $orderWidget[$zip]['sbs'][$key]['w'] = $binPacked->bin_data->w . ' x ';
-                                    $orderWidget[$zip]['sbs'][$key]['h'] = $binPacked->bin_data->h;
-
-                                    $orderWidget[$zip]['sbs'][$key]['nickname'] = $this->getBoxName($binPacked->bin_data->id, $request['store_id'], $order['rate_id'], $order['cart_id']);
-                                    $productid = $item->id;
-                                    $orderWidget[$zip]['sbs'][$key]['items'][$count]['product_name'] = $lineItem->items->$productid->lineItemName;
-                                    $orderWidget[$zip]['sbs'][$key]['items'][$count]['w'] = $item->w;
-                                    $orderWidget[$zip]['sbs'][$key]['items'][$count]['h'] = $item->h;
-                                    $orderWidget[$zip]['sbs'][$key]['items'][$count]['d'] = $item->d;
-
-                                    $orderWidget[$zip]['sbs'][$key]['items'][$count]['image_separated'] = $item->image_separated;
-                                    $orderWidget[$zip]['sbs'][$key]['items'][$count]['image_sbs'] = $item->image_sbs;
-                                    $count++;
-
-                                }
-                                $orderWidget[$zip]['sbs'][$key]['number_of_items'] = $count;
+                            $type = '';
+                            if (isset($binPacked->bin_data->type) && $binPacked->bin_data->type == 'item') {
+                                $type = 'item';
+                                $itemCount++;
                             }
-                            $totalBoxes = $key+1;
+                            $count = 0;
+                            foreach ($binPacked->items as $item) {
+                                $orderWidget[$zip]['sbs'][$key]['type'] = $type;
+                                $orderWidget[$zip]['sbs'][$key]['image_complete'] = $binPacked->image_complete;
+                                $orderWidget[$zip]['sbs'][$key]['d'] = $binPacked->bin_data->d. ' x ';
+                                $orderWidget[$zip]['sbs'][$key]['w'] = $binPacked->bin_data->w . ' x ';
+                                $orderWidget[$zip]['sbs'][$key]['h'] = $binPacked->bin_data->h;
+
+                                $orderWidget[$zip]['sbs'][$key]['nickname'] = $this->getBoxName($binPacked->bin_data->id, $request['store_id'], $order['rate_id'], $order['cart_id']);
+                                $productid = $item->id;
+                                $orderWidget[$zip]['sbs'][$key]['items'][$count]['product_name'] = $lineItem->items->$productid->lineItemName;
+                                $orderWidget[$zip]['sbs'][$key]['items'][$count]['w'] = $item->w;
+                                $orderWidget[$zip]['sbs'][$key]['items'][$count]['h'] = $item->h;
+                                $orderWidget[$zip]['sbs'][$key]['items'][$count]['d'] = $item->d;
+
+                                $orderWidget[$zip]['sbs'][$key]['items'][$count]['image_separated'] = $item->image_separated;
+                                $orderWidget[$zip]['sbs'][$key]['items'][$count]['image_sbs'] = $item->image_sbs;
+                                $count++;
+
+                            }
+                            $orderWidget[$zip]['sbs'][$key]['number_of_items'] = $count;
                         }
+                        $totalBoxes = $key+1-$itemCount;
+
+
                     }
                 }
             }
@@ -215,7 +215,7 @@ class OrderController extends Controller
                 $insertedIds[] = $item->id;
                 $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
             }
-            
+
             $orderWidget[$zip]['accessories'] = [];
             if(!$isMulti){
                 if(isset($item->product_insurance_active) && $item->product_insurance_active == 1){

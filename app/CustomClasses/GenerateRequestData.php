@@ -876,16 +876,19 @@ class GenerateRequestData
                 }
 
                 foreach ($items as $locationId => $item) {
-                    foreach ($item as $itm) {
-                        $origin = $itm['variant_id'];
+                    //foreach ($item as $itm) {
+
                         $bins = $binResponse[$locationId]->bins_packed ?? [];
+                        //print_r($items); print_r($bins); print_r($itemsArr); exit;
                         foreach ($bins as $key => $bin) {
+                            $itm = $bin->items;
+                            $origin = $itm[0]->id;
                             $newkey = $origin . $key;
                             $newOrigins[$newkey] = $origins[$origin];
                             $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins, $itemsArr);
                         }
-                        break;
-                    }
+                        //break;
+                    //}
                 }
             } else {
                 $newOrigins = $origins;
