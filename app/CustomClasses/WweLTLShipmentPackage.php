@@ -111,11 +111,14 @@ class WweLTLShipmentPackage
                print_r($ori);
                echo '</pre>';
                die();*/
+
             $originLoca[$key]['warehouse_id'] = $ori->id ?? '';
+            $originLoca[$key]['address'] = $ori->address ?? '';
+            $originLoca[$key]['phone'] = $ori->phone ?? '';
             $originLoca[$key]['type'] = $ori->type ?? '';
             $originLoca[$key]['city'] = $ori->city ?? '';
             $originLoca[$key]['state'] = $ori->state ?? '';
-            $originLoca[$key]['zip'] = $ori->zip_code ?? '';
+            $originLoca[$key]['zip'] = isset($ori->zip_code) ? str_replace(' ', '',$ori->zip_code) : '';
             $originLoca[$key]['country'] = $ori->country ?? '';
             $originLoca[$key]['additionals'] = $ori->additionals ?? [];
         }
@@ -170,16 +173,20 @@ class WweLTLShipmentPackage
             $zip = $origin['zip'] ?? '';
             $city = $origin['city'] ?? '';
             $state = $origin['state'] ?? '';
+            $address = $origin['address'] ?? '';
+            $phone = $origin['phone'] ?? '';
             $country = ($origin['country'] == "United State") ? "US" : $origin['country'];
             $location = isset($origin['type']) && $origin['type'] == 1 ? 'warehouse' : 'dropship';
             $locationId = $shortOrigin['warehouse_id'] ?? $shortOrigin['id'] ?? time();
             $data = [
                 'location' => $location,
                 'locationId' => $locationId,
+                'address' => $address,
                 'senderZip' => $zip,
                 'senderCity' => $city,
                 'senderState' => $state,
                 'senderCountryCode' => $country,
+                'phone' => $phone,
                 'InstorPickupLocalDelivery' => $this->instorePickupLdData($origin, $receiverZipCode),
             ];
             $origin = reset($origin);
@@ -257,6 +264,7 @@ class WweLTLShipmentPackage
                 $inStore = $additionalData['instore_pickup_data'];
                 $array['inStorePickup'] = [
                     'addressWithInMiles' => $inStore['miles'],
+                    'phone' => $shortOrigin['phone'] ?? '',
                     'postalCodeMatch' => $this->checkPostalCodeMatch($receiverZipCode, $inStore['postalCodes']),
                 ];
             }

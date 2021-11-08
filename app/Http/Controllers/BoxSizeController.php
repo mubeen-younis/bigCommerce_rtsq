@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\BoxSize;
+use App\Models\MultiplePackagingBoxes;
+use App\Models\ProductSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -154,5 +156,66 @@ class BoxSizeController extends Controller
         return response()->json(['error' => false,
             'message' => "Box deleted Successfully",
             'data' => $id]);
+    }
+
+    public function getMultiplePackagingBoxes(Request $request){
+        $storeId = $request['store_id'];
+        $products = ProductSetting::select('product_settings.id','product_settings.name', 'product_settings.sku')
+            ->where('product_settings.ship_multiple_package', 1)
+            ->where('product_settings.store_id', $storeId)->get()->toArray();
+        if(!empty($products)) {
+            foreach ($products as $key => $product) {
+                $multiplePackages = $this->getBoxesByProductId($product['id']);
+                $products[$key]['boxes'] = $multiplePackages ?? [];
+            }
+        }
+        return response()->json([
+            'error' => false,
+            'data' => $products,
+            'message' => 'Box added succesfully.'
+        ]);
+    }
+
+    public function getBoxesByProductId($productId){
+        return MultiplePackagingBoxes::where('product_id', $productId)
+            ->where('status', 1)
+            ->get()->toArray();
+    }
+
+    public function addMultiplePackagingBox(Request $request){
+        $data = $request->except(['store_name', 'store_hash', 'store_id']);
+        if(MultiplePackagingBoxes::create($data)){
+            return $this->getMultiplePackagingBoxes($request);
+        }else{
+            return response()->json([
+                'error' => true,
+                'message' => "Box could not be added."
+            ]);
+        }
+    }
+
+    public function deleteMultiplePackagingBox(Request $request){
+        $id = $request->id;
+        if(MultiplePackagingBoxes::find($id)->delete()){
+            return $this->getMultiplePackagingBoxes($request);
+        }else{
+            return response()->json([
+                'error' => true,
+                'message' => "Box could not be deleted."
+            ]);
+        }
+    }
+
+    public function updateMultiplePackagingBox(Request $request){
+        $id = $request->id;
+        $update = $request->except(['store_name', 'store_hash', 'store_id', 'id']);
+        if(MultiplePackagingBoxes::find($id)->update($update)){
+            return $this->getMultiplePackagingBoxes($request);
+        }else{
+            return response()->json([
+                'error' => true,
+                'message' => "Box could not be updated."
+            ]);
+        }
     }
 }
