@@ -240,17 +240,18 @@ class GenerateRequestData
             $liftGateWithAuto = '1';
         }
         $binReponse = $boxBins =[];
-        $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
-        //print_r($multiplePackaging); exit;
-        if(empty($multiplePackaging)){
-            return null;
-        }
-        $itemsArr = $multiplePackaging['itemsArr'];
-        $isMultishipment = $multiplePackaging['isMultishipment'];
-        $carriers = $multiplePackaging['carriers'];
+
         if ($this->storeData['installed_addon_sbs'])
         {
-            if(isset($carriers['wweSmall']) || isset($carriers['upsSmall']) || isset($carriers['upsSmall'])){
+            $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
+            if(empty($multiplePackaging)){
+                return null;
+            }
+            $itemsArr = $multiplePackaging['itemsArr'];
+            $isMultishipment = $multiplePackaging['isMultishipment'];
+            $carriers = $multiplePackaging['carriers'];
+            if(isset($carriers['wweSmall']) || isset($carriers['upsSmall'])){
+
                 $olditemsArr = $itemsArr;
                 $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'];
                 $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment );
@@ -289,7 +290,6 @@ class GenerateRequestData
             'receiverAddress' => $receiverAddress,
             'commdityDetails' => $itemsArr,
         ];
-        //print_r($binReponse); exit;
         $resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse, 'boxBins' => $boxBins];
         return $resp;
     }
