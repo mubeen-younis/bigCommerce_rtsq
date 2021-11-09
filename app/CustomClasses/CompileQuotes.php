@@ -5,6 +5,7 @@ namespace App\CustomClasses;
 use App\Constants\Constant;
 use App\CustomClasses\UpsSmall\QuotesResults as upsSmallQuotesResults;
 use App\CustomClasses\Fedex\ltl\QuotesResults as fedexLtlQuotesResults;
+use App\CustomClasses\Fedex\small\QuotesResults as fedexSmallQuotesResults;
 use App\CustomClasses\GTZ\ltl\QuotesResults as globalTranzQuotesResults;
 use App\CustomClasses\WWESMALL\WweSmallQuoteResults;
 use App\CustomClasses\Shipping;
@@ -679,6 +680,15 @@ class CompileQuotes
                         $quotesRes = array_merge($quotesRes, $resp);
                     }
                     break;
+
+                case "fedexSmall":
+                    $resp = $this->compileFedexSmallQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential);
+                    $quotesTemp['fedexSmall'] = $resp;
+                    if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))){
+                        $quotesRes = array_merge($quotesRes, $resp);
+                    }
+                    break;
+
                 case "globalTranz":
                     $resp = $this->compileGlobalTranzLtlQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential);
                     $quotesTemp['globalTranz'] = $resp;
@@ -916,6 +926,25 @@ class CompileQuotes
         $this->alwaysResi = $this->residential['alwaysResi']['upsSmall'] ?? false;
         $access = $this->getAccessorialCodeSmall();
         $res = $this->upsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment);
+
+        if(!$this->isMultiShipment) {
+            $this->isMultiShipment = $res['isMultiShipment'];
+        }
+        return $res['resp'];
+    }
+
+    public function compileFedexSmallQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential){
+        $this->fedexSmallQuotesResults = new fedexSmallQuotesResults();
+        if($residential['fedexSmall'] == 'Y'){
+            $this->isResi = true;
+            $this->residentialDlvry = 1;
+        }else{
+            $this->isResi = false;
+            $this->residentialDlvry = 0;
+        }
+        $this->alwaysResi = $this->residential['alwaysResi']['fedexSmall'] ?? false;
+        $access = $this->getAccessorialCodeSmall();
+        $res = $this->fedexSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment);
 
         if(!$this->isMultiShipment) {
             $this->isMultiShipment = $res['isMultiShipment'];

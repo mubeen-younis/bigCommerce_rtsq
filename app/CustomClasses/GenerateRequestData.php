@@ -250,10 +250,15 @@ class GenerateRequestData
             $itemsArr = $multiplePackaging['itemsArr'];
             $isMultishipment = $multiplePackaging['isMultishipment'];
             $carriers = $multiplePackaging['carriers'];
-            if(isset($carriers['wweSmall']) || isset($carriers['upsSmall'])){
+            $hasSmall = isset($carriers['wweSmall'])
+                || isset($carriers['upsSmall'])
+                || isset($carriers['fedexSmall']);
+            if($hasSmall){
 
                 $olditemsArr = $itemsArr;
-                $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'];
+                $carriersoriginAddress = $carriers['wweSmall']['originAddress']
+                    ?? $carriers['upsSmall']['originAddress']
+                    ?? $carriers['fedexSmall']['originAddress'];
                 $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment );
                 $itemsArr = $sbsResponse['items'] ?? $itemsArr;
                 if(isset($carriers['wweSmall'])) {
@@ -262,7 +267,7 @@ class GenerateRequestData
                 if(isset($carriers['upsSmall'])) {
                     $carriers['upsSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                 }
-                if(isset($carriers['upsSmall'])) {
+                if(isset($carriers['fedexSmall'])) {
                     $carriers['fedexSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                 }
                 $binReponse = $sbsResponse['binResponse'];
@@ -758,7 +763,7 @@ class GenerateRequestData
             'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
             'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
             'storeDateTime' => date("Y-m-d H:i:s"), //2020-10-22 14:00:00
-            'shipmentWeekDays' => $this->getDays($connSettings['quote_settings']['week_days']), //array('1','2','3','4','5'),
+            'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days'])?$this->getDays($connSettings['quote_settings']['week_days']):'', //array('1','2','3','4','5'),
 
             'residentialDelivery' =>  ( $alwaysResi ? 'Y' : $residential == 'Y' ) ? 'on':'off',
 
