@@ -37,14 +37,16 @@ class Bin3D
                 $binRequest[$key] = $this->generateBinRequest($bins, $item);
             }
             $responseFromSBS = $this->binRequest($binRequest, $storeId, $hits, $cartInfo);
+            //print_r($responseFromSBS); print_r($items); print_r($itemsAlone); exit;
             $items = $itemsAlone;
+
             if($isMultishipment){
                 $responseFromSBSAlone = $this->generateShipAloneBinResponse($itemsAlone);
                 $sbsCompiledResponseAlone = $this->appendNotPackedItemsOnlyAlone($responseFromSBSAlone);
                 foreach ($sbsCompiledResponseAlone as $key=> $responseFromSBSAlone){
                     $responseFromSBSAlone->not_packed_items = [];
                     $response['response'] = $responseFromSBSAlone;
-                    $responseFromSBS->$key = json_encode($response);
+                    $responseFromSBS[$key] = json_encode($response);
                 }
                 $sbsCompiledResponse = $this->appendNotPackedItems($responseFromSBS, $items);
             }else {
