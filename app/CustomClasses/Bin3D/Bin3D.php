@@ -41,8 +41,6 @@ class Bin3D
             if($isMultishipment){
                 $responseFromSBSAlone = $this->generateShipAloneBinResponse($itemsAlone);
                 $sbsCompiledResponseAlone = $this->appendNotPackedItemsOnlyAlone($responseFromSBSAlone);
-
-
                 foreach ($sbsCompiledResponseAlone as $key=> $responseFromSBSAlone){
                     $responseFromSBSAlone->not_packed_items = [];
                     $response['response'] = $responseFromSBSAlone;
@@ -210,9 +208,8 @@ class Bin3D
          * **/
         if(BinRequestLog::where('request_hash', '=', $requestHash)->where('created_at', '>', Carbon::now()->subDay(1))->exists()){
            $response = BinRequestLog::select('api_response')->where('request_hash', '=', $requestHash)->where('created_at', '>', Carbon::now()->subDay(1))->first();
-           return json_decode($response['api_response']);
+           return (array) json_decode($response['api_response']);
         }
-//dd(1);
         $binRequestLog = new BinRequestLog();
         $binRequestLog->store_id = $storeId;
         $binRequestLog->cart_id = $cartInfo['cartId'];
