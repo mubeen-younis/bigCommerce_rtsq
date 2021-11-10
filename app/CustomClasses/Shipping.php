@@ -260,11 +260,12 @@ class Shipping
         $boxFee = 0;
         if(!empty($bins->bins_packed)){
             foreach($bins->bins_packed as $pack){
-                if($pack->bin_data->type === 'item'){
+                if(isset($pack->bin_data->type) && $pack->bin_data->type === 'item'){
                     $boxFee += $pack->bin_data->boxFee;
+                }else {
+                    $boxId = $pack->bin_data->id;
+                    $boxFee += $this->BoxFeeByID($boxId);
                 }
-                $boxId = $pack->bin_data->id;
-                $boxFee += $this->BoxFeeByID($boxId);
             }
         }
         return $boxFee;
