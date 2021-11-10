@@ -292,6 +292,8 @@ class Bin3D
     }
 
     private function createItemOwnPackage($itemPropertiesArr){
+        $boxFee = $itemPropertiesArr['boxFee'] ?? 0;
+        $q = $itemPropertiesArr['q'] ?? 0;
         $itemPackage = new \stdClass();
         $itemPackage->bin_data = new \stdClass();
         $itemPackage->bin_data->w = $itemPropertiesArr['w'];
@@ -299,6 +301,7 @@ class Bin3D
         $itemPackage->bin_data->d = $itemPropertiesArr['d'];
         $itemPackage->bin_data->id = $itemPropertiesArr['id'];
         $itemPackage->bin_data->type = 'item';
+        $itemPackage->bin_data->boxFee = $boxFee*$q;
         $itemPackage->bin_data->used_space = '100';
         $itemPackage->bin_data->weight = $itemPropertiesArr['wg'];
         $itemPackage->bin_data->used_weight = '100';
@@ -351,6 +354,7 @@ class Bin3D
             $notPacked['bins_packed'] = [];
             $notPacked['status'] = 1;
             $notPacked['errors'] = [];
+            $notPacked['boxFee'] = $items['boxFee'] ??0;
             $data['response'] = $notPacked;
             $object[$Shipkey] = json_encode($data);
 

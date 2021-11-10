@@ -304,6 +304,7 @@ class GenerateRequestData
                             $itemsArr[$key]['lineItemWeight'] = $box['weight'] ?? 0;
                             $itemsArr[$key]['lineItemPrice'] = $price;
                             $itemsArr[$key]['shipBinAlone'] = 1;
+                            $itemsArr[$key]['boxFee'] = $boxFee;
                             $carriers[$carrierName]['originAddress'][$key] = $origin;
                         }
                         unset($carriers[$carrierName]['originAddress'][$varriantId]);
@@ -830,7 +831,8 @@ class GenerateRequestData
                         "d" => $itemsArr[$key]['lineItemLength'] ?? 0,
                         "w" => $itemsArr[$key]['lineItemWidth'] ?? 0,
                         "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
-                        "vr" => $itemsArr[$key]['vertical_rotation'] ?? 0 //vertical 0 or 1
+                        "vr" => $itemsArr[$key]['vertical_rotation'] ?? 0,
+                        "boxFee" => $itemsArr[$key]['boxFee'] ?? 0 //vertical 0 or 1
                     ];
                 }else {
                     $items[$origin['locationId']][] = [

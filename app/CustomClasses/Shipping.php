@@ -200,6 +200,7 @@ class Shipping
 
     private function addBinResponseToQuotes($binReponse, $quotes){
         $boxFee = [];
+        //print_r($binReponse); exit;
         foreach ($quotes as $carrierName => $quote) {
             if($this->isSmallCarrier($carrierName)) {
                 foreach ($binReponse as $locationId => $bin) {
@@ -259,6 +260,9 @@ class Shipping
         $boxFee = 0;
         if(!empty($bins->bins_packed)){
             foreach($bins->bins_packed as $pack){
+                if($pack->bin_data->type === 'item'){
+                    $boxFee += $pack->bin_data->boxFee;
+                }
                 $boxId = $pack->bin_data->id;
                 $boxFee += $this->BoxFeeByID($boxId);
             }

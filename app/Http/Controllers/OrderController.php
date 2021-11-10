@@ -135,7 +135,7 @@ class OrderController extends Controller
                     $autoResidentialsStatus = $liftResidentialStatus['resi'] ?? 'n';
                     $residentialsPickup = $liftResidentialStatus['resiPickup'] ?? 'n';
 
-                    $totalBoxes = 0;
+                    $totalBoxes = 1;
                     if(isset($ws->binPackagingData) && !empty($ws->binPackagingData) && $isSmallrate){
                         $sbsData = $ws->binPackagingData->response;
                         $itemCount = 0;
