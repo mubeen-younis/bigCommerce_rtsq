@@ -66,6 +66,7 @@ class Bin3D
             $responseFromSBS = $this->binRequest($binRequest, $storeId, $hits, $cartInfo);
             $sbsCompiledResponse = $this->appendNotPackedItems($responseFromSBS, $items);
         }else if(count($itemsAlone)){
+            //dd(2);
             $responseFromSBS = $this->generateShipAloneBinResponse($itemsAlone);
             $sbsCompiledResponse = $this->appendNotPackedItemsOnlyAlone($responseFromSBS);
         }
@@ -110,10 +111,10 @@ class Bin3D
             if(count($not_packed_items)){
                 foreach ($not_packed_items as $not_packed_item) {
                     $not_packed_item = (array)$not_packed_item;
-                    for ($i = 1; $i <= $not_packed_item['q']; $i++) {
+                    //for ($i = 1; $i <= $not_packed_item['q']; $i++) {
 
                         array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
-                    }
+                   // }
                 }
             }
         }
@@ -128,9 +129,9 @@ class Bin3D
             if(count($not_packed_items)){
                 foreach ($not_packed_items as $not_packed_item) {
                     $not_packed_item = (array)$not_packed_item;
-                    for ($i = 1; $i <= $not_packed_item['q']; $i++) {
+                    //for ($i = 1; $i <= $not_packed_item['q']; $i++) {
                         array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
-                    }
+                    //}
                 }
             }
         }
