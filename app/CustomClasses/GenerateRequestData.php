@@ -279,6 +279,7 @@ class GenerateRequestData
     public function handleShipAsMultiplePackaging($carriers, $itemsArr){
         $locationIds = [];
         foreach ($carriers as $carrierName => $carrier){
+            //print_r($carrier['originAddress']); exit;
             foreach($carrier['originAddress'] as $varriantId => $origin){
                 $isShipAsMultiplePackage = $itemsArr[$varriantId]['shipMultiplePackage'] ?? false;
                 if(!in_array($origin['locationId'], $locationIds)){
@@ -307,7 +308,7 @@ class GenerateRequestData
                             $itemsArr[$key]['boxFee'] = $boxFee;
                             $carriers[$carrierName]['originAddress'][$key] = $origin;
                         }
-                        unset($carriers[$carrierName]['originAddress'][$varriantId]);
+                        //unset($carriers[$carrierName]['originAddress'][$varriantId]);
                     }
                 }
             }
