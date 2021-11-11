@@ -73,13 +73,14 @@ class OrderController extends Controller
         );
     }
 
-    public function formateItems($items){
+    public function formateItems($oldItems, $items){
         $tempItems = $items;
-        foreach ($tempItems as $item){
+        foreach ($tempItems as $key => $item){
             $variant_id = $item->variant_id;
-            $items->$variant_id = $item;
-        }
-        return $items;
+            $oldItems->$variant_id = $item;
+            $oldItems->$key = $item;
+        };
+        return $oldItems;
     }
 
     public function formateOrigins($carriers){
@@ -113,10 +114,10 @@ class OrderController extends Controller
         $responseFromWS = json_decode($data['quotes']);
 
         $requestToWS = json_decode($data['request']);
-        $lineItem->items = $this->formateItems($requestToWS->requestArr->commdityDetails);
+        $lineItem->items = $this->formateItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
+
         $lineItem->origin = $this->formateOrigins($requestToWS->requestArr->carriers);
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
-        //dd($order['rate_id'],$multiShipmentresponse);
         $autoResidentialsStatus = 'n';
         $residentialsPickup = 'n';
         $liftGateStatus = 'n';
@@ -128,7 +129,6 @@ class OrderController extends Controller
                 if( !(isset($ws->severity) && $ws->severity == 'ERROR') ){
 
                     $liftResidentialStatus = $this->getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate,$order['rate_id'] );
-                    //dd($liftResidentialStatus);
                     if($isLG) {
                         $liftGateStatus = $liftResidentialStatus['liftG'] ?? 'n';
                     }
@@ -139,7 +139,6 @@ class OrderController extends Controller
                     if(isset($ws->binPackagingData) && !empty($ws->binPackagingData) && $isSmallrate){
                         $sbsData = $ws->binPackagingData->response;
                         $itemCount = 0;
-//print_r($sbsData->bins_packed); print_r($lineItem->items); exit;
                         foreach ($sbsData->bins_packed as $key => $binPacked) {
 
                             $type = '';
@@ -186,10 +185,10 @@ class OrderController extends Controller
         }
         $origins = $lineItem->origin;
         $items = $lineItem->items;
-
+        //print_r($origins); print_r($items); exit;
         $count = 0;
         $addedInsurance = $addHazmat = false;
-//print_r($items); exit;
+
         $isMulti = false;
         $insertedIds = [];
         foreach($origins as $key => $origin){
@@ -219,8 +218,8 @@ class OrderController extends Controller
             $orderWidget[$zip]['shipping_method'] = $sName.$sMethod;
             $orderWidget[$zip]['shipping_rate'] = '$'. number_format((float)$sRate, 2, '.', '');
             //print_r($item);
-            if( (!in_array($item->id, $insertedIds)) ) {
-                $insertedIds[] = $item->id;
+            if( (!in_array($item->lineItemName, $insertedIds)) ) {
+                $insertedIds[] = $item->lineItemName;
                 $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
             }
 

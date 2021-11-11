@@ -222,7 +222,7 @@ class GenerateRequestData
         }
         $binReponse = $boxBins =[];
 
-        if ($this->storeData['installed_addon_sbs'])
+        if ($this->storeData['installed_addon_sbs'] && 1)
         {
             $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
             if(empty($multiplePackaging)){
@@ -313,11 +313,13 @@ class GenerateRequestData
                 }
             }
         }
-        return [
+        $res = [
             'carriers' => $carriers,
             'itemsArr' => $itemsArr,
             'isMultishipment' => count($locationIds) > 1 ? true: false
         ];
+        //print_r($res); exit;
+        return $res;
     }
 
     public function getPrice($products, $field, $value){
