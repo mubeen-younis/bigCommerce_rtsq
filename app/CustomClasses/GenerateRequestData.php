@@ -222,7 +222,7 @@ class GenerateRequestData
         }
         $binReponse = $boxBins =[];
 
-        if ($this->storeData['installed_addon_sbs'] && 1)
+        if ($this->storeData['installed_addon_sbs'])
         {
             $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
             if(empty($multiplePackaging)){
@@ -308,7 +308,7 @@ class GenerateRequestData
                             $itemsArr[$key]['boxFee'] = $boxFee;
                             $carriers[$carrierName]['originAddress'][$key] = $origin;
                         }
-                        //unset($carriers[$carrierName]['originAddress'][$varriantId]);
+                        unset($carriers[$carrierName]['originAddress'][$varriantId]);
                     }
                 }
             }
