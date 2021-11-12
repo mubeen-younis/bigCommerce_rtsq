@@ -787,6 +787,7 @@ class CompileQuotes
                 //}
             }
         }
+
         return $newQuotes;
     }
 
@@ -945,9 +946,8 @@ class CompileQuotes
         $this->alwaysResi = $this->residential['alwaysResi']['fedexSmall'] ?? false;
         $access = $this->getAccessorialCodeSmall();
         $res = $this->fedexSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment);
-
         if(!$this->isMultiShipment) {
-            $this->isMultiShipment = $res['isMultiShipment'];
+            $this->isMultiShipment = $res['isMultiShipment'] ?? false;
         }
         return $res['resp'];
     }

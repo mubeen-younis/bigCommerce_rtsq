@@ -107,7 +107,7 @@ class QuotesResults
 
 
     public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment){
-
+        //print_r($shipments); exit;
         $shipments = $this->formateQuoteBeforeCompile($shipments);
 
         $this->quoteSettings = $connectionSettings['fedex-small']['quote_settings'] ?? [];
@@ -131,6 +131,9 @@ class QuotesResults
         if(!$isMultiShipment) {
             $isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
+        $returnResp = [
+            'isMultiShipment' => $isMultiShipment
+        ];
         $this->isMultiShipment = $isMultiShipment;
         $shipmentCount = 0;
         $count = 0;
@@ -148,6 +151,7 @@ class QuotesResults
 
             if (isset($quote['q'])) {
                 foreach ($quote['q'] as $key => $data) {
+
                     // Check if service type is checked to show
                     if (!in_array($data['serviceType'], $allConfigServices)) {
                         continue;
@@ -187,9 +191,9 @@ class QuotesResults
                     }
 
 
-                    $title = $this->getServiceTitle($data['serviceDesc'], $data['transitTime'], $data['serviceType'], $this->quoteSettings, $residential);
+                    $title = $this->getServiceTitle($data['serviceDesc'], $data, $data['serviceType'], $this->quoteSettings, $residential);
                     $price = (float) str_replace(',','',$price);
-                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12'.$data['serviceType'] . $access;
+                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12fedex'.$data['serviceType'] . $access;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
                     $multiShipmentQuotes['simple'][$origin] = $originQuotes[$shipmentCount]['shipment'][$key]['simple'];

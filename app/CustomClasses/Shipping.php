@@ -110,7 +110,6 @@ class Shipping
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];
         }
-
         $_finalQuotes = $finalTitlesTemp = $finalCodesTemp = [];
         $finalTitles = array_column($finalQuotes, 'title');
         $finalCodes = array_column($finalQuotes, 'code');
@@ -170,6 +169,7 @@ class Shipping
     }
 
     private function removeParcelIfLtl($finalQuotes){
+        //print_r($finalQuotes); exit;
         $hasLtl = false;
         $hasParcel = false;
         foreach ($finalQuotes as $quote){
