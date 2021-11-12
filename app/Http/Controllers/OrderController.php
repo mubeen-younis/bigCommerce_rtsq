@@ -190,7 +190,7 @@ class OrderController extends Controller
         $addedInsurance = $addHazmat = false;
 
         $isMulti = false;
-        $insertedIds = [];
+        $insertedIds = $insertedNames = [];
         foreach($origins as $key => $origin){
             $item =  $items->$key;
             $city = $origin->senderCity ? $origin->senderCity.',': '';
@@ -218,9 +218,16 @@ class OrderController extends Controller
             $orderWidget[$zip]['shipping_method'] = $sName.$sMethod;
             $orderWidget[$zip]['shipping_rate'] = '$'. number_format((float)$sRate, 2, '.', '');
             //print_r($item); exit;
-            if( (!in_array($item->variant_id, $insertedIds)) ) {
-                $insertedIds[] = $item->variant_id;
-                $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
+            if( $item->shipMultiplePackage ) {
+                if((!in_array($item->lineItemName, $insertedNames))) {
+                    $insertedNames[] = $item->lineItemName;
+                    $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
+                }
+            }else{
+                if((!in_array($item->id, $insertedIds))) {
+                    $insertedIds[] = $item->id;
+                    $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
+                }
             }
 
             $orderWidget[$zip]['accessories'] = [];
