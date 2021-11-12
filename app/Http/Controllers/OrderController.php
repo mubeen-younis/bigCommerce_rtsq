@@ -217,9 +217,9 @@ class OrderController extends Controller
 
             $orderWidget[$zip]['shipping_method'] = $sName.$sMethod;
             $orderWidget[$zip]['shipping_rate'] = '$'. number_format((float)$sRate, 2, '.', '');
-            //print_r($item);
-            if( (!in_array($item->lineItemName, $insertedIds)) ) {
-                $insertedIds[] = $item->lineItemName;
+            //print_r($item); exit;
+            if( (!in_array($item->variant_id, $insertedIds)) ) {
+                $insertedIds[] = $item->variant_id;
                 $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
             }
 

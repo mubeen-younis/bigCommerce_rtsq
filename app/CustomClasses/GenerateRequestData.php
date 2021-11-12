@@ -27,6 +27,8 @@ class GenerateRequestData
     public $radHitConsumed = 0;
     public $resiCarrier = [];
     public $residential = "N";
+    public $origins = [];
+    public $itemsArr = [];
 
     /**
      * constructor of class that accepts request object
@@ -224,6 +226,8 @@ class GenerateRequestData
 
         if ($this->storeData['installed_addon_sbs'])
         {
+            $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'];
+            $this->itemsArr = $itemsArr;
             $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
             if(empty($multiplePackaging)){
                 return null;
@@ -277,6 +281,7 @@ class GenerateRequestData
      * get box related to item id and re create items array according to boxes
      */
     public function handleShipAsMultiplePackaging($carriers, $itemsArr){
+        //print_r($carriers); print_r($itemsArr); //exit;
         $locationIds = [];
         foreach ($carriers as $carrierName => $carrier){
             //print_r($carrier['originAddress']); exit;
@@ -294,7 +299,7 @@ class GenerateRequestData
                         foreach ($getBoxes as $key => $box){
                             $key = substr(str_shuffle("0123456789"), 0, 5);
                             $boxFee = $box['box_fee'] ?? 0;
-                            $variantId = $this->getPrice($itemsArr, 'id',$box['product_id']);
+                            $variantId = $this->generateVariantId($itemsArr, 'id',$box['product_id']);
                             $price = $itemsArr[$variantId]['lineItemPrice'] ?? 0;
                             $price = (($price/count($getBoxes))/$box['quantity'])+$boxFee;
                             $itemsArr[$key] = $itemsArr[$varriantId];
@@ -323,7 +328,7 @@ class GenerateRequestData
         return $res;
     }
 
-    public function getPrice($products, $field, $value){
+    public function generateVariantId($products, $field, $value){
         foreach($products as $key => $product)
         {
             if ( $product[$field] === $value )
@@ -821,6 +826,7 @@ class GenerateRequestData
 
     public function getStoreBoxes($storeId, $itemsArr, $origins, $cartInfo, $isMultishipment)
     {
+        //print_r($origins); print_r($itemsArr); exit;
         $items = $itemsAlone = [];
         foreach ($origins as $key => $origin){
             $isNotLtl = !(isset($itemsArr[$key]['freightClass']) && $itemsArr[$key]['freightClass'] === 'ltl');
@@ -868,7 +874,7 @@ class GenerateRequestData
             );
         }
         $hits = count($items);
-        if((count($items) || count($itemsAlone) ) && count($boxBins)) {
+        if((count($items) && count($boxBins) ) || count($itemsAlone) ) {
             $Bin3D = new Bin3D();
             $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment);
             if (count($binResponse)) {
@@ -904,12 +910,12 @@ class GenerateRequestData
                     }
                 }
             } else {
-                $newOrigins = $origins;
-                $newitemsArr = $itemsArr;
+                $newOrigins = $this->origins;
+                $newitemsArr = $this->itemsArr;
             }
         }else{
-            $newOrigins = $origins;
-            $newitemsArr = $itemsArr;
+            $newOrigins = $this->origins;
+            $newitemsArr = $this->itemsArr;
         }
         $resp['items'] = $newitemsArr;
         $resp['originAddress'] = $newOrigins;

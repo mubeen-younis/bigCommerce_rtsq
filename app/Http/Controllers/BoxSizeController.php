@@ -162,7 +162,7 @@ class BoxSizeController extends Controller
         return response()->json([
             'error' => false,
             'data' => $this->multiplePackagingBoxes($request),
-            'message' => 'Box added succesfully.'
+            'message' => 'Box added successfully.'
         ]);
     }
 
@@ -198,7 +198,7 @@ class BoxSizeController extends Controller
             return response()->json([
                 'error' => false,
                 'data' => $this->multiplePackagingBoxes($request),
-                'message' => 'Box added succesfully.'
+                'message' => 'Box added successfully.'
             ]);
         }else{
             return response()->json([
@@ -214,7 +214,7 @@ class BoxSizeController extends Controller
             return response()->json([
                 'error' => false,
                 'data' => $this->multiplePackagingBoxes($request),
-                'message' => 'Box deleted succesfully.'
+                'message' => 'Box deleted successfully.'
             ]);
         }else{
             return response()->json([
@@ -237,7 +237,7 @@ class BoxSizeController extends Controller
             return response()->json([
                 'error' => false,
                 'data' => $this->multiplePackagingBoxes($request),
-                'message' => 'Box updated succesfully.'
+                'message' => 'Box updated successfully.'
             ]);
         }else{
             return response()->json([
