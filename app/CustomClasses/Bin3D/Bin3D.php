@@ -31,6 +31,7 @@ class Bin3D
         if(!$sbsStatus['status']){
             return [];
         }
+        //print_r($items); print_r($itemsAlone); exit;
         if(count($items) && count($itemsAlone)){
 
             foreach ($items as $key => $item) {
@@ -38,18 +39,22 @@ class Bin3D
             }
             $responseFromSBS = $this->binRequest($binRequest, $storeId, $hits, $cartInfo);
             //print_r($responseFromSBS); print_r($items); print_r($itemsAlone); exit;
-            $items = $itemsAlone;
+
 
             if($isMultishipment){
+                $items = $items + $itemsAlone;
                 $responseFromSBSAlone = $this->generateShipAloneBinResponse($itemsAlone);
                 $sbsCompiledResponseAlone = $this->appendNotPackedItemsOnlyAlone($responseFromSBSAlone);
+                //print_r($sbsCompiledResponseAlone); exit;
                 foreach ($sbsCompiledResponseAlone as $key=> $responseFromSBSAlone){
                     $responseFromSBSAlone->not_packed_items = [];
                     $response['response'] = $responseFromSBSAlone;
                     $responseFromSBS[$key] = json_encode($response);
                 }
+                //print_r($responseFromSBS); exit;
                 $sbsCompiledResponse = $this->appendNotPackedItems($responseFromSBS, $items);
             }else {
+                $items = $itemsAlone;
                 $sbsCompiledResponse = $this->appendNotPackedItemsBoth($responseFromSBS, $items);
             }
         }else if(count($items)) {
@@ -134,6 +139,7 @@ class Bin3D
     }
 
     public function appendNotPackedItems($responseFromSBS, $items = []){
+        //print_r($responseFromSBS); print_r($items); exit;
         foreach ($responseFromSBS as $key => $SBSResp){
             $data[$key] = json_decode($SBSResp)->response;
             $resp = json_decode($SBSResp);
