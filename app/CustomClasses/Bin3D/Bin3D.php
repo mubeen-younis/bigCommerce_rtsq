@@ -31,27 +31,27 @@ class Bin3D
         if(!$sbsStatus['status']){
             return [];
         }
-        //print_r($items); print_r($itemsAlone); exit;
         if(count($items) && count($itemsAlone)){
 
             foreach ($items as $key => $item) {
                 $binRequest[$key] = $this->generateBinRequest($bins, $item);
             }
             $responseFromSBS = $this->binRequest($binRequest, $storeId, $hits, $cartInfo);
-            //print_r($responseFromSBS); print_r($items); print_r($itemsAlone); exit;
-
 
             if($isMultishipment){
                 $items = $items + $itemsAlone;
                 $responseFromSBSAlone = $this->generateShipAloneBinResponse($itemsAlone);
                 $sbsCompiledResponseAlone = $this->appendNotPackedItemsOnlyAlone($responseFromSBSAlone);
-                //print_r($sbsCompiledResponseAlone); exit;
                 foreach ($sbsCompiledResponseAlone as $key=> $responseFromSBSAlone){
                     $responseFromSBSAlone->not_packed_items = [];
                     $response['response'] = $responseFromSBSAlone;
-                    $responseFromSBS[$key] = json_encode($response);
+                    //$responseFromSBS[$key] = json_encode($response);
+                    if(isset($responseFromSBS[$key])){
+                        $responseFromSBS[$key] = json_encode($this->multiShipmentOneShipHasBoth($responseFromSBS[$key], $responseFromSBSAlone));
+                    }else {
+                        $responseFromSBS[$key] = json_encode($response);
+                    }
                 }
-                //print_r($responseFromSBS); exit;
                 $sbsCompiledResponse = $this->appendNotPackedItems($responseFromSBS, $items);
             }else {
                 $items = $itemsAlone;
@@ -67,7 +67,18 @@ class Bin3D
             $responseFromSBS = $this->generateShipAloneBinResponse($itemsAlone);
             $sbsCompiledResponse = $this->appendNotPackedItemsOnlyAlone($responseFromSBS);
         }
+        //print_r($sbsCompiledResponse); exit;
         return $sbsCompiledResponse;
+    }
+
+    public function multiShipmentOneShipHasBoth($responseFromSBS, $responseFromSBSAlone){
+        $responseFromSBS = json_decode($responseFromSBS)->response;
+        foreach ($responseFromSBSAlone->bins_packed as $packed){
+            array_push($responseFromSBS->bins_packed, $packed);
+        }
+        return [
+            'response' => $responseFromSBS
+        ];
     }
 
     public function appendNotPackedItemsBothMultishipment($responseFromSBS, $items){
