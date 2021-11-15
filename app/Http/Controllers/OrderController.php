@@ -158,22 +158,24 @@ class OrderController extends Controller
 
                             $orderWidgetData['nickname'] = $this->getBoxName($binPacked->bin_data->id, $request['store_id'], $order['rate_id'], $order['cart_id']);
                             foreach ($binPacked->items as $item) {
-
                                 $productid = $item->id;
-                                $orderWidgetData['items'][$count]['product_name'] = $lineItem->items->$productid->lineItemName;
-                                $orderWidgetData['items'][$count]['w'] = $item->w;
-                                $orderWidgetData['items'][$count]['h'] = $item->h;
-                                $orderWidgetData['items'][$count]['d'] = $item->d;
 
-                                $orderWidgetData['items'][$count]['image_separated'] = $item->image_separated;
-                                $orderWidgetData['items'][$count]['image_sbs'] = $item->image_sbs;
+                                    $orderWidgetData['items'][$count]['product_name'] = $lineItem->items->$productid->lineItemName ?? '';
+                                    $orderWidgetData['items'][$count]['w'] = $item->w;
+                                    $orderWidgetData['items'][$count]['h'] = $item->h;
+                                    $orderWidgetData['items'][$count]['d'] = $item->d;
 
-                                $orderWidget[$zip]['sbs'][$key] = $orderWidgetData;
-                                ++$count;
+                                    $orderWidgetData['items'][$count]['image_separated'] = $item->image_separated;
+                                    $orderWidgetData['items'][$count]['image_sbs'] = $item->image_sbs;
+
+                                    $orderWidget[$zip]['sbs'][$key] = $orderWidgetData;
+                                    ++$count;
 
                             }
                             unset($orderWidgetData);
-                            $orderWidget[$zip]['sbs'][$key]['number_of_items'] = $count;
+                            if($count) {
+                                $orderWidget[$zip]['sbs'][$key]['number_of_items'] = $count;
+                            }
                         }
                         $totalBoxes = $key+1-$itemCount;
 
