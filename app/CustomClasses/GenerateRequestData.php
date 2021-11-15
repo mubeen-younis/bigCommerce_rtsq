@@ -27,8 +27,10 @@ class GenerateRequestData
     public $radHitConsumed = 0;
     public $resiCarrier = [];
     public $residential = "N";
+    public $fedexType = 'normal';
     public $origins = [];
     public $itemsArr = [];
+    public $carriers = [];
 
     /**
      * constructor of class that accepts request object
@@ -245,8 +247,9 @@ class GenerateRequestData
 
         if ($this->storeData['installed_addon_sbs'])
         {
-            $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'];
+            $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'];
             $this->itemsArr = $itemsArr;
+            $this->carriers = $carriers;
             $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
             if(empty($multiplePackaging)){
                 return null;
@@ -263,8 +266,25 @@ class GenerateRequestData
                 $carriersoriginAddress = $carriers['wweSmall']['originAddress']
                     ?? $carriers['upsSmall']['originAddress']
                     ?? $carriers['fedexSmall']['originAddress'];
-                $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment );
-                $itemsArr = $sbsResponse['items'] ?? $itemsArr;
+
+                if(isset($carriers['fedexSmall'])){
+                    $this->fedexType = 'normal'; // ground services
+                    $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
+                    $itemsArrNormal = $sbsResponse['items'] ?? $itemsArr;
+                    $this->fedexType = 'fedex'; // one rate services
+                    $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
+                    $itemsArrOneRate = $sbsResponse['items'] ?? $itemsArr;
+                    $commdityDetails['one_rate_commdityDetails'] = $this->lineItems($itemsArrOneRate);
+                    $this->fedexType = 'both'; // air services
+                    $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
+                    $itemsArrBoth = $sbsResponse['items'] ?? $itemsArr;
+                    $commdityDetails['air_services_commdityDetails'] = $this->lineItems($itemsArrBoth);
+                }else {
+                    $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
+                    $itemsArr = $sbsResponse['items'] ?? $itemsArr;
+                }
+
+
                 if(isset($carriers['wweSmall'])) {
                     $carriers['wweSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                 }
@@ -286,7 +306,8 @@ class GenerateRequestData
                 }
             }
         }
-
+        $commdityDetails = $commdityDetails ?? '';
+        //print_r($commdityDetails); exit;
         $requestArr = [
             'apiVersion' => '2.0',
             'platform' => 'bigcommerce',
@@ -298,9 +319,18 @@ class GenerateRequestData
             'carriers' => $carriers,
             'receiverAddress' => $receiverAddress,
             'commdityDetails' => $itemsArr,
+            $commdityDetails
         ];
         $resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse, 'boxBins' => $boxBins];
         return $resp;
+    }
+
+    public function lineItems($items){
+        $newItems = [];
+        foreach ($items as $key => $item){
+            $newItems[$key]['lineItems'] = $item;
+        }
+        return $newItems;
     }
 
     /**
@@ -929,8 +959,22 @@ class GenerateRequestData
         }
         //print_r($itemsArr); print_r($items); print_r($itemsAlone); exit;
         $boxBins = $newOrigins = $newitemsArr = [];
-        $boxes = DB::table('box_sizes')->where('store_id', $storeId)
-            ->where('is_available', 1)->get();
+        switch ($this->fedexType){
+            case 'normal':
+                $boxes = DB::table('box_sizes')->where('store_id', $storeId)
+                    ->where('is_available', 1)->where('box_type', 1)->get();
+                break;
+            case 'fedex':
+                $boxes = DB::table('box_sizes')->where('store_id', $storeId)
+                    ->where('is_available', 1)->where('box_type', 2)->get();
+                break;
+            default:
+                $boxes = DB::table('box_sizes')->where('store_id', $storeId)
+                    ->where('is_available', 1)->get();
+                break;
+        }
+        /*$boxes = DB::table('box_sizes')->where('store_id', $storeId)
+            ->where('is_available', 1)->get();*/
         foreach ($boxes as $box) {
             $boxBins[$box->id] = array(
                 'nickname' => $box->nickname,
