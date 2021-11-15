@@ -146,7 +146,7 @@ class OrderController extends Controller
                             if (isset($binPacked->bin_data->type) && $binPacked->bin_data->type == 'item') {
                                 $type = 'item';
                                 $product_id = $binPacked->bin_data->id;
-                                $quantity = $lineItem->items->$product_id->piecesOfLineItem ?? 1;
+                                $quantity = $binPacked->bin_data->quantity ?? 1;
                                 $itemCount++;
                             }
                             $count = 0;

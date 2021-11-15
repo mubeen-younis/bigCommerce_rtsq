@@ -308,6 +308,7 @@ class Bin3D
         $itemPackage->bin_data->id = $itemPropertiesArr['id'];
         $itemPackage->bin_data->type = 'item';
         $itemPackage->bin_data->boxFee = $boxFee*$q;
+        $itemPackage->bin_data->quantity = $q;
         $itemPackage->bin_data->used_space = '100';
         $itemPackage->bin_data->weight = $itemPropertiesArr['wg'];
         $itemPackage->bin_data->used_weight = '100';
