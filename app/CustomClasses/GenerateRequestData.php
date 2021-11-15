@@ -895,7 +895,7 @@ class GenerateRequestData
                         if(!empty($itm)) {
                             // print_r($itm); exit;
                             $bins = $binResponse[$locationId]->bins_packed ?? [];
-                            //print_r($items); print_r($bins); exit;
+                            // print_r($bins); exit;
                             $hasBoth = true;
                             foreach ($bins as $key => $bin) {
                                 //$itm = $bin->items;
@@ -908,14 +908,18 @@ class GenerateRequestData
                                 $itemId = $items[0]->id ?? 0;
                                 if($itemId !== $binId){
                                     $origin = $itm['id'];
-                                    $newkey = $origin . $key;
+                                    if(isset($itemsArr[$origin]['shipBinAlone']) && $itemsArr[$origin]['shipBinAlone'] == 1){
+                                        $newkey = $origin;
+                                    }else {
+                                        $newkey = $origin . $key;
+                                    }
                                     $newOrigins[$newkey] = $origins[$origin];
                                     $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins, $itemsArr);
                                     $hasBoth = false;
                                 }else{
                                     if($hasBoth){
                                         $origin = $itm['id'];
-                                        $newkey = $origin . $key;
+                                        $newkey = $origin;// . $key;
                                         $newOrigins[$newkey] = $origins[$origin];
                                         $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins, $itemsArr);
                                     }
@@ -944,6 +948,7 @@ class GenerateRequestData
     }
 
     public function updatCommdityDetails($item, $bin, $boxBins, $itemsArr){
+
         $boxWeight = 0;
         $price = $item['lineItemPrice'] ?? 0;
         if(isset($bin->bin_data->id) && isset($boxBins[$bin->bin_data->id])){
@@ -960,8 +965,12 @@ class GenerateRequestData
         $item['lineItemHeight'] = $bin->bin_data->h ?? 0;
         $item['lineItemPrice'] = $price;//$item['lineItemPrice']*$quantityPacked;
         $item['lineItemWeight'] = $bin->bin_data->weight + $boxWeight;
+
         //$item['piecesOfLineItem'] = 1 ?? 0;
         $item['shipItemAlone'] = 1;
+        if( (isset($item['shipBinAlone']) && $item['shipBinAlone'] == 0 )){
+            $item['piecesOfLineItem'] = 1;
+        }
         if(isset($bin->bin_data->type) && $bin->bin_data->type == 'item' && isset($bin->bin_data->id)) {
             $item['variant_id'] = $bin->bin_data->id ?? 0;
         }
