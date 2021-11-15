@@ -140,7 +140,6 @@ class OrderController extends Controller
                         $sbsData = $ws->binPackagingData->response;
                         $itemCount = 0;
                         foreach ($sbsData->bins_packed as $key => $binPacked) {
-
                             $type = '';
                             $quantity = 1;
                             if (isset($binPacked->bin_data->type) && $binPacked->bin_data->type == 'item') {
@@ -150,15 +149,16 @@ class OrderController extends Controller
                                 $itemCount++;
                             }
                             $count = 0;
-                            foreach ($binPacked->items as $item) {
-                                $orderWidgetData['type'] = $type;
-                                $orderWidgetData['image_complete'] = $binPacked->image_complete;
-                                $orderWidgetData['d'] = $binPacked->bin_data->d. ' x ';
-                                $orderWidgetData['w'] = $binPacked->bin_data->w . ' x ';
-                                $orderWidgetData['h'] = $binPacked->bin_data->h;
-                                $orderWidgetData['quantity'] = $quantity;
+                            $orderWidgetData['type'] = $type;
+                            $orderWidgetData['image_complete'] = $binPacked->image_complete;
+                            $orderWidgetData['d'] = $binPacked->bin_data->d. ' x ';
+                            $orderWidgetData['w'] = $binPacked->bin_data->w . ' x ';
+                            $orderWidgetData['h'] = $binPacked->bin_data->h;
+                            $orderWidgetData['quantity'] = $quantity;
 
-                                $orderWidgetData['nickname'] = $this->getBoxName($binPacked->bin_data->id, $request['store_id'], $order['rate_id'], $order['cart_id']);
+                            $orderWidgetData['nickname'] = $this->getBoxName($binPacked->bin_data->id, $request['store_id'], $order['rate_id'], $order['cart_id']);
+                            foreach ($binPacked->items as $item) {
+
                                 $productid = $item->id;
                                 $orderWidgetData['items'][$count]['product_name'] = $lineItem->items->$productid->lineItemName;
                                 $orderWidgetData['items'][$count]['w'] = $item->w;
@@ -169,14 +169,13 @@ class OrderController extends Controller
                                 $orderWidgetData['items'][$count]['image_sbs'] = $item->image_sbs;
 
                                 $orderWidget[$zip]['sbs'][$key] = $orderWidgetData;
-
-                                $count++;
+                                ++$count;
 
                             }
+                            unset($orderWidgetData);
                             $orderWidget[$zip]['sbs'][$key]['number_of_items'] = $count;
                         }
                         $totalBoxes = $key+1-$itemCount;
-                        //$totalBoxes = $key+1;
 
 
                     }
@@ -185,7 +184,6 @@ class OrderController extends Controller
         }
         $origins = $lineItem->origin;
         $items = $lineItem->items;
-        //print_r($origins); print_r($items); exit;
         $count = 0;
         $addedInsurance = $addHazmat = false;
 
