@@ -42,6 +42,7 @@ class Shipping
         $quoteSettings = $multiShipmentQuotes = [];
         $generateReqData = new GenerateRequestData();
         //   init is a function to to call it explixitlitly rather constructor
+
         $generateReqData->_init($quoteSettings, $connectionSettings, $storeData);
         $package = $request['lineItemData'];
         // Disabling instore pickup if there is multi shipment case
@@ -200,6 +201,7 @@ class Shipping
 
     private function addBinResponseToQuotes($binReponse, $quotes){
         $boxFee = [];
+        //print_r($binReponse); exit;
         foreach ($quotes as $carrierName => $quote) {
             if($this->isSmallCarrier($carrierName)) {
                 foreach ($binReponse as $locationId => $bin) {
@@ -259,8 +261,12 @@ class Shipping
         $boxFee = 0;
         if(!empty($bins->bins_packed)){
             foreach($bins->bins_packed as $pack){
-                $boxId = $pack->bin_data->id;
-                $boxFee += $this->BoxFeeByID($boxId);
+                if(isset($pack->bin_data->type) && $pack->bin_data->type === 'item'){
+                    $boxFee += $pack->bin_data->boxFee;
+                }else {
+                    $boxId = $pack->bin_data->id;
+                    $boxFee += $this->BoxFeeByID($boxId);
+                }
             }
         }
         return $boxFee;

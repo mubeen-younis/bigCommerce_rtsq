@@ -31,32 +31,30 @@ class Bin3D
         if(!$sbsStatus['status']){
             return [];
         }
-        //dd($isMultishipment, $items, $itemsAlone);
-        //print_r($items); print_r($itemsAlone); exit;
         if(count($items) && count($itemsAlone)){
 
             foreach ($items as $key => $item) {
                 $binRequest[$key] = $this->generateBinRequest($bins, $item);
             }
-            //print_r($binRequest); exit;
             $responseFromSBS = $this->binRequest($binRequest, $storeId, $hits, $cartInfo);
-            $items = $itemsAlone;
+
             if($isMultishipment){
+                $items = $items + $itemsAlone;
                 $responseFromSBSAlone = $this->generateShipAloneBinResponse($itemsAlone);
                 $sbsCompiledResponseAlone = $this->appendNotPackedItemsOnlyAlone($responseFromSBSAlone);
-                //dd(count($responseFromSBSAlone));
-                //print_r($responseFromSBS); print_r($sbsCompiledResponseAlone);  exit;
-                //array_push($responseFromSBS, $responseFromSBS1);
-
                 foreach ($sbsCompiledResponseAlone as $key=> $responseFromSBSAlone){
-                    //print_r($responseFromSBSAlone); exit;
                     $responseFromSBSAlone->not_packed_items = [];
                     $response['response'] = $responseFromSBSAlone;
-                    $responseFromSBS->$key = json_encode($response);
+                    //$responseFromSBS[$key] = json_encode($response);
+                    if(isset($responseFromSBS[$key])){
+                        $responseFromSBS[$key] = json_encode($this->multiShipmentOneShipHasBoth($responseFromSBS[$key], $responseFromSBSAlone));
+                    }else {
+                        $responseFromSBS[$key] = json_encode($response);
+                    }
                 }
-                //print_r($responseFromSBS); exit;
                 $sbsCompiledResponse = $this->appendNotPackedItems($responseFromSBS, $items);
             }else {
+                $items = $itemsAlone;
                 $sbsCompiledResponse = $this->appendNotPackedItemsBoth($responseFromSBS, $items);
             }
         }else if(count($items)) {
@@ -71,6 +69,16 @@ class Bin3D
         }
         //print_r($sbsCompiledResponse); exit;
         return $sbsCompiledResponse;
+    }
+
+    public function multiShipmentOneShipHasBoth($responseFromSBS, $responseFromSBSAlone){
+        $responseFromSBS = json_decode($responseFromSBS)->response;
+        foreach ($responseFromSBSAlone->bins_packed as $packed){
+            array_push($responseFromSBS->bins_packed, $packed);
+        }
+        return [
+            'response' => $responseFromSBS
+        ];
     }
 
     public function appendNotPackedItemsBothMultishipment($responseFromSBS, $items){
@@ -110,10 +118,10 @@ class Bin3D
             if(count($not_packed_items)){
                 foreach ($not_packed_items as $not_packed_item) {
                     $not_packed_item = (array)$not_packed_item;
-                    for ($i = 1; $i <= $not_packed_item['q']; $i++) {
+                    //for ($i = 1; $i <= $not_packed_item['q']; $i++) {
 
                         array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
-                    }
+                   // }
                 }
             }
         }
@@ -128,9 +136,13 @@ class Bin3D
             if(count($not_packed_items)){
                 foreach ($not_packed_items as $not_packed_item) {
                     $not_packed_item = (array)$not_packed_item;
-                    for ($i = 1; $i <= $not_packed_item['q']; $i++) {
+                    /*
+                     * Commented quantity because it was repeating product
+                     * now it will be handled by index 'piecesOfLineItem'
+                     */
+                    //for ($i = 1; $i <= $not_packed_item['q']; $i++) {
                         array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
-                    }
+                    //}
                 }
             }
         }
@@ -138,6 +150,7 @@ class Bin3D
     }
 
     public function appendNotPackedItems($responseFromSBS, $items = []){
+        //print_r($responseFromSBS); print_r($items); exit;
         foreach ($responseFromSBS as $key => $SBSResp){
             $data[$key] = json_decode($SBSResp)->response;
             $resp = json_decode($SBSResp);
@@ -214,9 +227,8 @@ class Bin3D
          * **/
         if(BinRequestLog::where('request_hash', '=', $requestHash)->where('created_at', '>', Carbon::now()->subDay(1))->exists()){
            $response = BinRequestLog::select('api_response')->where('request_hash', '=', $requestHash)->where('created_at', '>', Carbon::now()->subDay(1))->first();
-           return json_decode($response['api_response']);
+           return (array) json_decode($response['api_response']);
         }
-//dd(1);
         $binRequestLog = new BinRequestLog();
         $binRequestLog->store_id = $storeId;
         $binRequestLog->cart_id = $cartInfo['cartId'];
@@ -297,6 +309,8 @@ class Bin3D
     }
 
     private function createItemOwnPackage($itemPropertiesArr){
+        $boxFee = $itemPropertiesArr['boxFee'] ?? 0;
+        $q = $itemPropertiesArr['q'] ?? 0;
         $itemPackage = new \stdClass();
         $itemPackage->bin_data = new \stdClass();
         $itemPackage->bin_data->w = $itemPropertiesArr['w'];
@@ -304,6 +318,8 @@ class Bin3D
         $itemPackage->bin_data->d = $itemPropertiesArr['d'];
         $itemPackage->bin_data->id = $itemPropertiesArr['id'];
         $itemPackage->bin_data->type = 'item';
+        $itemPackage->bin_data->boxFee = $boxFee*$q;
+        $itemPackage->bin_data->quantity = $q;
         $itemPackage->bin_data->used_space = '100';
         $itemPackage->bin_data->weight = $itemPropertiesArr['wg'];
         $itemPackage->bin_data->used_weight = '100';
@@ -356,6 +372,7 @@ class Bin3D
             $notPacked['bins_packed'] = [];
             $notPacked['status'] = 1;
             $notPacked['errors'] = [];
+            $notPacked['boxFee'] = $items['boxFee'] ??0;
             $data['response'] = $notPacked;
             $object[$Shipkey] = json_encode($data);
 

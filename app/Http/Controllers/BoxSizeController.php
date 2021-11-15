@@ -159,6 +159,14 @@ class BoxSizeController extends Controller
     }
 
     public function getMultiplePackagingBoxes(Request $request){
+        return response()->json([
+            'error' => false,
+            'data' => $this->multiplePackagingBoxes($request),
+            'message' => 'Box added successfully.'
+        ]);
+    }
+
+    public function multiplePackagingBoxes($request){
         $storeId = $request['store_id'];
         $products = ProductSetting::select('product_settings.id','product_settings.name', 'product_settings.sku')
             ->where('product_settings.ship_multiple_package', 1)
@@ -169,11 +177,7 @@ class BoxSizeController extends Controller
                 $products[$key]['boxes'] = $multiplePackages ?? [];
             }
         }
-        return response()->json([
-            'error' => false,
-            'data' => $products,
-            'message' => 'Box added succesfully.'
-        ]);
+        return $products ?? [];
     }
 
     public function getBoxesByProductId($productId){
@@ -184,8 +188,18 @@ class BoxSizeController extends Controller
 
     public function addMultiplePackagingBox(Request $request){
         $data = $request->except(['store_name', 'store_hash', 'store_id']);
+        if(MultiplePackagingBoxes::where('id', '!=', $request->id)->where('product_id', $request->product_id)->where('nickname',$request->nickname)->exists()){
+            return response()->json([
+                'error' => true,
+                'message' => "Nickname already exist."
+            ]);
+        }
         if(MultiplePackagingBoxes::create($data)){
-            return $this->getMultiplePackagingBoxes($request);
+            return response()->json([
+                'error' => false,
+                'data' => $this->multiplePackagingBoxes($request),
+                'message' => 'Box added successfully.'
+            ]);
         }else{
             return response()->json([
                 'error' => true,
@@ -197,7 +211,11 @@ class BoxSizeController extends Controller
     public function deleteMultiplePackagingBox(Request $request){
         $id = $request->id;
         if(MultiplePackagingBoxes::find($id)->delete()){
-            return $this->getMultiplePackagingBoxes($request);
+            return response()->json([
+                'error' => false,
+                'data' => $this->multiplePackagingBoxes($request),
+                'message' => 'Box deleted successfully.'
+            ]);
         }else{
             return response()->json([
                 'error' => true,
@@ -209,8 +227,18 @@ class BoxSizeController extends Controller
     public function updateMultiplePackagingBox(Request $request){
         $id = $request->id;
         $update = $request->except(['store_name', 'store_hash', 'store_id', 'id']);
+        if(MultiplePackagingBoxes::where('id', '!=', $request->id)->where('product_id', $request->product_id)->where('nickname',$request->nickname)->exists()){
+            return response()->json([
+                'error' => true,
+                'message' => "Nickname already exist."
+            ]);
+        }
         if(MultiplePackagingBoxes::find($id)->update($update)){
-            return $this->getMultiplePackagingBoxes($request);
+            return response()->json([
+                'error' => false,
+                'data' => $this->multiplePackagingBoxes($request),
+                'message' => 'Box updated successfully.'
+            ]);
         }else{
             return response()->json([
                 'error' => true,
