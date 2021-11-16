@@ -891,17 +891,11 @@ class GenerateRequestData
                 }
                 //print_r($items); print_r($binResponse); exit;
                 foreach ($items as $locationId => $item) {
-                    foreach ($item as $itm) {
+                    foreach ($item as $keyItem => $itm) {
                         if(!empty($itm)) {
-                            // print_r($itm); exit;
                             $bins = $binResponse[$locationId]->bins_packed ?? [];
-                            // print_r($bins); exit;
                             $hasBoth = true;
                             foreach ($bins as $key => $bin) {
-                                //$itm = $bin->items;
-                                //$origin = $itm[0]->id;
-                                //print_r($itm); exit;
-                                //print_r($bin); exit;
                                 $binId = $bin->bin_data->id;
 
                                 $items = $bin->items;
@@ -917,9 +911,9 @@ class GenerateRequestData
                                     $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins, $itemsArr);
                                     $hasBoth = false;
                                 }else{
-                                    if($hasBoth){
-                                        $origin = $itm['id'];
-                                        $newkey = $origin;// . $key;
+                                    $origin = $itm['id'];
+                                    if($hasBoth && $key == $keyItem ){
+                                        $newkey = $origin . $key;
                                         $newOrigins[$newkey] = $origins[$origin];
                                         $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins, $itemsArr);
                                     }
@@ -927,7 +921,6 @@ class GenerateRequestData
 
                             }
                         }
-                        //break;
                     }
                 }
             } else {
@@ -942,7 +935,6 @@ class GenerateRequestData
         $resp['originAddress'] = $newOrigins;
         $resp['binResponse'] = $binResponse ?? [];
         $resp['boxBins'] = $boxBins;
-        //print_r($resp); exit;
         return $resp;
 
     }
