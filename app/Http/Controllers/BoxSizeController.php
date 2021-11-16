@@ -191,7 +191,7 @@ class BoxSizeController extends Controller
         if(MultiplePackagingBoxes::where('id', '!=', $request->id)->where('product_id', $request->product_id)->where('nickname',$request->nickname)->exists()){
             return response()->json([
                 'error' => true,
-                'message' => "Nickname already exist."
+                'message' => "Nickname already exists."
             ]);
         }
         if(MultiplePackagingBoxes::create($data)){
@@ -230,7 +230,7 @@ class BoxSizeController extends Controller
         if(MultiplePackagingBoxes::where('id', '!=', $request->id)->where('product_id', $request->product_id)->where('nickname',$request->nickname)->exists()){
             return response()->json([
                 'error' => true,
-                'message' => "Nickname already exist."
+                'message' => "Nickname already exists."
             ]);
         }
         if(MultiplePackagingBoxes::find($id)->update($update)){
