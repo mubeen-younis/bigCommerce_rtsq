@@ -27,6 +27,10 @@ class GenerateRequestData
     public $radHitConsumed = 0;
     public $resiCarrier = [];
     public $residential = "N";
+    public $oneRate = false;
+    public $air = false;
+    public $ground = false;
+    public $smartPost = false;
     public $fedexType = 'normal';
     public $origins = [];
     public $itemsArr = [];
@@ -268,17 +272,36 @@ class GenerateRequestData
                     ?? $carriers['fedexSmall']['originAddress'];
 
                 if(isset($carriers['fedexSmall'])){
-                    $this->fedexType = 'normal'; // ground services
-                    $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
-                    $itemsArrNormal = $sbsResponse['items'] ?? $itemsArr;
-                    $this->fedexType = 'fedex'; // one rate services
-                    $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
-                    $itemsArrOneRate = $sbsResponse['items'] ?? $itemsArr;
-                    $commdityDetails['one_rate_commdityDetails'] = $this->lineItems($itemsArrOneRate);
-                    $this->fedexType = 'both'; // air services
-                    $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
-                    $itemsArrBoth = $sbsResponse['items'] ?? $itemsArr;
-                    $commdityDetails['air_services_commdityDetails'] = $this->lineItems($itemsArrBoth);
+                    $this->checkServiceEnabled();
+                    if($this->ground) {
+                        $this->fedexType = 'normal'; // ground services
+                        $sbsResponseGround = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
+                        $itemsArrGround = $sbsResponseGround['items'] ?? $itemsArr;
+                        foreach ($sbsResponseGround['originAddress'] as $key => $origin){
+                            $carriers['fedexSmall']['originAddress'][$key] = $origin;
+                        }
+                    }
+
+                    if($this->oneRate) {
+                        $this->fedexType = 'fedex'; // one rate services
+                        $sbsResponseOneRate = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
+                        $itemsArrOneRate = $sbsResponseOneRate['items'] ?? $itemsArr;
+                        $commdityDetails['one_rate_commdityDetails'] = $this->lineItems($itemsArrOneRate);
+                        foreach ($sbsResponseOneRate['originAddress'] as $key => $origin){
+                            $carriers['fedexSmall']['originAddress'][$key] = $origin;
+                        }
+                    }
+
+                    if($this->air) {
+                        $this->fedexType = 'both'; // air services
+                        $sbsResponseAir = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
+                        $itemsArrAir = $sbsResponseAir['items'] ?? $itemsArr;
+                        $commdityDetails['air_services_commdityDetails'] = $this->lineItems($itemsArrAir);
+                        foreach ($sbsResponseAir['originAddress'] as $key => $origin){
+                            $carriers['fedexSmall']['originAddress'][$key] = $origin;
+                        }
+                    }
+                    $itemsArr = $itemsArrGround;
                 }else {
                     $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
                     $itemsArr = $sbsResponse['items'] ?? $itemsArr;
@@ -291,11 +314,8 @@ class GenerateRequestData
                 if(isset($carriers['upsSmall'])) {
                     $carriers['upsSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                 }
-                if(isset($carriers['fedexSmall'])) {
-                    $carriers['fedexSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
-                }
-                $binReponse = $sbsResponse['binResponse'];
-                $boxBins = $sbsResponse['boxBins'];
+                $binReponse = $sbsResponse['binResponse'] ?? [];
+                $boxBins = $sbsResponse['boxBins'] ?? [];
                 $isLtl = isset($carriers['wweLTL'])
                     || isset($carriers['upsLTL'])
                     || isset($carriers['fedexLTL'])
@@ -306,8 +326,6 @@ class GenerateRequestData
                 }
             }
         }
-        $commdityDetails = $commdityDetails ?? '';
-        //print_r($commdityDetails); exit;
         $requestArr = [
             'apiVersion' => '2.0',
             'platform' => 'bigcommerce',
@@ -319,8 +337,21 @@ class GenerateRequestData
             'carriers' => $carriers,
             'receiverAddress' => $receiverAddress,
             'commdityDetails' => $itemsArr,
-            $commdityDetails
         ];
+
+        if(isset($carriers['fedexSmall'])) {
+            if($this->smartPost){
+                $requestArr['FedexSmartPostPricing'] = 1;
+            }
+            if($this->air){
+                $requestArr['FedexAirServicesPricing'] = 1;
+                $requestArr['air_services_commdityDetails'] = $commdityDetails['air_services_commdityDetails'];
+            }
+            if($this->oneRate){
+                $requestArr['FedexOneRatePricing'] = 1;
+                $requestArr['one_rate_commdityDetails'] = $commdityDetails['one_rate_commdityDetails'];
+            }
+        }
         $resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse, 'boxBins' => $boxBins];
         return $resp;
     }
@@ -331,6 +362,31 @@ class GenerateRequestData
             $newItems[$key]['lineItems'] = $item;
         }
         return $newItems;
+    }
+
+    public function checkServiceEnabled(){
+        $carrierServices = $this->connectionSettings['fedex-small']['quote_settings']['carrier_services'] ?? [];
+        foreach ($carrierServices as $key => $service){
+            $oneRate = ['one_rate_express_saver', 'one_rate_2_day', 'one_rate_2_day_am', 'one_rate_standard_overnight', 'one_rate_priority_overnight', 'one_rate_first_overnight'];
+            if(!$this->oneRate && $service && in_array($key, $oneRate)){
+                $this->oneRate = true;
+            }
+
+            $ground = ['fedex_home_delivery', 'fedex_appointment_home_delivery', 'fedex_ground', 'international_ground', 'fedex_evening_home_delivery', 'fedex_date_certain_home_delivery', 'fedex_smartpost'];
+            if(!$this->ground && $service && in_array($key, $ground)){
+                $this->ground = true;
+            }
+
+            $smartPost = ['fedex_smartpost'];
+            if(!$this->smartPost && $service && in_array($key, $smartPost)){
+                $this->smartPost = true;
+            }
+
+            $air = ['fedex_express_saver', 'fedex_2_day', 'fedex_2_day_am', 'fedex_priority_overnight', 'fedex_first_overnight', 'international_distribution_freight', 'international_economy', 'international_economy_distribution', 'international_economy_freight', 'international_first', 'international_priority', 'international_priority_distribution', 'international_priority_freight', 'priority_overnight', 'standard_overnight'];
+            if(!$this->air && $service && in_array($key, $air)){
+                $this->air = true;
+            }
+        }
     }
 
     /**
@@ -968,7 +1024,7 @@ class GenerateRequestData
                 $boxes = DB::table('box_sizes')->where('store_id', $storeId)
                     ->where('is_available', 1)->where('box_type', 2)->get();
                 break;
-            default:
+            case 'both':
                 $boxes = DB::table('box_sizes')->where('store_id', $storeId)
                     ->where('is_available', 1)->get();
                 break;

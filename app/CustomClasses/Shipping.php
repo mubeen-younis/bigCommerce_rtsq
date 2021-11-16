@@ -85,12 +85,12 @@ class Shipping
         if (empty($requestArr)) {
             return false;
         }
-        print_r($requestArr['requestArr']); exit;
+        //print_r($requestArr['requestArr']); exit;
         $url = Constant::QUOTES_URL;
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
-        //print_r($requestArr['requestArr']); print_r($quotes); exit;
+        print_r($requestArr['requestArr']); print_r($quotes); exit;
         /*
         * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
         */
