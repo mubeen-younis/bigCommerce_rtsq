@@ -889,7 +889,16 @@ class GenerateRequestData
                         }
                     }
                 }
-                //print_r($items); print_r($binResponse); exit;
+                //print_r($items); print_r($binResponse); print_r($itemsArr); exit;
+                $counting = 0;
+                /*$counting = 0;
+                foreach ($binResponse as $locationId => $bins){
+                    foreach ($bins->bins_packed as $binPacked){
+                        print_r($binPacked);
+                        $counting++;
+                    }
+                }
+                echo $counting; exit;*/
                 foreach ($items as $locationId => $item) {
                     foreach ($item as $keyItem => $itm) {
                         if(!empty($itm)) {
@@ -901,18 +910,23 @@ class GenerateRequestData
                                 $items = $bin->items;
                                 $itemId = $items[0]->id ?? 0;
                                 if($itemId !== $binId){
+
                                     $origin = $itm['id'];
-                                    if(isset($itemsArr[$origin]['shipBinAlone']) && $itemsArr[$origin]['shipBinAlone'] == 1){
-                                        $newkey = $origin;
-                                    }else {
-                                        $newkey = $origin . $key;
+                                    if(/*$hasBoth && */ $key == $keyItem) {
+                                        if (isset($itemsArr[$origin]['shipBinAlone']) && $itemsArr[$origin]['shipBinAlone'] == 1) {
+                                            $newkey = $origin . $key;
+
+                                        } else {
+                                            $newkey = $origin . $key;
+                                        }
+                                        $newOrigins[$newkey] = $origins[$origin];
+                                        $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins, $itemsArr);
+                                        $hasBoth = false;
                                     }
-                                    $newOrigins[$newkey] = $origins[$origin];
-                                    $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins, $itemsArr);
-                                    $hasBoth = false;
                                 }else{
                                     $origin = $itm['id'];
-                                    if($hasBoth && $key == $keyItem ){
+                                    if(/*$hasBoth && */ $key == $keyItem){
+                                        $counting++;
                                         $newkey = $origin . $key;
                                         $newOrigins[$newkey] = $origins[$origin];
                                         $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins, $itemsArr);
@@ -935,6 +949,7 @@ class GenerateRequestData
         $resp['originAddress'] = $newOrigins;
         $resp['binResponse'] = $binResponse ?? [];
         $resp['boxBins'] = $boxBins;
+        //echo $counting; print_r($resp); exit;
         return $resp;
 
     }
