@@ -286,20 +286,22 @@ class GenerateRequestData
                         $this->fedexType = 'fedex'; // one rate services
                         $sbsResponseOneRate = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
                         $itemsArrOneRate = $sbsResponseOneRate['items'] ?? $itemsArr;
-                        $commdityDetails['one_rate_commdityDetails'] = $this->lineItems($itemsArrOneRate);
                         foreach ($sbsResponseOneRate['originAddress'] as $key => $origin){
                             $carriers['fedexSmall']['originAddress'][$key] = $origin;
                         }
+                        $commdityDetails['one_rate_commdityDetails'] = $this->lineItems($itemsArrOneRate, $carriers['fedexSmall']['originAddress']);
+
                     }
 
                     if($this->air) {
                         $this->fedexType = 'both'; // air services
                         $sbsResponseAir = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
                         $itemsArrAir = $sbsResponseAir['items'] ?? $itemsArr;
-                        $commdityDetails['air_services_commdityDetails'] = $this->lineItems($itemsArrAir);
                         foreach ($sbsResponseAir['originAddress'] as $key => $origin){
                             $carriers['fedexSmall']['originAddress'][$key] = $origin;
                         }
+                        $commdityDetails['air_services_commdityDetails'] = $this->lineItems($itemsArrAir, $carriers['fedexSmall']['originAddress']);
+
                     }
                     $itemsArr = $itemsArrGround;
                 }else {
@@ -356,10 +358,11 @@ class GenerateRequestData
         return $resp;
     }
 
-    public function lineItems($items){
+    public function lineItems($items, $origins){
         $newItems = [];
         foreach ($items as $key => $item){
-            $newItems[$key]['lineItems'] = $item;
+            $locationId = $origins[$key]['locationId'] ?? 1;
+            $newItems[$locationId]['lineItems'][] = $item;
         }
         return $newItems;
     }
