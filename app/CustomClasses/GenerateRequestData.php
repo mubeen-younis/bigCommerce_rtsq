@@ -1058,7 +1058,23 @@ class GenerateRequestData
                         }
                     }
                 }
-                //print_r($items); print_r($binResponse); exit;
+                $binResponse = $this->addPackagingID($binResponse);
+                //print_r($items); print_r($binResponse); print_r($itemsArr); exit;
+                $counting = 0;
+                $counting = 0;
+                foreach ($binResponse as $locationId => $bins){
+                    foreach ($bins->bins_packed as $key => $binPacked){
+                        //print_r($binPacked);
+                        $bin = $binPacked;
+                        $counting++;
+                        $origin = $bin->bin_data->variant_id;
+                        $newkey = $origin . $key;
+                        $newOrigins[$newkey] = $origins[$origin];
+                        $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins, $itemsArr);
+                    }
+                }
+                //echo $counting; exit;
+                /*$count1 = $count2 = $count11 = $count22 = 0;
                 foreach ($items as $locationId => $item) {
                     foreach ($item as $keyItem => $itm) {
                         if(!empty($itm)) {
@@ -1070,18 +1086,26 @@ class GenerateRequestData
                                 $items = $bin->items;
                                 $itemId = $items[0]->id ?? 0;
                                 if($itemId !== $binId){
+                                    ++$count1;
                                     $origin = $itm['id'];
-                                    if(isset($itemsArr[$origin]['shipBinAlone']) && $itemsArr[$origin]['shipBinAlone'] == 1){
-                                        $newkey = $origin;
-                                    }else {
-                                        $newkey = $origin . $key;
+                                    if($key == $keyItem) {
+                                        ++$count11;
+                                        if (isset($itemsArr[$origin]['shipBinAlone']) && $itemsArr[$origin]['shipBinAlone'] == 1) {
+                                            $newkey = $origin . $key;
+
+                                        } else {
+                                            $newkey = $origin . $key;
+                                        }
+                                        $newOrigins[$newkey] = $origins[$origin];
+                                        $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins, $itemsArr);
+                                        $hasBoth = false;
                                     }
-                                    $newOrigins[$newkey] = $origins[$origin];
-                                    $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins, $itemsArr);
-                                    $hasBoth = false;
                                 }else{
+                                    ++$count2;
                                     $origin = $itm['id'];
-                                    if($hasBoth && $key == $keyItem ){
+                                    if($key == $keyItem){
+                                        ++$count22;
+                                        $counting++;
                                         $newkey = $origin . $key;
                                         $newOrigins[$newkey] = $origins[$origin];
                                         $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins, $itemsArr);
@@ -1091,7 +1115,7 @@ class GenerateRequestData
                             }
                         }
                     }
-                }
+                }*/
             } else {
                 $newOrigins = $this->origins;
                 $newitemsArr = $this->itemsArr;
@@ -1104,6 +1128,8 @@ class GenerateRequestData
         $resp['originAddress'] = $newOrigins;
         $resp['binResponse'] = $binResponse ?? [];
         $resp['boxBins'] = $boxBins;
+        //echo "if: $count1 , if: $count11, else: $count2, if: $count22";
+        //print_r($resp); exit;
         return $resp;
 
     }
@@ -1136,6 +1162,18 @@ class GenerateRequestData
             $item['variant_id'] = $bin->bin_data->id ?? 0;
         }
         return $item;
+    }
+
+    public function addPackagingID($binResponse){
+        foreach ($binResponse as $locationId => $bins){
+            foreach ($bins->bins_packed as $key => $bin){
+                $items = $bin->items;
+                $item = $items[0];
+                $variant_id = $item->id;
+                $binResponse[$locationId]->bins_packed[$key]->bin_data->variant_id = $variant_id;
+            }
+        }
+        return $binResponse;
     }
 
 
