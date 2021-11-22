@@ -280,16 +280,22 @@ class GenerateRequestData
                         foreach ($sbsResponseGround['originAddress'] as $key => $origin){
                             $carriers['fedexSmall']['originAddress'][$key] = $origin;
                         }
+                        $binReponse['ground'] = $sbsResponseGround['binResponse'];
                     }
 
                     if($this->oneRate) {
                         $this->fedexType = 'fedex'; // one rate services
                         $sbsResponseOneRate = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
-                        $itemsArrOneRate = $sbsResponseOneRate['items'] ?? $itemsArr;
-                        foreach ($sbsResponseOneRate['originAddress'] as $key => $origin){
-                            $carriers['fedexSmall']['originAddress'][$key] = $origin;
+                        $this->allPacked($sbsResponseOneRate);
+                        if($this->oneRate) {
+                            $itemsArrOneRate = $sbsResponseOneRate['items'] ?? $itemsArr;
+                            /*foreach ($sbsResponseOneRate['originAddress'] as $key => $origin) {
+                                $carriers['fedexSmall']['originAddress'][$key] = $origin;
+                            }*/
+                            $commdityDetails['one_rate_commdityDetails'] = $this->lineItems($itemsArrOneRate, $carriers['fedexSmall']['originAddress'], true, $sbsResponseOneRate['binResponse']);
+                            $binReponse['oneRate'] = $sbsResponseOneRate['binResponse'];
                         }
-                        $commdityDetails['one_rate_commdityDetails'] = $this->lineItems($itemsArrOneRate, $carriers['fedexSmall']['originAddress']);
+
 
                     }
 
@@ -297,13 +303,15 @@ class GenerateRequestData
                         $this->fedexType = 'both'; // air services
                         $sbsResponseAir = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
                         $itemsArrAir = $sbsResponseAir['items'] ?? $itemsArr;
-                        foreach ($sbsResponseAir['originAddress'] as $key => $origin){
+                        /*foreach ($sbsResponseAir['originAddress'] as $key => $origin){
                             $carriers['fedexSmall']['originAddress'][$key] = $origin;
-                        }
+                        }*/
                         $commdityDetails['air_services_commdityDetails'] = $this->lineItems($itemsArrAir, $carriers['fedexSmall']['originAddress']);
+                        $binReponse['air'] = $sbsResponseAir['binResponse'];
 
                     }
                     $itemsArr = $itemsArrGround;
+                    $sbsResponse['binResponse'] = $binReponse;
                 }else {
                     $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
                     $itemsArr = $sbsResponse['items'] ?? $itemsArr;
@@ -358,13 +366,35 @@ class GenerateRequestData
         return $resp;
     }
 
-    public function lineItems($items, $origins){
+    public function lineItems($items, $origins, $isOneRate = false, $binResponse = []){
         $newItems = [];
         foreach ($items as $key => $item){
             $locationId = $origins[$key]['locationId'] ?? 1;
             $newItems[$locationId]['lineItems'][] = $item;
+            if($isOneRate) {
+                $newItems[$locationId]['one_rate_package_type'] = $binResponse[$locationId]->bins_packed[0]->bin_data->name;
+            }
         }
         return $newItems;
+    }
+
+    public function allPacked($sbsResponseOneRate){
+        if($this->oneRate && isset($sbsResponseOneRate['binResponse'])){
+            foreach($sbsResponseOneRate['binResponse'] as $shipment => $binResponse){
+                $bins_packed = $binResponse->bins_packed ?? [];
+                if(!empty($bins_packed)){
+                    foreach ($bins_packed as $packed){
+                        if(isset($packed->bin_data->type) && $packed->bin_data->type == 'item'){
+                            $this->oneRate = false;
+                            break 2;
+                        }
+                    }
+                }else{
+                    $this->oneRate = false;
+                    break;
+                }
+            }
+        }
     }
 
     public function checkServiceEnabled(){
@@ -849,6 +879,13 @@ class GenerateRequestData
         }
         $this->resiCarrier['fedexSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['fedexSmall'] = $alwaysResi;
+        $hubIdindicia = explode('(', $connSettings['creds']['hub_id']);
+        $hubId = trim($hubIdindicia[0]);
+        $indicia = trim(explode(')',$hubIdindicia[1])[0]);
+        $smartPostData = [
+            'hubId' => $hubId,
+            'indicia' => $indicia
+        ];
         $apiArray = [
 
             'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
@@ -867,6 +904,7 @@ class GenerateRequestData
             'includeDeclaredValue' => '1', //insurance active with sbs active 0 or 1
             'pkgType' => '00',
             'saturdayDelivery' => 'on',
+            'smartPostData' => $smartPostData
         ];
         return $apiArray;
     }
@@ -1028,6 +1066,7 @@ class GenerateRequestData
         foreach ($boxes as $box) {
             $boxBins[$box->id] = array(
                 'nickname' => $box->nickname,
+                'name' => $box->box_name,
                 'w' => $box->width,
                 'h' => $box->height,
                 'd' => $box->length,
@@ -1052,7 +1091,7 @@ class GenerateRequestData
                         }
                     }
                 }
-                $binResponse = $this->addPackagingID($binResponse);
+                $binResponse = $this->addPackagingID($binResponse, $boxBins);
 
                 $counting = 0;
                 $counting = 0;
@@ -1157,13 +1196,15 @@ class GenerateRequestData
         return $item;
     }
 
-    public function addPackagingID($binResponse){
+    public function addPackagingID($binResponse, $boxBins){
         foreach ($binResponse as $locationId => $bins){
             foreach ($bins->bins_packed as $key => $bin){
                 $items = $bin->items;
                 $item = $items[0];
                 $variant_id = $item->id;
                 $binResponse[$locationId]->bins_packed[$key]->bin_data->variant_id = $variant_id;
+                $boxId = $bin->bin_data->id ?? 0;
+                $binResponse[$locationId]->bins_packed[$key]->bin_data->name = isset($boxBins[$boxId]['name']) ? strtoupper(str_replace(' ','_',trim(explode('__',$boxBins[$boxId]['name'])[0]))) : '';
             }
         }
         return $binResponse;

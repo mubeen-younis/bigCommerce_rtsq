@@ -148,12 +148,15 @@ class QuotesResults
                 unset($quote['InstorPickupLocalDelivery']);
             }
             $lowestAmount = 0;
-
+//print_r($quote['q']); print_r($allConfigServices); exit;
             if (isset($quote['q'])) {
                 foreach ($quote['q'] as $key => $data) {
 
                     // Check if service type is checked to show
-                    if (!in_array($data['serviceType'], $allConfigServices)) {
+                    $serviceName = str_replace('_ONE_RATE', '',$data['serviceType']);
+                    $serviceName = str_replace('_AIR_SERVICE', '',$serviceName);
+
+                    if (!in_array($serviceName, $allConfigServices)) {
                         continue;
                     }
                     //  CHeck FOr Ups ground transit days
@@ -261,15 +264,35 @@ class QuotesResults
 
     public function formateQuoteBeforeCompile($shipments){
         foreach ($shipments as $shipment => $serviceTypes){
-            foreach ($serviceTypes as $serviseName => $quotes) {
+            foreach ($serviceTypes as $serviceName => $quotes) {
                 if (!isset($quotes['q'])) {
                     continue;
                 }
-                foreach ($quotes['q'] as $key => $quote) {
-                    $shipments[$shipment]['q'][$key] = $quote;
-                    $shipments[$shipment]['q'][$key]['serviceDesc'] = ucwords(strtolower(str_replace('_', ' ', $quote['serviceType'])));
+                $append = '';
+                if($serviceName == 'fedexOneRate'){
+                    $append = '_ONE_RATE';
                 }
-                unset($shipments[$shipment][$serviseName]);
+                $isAir = false;
+                if($serviceName == 'fedexAirServices'){
+                    $isAir = true;
+                }
+                foreach ($quotes['q'] as $key => $quote) {
+                    if($isAir){
+                        if(!$this->isGroundService($key)) {
+                            $key = $key . $append;
+                            $quote['serviceType'] = $quote['serviceType'].$append;
+                            $shipments[$shipment]['q'][$key] = $quote;
+                            $shipments[$shipment]['q'][$key]['serviceDesc'] = ucwords(strtolower(str_replace('_', ' ', $quote['serviceType'])));
+                            $shipments[$shipment]['q'][$key]['serviceType'] = $quote['serviceType'].'_AIR_SERVICE';
+                        }
+                    }else{
+                        $key = $key . $append;
+                        $quote['serviceType'] = $quote['serviceType'].$append;
+                        $shipments[$shipment]['q'][$key] = $quote;
+                        $shipments[$shipment]['q'][$key]['serviceDesc'] = ucwords(strtolower(str_replace('_', ' ', $quote['serviceType'])));
+                    }
+                }
+                unset($shipments[$shipment][$serviceName]);
             }
         }
         return $shipments;
@@ -320,6 +343,11 @@ class QuotesResults
         $sliced = array_slice($arraySorting['simple'], 0, $options, true);
         $resp = array_intersect_key($services, $sliced);
         return $resp;
+    }
+
+    function isGroundService($service){
+        $groundServices = ['FEDEX_GROUND', 'HOME_DELIVERY', 'DATE_CERTAIN_HOME_DELIVERY', 'EVENING_HOME_DELIVERY', 'APPOINTMENT_HOME_DELIVERY', 'SMART_POST'];
+        return in_array($service, $groundServices);
     }
 
 }
