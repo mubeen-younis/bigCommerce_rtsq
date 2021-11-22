@@ -42,6 +42,7 @@ class Shipping
         $quoteSettings = $multiShipmentQuotes = [];
         $generateReqData = new GenerateRequestData();
         //   init is a function to to call it explixitlitly rather constructor
+
         $generateReqData->_init($quoteSettings, $connectionSettings, $storeData);
         $package = $request['lineItemData'];
         // Disabling instore pickup if there is multi shipment case
@@ -84,6 +85,7 @@ class Shipping
         if (empty($requestArr)) {
             return false;
         }
+        //print_r($requestArr['requestArr']); exit;
         $url = Constant::QUOTES_URL;
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
@@ -95,9 +97,12 @@ class Shipping
         $this->isRequestMultishipment = $ltlSmallCompileQuotes->checkIsRequestMiltiShipment($requestArr['requestArr'], $quotes);
         $boxbins = $requestArr['boxBins'] ?? [];
         if(isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])){
+            Log::info('BinData '. json_encode($requestArr['binReponse']));
             $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes);
         }
+
         Log::info('after addBinResponseToQuotes '. json_encode($quotes));
+        //print_r($quotes); exit;
         $quotesFromWs = $quotes ?? [];
 
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential);
@@ -196,6 +201,7 @@ class Shipping
 
     private function addBinResponseToQuotes($binReponse, $quotes){
         $boxFee = [];
+        //print_r($binReponse); exit;
         foreach ($quotes as $carrierName => $quote) {
             if($this->isSmallCarrier($carrierName)) {
                 foreach ($binReponse as $locationId => $bin) {
@@ -255,8 +261,12 @@ class Shipping
         $boxFee = 0;
         if(!empty($bins->bins_packed)){
             foreach($bins->bins_packed as $pack){
-                $boxId = $pack->bin_data->id;
-                $boxFee += $this->BoxFeeByID($boxId);
+                if(isset($pack->bin_data->type) && $pack->bin_data->type === 'item'){
+                    $boxFee += $pack->bin_data->boxFee;
+                }else {
+                    $boxId = $pack->bin_data->id;
+                    $boxFee += $this->BoxFeeByID($boxId);
+                }
             }
         }
         return $boxFee;
@@ -271,7 +281,7 @@ class Shipping
     }
 
     public function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null){
-        //echo "<pre>"; print_r($multiShipmentQuotes); print_r($resp); exit;
+        //echo "<pre>"; print_r($requestArr); print_r($lineItems); exit;
         foreach ($finalQuotes as $finalQuote){
             $RequestTempData = new RequestTempData();
             $RequestTempData->request = json_encode($requestArr);
