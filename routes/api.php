@@ -25,6 +25,7 @@ use App\Models\CarrierServices;
 use App\Models\Locations;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\BoxSizeController;
 
 
 /*
@@ -152,6 +153,12 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/get_carrier_services', [AdditionalCarrierTabSettingController::class, 'index']);
     Route::post('/has_insurance', [AdditionalCarrierTabSettingController::class, 'hasInsurance']);
 
+
+    //Multiple packages
+    Route::get('/getmultiplepackages', [BoxSizeController::class, 'getMultiplePackagingBoxes']);
+    Route::post('/addmultiplepackages', [BoxSizeController::class, 'addMultiplePackagingBox']);
+    Route::post('/updatemultiplepackages', [BoxSizeController::class, 'updateMultiplePackagingBox']);
+    Route::post('/deletemultiplepackages', [BoxSizeController::class, 'deleteMultiplePackagingBox']);
 
 });
 //Webhook
