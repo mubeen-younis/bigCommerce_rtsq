@@ -57,7 +57,6 @@ class OrderController extends Controller
                 'message' => 'No Order Found',
             ], 404);
         }
-        // dd($order['cart_id'], $order['rate_id']); //echo "<pre>"; print_r($order); exit;
         $orderWidget = $this->createOrderWidget($request, $order);
         if(empty($orderWidget)){
             return response()->json(['error' => true,
@@ -217,7 +216,6 @@ class OrderController extends Controller
 
             $orderWidget[$zip]['shipping_method'] = $sName.$sMethod;
             $orderWidget[$zip]['shipping_rate'] = '$'. number_format((float)$sRate, 2, '.', '');
-            //print_r($item); exit;
             if( $item->shipMultiplePackage ) {
                 if((!in_array($item->lineItemName, $insertedNames))) {
                     $insertedNames[] = $item->lineItemName;

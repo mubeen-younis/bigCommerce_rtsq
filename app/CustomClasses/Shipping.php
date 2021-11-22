@@ -85,12 +85,10 @@ class Shipping
         if (empty($requestArr)) {
             return false;
         }
-        //print_r($requestArr['requestArr']); exit;
         $url = Constant::QUOTES_URL;
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
-        //print_r($requestArr['requestArr']); print_r($quotes); exit;
         /*
         * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
         */
@@ -102,7 +100,7 @@ class Shipping
         }
 
         Log::info('after addBinResponseToQuotes '. json_encode($quotes));
-        //print_r($quotes); exit;
+
         $quotesFromWs = $quotes ?? [];
 
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential);
@@ -201,7 +199,6 @@ class Shipping
 
     private function addBinResponseToQuotes($binReponse, $quotes){
         $boxFee = [];
-        //print_r($binReponse); exit;
         foreach ($quotes as $carrierName => $quote) {
             if($this->isSmallCarrier($carrierName)) {
                 foreach ($binReponse as $locationId => $bin) {
@@ -281,7 +278,6 @@ class Shipping
     }
 
     public function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null){
-        //echo "<pre>"; print_r($requestArr); print_r($lineItems); exit;
         foreach ($finalQuotes as $finalQuote){
             $RequestTempData = new RequestTempData();
             $RequestTempData->request = json_encode($requestArr);
