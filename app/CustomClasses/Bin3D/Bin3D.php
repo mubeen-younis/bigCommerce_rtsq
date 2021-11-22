@@ -67,7 +67,6 @@ class Bin3D
             $responseFromSBS = $this->generateShipAloneBinResponse($itemsAlone);
             $sbsCompiledResponse = $this->appendNotPackedItemsOnlyAlone($responseFromSBS);
         }
-        //print_r($sbsCompiledResponse); exit;
         return $sbsCompiledResponse;
     }
 
@@ -118,10 +117,9 @@ class Bin3D
             if(count($not_packed_items)){
                 foreach ($not_packed_items as $not_packed_item) {
                     $not_packed_item = (array)$not_packed_item;
-                    //for ($i = 1; $i <= $not_packed_item['q']; $i++) {
 
-                        array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
-                   // }
+                    array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
+
                 }
             }
         }
@@ -140,9 +138,8 @@ class Bin3D
                      * Commented quantity because it was repeating product
                      * now it will be handled by index 'piecesOfLineItem'
                      */
-                    //for ($i = 1; $i <= $not_packed_item['q']; $i++) {
-                        array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
-                    //}
+                    array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
+
                 }
             }
         }
@@ -150,7 +147,6 @@ class Bin3D
     }
 
     public function appendNotPackedItems($responseFromSBS, $items = []){
-        //print_r($responseFromSBS); print_r($items); exit;
         foreach ($responseFromSBS as $key => $SBSResp){
             $data[$key] = json_decode($SBSResp)->response;
             $resp = json_decode($SBSResp);

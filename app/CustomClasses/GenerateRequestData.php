@@ -281,10 +281,8 @@ class GenerateRequestData
      * get box related to item id and re create items array according to boxes
      */
     public function handleShipAsMultiplePackaging($carriers, $itemsArr){
-        //print_r($carriers); print_r($itemsArr); //exit;
         $locationIds = [];
         foreach ($carriers as $carrierName => $carrier){
-            //print_r($carrier['originAddress']); exit;
             foreach($carrier['originAddress'] as $varriantId => $origin){
                 $isShipAsMultiplePackage = $itemsArr[$varriantId]['shipMultiplePackage'] ?? false;
                 if(!in_array($origin['locationId'], $locationIds)){
@@ -324,7 +322,6 @@ class GenerateRequestData
             'itemsArr' => $itemsArr,
             'isMultishipment' => count($locationIds) > 1 ? true: false
         ];
-        //print_r($res); exit;
         return $res;
     }
 
@@ -398,7 +395,6 @@ class GenerateRequestData
     }
 
     public function getApiInfoArrGTZLtl($connSettings, $destination, $carName){
-        //print_r($connSettings['quote_settings']['show_guaranteed_options']); exit;
         $liftGate = ( (isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
         /*
@@ -511,7 +507,6 @@ class GenerateRequestData
     }
 
     public function getApiInfoArrFedexLtl($connSettings, $destination, $enitOrigin){
-        //print_r($connSettings); exit;
         $liftGate = ( (isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
         /*
@@ -558,7 +553,6 @@ class GenerateRequestData
                 }
             }
         }
-        //print_r($connSettings['creds']); exit;
         $apiArray = [
             'AccountNumber' => $connSettings['creds']['account_number'] ?? '',
             'MeterNumber' => $connSettings['creds']['meter_number'] ?? '',
@@ -674,7 +668,6 @@ class GenerateRequestData
         }else{
             $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
         }
-       // print_r($connSettings['quote_settings']); exit;
         $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
         $this->resiCarrier['upsSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['upsSmall'] = $alwaysResi;
@@ -769,7 +762,6 @@ class GenerateRequestData
         //$this->resiCarrier['wweLtl'] = $residential;
 
         $residentialPickup = ( isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
-        //print_r($connSettings); dd($liftGate, $residentialPickup);exit;
 
 
         $this->resiCarrier['upsLtl'] = $residential;
@@ -826,7 +818,6 @@ class GenerateRequestData
 
     public function getStoreBoxes($storeId, $itemsArr, $origins, $cartInfo, $isMultishipment)
     {
-        //print_r($origins); print_r($itemsArr); exit;
         $items = $itemsAlone = [];
         foreach ($origins as $key => $origin){
             $isNotLtl = !(isset($itemsArr[$key]['freightClass']) && $itemsArr[$key]['freightClass'] === 'ltl');
@@ -858,7 +849,7 @@ class GenerateRequestData
                 }
             }
         }
-        //print_r($itemsArr); print_r($items); print_r($itemsAlone); exit;
+
         $boxBins = $newOrigins = $newitemsArr = [];
         $boxes = DB::table('box_sizes')->where('store_id', $storeId)
             ->where('is_available', 1)->get();
@@ -878,7 +869,7 @@ class GenerateRequestData
             $Bin3D = new Bin3D();
             $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment);
             if (count($binResponse)) {
-                //print_r($itemsAlone); print_r($items); exit;
+
 
                 foreach ($itemsAlone as $key => $itemAlone) {
                     foreach ($itemAlone as $alone) {
@@ -890,12 +881,12 @@ class GenerateRequestData
                     }
                 }
                 $binResponse = $this->addPackagingID($binResponse);
-                //print_r($items); print_r($binResponse); print_r($itemsArr); exit;
+
                 $counting = 0;
                 $counting = 0;
                 foreach ($binResponse as $locationId => $bins){
                     foreach ($bins->bins_packed as $key => $binPacked){
-                        //print_r($binPacked);
+
                         $bin = $binPacked;
                         $counting++;
                         $origin = $bin->bin_data->variant_id;
@@ -959,8 +950,7 @@ class GenerateRequestData
         $resp['originAddress'] = $newOrigins;
         $resp['binResponse'] = $binResponse ?? [];
         $resp['boxBins'] = $boxBins;
-        //echo "if: $count1 , if: $count11, else: $count2, if: $count22";
-        //print_r($resp); exit;
+
         return $resp;
 
     }
