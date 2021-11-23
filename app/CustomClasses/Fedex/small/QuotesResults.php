@@ -196,7 +196,21 @@ class QuotesResults
 
                     $title = $this->getServiceTitle($data['serviceDesc'], $data, $data['serviceType'], $this->quoteSettings, $residential);
                     $price = (float) str_replace(',','',$price);
-                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12fedex'.$data['serviceType'] . $access;
+                    /*
+                    * Generate random code to limit rate_id to 50 chars
+                     */
+                    if(strpos($data['serviceType'], '_AIR_SERVICE')) {
+                        $access2 = $access . '+airser';
+                    }else if(strpos($data['serviceType'], '_ONE_RATE')){
+                        $access2 = $access . '+onerate';
+                    }else{
+                        $access2 = $access . '+ground';
+                    }
+
+                    $data['serviceType'] = $this->generateRandomString(5);
+                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12fedex'.$data['serviceType'] . $access2;
+
+
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
                     $multiShipmentQuotes['simple'][$origin] = $originQuotes[$shipmentCount]['shipment'][$key]['simple'];
@@ -261,6 +275,16 @@ class QuotesResults
         return $resp;
     }
 
+    function generateRandomString($length = 25) {
+        $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $charactersLength = strlen($characters);
+        $randomString = '';
+        for ($i = 0; $i < $length; $i++) {
+            $randomString .= $characters[rand(0, $charactersLength - 1)];
+        }
+        return $randomString;
+    }
+
 
     public function formateQuoteBeforeCompile($shipments){
         foreach ($shipments as $shipment => $serviceTypes){
@@ -269,8 +293,10 @@ class QuotesResults
                     continue;
                 }
                 $append = '';
+                $isOneRate = false;
                 if($serviceName == 'fedexOneRate'){
                     $append = '_ONE_RATE';
+                    $isOneRate = true;
                 }
                 $isAir = false;
                 if($serviceName == 'fedexAirServices'){

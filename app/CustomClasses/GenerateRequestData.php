@@ -299,7 +299,6 @@ class GenerateRequestData
                             $binReponse['oneRate'] = $sbsResponseOneRate['binResponse'];
                         }
 
-
                     }
 
                     if($this->air) {
