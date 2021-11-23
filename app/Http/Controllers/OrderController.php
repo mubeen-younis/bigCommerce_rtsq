@@ -122,6 +122,9 @@ class OrderController extends Controller
         $liftGateStatus = 'n';
         $binPackagingData = '';
         $orderWidget = [];
+        $isOneRate = strpos($order['rate_id'], '+or');
+        $isGround = strpos($order['rate_id'], '+gd');
+        $isAir = strpos($order['rate_id'], '+as');
         foreach($responseFromWS as $carrrierName => $WsResp){
             foreach($WsResp as $zip => $ws){
 
@@ -136,7 +139,15 @@ class OrderController extends Controller
 
                     $totalBoxes = 1;
                     if(isset($ws->binPackagingData) && !empty($ws->binPackagingData) && $isSmallrate){
-                        $sbsData = $ws->binPackagingData->response;
+                        if($isGround){
+                            $sbsData = $ws->binPackagingData->response->ground;
+                        }else if($isAir){
+                            $sbsData = $ws->binPackagingData->response->air;
+                        }else if($isOneRate){
+                            $sbsData = $ws->binPackagingData->response->oneRate;
+                        }else{
+                            $sbsData = $ws->binPackagingData->response;
+                        }
                         $itemCount = 0;
                         foreach ($sbsData->bins_packed as $key => $binPacked) {
                             $type = '';

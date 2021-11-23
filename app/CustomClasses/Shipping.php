@@ -100,7 +100,7 @@ class Shipping
             $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes);
         }
         //print_r($requestArr['requestArr']);
-       // print_r($requestArr['binReponse']);
+        //print_r($requestArr['binReponse']);
         //print_r($quotes); exit;
         Log::info('after addBinResponseToQuotes '. json_encode($quotes));
 
@@ -204,9 +204,18 @@ class Shipping
         $boxFee = [];
         foreach ($quotes as $carrierName => $quote) {
             if($this->isSmallCarrier($carrierName)) {
-                foreach ($binReponse as $locationId => $bin) {
-                    $quotes[$carrierName][$locationId]['binPackagingData']['response'] = $bin;
-                    $boxFee[$locationId] = $this->getCumulativeBoxFee($bin);
+                if($carrierName == 'fedexSmall'){
+                    foreach ($binReponse as $serviceType => $response) {
+                        foreach ($response as $locationId => $bin) {
+                            $quotes[$carrierName][$locationId]['binPackagingData']['response'][$serviceType] = $bin;
+                            $boxFee[$locationId] = $this->getCumulativeBoxFee($bin);
+                        }
+                    }
+                }else {
+                    foreach ($binReponse as $locationId => $bin) {
+                        $quotes[$carrierName][$locationId]['binPackagingData']['response'] = $bin;
+                        $boxFee[$locationId] = $this->getCumulativeBoxFee($bin);
+                    }
                 }
             }
         }
@@ -218,8 +227,9 @@ class Shipping
 
     public function isSmallCarrier($carrierName){
         $smallCarriers = [
-          'wweSmall',
-          'upsSmall'
+            'wweSmall',
+            'upsSmall',
+            'fedexSmall',
         ];
         return in_array($carrierName, $smallCarriers);
     }
