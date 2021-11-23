@@ -288,7 +288,11 @@ class GenerateRequestData
                     if($this->oneRate) {
                         $this->fedexType = 'fedex'; // one rate services
                         $sbsResponseOneRate = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
-                        $this->allPacked($sbsResponseOneRate);
+                        if(empty($sbsResponseOneRate['binResponse'])){
+                            $this->oneRate = false;
+                        }else {
+                            $this->allPacked($sbsResponseOneRate);
+                        }
                         if($this->oneRate) {
                             $itemsArrOneRate = $sbsResponseOneRate['items'] ?? $itemsArr;
                             $commdityDetails['one_rate_commdityDetails'] = $this->lineItems($itemsArrOneRate, $carriers['fedexSmall']['originAddress'], true, $sbsResponseOneRate['binResponse']);
@@ -876,7 +880,7 @@ class GenerateRequestData
         $this->resiCarrier['fedexSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['fedexSmall'] = $alwaysResi;
         $hubIdindicia = explode('(', $connSettings['creds']['hub_id']);
-        $hubId = '5431';//trim($hubIdindicia[0]);
+        $hubId = trim($hubIdindicia[0]);
         $indicia = 'PARCEL_SELECT';//trim(explode(')',$hubIdindicia[1])[0]);
         $smartPostData = [
             'hubId' => $hubId,
