@@ -277,6 +277,8 @@ class GenerateRequestData
                         $this->fedexType = 'normal'; // ground services
                         $sbsResponseGround = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
                         $itemsArrGround = $sbsResponseGround['items'] ?? $itemsArr;
+
+                        unset($carriers['fedexSmall']['originAddress']);
                         foreach ($sbsResponseGround['originAddress'] as $key => $origin){
                             $carriers['fedexSmall']['originAddress'][$key] = $origin;
                         }
@@ -289,9 +291,6 @@ class GenerateRequestData
                         $this->allPacked($sbsResponseOneRate);
                         if($this->oneRate) {
                             $itemsArrOneRate = $sbsResponseOneRate['items'] ?? $itemsArr;
-                            /*foreach ($sbsResponseOneRate['originAddress'] as $key => $origin) {
-                                $carriers['fedexSmall']['originAddress'][$key] = $origin;
-                            }*/
                             $commdityDetails['one_rate_commdityDetails'] = $this->lineItems($itemsArrOneRate, $carriers['fedexSmall']['originAddress'], true, $sbsResponseOneRate['binResponse']);
                             $binReponse['oneRate'] = $sbsResponseOneRate['binResponse'];
                         }
@@ -303,9 +302,6 @@ class GenerateRequestData
                         $this->fedexType = 'both'; // air services
                         $sbsResponseAir = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
                         $itemsArrAir = $sbsResponseAir['items'] ?? $itemsArr;
-                        /*foreach ($sbsResponseAir['originAddress'] as $key => $origin){
-                            $carriers['fedexSmall']['originAddress'][$key] = $origin;
-                        }*/
                         $commdityDetails['air_services_commdityDetails'] = $this->lineItems($itemsArrAir, $carriers['fedexSmall']['originAddress']);
                         $binReponse['air'] = $sbsResponseAir['binResponse'];
 
@@ -880,8 +876,8 @@ class GenerateRequestData
         $this->resiCarrier['fedexSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['fedexSmall'] = $alwaysResi;
         $hubIdindicia = explode('(', $connSettings['creds']['hub_id']);
-        $hubId = trim($hubIdindicia[0]);
-        $indicia = trim(explode(')',$hubIdindicia[1])[0]);
+        $hubId = '5431';//trim($hubIdindicia[0]);
+        $indicia = 'PARCEL_SELECT';//trim(explode(')',$hubIdindicia[1])[0]);
         $smartPostData = [
             'hubId' => $hubId,
             'indicia' => $indicia
