@@ -228,7 +228,7 @@ class QuotesResults
                 $netChargeArray = array_column($shipment['shipment'], 'simple');
                 $minValueFromNetChargeArr = min(array_column($netChargeArray, 'rate'));
                 $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
-                $originQuotesMulti[0]['code'] = 'Multifedexsmall'.$access;
+                $originQuotesMulti[0]['code'] = 'Multifedexsmall'.$access2;
                 $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
                 $originQuotesMulti[0]['title'] = $residential ? 'Shipping ( R ) ' : 'Shipping';
             }
