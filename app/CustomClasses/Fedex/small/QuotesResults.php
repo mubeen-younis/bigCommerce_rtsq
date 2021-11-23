@@ -200,15 +200,15 @@ class QuotesResults
                     * Generate random code to limit rate_id to 50 chars
                      */
                     if(strpos($data['serviceType'], '_AIR_SERVICE')) {
-                        $access2 = $access . '+airser';
+                        $access2 = $access . '+as';
                     }else if(strpos($data['serviceType'], '_ONE_RATE')){
-                        $access2 = $access . '+onerate';
+                        $access2 = $access . '+or';
                     }else{
-                        $access2 = $access . '+ground';
+                        $access2 = $access . '+gd';
                     }
 
                     $data['serviceType'] = $this->generateRandomString(5);
-                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12fedex'.$data['serviceType'] . $access2;
+                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12fd'.$data['serviceType'] . $access2;
 
 
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;

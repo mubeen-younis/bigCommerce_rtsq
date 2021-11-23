@@ -706,6 +706,7 @@ class OrderController extends Controller
                 if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
                     $rateId = json_decode($response['response'])->rate_id;
                     $reqData = RequestTempData::where('rate_id', $rateId)->where('cart_id', $cartId)->get()->toArray();
+                    Log::info('Orderdata $reqData: ' . json_encode($reqData). ' RateID: '.$rateId .' CartId: '.$cartId);
                     foreach ($reqData as $data)
                     {
                         unset($data['id']);
