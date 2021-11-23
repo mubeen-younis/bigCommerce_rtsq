@@ -140,16 +140,17 @@ class OrderController extends Controller
                     $totalBoxes = 1;
                     if(isset($ws->binPackagingData) && !empty($ws->binPackagingData) && $isSmallrate){
                         if($isGround){
-                            $sbsData = $ws->binPackagingData->response->ground;
+                            $sbsData = $ws->binPackagingData->response->ground->bins_packed;
                         }else if($isAir){
-                            $sbsData = $ws->binPackagingData->response->air;
+                            $sbsData = $ws->binPackagingData->response->air->bins_packed;
                         }else if($isOneRate){
-                            $sbsData = $ws->binPackagingData->response->oneRate;
+                            $sbsData = $ws->binPackagingData->response->oneRate->bins_packed;
                         }else{
-                            $sbsData = $ws->binPackagingData->response;
+                            $sbsData = $ws->binPackagingData->response->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->oneRate->bins_packed;
                         }
+                        //print_r($ws->binPackagingData->response); exit;
                         $itemCount = 0;
-                        foreach ($sbsData->bins_packed as $key => $binPacked) {
+                        foreach ($sbsData as $key => $binPacked) {
                             $type = '';
                             $quantity = 1;
                             if (isset($binPacked->bin_data->type) && $binPacked->bin_data->type == 'item') {
