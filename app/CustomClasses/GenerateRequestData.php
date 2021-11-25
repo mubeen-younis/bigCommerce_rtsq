@@ -102,6 +102,11 @@ class GenerateRequestData
                     $carriersArr['carriers'][$carName] = $wweLtlArr;
 
                     break;
+                case "xpo-ltl":
+                    $wweLtlArr = $this->xpoLtlEnitArr($con1, $destination, $enitOrigin);
+                    $wweLtlArr['originAddress'] = $enitOrigin;
+                    $carriersArr['carriers']['xpoLogistics'] = $wweLtlArr;
+                    break;
             }
         }
         return ['carriersArr' => $carriersArr, 'residential' => $this->resiCarrier];
@@ -229,6 +234,19 @@ class GenerateRequestData
         ];
     }
 
+    public function xpoLtlEnitArr($connSettings, $destination, $enitOrigin){
+        return [
+            'licenseKey' => $connSettings['creds']['license_key'] ?? '', //$this->connectionSettings['license_key'],
+            'serverName' => "https://" . $this->storeData['store']['name'], //"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
+            'carrierMode' => 'pro',
+            'quotestType' => 'ltl', // ltl / small
+            'version' => '1.0.0',
+            'returnQuotesOnExceedWeight' => 1,
+            'api' => $this->getApiInfoArrXPOLtl($connSettings, $destination, $enitOrigin),
+            'getDistance' => 0,
+        ];
+    }
+
     /**
      * function for generate request array
      * @param $request
@@ -251,20 +269,21 @@ class GenerateRequestData
 
         if ($this->storeData['installed_addon_sbs'])
         {
-            $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'];
+            $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? [];
             $this->itemsArr = $itemsArr;
             $this->carriers = $carriers;
-            $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
-            if(empty($multiplePackaging)){
-                return null;
-            }
-            $itemsArr = $multiplePackaging['itemsArr'];
-            $isMultishipment = $multiplePackaging['isMultishipment'];
-            $carriers = $multiplePackaging['carriers'];
+
             $hasSmall = isset($carriers['wweSmall'])
                 || isset($carriers['upsSmall'])
                 || isset($carriers['fedexSmall']);
             if($hasSmall){
+                $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
+                if(empty($multiplePackaging)){
+                    return null;
+                }
+                $itemsArr = $multiplePackaging['itemsArr'];
+                $isMultishipment = $multiplePackaging['isMultishipment'];
+                $carriers = $multiplePackaging['carriers'];
 
                 $olditemsArr = $itemsArr;
                 $carriersoriginAddress = $carriers['wweSmall']['originAddress']
@@ -329,7 +348,8 @@ class GenerateRequestData
                     || isset($carriers['upsLTL'])
                     || isset($carriers['fedexLTL'])
                     || isset($carriers['cerasis'])
-                    || isset($carriers['globalTranz']);
+                    || isset($carriers['globalTranz'])
+                || isset($carriers['xpoLogistics']);
                 if($isLtl){
                     $itemsArr = $olditemsArr + $itemsArr;
                 }
@@ -749,6 +769,67 @@ class GenerateRequestData
             'accessorial' => $accessorial,
             /*array('DANGEROUS_GOODS', 'LIFTGATE_DELIVERY'),*/
         ];
+
+
+        return $apiArray;
+    }
+
+    function getApiInfoArrXPOLtl($connSettings, $destination, $enitOrigin){
+        $liftGate = ( (isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
+            (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+        /*
+         * Check if rad hit not consumed and residential is enables
+         * **/
+        $residential = 'N';
+        $alwaysResi = false;
+        $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
+        if( $this->storeData['installed_addon_rad'] && ( (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))){
+            if($this->radHitConsumed == 0){
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+
+            }else{
+                $residential = $this->residential;
+            }
+            if($liftGate != 'Y'){
+                $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
+            }
+        }else{
+            $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
+        }
+
+
+        $this->resiCarrier['xpoLtl'] = $residential;
+        $this->resiCarrier['alwaysResi']['xpoxLtl'] = $alwaysResi;
+        $residentialPickup = ( isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
+
+        $accessorial = [];
+
+        if($residential === 'Y' || $alwaysResi) {
+            $accessorial['RSD'] = 'RSD';
+        }
+        if($liftGate === 'Y') {
+            $accessorial['DLG'] = 'DLG';
+        }
+        $apiArray = [
+            'UserName' => $connSettings['creds']['username'] ?? '',
+            'Password' => $connSettings['creds']['password'] ?? '',
+            'CUSTNMBR' => $connSettings['creds']['delivery_account_number'] ?? '',
+            'physicalZipCode' => $connSettings['creds']['delivery_postal_code'] ?? '',
+            'thirdPartyAccountNumber' => $connSettings['creds']['bill_to_account_number'] ?? '',
+            'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
+            'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
+            'accessorial' => $accessorial
+        ];
+
+        if(isset($connSettings['creds']['access_level']) && $connSettings['creds']['access_level'] == 'pro' && isset($connSettings['creds']['api_key']) && $connSettings['creds']['api_key'] != '' ){
+            $Test = [
+                'basicAccessToken' => $connSettings['creds']['api_key'] ?? '',
+                'xpoApiVersion' => '1.0',
+            ];
+            $apiArray = array_merge($apiArray, $Test);
+        }
 
 
         return $apiArray;
