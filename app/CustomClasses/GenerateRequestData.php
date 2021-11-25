@@ -251,7 +251,7 @@ class GenerateRequestData
 
         if ($this->storeData['installed_addon_sbs'])
         {
-            $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'];
+            $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? [];
             $this->itemsArr = $itemsArr;
             $this->carriers = $carriers;
             $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
