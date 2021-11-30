@@ -101,7 +101,7 @@ class Shipping
         }
         //;
         //print_r($requestArr['binReponse']);
-        print_r($requestArr['requestArr']); print_r($quotes); exit;
+       // print_r($requestArr['requestArr']); print_r($quotes); exit;
         Log::info('after addBinResponseToQuotes '. json_encode($quotes));
 
         $quotesFromWs = $quotes ?? [];
@@ -112,6 +112,7 @@ class Shipping
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];
         }
+
         $_finalQuotes = $finalTitlesTemp = $finalCodesTemp = [];
         $finalTitles = array_column($finalQuotes, 'title');
         $finalCodes = array_column($finalQuotes, 'code');
@@ -126,6 +127,7 @@ class Shipping
         $isAVGCodeExist = gettype(array_search('AVG', $finalCodesTemp)) == 'integer';
         $isUpsLtlCodeExist = gettype(array_search('upsltl', $finalCodesTemp)) == 'integer';
         $isFedexLtlCodeExist = gettype(array_search('fedexltl', $finalCodesTemp)) == 'integer';
+        $isxpoLtlCodeExist = gettype(array_search('xpoltl', $finalCodesTemp)) == 'integer';
         $freightCode = '';
         $finalCost = 0;
 
@@ -151,10 +153,9 @@ class Shipping
             $finalQuotes = $_finalQuotes;
         }else {
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
-            if($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist)){
+            if($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist)){
                 $isShippingOrFreight = false;
             }
-            //dd($this->isRequestMultishipment, $isShippingOrFreight);
             if($this->isRequestMultishipment && !$isShippingOrFreight) {
                 $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings,  $residential, $quotesFromWs, $requestArr['requestArr']);
                 $finalQuotes = $finalQuotesMulti['checkoutQuotes'] ?? [];
@@ -171,7 +172,6 @@ class Shipping
     }
 
     private function removeParcelIfLtl($finalQuotes){
-        //print_r($finalQuotes); exit;
         $hasLtl = false;
         $hasParcel = false;
         foreach ($finalQuotes as $quote){
@@ -239,7 +239,8 @@ class Shipping
             'wweLTL',
             'upsLTL',
             'fedexLTL',
-            'globalTranz'
+            'globalTranz',
+            'xpoLTL'
         ];
         return in_array($carrierName, $ltlCarriers);
     }
@@ -478,7 +479,7 @@ class Shipping
     }
 
     public function isSmall($carrier){
-        $smallCarriers = ['wweSmall','upsSmall'];
+        $smallCarriers = ['wweSmall','upsSmall','fedexSmall'];
         return in_array($carrier, $smallCarriers);
     }
 }
