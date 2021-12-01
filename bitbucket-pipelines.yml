@@ -30,7 +30,7 @@ pipelines:
               SSH_USER: 'eniture'
               SERVER: '3.213.234.241'
               MODE: 'command'
-              COMMAND: '/home/eniture/public_html/bigcommerce/bc/remote-script.sh'
+              COMMAND: '/home/eniture/public_html/bigcommerce/backend/remote-script.sh'
 
     master:
     - step:
