@@ -801,7 +801,7 @@ class GenerateRequestData
 
 
         $this->resiCarrier['xpoLtl'] = $residential;
-        $this->resiCarrier['alwaysResi']['xpoxLtl'] = $alwaysResi;
+        $this->resiCarrier['alwaysResi']['xpoLtl'] = $alwaysResi;
         $residentialPickup = ( isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
 
         $accessorial = [];
