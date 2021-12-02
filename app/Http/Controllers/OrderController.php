@@ -122,6 +122,9 @@ class OrderController extends Controller
         $liftGateStatus = 'n';
         $binPackagingData = '';
         $orderWidget = [];
+        $isOneRate = strpos($order['rate_id'], '+or');
+        $isGround = strpos($order['rate_id'], '+gd');
+        $isAir = strpos($order['rate_id'], '+as');
         foreach($responseFromWS as $carrrierName => $WsResp){
             foreach($WsResp as $zip => $ws){
 
@@ -136,9 +139,18 @@ class OrderController extends Controller
 
                     $totalBoxes = 1;
                     if(isset($ws->binPackagingData) && !empty($ws->binPackagingData) && $isSmallrate){
-                        $sbsData = $ws->binPackagingData->response;
+                        if($isGround){
+                            $sbsData = $ws->binPackagingData->response->ground->bins_packed;
+                        }else if($isAir){
+                            $sbsData = $ws->binPackagingData->response->air->bins_packed;
+                        }else if($isOneRate){
+                            $sbsData = $ws->binPackagingData->response->oneRate->bins_packed;
+                        }else{
+                            $sbsData = $ws->binPackagingData->response->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->oneRate->bins_packed;
+                        }
+                        //print_r($ws->binPackagingData->response); exit;
                         $itemCount = 0;
-                        foreach ($sbsData->bins_packed as $key => $binPacked) {
+                        foreach ($sbsData as $key => $binPacked) {
                             $type = '';
                             $quantity = 1;
                             if (isset($binPacked->bin_data->type) && $binPacked->bin_data->type == 'item') {
@@ -706,6 +718,7 @@ class OrderController extends Controller
                 if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
                     $rateId = json_decode($response['response'])->rate_id;
                     $reqData = RequestTempData::where('rate_id', $rateId)->where('cart_id', $cartId)->get()->toArray();
+                    Log::info('Orderdata $reqData: ' . json_encode($reqData). ' RateID: '.$rateId .' CartId: '.$cartId);
                     foreach ($reqData as $data)
                     {
                         unset($data['id']);

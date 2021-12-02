@@ -27,8 +27,14 @@ class GenerateRequestData
     public $radHitConsumed = 0;
     public $resiCarrier = [];
     public $residential = "N";
+    public $oneRate = false;
+    public $air = false;
+    public $ground = false;
+    public $smartPost = false;
+    public $fedexType = 'normal';
     public $origins = [];
     public $itemsArr = [];
+    public $carriers = [];
 
     /**
      * constructor of class that accepts request object
@@ -81,6 +87,12 @@ class GenerateRequestData
                     $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['fedexLTL'] = $wweLtlArr;
                     break;
+
+                case "fedex-small":
+                    $wweLtlArr = $this->fedexSmallEnitArr($con1, $destination, $enitOrigin);
+                    $wweLtlArr['originAddress'] = $enitOrigin;
+                    $carriersArr['carriers']['fedexSmall'] = $wweLtlArr;
+                    break;
                 case "gtz-ltl":
                     $carName = isset($con1['creds']['api_type']) && $con1['creds']['api_type'] === 'CRS' ? 'cerasis' : 'globalTranz';
                     $wweLtlArr = $this->gtzLtlEnitArr($con1, $destination, $enitOrigin, $carName);
@@ -88,6 +100,12 @@ class GenerateRequestData
                     $wweLtlArr['originAddress'] = $enitOrigin;
 
                     $carriersArr['carriers'][$carName] = $wweLtlArr;
+
+                    break;
+                case "xpo-ltl":
+                    $wweLtlArr = $this->xpoLtlEnitArr($con1, $destination, $enitOrigin);
+                    $wweLtlArr['originAddress'] = $enitOrigin;
+                    $carriersArr['carriers']['xpoLogistics'] = $wweLtlArr;
                     break;
             }
         }
@@ -190,6 +208,18 @@ class GenerateRequestData
         ];
     }
 
+    public function fedexSmallEnitArr($connSettings, $destination){
+        return [
+            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'serverName' => "https://" . $this->storeData['store']['name'],
+            'carrierMode' => 'pro',
+            'quotestType' => 'small', // ltl / small
+            'version' => '1.0.0',
+            'api' => $this->getApiInfoArrFedexSmall($connSettings, $destination),
+            'getDistance' => 0,
+        ];
+    }
+
     public function fedexLtlEnitArr($connSettings, $destination, $enitOrigin)
     {
         return [
@@ -200,6 +230,19 @@ class GenerateRequestData
             'version' => '1.0.0',
             'returnQuotesOnExceedWeight' => 1,
             'api' => $this->getApiInfoArrFedexLtl($connSettings, $destination, $enitOrigin),
+            'getDistance' => 0,
+        ];
+    }
+
+    public function xpoLtlEnitArr($connSettings, $destination, $enitOrigin){
+        return [
+            'licenseKey' => $connSettings['creds']['license_key'] ?? '', //$this->connectionSettings['license_key'],
+            'serverName' => "https://" . $this->storeData['store']['name'], //"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
+            'carrierMode' => 'pro',
+            'quotestType' => 'ltl', // ltl / small
+            'version' => '1.0.0',
+            'returnQuotesOnExceedWeight' => 1,
+            'api' => $this->getApiInfoArrXPOLtl($connSettings, $destination, $enitOrigin),
             'getDistance' => 0,
         ];
     }
@@ -226,39 +269,92 @@ class GenerateRequestData
 
         if ($this->storeData['installed_addon_sbs'])
         {
-            $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'];
+            $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? [];
             $this->itemsArr = $itemsArr;
-            $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
-            if(empty($multiplePackaging)){
-                return null;
-            }
-            $itemsArr = $multiplePackaging['itemsArr'];
-            $isMultishipment = $multiplePackaging['isMultishipment'];
-            $carriers = $multiplePackaging['carriers'];
-            if(isset($carriers['wweSmall']) || isset($carriers['upsSmall'])){
+            $this->carriers = $carriers;
+
+            $hasSmall = isset($carriers['wweSmall'])
+                || isset($carriers['upsSmall'])
+                || isset($carriers['fedexSmall']);
+            if($hasSmall){
+                $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
+                if(empty($multiplePackaging)){
+                    return null;
+                }
+                $itemsArr = $multiplePackaging['itemsArr'];
+                $isMultishipment = $multiplePackaging['isMultishipment'];
+                $carriers = $multiplePackaging['carriers'];
+
                 $olditemsArr = $itemsArr;
-                $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'];
-                $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment );
-                $itemsArr = $sbsResponse['items'] ?? $itemsArr;
+                $carriersoriginAddress = $carriers['wweSmall']['originAddress']
+                    ?? $carriers['upsSmall']['originAddress']
+                    ?? $carriers['fedexSmall']['originAddress'];
+
+                if(isset($carriers['fedexSmall'])){
+                    $this->checkServiceEnabled();
+                    if($this->ground) {
+                        $this->fedexType = 'normal'; // ground services
+                        $sbsResponseGround = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
+                        $itemsArrGround = $sbsResponseGround['items'] ?? $itemsArr;
+
+                        unset($carriers['fedexSmall']['originAddress']);
+                        foreach ($sbsResponseGround['originAddress'] as $key => $origin){
+                            $carriers['fedexSmall']['originAddress'][$key] = $origin;
+                        }
+                        $binReponse['ground'] = $sbsResponseGround['binResponse'];
+                    }
+
+                    if($this->oneRate) {
+                        $this->fedexType = 'fedex'; // one rate services
+                        $sbsResponseOneRate = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
+                        if(empty($sbsResponseOneRate['binResponse'])){
+                            $this->oneRate = false;
+                        }else {
+                            $this->allPacked($sbsResponseOneRate);
+                        }
+                        if($this->oneRate) {
+                            $itemsArrOneRate = $sbsResponseOneRate['items'] ?? $itemsArr;
+                            $commdityDetails['one_rate_commdityDetails'] = $this->lineItems($itemsArrOneRate, $carriers['fedexSmall']['originAddress'], true, $sbsResponseOneRate['binResponse']);
+                            $binReponse['oneRate'] = $sbsResponseOneRate['binResponse'];
+                        }
+
+                    }
+
+                    if($this->air) {
+                        $this->fedexType = 'both'; // air services
+                        $sbsResponseAir = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
+                        $itemsArrAir = $sbsResponseAir['items'] ?? $itemsArr;
+                        $commdityDetails['air_services_commdityDetails'] = $this->lineItems($itemsArrAir, $carriers['fedexSmall']['originAddress']);
+                        $binReponse['air'] = $sbsResponseAir['binResponse'];
+
+                    }
+                    $itemsArr = $itemsArrGround;
+                    $sbsResponse['binResponse'] = $binReponse;
+                }else {
+                    $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
+                    $itemsArr = $sbsResponse['items'] ?? $itemsArr;
+                }
+
+
                 if(isset($carriers['wweSmall'])) {
                     $carriers['wweSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                 }
                 if(isset($carriers['upsSmall'])) {
                     $carriers['upsSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                 }
-                $binReponse = $sbsResponse['binResponse'];
-                $boxBins = $sbsResponse['boxBins'];
+                $binReponse = $sbsResponse['binResponse'] ?? [];
+                $boxBins = $sbsResponse['boxBins'] ?? [];
                 $isLtl = isset($carriers['wweLTL'])
                     || isset($carriers['upsLTL'])
                     || isset($carriers['fedexLTL'])
                     || isset($carriers['cerasis'])
-                    || isset($carriers['globalTranz']);
+                    || isset($carriers['globalTranz'])
+                || isset($carriers['xpoLogistics']);
                 if($isLtl){
                     $itemsArr = $olditemsArr + $itemsArr;
                 }
             }
         }
-
         $requestArr = [
             'apiVersion' => '2.0',
             'platform' => 'bigcommerce',
@@ -271,8 +367,78 @@ class GenerateRequestData
             'receiverAddress' => $receiverAddress,
             'commdityDetails' => $itemsArr,
         ];
+
+        if(isset($carriers['fedexSmall'])) {
+            if($this->smartPost){
+                $requestArr['FedexSmartPostPricing'] = 1;
+            }
+            if($this->air){
+                $requestArr['FedexAirServicesPricing'] = 1;
+                $requestArr['air_services_commdityDetails'] = $commdityDetails['air_services_commdityDetails'];
+            }
+            if($this->oneRate){
+                $requestArr['FedexOneRatePricing'] = 1;
+                $requestArr['one_rate_commdityDetails'] = $commdityDetails['one_rate_commdityDetails'];
+            }
+        }
         $resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse, 'boxBins' => $boxBins];
         return $resp;
+    }
+
+    public function lineItems($items, $origins, $isOneRate = false, $binResponse = []){
+        $newItems = [];
+        foreach ($items as $key => $item){
+            $locationId = $origins[$key]['locationId'] ?? 1;
+            $newItems[$locationId]['lineItems'][] = $item;
+            if($isOneRate) {
+                $newItems[$locationId]['one_rate_package_type'] = $binResponse[$locationId]->bins_packed[0]->bin_data->name;
+            }
+        }
+        return $newItems;
+    }
+
+    public function allPacked($sbsResponseOneRate){
+        if($this->oneRate && isset($sbsResponseOneRate['binResponse'])){
+            foreach($sbsResponseOneRate['binResponse'] as $shipment => $binResponse){
+                $bins_packed = $binResponse->bins_packed ?? [];
+                if(!empty($bins_packed)){
+                    foreach ($bins_packed as $packed){
+                        if(isset($packed->bin_data->type) && $packed->bin_data->type == 'item'){
+                            $this->oneRate = false;
+                            break 2;
+                        }
+                    }
+                }else{
+                    $this->oneRate = false;
+                    break;
+                }
+            }
+        }
+    }
+
+    public function checkServiceEnabled(){
+        $carrierServices = $this->connectionSettings['fedex-small']['quote_settings']['carrier_services'] ?? [];
+        foreach ($carrierServices as $key => $service){
+            $oneRate = ['one_rate_express_saver', 'one_rate_2_day', 'one_rate_2_day_am', 'one_rate_standard_overnight', 'one_rate_priority_overnight', 'one_rate_first_overnight'];
+            if(!$this->oneRate && $service && in_array($key, $oneRate)){
+                $this->oneRate = true;
+            }
+
+            $ground = ['fedex_home_delivery', 'fedex_appointment_home_delivery', 'fedex_ground', 'international_ground', 'fedex_evening_home_delivery', 'fedex_date_certain_home_delivery', 'fedex_smartpost'];
+            if(!$this->ground && $service && in_array($key, $ground)){
+                $this->ground = true;
+            }
+
+            $smartPost = ['fedex_smartpost'];
+            if(!$this->smartPost && $service && in_array($key, $smartPost)){
+                $this->smartPost = true;
+            }
+
+            $air = ['fedex_express_saver', 'fedex_2_day', 'fedex_2_day_am', 'fedex_priority_overnight', 'fedex_first_overnight', 'international_distribution_freight', 'international_economy', 'international_economy_distribution', 'international_economy_freight', 'international_first', 'international_priority', 'international_priority_distribution', 'international_priority_freight', 'priority_overnight', 'standard_overnight'];
+            if(!$this->air && $service && in_array($key, $air)){
+                $this->air = true;
+            }
+        }
     }
 
     /**
@@ -608,6 +774,67 @@ class GenerateRequestData
         return $apiArray;
     }
 
+    function getApiInfoArrXPOLtl($connSettings, $destination, $enitOrigin){
+        $liftGate = ( (isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
+            (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+        /*
+         * Check if rad hit not consumed and residential is enables
+         * **/
+        $residential = 'N';
+        $alwaysResi = false;
+        $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
+        if( $this->storeData['installed_addon_rad'] && ( (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))){
+            if($this->radHitConsumed == 0){
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+
+            }else{
+                $residential = $this->residential;
+            }
+            if($liftGate != 'Y'){
+                $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
+            }
+        }else{
+            $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
+        }
+
+
+        $this->resiCarrier['xpoLtl'] = $residential;
+        $this->resiCarrier['alwaysResi']['xpoxLtl'] = $alwaysResi;
+        $residentialPickup = ( isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
+
+        $accessorial = [];
+
+        if($residential === 'Y' || $alwaysResi) {
+            $accessorial['RSD'] = 'RSD';
+        }
+        if($liftGate === 'Y') {
+            $accessorial['DLG'] = 'DLG';
+        }
+        $apiArray = [
+            'UserName' => $connSettings['creds']['username'] ?? '',
+            'Password' => $connSettings['creds']['password'] ?? '',
+            'CUSTNMBR' => $connSettings['creds']['delivery_account_number'] ?? '',
+            'physicalZipCode' => $connSettings['creds']['delivery_postal_code'] ?? '',
+            'thirdPartyAccountNumber' => $connSettings['creds']['bill_to_account_number'] ?? '',
+            'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
+            'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
+            'accessorial' => $accessorial
+        ];
+
+        if(isset($connSettings['creds']['access_level']) && $connSettings['creds']['access_level'] == 'pro' && isset($connSettings['creds']['api_key']) && $connSettings['creds']['api_key'] != '' ){
+            $Test = [
+                'basicAccessToken' => $connSettings['creds']['api_key'] ?? '',
+                'xpoApiVersion' => '1.0',
+            ];
+            $apiArray = array_merge($apiArray, $Test);
+        }
+
+
+        return $apiArray;
+    }
+
     /*
      * checkRadStatus to check Rad plan if enabled and
      * **/
@@ -709,6 +936,55 @@ class GenerateRequestData
                 'ups_small_pkg_Saver' => $this->issetIndex($carrierServices, 'ups_worldwide_saver'),
                 'ups_small_pkg_aditional_handling' => $this->issetIndex($carrierServices, 'ups_ground_with_freight_pricing')
             ],
+        ];
+        return $apiArray;
+    }
+
+    function getApiInfoArrFedexSmall($connSettings, $destination){
+        $residential = 'N';
+        $alwaysResi = false;
+        $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
+        if( $this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])){
+            if($this->radHitConsumed == 0){
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+
+            }else{
+                $residential = $this->residential;
+            }
+
+        }else{
+            $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
+        }
+        $this->resiCarrier['fedexSmall'] = $residential;
+        $this->resiCarrier['alwaysResi']['fedexSmall'] = $alwaysResi;
+        $hubIdindicia = explode('(', $connSettings['creds']['hub_id']);
+        $hubId = trim($hubIdindicia[0]);
+        $indicia = 'PARCEL_SELECT';//trim(explode(')',$hubIdindicia[1])[0]);
+        $smartPostData = [
+            'hubId' => $hubId,
+            'indicia' => $indicia
+        ];
+        $apiArray = [
+
+            'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
+            'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
+            'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
+            'storeDateTime' => date("Y-m-d H:i:s"), //2020-10-22 14:00:00
+            'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days'])?$this->getDays($connSettings['quote_settings']['week_days']):'', //array('1','2','3','4','5'),
+
+            'residentialDelivery' =>  ( $alwaysResi ? 'Y' : $residential == 'Y' ) ? 'on':'off',
+
+            'MeterNumber' => $connSettings['creds']['meter_number'],
+            'password' => $connSettings['creds']['password'],
+            'key' => $connSettings['creds']['api_access_key'],
+            'AccountNumber' => $connSettings['creds']['account_number'],
+            'prefferedCurrency' => 'USD',
+            'includeDeclaredValue' => '1', //insurance active with sbs active 0 or 1
+            'pkgType' => '00',
+            'saturdayDelivery' => 'on',
+            'smartPostData' => $smartPostData
         ];
         return $apiArray;
     }
@@ -851,11 +1127,26 @@ class GenerateRequestData
         }
 
         $boxBins = $newOrigins = $newitemsArr = [];
-        $boxes = DB::table('box_sizes')->where('store_id', $storeId)
-            ->where('is_available', 1)->get();
+        switch ($this->fedexType){
+            case 'normal':
+                $boxes = DB::table('box_sizes')->where('store_id', $storeId)
+                    ->where('is_available', 1)->where('box_type', 1)->get();
+                break;
+            case 'fedex':
+                $boxes = DB::table('box_sizes')->where('store_id', $storeId)
+                    ->where('is_available', 1)->where('box_type', 2)->get();
+                break;
+            case 'both':
+                $boxes = DB::table('box_sizes')->where('store_id', $storeId)
+                    ->where('is_available', 1)->get();
+                break;
+        }
+        /*$boxes = DB::table('box_sizes')->where('store_id', $storeId)
+            ->where('is_available', 1)->get();*/
         foreach ($boxes as $box) {
             $boxBins[$box->id] = array(
                 'nickname' => $box->nickname,
+                'name' => $box->box_name,
                 'w' => $box->width,
                 'h' => $box->height,
                 'd' => $box->length,
@@ -880,7 +1171,7 @@ class GenerateRequestData
                         }
                     }
                 }
-                $binResponse = $this->addPackagingID($binResponse);
+                $binResponse = $this->addPackagingID($binResponse, $boxBins);
 
                 $counting = 0;
                 $counting = 0;
@@ -985,13 +1276,15 @@ class GenerateRequestData
         return $item;
     }
 
-    public function addPackagingID($binResponse){
+    public function addPackagingID($binResponse, $boxBins){
         foreach ($binResponse as $locationId => $bins){
             foreach ($bins->bins_packed as $key => $bin){
                 $items = $bin->items;
                 $item = $items[0];
                 $variant_id = $item->id;
                 $binResponse[$locationId]->bins_packed[$key]->bin_data->variant_id = $variant_id;
+                $boxId = $bin->bin_data->id ?? 0;
+                $binResponse[$locationId]->bins_packed[$key]->bin_data->name = isset($boxBins[$boxId]['name']) ? strtoupper(str_replace(' ','_',trim(explode('__',$boxBins[$boxId]['name'])[0]))) : '';
             }
         }
         return $binResponse;
