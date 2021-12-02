@@ -1397,7 +1397,6 @@ class CompileQuotes
             $this->residentialDlvry = 0;
         }
         $this->alwaysResi = $this->residential['alwaysResi']['xpoLtl'] ?? false;
-
         $shipments = $xpoLtl->formateQuoteBeforeCompile($shipments);
         //print_r($shipments); exit;
         $this->quoteSettings = $connectionSettings['xpo-ltl']['quote_settings'] ?? [];
