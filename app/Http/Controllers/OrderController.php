@@ -227,7 +227,7 @@ class OrderController extends Controller
             $sMethod = isset($shipping_name[1]) ? '('.$shipping_name[1] : '';
 
             $orderWidget[$zip]['shipping_method'] = $sName.$sMethod;
-            $orderWidget[$zip]['shipping_rate'] = '$'. number_format((float)$sRate, 2, '.', '');
+            $orderWidget[$zip]['shipping_rate'] = '$'. number_format((float)$sRate, 2, );
             if( $item->shipMultiplePackage ) {
                 if((!in_array($item->lineItemName, $insertedNames))) {
                     $insertedNames[] = $item->lineItemName;
