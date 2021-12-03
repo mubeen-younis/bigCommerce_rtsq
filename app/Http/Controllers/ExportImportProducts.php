@@ -312,19 +312,31 @@ class ExportImportProducts extends Controller
         }
         if(isset($indexes['weight']) && $indexes['weight']){
             $key = $indexes['weight'];
-            $update['weight'] = (float) $product["$key"];
+            $data = (float) $product["$key"];
+            if($data >= 0){
+                $update['weight'] = (float) $product["$key"];
+            }
         }
         if(isset($indexes['length']) && $indexes['length']){
             $key = $indexes['length'];
-            $update['length'] = (float) $product["$key"];
+            $data = (float) $product["$key"];
+            if($data >= 0) {
+                $update['length'] = (float)$product["$key"];
+            }
         }
         if(isset($indexes['width']) && $indexes['width']){
             $key = $indexes['width'];
-            $update['width'] = (float) $product["$key"];
+            $data = (float) $product["$key"];
+            if($data >= 0) {
+                $update['width'] = (float)$product["$key"];
+            }
         }
         if(isset($indexes['height']) && $indexes['height']){
             $key = $indexes['height'];
-            $update['height'] = (float) $product["$key"];
+            $data = (float) $product["$key"];
+            if($data >= 0) {
+                $update['height'] = (float)$product["$key"];
+            }
         }
         if(!empty($update)){
             if($variant_id) {
@@ -379,7 +391,10 @@ class ExportImportProducts extends Controller
         if(isset($indexes['freight_class']) && $indexes['freight_class']){
             $key = $indexes['freight_class'];
             if(array_key_exists($key, $product)) {
-                $settings->freight_class = (string)$product["$key"];
+                $freightClass = (string)$product["$key"];
+                if($freightClass == '' || $this->isFreightClass($freightClass)){
+                    $settings->freight_class = (string)$product["$key"];
+                }
             }
         }
         if(isset($indexes['ship_alone']) && $indexes['ship_alone']){
@@ -393,6 +408,9 @@ class ExportImportProducts extends Controller
             if(array_key_exists($key, $product)) {
                 $settings->allow_vertical = ($product["$key"] == 1) ? true : false;;
             }
+        }
+        if($settings->allow_vertical && $settings->ship_own_package){
+            $settings->ship_own_package = false;
         }
         if(isset($indexes['insurance']) && $indexes['insurance']){
             $key = $indexes['insurance'];
@@ -426,6 +444,11 @@ class ExportImportProducts extends Controller
             }
         }*/
         return $settings;
+    }
+
+    function isFreightClass($freigtClass){
+        $allFreightClass = ['50','55','60','65','70','77.5','85','92.5','100','125','150','175','200','250','300','400','500','DensityBased'];
+        return in_array($freigtClass, $allFreightClass);
     }
 
     public function updateDropShip($oldSettings, $product, $indexes, $store_id){
