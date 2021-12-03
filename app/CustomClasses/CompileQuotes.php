@@ -1082,8 +1082,11 @@ class CompileQuotes
                     }
                 }
             }
-            //print_r($originQuotes); print_r($arraySorting); exit;
-            $compiledQuotes = $this->getGTZCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
+            if(!$this->isMultiShipment) {
+                $compiledQuotes = $this->getGTZCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
+            }else{
+                $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
+            }
 
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
                 if (count($compiledQuotes) > 1) {
@@ -2409,10 +2412,9 @@ class CompileQuotes
      */
     public function getGTZCompiledQuotes($services, $arraySorting, $lgQuotes)
     {
-        //print_r($this->quoteSettings); print_r($services); exit;
         $servicesOriginal = $services;
         $quickest = $quotes = [];
-        if(isset($this->quoteSettings['quickest_service']) && $this->quoteSettings['quickest_service'] == 1 && isset($this->quoteSettings['method']) && $this->quoteSettings['method'] != 2){
+        if(isset($this->quoteSettings['quickest_service']) && $this->quoteSettings['quickest_service'] == 1 && isset($this->quoteSettings['method']) && $this->quoteSettings['method'] != 2 && !$this->isMultiShipment){
             if(isset($arraySorting['quickest']['simple'])){
                 $minIndex = array_search(min($arraySorting['quickest']['simple']), $arraySorting['quickest']['simple']);
                 $quickest = $services[$minIndex];
@@ -2431,7 +2433,6 @@ class CompileQuotes
         if(isset($this->quoteSettings['method']) && $this->quoteSettings['method'] != 0) {
             $quotes = $this->getCompiledQuotes($servicesOriginal, $arraySorting, $lgQuotes);
         }
-        //dd( array_merge($quotes,$quickest));
         $quotes = array_merge($quotes,$quickest);
         foreach ($quotes as $key => $quote){
             if(isset($quotes[$key]['simple']['titleQuickest'])){
