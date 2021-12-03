@@ -2062,7 +2062,7 @@ class CompileQuotes
         $this->quoteSettings['label_as'] = $quoteSetting['label_as'] ?? '';
         $deliveryEstimateLabel = (!empty($deliveryEstimate) && ( isset($this->quoteSettings['showDeliveryEstimate']) && $this->quoteSettings['showDeliveryEstimate']) ) ? ' (Estimated transit time of ' . $deliveryEstimate . ' business days)' : '';
         if ($this->isMultiShipment && $from == false) {
-            return $serviceTitle.$deliveryEstimateLabel;
+            return $serviceName.$deliveryEstimateLabel;
         }
         // Here  Making Delivery estimate title
 
