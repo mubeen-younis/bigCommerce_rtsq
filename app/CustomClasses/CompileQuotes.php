@@ -975,7 +975,7 @@ class CompileQuotes
         $shipments = $this->GTZLtlQuotesResults->formateQuoteBeforeCompile($shipments);
         //print_r($shipments); exit;
         $this->quoteSettings = $connectionSettings['gtz-ltl']['quote_settings'] ?? [];
-
+//print_r($this->quoteSettings); exit;
         $allConfigServices = $connectionSettings['gtz-ltl']['carrier_services']['GTZ'] ?? [];
 
         $this->quoteSettingsData();
@@ -1033,20 +1033,24 @@ class CompileQuotes
                         $access = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi);
                         $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings);
                         $title = $this->getGTitle($data['serviceDesc'], false,false, false ,false, $data['totalTransitTimeInDays'], $this->quoteSettings);
+                        $titleQuickest = $this->getGTitle($data['serviceDesc'], false,false, false ,false, $data['totalTransitTimeInDays'], $this->quoteSettings, true);
                         $arraySorting['simple'][$key] = $price;
                         $arraySorting['quickest']['simple'][$key] = $data['totalTransitTimeInDays'];
                         $originQuotes[$key]['simple']['code'] = $data['serviceType'] . $access;
                         $originQuotes[$key]['simple']['rate'] = $price;
                         $originQuotes[$key]['simple']['title'] = $title;
+                        $originQuotes[$key]['simple']['titleQuickest'] = $titleQuickest;
                         if ($lgQuotes) {
                             $access = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi,true);
                             $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings, true);
                             $title = $this->getGTitle($data['serviceDesc'], true, false, false, false, $data['totalTransitTimeInDays'], $this->quoteSettings);
+                            $titleQuickest = $this->getGTitle($data['serviceDesc'], true, false, false, false, $data['totalTransitTimeInDays'], $this->quoteSettings, true);
                             $arraySorting['liftgate'][$key] = $price;
                             $arraySorting['quickest']['liftgate'][$key] = $data['totalTransitTimeInDays'];
                             $originQuotes[$key]['liftgate']['code'] = $data['serviceType'] . $access;
                             $originQuotes[$key]['liftgate']['rate'] = $price;
                             $originQuotes[$key]['liftgate']['title'] = $title;
+                            $originQuotes[$key]['liftgate']['titleQuickest'] = $titleQuickest;
                         }
                         /*if ($notify) {
                             $access = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi,false, true);
@@ -1078,7 +1082,7 @@ class CompileQuotes
                     }
                 }
             }
-            //print_r($originQuotes); exit;
+            //print_r($originQuotes); print_r($arraySorting); exit;
             $compiledQuotes = $this->getGTZCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
 
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
@@ -2036,7 +2040,7 @@ class CompileQuotes
     /**
      * Title for GTZ
      */
-    public function getGTitle($serviceName, $lgOption = false, $notify = false, $laccess = false, $from = false, $deliveryEstimate = '', $quoteSetting = [])
+    public function getGTitle($serviceName, $lgOption = false, $notify = false, $laccess = false, $from = false, $deliveryEstimate = '', $quoteSetting = [], $quckest = false)
     {
         // Here  Making service title
         if(!empty($quoteSetting)){
@@ -2046,7 +2050,7 @@ class CompileQuotes
         * Check if quickest enabled -> set lable_as manaully
         */
         $quoteSetting = $this->quoteSettings ?? [];
-        if(isset($this->quoteSettings['method']) && $this->quoteSettings['method'] == 0){
+        if($quckest){
             $this->quoteSettings['method'] = 1;
             $this->quoteSettings['label_as'] = $this->quoteSettings['quickest_service_label'] ?? '';
         }
@@ -2405,16 +2409,39 @@ class CompileQuotes
      */
     public function getGTZCompiledQuotes($services, $arraySorting, $lgQuotes)
     {
-        if(isset($this->quoteSettings['method']) && $this->quoteSettings['method'] === 0){
+        //print_r($this->quoteSettings); print_r($services); exit;
+        $servicesOriginal = $services;
+        $quickest = $quotes = [];
+        if(isset($this->quoteSettings['quickest_service']) && $this->quoteSettings['quickest_service'] == 1 && isset($this->quoteSettings['method']) && $this->quoteSettings['method'] != 2){
             if(isset($arraySorting['quickest']['simple'])){
                 $minIndex = array_search(min($arraySorting['quickest']['simple']), $arraySorting['quickest']['simple']);
                 $quickest = $services[$minIndex];
                 unset($services);
+
+                if(isset($quickest['simple']['title'])) {
+                    $quickest['simple']['title'] = $quickest['simple']['titleQuickest'];
+                }
+                if(isset($quickest['liftgate']['title'])) {
+                    $quickest['liftgate']['title'] = $quickest['liftgate']['titleQuickest'];
+                }
                 $services[$minIndex] = $quickest;
-                return $services;
+                $quickest =  $services;
             }
         }
-        return $this->getCompiledQuotes($services, $arraySorting, $lgQuotes);
+        if(isset($this->quoteSettings['method']) && $this->quoteSettings['method'] != 0) {
+            $quotes = $this->getCompiledQuotes($servicesOriginal, $arraySorting, $lgQuotes);
+        }
+        //dd( array_merge($quotes,$quickest));
+        $quotes = array_merge($quotes,$quickest);
+        foreach ($quotes as $key => $quote){
+            if(isset($quotes[$key]['simple']['titleQuickest'])){
+                unset($quotes[$key]['simple']['titleQuickest']);
+            }
+            if(isset($quotes[$key]['liftgate']['titleQuickest'])){
+                unset($quotes[$key]['liftgate']['titleQuickest']);
+            }
+        }
+        return $quotes;
     }
     public function getCompiledQuotes($services, $arraySorting, $lgQuotes)
     {
