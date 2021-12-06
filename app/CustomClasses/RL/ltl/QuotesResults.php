@@ -1,7 +1,7 @@
 <?php
 
 
-namespace App\CustomClasses\XPO\ltl;
+namespace App\CustomClasses\RL\ltl;
 
 
 use App\Constants\Constant;
@@ -13,6 +13,11 @@ class QuotesResults
     public function __construct()
     {
         $this->CompileQuotes = new CompileQuotes();
+    }
+
+
+    public function GTZcompileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $isMultiShipment){
+        //print_r($shipments); exit;
     }
 
     public function formateQuoteBeforeCompile($shipments){
