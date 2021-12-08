@@ -89,6 +89,7 @@ class Shipping
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
+
         /*
         * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
         */
@@ -98,7 +99,9 @@ class Shipping
             Log::info('BinData '. json_encode($requestArr['binReponse']));
             $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes);
         }
-
+        //;
+        //print_r($requestArr['binReponse']);
+       // print_r($requestArr['requestArr']); print_r($quotes); exit;
         Log::info('after addBinResponseToQuotes '. json_encode($quotes));
 
         $quotesFromWs = $quotes ?? [];
@@ -124,6 +127,7 @@ class Shipping
         $isAVGCodeExist = gettype(array_search('AVG', $finalCodesTemp)) == 'integer';
         $isUpsLtlCodeExist = gettype(array_search('upsltl', $finalCodesTemp)) == 'integer';
         $isFedexLtlCodeExist = gettype(array_search('fedexltl', $finalCodesTemp)) == 'integer';
+        $isxpoLtlCodeExist = gettype(array_search('xpoltl', $finalCodesTemp)) == 'integer';
         $freightCode = '';
         $finalCost = 0;
 
@@ -149,10 +153,9 @@ class Shipping
             $finalQuotes = $_finalQuotes;
         }else {
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
-            if($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist)){
+            if($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist)){
                 $isShippingOrFreight = false;
             }
-            //dd($this->isRequestMultishipment, $isShippingOrFreight);
             if($this->isRequestMultishipment && !$isShippingOrFreight) {
                 $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings,  $residential, $quotesFromWs, $requestArr['requestArr']);
                 $finalQuotes = $finalQuotesMulti['checkoutQuotes'] ?? [];
@@ -201,9 +204,18 @@ class Shipping
         $boxFee = [];
         foreach ($quotes as $carrierName => $quote) {
             if($this->isSmallCarrier($carrierName)) {
-                foreach ($binReponse as $locationId => $bin) {
-                    $quotes[$carrierName][$locationId]['binPackagingData']['response'] = $bin;
-                    $boxFee[$locationId] = $this->getCumulativeBoxFee($bin);
+                if($carrierName == 'fedexSmall'){
+                    foreach ($binReponse as $serviceType => $response) {
+                        foreach ($response as $locationId => $bin) {
+                            $quotes[$carrierName][$locationId]['binPackagingData']['response'][$serviceType] = $bin;
+                            $boxFee[$locationId] = $this->getCumulativeBoxFee($bin);
+                        }
+                    }
+                }else {
+                    foreach ($binReponse as $locationId => $bin) {
+                        $quotes[$carrierName][$locationId]['binPackagingData']['response'] = $bin;
+                        $boxFee[$locationId] = $this->getCumulativeBoxFee($bin);
+                    }
                 }
             }
         }
@@ -215,8 +227,9 @@ class Shipping
 
     public function isSmallCarrier($carrierName){
         $smallCarriers = [
-          'wweSmall',
-          'upsSmall'
+            'wweSmall',
+            'upsSmall',
+            'fedexSmall',
         ];
         return in_array($carrierName, $smallCarriers);
     }
@@ -226,7 +239,8 @@ class Shipping
             'wweLTL',
             'upsLTL',
             'fedexLTL',
-            'globalTranz'
+            'globalTranz',
+            'xpoLTL'
         ];
         return in_array($carrierName, $ltlCarriers);
     }
@@ -278,6 +292,7 @@ class Shipping
     }
 
     public function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null){
+        //print_r($resp); print_r($multiShipmentQuotes); exit;
         foreach ($finalQuotes as $finalQuote){
             $RequestTempData = new RequestTempData();
             $RequestTempData->request = json_encode($requestArr);
@@ -465,7 +480,7 @@ class Shipping
     }
 
     public function isSmall($carrier){
-        $smallCarriers = ['wweSmall','upsSmall'];
+        $smallCarriers = ['wweSmall','upsSmall','fedexSmall'];
         return in_array($carrier, $smallCarriers);
     }
 }
