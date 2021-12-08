@@ -22,35 +22,48 @@ class QuotesResults
 
     public function formateQuoteBeforeCompile($shipments){
         foreach ($shipments as $shipment => $quotes){
-            if(!isset($quotes['q'])){
-                continue;
-            }
-            /*
-             * formate if only old versions
-             * check $shipments[$shipment]['q']['serviceType'] is old version
-             */
-            $quote = $quotes['q'];
-            $key = 0;
-            if(!isset($shipments[$shipment]['q']['serviceType'])) {
+            if(isset($quotes['q']) || isset($quotes['quotesWithInsideDel'])) {
                 unset($shipments[$shipment]['q']);
-                $shipments[$shipment]['q'][$key] = $quote;
-                $shipments[$shipment]['q'][$key]['serviceType'] = 'xpo';
-                $shipments[$shipment]['q'][$key]['serviceDesc'] = 'Freight';
-                $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = $quote['NetCharge'][0] ?? 0;
-                $shipments[$shipment]['q'][$key]['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
-                $shipments[$shipment]['q'][$key]['transitTime'] = $quote['TransitTime'][0] ?? '';
-                $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $quote['AccessorialCharges']['OtherAccessorialChargesFormated']['DLG'] ?? 0;
-            }else{
-                unset($shipments[$shipment]['q']);
-                $shipments[$shipment]['q'][$key] = $quote;
-                unset($shipments[$shipment]['q'][$key]['totalNetCharge']);
-                $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = $quote['totalNetCharge'] ?? 0;
-                $shipments[$shipment]['q'][$key]['serviceType'] = 'xpo';
-                $shipments[$shipment]['q'][$key]['serviceDesc'] = 'Freight';
-                $shipments[$shipment]['q'][$key]['transitTime'] = $quote['transitDays'] ?? '';
+                unset($shipments[$shipment]['quotesWithInsideDel']);
+                if(isset($quotes['q']['ServiceLevels']['ServiceLevel'])) {
+                    foreach ($quotes['q']['ServiceLevels']['ServiceLevel'] as $key => $quote) {
+                        $shipments[$shipment]['q'][$key] = $quote;
+                        $shipments[$shipment]['q'][$key]['serviceType'] = $quote['Code'];
+                        $shipments[$shipment]['q'][$key]['serviceDesc'] = $quote['Title'];
+                        $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = (float) str_replace('$', '',$quote['NetCharge']);
+                        $shipments[$shipment]['q'][$key]['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
+                        $shipments[$shipment]['q'][$key]['transitTime'] = $quote['totalTransitTimeInDays'] ?? '';
+                        $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $this->liftGateFees($quotes);
+                    }
+                }
+                if(isset($quotes['quotesWithInsideDel']['ServiceLevels']['ServiceLevel'])){
+                    foreach ($quotes['quotesWithInsideDel']['ServiceLevels']['ServiceLevel'] as $key => $quote) {
+                        $key = count($shipments[$shipment]['q']);
+                        $shipments[$shipment]['q'][$key] = $quote;
+                        $shipments[$shipment]['q'][$key]['serviceType'] = $quote['Code'];
+                        $shipments[$shipment]['q'][$key]['serviceDesc'] = $quote['Title'];
+                        $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = (float) str_replace('$', '',$quote['NetCharge']);
+                        $shipments[$shipment]['q'][$key]['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
+                        $shipments[$shipment]['q'][$key]['transitTime'] = $quote['totalTransitTimeInDays'] ?? '';
+                        $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $this->liftGateFees($quotes);
+                    }
+                }
             }
         }
         return $shipments;
+    }
+
+    function liftGateFees($quotes){
+        $fees = 0;
+        if(isset($quotes['q']['Charges']['Charge'])){
+            foreach ($quotes['q']['Charges']['Charge'] as $charge){
+                if(isset($charge['Type']) && $charge['Type'] == 'LIFT'){
+                    $fees = (float) str_replace('$', '',$charge['Amount']);
+                    break;
+                }
+            }
+        }
+        return $fees;
     }
 
     public function calculatePrice($data, $uoteSettings, $lgOption = false, $notify = false, $laccess = false)

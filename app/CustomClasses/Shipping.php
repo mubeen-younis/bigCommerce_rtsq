@@ -101,7 +101,7 @@ class Shipping
         }
         //;
         //print_r($requestArr['binReponse']);
-       // print_r($requestArr['requestArr']); print_r($quotes); exit;
+        //print_r($requestArr['requestArr']); print_r($quotes); exit;
         Log::info('after addBinResponseToQuotes '. json_encode($quotes));
 
         $quotesFromWs = $quotes ?? [];

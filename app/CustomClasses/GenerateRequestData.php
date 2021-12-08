@@ -107,6 +107,11 @@ class GenerateRequestData
                     $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['xpoLogistics'] = $wweLtlArr;
                     break;
+                case "rl-ltl":
+                    $wweLtlArr = $this->rnlLtlEnitArr($con1, $destination, $enitOrigin);
+                    $wweLtlArr['originAddress'] = $enitOrigin;
+                    $carriersArr['carriers']['rnl'] = $wweLtlArr;
+                    break;
             }
         }
         return ['carriersArr' => $carriersArr, 'residential' => $this->resiCarrier];
@@ -243,6 +248,19 @@ class GenerateRequestData
             'version' => '1.0.0',
             'returnQuotesOnExceedWeight' => 1,
             'api' => $this->getApiInfoArrXPOLtl($connSettings, $destination, $enitOrigin),
+            'getDistance' => 0,
+        ];
+    }
+
+    function rnlLtlEnitArr($connSettings, $destination, $enitOrigin){
+        return [
+            'licenseKey' => $connSettings['creds']['license_key'] ?? '', //$this->connectionSettings['license_key'],
+            'serverName' => "https://" . $this->storeData['store']['name'], //"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
+            'carrierMode' => 'pro',
+            'quotestType' => 'ltl', // ltl / small
+            'version' => '1.0.0',
+            'returnQuotesOnExceedWeight' => 1,
+            'api' => $this->getApiInfoArrRNLLtl($connSettings, $destination, $enitOrigin),
             'getDistance' => 0,
         ];
     }
@@ -823,15 +841,62 @@ class GenerateRequestData
             'accessorial' => $accessorial
         ];
 
-        if(isset($connSettings['creds']['access_level']) && $connSettings['creds']['access_level'] == 'pro' && isset($connSettings['creds']['api_key']) && $connSettings['creds']['api_key'] != '' ){
-            $Test = [
-                'basicAccessToken' => $connSettings['creds']['api_key'] ?? '',
-                'xpoApiVersion' => '1.0',
-            ];
-            $apiArray = array_merge($apiArray, $Test);
+
+        return $apiArray;
+    }
+
+    function getApiInfoArrRNLLtl($connSettings, $destination, $enitOrigin){
+        $liftGate = ( (isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
+            (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+        /*
+         * Check if rad hit not consumed and residential is enables
+         * **/
+        $residential = 'N';
+        $alwaysResi = false;
+        $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
+        if( $this->storeData['installed_addon_rad'] && ( (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))){
+            if($this->radHitConsumed == 0){
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+
+            }else{
+                $residential = $this->residential;
+            }
+            if($liftGate != 'Y'){
+                $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
+            }
+        }else{
+            $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
         }
 
 
+        $this->resiCarrier['rnlLtl'] = $residential;
+        $this->resiCarrier['alwaysResi']['rnlLtl'] = $alwaysResi;
+
+        $apiArray = [
+            'UserName' => $connSettings['creds']['username'] ?? '',
+            'Password' => $connSettings['creds']['password'] ?? '',
+            'APIKey' => $connSettings['creds']['authentication_key'] ?? '',
+            'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
+            'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
+            'liftgateDelivery' => $liftGate,
+            'residentialDelivery' => $alwaysResi ? 'Y' : $residential,
+            'insideDelAsAnOption' => $connSettings['quote_settings']['offer_inside_delivery'] ?? 0,
+
+            'QuoteType' => 'Domestic', //'Domestic or International or AlaskaHawaii'
+            'CODAmount' => '0',
+            'collectOnDeliveryAmount' => '0',
+            'DeclaredValue' => '0',
+
+            'holdAtTerminal' => $connSettings['quote_settings']['hold_at_terminal'] ?? 0,
+
+            /*'modifyShipmentDateTime' => '1',
+            'OrderCutoffTime' => '16:00',
+            'shipmentOffsetDays' => '2',
+            'storeDateTime' => date('Y-m-d H:i:s'),
+            'shipmentWeekDays' => array('4','5'),*/
+        ];
         return $apiArray;
     }
 
