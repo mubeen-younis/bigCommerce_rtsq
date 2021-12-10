@@ -271,7 +271,7 @@ class GenerateRequestData
             return [];
         }
         $shipmentPrice = $this->calculatePrice($lineItems);
-        if(isset($connSettings['quote_settings']['free_shipping_on_orders']) && $connSettings['quote_settings']['free_shipping_on_orders'] > $shipmentPrice ){
+        if(isset($connSettings['quote_settings']['free_shipping_on_orders']) && $connSettings['quote_settings']['free_shipping_on_orders'] < $shipmentPrice ){
             return [
                 'freeShipment' => true
             ];
