@@ -49,7 +49,7 @@ class Shipping
         $originAddress = $this->checkInstorePickup($package['origin']);
         // Generating carrier creds and origin array
         $destination = $request['lineItemData']['destination'] ?? [];
-        $resp = $generateReqData->generateEnitureArray($originAddress, $destination);
+        $resp = $generateReqData->generateEnitureArray($originAddress, $destination, $package['items']);
         $residential = $resp['residential'];
         $carriersArray = $resp['carriersArr'];
 
@@ -102,12 +102,17 @@ class Shipping
         //;
         //print_r($requestArr['binReponse']);
         //print_r($requestArr['requestArr']); print_r($quotes); exit;
+        $freeRNL = false;
+        if(isset($requestArr['requestArr']['carriers']['rnl']['freeShipment']) && $requestArr['requestArr']['carriers']['rnl']['freeShipment']){
+            unset($requestArr['requestArr']['carriers']['rnl']['freeShipment']);
+            $freeRNL = true;
+        }
         Log::info('after addBinResponseToQuotes '. json_encode($quotes));
 
         $quotesFromWs = $quotes ?? [];
 
-        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential);
-
+        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL);
+//print_r($finalQuotes); exit;
         if (!empty($finalQuotes['multiShipmentQuotes'])){
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];
@@ -240,7 +245,8 @@ class Shipping
             'upsLTL',
             'fedexLTL',
             'globalTranz',
-            'xpoLTL'
+            'xpoLTL',
+            'rnlLTL',
         ];
         return in_array($carrierName, $ltlCarriers);
     }

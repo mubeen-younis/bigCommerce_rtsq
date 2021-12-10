@@ -635,7 +635,7 @@ class CompileQuotes
      * @info: This function will compile all quotes according to the origin.
      * After getting from quotes almost all type of compilation happened in this function
      */
-    public function newGetQuotesResults($quotes, $connectionSettings, $allOrigins, $isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential)
+    public function newGetQuotesResults($quotes, $connectionSettings, $allOrigins, $isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL = false)
     {
         $this->residential = $residential;
         if ($quotes == null) {
@@ -713,7 +713,7 @@ class CompileQuotes
                     }
                     break;
                 case "rnl":
-                    $resp = $this->compileRNLLtlQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential);
+                    $resp = $this->compileRNLLtlQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL);
                     $quotesTemp['rnlLTL'] = $resp;
                     if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))){
                         $quotesRes = array_merge($quotesRes, $resp);
@@ -1517,7 +1517,10 @@ class CompileQuotes
         return $this->arrangeOwnFreight($allQuotes);
     }
 
-    function compileRNLLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential){
+    function compileRNLLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL){
+        if($freeRNL){
+            return $this->arrangeFreeRNL([]);
+        }
         $rnlLtl = new rnlLtlQuotesResults();
         if($residential['rnlLtl'] == 'Y'){
             $this->isResi = true;
@@ -1527,10 +1530,23 @@ class CompileQuotes
             $this->residentialDlvry = 0;
         }
         $this->alwaysResi = $this->residential['alwaysResi']['rnlLtl'] ?? false;
-        $shipments = $rnlLtl->formateQuoteBeforeCompile($shipments);
-        print_r($shipments); exit;
         $this->quoteSettings = $connectionSettings['rl-ltl']['quote_settings'] ?? [];
-print_r($this->quoteSettings); exit;
+        $shipments = $rnlLtl->formateQuoteBeforeCompile($shipments, $this->quoteSettings);
+
+        //print_r($shipments); exit;
+        $allConfigServices = [];
+        if(isset($this->quoteSettings['standard_service']) && $this->quoteSettings['standard_service']){
+            array_push($allConfigServices, 'STD');
+        }
+        if(isset($this->quoteSettings['guaranteed_pm']) && $this->quoteSettings['guaranteed_pm']){
+            array_push($allConfigServices, 'GSDS');
+        }
+        if(isset($this->quoteSettings['guaranteed_am']) && $this->quoteSettings['guaranteed_am']){
+            array_push($allConfigServices, 'GSAM');
+        }
+        if(isset($this->quoteSettings['guaranteed_hourly_window']) && $this->quoteSettings['guaranteed_hourly_window']){
+            array_push($allConfigServices, 'GSHW');
+        }
         $this->quoteSettingsData();
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
@@ -1545,12 +1561,12 @@ print_r($this->quoteSettings); exit;
             $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;;
         }
         $lableAs = $this->quoteSettings['label_as'] ?? '';
+        $preAccess = 'rnlltl';
+        $HAT = [];
         foreach ($shipments as $origin => $quote) {
-
             if (isset($quote['severity'])) {
                 continue;
             }
-
             if ($count == 0) { //To be checked only once
                 $isRad = $quote['autoResidentialsStatus'] ?? '';
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
@@ -1570,35 +1586,45 @@ print_r($this->quoteSettings); exit;
                 if (isset($quote['hazardousStatus'])) {
                     $hazShipmentArr[$origin] = $quote['hazardousStatus'] == 'y' ? 'Y' : 'N';
                 }
+                //print_r($quote['q']); print_r($allConfigServices); exit;
                 foreach ($quote['q'] as $key => $data) {
-                    $access = $this->getAccessorialCode();
+                    if (!in_array($data['Code'], $allConfigServices)) {
+                        continue;
+                    }
+                    $isHat = strpos($data['serviceType'], 'HAT+') !== false;
+                    if($isHat){
+                        $HAT[] = $data;
+                        continue;
+                    }
                     $price = $this->calculatePrice($data);
-
+                    $this->quoteSettings['label_as'] = $lableAs.' '.$data['serviceDesc'];
                     $title = $this->getTitle($data['serviceDesc'], false, false, $data['transitTime']);
 
+                    $access = $this->getAccessorialCode();
                     $arraySorting['simple'][$key] = $price;
-                    $originQuotes[$key]['simple']['code'] = 'xpoltl' . $access;
+                    $originQuotes[$key]['simple']['code'] = $preAccess . $access;
                     $originQuotes[$key]['simple']['rate'] = $price;
                     $originQuotes[$key]['simple']['title'] = $title;
-                    if ($lgQuotes) {
+                    if ($lgQuotes && !$isHat) {
                         $lgAccess = $this->getAccessorialCode(true);
                         $lgPrice = $this->calculatePrice($data, true);
                         $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['transitTime']);
                         $arraySorting['liftgate'][$key] = $lgPrice;
-                        $originQuotes[$key]['liftgate']['code'] = 'xpoltl' . $lgAccess;
+                        $originQuotes[$key]['liftgate']['code'] = $preAccess . $lgAccess;
                         $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
                         $originQuotes[$key]['liftgate']['title'] = $lgTitle;
                     }
                 }
             }
+            //dd($HAT);
             $compiledQuotes = $originQuotes;
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
                 if (count($compiledQuotes) > 1) {
                     foreach ($compiledQuotes as $k => $service) {
                         $allQuotes['simple'][] = $service['simple'];
                         $multiShipmentQuotes['simple'][$origin] = $service['simple'];
-                        $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
-                        $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
+                        $lgQuotes && isset($service['liftgate']) ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
+                        $lgQuotes && isset($service['liftgate']) ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
                     }
                 } else {
                     $service = reset($compiledQuotes);
@@ -1621,12 +1647,16 @@ print_r($this->quoteSettings); exit;
 
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
-                'checkoutQuotes' => $this->arrangeOwnFreight($allQuotes),
+                'checkoutQuotes' => $this->arrangeHATFreight($allQuotes, $HAT),
                 'multiShipmentQuotes' => $multiShipmentQuotes
             ];
             return $resp;
         }
-        return $this->arrangeOwnFreight($allQuotes);
+        if(!empty($HAT)){
+            return $this->arrangeHATFreight($allQuotes, $HAT);
+        }
+
+        return $allQuotes;
     }
 
     public function compileWweSmallQuotes($shipments, $connectionSettings, $allOrigins, $isHazmat, $smalLtlHazmat, $hazmatAllItems)
@@ -2651,6 +2681,30 @@ print_r($this->quoteSettings); exit;
             'rate' => 0
         ];
         return array_merge($finalQuotes, $ownArrangement);
+    }
+    function arrangeHATFreight($finalQuotes, $HAT){
+        if(empty($HAT)){
+            return $finalQuotes;
+        }
+        $amount = 0;
+        foreach ($HAT as $data){
+            $amount +=  $data['totalNetCharge']['Amount'];
+        }
+        $hatQuotes[] = [
+            'code' => $HAT[0]['serviceType'],
+            'title' => $HAT[0]['serviceDesc'],
+            'rate' => $amount
+        ];
+        return array_merge($finalQuotes, $hatQuotes);
+    }
+
+    function arrangeFreeRNL($finalQuotes){
+        $hatQuotes[] = [
+            'code' => 'freernlltl',
+            'title' => 'Free',
+            'rate' => 0
+        ];
+        return array_merge($finalQuotes, $hatQuotes);
     }
 
     /**

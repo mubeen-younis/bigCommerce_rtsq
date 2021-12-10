@@ -35,6 +35,7 @@ class GenerateRequestData
     public $origins = [];
     public $itemsArr = [];
     public $carriers = [];
+    public $isPoBOX = false;
 
     /**
      * constructor of class that accepts request object
@@ -56,8 +57,10 @@ class GenerateRequestData
      * function that generates Wwe array
      * @return array
      */
-    public function generateEnitureArray($origin, $destination)
+    public function generateEnitureArray($origin, $destination, $lineItems)
     {
+
+        $this->destinationIsPOBox($destination);
         $carriersArr['carriers'] = [];
         $enitOrigin = $this->getEnitOrigin($origin);
         foreach ($this->connectionSettings as $key => $con1) {
@@ -108,13 +111,24 @@ class GenerateRequestData
                     $carriersArr['carriers']['xpoLogistics'] = $wweLtlArr;
                     break;
                 case "rl-ltl":
-                    $wweLtlArr = $this->rnlLtlEnitArr($con1, $destination, $enitOrigin);
-                    $wweLtlArr['originAddress'] = $enitOrigin;
-                    $carriersArr['carriers']['rnl'] = $wweLtlArr;
+                    $wweLtlArr = $this->rnlLtlEnitArr($con1, $destination, $enitOrigin, $lineItems);
+                    if(!empty($wweLtlArr)) {
+                        $wweLtlArr['originAddress'] = $enitOrigin;
+                        $carriersArr['carriers']['rnl'] = $wweLtlArr;
+                    }
                     break;
             }
         }
         return ['carriersArr' => $carriersArr, 'residential' => $this->resiCarrier];
+    }
+
+    function destinationIsPOBox($destination){
+        $this->isPoBOX = strpos(strtolower($destination['street_1']), 'po box') !== false
+        || strpos(strtolower($destination['street_1']), 'post office box') !== false
+        || strpos(strtolower($destination['street_1']), 'p.o. box') !== false
+        || strpos(strtolower($destination['street_2']), 'po box') !== false
+        || strpos(strtolower($destination['street_2']), 'post office box') !== false
+        || strpos(strtolower($destination['street_2']), 'po box') !== false;
     }
 
 
@@ -252,7 +266,16 @@ class GenerateRequestData
         ];
     }
 
-    function rnlLtlEnitArr($connSettings, $destination, $enitOrigin){
+    function rnlLtlEnitArr($connSettings, $destination, $enitOrigin, $lineItems){
+        if(isset($connSettings['quote_settings']['returnRates']) && $connSettings['quote_settings']['returnRates'] && $this->isPoBOX){
+            return [];
+        }
+        $shipmentPrice = $this->calculatePrice($lineItems);
+        if(isset($connSettings['quote_settings']['free_shipping_on_orders']) && $connSettings['quote_settings']['free_shipping_on_orders'] > $shipmentPrice ){
+            return [
+                'freeShipment' => true
+            ];
+        }
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '', //$this->connectionSettings['license_key'],
             'serverName' => "https://" . $this->storeData['store']['name'], //"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
@@ -261,8 +284,16 @@ class GenerateRequestData
             'version' => '1.0.0',
             'returnQuotesOnExceedWeight' => 1,
             'api' => $this->getApiInfoArrRNLLtl($connSettings, $destination, $enitOrigin),
-            'getDistance' => 0,
+            'getDistance' => 0
         ];
+    }
+
+    function calculatePrice($lineItems){
+        $price = 0;
+        foreach ($lineItems as $item){
+            $price += $item['originalPiecesOfLineItem']*$item['lineItemPrice'];
+        }
+        return $price;
     }
 
     /**
@@ -409,7 +440,7 @@ class GenerateRequestData
             $locationId = $origins[$key]['locationId'] ?? 1;
             $newItems[$locationId]['lineItems'][] = $item;
             if($isOneRate) {
-                $newItems[$locationId]['one_rate_package_type'] = $binResponse[$locationId]->bins_packed[0]->bin_data->name;
+                $newItems[$locationId]['one_rate_package_type'] = $binResponse[$locationId]->bins_packed[0]->bin_data->name  ?? '';
             }
         }
         return $newItems;
