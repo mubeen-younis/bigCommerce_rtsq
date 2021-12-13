@@ -1578,6 +1578,8 @@ class CompileQuotes
                     $lgQuotes = ( ( isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
                             (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
                 }
+                $ID = (isset($this->quoteSettings['offer_inside_delivery']) && $this->quoteSettings['offer_inside_delivery']);
+
             }
             $originQuotes = [];
             $arraySorting = [];
@@ -1614,6 +1616,15 @@ class CompileQuotes
                         $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
                         $originQuotes[$key]['liftgate']['title'] = $lgTitle;
                     }
+                    /*if ($ID && !$isHat) {
+                        $access = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi,false, true);
+                        $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings,  false, true);
+                        $title = $this->getGTitle($data['serviceDesc'], false, true, false, false, $data['totalTransitTimeInDays'], $this->quoteSettings);
+                        $arraySorting['notify'][$key] = $price;
+                        $originQuotes[$key]['notify']['code'] = $data['serviceType'] . $access;
+                        $originQuotes[$key]['notify']['rate'] = $price;
+                        $originQuotes[$key]['notify']['title'] = $title;
+                    }*/
                 }
             }
             //dd($HAT);

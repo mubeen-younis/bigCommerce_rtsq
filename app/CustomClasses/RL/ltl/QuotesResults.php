@@ -25,7 +25,7 @@ class QuotesResults
         foreach ($shipments as $shipment => $quotes){
             if(isset($quotes['q']) || isset($quotes['quotesWithInsideDel']) || isset($quotes['holdAtTerminalResponse'])) {
                 unset($shipments[$shipment]);
-                if(isset($quotes['q']['ServiceLevels']['ServiceLevel'])) {
+                /*if(isset($quotes['q']['ServiceLevels']['ServiceLevel'])) {
                     if(!isset($quotes['q']['ServiceLevels']['ServiceLevel'][0])){
                         $services = $quotes['q']['ServiceLevels']['ServiceLevel'];
                         unset($quotes['q']['ServiceLevels']['ServiceLevel']);
@@ -42,7 +42,7 @@ class QuotesResults
                         $shipments[$shipment]['q'][$key]['transitTime'] = $quote['totalTransitTimeInDays'] ?? '';
                         $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $this->liftGateFees($quotes);
                     }
-                }
+                }*/
                 if(isset($quotes['quotesWithInsideDel']['ServiceLevels']['ServiceLevel'])){
                     if(!isset($quotes['quotesWithInsideDel']['ServiceLevels']['ServiceLevel'][0])){
                         $services = $quotes['quotesWithInsideDel']['ServiceLevels']['ServiceLevel'];
@@ -50,14 +50,33 @@ class QuotesResults
                         $quotes['quotesWithInsideDel']['ServiceLevels']['ServiceLevel'][0] = $services;
                     }
                     foreach ($quotes['quotesWithInsideDel']['ServiceLevels']['ServiceLevel'] as $key => $quote) {
-                        $key = count($shipments[$shipment]['q']);
+                        $key = isset($shipments[$shipment]['q']) ? count($shipments[$shipment]['q']) :0;
                         $shipments[$shipment]['q'][$key] = $quote;
                         $shipments[$shipment]['q'][$key]['serviceType'] = 'inside+'.$quote['Code'];
-                        $shipments[$shipment]['q'][$key]['serviceDesc'] = 'Inside Delivery '.$quote['Title'];
+                        $shipments[$shipment]['q'][$key]['serviceDesc'] = $quote['Title'];
                         $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = (float) str_replace('$', '',$quote['NetCharge']);
                         $shipments[$shipment]['q'][$key]['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
                         $shipments[$shipment]['q'][$key]['transitTime'] = $quote['totalTransitTimeInDays'] ?? '';
                         $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $this->liftGateFees($quotes);
+                        $shipments[$shipment]['q'][$key]['surcharges']['insidedelivery'] = $this->insideFees($quotes);
+                    }
+                }else{
+                    if(!isset($quotes['q']['ServiceLevels']['ServiceLevel'][0])){
+                        $services = $quotes['q']['ServiceLevels']['ServiceLevel'];
+                        unset($quotes['q']['ServiceLevels']['ServiceLevel']);
+                        $quotes['q']['ServiceLevels']['ServiceLevel'][0] = $services;
+                    }
+
+                    foreach ($quotes['q']['ServiceLevels']['ServiceLevel'] as $key => $quote) {
+                        $key = isset($shipments[$shipment]['q']) ? count($shipments[$shipment]['q']) :0;
+                        $shipments[$shipment]['q'][$key] = $quote;
+                        $shipments[$shipment]['q'][$key]['serviceType'] = $quote['Code'] ?? '';
+                        $shipments[$shipment]['q'][$key]['serviceDesc'] = $quote['Title'] ?? '';
+                        $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = (float) str_replace('$', '',$quote['NetCharge']);
+                        $shipments[$shipment]['q'][$key]['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
+                        $shipments[$shipment]['q'][$key]['transitTime'] = $quote['totalTransitTimeInDays'] ?? '';
+                        $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $this->liftGateFees($quotes);
+
                     }
                 }
 
@@ -87,6 +106,19 @@ class QuotesResults
         if(isset($quotes['q']['Charges']['Charge'])){
             foreach ($quotes['q']['Charges']['Charge'] as $charge){
                 if(isset($charge['Type']) && $charge['Type'] == 'LIFT'){
+                    $fees = (float) str_replace('$', '',$charge['Amount']);
+                    break;
+                }
+            }
+        }
+        return $fees;
+    }
+
+    function insideFees($quotes){
+        $fees = 0;
+        if(isset($quotes['quotesWithInsideDel']['Charges']['Charge'])){
+            foreach ($quotes['quotesWithInsideDel']['Charges']['Charge'] as $charge){
+                if(isset($charge['Type']) && $charge['Type'] == 'ID'){
                     $fees = (float) str_replace('$', '',$charge['Amount']);
                     break;
                 }

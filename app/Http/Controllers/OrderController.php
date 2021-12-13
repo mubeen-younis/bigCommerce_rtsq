@@ -108,7 +108,6 @@ class OrderController extends Controller
         $order['rate_id'] = strtolower($order['rate_id']);
         $isSmallrate = substr($order['rate_id'], 0, 9) == 'parcel_12' || substr($order['rate_id'], 0, 5) == 'multi'  ? true : false;
         $isLG = strpos($order['rate_id'], '+lg');
-        //dd($order['rate_id']);
         $isOwnArrangement = strpos($order['rate_id'], 'own_arrangement') === 0 || strpos($order['rate_id'], 'freernlltl') === 0 ? true : false;
         $lineItem = json_decode($data['lineitems'])->lineItemData;
         $responseFromWS = json_decode($data['quotes']);
