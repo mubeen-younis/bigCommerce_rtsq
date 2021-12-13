@@ -108,7 +108,8 @@ class OrderController extends Controller
         $order['rate_id'] = strtolower($order['rate_id']);
         $isSmallrate = substr($order['rate_id'], 0, 9) == 'parcel_12' || substr($order['rate_id'], 0, 5) == 'multi'  ? true : false;
         $isLG = strpos($order['rate_id'], '+lg');
-        $isOwnArrangement = strpos($order['rate_id'], 'own_arrangement') === 0 ? true : false;
+        //dd($order['rate_id']);
+        $isOwnArrangement = strpos($order['rate_id'], 'own_arrangement') === 0 || strpos($order['rate_id'], 'freernlltl') === 0 ? true : false;
         $lineItem = json_decode($data['lineitems'])->lineItemData;
         $responseFromWS = json_decode($data['quotes']);
 
@@ -210,7 +211,7 @@ class OrderController extends Controller
             $senderZip = $origin->senderZip ?? '';
             $orderWidget[$zip]['locationtype'] = $item->dropship_enabled == 'N' ? 'Warehouse' : 'Dropship';
             $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
-            $orderWidget[$zip]['totalBoxes'] = $totalBoxes;
+            $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
             $sRate = $order['shipping_rate'];
             if($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement){
                 if($isLG) {
