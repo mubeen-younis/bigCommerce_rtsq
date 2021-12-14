@@ -47,7 +47,7 @@ class PackageSubscriptionController extends Controller
         }else{
             $error = true;
             $data = $request->all();
-            $message = 'Addon type is missing.';
+            $message = 'Add-on type is missing.';
         }
         return response()->json([
             'error' => $error,
@@ -146,7 +146,7 @@ class PackageSubscriptionController extends Controller
         }else{
             $responce = [
                 'error' => true,
-                'message' => 'Addon type is missing.',
+                'message' => 'Add-on type is missing.',
                 'data' => $request->all(),
             ];
         }
@@ -354,7 +354,7 @@ class PackageSubscriptionController extends Controller
         }else{
             $responce = [
                 'error' => true,
-                'message' => 'Addon type is missing.',
+                'message' => 'Add-on type is missing.',
                 'data' => $request->all(),
             ];
         }
@@ -500,13 +500,13 @@ class PackageSubscriptionController extends Controller
             return response()->json([
                 'error' => false,
                 'data' => ['status' => 0],
-                'message' => 'No current subscribed '.$addonType.' addon is available'
+                'message' => 'No current subscribed '.$addonType.' add-on is available'
             ]);
         }else{
             return response()->json([
                 'error' => false,
                 'data' => $currentPackageSub,
-                'message' => $addonType.' addon subscription details found'
+                'message' => $addonType.' add-on subscription details found'
             ]);
         }
     }
@@ -527,7 +527,7 @@ class PackageSubscriptionController extends Controller
         }else{
             $responce = [
                 'error' => true,
-                'message' => 'Addon type is missing.',
+                'message' => 'Add-on type is missing.',
                 'data' => $request->all(),
             ];
         }
@@ -549,7 +549,7 @@ class PackageSubscriptionController extends Controller
         return [
             'error' => false,
             'data' => $this->getPkgDetails($addonType),
-            'message' => ($data['suspend'] == 3) ? 'The '.$addonName.' addon has been suspended' : 'The '.$addonName.' addon has been reactivated',
+            'message' => ($data['suspend'] == 3) ? 'The '.$addonName.' add-on has been suspended' : 'The '.$addonName.' add-on has been reactivated',
         ];
     }
 }
