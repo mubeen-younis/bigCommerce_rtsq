@@ -179,7 +179,7 @@ class PackageSubscriptionController extends Controller
             return [
                 'error' => true,
                 'data' => [],
-                'message' => "You must subscribe to the paid plan for the Real-time Shipping Quotes to buy the Addon",
+                'message' => "You must subscribe to the paid plan for the Real-time Shipping Quotes to buy the Add-on",
             ];
         }
         $paymentMethod = isset($mainSubscription->payment_method_id) ? $mainSubscription->payment_method_id : null;

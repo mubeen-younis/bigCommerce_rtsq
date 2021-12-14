@@ -98,7 +98,7 @@ class AddonsController extends Controller
         if (empty($request->addon_id)) {
             return response()->json([
                 'error' => true,
-                'message' => 'Empty Addon ID',
+                'message' => 'Empty Add-on ID',
             ], 200);
         }
 
@@ -115,13 +115,13 @@ class AddonsController extends Controller
 
             return response()->json(['error' => false,
                 'data' => InstalledAddon::find($installAddon->id),
-                'message' => 'Addon Installed Successfully',
+                'message' => 'Add-on Installed Successfully',
             ], 200);
         }
 
         return response()->json(['error' => true,
             'data' => [],
-            'message' => "Addon is not available at the moment",
+            'message' => "Add-on is not available at the moment",
         ], 500);
     }
 
@@ -137,7 +137,7 @@ class AddonsController extends Controller
         if ($addons->isEmpty()) {
             return response()->json(['error' => false,
                 'data' => [],
-                'message' => 'No Installed Addons Found',
+                'message' => 'No Installed Add-ons Found',
             ], 200);
         }
 
@@ -158,7 +158,7 @@ class AddonsController extends Controller
 
             return response()->json(['error' => false,
                 'data' => $addons,
-                'message' => 'Addons Found',
+                'message' => 'Add-ons Found',
             ], 200);
         }
 
@@ -176,7 +176,7 @@ class AddonsController extends Controller
         if (empty($request->addon_id)) {
             return response()->json([
                 'error' => true,
-                'message' => 'Empty Addon Id',
+                'message' => 'Empty Add-on Id',
             ]);
         }
 
@@ -185,10 +185,10 @@ class AddonsController extends Controller
         if ($addon) {
             InstalledAddon::where('id', $request->addon_id)->update(['is_enabled' => !$addon->is_enabled]);
 
-            return response()->json(['data' => InstalledAddon::find($addon->id), 'message' => 'Addon Status updated', 'error' => false], 200);
+            return response()->json(['data' => InstalledAddon::find($addon->id), 'message' => 'Add-on status updated', 'error' => false], 200);
         } else {
             return response()->json([
-                'message' => 'Invalid Addon ID',
+                'message' => 'Invalid Add-on ID',
                 'error' => true,
             ], 404);
         }
@@ -199,7 +199,7 @@ class AddonsController extends Controller
         if (empty($request->addon_id)) {
             return response()->json([
                 'error' => true,
-                'message' => 'Empty Addon Id',
+                'message' => 'Empty Add-on Id',
             ]);
         }
 
@@ -208,10 +208,10 @@ class AddonsController extends Controller
         if ($addon) {
             InstalledAddon::where('id', $request->addon_id)->update(['is_suspend' => !$addon->is_suspend]);
 
-            return response()->json(['data' => InstalledAddon::find($addon->id), 'message' => 'Addon Status updated', 'error' => false], 200);
+            return response()->json(['data' => InstalledAddon::find($addon->id), 'message' => 'Add-on status updated', 'error' => false], 200);
         } else {
             return response()->json([
-                'message' => 'Invalid Addon ID',
+                'message' => 'Invalid Add-on ID',
                 'error' => true,
             ], 404);
         }
