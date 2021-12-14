@@ -115,13 +115,13 @@ class AddonsController extends Controller
 
             return response()->json(['error' => false,
                 'data' => InstalledAddon::find($installAddon->id),
-                'message' => 'Addon Installed Successfully',
+                'message' => 'Add-on Installed Successfully',
             ], 200);
         }
 
         return response()->json(['error' => true,
             'data' => [],
-            'message' => "Addon is not available at the moment",
+            'message' => "Add-on is not available at the moment",
         ], 500);
     }
 
