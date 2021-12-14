@@ -208,7 +208,7 @@ class AddonsController extends Controller
         if ($addon) {
             InstalledAddon::where('id', $request->addon_id)->update(['is_suspend' => !$addon->is_suspend]);
 
-            return response()->json(['data' => InstalledAddon::find($addon->id), 'message' => 'Addon Status updated', 'error' => false], 200);
+            return response()->json(['data' => InstalledAddon::find($addon->id), 'message' => 'Add-on Status updated', 'error' => false], 200);
         } else {
             return response()->json([
                 'message' => 'Invalid Addon ID',
