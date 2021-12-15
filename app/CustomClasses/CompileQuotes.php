@@ -271,7 +271,6 @@ class CompileQuotes
      */
     public function inStoreLocalDeliveryQuotes($quotesArray, $inStoreLd, $allOrigins)
     {
-
         /*if (empty($quotesArray)) {
             return [];
         }

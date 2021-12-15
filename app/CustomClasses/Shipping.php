@@ -261,8 +261,10 @@ class Shipping
                         if (isset($q['q'])) {
                             foreach ($q['q'] as $key => $qs) {
                                 if (isset($qs['totalNetCharge']['Amount'])) {
-                                    $quotes[$carName][$locId]['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $boxFee[$locId];
-                                    $quotes[$carName][$locId]['q'][$key]['boxFees']['Amount'] = $boxFee[$locId];
+                                    if(isset($boxFee[$locId])) {
+                                        $quotes[$carName][$locId]['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $boxFee[$locId];
+                                        $quotes[$carName][$locId]['q'][$key]['boxFees']['Amount'] = $boxFee[$locId];
+                                    }
                                 }
                             }
                         }
@@ -273,7 +275,7 @@ class Shipping
         return $quotes;
     }
 
-    private function getCumulativeBoxFee(object $bins):float
+    private function getCumulativeBoxFee($bins):float
     {
         $boxFee = 0;
         if(!empty($bins->bins_packed)){
@@ -360,7 +362,7 @@ class Shipping
     }
 
     private function checkIndividualHazmat($request){
-        $smallOrigins = $marketItemSmall = $request['carriers']['wweSmall']['originAddress'] ?? $request['carriers']['upsSmall']['originAddress'] ?? [];
+        $smallOrigins = $marketItemSmall = $request['carriers']['wweSmall']['originAddress'] ?? $request['carriers']['upsSmall']['originAddress'] ?? $request['carriers']['fedexSmall']['originAddress'] ?? [];
         $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? $request['carriers']['upsLTL']['originAddress'] ?? [];
         $items = $request['commdityDetails'] ?? [];
         $smallHazmat = $ltlHazmat = false;

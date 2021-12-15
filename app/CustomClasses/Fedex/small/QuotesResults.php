@@ -40,7 +40,7 @@ class QuotesResults
     public function addHazmatAmountsInServices($amount, $serviceCode, $quoteSettings)
     {
         // Adding hazmat fee to Ground Service
-        if ($serviceCode == "03") {
+        if ($serviceCode == "FEDEX_GROUND") {
             if ( isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
                 $amount = $amount + $quoteSettings['ground_hazardous_material_fee'];
             }
@@ -107,17 +107,28 @@ class QuotesResults
 
 
     public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment){
-        //print_r($shipments); exit;
         $shipments = $this->formateQuoteBeforeCompile($shipments);
-
         $this->quoteSettings = $connectionSettings['fedex-small']['quote_settings'] ?? [];
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
         $allConfigServices = [];
         foreach ($this->quoteSettings['carrier_services'] as $key => $serviceName){
             if($serviceName){
-                $allConfigServices[] = strtoupper($key);
+                $key = strtoupper($key);
+                $key = $key == 'FEDEX_FIRST_OVERNIGHT' ? 'FIRST_OVERNIGHT' : $key;
+                $key = $key == 'FEDEX_HOME_DELIVERY' ? 'GROUND_HOME_DELIVERY' : $key;
+                $key = $key == 'FEDEX_SMARTPOST' ? 'SMART_POST' : $key;
+                //$allConfigServices[] = strtoupper($key);
+                if(isset($this->quoteSettings['ground_service_for_hazardous_material']) && $this->quoteSettings['ground_service_for_hazardous_material']){
+                    if($key === 'FEDEX_GROUND') {
+                        $allConfigServices[] = strtoupper($key);
+                        break;
+                    }
+                }else{
+                    $allConfigServices[] = strtoupper($key);
+                }
             }
         }
+        //print_r($this->quoteSettings);exit;// print_r($shipments); exit;
         $this->quoteSettingsData();
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
@@ -137,6 +148,7 @@ class QuotesResults
         $this->isMultiShipment = $isMultiShipment;
         $shipmentCount = 0;
         $count = 0;
+        //print_r($shipments); exit;
         foreach ($shipments as $origin => $quote) {
 
             if (isset($quote['severity'])) {
@@ -144,11 +156,10 @@ class QuotesResults
             }
             if ($count == 0) { //To be checked only once
                 // $this->getAutoResidentialTitle('');
-                $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
+                $inStoreLdData = $quote['fedexServices']['InstorPickupLocalDelivery'] ?? $quote['smartPost']['InstorPickupLocalDelivery']  ?? $quote['fedexAirServices']['InstorPickupLocalDelivery'] ?? false;
                 unset($quote['InstorPickupLocalDelivery']);
             }
             $lowestAmount = 0;
-//print_r($quote['q']); print_r($allConfigServices); exit;
             if (isset($quote['q'])) {
                 foreach ($quote['q'] as $key => $data) {
 
@@ -160,7 +171,7 @@ class QuotesResults
                         continue;
                     }
                     //  CHeck FOr Ups ground transit days
-                    if ($data['serviceType'] == "GND") {
+                    if ($data['serviceType'] == "FEDEX_GROUND") {
                         // TODO: ALso We have to check plan here
                         if (isset($this->quoteSettings['number_of_transit_days']) && $this->quoteSettings['number_of_transit_days'] != null && isset($this->quoteSettings['ground_metric']) && $this->quoteSettings['ground_metric'] != null) {
                             $islimited = $this->checkGroundTransit($data, $this->quoteSettings);
@@ -171,13 +182,16 @@ class QuotesResults
                     }
                     //  CHecks FOr Only quote ground service if hazardous
                     if ($isHazmat && isset($this->quoteSettings['ground_service_for_hazardous_material']) && $this->quoteSettings['ground_service_for_hazardous_material']) {
-                        if ($data['serviceType'] != "GND") {
+                        if ($data['serviceType'] != "FEDEX_GROUND") {
                             continue;
                         }
                     }
 
                     //$access = $this->getAccessorialCodeSmall();
                     // Adding Markup in services if enabled
+                    if(isset($this->quoteSettings['negotiated_rates']) && $this->quoteSettings['negotiated_rates'] == 1){
+                        $data['totalNetCharge']['Amount'] = $data['NegotiatedRates']['Amount'] ?? $data['totalNetCharge']['Amount'];
+                    }
                     $price = $this->getServiceRate($data['totalNetCharge']['Amount'], $data['serviceType'], $this->quoteSettings);
                     $quoteSettings = $this->quoteSettings;
 
@@ -241,6 +255,7 @@ class QuotesResults
         }
         // Doing For SIngle Shipment
         //dd($originQuotes);
+
         if (!empty($originQuotes)) {
             $originQuotes = array_column(array_values($originQuotes), 'shipment');
             $originQuotes = reset($originQuotes);
@@ -287,9 +302,14 @@ class QuotesResults
 
 
     public function formateQuoteBeforeCompile($shipments){
+        //print_r($shipments); exit;
         foreach ($shipments as $shipment => $serviceTypes){
+            $inStoreLocal = [];
             foreach ($serviceTypes as $serviceName => $quotes) {
                 if (!isset($quotes['q'])) {
+                    if(isset($quotes['InstorPickupLocalDelivery'])){
+                        $inStoreLocal = $quotes['InstorPickupLocalDelivery'];
+                    }
                     continue;
                 }
                 $append = '';
@@ -316,6 +336,9 @@ class QuotesResults
                         $quote['serviceType'] = $quote['serviceType'].$append;
                         $shipments[$shipment]['q'][$key] = $quote;
                         $shipments[$shipment]['q'][$key]['serviceDesc'] = ucwords(strtolower(str_replace('_', ' ', $quote['serviceType'])));
+                    }
+                    if(!empty($inStoreLocal) && !isset($shipments[$shipment]['InstorPickupLocalDelivery'])) {
+                        $shipments[$shipment]['InstorPickupLocalDelivery'] = $inStoreLocal;
                     }
                 }
                 unset($shipments[$shipment][$serviceName]);
