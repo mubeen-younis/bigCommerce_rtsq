@@ -722,9 +722,7 @@ class CompileQuotes
         }
 
         // Removing duplicate respone of quotes
-
         $quotesRes = $this->handleMultiCarrResp($quotesTemp);
-
         $quotesRes = array_map("unserialize", array_unique(array_map("serialize", $quotesRes)));
 
         return $quotesRes;
@@ -1692,8 +1690,8 @@ class CompileQuotes
         }
 
         $numberOfShipments = 0;
-        foreach ($shipments as $ship){
-            if (!isset($ship['severity'])) {
+        foreach ($shipments as $key => $ship){
+            if (!isset($ship['severity']) && !in_array($key, ['air', 'ground'])) {
                 $numberOfShipments++;
             }
         }

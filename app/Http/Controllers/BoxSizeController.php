@@ -154,7 +154,7 @@ class BoxSizeController extends Controller
         $boxsize->delete();
 
         return response()->json(['error' => false,
-            'message' => "Box deleted Successfully",
+            'message' => "Box deleted successfully",
             'data' => $id]);
     }
 
