@@ -1,6 +1,6 @@
 <div>
 
-    You have successfully subscribed {{$subscriptionDetail->current_package_name.' ($'.$subscriptionDetail->current_package_cost.')'}} {{($subscriptionDetail->package_id != 1 && $subscriptionDetail->package_id != 7) ? 'monthly' : 'trial'}} package for the {{$addon}} addon and it will be expired on {{$subscriptionDetail->expiry_time}}. Your subscription will{{$subscriptionDetail->package_to_be_charge_status != 'disable' ? '':' not'}} be auto renew at the end of the period.
+    You have successfully subscribed {{'($'.$subscriptionDetail->current_package_cost.')'}} {{($subscriptionDetail->package_id != 1 && $subscriptionDetail->package_id != 7) ? 'monthly' : 'trial'}} package for the {{$addon}} add-on and it will be expired on {{$subscriptionDetail->expiry_time}}. Your subscription will{{$subscriptionDetail->package_to_be_charge_status != 'disable' ? '':' not'}} be auto renew at the end of the period.
     <br/>
 
     <p>Sincerely,<br />

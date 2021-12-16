@@ -49,7 +49,7 @@ class Shipping
         $originAddress = $this->checkInstorePickup($package['origin']);
         // Generating carrier creds and origin array
         $destination = $request['lineItemData']['destination'] ?? [];
-        $resp = $generateReqData->generateEnitureArray($originAddress, $destination);
+        $resp = $generateReqData->generateEnitureArray($originAddress, $destination, $package['items']);
         $residential = $resp['residential'];
         $carriersArray = $resp['carriersArr'];
 
@@ -101,13 +101,18 @@ class Shipping
         }
         //;
         //print_r($requestArr['binReponse']);
-       // print_r($requestArr['requestArr']); print_r($quotes); exit;
+        //print_r($requestArr['requestArr']); print_r($quotes); exit;
+        $freeRNL = false;
+        if(isset($requestArr['requestArr']['carriers']['rnl']['freeShipment']) && $requestArr['requestArr']['carriers']['rnl']['freeShipment']){
+            unset($requestArr['requestArr']['carriers']['rnl']['freeShipment']);
+            $freeRNL = true;
+        }
         Log::info('after addBinResponseToQuotes '. json_encode($quotes));
 
         $quotesFromWs = $quotes ?? [];
 
-        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential);
-
+        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL);
+//print_r($finalQuotes); exit;
         if (!empty($finalQuotes['multiShipmentQuotes'])){
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];
@@ -240,7 +245,8 @@ class Shipping
             'upsLTL',
             'fedexLTL',
             'globalTranz',
-            'xpoLTL'
+            'xpoLTL',
+            'rnlLTL',
         ];
         return in_array($carrierName, $ltlCarriers);
     }
@@ -255,8 +261,10 @@ class Shipping
                         if (isset($q['q'])) {
                             foreach ($q['q'] as $key => $qs) {
                                 if (isset($qs['totalNetCharge']['Amount'])) {
-                                    $quotes[$carName][$locId]['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $boxFee[$locId];
-                                    $quotes[$carName][$locId]['q'][$key]['boxFees']['Amount'] = $boxFee[$locId];
+                                    if(isset($boxFee[$locId])) {
+                                        $quotes[$carName][$locId]['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $boxFee[$locId];
+                                        $quotes[$carName][$locId]['q'][$key]['boxFees']['Amount'] = $boxFee[$locId];
+                                    }
                                 }
                             }
                         }
@@ -267,7 +275,7 @@ class Shipping
         return $quotes;
     }
 
-    private function getCumulativeBoxFee(object $bins):float
+    private function getCumulativeBoxFee($bins):float
     {
         $boxFee = 0;
         if(!empty($bins->bins_packed)){
@@ -354,7 +362,7 @@ class Shipping
     }
 
     private function checkIndividualHazmat($request){
-        $smallOrigins = $marketItemSmall = $request['carriers']['wweSmall']['originAddress'] ?? $request['carriers']['upsSmall']['originAddress'] ?? [];
+        $smallOrigins = $marketItemSmall = $request['carriers']['wweSmall']['originAddress'] ?? $request['carriers']['upsSmall']['originAddress'] ?? $request['carriers']['fedexSmall']['originAddress'] ?? [];
         $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? $request['carriers']['upsLTL']['originAddress'] ?? [];
         $items = $request['commdityDetails'] ?? [];
         $smallHazmat = $ltlHazmat = false;
