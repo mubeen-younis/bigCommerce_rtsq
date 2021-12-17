@@ -227,12 +227,17 @@ class QuotesResults
 
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
-                    $multiShipmentQuotes['simple'][$origin] = $originQuotes[$shipmentCount]['shipment'][$key]['simple'];
+                    if(isset($multiShipmentQuotes['simple'][$origin])){
+                        if($multiShipmentQuotes['simple'][$origin]['rate'] > $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate']){
+                            $multiShipmentQuotes['simple'][$origin] = $originQuotes[$shipmentCount]['shipment'][$key]['simple'];
+                        }
+                    }else{
+                        $multiShipmentQuotes['simple'][$origin] = $originQuotes[$shipmentCount]['shipment'][$key]['simple'];
+                    }
                 }
             }
             $shipmentCount++;
         }
-        //  dd($originQuotes,'dds',$this->isMultiShipment);
         // $multiShipmentQuotes
         // Check for mukti shipment finding lowest price in each shipment and adding them for multi shipment
         if ($this->isMultiShipment) {
@@ -251,6 +256,7 @@ class QuotesResults
                 'multiShipmentQuotes' => $multiShipmentQuotes,
             ];
             $returnResp['resp'] = $resp;
+            print_r($returnResp); exit;
             return $returnResp;
         }
         // Doing For SIngle Shipment

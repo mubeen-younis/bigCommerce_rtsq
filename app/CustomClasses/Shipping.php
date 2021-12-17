@@ -112,7 +112,7 @@ class Shipping
         $quotesFromWs = $quotes ?? [];
 
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL);
-//print_r($finalQuotes); exit;
+
         if (!empty($finalQuotes['multiShipmentQuotes'])){
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];
@@ -177,6 +177,7 @@ class Shipping
     }
 
     private function removeParcelIfLtl($finalQuotes){
+        $finalQuotes = $finalQuotes['checkoutQuotes'] ?? $finalQuotes;
         $hasLtl = false;
         $hasParcel = false;
         foreach ($finalQuotes as $quote){

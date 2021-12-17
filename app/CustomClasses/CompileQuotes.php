@@ -722,9 +722,7 @@ class CompileQuotes
         }
 
         // Removing duplicate respone of quotes
-
         $quotesRes = $this->handleMultiCarrResp($quotesTemp);
-
         $quotesRes = array_map("unserialize", array_unique(array_map("serialize", $quotesRes)));
 
         return $quotesRes;
@@ -1172,11 +1170,11 @@ class CompileQuotes
         $labelAs = '';
         if($isShippingFinalMile && isset($this->quoteSettings['final_mile_service_level'])){
             if($this->quoteSettings['final_mile_service_level'] == 'premium'){
-                $labelAs = $this->quoteSettings['premium_label'] ?? '';
+                $labelAs = $this->quoteSettings['premium_label'] ?? 'Premium';
             }else if($this->quoteSettings['final_mile_service_level'] == 'threshold'){
-                $labelAs = $this->quoteSettings['threshold_label'] ?? '';
+                $labelAs = $this->quoteSettings['threshold_label'] ?? 'Threshold';
             }else if($this->quoteSettings['final_mile_service_level'] == 'room_of_choice'){
-                $labelAs = $this->quoteSettings['room_of_choice_label'] ?? '';
+                $labelAs = $this->quoteSettings['room_of_choice_label'] ?? 'Room of Choice';
             }
         }
         if(!$this->isMultiShipment) {
@@ -1217,7 +1215,7 @@ class CompileQuotes
                 }
                 foreach ($quote['q'] as $key => $data) {
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) /*&& isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y' */) {
-                        $access = $preCode.$this->getAccessorialCode($isResi);
+                        $access = $preCode.$this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
                         $title = $this->getTitle($data['serviceDesc'], false, false, $data['transitTime']);
                         $arraySorting['simple'][$key] = $price;
@@ -1225,7 +1223,7 @@ class CompileQuotes
                         $originQuotes[$key]['simple']['rate'] = $price;
                         $originQuotes[$key]['simple']['title'] = $title;
                         if ($lgQuotes) {
-                            $access = $preCode.$this->getAccessorialCode($isResi,true);
+                            $access = $preCode.$this->getAccessorialCode(true);
                             $price = $this->calculatePrice($data, true);
                             $title = $this->getTitle($data['serviceDesc'], true, false, $data['transitTime']);
                             $arraySorting['liftgate'][$key] = $price;
@@ -1692,8 +1690,8 @@ class CompileQuotes
         }
 
         $numberOfShipments = 0;
-        foreach ($shipments as $ship){
-            if (!isset($ship['severity'])) {
+        foreach ($shipments as $key => $ship){
+            if (!isset($ship['severity']) && !in_array($key, ['air', 'ground'])) {
                 $numberOfShipments++;
             }
         }
@@ -2087,7 +2085,6 @@ class CompileQuotes
         if (($lgOption || (isset($this->liftGate) && $this->liftGate == '1')) || (isset($this->RADforLiftgate) && $this->RADforLiftgate && $this->isResi)) {
             $access .= '+LG';
         }
-
         return $access;
     }
 
