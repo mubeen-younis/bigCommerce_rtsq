@@ -423,7 +423,7 @@ class OrderController extends Controller
                         $resp['allOrders'][$count]['customer'] = $order['billing_address']['first_name'] . ' ' . $order['billing_address']['last_name'];
                         $resp['allOrders'][$count]['date_created'] = date("m/d/Y", strtotime($order['date_created']));
                         $resp['allOrders'][$count]['status'] = $order['status'];
-                        $resp['allOrders'][$count]['total_inc_tax'] = '$' . number_format((float)$order['total_inc_tax'], 2, '.', '');
+                        $resp['allOrders'][$count]['total_inc_tax'] = '$' . number_format((float)$order['total_inc_tax'], 2);
                         $resp['allOrders'][$count]['items_total'] = $order['items_total'];
                     }
                 }
