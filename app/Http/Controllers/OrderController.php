@@ -226,9 +226,9 @@ class OrderController extends Controller
 
             $shipping_name = explode('(',$order['shipping_name']);
             $sName = $shipping_name[0] ?? '';
-            $sName = str_replace(ucwords(Constant::RESI_LABEL), '', $sName);
-            $sName = str_replace(ucwords(Constant::LIFT_LABEL), '', $sName);
-            $sName = str_replace(ucwords(Constant::RESI_LIFT_LABEL), '', $sName);
+            $sName = str_replace(Constant::RESI_LABEL, '', $sName);
+            $sName = str_replace(Constant::LIFT_LABEL, '', $sName);
+            $sName = str_replace(Constant::RESI_LIFT_LABEL, '', $sName);
             $sMethod = isset($shipping_name[1]) ? '('.$shipping_name[1] : '';
 
             $orderWidget[$zip]['shipping_method'] = $sName.$sMethod;
