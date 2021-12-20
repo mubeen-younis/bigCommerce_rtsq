@@ -99,7 +99,7 @@ class WweSmallQuoteResults
         }
         $resiTitle = '';
         if($isResi){
-            $resiTitle = " ( R ) ";
+            $resiTitle = Constant::RESI_LABEL;
         }
         return $title . $resiTitle;
     }

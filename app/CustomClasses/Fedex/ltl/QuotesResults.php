@@ -83,7 +83,7 @@ class QuotesResults
         }
         $resiTitle = '';
         if($isResi){
-            $resiTitle = " ( R ) ";
+            $resiTitle = Constant::RESI_LABEL;
         }
         return $title . $resiTitle;
     }
@@ -298,9 +298,9 @@ class QuotesResults
         foreach ($fields as $key => $field) {
             $this->$key = $this->configSettings[$field] ?? '';
         }
-        $this->resiLabel = ' (R)';
-        $this->lgLabel = ' (L)';
-        $this->resiLgLabel = ' (R | L)';
+        $this->resiLabel = Constant::RESI_LABEL;
+        $this->lgLabel = Constant::LIFT_LABEL;
+        $this->resiLgLabel = Constant::RESI_LIFT_LABEL;
     }
 
     public function getCompiledQuotes($services, $arraySorting, $lgQuotes, $isMulitshipment)

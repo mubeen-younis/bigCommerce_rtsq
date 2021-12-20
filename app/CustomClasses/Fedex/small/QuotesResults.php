@@ -82,7 +82,7 @@ class QuotesResults
         }
         $resiTitle = '';
         if($isResi){
-            $resiTitle = " ( R ) ";
+            $resiTitle = Constant::RESI_LABEL;
         }
         return $title . $resiTitle;
     }
@@ -249,14 +249,13 @@ class QuotesResults
                 $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
                 $originQuotesMulti[0]['code'] = 'Multifedexsmall'.$access2;
                 $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
-                $originQuotesMulti[0]['title'] = $residential ? 'Shipping ( R ) ' : 'Shipping';
+                $originQuotesMulti[0]['title'] = $residential ? 'Shipping '.Constant::RESI_LABEL : 'Shipping';
             }
             $resp = [
                 'checkoutQuotes' => $originQuotesMulti,
                 'multiShipmentQuotes' => $multiShipmentQuotes,
             ];
             $returnResp['resp'] = $resp;
-            print_r($returnResp); exit;
             return $returnResp;
         }
         // Doing For SIngle Shipment
@@ -383,9 +382,9 @@ class QuotesResults
         foreach ($fields as $key => $field) {
             $this->$key = $this->configSettings[$field] ?? '';
         }
-        $this->resiLabel = ' (R)';
-        $this->lgLabel = ' (L)';
-        $this->resiLgLabel = ' (R | L)';
+        $this->resiLabel = Constant::RESI_LABEL;
+        $this->lgLabel = Constant::LIFT_LABEL;
+        $this->resiLgLabel = Constant::RESI_LIFT_LABEL;
     }
 
     public function getCompiledQuotes($services, $arraySorting, $lgQuotes, $isMulitshipment)

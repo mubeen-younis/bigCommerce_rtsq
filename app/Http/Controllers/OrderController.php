@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Constants\Constant;
 use App\CurlRequest;
 use App\Models\Orders;
 use App\Models\RequestData;
@@ -222,8 +223,12 @@ class OrderController extends Controller
                 }
                 $isMulti = true;
             }
+
             $shipping_name = explode('(',$order['shipping_name']);
             $sName = $shipping_name[0] ?? '';
+            $sName = str_replace(ucwords(Constant::RESI_LABEL), '', $sName);
+            $sName = str_replace(ucwords(Constant::LIFT_LABEL), '', $sName);
+            $sName = str_replace(ucwords(Constant::RESI_LIFT_LABEL), '', $sName);
             $sMethod = isset($shipping_name[1]) ? '('.$shipping_name[1] : '';
 
             $orderWidget[$zip]['shipping_method'] = $sName.$sMethod;

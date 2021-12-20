@@ -83,7 +83,7 @@ class QuotesResults
         }
         $resiTitle = '';
         if($isResi){
-            $resiTitle = " ( R ) ";
+            $resiTitle = Constant::RESI_LABEL;
         }
         return $title . $resiTitle;
     }
@@ -210,7 +210,7 @@ class QuotesResults
                 $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
                 $originQuotesMulti[0]['code'] = 'Multiups'.$access;
                 $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
-                $originQuotesMulti[0]['title'] = $residential ? 'Shipping ( R ) ' : 'Shipping';
+                $originQuotesMulti[0]['title'] = $residential ? 'Shipping'.Constant::RESI_LABEL  : 'Shipping';
             }
             foreach ($multiShipmentQuotes as $shipmentKey => $shipment) {
                 $keys = array_column($shipment, 'rate');
