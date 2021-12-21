@@ -451,7 +451,7 @@ class Shipping
     public function limitTitle($quote){
         $res = $quote['title'];
         if( strlen($quote['title']) > 100 ){
-            $res = explode("(Estimated", $quote['title'])[0];
+            $res = explode("(", $quote['title'])[0];
         }else if( $quote['title'] == "" ){
             $res = $quote['code'];
         }

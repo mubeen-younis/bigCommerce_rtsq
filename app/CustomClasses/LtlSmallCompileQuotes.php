@@ -153,7 +153,7 @@ class LtlSmallCompileQuotes{
                 $ltlQuot = $ltlQuot[0] ?? $ltlQuot;
                 $rCode = ($parcel['isResi'] || $ltlQuot['isResi'] || $parcel['alwaysResi'] || $ltlQuot['alwaysResi'] ) ? '+R':'';
                 if($simpleLg === 'simple') {
-                    $rtitle = ($parcel['isResi'] || $ltlQuot['isResi'])  ? ' ( R )':'';
+                    $rtitle = ($parcel['isResi'] || $ltlQuot['isResi'])  ? Constant::RESI_LABEL:'';
                     $newQuotes[] = [
                         'code' => 'multi' . $rCode,
                         'rate' => $parcel['rate'] + $ltlQuot['rate'],
@@ -161,9 +161,9 @@ class LtlSmallCompileQuotes{
                     ];
                 }else if($simpleLg === 'LG'){
                     if(isset($ltlQuot['alwaysLG']) && $ltlQuot['alwaysLG']){
-                        $rtitle = ($parcel['isResi'] || $ltlQuot['isResi']) ? ' ( R )' : '';
+                        $rtitle = ($parcel['isResi'] || $ltlQuot['isResi']) ? Constant::RESI_LABEL : '';
                     }else{
-                        $rtitle = ($parcel['isResi'] || $ltlQuot['isResi']) ? ' ( R | L )' : ' ( L )';
+                        $rtitle = ($parcel['isResi'] || $ltlQuot['isResi']) ? Constant::RESI_LIFT_LABEL : Constant::LIFT_LABEL;
                     }
                     $newQuotes[] = [
                         'code' => 'multi'.$rCode.'+LG',

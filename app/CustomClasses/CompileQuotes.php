@@ -520,9 +520,9 @@ class CompileQuotes
         foreach ($fields as $key => $field) {
             $this->$key = $this->configSettings[$field] ?? '';
         }
-        $this->resiLabel = ' (R)';
-        $this->lgLabel = ' (L)';
-        $this->resiLgLabel = ' (R | L)';
+        $this->resiLabel = Constant::RESI_LABEL;
+        $this->lgLabel = Constant::LIFT_LABEL;
+        $this->resiLgLabel = Constant::RESI_LIFT_LABEL;
     }
 
     /**
@@ -875,7 +875,7 @@ class CompileQuotes
                     }
                 }
             }
-            //print_r($originQuotes); //exit;
+            //print_r($originQuotes); exit;
             $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
             //print_r($compiledQuotes); exit;
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
@@ -900,6 +900,7 @@ class CompileQuotes
             }
             $count++;
         }
+
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
@@ -913,7 +914,6 @@ class CompileQuotes
             ];
             return $resp;
         }
-
         return $this->arrangeOwnFreight($allQuotes);
     }
 
@@ -1755,7 +1755,7 @@ class CompileQuotes
                     }
 
 
-                    $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $data['transitTime'], $data['serviceType'], $this->quoteSettings, $this->isResi);
+                    $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $data['deliveryTimestamp'], $data['serviceType'], $this->quoteSettings, $this->isResi);
                     $price = (float) str_replace(',','',$price);
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12'.$data['serviceType'] . $access;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
@@ -1777,7 +1777,7 @@ class CompileQuotes
                 $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
                 $originQuotesMulti[0]['code'] = $this->isResi || $this->alwaysResi ? 'Multi+R':'Multi';
                 $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
-                $originQuotesMulti[0]['title'] = $this->isResi ? 'Shipping ( R ) ' : 'Shipping';
+                $originQuotesMulti[0]['title'] = $this->isResi ? 'Shipping'.Constant::RESI_LABEL : 'Shipping';
             }
             $resp = [
                 'checkoutQuotes' => $originQuotesMulti,
@@ -1973,13 +1973,18 @@ class CompileQuotes
      */
     public function getFinalQuotesArray($quotes)
     {
-        //dd($quotes);
         if (empty($quotes)) {
             return [];
         }
         $lfg = (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery'] == 1) || ($this->isResi && isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']);
         if ($this->isMultiShipment == false) {
-            if (isset($quotes['liftgate']) && (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery'] == 1) && (( isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'] == 0) || $this->isResi == 0)) {
+            if (
+                isset($quotes['liftgate'])
+                && (isset($this->quoteSettings['offerLiftGateDelivery'])
+                    && $this->quoteSettings['offerLiftGateDelivery'] == 1)
+                && (
+                    ( isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'] == 0) || $this->isResi == 0)
+            ) {
                 /**
                  * Condition for lift gate as an option
                  * */
@@ -2171,7 +2176,7 @@ class CompileQuotes
             $this->quoteSettings = $quoteSetting;
         }
         $serviceTitle = $this->customLabel($serviceName);
-        $deliveryEstimateLabel = (!empty($deliveryEstimate) && ( isset($this->quoteSettings['showDeliveryEstimate']) && $this->quoteSettings['showDeliveryEstimate']) ) ? ' (Estimated transit time of ' . $deliveryEstimate . ' business days)' : '';
+        $deliveryEstimateLabel = (!empty($deliveryEstimate) && ( isset($this->quoteSettings['showDeliveryEstimate']) && $this->quoteSettings['showDeliveryEstimate']) ) ? ' (Estimated number of days until delivery is ' . $deliveryEstimate . ')' : '';
         if ($this->isMultiShipment && $from == false) {
             return $serviceTitle.$deliveryEstimateLabel;
         }
@@ -2193,7 +2198,7 @@ class CompileQuotes
         } elseif ($this->isResi) {
             $accessTitle = $this->resiLabel;
         }
-        $resp = $serviceTitle  . $deliveryEstimateLabel . $accessTitle;
+        $resp = $serviceTitle . $accessTitle . $deliveryEstimateLabel;
         return $resp;
     }
 
@@ -2234,24 +2239,24 @@ class CompileQuotes
         }
         if ($lgOption === true || (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'] ) )  {
             if ($lgOption && $this->quoteSettings['alwaysLiftGateDelivery'] == '0') {
-                $accessTitle = $this->isResi ? 'R | L' : 'L';
+                $accessTitle = $this->isResi ? Constant::RESI_LIFT_LABEL : Constant::LIFT_LABEL;
             }
             if (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery'] && $this->isResi) {
-                $accessTitle = 'R';//$this->resiLabel;
+                $accessTitle = Constant::RESI_LABEL;//$this->resiLabel;
             }
             if (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'] && $this->isResi) {
-                $accessTitle = 'R | L';//$this->resiLgLabel;
+                $accessTitle = Constant::RESI_LIFT_LABEL;//$this->resiLgLabel;
             }
         } elseif ($this->isResi) {
-            $accessTitle = 'R';//$this->resiLabel;
+            $accessTitle = Constant::RESI_LABEL;//$this->resiLabel;
         }
         $title[] = $accessTitle;
         $title = array_filter($title);
         $accessTitle = '';
         if(!empty($title)){
-            $accessTitle =  '( '.implode(' | ', $title) .' )';
+            $accessTitle =  implode(' | ', $title);
         }
-        $resp = $serviceTitle  . $deliveryEstimateLabel . $accessTitle;
+        $resp = $serviceTitle . $accessTitle . $deliveryEstimateLabel;
         return $resp;
     }
 
