@@ -95,7 +95,7 @@ class WweSmallQuoteResults
     public function getServiceTitle($title, $transitTime, $serviceCode, $quoteSettings, $isResi = false)
     {
         if (isset($quoteSettings['showDeliveryEstimate']) && $quoteSettings['showDeliveryEstimate'] == true) {
-            $title = $title . ' (Delivery ' . $transitTime . ')';
+            $title = $title . ' (Delivery by ' . date('m-d-y h:i A', strtotime($transitTime)) . ')';
         }
         $resiTitle = '';
         if($isResi){

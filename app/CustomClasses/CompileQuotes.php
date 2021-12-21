@@ -1755,7 +1755,7 @@ class CompileQuotes
                     }
 
 
-                    $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $data['transitTime'], $data['serviceType'], $this->quoteSettings, $this->isResi);
+                    $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $data['deliveryTimestamp'], $data['serviceType'], $this->quoteSettings, $this->isResi);
                     $price = (float) str_replace(',','',$price);
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12'.$data['serviceType'] . $access;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
@@ -2176,7 +2176,7 @@ class CompileQuotes
             $this->quoteSettings = $quoteSetting;
         }
         $serviceTitle = $this->customLabel($serviceName);
-        $deliveryEstimateLabel = (!empty($deliveryEstimate) && ( isset($this->quoteSettings['showDeliveryEstimate']) && $this->quoteSettings['showDeliveryEstimate']) ) ? ' (Estimated transit time of ' . $deliveryEstimate . ' business days)' : '';
+        $deliveryEstimateLabel = (!empty($deliveryEstimate) && ( isset($this->quoteSettings['showDeliveryEstimate']) && $this->quoteSettings['showDeliveryEstimate']) ) ? ' (Estimated number of days until delivery is ' . $deliveryEstimate . ')' : '';
         if ($this->isMultiShipment && $from == false) {
             return $serviceTitle.$deliveryEstimateLabel;
         }
