@@ -76,16 +76,15 @@ class QuotesResults
 
     public function getServiceTitle($title, $data, $serviceCode, $quoteSettings, $isResi = false)
     {
+        if($isResi){
+            $title = $title . Constant::RESI_LABEL;
+        }
         if ( isset($data['totalTransitTimeInDays']) && $data['totalTransitTimeInDays'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2) {
             $title = $title . ' (Estimated number of days until delivery is '.$data['totalTransitTimeInDays'].')';
         }else if( isset($data['deliveryTimestamp']) && $data['deliveryTimestamp'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3){
             $title = $title . ' (Delivery by '.date ('m-d-y h:i A', strtotime($data['deliveryTimestamp'])).')';
         }
-        $resiTitle = '';
-        if($isResi){
-            $resiTitle = Constant::RESI_LABEL;
-        }
-        return $title . $resiTitle;
+        return $title;
     }
 
     public function checkGroundTransit($quote, $quoteSettings)
