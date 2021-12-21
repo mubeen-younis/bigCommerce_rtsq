@@ -180,7 +180,6 @@ class QuotesResults
                         }
                     }
 
-
                     $title = $this->getServiceTitle($data['serviceDesc'], $data, $data['serviceType'], $this->quoteSettings, $residential);
                     $price = (float) str_replace(',','',$price);
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12ups'.$data['serviceType'] . $access;
