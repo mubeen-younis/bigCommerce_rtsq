@@ -94,14 +94,14 @@ class WweSmallQuoteResults
 
     public function getServiceTitle($title, $transitTime, $serviceCode, $quoteSettings, $isResi = false)
     {
-        if (isset($quoteSettings['showDeliveryEstimate']) && $quoteSettings['showDeliveryEstimate'] == true) {
-            $title = $title . ' (Delivery ' . $transitTime . ')';
-        }
-        $resiTitle = '';
         if($isResi){
-            $resiTitle = " ( R ) ";
+            $title = $title . Constant::RESI_LABEL;
         }
-        return $title . $resiTitle;
+        if (isset($quoteSettings['showDeliveryEstimate']) && $quoteSettings['showDeliveryEstimate'] == true) {
+            $title = $title . ' (Delivery by ' . date('m-d-y h:i A', strtotime($transitTime)) . ')';
+        }
+
+        return $title;
     }
 
     public function serviceCodeOfWweSmallService($service)

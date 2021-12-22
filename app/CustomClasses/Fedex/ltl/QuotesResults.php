@@ -79,11 +79,11 @@ class QuotesResults
         if ( isset($data['totalTransitTimeInDays']) && $data['totalTransitTimeInDays'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2) {
             $title = $title . ' (Estimated number of days until delivery is '.$data['totalTransitTimeInDays'].')';
         }else if( isset($data['deliveryTimestamp']) && $data['deliveryTimestamp'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3){
-            $title = $title . ' (Estimated delivery date is '.date ('m-d-Y', strtotime($data['deliveryTimestamp'])).')';
+            $title = $title . ' (Delivery by '.date ('m-d-y h:i A', strtotime($data['deliveryTimestamp'])).')';
         }
         $resiTitle = '';
         if($isResi){
-            $resiTitle = " ( R ) ";
+            $resiTitle = Constant::RESI_LABEL;
         }
         return $title . $resiTitle;
     }
@@ -298,9 +298,9 @@ class QuotesResults
         foreach ($fields as $key => $field) {
             $this->$key = $this->configSettings[$field] ?? '';
         }
-        $this->resiLabel = ' (R)';
-        $this->lgLabel = ' (L)';
-        $this->resiLgLabel = ' (R | L)';
+        $this->resiLabel = Constant::RESI_LABEL;
+        $this->lgLabel = Constant::LIFT_LABEL;
+        $this->resiLgLabel = Constant::RESI_LIFT_LABEL;
     }
 
     public function getCompiledQuotes($services, $arraySorting, $lgQuotes, $isMulitshipment)

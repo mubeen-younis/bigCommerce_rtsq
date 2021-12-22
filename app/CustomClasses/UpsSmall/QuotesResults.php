@@ -76,16 +76,15 @@ class QuotesResults
 
     public function getServiceTitle($title, $data, $serviceCode, $quoteSettings, $isResi = false)
     {
+        if($isResi){
+            $title = $title . Constant::RESI_LABEL;
+        }
         if ( isset($data['totalTransitTimeInDays']) && $data['totalTransitTimeInDays'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2) {
             $title = $title . ' (Estimated number of days until delivery is '.$data['totalTransitTimeInDays'].')';
         }else if( isset($data['deliveryTimestamp']) && $data['deliveryTimestamp'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3){
-            $title = $title . ' (Estimated delivery date is '.date ('m-d-Y', strtotime($data['deliveryTimestamp'])).')';
+            $title = $title . ' (Delivery by '.date ('m-d-y h:i A', strtotime($data['deliveryTimestamp'])).')';
         }
-        $resiTitle = '';
-        if($isResi){
-            $resiTitle = " ( R ) ";
-        }
-        return $title . $resiTitle;
+        return $title;
     }
 
     public function checkGroundTransit($quote, $quoteSettings)
@@ -180,7 +179,6 @@ class QuotesResults
                         }
                     }
 
-
                     $title = $this->getServiceTitle($data['serviceDesc'], $data, $data['serviceType'], $this->quoteSettings, $residential);
                     $price = (float) str_replace(',','',$price);
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12ups'.$data['serviceType'] . $access;
@@ -210,7 +208,7 @@ class QuotesResults
                 $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
                 $originQuotesMulti[0]['code'] = 'Multiups'.$access;
                 $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
-                $originQuotesMulti[0]['title'] = $residential ? 'Shipping ( R ) ' : 'Shipping';
+                $originQuotesMulti[0]['title'] = $residential ? 'Shipping'.Constant::RESI_LABEL  : 'Shipping';
             }
             foreach ($multiShipmentQuotes as $shipmentKey => $shipment) {
                 $keys = array_column($shipment, 'rate');

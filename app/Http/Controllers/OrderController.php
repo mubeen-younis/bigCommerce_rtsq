@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Constants\Constant;
 use App\CurlRequest;
 use App\Models\Orders;
 use App\Models\RequestData;
@@ -108,7 +109,7 @@ class OrderController extends Controller
         $order['rate_id'] = strtolower($order['rate_id']);
         $isSmallrate = substr($order['rate_id'], 0, 9) == 'parcel_12' || substr($order['rate_id'], 0, 5) == 'multi'  ? true : false;
         $isLG = strpos($order['rate_id'], '+lg');
-        $isOwnArrangement = strpos($order['rate_id'], 'own_arrangement') === 0 ? true : false;
+        $isOwnArrangement = strpos($order['rate_id'], 'own_arrangement') === 0 || strpos($order['rate_id'], 'freernlltl') === 0 ? true : false;
         $lineItem = json_decode($data['lineitems'])->lineItemData;
         $responseFromWS = json_decode($data['quotes']);
 
@@ -122,6 +123,9 @@ class OrderController extends Controller
         $liftGateStatus = 'n';
         $binPackagingData = '';
         $orderWidget = [];
+        $isOneRate = strpos($order['rate_id'], '+or');
+        $isGround = strpos($order['rate_id'], '+gd');
+        $isAir = strpos($order['rate_id'], '+as');
         foreach($responseFromWS as $carrrierName => $WsResp){
             foreach($WsResp as $zip => $ws){
 
@@ -136,9 +140,18 @@ class OrderController extends Controller
 
                     $totalBoxes = 1;
                     if(isset($ws->binPackagingData) && !empty($ws->binPackagingData) && $isSmallrate){
-                        $sbsData = $ws->binPackagingData->response;
+                        if($isGround){
+                            $sbsData = $ws->binPackagingData->response->ground->bins_packed;
+                        }else if($isAir){
+                            $sbsData = $ws->binPackagingData->response->air->bins_packed;
+                        }else if($isOneRate){
+                            $sbsData = $ws->binPackagingData->response->oneRate->bins_packed;
+                        }else{
+                            $sbsData = $ws->binPackagingData->response->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->oneRate->bins_packed;
+                        }
+                        //print_r($ws->binPackagingData->response); exit;
                         $itemCount = 0;
-                        foreach ($sbsData->bins_packed as $key => $binPacked) {
+                        foreach ($sbsData as $key => $binPacked) {
                             $type = '';
                             $quantity = 1;
                             if (isset($binPacked->bin_data->type) && $binPacked->bin_data->type == 'item') {
@@ -198,7 +211,7 @@ class OrderController extends Controller
             $senderZip = $origin->senderZip ?? '';
             $orderWidget[$zip]['locationtype'] = $item->dropship_enabled == 'N' ? 'Warehouse' : 'Dropship';
             $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
-            $orderWidget[$zip]['totalBoxes'] = $totalBoxes;
+            $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
             $sRate = $order['shipping_rate'];
             if($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement){
                 if($isLG) {
@@ -210,12 +223,16 @@ class OrderController extends Controller
                 }
                 $isMulti = true;
             }
+
             $shipping_name = explode('(',$order['shipping_name']);
             $sName = $shipping_name[0] ?? '';
+            $sName = str_replace(Constant::RESI_LABEL, '', $sName);
+            $sName = str_replace(Constant::LIFT_LABEL, '', $sName);
+            $sName = str_replace(Constant::RESI_LIFT_LABEL, '', $sName);
             $sMethod = isset($shipping_name[1]) ? '('.$shipping_name[1] : '';
 
             $orderWidget[$zip]['shipping_method'] = $sName.$sMethod;
-            $orderWidget[$zip]['shipping_rate'] = '$'. number_format((float)$sRate, 2, '.', '');
+            $orderWidget[$zip]['shipping_rate'] = '$'. number_format((float)$sRate, 2, );
             if( $item->shipMultiplePackage ) {
                 if((!in_array($item->lineItemName, $insertedNames))) {
                     $insertedNames[] = $item->lineItemName;
@@ -411,7 +428,7 @@ class OrderController extends Controller
                         $resp['allOrders'][$count]['customer'] = $order['billing_address']['first_name'] . ' ' . $order['billing_address']['last_name'];
                         $resp['allOrders'][$count]['date_created'] = date("m/d/Y", strtotime($order['date_created']));
                         $resp['allOrders'][$count]['status'] = $order['status'];
-                        $resp['allOrders'][$count]['total_inc_tax'] = '$' . number_format((float)$order['total_inc_tax'], 2, '.', '');
+                        $resp['allOrders'][$count]['total_inc_tax'] = '$' . number_format((float)$order['total_inc_tax'], 2);
                         $resp['allOrders'][$count]['items_total'] = $order['items_total'];
                     }
                 }
@@ -706,6 +723,7 @@ class OrderController extends Controller
                 if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
                     $rateId = json_decode($response['response'])->rate_id;
                     $reqData = RequestTempData::where('rate_id', $rateId)->where('cart_id', $cartId)->get()->toArray();
+                    Log::info('Orderdata $reqData: ' . json_encode($reqData). ' RateID: '.$rateId .' CartId: '.$cartId);
                     foreach ($reqData as $data)
                     {
                         unset($data['id']);
