@@ -6,7 +6,7 @@ use App\CustomClasses\CurlRequest;
 
 class ConnectionSettings
 {
-    private $testConnectionUrl = 'https://eniture-qa.com/ws/index.php';
+    private $testConnectionUrl = 'https://eniture.com/ws/index.php';
     public function __construct()
     {
         $this->curlRequest = new CurlRequest();
