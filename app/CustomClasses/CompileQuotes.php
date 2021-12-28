@@ -1412,8 +1412,9 @@ class CompileQuotes
             $this->residentialDlvry = 0;
         }
         $this->alwaysResi = $this->residential['alwaysResi']['xpoLtl'] ?? false;
+        //print_r($shipments);
         $shipments = $xpoLtl->formateQuoteBeforeCompile($shipments);
-
+//print_r($shipments); exit;
         $this->quoteSettings = $connectionSettings['xpo-ltl']['quote_settings'] ?? [];
 
         $this->quoteSettingsData();
@@ -1459,7 +1460,7 @@ class CompileQuotes
                     $access = $this->getAccessorialCode();
                     $price = $this->calculatePrice($data);
 
-                    $title = $this->getTitle($data['serviceDesc'], false, false, $data['transitTime']);
+                    $title = $this->getTitle($data['serviceDesc'], false, false, $data['totalTransitTimeInDays']);
 
                     $arraySorting['simple'][$key] = $price;
                     $originQuotes[$key]['simple']['code'] = 'xpoltl' . $access;
@@ -1468,7 +1469,7 @@ class CompileQuotes
                     if ($lgQuotes) {
                         $lgAccess = $this->getAccessorialCode(true);
                         $lgPrice = $this->calculatePrice($data, true);
-                        $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['transitTime']);
+                        $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays']);
                         $arraySorting['liftgate'][$key] = $lgPrice;
                         $originQuotes[$key]['liftgate']['code'] = 'xpoltl' . $lgAccess;
                         $originQuotes[$key]['liftgate']['rate'] = $lgPrice;

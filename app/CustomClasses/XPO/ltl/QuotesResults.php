@@ -34,6 +34,7 @@ class QuotesResults
                 $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = $quote['NetCharge'][0] ?? 0;
                 $shipments[$shipment]['q'][$key]['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
                 $shipments[$shipment]['q'][$key]['transitTime'] = $quote['TransitTime'][0] ?? '';
+                $shipments[$shipment]['q'][$key]['totalTransitTimeInDays'] = $quote['totalTransitTimeInDays'] ?? '';
                 $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $quote['AccessorialCharges']['OtherAccessorialChargesFormated']['DLG'] ?? 0;
             }else{
                 unset($shipments[$shipment]['q']);
@@ -43,6 +44,7 @@ class QuotesResults
                 $shipments[$shipment]['q'][$key]['serviceType'] = 'xpo';
                 $shipments[$shipment]['q'][$key]['serviceDesc'] = 'Freight';
                 $shipments[$shipment]['q'][$key]['transitTime'] = $quote['transitDays'] ?? '';
+                $shipments[$shipment]['q'][$key]['totalTransitTimeInDays'] = $quote['totalTransitTimeInDays'] ?? '';
             }
         }
         return $shipments;
