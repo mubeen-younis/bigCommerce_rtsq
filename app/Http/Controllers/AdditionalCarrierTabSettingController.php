@@ -38,7 +38,7 @@ class AdditionalCarrierTabSettingController extends Controller
                 $services = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
                     ->where('installed_carriers.id', $installed_carrier)
                     ->where('shopify_freights.store_id', $storeId)
-                    ->orderBy('speed_freight_carrierName')->get();
+                    ->orderBy('speed_freight_carrierSCAC')->get();
             }else{
                 $services = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
                     ->where('installed_carriers.id', $installed_carrier)
