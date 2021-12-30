@@ -115,7 +115,7 @@ class OrderController extends Controller
 
         $requestToWS = json_decode($data['request']);
         $lineItem->items = $this->formateItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
-
+//print_r($lineItem->items); exit;
         $lineItem->origin = $this->formateOrigins($requestToWS->requestArr->carriers);
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
         $autoResidentialsStatus = 'n';
@@ -203,6 +203,7 @@ class OrderController extends Controller
 
         $isMulti = false;
         $insertedIds = $insertedNames = [];
+        //print_r($origins); exit;
         foreach($origins as $key => $origin){
             $item =  $items->$key;
             $city = $origin->senderCity ? $origin->senderCity.',': '';
@@ -244,7 +245,10 @@ class OrderController extends Controller
                     $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
                 }
             }
-
+            $addedHazmat = false;
+            if(isset($orderWidget[$zip]['accessories'])){
+                $addedHazmat = in_array('Hazardous Material',$orderWidget[$zip]['accessories']);
+            }
             $orderWidget[$zip]['accessories'] = [];
             if(!$isMulti){
                 if(isset($item->product_insurance_active) && $item->product_insurance_active == 1){
@@ -263,7 +267,7 @@ class OrderController extends Controller
                 if(isset($item->product_insurance_active) && $item->product_insurance_active == 1){
                     array_push($orderWidget[$zip]['accessories'], 'Insurance');
                 }
-                if(isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') {
+                if( (isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') || $addedHazmat) {
                     array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
                     $addHazmat = true;
                 }

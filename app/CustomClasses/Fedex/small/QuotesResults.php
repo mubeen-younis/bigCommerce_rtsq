@@ -370,26 +370,28 @@ class QuotesResults
                 if($serviceName == 'fedexAirServices'){
                     $isAir = true;
                 }
-                foreach ($quotes['q'] as $key => $quote) {
-                    if($isAir){
-                        if(!$this->isGroundService($key)) {
+                if(isset($quotes['q'])) {
+                    foreach ($quotes['q'] as $key => $quote) {
+                        if ($isAir) {
+                            if (!$this->isGroundService($key)) {
+                                $key = $key . $append;
+                                $quote['serviceType'] = $quote['serviceType'] . $append;
+                                $shipments[$shipment]['q'][$key] = $quote;
+                                $shipments[$shipment]['q'][$key]['serviceDesc'] = ucwords(strtolower(str_replace('_', ' ', $quote['serviceType'])));
+                                $shipments[$shipment]['q'][$key]['serviceType'] = $quote['serviceType'] . '_AIR_SERVICE';
+                            }
+                        } else {
                             $key = $key . $append;
-                            $quote['serviceType'] = $quote['serviceType'].$append;
+                            $quote['serviceType'] = $quote['serviceType'] . $append;
                             $shipments[$shipment]['q'][$key] = $quote;
                             $shipments[$shipment]['q'][$key]['serviceDesc'] = ucwords(strtolower(str_replace('_', ' ', $quote['serviceType'])));
-                            $shipments[$shipment]['q'][$key]['serviceType'] = $quote['serviceType'].'_AIR_SERVICE';
                         }
-                    }else{
-                        $key = $key . $append;
-                        $quote['serviceType'] = $quote['serviceType'].$append;
-                        $shipments[$shipment]['q'][$key] = $quote;
-                        $shipments[$shipment]['q'][$key]['serviceDesc'] = ucwords(strtolower(str_replace('_', ' ', $quote['serviceType'])));
+                        if (!empty($inStoreLocal)) {
+                            $shipments[$shipment]['InstorPickupLocalDelivery'] = $inStoreLocal;
+                        }
                     }
-                    if(!empty($inStoreLocal)) {
-                        $shipments[$shipment]['InstorPickupLocalDelivery'] = $inStoreLocal;
-                    }
+                    unset($shipments[$shipment][$serviceName]);
                 }
-                unset($shipments[$shipment][$serviceName]);
             }
         }
         return $shipments;

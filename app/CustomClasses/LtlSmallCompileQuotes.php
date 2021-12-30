@@ -79,7 +79,6 @@ class LtlSmallCompileQuotes{
                         $quote['isResi'] = $residential['gtzLtl'] == 'Y';
                         $quote['alwaysLG'] = isset($connectionSettings['gtz-ltl']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['gtz-ltl']['quote_settings']['alwaysLiftGateDelivery'];
                     }
-//dd($quote['isResi'], $quote['alwaysResi']);
                     if (strpos($quote['code'], '+LG') !== false) {
                         $quotesCarrier['ltl']['cerasis']['LG'][] = $quote;
                     } else {
@@ -89,7 +88,7 @@ class LtlSmallCompileQuotes{
                 else if(strpos($quote['code'], 'xpoltl') !== false){
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
                     $quote['isResi'] = $residential['xpoLtl'] == 'Y';
-                    $quote['alwaysLG'] = isset($connectionSettings['xpoLTL']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['xpo-ltl']['quote_settings']['alwaysLiftGateDelivery'];
+                    $quote['alwaysLG'] = isset($connectionSettings['xpo-ltl']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['xpo-ltl']['quote_settings']['alwaysLiftGateDelivery'];
                     if (strpos($quote['code'], '+LG') !== false) {
                         $quotesCarrier['ltl']['xpo']['LG'][] = $quote;
                     } else {
