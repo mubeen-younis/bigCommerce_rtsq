@@ -1531,7 +1531,6 @@ class CompileQuotes
         $this->quoteSettings = $connectionSettings['rl-ltl']['quote_settings'] ?? [];
         $shipments = $rnlLtl->formateQuoteBeforeCompile($shipments, $this->quoteSettings);
 
-
         $allConfigServices = [];
         if(isset($this->quoteSettings['standard_service']) && $this->quoteSettings['standard_service']){
             array_push($allConfigServices, 'STD');
@@ -1598,7 +1597,7 @@ class CompileQuotes
                     }
                     $price = $this->calculatePrice($data);
                     $this->quoteSettings['label_as'] = $lableAs.' '.$data['serviceDesc'];
-                    $title = $this->getTitle($data['serviceDesc'], false, false, $data['transitTime']);
+                    $title = $this->getTitle($data['serviceDesc'], false, false, $data['totalTransitTimeInDays']);
 
                     $access = $this->getAccessorialCode();
                     $arraySorting['simple'][$key] = $price;
@@ -1608,7 +1607,7 @@ class CompileQuotes
                     if ($lgQuotes && !$isHat) {
                         $lgAccess = $this->getAccessorialCode(true);
                         $lgPrice = $this->calculatePrice($data, true);
-                        $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['transitTime']);
+                        $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays']);
                         $arraySorting['liftgate'][$key] = $lgPrice;
                         $originQuotes[$key]['liftgate']['code'] = $preAccess . $lgAccess;
                         $originQuotes[$key]['liftgate']['rate'] = $lgPrice;

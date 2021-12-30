@@ -749,7 +749,8 @@ class OrderController extends Controller
             'UPS 2nd Day Air Saver',
             'UPS Next Day Air Saver',
             'UPS Next Day Air',
-            'UPS Next Day Air Early'
+            'UPS Next Day Air Early',
+            'Fedex Ground',
         ];
         return in_array($quote, $small);
     }
