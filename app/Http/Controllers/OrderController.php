@@ -106,6 +106,8 @@ class OrderController extends Controller
             $index = (int) substr($index, 0, 1);
         }
         $isSmallLtlrate = substr($order['rate_id'], 0, 5) == 'multi'  ? true : false;
+        $isHAT = strpos(strtolower($order['rate_id']), '+hat');
+
         $order['rate_id'] = strtolower($order['rate_id']);
         $isSmallrate = substr($order['rate_id'], 0, 9) == 'parcel_12' || substr($order['rate_id'], 0, 5) == 'multi'  ? true : false;
         $isLG = strpos($order['rate_id'], '+lg');
@@ -215,7 +217,10 @@ class OrderController extends Controller
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
             $sRate = $order['shipping_rate'];
             if($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement){
-                if($isLG) {
+                if($isHAT){
+                    $sRate = $multiShipmentresponse->$index->hat->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
+                    $order['shipping_name'] = $multiShipmentresponse->$index->hat->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
+                }else if($isLG) {
                     $sRate = $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->liftgate->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
                 }else {
@@ -275,6 +280,7 @@ class OrderController extends Controller
             $isSmall = $this->isSmallQuote($sName);
 
             $autoResidentialsStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Delivery') : '';
+            $isHAT ? array_push($orderWidget[$zip]['accessories'], 'Hold At Terminal') : '';
             if(!$isSmall) {
 
                 $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Pickup') : '';
@@ -749,7 +755,8 @@ class OrderController extends Controller
             'UPS 2nd Day Air Saver',
             'UPS Next Day Air Saver',
             'UPS Next Day Air',
-            'UPS Next Day Air Early'
+            'UPS Next Day Air Early',
+            'Fedex Ground',
         ];
         return in_array($quote, $small);
     }

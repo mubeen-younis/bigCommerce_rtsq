@@ -1530,8 +1530,7 @@ class CompileQuotes
         $this->alwaysResi = $this->residential['alwaysResi']['rnlLtl'] ?? false;
         $this->quoteSettings = $connectionSettings['rl-ltl']['quote_settings'] ?? [];
         $shipments = $rnlLtl->formateQuoteBeforeCompile($shipments, $this->quoteSettings);
-
-
+//print_r($shipments); exit;
         $allConfigServices = [];
         if(isset($this->quoteSettings['standard_service']) && $this->quoteSettings['standard_service']){
             array_push($allConfigServices, 'STD');
@@ -1598,7 +1597,7 @@ class CompileQuotes
                     }
                     $price = $this->calculatePrice($data);
                     $this->quoteSettings['label_as'] = $lableAs.' '.$data['serviceDesc'];
-                    $title = $this->getTitle($data['serviceDesc'], false, false, $data['transitTime']);
+                    $title = $this->getTitle($data['serviceDesc'], false, false, $data['totalTransitTimeInDays']);
 
                     $access = $this->getAccessorialCode();
                     $arraySorting['simple'][$key] = $price;
@@ -1608,7 +1607,7 @@ class CompileQuotes
                     if ($lgQuotes && !$isHat) {
                         $lgAccess = $this->getAccessorialCode(true);
                         $lgPrice = $this->calculatePrice($data, true);
-                        $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['transitTime']);
+                        $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays']);
                         $arraySorting['liftgate'][$key] = $lgPrice;
                         $originQuotes[$key]['liftgate']['code'] = $preAccess . $lgAccess;
                         $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
@@ -1652,17 +1651,29 @@ class CompileQuotes
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
-        if ( (!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1 ) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1 )){
 
-            $allQuotes = $this->forceChangeTitle($allQuotes);
-            $resp = [
-                'checkoutQuotes' => $this->arrangeHATFreight($allQuotes, $HAT),
-                'multiShipmentQuotes' => $multiShipmentQuotes
-            ];
+        if ( (!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1 ) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1 )){
+            if(!empty($HAT)) {
+                $allQuotes = $this->forceChangeTitle($allQuotes);
+                $hatLabel = explode('|', $HAT[0]['serviceDesc']);
+                unset($hatLabel[0]);
+                $lableAs = 'Freight |' . implode('|', $hatLabel);
+                $resp = [
+                    'checkoutQuotes' => $this->arrangeHATFreight($allQuotes, $HAT, $lableAs),
+                    'multiShipmentQuotes' => $this->arrangeHATMulti($multiShipmentQuotes, $HAT)
+                ];
+            }else{
+                $allQuotes = $this->forceChangeTitle($allQuotes);
+                $resp = [
+                    'checkoutQuotes' => $this->arrangeHATFreight($allQuotes, $HAT, 'Freight'),
+                    'multiShipmentQuotes' => $multiShipmentQuotes
+                ];
+            }
             return $resp;
         }
         if(!empty($HAT)){
-            return $this->arrangeHATFreight($allQuotes, $HAT);
+            $lableAs .= ' '.$HAT[0]['serviceDesc'];
+            return $this->arrangeHATFreight($allQuotes, $HAT, $lableAs);
         }
 
         return $allQuotes;
@@ -2695,7 +2706,7 @@ class CompileQuotes
         ];
         return array_merge($finalQuotes, $ownArrangement);
     }
-    function arrangeHATFreight($finalQuotes, $HAT){
+    function arrangeHATFreight($finalQuotes, $HAT, $lableAs = ''){
         if(empty($HAT)){
             return $finalQuotes;
         }
@@ -2705,10 +2716,24 @@ class CompileQuotes
         }
         $hatQuotes[] = [
             'code' => $HAT[0]['serviceType'],
-            'title' => $HAT[0]['serviceDesc'],
+            'title' => $lableAs,
             'rate' => $amount
         ];
         return array_merge($finalQuotes, $hatQuotes);
+    }
+
+    function arrangeHATMulti($mulishipment, $HAT){
+        $quotes = $mulishipment['simple'] ?? $mulishipment['liftgate'] ?? [];
+        $count = 0;
+        foreach ($quotes as $shipmentId => $quote){
+            $newQuote = [
+                'code' => $HAT[$count]['serviceType'] ?? '',
+                'rate' => $HAT[$count]['totalNetCharge']['Amount'] ?? '',
+                'title' => $HAT[$count]['serviceDesc'] ?? ''
+            ];
+            $mulishipment['hat'][$shipmentId] = $newQuote;
+        }
+        return $mulishipment;
     }
 
     function arrangeFreeRNL($finalQuotes){
