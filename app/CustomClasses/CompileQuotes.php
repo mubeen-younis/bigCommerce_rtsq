@@ -1660,7 +1660,7 @@ class CompileQuotes
                 $lableAs = 'Freight |' . implode('|', $hatLabel);
                 $resp = [
                     'checkoutQuotes' => $this->arrangeHATFreight($allQuotes, $HAT, $lableAs),
-                    'multiShipmentQuotes' => $multiShipmentQuotes
+                    'multiShipmentQuotes' => $this->arrangeHATMulti($multiShipmentQuotes, $HAT)
                 ];
             }else{
                 $allQuotes = $this->forceChangeTitle($allQuotes);
@@ -1669,7 +1669,6 @@ class CompileQuotes
                     'multiShipmentQuotes' => $multiShipmentQuotes
                 ];
             }
-
             return $resp;
         }
         if(!empty($HAT)){
@@ -2721,6 +2720,20 @@ class CompileQuotes
             'rate' => $amount
         ];
         return array_merge($finalQuotes, $hatQuotes);
+    }
+
+    function arrangeHATMulti($mulishipment, $HAT){
+        $quotes = $mulishipment['simple'] ?? $mulishipment['liftgate'] ?? [];
+        $count = 0;
+        foreach ($quotes as $shipmentId => $quote){
+            $newQuote = [
+                'code' => $HAT[$count]['serviceType'] ?? '',
+                'rate' => $HAT[$count]['totalNetCharge']['Amount'] ?? '',
+                'title' => $HAT[$count]['serviceDesc'] ?? ''
+            ];
+            $mulishipment['hat'][$shipmentId] = $newQuote;
+        }
+        return $mulishipment;
     }
 
     function arrangeFreeRNL($finalQuotes){
