@@ -106,6 +106,8 @@ class OrderController extends Controller
             $index = (int) substr($index, 0, 1);
         }
         $isSmallLtlrate = substr($order['rate_id'], 0, 5) == 'multi'  ? true : false;
+        $isHAT = strpos(strtolower($order['rate_id']), '+hat');
+
         $order['rate_id'] = strtolower($order['rate_id']);
         $isSmallrate = substr($order['rate_id'], 0, 9) == 'parcel_12' || substr($order['rate_id'], 0, 5) == 'multi'  ? true : false;
         $isLG = strpos($order['rate_id'], '+lg');
@@ -275,6 +277,7 @@ class OrderController extends Controller
             $isSmall = $this->isSmallQuote($sName);
 
             $autoResidentialsStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Delivery') : '';
+            $isHAT ? array_push($orderWidget[$zip]['accessories'], 'Hold At Terminal') : '';
             if(!$isSmall) {
 
                 $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Pickup') : '';

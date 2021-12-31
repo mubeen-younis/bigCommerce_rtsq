@@ -92,7 +92,7 @@ class QuotesResults
                         unset($shipments[$shipment]['q'][$key]['totalNetCharge']);
                         $shipments[$shipment]['q'][$key]['serviceType'] = 'rnlltl+HAT+'.$quote['Code'];
                         $shipments[$shipment]['q'][$key]['serviceDesc'] = $this->titleHAT($quote['Title'], $quotes['holdAtTerminalResponse']['address'], $quotes['holdAtTerminalResponse']['distance']);
-                        $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = $quote['totalNetCharge'] + $quoteSettings['hold_at_terminal_price'];
+                        $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = $this->getPrice($quote['totalNetCharge'], $quoteSettings['hold_at_terminal_price']);
                         $shipments[$shipment]['q'][$key]['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
                         $shipments[$shipment]['q'][$key]['totalTransitTimeInDays'] = $quote['totalTransitTimeInDays'] ?? '';
                         $shipments[$shipment]['q'][$key]['transitTime'] = $quote['transitTime'] ?? '';
@@ -103,8 +103,21 @@ class QuotesResults
         return $shipments;
     }
 
+    function getPrice($price, $hatPrice){
+        if((strlen($hatPrice) > 0)) {
+            $symbolicHATFee = strpos($hatPrice, '%') ? '%' : '';
+            $hatPrice = (float)$hatPrice ?? 0;
+            if ($symbolicHATFee === '%') {
+                $hatPrice = $hatPrice / 100 * $price;
+                $price = $price + $hatPrice;
+            } else {
+                $price = $price + $hatPrice;
+            }
+        }
+        return $price;
+    }
     function titleHAT($title, $address, $distance){
-        return $title.' | HAT | '.$distance['text']. ' | ' .$address['Code']. ', '. $address['State']. ', '. $address['ZipCode']. ' | '. $address['Phone'];
+        return $title.' | Hold At Terminal | '.$distance['text']. ' | ' .$address['Code']. ', '. $address['State']. ', '. $address['ZipCode']. ' | '. $address['Phone'];
     }
 
     function liftGateFees($quotes){
