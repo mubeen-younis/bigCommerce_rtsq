@@ -604,7 +604,9 @@ class GenerateRequestData
             'speed_freight_lift_gate_delivery' => $liftGate,
             'speed_freight_residential_pickup' => $residentialPickup,
             'insureShipment' => 0,
-            'insuranceCategory' => $insurance
+            'insuranceCategory' => $insurance,
+            'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? '',
+            'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? '',
         ];
         return $apiArray;
     }
@@ -1148,8 +1150,8 @@ class GenerateRequestData
             'paymentCode' => '10',
             'paymentDescription' => 'PREPAID',
             'paymentType' => $paymentType,
-            //'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'],
-            //'maxWeightPerHandlingUnit' => '',
+            'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? '',
+            'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? '',
             'serviceCode' => '308',
             'serviceCodeDescription' => 'UPS Freight LTL',
             'timeInTransitIndicator' => 'N',

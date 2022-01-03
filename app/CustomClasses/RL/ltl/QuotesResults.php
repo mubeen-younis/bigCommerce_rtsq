@@ -54,7 +54,7 @@ class QuotesResults
                         $shipments[$shipment]['q'][$key] = $quote;
                         $shipments[$shipment]['q'][$key]['serviceType'] = 'inside+'.$quote['Code'];
                         $shipments[$shipment]['q'][$key]['serviceDesc'] = $quote['Title'];
-                        $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = (float) str_replace('$', '',$quote['NetCharge']);
+                        $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = (float) str_replace('$', '',str_replace(',','',$quote['NetCharge']));
                         $shipments[$shipment]['q'][$key]['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
                         $shipments[$shipment]['q'][$key]['transitTime'] = $quote['totalTransitTimeInDays'] ?? '';
                         $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $this->liftGateFees($quotes);
@@ -73,7 +73,7 @@ class QuotesResults
                             $shipments[$shipment]['q'][$key] = $quote;
                             $shipments[$shipment]['q'][$key]['serviceType'] = $quote['Code'] ?? '';
                             $shipments[$shipment]['q'][$key]['serviceDesc'] = $quote['Title'] ?? '';
-                            $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = (float)str_replace('$', '', $quote['NetCharge']);
+                            $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = (float) str_replace('$', '',str_replace(',','',$quote['NetCharge']));
                             $shipments[$shipment]['q'][$key]['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
                             $shipments[$shipment]['q'][$key]['transitTime'] = $quote['transitTime'] ?? '';
                             $shipments[$shipment]['q'][$key]['totalTransitTimeInDays'] = $quote['totalTransitTimeInDays'] ?? '';
