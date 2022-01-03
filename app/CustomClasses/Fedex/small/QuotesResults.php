@@ -110,7 +110,7 @@ class QuotesResults
         $isDomestic = isset($this->allOrigins[$shipmentId]['senderCountryCode']) && isset($this->destination['country']) && strtoupper($this->allOrigins[$shipmentId]['senderCountryCode']) == strtoupper($this->destination['country']);
         $this->international = false;
         if($isDomestic){
-            if(in_array($serviceName, $allConfigServices['domestic'])){
+            if(isset($allConfigServices['domestic']) && in_array($serviceName, $allConfigServices['domestic'])){
                 return true;
             }
         }else{
@@ -137,44 +137,47 @@ class QuotesResults
         $shipments = $this->formateQuoteBeforeCompile($shipments);
         $this->quoteSettings = $connectionSettings['fedex-small']['quote_settings'] ?? [];
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
-        $allConfigServices = [];
-        foreach ($this->quoteSettings['carrier_services'] as $key => $serviceName){
-            if($serviceName) {
-                $isMarkup = strpos(strtolower($key), '_markup') !== false;
-                $isFedex = strpos(strtolower($key), 'fedex') !== false;
-                $isInternational = strpos(strtolower($key), 'international') !== false;
-                if ($isMarkup) {
-                    if($isFedex) {
-                        $key1 = str_replace('FEDEX_', '',strtoupper($key));
-                        $key2 = strtoupper($key);
-                        $allConfigServices['markup']['domestic'][$key1] = $serviceName;
-                        $allConfigServices['markup']['domestic'][$key2] = $serviceName;
-                        if($key2 == 'FEDEX_GROUND_MARKUP' || $key2 == 'FEDEX_GROUND_HOME_DELIVERY_MARKUP'){
+        $allConfigServices['services'] = $allConfigServices  = [];
+
+        if(isset($this->quoteSettings['carrier_services'])) {
+            foreach ($this->quoteSettings['carrier_services'] as $key => $serviceName) {
+                if ($serviceName) {
+                    $isMarkup = strpos(strtolower($key), '_markup') !== false;
+                    $isFedex = strpos(strtolower($key), 'fedex') !== false;
+                    $isInternational = strpos(strtolower($key), 'international') !== false;
+                    if ($isMarkup) {
+                        if ($isFedex) {
+                            $key1 = str_replace('FEDEX_', '', strtoupper($key));
+                            $key2 = strtoupper($key);
+                            $allConfigServices['markup']['domestic'][$key1] = $serviceName;
+                            $allConfigServices['markup']['domestic'][$key2] = $serviceName;
+                            if ($key2 == 'FEDEX_GROUND_MARKUP' || $key2 == 'FEDEX_GROUND_HOME_DELIVERY_MARKUP') {
+                                $allConfigServices['markup']['international'][$key2] = $serviceName;
+                            }
+                        } else if ($isInternational) {
+                            $key1 = str_replace('INTERNATIONAL_', '', strtoupper($key));
+                            $key2 = strtoupper($key);
+                            $allConfigServices['markup']['international'][$key1] = $serviceName;
                             $allConfigServices['markup']['international'][$key2] = $serviceName;
                         }
-                    }else if($isInternational) {
-                        $key1 = str_replace('INTERNATIONAL_', '',strtoupper($key));
-                        $key2 = strtoupper($key);
-                        $allConfigServices['markup']['international'][$key1] = $serviceName;
-                        $allConfigServices['markup']['international'][$key2] = $serviceName;
-                    }
-                } else {
-                    if($isFedex) {
-                        $key1 = str_replace('FEDEX_', '',strtoupper($key));
-                        $key2 = strtoupper($key);
-                        $allConfigServices['services']['domestic'][] = $key1;
-                        $allConfigServices['services']['domestic'][] = $key2;
-                        if($key2 == 'FEDEX_GROUND' || $key2 == 'FEDEX_GROUND_HOME_DELIVERY'){
+                    } else {
+                        if ($isFedex) {
+                            $key1 = str_replace('FEDEX_', '', strtoupper($key));
+                            $key2 = strtoupper($key);
+                            $allConfigServices['services']['domestic'][] = $key1;
+                            $allConfigServices['services']['domestic'][] = $key2;
+                            if ($key2 == 'FEDEX_GROUND' || $key2 == 'FEDEX_GROUND_HOME_DELIVERY') {
+                                $allConfigServices['services']['international'][] = $key2;
+                            }
+                        } else if ($isInternational) {
+                            $key1 = str_replace('INTERNATIONAL_', '', strtoupper($key));
+                            $key2 = strtoupper($key);
+                            $allConfigServices['services']['international'][] = $key1;
                             $allConfigServices['services']['international'][] = $key2;
+                        } else {
+                            $allConfigServices['services']['international'][] = strtoupper($key);
+                            $allConfigServices['services']['domestic'][] = strtoupper($key);
                         }
-                    }else if($isInternational) {
-                        $key1 = str_replace('INTERNATIONAL_', '',strtoupper($key));
-                        $key2 = strtoupper($key);
-                        $allConfigServices['services']['international'][] = $key1;
-                        $allConfigServices['services']['international'][] = $key2;
-                    }else{
-                        $allConfigServices['services']['international'][] = strtoupper($key);
-                        $allConfigServices['services']['domestic'][] = strtoupper($key);
                     }
                 }
             }
@@ -289,17 +292,19 @@ class QuotesResults
         if ($this->isMultiShipment) {
             $originQuotesMulti = [];
             $multiShipPrice = 0;
-            foreach ($originQuotes as $shipmentKey => $shipment) {
-                $netChargeArray = array_column($shipment['shipment'], 'simple');
-                $minValueFromNetChargeArr = min(array_column($netChargeArray, 'rate'));
-                $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
-                $originQuotesMulti[0]['code'] = 'Multifedexsmall'.$access2;
-                $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
-                $originQuotesMulti[0]['title'] = $residential ? 'Shipping '.Constant::RESI_LABEL : 'Shipping';
+            if(isset($originQuotes)) {
+                foreach ($originQuotes as $shipmentKey => $shipment) {
+                    $netChargeArray = array_column($shipment['shipment'], 'simple');
+                    $minValueFromNetChargeArr = min(array_column($netChargeArray, 'rate'));
+                    $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
+                    $originQuotesMulti[0]['code'] = 'Multifedexsmall' . $access2;
+                    $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
+                    $originQuotesMulti[0]['title'] = $residential ? 'Shipping ' . Constant::RESI_LABEL : 'Shipping';
+                }
             }
             $resp = [
-                'checkoutQuotes' => $originQuotesMulti,
-                'multiShipmentQuotes' => $multiShipmentQuotes,
+                'checkoutQuotes' => $originQuotesMulti ?? [],
+                'multiShipmentQuotes' => $multiShipmentQuotes ?? [],
             ];
             $returnResp['resp'] = $resp;
             return $returnResp;

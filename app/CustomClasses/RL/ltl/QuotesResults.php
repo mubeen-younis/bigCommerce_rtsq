@@ -117,7 +117,8 @@ class QuotesResults
         return $price;
     }
     function titleHAT($title, $address, $distance){
-        return $title.' | Hold At Terminal | '.$distance['text']. ' | ' .$address['Code']. ', '. $address['State']. ', '. $address['ZipCode']. ' | '. $address['Phone'];
+        $distance = $distance['text'] ?? '0 mi';
+        return $title.' | Hold At Terminal | '.$distance. ' | ' .$address['Code']. ', '. $address['State']. ', '. $address['ZipCode']. ' | '. $address['Phone'];
     }
 
     function liftGateFees($quotes){

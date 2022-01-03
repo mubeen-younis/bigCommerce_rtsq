@@ -181,7 +181,7 @@ class Shipping
         $hasLtl = false;
         $hasParcel = false;
         foreach ($finalQuotes as $quote){
-            $notCustomAdded = strpos($quote['code'], 'own_arrangement') === false && strpos($quote['code'], 'INSP') === false && strpos($quote['code'], 'LOCDEL') === false;
+            $notCustomAdded = isset($quote['code']) && strpos($quote['code'], 'own_arrangement') === false && strpos($quote['code'], 'INSP') === false && strpos($quote['code'], 'LOCDEL') === false;
             if($notCustomAdded) {
                 if (strpos($quote['code'], 'parcel_12') === 0) {
                     $hasParcel = true;
