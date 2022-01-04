@@ -63,21 +63,22 @@ class QuotesResults
                 }else{
                     //if(isset($quotes['q'])) {
                         if (!isset($quotes['q']['ServiceLevels']['ServiceLevel'][0])) {
-                            $services = $quotes['q']['ServiceLevels']['ServiceLevel'];
+                            $services = $quotes['q']['ServiceLevels']['ServiceLevel'] ?? [];
                             unset($quotes['q']['ServiceLevels']['ServiceLevel']);
-                            $quotes['q']['ServiceLevels']['ServiceLevel'][0] = $services;
+                            !empty($services) ? $quotes['q']['ServiceLevels']['ServiceLevel'][0] = $services : null;
                         }
-
-                        foreach ($quotes['q']['ServiceLevels']['ServiceLevel'] as $key => $quote) {
-                            $key = isset($shipments[$shipment]['q']) ? count($shipments[$shipment]['q']) : 0;
-                            $shipments[$shipment]['q'][$key] = $quote;
-                            $shipments[$shipment]['q'][$key]['serviceType'] = $quote['Code'] ?? '';
-                            $shipments[$shipment]['q'][$key]['serviceDesc'] = $quote['Title'] ?? '';
-                            $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = (float) str_replace('$', '',str_replace(',','',$quote['NetCharge']));
-                            $shipments[$shipment]['q'][$key]['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
-                            $shipments[$shipment]['q'][$key]['transitTime'] = $quote['transitTime'] ?? '';
-                            $shipments[$shipment]['q'][$key]['totalTransitTimeInDays'] = $quote['totalTransitTimeInDays'] ?? '';
-                            $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $this->liftGateFees($quotes);
+                        if(isset($quotes['q']['ServiceLevels']['ServiceLevel'])) {
+                            foreach ($quotes['q']['ServiceLevels']['ServiceLevel'] as $key => $quote) {
+                                $key = isset($shipments[$shipment]['q']) ? count($shipments[$shipment]['q']) : 0;
+                                $shipments[$shipment]['q'][$key] = $quote;
+                                $shipments[$shipment]['q'][$key]['serviceType'] = $quote['Code'] ?? '';
+                                $shipments[$shipment]['q'][$key]['serviceDesc'] = $quote['Title'] ?? '';
+                                $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = (float)str_replace('$', '', str_replace(',', '', $quote['NetCharge']));
+                                $shipments[$shipment]['q'][$key]['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
+                                $shipments[$shipment]['q'][$key]['transitTime'] = $quote['transitTime'] ?? '';
+                                $shipments[$shipment]['q'][$key]['totalTransitTimeInDays'] = $quote['totalTransitTimeInDays'] ?? '';
+                                $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $this->liftGateFees($quotes);
+                            }
                         }
                         if (isset($quotes['InstorPickupLocalDelivery'])) {
                             $shipments[$shipment]['InstorPickupLocalDelivery'] = $quotes['InstorPickupLocalDelivery'];
