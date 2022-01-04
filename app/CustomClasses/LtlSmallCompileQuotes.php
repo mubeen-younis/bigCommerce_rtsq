@@ -71,7 +71,7 @@ class LtlSmallCompileQuotes{
                         $quotesCarrier['ltl']['gtz']['simple'][] = $quote;
                     }
                 }
-                else if(strpos($quote['code'], 'cerasisltl') !== false){
+                else if(strpos($quote['code'], 'cltl') !== false){
                     $quote['alwaysResi'] = false;
                     $quote['isResi'] = false;
                     $quote['alwaysLG'] = false;

@@ -206,6 +206,7 @@ class OrderController extends Controller
         $isMulti = false;
         $insertedIds = $insertedNames = [];
         //print_r($origins); exit;
+        $code = '';
         foreach($origins as $key => $origin){
             $item =  $items->$key;
             $city = $origin->senderCity ? $origin->senderCity.',': '';
@@ -216,6 +217,7 @@ class OrderController extends Controller
             $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
             $sRate = $order['shipping_rate'];
+            //print_r($multiShipmentresponse); exit;
             if($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement){
                 if($isHAT){
                     $sRate = $multiShipmentresponse->$index->hat->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
@@ -223,9 +225,11 @@ class OrderController extends Controller
                 }else if($isLG) {
                     $sRate = $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->liftgate->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
+                    $code = $multiShipmentresponse->$index->liftgate->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
                 }else {
                     $sRate = $multiShipmentresponse->$index->simple->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->simple->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? '';
+                    $code = $multiShipmentresponse->$index->simple->$zip->code ?? $multiShipmentresponse->$index->liftgate->$zip->code ?? '';
                 }
                 $isMulti = true;
             }
@@ -278,8 +282,12 @@ class OrderController extends Controller
                 }
             }
             $isSmall = $this->isSmallQuote($sName);
+            if($isMulti){
+                strpos(strtolower($code), '+r') ? array_push($orderWidget[$zip]['accessories'], 'Residential Delivery') : '';
+            }else{
+                $autoResidentialsStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Delivery') : '';
+            }
 
-            $autoResidentialsStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Delivery') : '';
             $isHAT ? array_push($orderWidget[$zip]['accessories'], 'Hold At Terminal') : '';
             if(!$isSmall) {
 
