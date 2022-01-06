@@ -1057,8 +1057,8 @@ class GenerateRequestData
         }
         $this->resiCarrier['fedexSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['fedexSmall'] = $alwaysResi;
-        $hubIdindicia = explode('(', $connSettings['creds']['hub_id']);
-        $hubId = trim($hubIdindicia[0]);
+        $hubIdindicia = isset($connSettings['creds']['hub_id']) ? explode('(', $connSettings['creds']['hub_id']) : '';
+        $hubId = isset($hubIdindicia[0]) ? trim($hubIdindicia[0]) : '';
         $indicia = 'PARCEL_SELECT';//trim(explode(')',$hubIdindicia[1])[0]);
         $smartPostData = [
             'hubId' => $hubId,
