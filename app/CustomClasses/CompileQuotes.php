@@ -1036,7 +1036,7 @@ class CompileQuotes
                 }
                 foreach ($quote['q'] as $key => $data) {
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) /*&& isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y' */) {
-                        $data['totalTransitTimeInDays'] = $data['LtlServiceDays'] ?? 0;
+                        //$data['totalTransitTimeInDays'] = $data['LtlServiceDays'] ?? 0;
                         $access = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi);
                         $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings);
                         $title = $this->getGTitle($data['serviceDesc'], false,false, false ,false, $data['totalTransitTimeInDays'], $this->quoteSettings);
@@ -1092,9 +1092,11 @@ class CompileQuotes
             if(!$this->isMultiShipment) {
                 $compiledQuotes = $this->getGTZCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
             }else{
+                if(isset($this->quoteSettings['quickest_service']) && $this->quoteSettings['quickest_service'] == 1 && isset($this->quoteSettings['method']) && $this->quoteSettings['method'] != 2){
+                    $arraySorting = $arraySorting['quickest'] ?? $arraySorting;
+                }
                 $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
             }
-
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
                 if (count($compiledQuotes) > 1) {
                     foreach ($compiledQuotes as $k => $service) {
@@ -1137,6 +1139,7 @@ class CompileQuotes
     }
 
     public function compileCerasisLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential){
+        //print_r($shipments); exit;
         $this->GTZLtlQuotesResults = new globalTranzQuotesResults();
         if($residential['gtzLtl'] == 'Y'){
             $this->isResi = true;
@@ -1182,6 +1185,7 @@ class CompileQuotes
         if(!$this->isMultiShipment) {
             $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
+        //print_r($this->quoteSettings); exit;
         foreach ($shipments as $origin => $quote) {
 
             if (isset($quote['severity'])) {
@@ -1206,6 +1210,12 @@ class CompileQuotes
                     $this->residentialDlvry = 0;
                     $this->quoteSettings['method'] = 1;
                     $this->quoteSettings['label_as'] = $labelAs;
+                }else{
+                    if(isset($this->quoteSettings['method']) && $this->quoteSettings['method'] == 1){
+                        $this->quoteSettings['label_as'] = $this->quoteSettings['cheapest_label'] ?? '';
+                    }else{
+                        $this->quoteSettings['label_as'] = $this->quoteSettings['average_rate_label'] ?? '';
+                    }
                 }
             }
             $originQuotes = [];
@@ -1217,6 +1227,7 @@ class CompileQuotes
                 }
                 foreach ($quote['q'] as $key => $data) {
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) /*&& isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y' */) {
+                        $data['totalTransitTimeInDays'] = $isShippingFinalMile ? '': $data['totalTransitTimeInDays'];
                         $access = $preCode.$this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
                         $title = $this->getTitle($data['serviceDesc'], false, false, $data['totalTransitTimeInDays']);
@@ -2608,7 +2619,7 @@ class CompileQuotes
             }
         }
         if(isset($this->quoteSettings['method']) && $this->quoteSettings['method'] != 0) {
-            $quotes = $this->getCompiledQuotes($servicesOriginal, $arraySorting, $lgQuotes);
+            $quotes = $this->getGTZQuotes($servicesOriginal, $arraySorting, $lgQuotes);
         }
         $quotes = array_merge($quotes,$quickest);
         foreach ($quotes as $key => $quote){
@@ -2620,6 +2631,37 @@ class CompileQuotes
             }
         }
         return $quotes;
+    }
+
+    public function getGTZQuotes($services, $arraySorting, $lgQuotes)
+    {
+        if (empty($arraySorting) || empty($services)) {
+            return [];
+        }
+        asort($arraySorting['simple']);
+        $this->quoteSettings['method'] = $this->quoteSettings['method'] ?? 1;
+        if ($this->quoteSettings['method'] == 2 && $this->isMultiShipment == false){ //Cheapest method
+            $options = (int)$this->quoteSettings['number_of_options'] ?? 1;
+        }elseif ($this->quoteSettings['method'] == 3){ //Average rate
+            $options = (int)$this->quoteSettings['number_of_options'];
+        }else{
+            $options = 1;
+        }
+        $sliced = array_slice($arraySorting['simple'], 0, $options, true);
+        if ($this->quoteSettings['method'] == 3) {
+            return $this->averageRattingMethod($arraySorting, $options, $lgQuotes);
+        }
+        if( $lgQuotes && $options === 1 ){
+            $slicedLg = array_slice($arraySorting['liftgate'], 0, $options, true);
+
+            $resp = array_intersect_key($services, $sliced);
+            $respLg = array_intersect_key($services, $slicedLg);
+            $resp[array_key_first($resp)]['liftgate'] = $respLg[array_key_first($respLg)]['liftgate'];
+        }else{
+            $resp = array_intersect_key($services, $sliced);
+        }
+
+        return $resp;
     }
     public function getCompiledQuotes($services, $arraySorting, $lgQuotes)
     {
