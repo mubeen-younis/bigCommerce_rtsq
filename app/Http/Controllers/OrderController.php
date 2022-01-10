@@ -101,6 +101,7 @@ class OrderController extends Controller
         if(empty($data)){
             return [];
         }
+        $carrierHasInsurance = $this->hasInsureCarrier($order['rate_id']);
         $index = explode('idx+',$order['rate_id'])[1];
         if(!empty($index)){
             $index = (int) substr($index, 0, 1);
@@ -231,6 +232,7 @@ class OrderController extends Controller
                     $order['shipping_name'] = $multiShipmentresponse->$index->simple->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? '';
                     $code = $multiShipmentresponse->$index->simple->$zip->code ?? $multiShipmentresponse->$index->liftgate->$zip->code ?? '';
                 }
+                $carrierHasInsurance = $code ? $this->hasInsureCarrier($code) : false;
                 $isMulti = true;
             }
 
@@ -260,11 +262,13 @@ class OrderController extends Controller
             }
             $orderWidget[$zip]['accessories'] = [];
             if(!$isMulti){
-                if(isset($item->product_insurance_active) && $item->product_insurance_active == 1){
-                    array_push($orderWidget[$zip]['accessories'], 'Insurance');
-                    $addedInsurance = true;
-                }else if($addedInsurance){
-                    array_push($orderWidget[$zip]['accessories'], 'Insurance');
+                if($carrierHasInsurance) {
+                    if (isset($item->product_insurance_active) && $item->product_insurance_active == 1) {
+                        array_push($orderWidget[$zip]['accessories'], 'Insurance');
+                        $addedInsurance = true;
+                    } else if ($addedInsurance) {
+                        array_push($orderWidget[$zip]['accessories'], 'Insurance');
+                    }
                 }
                 if(isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') {
                     array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
@@ -273,7 +277,7 @@ class OrderController extends Controller
                     array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
                 }
             }else{
-                if(isset($item->product_insurance_active) && $item->product_insurance_active == 1){
+                if(isset($item->product_insurance_active) && $item->product_insurance_active == 1 && $carrierHasInsurance){
                     array_push($orderWidget[$zip]['accessories'], 'Insurance');
                 }
                 if( (isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') || $addedHazmat) {
@@ -767,6 +771,16 @@ class OrderController extends Controller
             'Fedex Ground',
         ];
         return in_array($quote, $small);
+    }
+
+    private function hasInsureCarrier($code){
+        $insureCarriers = ['wweltl', 'parcel_12wwe','parcel_12ups'];
+        foreach ($insureCarriers as $insureCarrier){
+            if(strpos($code, $insureCarrier)){
+                return true;
+            }
+        }
+        return false;
     }
 
 }
