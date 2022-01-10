@@ -64,7 +64,7 @@ class LtlSmallCompileQuotes{
                 else if(strpos($quote['code'], 'gtzltl') !== false){
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
                     $quote['isResi'] = $residential['gtzLtl'] == 'Y';
-                    $quote['alwaysLG'] = isset($connectionSettings['wweLTL']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['wweLTL']['quote_settings']['alwaysLiftGateDelivery'];
+                    $quote['alwaysLG'] = isset($connectionSettings['gtz-ltl']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['gtz-ltl']['quote_settings']['alwaysLiftGateDelivery'];
                     if (strpos($quote['code'], '+LG') !== false) {
                         $quotesCarrier['ltl']['gtz']['LG'][] = $quote;
                     } else {

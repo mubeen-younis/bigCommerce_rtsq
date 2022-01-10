@@ -87,6 +87,7 @@ class QuotesResults
                 $shipments[$shipment]['q'][$key]['serviceType'] = $quote['CarrierScac'] ?? '';
                 $shipments[$shipment]['q'][$key]['serviceDesc'] = $quote['CarrierName'] ?? '';
                 $shipments[$shipment]['q'][$key]['transitTime'] = $quote['TransitDays'] ?? '';
+                $shipments[$shipment]['q'][$key]['totalTransitTimeInDays'] = $quote['totalTransitTimeInDays'] ?? '';
                 $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = $quotes['quotesWithLiftGate'][$key]['ShipmentRate'] ?? $quote['ShipmentRate'] ?? 0;
                 if(isset($quotes['quotesWithLiftGate'][$key]['ShipmentRate'])) {
                     $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] - $quote['ShipmentRate'];
