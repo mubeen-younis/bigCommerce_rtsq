@@ -860,11 +860,11 @@ class CompileQuotes
                         $price = $this->calculatePrice($data);
                         $title = $this->getTitle($data['serviceDesc'], false, false, $data['totalTransitTimeInDays']);
                         $arraySorting['simple'][$key] = $price;
-                        $originQuotes[$key]['simple']['code'] = $data['serviceType'] . $access;
+                        $originQuotes[$key]['simple']['code'] = 'wweltl'.$data['serviceType'] . $access;
                         $originQuotes[$key]['simple']['rate'] = $price;
                         $originQuotes[$key]['simple']['title'] = $title;
                         if ($lgQuotes) {
-                            $lgAccess = $this->getAccessorialCode(true).$resiPickup;
+                            $lgAccess = 'wweltl'.$this->getAccessorialCode(true).$resiPickup;
                             $lgPrice = $this->calculatePrice($data, true);
                             $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays']);
                             $arraySorting['liftgate'][$key] = $lgPrice;
@@ -1782,7 +1782,7 @@ class CompileQuotes
 
                     $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $data['deliveryTimestamp'], $data['serviceType'], $this->quoteSettings, $this->isResi);
                     $price = (float) str_replace(',','',$price);
-                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12'.$data['serviceType'] . $access;
+                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12wwe'.$data['serviceType'] . $access;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
                     $multiShipmentQuotes['simple'][$origin] = $originQuotes[$shipmentCount]['shipment'][$key]['simple'];
