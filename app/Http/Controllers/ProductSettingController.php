@@ -268,6 +268,7 @@ class ProductSettingController extends Controller
             ], 404);
         }
         $products = ProductSetting::where('source_product_id', $request->product_id)
+            ->where('store_id', $request->store_id)
             ->get();
         if ($products->isEmpty()) {
             return response()->json(['error' => true,
@@ -360,7 +361,8 @@ class ProductSettingController extends Controller
 
         foreach ($request->products as $prd) {
             $product = ProductSetting::where('source_product_id', $prd['source_product_id'])
-                ->where('variant_id', $prd['variant_id'])->first();
+                ->where('variant_id', $prd['variant_id'])
+                ->where('store_id', $request->store_id)->first();
             $product->weight = $prd['weight'];
             $product->length = $prd['length'];
             $product->width = $prd['width'];
