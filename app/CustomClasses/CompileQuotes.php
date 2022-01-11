@@ -1818,9 +1818,10 @@ class CompileQuotes
                             $price = $this->wweSmallQuoteRes->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
                         }
                     }
-
-
-                    $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $data['deliveryTimestamp'], $data['serviceType'], $this->quoteSettings, $this->isResi);
+                    $date = $data['deliveryTimestamp'] ?? null;
+                    $days = $data['totalTransitTimeInDays'] ?? null;
+                    $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
+                    $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $dateAndDays, $data['serviceType'], $this->quoteSettings, $this->isResi);
 
                     $price = (float)str_replace(',', '', $price);
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12wwe' . $data['serviceType'] . $access;
