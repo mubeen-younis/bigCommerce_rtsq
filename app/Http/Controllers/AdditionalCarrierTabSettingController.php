@@ -192,7 +192,7 @@ class AdditionalCarrierTabSettingController extends Controller
         }
         $services = CarrierServices::where('shopify_freights.app_id', $gtzLtlId)
             ->where('shopify_freights.store_id', $storeId)
-            ->orderBy('speed_freight_carrierName')->get();
+            ->orderBy('speed_freight_carrierSCAC')->get();
 
         return response()->json(['error' => false,
             'data' => $services,
