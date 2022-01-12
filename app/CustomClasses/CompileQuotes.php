@@ -1114,7 +1114,7 @@ class CompileQuotes
             if (!$this->isMultiShipment) {
                 $compiledQuotes = $this->getGTZCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
             } else {
-                if (isset($this->quoteSettings['quickest_service']) && $this->quoteSettings['quickest_service'] == 1 && isset($this->quoteSettings['method']) && $this->quoteSettings['method'] != 2) {
+                if (isset($this->quoteSettings['quickest_service']) && $this->quoteSettings['quickest_service'] == 1 && isset($this->quoteSettings['method']) && $this->quoteSettings['method'] == 0) {
                     $arraySorting = $arraySorting['quickest'] ?? $arraySorting;
                 }
                 $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
