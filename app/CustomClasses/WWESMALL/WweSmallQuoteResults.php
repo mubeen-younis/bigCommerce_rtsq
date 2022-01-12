@@ -58,7 +58,7 @@ class WweSmallQuoteResults
     {
         // Adding hazmat fee to Ground Service
         if ($serviceCode == "GND") {
-            if ( isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
+            if (isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
                 $amount = $amount + $quoteSettings['ground_hazardous_material_fee'];
             }
             // Adding hazmat fee to Air Services
@@ -74,7 +74,7 @@ class WweSmallQuoteResults
 
     public function addHandlingMarkupOfHazmat($amount, $markupValue)
     {
-        $amount = (float) str_replace(',', '', $amount);
+        $amount = (float)str_replace(',', '', $amount);
         if (strpbrk($markupValue, '%') !== FALSE) {
             $amount = $this->getvalueFromPercent($amount, str_replace('%', '', $markupValue));
         } else {
@@ -92,15 +92,18 @@ class WweSmallQuoteResults
 
     }
 
-    public function getServiceTitle($title, $transitTime, $serviceCode, $quoteSettings, $isResi = false)
+    public function getServiceTitle($title, $dateAndDays, $serviceCode, $quoteSettings, $isResi = false)
     {
-        if($isResi){
+        if ($isResi) {
             $title = $title . Constant::RESI_LABEL;
         }
-        if (isset($quoteSettings['showDeliveryEstimate']) && $quoteSettings['showDeliveryEstimate'] == true) {
-            $title = $title . ' (Delivery by ' . date('m-d-y h:i A', strtotime($transitTime)) . ')';
+        $date = $dateAndDays['deliveryDate'] ?? null;
+        $days = $dateAndDays['totalTransitTimeInDays'] ?? null;
+        if (isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2) {
+            $title = !blank($days) ? $title . " (Estimated number of days until delivery is " . $days . ")" : $title;
+        } elseif (isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3) {
+            $title = !blank($date) ? $title . " (Estimated delivery date is " . date('m-d-Y \b\y h:i A', strtotime($date)) . ")" : $title;
         }
-
         return $title;
     }
 

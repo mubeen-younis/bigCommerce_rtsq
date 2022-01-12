@@ -622,7 +622,8 @@ class GenerateRequestData
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? '',
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? '',
         ];
-        return $apiArray;
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
+
     }
 
     public function getApiInfoArrGTZLtl($connSettings, $destination, $carName)
@@ -735,7 +736,8 @@ class GenerateRequestData
                 'accessorial' => $accessorial
             ];
         }
-        return $apiArray;
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
+
     }
 
     public function getApiInfoArrFedexLtl($connSettings, $destination, $enitOrigin)
@@ -786,20 +788,12 @@ class GenerateRequestData
                 }
             }
         }
-        $modifyShipmentDateTime = isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 &&
-        !blank($connSettings['quote_settings']['fulfillment_offset_days']) ? '1' : '0';
+
         $apiArray = [
             'AccountNumber' => $connSettings['creds']['account_number'] ?? '',
             'MeterNumber' => $connSettings['creds']['meter_number'] ?? '',
             'password' => $connSettings['creds']['password'] ?? '',
             'key' => $connSettings['creds']['api_access_key'] ?? '',
-
-            'modifyShipmentDateTime' => $modifyShipmentDateTime,
-            'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
-            'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
-            'storeDateTime' => $this->getStoreDateTime(), //2020-10-22 14:00:00
-            'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
-
             'shippingChargesAccount' => $connSettings['creds']['shipping_account_number'] ?? '',
             'billingLineAddress' => $connSettings['creds']['billing_address'] ?? '',
             'billingCountry' => $connSettings['creds']['billing_country'] ?? '',
@@ -845,9 +839,7 @@ class GenerateRequestData
             'accessorial' => $accessorial,
             /*array('DANGEROUS_GOODS', 'LIFTGATE_DELIVERY'),*/
         ];
-
-
-        return $apiArray;
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
 
     function getApiInfoArrXPOLtl($connSettings, $destination, $enitOrigin)
@@ -900,8 +892,7 @@ class GenerateRequestData
             'accessorial' => $accessorial
         ];
 
-
-        return $apiArray;
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
 
     function getApiInfoArrRNLLtl($connSettings, $destination, $enitOrigin)
@@ -957,7 +948,8 @@ class GenerateRequestData
             'storeDateTime' => date('Y-m-d H:i:s'),
             'shipmentWeekDays' => array('4','5'),*/
         ];
-        return $apiArray;
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
+
     }
 
     /*
@@ -1000,8 +992,8 @@ class GenerateRequestData
             'prefferedCurrency' => 'USD',
             'includeDeclaredValue' => "1",
         ];
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
 
-        return $apiArray;
     }
 
     public function getApiInfoArrUpsSmall($connSettings, $destination)
@@ -1203,7 +1195,7 @@ class GenerateRequestData
         if ($apiArray['paymentType'] === 'shipper') {
             unset($apiArray['payerAddress']);
         }
-        return $apiArray;
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
 
     private function checkRadIsSuspend($storeId)
@@ -1523,6 +1515,25 @@ class GenerateRequestData
             }
         }
         return $getMilesGoogleApi;
+    }
+
+
+    /**
+     * @param $connSettings
+     * @return array
+     */
+    public function getCutOffDetails($connSettings): array
+    {
+        $fulfillmentOffsetDays = $connSettings['quote_settings']['fulfillment_offset_days'] ?? null;
+        $orderCutOffTime = $connSettings['quote_settings']['order_cut_off_time'] ?? null;
+        $modifyShipmentDateTime = !blank($fulfillmentOffsetDays) || !blank($orderCutOffTime) ? '1' : '0';
+        return [
+            'modifyShipmentDateTime' => $modifyShipmentDateTime,
+            'OrderCutoffTime' => $orderCutOffTime,
+            'shipmentOffsetDays' => $fulfillmentOffsetDays,
+            'storeDateTime' => $this->getStoreDateTime(), //2020-10-22 14:00:00
+            'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : null,
+        ];
     }
 
 

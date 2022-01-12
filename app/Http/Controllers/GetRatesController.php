@@ -54,7 +54,7 @@ class GetRatesController extends Controller
         if ($storeData == null) {
             return [];
         }
-        if(!$this->storePlanStatus($storeData['store']['id'])){
+        if (!$this->storePlanStatus($storeData['store']['id'])) {
             return [];
         }
         //echo "<pre>"; print_r($storeData['installed_carriers'][0]['store_id']); exit;
@@ -77,13 +77,14 @@ class GetRatesController extends Controller
         }
         $quotes = $this->shipping->collectRates($formatReq, $storeData, $this->connectionSettings, $cartInfo);
         return $quotes;
-       // return $this->generateQuoteFormatResponse($quotes);
+        // return $this->generateQuoteFormatResponse($quotes);
         exit;
         $originWarehouse = new Origin();
         $originWarehouse->getNearestWarehouse($formatReq);
     }
 
-    function testQuotes(){
+    function testQuotes()
+    {
         $resp = '{"quote_id":"9","messages":[],"carrier_quotes":[{"carrier_info":{"code":"usps_pitney_bowes","display_name":"Freight"},"quotes":[{"code":"upsltl","rate_id":"upsltlidx+01631074742","display_name":"Freight","cost":{"currency":"USD","amount":"181.78"},"dispatch_date":"2021-09-08T04:19:02-00:00"},{"code":"AVG+LG","rate_id":"AVG+LGidx+11631074742","display_name":"Freight","cost":{"currency":"USD","amount":"288.884"},"dispatch_date":"2021-09-08T04:19:02-00:00"},{"code":"fredf","rate_id":"freights21631074742","display_name":"Freight","cost":{"currency":"USD","amount":"10"},"dispatch_date":"2021-09-08T04:19:02-00:00"}]}]}';
 
         Log::info('testQuotes ' . $resp);
@@ -94,15 +95,15 @@ class GetRatesController extends Controller
      * Check plan status of store to process quote request
      * **/
 
-    public function storePlanStatus($store_id){
+    public function storePlanStatus($store_id)
+    {
         $subsciption = Subscription::where('store_id', $store_id)->latest()->first();
-        if(empty($subsciption) || $subsciption->status === 3){ // not plan or expired plan
+        if (empty($subsciption) || $subsciption->status === 3) { // not plan or expired plan
             return false;
-        }else{
+        } else {
             return true;
         }
     }
-
 
 
     public function formatRequest($data, $storeData)
@@ -130,7 +131,7 @@ class GetRatesController extends Controller
 
                 $originAddress = $this->shipmentPkg->wweLTLOriginAddress($details, $product_settings, $details['destination']['zip'], $storeData, $this->connectionSettings);
                 $shipBinAlone = (isset($product_settings['ship_multiple_package']) && $product_settings['ship_multiple_package'])
-                    || (isset($product_settings['ship_own_package']) && $product_settings['ship_own_package']) ? 1 : 0;
+                || (isset($product_settings['ship_own_package']) && $product_settings['ship_own_package']) ? 1 : 0;
                 $key = $product['variant_id'] ?? $product['product_id'];
                 $details['origin'][$key] = $originAddress;
                 $details['items'][$key] = [
@@ -208,8 +209,8 @@ class GetRatesController extends Controller
     public function getProductSetting($productId, $variantId)
     {
         $settings = [];
-        $productSetting = ProductSetting::select('settings','id', 'ship_multiple_package')
-            ->where(['source_product_id' => $productId , 'variant_id' => $variantId])
+        $productSetting = ProductSetting::select('settings', 'id', 'ship_multiple_package')
+            ->where(['source_product_id' => $productId, 'variant_id' => $variantId])
             ->first();
         if (!empty($productSetting)) {
             $productSetting->toArray();
@@ -220,8 +221,9 @@ class GetRatesController extends Controller
         return $settings;
     }
 
-    private function getProductPrice($productId, $variantId){
-        return ProductSetting::where(['source_product_id' => $productId , 'variant_id' => $variantId])
+    private function getProductPrice($productId, $variantId)
+    {
+        return ProductSetting::where(['source_product_id' => $productId, 'variant_id' => $variantId])
             ->pluck('price')->first();
     }
 
