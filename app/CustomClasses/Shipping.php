@@ -81,30 +81,6 @@ class Shipping
                 }
             }
         }
-        /*        if ($this->isHazmat == 'Y') {
-                    foreach ($carriersArray['carriers'] as $key => $carriers) {
-                        $carriersArray['carriers'][$key]['api']['lineItemHazmatInfo'] = [
-                            [
-                                'isHazmatLineItem' => 'Y',
-                                'lineItemHazmatUNNumberHeader' => 'UN #',
-                                'lineItemHazmatUNNumber' => 'UN 1139',
-                                'lineItemHazmatClass' => '1.1',
-                                'lineItemHazmatEmContactPhone' => '4043308699',
-                                'lineItemHazmatPackagingGroup' => 'I',
-                            ],
-                        ];
-
-                    }
-                }
-                if($this->isInsurance === 'Y'){
-                    foreach($carriersArray['carriers'] as $key => $carriers){
-                        if($this->isSmall($key)){
-                            $carriersArray['carriers'][$key]['api']['includeDeclaredValue'] = 1;
-                        }else {
-                            $carriersArray['carriers'][$key]['api']['insureShipment'] = 1;
-                        }
-                    }
-                }*/
         // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
         if (empty($requestArr)) {
