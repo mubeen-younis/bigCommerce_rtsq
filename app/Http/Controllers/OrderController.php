@@ -776,7 +776,7 @@ class OrderController extends Controller
     private function hasInsureCarrier($code){
         $insureCarriers = ['wweltl', 'parcel_12wwe','parcel_12ups'];
         foreach ($insureCarriers as $insureCarrier){
-            if(strpos($code, $insureCarrier)){
+            if(strpos($code, $insureCarrier) !== false){
                 return true;
             }
         }
