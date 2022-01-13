@@ -394,8 +394,8 @@ class SubscriptionController extends Controller
                 $subscription->name = isset($data['card_name']) ? $data['card_name'] : '';
                 $subscription->email = self::$email;
                 $subscription->status = 1; //Active Status
-                $subscription->trial_ends_at = Carbon::now()->addDays(30);
-                $subscription->ends_at = Carbon::now()->addDays(30);
+                $subscription->trial_ends_at = Carbon::now()->addDays(14);
+                $subscription->ends_at = Carbon::now()->addDays(14);
                 $subscription->save();
             }
             //If the plan if subcribed successfully, then it must be a PAID Stripe plan
