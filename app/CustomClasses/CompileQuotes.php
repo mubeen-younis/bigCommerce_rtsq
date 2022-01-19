@@ -911,12 +911,12 @@ class CompileQuotes
             }
             $count++;
         }
+
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
         if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1)) {
-
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $this->arrangeOwnFreight($allQuotes),
@@ -2755,7 +2755,7 @@ class CompileQuotes
         }
         $sliced = array_slice($arraySorting['simple'], 0, $options, true);
         if ($this->quoteSettings['method'] == 3) {
-            return $this->averageRattingMethod($arraySorting, $options, $lgQuotes);
+            return $this->averageRattingMethod($arraySorting, $options, $lgQuotes, true);
         }
         $resp = array_intersect_key($services, $sliced);
         return $resp;
@@ -2768,15 +2768,15 @@ class CompileQuotes
      * @param $lgQuotes
      * @return array
      */
-    public function averageRattingMethod($ratesArray, $options, $lgQuotes)
+    public function averageRattingMethod($ratesArray, $options, $lgQuotes, $isWweLtl = false)
     {
         $sliced = array_slice($ratesArray['simple'], 0, $options, true);
         $simplePrice = $this->getAveragePrice($sliced, $options);
-
+        $prefix = $isWweLtl ? 'AVGwweltl' : 'AVG';
         $serviceName = $this->customLabel('Freight');
         $averageRateService[0]['simple'] = [
             'title' => $this->getTitle($serviceName, false),//$serviceName,
-            'code' => 'AVG' . $this->getAccessorialCode(),
+            'code' => $prefix . $this->getAccessorialCode(),
             'rate' => $simplePrice,
         ];
         if ($lgQuotes) {
@@ -2785,7 +2785,7 @@ class CompileQuotes
             $lfgPrice = $this->getAveragePrice($sliced, $options);
             $averageRateService[0]['liftgate'] = [
                 'title' => $this->getTitle($serviceName, $lgQuotes),
-                'code' => 'AVG' . $this->getAccessorialCode($lgQuotes),
+                'code' => $prefix . $this->getAccessorialCode($lgQuotes),
                 'rate' => $lfgPrice,
             ];
         }
