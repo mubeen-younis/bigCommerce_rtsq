@@ -178,6 +178,7 @@ class MainController extends BaseController
 
         $statusCode = $result->getStatusCode();
         $data = json_decode($result->getBody(), true);
+        Log::info('unsitall app '. json_encode($data));
         if ($statusCode == 200) {
             $storeHash = explode('/', $data['context']);
             $storeHash = $storeHash[1] ?? $data['context'];
