@@ -206,7 +206,7 @@ class OrderController extends Controller
 
         $isMulti = false;
         $insertedIds = $insertedNames = [];
-        //print_r($origins); exit;
+        //print_r($items); exit;
         $code = '';
         foreach($origins as $key => $origin){
             $item =  $items->$key;
@@ -233,6 +233,9 @@ class OrderController extends Controller
                     $code = $multiShipmentresponse->$index->simple->$zip->code ?? $multiShipmentresponse->$index->liftgate->$zip->code ?? '';
                 }
                 $carrierHasInsurance = $code ? $this->hasInsureCarrier($code) : false;
+                if(!$carrierHasInsurance){
+                    dd($code);
+                }
                 $isMulti = true;
             }
 
@@ -260,6 +263,7 @@ class OrderController extends Controller
             if(isset($orderWidget[$zip]['accessories'])){
                 $addedHazmat = in_array('Hazardous Material',$orderWidget[$zip]['accessories']);
             }
+            $oldAccessorial = $orderWidget[$zip]['accessories'] ?? [];
             $orderWidget[$zip]['accessories'] = [];
             if(!$isMulti){
                 if($carrierHasInsurance) {
@@ -277,7 +281,7 @@ class OrderController extends Controller
                     array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
                 }
             }else{
-                if(isset($item->product_insurance_active) && $item->product_insurance_active == 1 && $carrierHasInsurance){
+                if((isset($item->product_insurance_active) && $item->product_insurance_active == 1 && $carrierHasInsurance) || in_array('Insurance',$oldAccessorial)){
                     array_push($orderWidget[$zip]['accessories'], 'Insurance');
                 }
                 if( (isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') || $addedHazmat) {
@@ -301,6 +305,7 @@ class OrderController extends Controller
             $count++;
         }
         $sbs = '';
+        //print_r($orderWidget); exit;
         $resp = [
             'widget' => $this->objectToArray( $orderWidget ),
             'sbs' => $sbs
