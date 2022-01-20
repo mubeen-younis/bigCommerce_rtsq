@@ -171,7 +171,10 @@ class MainController extends BaseController
                 $storeHash = explode('/', $verifiedSignedRequestData['context']);
                 $storeHash = $storeHash[1] ?? $verifiedSignedRequestData['context'];
 
-                Store::where('hash', $storeHash)->update('app_status', 0);
+                //Store::where('hash', $storeHash)->update(['app_status', 0]);
+                $store = Store::where('hash', $storeHash)->first();
+                $store->app_status = 1;
+                $store->save();
                 $store = Store::where('hash', $storeHash)->first()->toArray();
                 $hubspotData = HubSpot::where('store_id', $store['id'])->first()->toArray();
                 $user = ['email' => $hubspotData['email']];
