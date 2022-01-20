@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Subscription;
 
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\HubSpotController;
 use App\Mail\PaymentFailedByWebHookEmail;
 use App\Models\Subscription\CarrierCount;
 use App\Models\Subscription\PaymentMethod;
@@ -283,6 +284,7 @@ class SubscriptionController extends Controller
     public function subscribeToPlan(Request $request)
     {
         try {
+            $hubSpotController = new HubSpotController();
             //Check: If current carriers installed are more than the choosed plan then return with message
             $currentSubscriptionDetail = $this->subscriptionDetailFromDB($request['store_id']);
             self::getPlansDetails($request['plan']);   //Getting Plan detail from DB
@@ -386,6 +388,21 @@ class SubscriptionController extends Controller
             //else, otherwise we consider it to be a trial
             if (!is_null($customerId) && !is_null($subscriptions)) {
                 $paymentMethodId = $this->savePaymentMethodInDB($customerResponse['data'], $data['store_id']);
+
+
+                $user = [
+                    'email' => $data['email'],
+                    'firstname' => $request['card_name'] ?? '',
+                    'lastname' => '',
+                    'city' => $request['city'] ?? '',
+                    'state' => $request['state'] ?? '',
+                    'zip' => $request['zip'] ?? '',
+                    'country' => $request['country'] ?? 'US',
+                    'address' => $request['address'] ?? '',
+                    'phone' => $request['phone'] ?? '',
+                ];
+                $status = [ 'products_purchased' => true ];
+                $hubSpotController->createUpdateHubSpotUser($data['store_id'], $user, $status);
             } else {
                 //Else part will be executed in case of trial and we need to update the subscription table for a trial
                 $subscription = new Subscription();
@@ -397,6 +414,13 @@ class SubscriptionController extends Controller
                 $subscription->trial_ends_at = Carbon::now()->addDays(14);
                 $subscription->ends_at = Carbon::now()->addDays(14);
                 $subscription->save();
+
+                /*
+                 * Create Hub spot user and activate trial
+                 */
+                $user = [ 'email' => $data['email'] ];
+                $status = [ 'product_trials' => true ];
+                $hubSpotController->createUpdateHubSpotUser($data['store_id'], $user, $status);
             }
             //If the plan if subcribed successfully, then it must be a PAID Stripe plan
             //Else, it is trial and $subscriptionId will be null.
@@ -409,6 +433,7 @@ class SubscriptionController extends Controller
             $this->updateCarrierCountsinDB($subscriptionId, $data['store_id']);
             $subscriptionDetail = $this->subscriptionDetailFromDB($data['store_id']);
             if ($request['plan'] == self::$trial) { // if planId is null then it's a trial and we need to send an email for trial
+
                 $emailData = array(
                     'receiverEmail' => $data['email'],
                     'productName' => 'Real-time Shipping Quotes',
