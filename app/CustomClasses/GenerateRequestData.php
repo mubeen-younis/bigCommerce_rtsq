@@ -1524,11 +1524,11 @@ class GenerateRequestData
      */
     public function getCutOffDetails($connSettings): array
     {
+        $delEstimateOption = $connSettings['quote_settings']['delivery_estimate_options'] ?? 1;
         $fulfillmentOffsetDays = $connSettings['quote_settings']['fulfillment_offset_days'] ?? null;
         $orderCutOffTime = $connSettings['quote_settings']['order_cut_off_time'] ?? null;
         $shipmentWeekDays = isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : null;
-        $modifyShipmentDateTime = !blank($fulfillmentOffsetDays) || !blank($orderCutOffTime) || !blank($shipmentWeekDays) ? '1' : '0';
-
+        $modifyShipmentDateTime = $delEstimateOption != 1 && (!blank($fulfillmentOffsetDays) || !blank($orderCutOffTime) || !blank($shipmentWeekDays)) ? '1' : '0';
         return [
             'modifyShipmentDateTime' => $modifyShipmentDateTime,
             'OrderCutoffTime' => $orderCutOffTime,
