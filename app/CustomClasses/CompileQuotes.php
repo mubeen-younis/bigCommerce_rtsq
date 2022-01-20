@@ -2293,7 +2293,7 @@ class CompileQuotes
         if (isset($this->quoteSettings['delivery_estimate_options']) && $this->quoteSettings['delivery_estimate_options'] == 2) {
             $deliveryEstimates = !blank($days) ? " (Estimated number of days until delivery is " . $days . ")" : "";
         } elseif (isset($this->quoteSettings['delivery_estimate_options']) && $this->quoteSettings['delivery_estimate_options'] == 3) {
-            $deliveryEstimates = !blank($date) ? " (Estimated delivery date is " . date('m-d-Y \b\y h:i A', strtotime($date)) . ")" : "";
+            $deliveryEstimates = !blank($date) ? " (Estimated delivery date is " . date('m-d-Y', strtotime($date)) . ")" : "";
         }
 
         return $deliveryEstimates;
