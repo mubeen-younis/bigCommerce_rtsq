@@ -173,14 +173,14 @@ class MainController extends BaseController
 
                 //Store::where('hash', $storeHash)->update(['app_status', 0]);
                 $store = Store::where('hash', $storeHash)->first();
-                $store->app_status = 1;
+                $store->app_status = 0;
                 $store->save();
                 $store = Store::where('hash', $storeHash)->first()->toArray();
                 $hubspotData = HubSpot::where('store_id', $store['id'])->first()->toArray();
                 $user = ['email' => $hubspotData['email']];
                 $status = ['products_lost' => true];
                 $hubSpotController = new HubSpotController();
-                $hubSpotController->createUpdateHubSpotUser($store['store_id'], $user, $status);
+                $hubSpotController->createUpdateHubSpotUser($store['id'], $user, $status);
                 /*
                  * Update WS graph data
                  * */
