@@ -163,7 +163,6 @@ class MainController extends BaseController
     }
 
     public function uninstall(Request $request){
-        Log::info('unsitall app '. json_encode($request->all()));
         $signedPayload = $request->input('signed_payload');
         if (!empty($signedPayload)) {
             $verifiedSignedRequestData = $this->verifySignedRequest($signedPayload, $request);

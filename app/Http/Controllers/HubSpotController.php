@@ -45,7 +45,6 @@ class HubSpotController extends Controller
                 ),
         );
         $url = Constant::HUB_SPOT_URL;
-Log::info('hubspot data '. json_encode($data));
         try {
             set_time_limit(0);
             $soap_do = curl_init();
