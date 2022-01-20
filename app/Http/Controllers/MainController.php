@@ -162,6 +162,7 @@ class MainController extends BaseController
     }
 
     public function uninstall(Request $request){
+        Log::info('unsitall app '. json_encode($request->all()));
         $client = new Client();
         $result = $client->request('POST', 'https://login.bigcommerce.com/oauth2/token', [
             'json' => [

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Constants\Constant;
 use App\Models\Store;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class SaleGraphController extends Controller
 {
@@ -25,5 +26,6 @@ class SaleGraphController extends Controller
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         $output = curl_exec($ch);
         curl_close($ch);
+        Log::info('updateGraphData '. json_encode($output));
     }
 }
