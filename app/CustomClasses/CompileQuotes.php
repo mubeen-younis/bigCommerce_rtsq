@@ -1396,7 +1396,7 @@ class CompileQuotes
                         if ($lgQuotes) {
                             $lgAccess = $this->getAccessorialCode(true);
                             $lgPrice = $this->calculatePrice($data, true);
-                            $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['transitTime']);
+                            $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['transitTime'], [], $dateAndDays);
                             $arraySorting['liftgate'][$key] = $lgPrice;
                             $originQuotes[$key]['liftgate']['code'] = 'fedexltl' . $lgAccess;
                             $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
@@ -1518,7 +1518,7 @@ class CompileQuotes
                     if ($lgQuotes) {
                         $lgAccess = $this->getAccessorialCode(true);
                         $lgPrice = $this->calculatePrice($data, true);
-                        $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays']);
+                        $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
                         $arraySorting['liftgate'][$key] = $lgPrice;
                         $originQuotes[$key]['liftgate']['code'] = 'xpoltl' . $lgAccess;
                         $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
@@ -1660,7 +1660,7 @@ class CompileQuotes
                     if ($lgQuotes && !$isHat) {
                         $lgAccess = $this->getAccessorialCode(true);
                         $lgPrice = $this->calculatePrice($data, true);
-                        $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays']);
+                        $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
                         $arraySorting['liftgate'][$key] = $lgPrice;
                         $originQuotes[$key]['liftgate']['code'] = $preAccess . $lgAccess;
                         $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
