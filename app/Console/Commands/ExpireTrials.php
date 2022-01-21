@@ -54,7 +54,6 @@ class ExpireTrials extends Command
                 $hubSpotController = new HubSpotController();
                 $hubSpotController->createUpdateHubSpotUser($trial->store_id, $user, $status);
             }
-            error_log('TRAIL CRON',json_encode($trial->id));
         }
         return 0;
     }
