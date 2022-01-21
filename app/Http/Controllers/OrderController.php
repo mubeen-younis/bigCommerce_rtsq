@@ -233,7 +233,7 @@ class OrderController extends Controller
                     $code = $multiShipmentresponse->$index->simple->$zip->code ?? $multiShipmentresponse->$index->liftgate->$zip->code ?? '';
                 }
                 $carrierHasInsurance = $code ? $this->hasInsureCarrier($code) : false;
-                
+
                 $isMulti = true;
             }
 
