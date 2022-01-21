@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Subscription;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\HubSpotController;
+use App\Http\Controllers\SaleGraphController;
 use App\Mail\PaymentFailedByWebHookEmail;
 use App\Models\Subscription\CarrierCount;
 use App\Models\Subscription\PaymentMethod;
@@ -403,6 +404,7 @@ class SubscriptionController extends Controller
                 ];
                 $status = [ 'products_purchased' => true ];
                 $hubSpotController->createUpdateHubSpotUser($data['store_id'], $user, $status);
+
             } else {
                 //Else part will be executed in case of trial and we need to update the subscription table for a trial
                 $subscription = new Subscription();
@@ -420,6 +422,7 @@ class SubscriptionController extends Controller
                  */
                 $user = [ 'email' => $data['email'] ];
                 $status = [ 'product_trials' => true ];
+
                 $hubSpotController->createUpdateHubSpotUser($data['store_id'], $user, $status);
             }
             //If the plan if subcribed successfully, then it must be a PAID Stripe plan
@@ -442,6 +445,11 @@ class SubscriptionController extends Controller
                     'action' => 'IPF'       // Invoice Payment Failed
                 );
                 Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, 3));
+            }else{
+                /*
+                  * Update WS graph data
+                  * */
+                SaleGraphController::updateGraphData();
             }
             return response()->json([
                 'error' => false,
@@ -896,6 +904,7 @@ class SubscriptionController extends Controller
 
         //If there is already a subscription exists for the store_id then retrieve it
         $oldSubscription = Subscription::where('subscription_id', $subscriptionId)->latest()->first();
+        $userLost = false;
         if ($paymentStatus == 1) {
             $emailData = array(
                 'receiverEmail' => $customer->email,
@@ -921,6 +930,7 @@ class SubscriptionController extends Controller
             $oldSubscription->update([
                 'status' => 3
             ]);
+            $userLost = true;
             Mail::to($email)->send(new PaymentFailedByWebHookEmail($emailData, $paymentStatus));
         } elseif ($paymentStatus == 0) {
             $emailData = array(
@@ -933,7 +943,21 @@ class SubscriptionController extends Controller
             $oldSubscription->update([
                 'status' => 3
             ]);
+            $userLost = true;
             Mail::to($email)->send(new PaymentFailedByWebHookEmail($emailData, $paymentStatus));
+        }
+        if($userLost){
+            /*
+             * Update WS graph data
+             * */
+            SaleGraphController::updateGraphData();
+            /*
+             * Create Hub spot user and activate trial
+             */
+            $user = [ 'email' => $customer->email ];
+            $status = [ 'products_lost' => true ];
+            $hubSpotController = new HubSpotController();
+            $hubSpotController->createUpdateHubSpotUser($oldSubscription->store_id, $user, $status);
         }
     }
 
@@ -965,6 +989,7 @@ class SubscriptionController extends Controller
         } else {
             //Do Nothing
         }
+
 
         return response()->json(['error' => false,
             'data' => [],
