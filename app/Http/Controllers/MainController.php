@@ -116,6 +116,7 @@ class MainController extends BaseController
                 $store->hash = $storeHash;
                 $store->owner_id = $data['user']['id'];
                 $store->owner_email = $data['user']['email'];
+                $store->app_status = 1;
                 $store->save();
                 //$accTok = Store::create(['access_token' => $data['access_token'], 'token' => $toAppendHash, 'hash' => $data['context'], 'owner_id' => $data['user']['id'], 'owner_email' => $data['user']['email']]);
                 if (!empty($store)){
@@ -162,40 +163,34 @@ class MainController extends BaseController
     }
 
     public function uninstall(Request $request){
-        Log::info('unsitall app '. json_encode($request->all()));
-        $client = new Client();
-        $result = $client->request('POST', 'https://login.bigcommerce.com/oauth2/token', [
-            'json' => [
-                'client_id' => $this->getAppClientId(),
-                'client_secret' => $this->getAppSecret($request),
-                'redirect_uri' => $this->baseURL . '/auth/install',
-                'grant_type' => 'authorization_code',
-                'code' => $request->input('code'),
-                'scope' => $request->input('scope'),
-                'context' => $request->input('context'),
-            ]
-        ]);
+        $signedPayload = $request->input('signed_payload');
+        if (!empty($signedPayload)) {
+            $verifiedSignedRequestData = $this->verifySignedRequest($signedPayload, $request);
+            if ($verifiedSignedRequestData !== null) {
+                $storeHash = explode('/', $verifiedSignedRequestData['context']);
+                $storeHash = $storeHash[1] ?? $verifiedSignedRequestData['context'];
 
-        $statusCode = $result->getStatusCode();
-        $data = json_decode($result->getBody(), true);
-        if ($statusCode == 200) {
-            $storeHash = explode('/', $data['context']);
-            $storeHash = $storeHash[1] ?? $data['context'];
-            Store::where('hash', $storeHash)->update('app_status', 0);
-            $store = Store::where('hash', $storeHash)->first()->toArray();
-            $hubspotData = HubSpot::where('store_id', $store['id'])->first()->toArray();
-            $user = [ 'email' => $hubspotData['email'] ];
-            $status = [ 'products_lost' => true ];
-            $hubSpotController = new HubSpotController();
-            $hubSpotController->createUpdateHubSpotUser($data['store_id'], $user, $status);
-            /*
-             * Update WS graph data
-             * */
-            SaleGraphController::updateGraphData();
+                //Store::where('hash', $storeHash)->update(['app_status', 0]);
+                $store = Store::where('hash', $storeHash)->first();
+                $store->app_status = 0;
+                $store->save();
+                $store = Store::where('hash', $storeHash)->first()->toArray();
+                $hubspotData = HubSpot::where('store_id', $store['id'])->first()->toArray();
+                $user = ['email' => $hubspotData['email']];
+                $status = ['products_lost' => true];
+                $hubSpotController = new HubSpotController();
+                $hubSpotController->createUpdateHubSpotUser($store['id'], $user, $status);
+                /*
+                 * Update WS graph data
+                 * */
+                SaleGraphController::updateGraphData();
+            }
         }
         echo 'uninstall';
         return app()->version();
     }
+
+
 
 
     public function load(Request $request)
