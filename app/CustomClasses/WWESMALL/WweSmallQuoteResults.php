@@ -102,7 +102,7 @@ class WweSmallQuoteResults
         if (isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2) {
             $title = !blank($days) ? $title . " (Estimated number of days until delivery is " . $days . ")" : $title;
         } elseif (isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3) {
-            $title = !blank($date) ? $title . " (Estimated delivery date is " . date('m-d-Y \b\y h:i A', strtotime($date)) . ")" : $title;
+            $title = !blank($date) ? $title . " (Estimated delivery date is " . date('m-d-Y', strtotime($date)) . ")" : $title;
         }
         return $title;
     }
