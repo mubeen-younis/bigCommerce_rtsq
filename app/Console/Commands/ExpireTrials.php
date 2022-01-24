@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Http\Controllers\HubSpotController;
+use App\Models\HubSpot;
 use App\Models\Subscription\Subscription;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -39,15 +41,19 @@ class ExpireTrials extends Command
      */
     public function handle()
     {
-        $trials = Subscription::where('plan_id',1)->get();
+        $trials = Subscription::where('plan_id',1)->where('status', 1)->get();
         foreach ($trials as $trial){
             if ($trial->plan_id == 1 && Carbon::now() > Carbon::parse($trial->ends_at)){
                 //If Trial is expired then update expired (2) status to DB
                 $trial->update([
                     'status' => 2
                 ]);
+                $hubSpotUser = HubSpot::select('email')->where('store_id', $trial->store_id)->first()->toArray();
+                $user = [ 'email' => $hubSpotUser['email'] ];
+                $status = [ 'products_lost' => true ];
+                $hubSpotController = new HubSpotController();
+                $hubSpotController->createUpdateHubSpotUser($trial->store_id, $user, $status);
             }
-            error_log('TRAIL CRON',json_encode($trial->id));
         }
         return 0;
     }

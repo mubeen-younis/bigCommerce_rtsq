@@ -33,7 +33,7 @@ class ExportProducts extends Mailable
     {
         $hash = $this->hash;
         $url = URL::to('api/downloadcsv/'.$hash);
-        return $this->subject('Here is CSV file you requested')
+        return $this->subject('Here is the CSV file you requested')
             ->replyTo([Constant::ENITURE_SUPPORT_EMAIL])
             ->view('emails.exportproducts', compact('url'));
     }
