@@ -834,6 +834,12 @@ class SubscriptionController extends Controller
                 'subscriptionId'=> $paymentDetail->data->object->items->data[0]->subscription
             );
         }
+        if(!Subscription::where('stripe_id', $customerId)->exists()){
+            return [
+                'error' => true,
+                'msg' =>'Customer does not exists.'
+            ];
+        }
         $customer = \Stripe\Customer::retrieve($customerId);
 
         $email = $customer->email;
@@ -902,6 +908,9 @@ class SubscriptionController extends Controller
         if ($eventType == 'customer.subscription.deleted'){
             $msg = 'Subscription has been cancelled';
             $re = $this->invoicePaymentActionByWebHook($paymentDetail, 2);
+            if(isset($re['error']) && $re['error']){
+                $msg = $re['msg'] ?? $msg;
+            }
         }elseif ($eventType == 'invoice.payment_succeeded'){
             $msg = 'Subscription successful';
             $this->invoicePaymentActionByWebHook($paymentDetail, 1);
