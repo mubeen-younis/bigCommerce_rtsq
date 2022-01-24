@@ -1196,6 +1196,7 @@ class CompileQuotes
         }
         $isShippingFinalMile = isset($this->quoteSettings['shipping_service']) && $this->quoteSettings['shipping_service'] == 'final_mile';
         $labelAs = '';
+        //dd($isShippingFinalMile);
         if ($isShippingFinalMile && isset($this->quoteSettings['final_mile_service_level'])) {
             if ($this->quoteSettings['final_mile_service_level'] == 'premium') {
                 $labelAs = $this->quoteSettings['premium_label'] ?? 'Premium';
@@ -1251,7 +1252,11 @@ class CompileQuotes
                           * */
                         $date = $data['deliveryDate'] ?? null;
                         $days = $data['totalTransitTimeInDays'] ?? null;
-                        $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
+                        if($isShippingFinalMile){
+                            $dateAndDays = ['deliveryDate' => null, 'totalTransitTimeInDays' => null];
+                        }else {
+                            $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
+                        }
                         $title = $this->getTitle($data['serviceDesc'], false, false, $data['transitTime'], [], $dateAndDays);
                         $arraySorting['simple'][$key] = $price;
                         $originQuotes[$key]['simple']['code'] = $data['serviceType'] . $access;
