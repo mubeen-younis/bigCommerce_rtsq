@@ -983,7 +983,6 @@ class CompileQuotes
 
     public function compileGlobalTranzLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
-        //print_r($shipments); exit;
         $this->GTZLtlQuotesResults = new globalTranzQuotesResults();
         if ($residential['gtzLtl'] == 'Y') {
             $this->isResi = true;
@@ -1200,7 +1199,6 @@ class CompileQuotes
         }
         $isShippingFinalMile = isset($this->quoteSettings['shipping_service']) && $this->quoteSettings['shipping_service'] == 'final_mile';
         $labelAs = '';
-        //print_r($this->quoteSettings); exit;
         if ($isShippingFinalMile && isset($this->quoteSettings['final_mile_service_level'])) {
             if ($this->quoteSettings['final_mile_service_level'] == 'premium') {
                 $labelAs = $this->quoteSettings['premium_label'] ?? 'Premium';
