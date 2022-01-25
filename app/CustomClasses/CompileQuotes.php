@@ -97,6 +97,8 @@ class CompileQuotes
     private $carrierServices = [];
     private $alwaysResi = false;
 
+    private $isGTZCerasis = false;
+
     public function __construct()
     {
         $this->wweSmallQuoteRes = new WweSmallQuoteResults();
@@ -981,6 +983,7 @@ class CompileQuotes
 
     public function compileGlobalTranzLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
+        //print_r($shipments); exit;
         $this->GTZLtlQuotesResults = new globalTranzQuotesResults();
         if ($residential['gtzLtl'] == 'Y') {
             $this->isResi = true;
@@ -1163,6 +1166,7 @@ class CompileQuotes
 
     public function compileCerasisLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
+        $this->isGTZCerasis = true;
         $this->GTZLtlQuotesResults = new globalTranzQuotesResults();
         if ($residential['gtzLtl'] == 'Y') {
             $this->isResi = true;
@@ -1196,7 +1200,7 @@ class CompileQuotes
         }
         $isShippingFinalMile = isset($this->quoteSettings['shipping_service']) && $this->quoteSettings['shipping_service'] == 'final_mile';
         $labelAs = '';
-        //dd($isShippingFinalMile);
+        //print_r($this->quoteSettings); exit;
         if ($isShippingFinalMile && isset($this->quoteSettings['final_mile_service_level'])) {
             if ($this->quoteSettings['final_mile_service_level'] == 'premium') {
                 $labelAs = $this->quoteSettings['premium_label'] ?? 'Premium';
@@ -1204,6 +1208,12 @@ class CompileQuotes
                 $labelAs = $this->quoteSettings['threshold_label'] ?? 'Threshold';
             } else if ($this->quoteSettings['final_mile_service_level'] == 'room_of_choice') {
                 $labelAs = $this->quoteSettings['room_of_choice_label'] ?? 'Room of Choice';
+            }
+        }else{
+            if (isset($this->quoteSettings['rating_method']) && $this->quoteSettings['rating_method'] == 3) { //Average
+                $this->quoteSettings['label_as'] = $this->quoteSettings['average_rate_label'] ?? '';
+            } else if (isset($this->quoteSettings['rating_method']) && $this->quoteSettings['rating_method'] == 1) { //cheapest
+                $this->quoteSettings['label_as'] = $this->quoteSettings['cheapest_label'] ?? '';
             }
         }
         if (!$this->isMultiShipment) {
@@ -2760,7 +2770,7 @@ class CompileQuotes
         }
         $sliced = array_slice($arraySorting['simple'], 0, $options, true);
         if ($this->quoteSettings['method'] == 3) {
-            return $this->averageRattingMethod($arraySorting, $options, $lgQuotes, true);
+            return $this->averageRattingMethod($arraySorting, $options, $lgQuotes);
         }
         $resp = array_intersect_key($services, $sliced);
         return $resp;
@@ -2773,11 +2783,11 @@ class CompileQuotes
      * @param $lgQuotes
      * @return array
      */
-    public function averageRattingMethod($ratesArray, $options, $lgQuotes, $isWweLtl = false)
+    public function averageRattingMethod($ratesArray, $options, $lgQuotes)
     {
         $sliced = array_slice($ratesArray['simple'], 0, $options, true);
         $simplePrice = $this->getAveragePrice($sliced, $options);
-        $prefix = $isWweLtl ? 'AVGwweltl' : 'AVG';
+        $prefix = $this->isGTZCerasis ? 'AVG' : 'AVGwweltl';
         $serviceName = $this->customLabel('Freight');
         $averageRateService[0]['simple'] = [
             'title' => $this->getTitle($serviceName, false),//$serviceName,
