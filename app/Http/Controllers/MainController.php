@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Constants\Constant;
 use App\Models\AccessTokens;
+use App\Models\HubSpot;
 use App\Models\ProductSetting;
 use App\Models\Store;
 use Illuminate\Routing\Controller as BaseController;
@@ -16,6 +17,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Bigcommerce\Api\Client as Bigcommerce;
 use Illuminate\Support\Facades\Redirect;
+use App\Http\Controllers\HubSpotController;
+use App\Http\Controllers\SaleGraphController;
 
 class MainController extends BaseController
 {
@@ -113,6 +116,7 @@ class MainController extends BaseController
                 $store->hash = $storeHash;
                 $store->owner_id = $data['user']['id'];
                 $store->owner_email = $data['user']['email'];
+                $store->app_status = 1;
                 $store->save();
                 //$accTok = Store::create(['access_token' => $data['access_token'], 'token' => $toAppendHash, 'hash' => $data['context'], 'owner_id' => $data['user']['id'], 'owner_email' => $data['user']['email']]);
                 if (!empty($store)){
@@ -121,6 +125,11 @@ class MainController extends BaseController
                         'store_name' => $store->hash
                     ]);
                 }
+                /*
+                 * Update WS graph data
+                 * */
+                SaleGraphController::updateGraphData();
+
                 // If the merchant installed the app via an external link, redirect back to the
                 // BC installation success page for this app
                 if ($request->has('external_install')) {
@@ -130,6 +139,7 @@ class MainController extends BaseController
 
             //return redirect('/');
             // Redirect::to($this->baseURL . '/?store=' . $data['access_token']);
+
             return Redirect::to(Constant::FRONTEND_URL.'/?store=' . $toAppendHash);
         } catch (RequestException $e) {
             $statusCode = $e->getResponse()->getStatusCode();
@@ -151,6 +161,36 @@ class MainController extends BaseController
             }
         }
     }
+
+    public function uninstall(Request $request){
+        $signedPayload = $request->input('signed_payload');
+        if (!empty($signedPayload)) {
+            $verifiedSignedRequestData = $this->verifySignedRequest($signedPayload, $request);
+            if ($verifiedSignedRequestData !== null) {
+                $storeHash = explode('/', $verifiedSignedRequestData['context']);
+                $storeHash = $storeHash[1] ?? $verifiedSignedRequestData['context'];
+
+                //Store::where('hash', $storeHash)->update(['app_status', 0]);
+                $store = Store::where('hash', $storeHash)->first();
+                $store->app_status = 0;
+                $store->save();
+                $store = Store::where('hash', $storeHash)->first()->toArray();
+                $hubspotData = HubSpot::where('store_id', $store['id'])->first()->toArray();
+                $user = ['email' => $hubspotData['email']];
+                $status = ['products_lost' => true];
+                $hubSpotController = new HubSpotController();
+                $hubSpotController->createUpdateHubSpotUser($store['id'], $user, $status);
+                /*
+                 * Update WS graph data
+                 * */
+                SaleGraphController::updateGraphData();
+            }
+        }
+        echo 'uninstall';
+        return app()->version();
+    }
+
+
 
 
     public function load(Request $request)

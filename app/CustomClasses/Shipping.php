@@ -24,6 +24,7 @@ class Shipping
     private $compileQuotes;
     private $isInsurance = 'N';
     private $isRequestMultishipment = false;
+
     public function __construct()
     {
         $this->shipmentPkg = new WweLTLShipmentPackage();
@@ -57,8 +58,10 @@ class Shipping
         $hazmatAllItems = $this->isHazmatMaterial($package);
 
         $this->isInsurance($package);
-        if ($this->isHazmat == 'Y') {
-            foreach ($carriersArray['carriers'] as $key => $carriers) {
+
+
+        foreach ($carriersArray['carriers'] as $key => $carriers) {
+            if ($this->isHazmat == 'Y') {
                 $carriersArray['carriers'][$key]['api']['lineItemHazmatInfo'] = [
                     [
                         'isHazmatLineItem' => 'Y',
@@ -70,18 +73,17 @@ class Shipping
                     ],
                 ];
             }
-        }
-        if($this->isInsurance === 'Y'){
-            foreach($carriersArray['carriers'] as $key => $carriers){
-                if($this->isSmall($key)){
+            if ($this->isInsurance === 'Y') {
+                if ($this->isSmall($key)) {
                     $carriersArray['carriers'][$key]['api']['includeDeclaredValue'] = 1;
-                }else {
+                } else {
                     $carriersArray['carriers'][$key]['api']['insureShipment'] = 1;
                 }
             }
         }
         // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
+
         if (empty($requestArr)) {
             return false;
         }
@@ -95,25 +97,25 @@ class Shipping
         */
         $this->isRequestMultishipment = $ltlSmallCompileQuotes->checkIsRequestMiltiShipment($requestArr['requestArr'], $quotes);
         $boxbins = $requestArr['boxBins'] ?? [];
-        if(isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])){
-            Log::info('BinData '. json_encode($requestArr['binReponse']));
+        if (isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])) {
+            Log::info('BinData ' . json_encode($requestArr['binReponse']));
             $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes);
         }
         //;
         //print_r($requestArr['binReponse']);
         //print_r($requestArr['requestArr']); print_r($quotes); exit;
         $freeRNL = false;
-        if(isset($requestArr['requestArr']['carriers']['rnl']['freeShipment']) && $requestArr['requestArr']['carriers']['rnl']['freeShipment']){
+        if (isset($requestArr['requestArr']['carriers']['rnl']['freeShipment']) && $requestArr['requestArr']['carriers']['rnl']['freeShipment']) {
             unset($requestArr['requestArr']['carriers']['rnl']['freeShipment']);
             $freeRNL = true;
         }
-        Log::info('after addBinResponseToQuotes '. json_encode($quotes));
+        Log::info('after addBinResponseToQuotes ' . json_encode($quotes));
 
         $quotesFromWs = $quotes ?? [];
 
-        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL);
+        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination);
 
-        if (!empty($finalQuotes['multiShipmentQuotes'])){
+        if (!empty($finalQuotes['multiShipmentQuotes'])) {
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];
         }
@@ -121,10 +123,10 @@ class Shipping
         $_finalQuotes = $finalTitlesTemp = $finalCodesTemp = [];
         $finalTitles = array_column($finalQuotes, 'title');
         $finalCodes = array_column($finalQuotes, 'code');
-        foreach ($finalTitles as $key=>$finalTitle ){
+        foreach ($finalTitles as $key => $finalTitle) {
             $finalTitlesTemp[$key] = explode(' ', $finalTitle)[0];
         }
-        foreach ($finalCodes as $key=>$finalCode ){
+        foreach ($finalCodes as $key => $finalCode) {
             $finalCodesTemp[$key] = explode('+', $finalCode)[0];
         }
         $isFreightTitleExist = array_search('Freight', $finalTitlesTemp);
@@ -136,13 +138,13 @@ class Shipping
         $freightCode = '';
         $finalCost = 0;
 
-        if ((gettype($isFreightTitleExist) == 'integer') && (gettype($isShippingTitleExist) == 'integer')){
-            foreach ($finalQuotes as $key=>$_quote){
-                if ($_quote['title'] == 'Freight' || $_quote['title'] == 'Shipping'){
+        if ((gettype($isFreightTitleExist) == 'integer') && (gettype($isShippingTitleExist) == 'integer')) {
+            foreach ($finalQuotes as $key => $_quote) {
+                if ($_quote['title'] == 'Freight' || $_quote['title'] == 'Shipping') {
                     $finalCost += $_quote['rate'];
                     $freightCode = ($_quote['code'] != 'Multi') ? $_quote['code'] : $freightCode;
                 }
-                if($_quote['title'] != 'Freight' && $_quote['title'] != 'Shipping'){
+                if ($_quote['title'] != 'Freight' && $_quote['title'] != 'Shipping') {
                     $_finalQuotes[$key]['code'] = $_quote['code'];
                     $_finalQuotes[$key]['rate'] = $_quote['rate'];
                     $_finalQuotes[$key]['title'] = $_quote['title'];
@@ -150,22 +152,22 @@ class Shipping
             }
         }
 
-        if (!empty($_finalQuotes)){
+        if (!empty($_finalQuotes)) {
             $_finalQuotes[$key]['code'] = $freightCode;
             $_finalQuotes[$key]['title'] = 'Freight';
             $_finalQuotes[$key]['rate'] = $finalCost;
             $_finalQuotes = array_values($_finalQuotes);
             $finalQuotes = $_finalQuotes;
-        }else {
+        } else {
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
-            if($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist)){
+            if ($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist)) {
                 $isShippingOrFreight = false;
             }
-            if($this->isRequestMultishipment && !$isShippingOrFreight) {
-                $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings,  $residential, $quotesFromWs, $requestArr['requestArr']);
+            if ($this->isRequestMultishipment && !$isShippingOrFreight) {
+                $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings, $residential, $quotesFromWs, $requestArr['requestArr']);
                 $finalQuotes = $finalQuotesMulti['checkoutQuotes'] ?? [];
                 $multiShipmentQuotes = $finalQuotesMulti['multiShipmentQuotes'] ?? [];
-            }else{
+            } else {
                 $finalQuotes = $this->removeParcelIfLtl($finalQuotes);
             }
         }
@@ -176,13 +178,14 @@ class Shipping
         return $resp;
     }
 
-    private function removeParcelIfLtl($finalQuotes){
+    private function removeParcelIfLtl($finalQuotes)
+    {
         $finalQuotes = $finalQuotes['checkoutQuotes'] ?? $finalQuotes;
         $hasLtl = false;
         $hasParcel = false;
-        foreach ($finalQuotes as $quote){
-            $notCustomAdded = strpos($quote['code'], 'own_arrangement') === false && strpos($quote['code'], 'INSP') === false && strpos($quote['code'], 'LOCDEL') === false;
-            if($notCustomAdded) {
+        foreach ($finalQuotes as $quote) {
+            $notCustomAdded = isset($quote['code']) && strpos($quote['code'], 'own_arrangement') === false && strpos($quote['code'], 'INSP') === false && strpos($quote['code'], 'LOCDEL') === false;
+            if ($notCustomAdded) {
                 if (strpos($quote['code'], 'parcel_12') === 0) {
                     $hasParcel = true;
                 } else {
@@ -190,8 +193,8 @@ class Shipping
                 }
             }
         }
-        if($hasLtl && $hasParcel){
-            foreach ($finalQuotes as $key => $quote){
+        if ($hasLtl && $hasParcel) {
+            foreach ($finalQuotes as $key => $quote) {
                 if (strpos($quote['code'], 'parcel') === 0) {
                     unset($finalQuotes[$key]);
                 }
@@ -200,24 +203,26 @@ class Shipping
         return $finalQuotes;
     }
 
-    private function makeMultishipmentSmallLtl($quotes, $connectionSettings,  $residential, $quotesFromWs, $requestArr){
+    private function makeMultishipmentSmallLtl($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr)
+    {
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
-        $resp = $ltlSmallCompileQuotes->compileQuotes($quotes, $connectionSettings,  $residential, $quotesFromWs, $requestArr);
+        $resp = $ltlSmallCompileQuotes->compileQuotes($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr);
         return $resp;
     }
 
-    private function addBinResponseToQuotes($binReponse, $quotes){
+    private function addBinResponseToQuotes($binReponse, $quotes)
+    {
         $boxFee = [];
         foreach ($quotes as $carrierName => $quote) {
-            if($this->isSmallCarrier($carrierName)) {
-                if($carrierName == 'fedexSmall'){
+            if ($this->isSmallCarrier($carrierName)) {
+                if ($carrierName == 'fedexSmall') {
                     foreach ($binReponse as $serviceType => $response) {
                         foreach ($response as $locationId => $bin) {
                             $quotes[$carrierName][$locationId]['binPackagingData']['response'][$serviceType] = $bin;
                             $boxFee[$locationId] = $this->getCumulativeBoxFee($bin);
                         }
                     }
-                }else {
+                } else {
                     foreach ($binReponse as $locationId => $bin) {
                         $quotes[$carrierName][$locationId]['binPackagingData']['response'] = $bin;
                         $boxFee[$locationId] = $this->getCumulativeBoxFee($bin);
@@ -225,13 +230,14 @@ class Shipping
                 }
             }
         }
-        if(!empty($boxFee)){
+        if (!empty($boxFee)) {
             $quotes = $this->addBoxFeeToQuotes($quotes, $boxFee);
         }
         return $quotes;
     }
 
-    public function isSmallCarrier($carrierName){
+    public function isSmallCarrier($carrierName)
+    {
         $smallCarriers = [
             'wweSmall',
             'upsSmall',
@@ -240,7 +246,8 @@ class Shipping
         return in_array($carrierName, $smallCarriers);
     }
 
-    public function isLtlCarrier($carrierName){
+    public function isLtlCarrier($carrierName)
+    {
         $ltlCarriers = [
             'wweLTL',
             'upsLTL',
@@ -252,17 +259,17 @@ class Shipping
         return in_array($carrierName, $ltlCarriers);
     }
 
-    private function addBoxFeeToQuotes(array $quotes, array $boxFee) : array
+    private function addBoxFeeToQuotes(array $quotes, array $boxFee): array
     {
         $parcelCarName = ['wweSmall', 'upsSmall'];
-        if(isset($quotes) && !empty($quotes)){
+        if (isset($quotes) && !empty($quotes)) {
             foreach ($quotes as $carName => $quot) {
-                if(in_array($carName, $parcelCarName)) {
+                if (in_array($carName, $parcelCarName)) {
                     foreach ($quot as $locId => $q) {
                         if (isset($q['q'])) {
                             foreach ($q['q'] as $key => $qs) {
                                 if (isset($qs['totalNetCharge']['Amount'])) {
-                                    if(isset($boxFee[$locId])) {
+                                    if (isset($boxFee[$locId])) {
                                         $quotes[$carName][$locId]['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $boxFee[$locId];
                                         $quotes[$carName][$locId]['q'][$key]['boxFees']['Amount'] = $boxFee[$locId];
                                     }
@@ -276,14 +283,14 @@ class Shipping
         return $quotes;
     }
 
-    private function getCumulativeBoxFee($bins):float
+    private function getCumulativeBoxFee($bins): float
     {
         $boxFee = 0;
-        if(!empty($bins->bins_packed)){
-            foreach($bins->bins_packed as $pack){
-                if(isset($pack->bin_data->type) && $pack->bin_data->type === 'item'){
+        if (!empty($bins->bins_packed)) {
+            foreach ($bins->bins_packed as $pack) {
+                if (isset($pack->bin_data->type) && $pack->bin_data->type === 'item') {
                     $boxFee += $pack->bin_data->boxFee;
-                }else {
+                } else {
                     $boxId = $pack->bin_data->id;
                     $boxFee += $this->BoxFeeByID($boxId);
                 }
@@ -294,15 +301,16 @@ class Shipping
 
     private function BoxFeeByID(int $boxId)
     {
-        if(BoxSize::where('id',$boxId)->exists()){
+        if (BoxSize::where('id', $boxId)->exists()) {
             return BoxSize::find($boxId)->pluck('box_fee')->first();
         }
         return 0;
     }
 
-    public function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null){
+    public function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null)
+    {
         //print_r($resp); print_r($multiShipmentQuotes); exit;
-        foreach ($finalQuotes as $finalQuote){
+        foreach ($finalQuotes as $finalQuote) {
             $RequestTempData = new RequestTempData();
             $RequestTempData->request = json_encode($requestArr);
             $RequestTempData->lineitems = json_encode($lineItems);
@@ -317,10 +325,11 @@ class Shipping
         }
     }
 
-    public function addRateId($finalQuotes){
+    public function addRateId($finalQuotes)
+    {
         $time = time();
-        foreach($finalQuotes as $key => $finalQuote){
-            $finalQuotes[$key]['rate_id'] = isset($finalQuote['code']) ? $finalQuote['code'].'idx+'.$key.$time : $time;
+        foreach ($finalQuotes as $key => $finalQuote) {
+            $finalQuotes[$key]['rate_id'] = isset($finalQuote['code']) ? $finalQuote['code'] . 'idx+' . $key . $time : $time;
         }
         return $finalQuotes;
     }
@@ -355,28 +364,29 @@ class Shipping
             if (isset($item['isHazmatLineItem']) && $item['isHazmatLineItem'] == 'Y') {
                 $this->isHazmat = 'Y';
                 $hazmatAllItems[$items['origin'][$key]['locationId']] = 'Y';
-            }else{
+            } else {
                 $hazmatAllItems[$items['origin'][$key]['locationId']] = 'N';
             }
         }
         return $hazmatAllItems;
     }
 
-    private function checkIndividualHazmat($request){
+    private function checkIndividualHazmat($request)
+    {
         $smallOrigins = $marketItemSmall = $request['carriers']['wweSmall']['originAddress'] ?? $request['carriers']['upsSmall']['originAddress'] ?? $request['carriers']['fedexSmall']['originAddress'] ?? [];
         $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? $request['carriers']['upsLTL']['originAddress'] ?? [];
         $items = $request['commdityDetails'] ?? [];
         $smallHazmat = $ltlHazmat = false;
-        if(!empty($smallOrigins)){
-            foreach ($smallOrigins as $key=>$origin){
-                if(isset($items[$key]['isHazmatLineItem']) && $items[$key]['isHazmatLineItem'] == 'Y'){
+        if (!empty($smallOrigins)) {
+            foreach ($smallOrigins as $key => $origin) {
+                if (isset($items[$key]['isHazmatLineItem']) && $items[$key]['isHazmatLineItem'] == 'Y') {
                     $smallHazmat = true;
-                    $marketItemSmall[] = $items[$key]['product_id'].$items[$key]['variant_id'];
+                    $marketItemSmall[] = $items[$key]['product_id'] . $items[$key]['variant_id'];
                 }
             }
-            foreach ($ltlOrigins as $key=>$origin){
-                $id = $items[$key]['product_id'].$items[$key]['variant_id'];
-                if(isset($items[$key]['isHazmatLineItem']) && $items[$key]['isHazmatLineItem'] == 'Y' && !in_array($id, $marketItemSmall)){
+            foreach ($ltlOrigins as $key => $origin) {
+                $id = $items[$key]['product_id'] . $items[$key]['variant_id'];
+                if (isset($items[$key]['isHazmatLineItem']) && $items[$key]['isHazmatLineItem'] == 'Y' && !in_array($id, $marketItemSmall)) {
                     $ltlHazmat = true;
                     break;
                 }
@@ -421,9 +431,9 @@ class Shipping
     public function generateQuoteFormatResponse($quotes)
     {
         $quotes = array_values($quotes);
-        $current = str_replace(' ', 'T', Carbon::now())."-00:00";
+        $current = str_replace(' ', 'T', Carbon::now()) . "-00:00";
         if (!empty(array_filter($quotes))) {
-            $resp['quote_id'] = (string) rand(1,9);// need to change
+            $resp['quote_id'] = (string)rand(1, 9);// need to change
             $resp['messages'] = [];// need to change
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'eniture_quotes', 'display_name' => $this->limitTitle($quotes[0])]];
             foreach ($quotes as $key => $quote) {
@@ -431,7 +441,7 @@ class Shipping
                     'code' => $quote['code'],
                     'rate_id' => $quote['rate_id'],
                     'display_name' => $this->limitTitle($quote),
-                    'cost' => ['currency' => 'USD', 'amount' => str_replace(',','',$quote['rate'])],
+                    'cost' => ['currency' => 'USD', 'amount' => str_replace(',', '', $quote['rate'])],
                     'dispatch_date' => "$current"
                     //'cost' => ['currency' => 'USD', 'amount' => number_format($quote['rate'], 2, '.', ',')],
                     //'transit_time' => ['units' => 'BUSINESS_DAYS', 'duration' => 1],
@@ -443,16 +453,17 @@ class Shipping
             $resp = [];
         }
 
-        Log::info('$resp '. json_encode($resp));
+        Log::info('$resp ' . json_encode($resp));
         return $resp;
     }
 
 
-    public function limitTitle($quote){
+    public function limitTitle($quote)
+    {
         $res = $quote['title'];
-        if( strlen($quote['title']) > 100 ){
+        if (strlen($quote['title']) > 100) {
             $res = explode("(", $quote['title'])[0];
-        }else if( $quote['title'] == "" ){
+        } else if ($quote['title'] == "") {
             $res = $quote['code'];
         }
         return $res;
@@ -488,8 +499,9 @@ class Shipping
         return $result;
     }
 
-    public function isSmall($carrier){
-        $smallCarriers = ['wweSmall','upsSmall','fedexSmall'];
+    public function isSmall($carrier)
+    {
+        $smallCarriers = ['wweSmall', 'upsSmall', 'fedexSmall'];
         return in_array($carrier, $smallCarriers);
     }
 }

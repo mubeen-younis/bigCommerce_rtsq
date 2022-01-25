@@ -49,10 +49,11 @@ Route::get('error', [MainController::class, 'error']);
 Route::group(['prefix' => 'auth'], function () {
     Route::get('install', [MainController::class, 'install']);
 
-    Route::get('uninstall', function () {
+    Route::get('uninstall', [MainController::class, 'uninstall']);
+    /*Route::get('uninstall', function () {
         echo 'uninstall';
         return app()->version();
-    });
+    });*/
 
     Route::get('remove-user', function () {
         echo 'remove-user';

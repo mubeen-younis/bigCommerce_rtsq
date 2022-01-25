@@ -101,11 +101,14 @@ class OrderController extends Controller
         if(empty($data)){
             return [];
         }
+        $carrierHasInsurance = $this->hasInsureCarrier($order['rate_id']);
         $index = explode('idx+',$order['rate_id'])[1];
         if(!empty($index)){
             $index = (int) substr($index, 0, 1);
         }
         $isSmallLtlrate = substr($order['rate_id'], 0, 5) == 'multi'  ? true : false;
+        $isHAT = strpos(strtolower($order['rate_id']), '+hat');
+
         $order['rate_id'] = strtolower($order['rate_id']);
         $isSmallrate = substr($order['rate_id'], 0, 9) == 'parcel_12' || substr($order['rate_id'], 0, 5) == 'multi'  ? true : false;
         $isLG = strpos($order['rate_id'], '+lg');
@@ -115,7 +118,7 @@ class OrderController extends Controller
 
         $requestToWS = json_decode($data['request']);
         $lineItem->items = $this->formateItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
-
+//print_r($lineItem->items); exit;
         $lineItem->origin = $this->formateOrigins($requestToWS->requestArr->carriers);
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
         $autoResidentialsStatus = 'n';
@@ -203,6 +206,8 @@ class OrderController extends Controller
 
         $isMulti = false;
         $insertedIds = $insertedNames = [];
+        //print_r($items); exit;
+        $code = '';
         foreach($origins as $key => $origin){
             $item =  $items->$key;
             $city = $origin->senderCity ? $origin->senderCity.',': '';
@@ -213,14 +218,22 @@ class OrderController extends Controller
             $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
             $sRate = $order['shipping_rate'];
+            //print_r($multiShipmentresponse); exit;
             if($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement){
-                if($isLG) {
+                if($isHAT){
+                    $sRate = $multiShipmentresponse->$index->hat->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
+                    $order['shipping_name'] = $multiShipmentresponse->$index->hat->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
+                }else if($isLG) {
                     $sRate = $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->liftgate->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
+                    $code = $multiShipmentresponse->$index->liftgate->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
                 }else {
                     $sRate = $multiShipmentresponse->$index->simple->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->simple->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? '';
+                    $code = $multiShipmentresponse->$index->simple->$zip->code ?? $multiShipmentresponse->$index->liftgate->$zip->code ?? '';
                 }
+                $carrierHasInsurance = $code ? $this->hasInsureCarrier($code) : false;
+
                 $isMulti = true;
             }
 
@@ -244,14 +257,20 @@ class OrderController extends Controller
                     $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
                 }
             }
-
+            $addedHazmat = false;
+            if(isset($orderWidget[$zip]['accessories'])){
+                $addedHazmat = in_array('Hazardous Material',$orderWidget[$zip]['accessories']);
+            }
+            $oldAccessorial = $orderWidget[$zip]['accessories'] ?? [];
             $orderWidget[$zip]['accessories'] = [];
             if(!$isMulti){
-                if(isset($item->product_insurance_active) && $item->product_insurance_active == 1){
-                    array_push($orderWidget[$zip]['accessories'], 'Insurance');
-                    $addedInsurance = true;
-                }else if($addedInsurance){
-                    array_push($orderWidget[$zip]['accessories'], 'Insurance');
+                if($carrierHasInsurance) {
+                    if (isset($item->product_insurance_active) && $item->product_insurance_active == 1) {
+                        array_push($orderWidget[$zip]['accessories'], 'Insurance');
+                        $addedInsurance = true;
+                    } else if ($addedInsurance) {
+                        array_push($orderWidget[$zip]['accessories'], 'Insurance');
+                    }
                 }
                 if(isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') {
                     array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
@@ -260,17 +279,22 @@ class OrderController extends Controller
                     array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
                 }
             }else{
-                if(isset($item->product_insurance_active) && $item->product_insurance_active == 1){
+                if((isset($item->product_insurance_active) && $item->product_insurance_active == 1 && $carrierHasInsurance) || in_array('Insurance',$oldAccessorial)){
                     array_push($orderWidget[$zip]['accessories'], 'Insurance');
                 }
-                if(isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') {
+                if( (isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') || $addedHazmat) {
                     array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
                     $addHazmat = true;
                 }
             }
             $isSmall = $this->isSmallQuote($sName);
+            if($isMulti){
+                strpos(strtolower($code), '+r') ? array_push($orderWidget[$zip]['accessories'], 'Residential Delivery') : '';
+            }else{
+                $autoResidentialsStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Delivery') : '';
+            }
 
-            $autoResidentialsStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Delivery') : '';
+            $isHAT ? array_push($orderWidget[$zip]['accessories'], 'Hold At Terminal') : '';
             if(!$isSmall) {
 
                 $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Pickup') : '';
@@ -279,6 +303,7 @@ class OrderController extends Controller
             $count++;
         }
         $sbs = '';
+        //print_r($orderWidget); exit;
         $resp = [
             'widget' => $this->objectToArray( $orderWidget ),
             'sbs' => $sbs
@@ -745,9 +770,20 @@ class OrderController extends Controller
             'UPS 2nd Day Air Saver',
             'UPS Next Day Air Saver',
             'UPS Next Day Air',
-            'UPS Next Day Air Early'
+            'UPS Next Day Air Early',
+            'Fedex Ground',
         ];
         return in_array($quote, $small);
+    }
+
+    private function hasInsureCarrier($code){
+        $insureCarriers = ['wweltl', 'parcel_12wwe','parcel_12ups'];
+        foreach ($insureCarriers as $insureCarrier){
+            if(strpos($code, $insureCarrier) !== false){
+                return true;
+            }
+        }
+        return false;
     }
 
 }

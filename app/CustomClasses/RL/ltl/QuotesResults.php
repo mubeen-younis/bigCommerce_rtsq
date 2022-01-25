@@ -23,7 +23,7 @@ class QuotesResults
     public function formateQuoteBeforeCompile($shipments, $quoteSettings){
         //print_r($shipments); exit;
         foreach ($shipments as $shipment => $quotes){
-            if(isset($quotes['q']) || isset($quotes['quotesWithInsideDel']) || isset($quotes['holdAtTerminalResponse'])) {
+            if(isset($quotes['q']) || isset($quotes['quotesWithInsideDel']) || isset($quotes['holdAtTerminalResponse']) || isset($quotes['InstorPickupLocalDelivery'])) {
                 unset($shipments[$shipment]);
                 /*if(isset($quotes['q']['ServiceLevels']['ServiceLevel'])) {
                     if(!isset($quotes['q']['ServiceLevels']['ServiceLevel'][0])){
@@ -54,30 +54,36 @@ class QuotesResults
                         $shipments[$shipment]['q'][$key] = $quote;
                         $shipments[$shipment]['q'][$key]['serviceType'] = 'inside+'.$quote['Code'];
                         $shipments[$shipment]['q'][$key]['serviceDesc'] = $quote['Title'];
-                        $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = (float) str_replace('$', '',$quote['NetCharge']);
+                        $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = (float) str_replace('$', '',str_replace(',','',$quote['NetCharge']));
                         $shipments[$shipment]['q'][$key]['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
                         $shipments[$shipment]['q'][$key]['transitTime'] = $quote['totalTransitTimeInDays'] ?? '';
                         $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $this->liftGateFees($quotes);
                         $shipments[$shipment]['q'][$key]['surcharges']['insidedelivery'] = $this->insideFees($quotes);
                     }
                 }else{
-                    if(!isset($quotes['q']['ServiceLevels']['ServiceLevel'][0])){
-                        $services = $quotes['q']['ServiceLevels']['ServiceLevel'];
-                        unset($quotes['q']['ServiceLevels']['ServiceLevel']);
-                        $quotes['q']['ServiceLevels']['ServiceLevel'][0] = $services;
-                    }
-
-                    foreach ($quotes['q']['ServiceLevels']['ServiceLevel'] as $key => $quote) {
-                        $key = isset($shipments[$shipment]['q']) ? count($shipments[$shipment]['q']) :0;
-                        $shipments[$shipment]['q'][$key] = $quote;
-                        $shipments[$shipment]['q'][$key]['serviceType'] = $quote['Code'] ?? '';
-                        $shipments[$shipment]['q'][$key]['serviceDesc'] = $quote['Title'] ?? '';
-                        $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = (float) str_replace('$', '',$quote['NetCharge']);
-                        $shipments[$shipment]['q'][$key]['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
-                        $shipments[$shipment]['q'][$key]['transitTime'] = $quote['totalTransitTimeInDays'] ?? '';
-                        $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $this->liftGateFees($quotes);
-
-                    }
+                    //if(isset($quotes['q'])) {
+                        if (!isset($quotes['q']['ServiceLevels']['ServiceLevel'][0])) {
+                            $services = $quotes['q']['ServiceLevels']['ServiceLevel'] ?? [];
+                            unset($quotes['q']['ServiceLevels']['ServiceLevel']);
+                            !empty($services) ? $quotes['q']['ServiceLevels']['ServiceLevel'][0] = $services : null;
+                        }
+                        if(isset($quotes['q']['ServiceLevels']['ServiceLevel'])) {
+                            foreach ($quotes['q']['ServiceLevels']['ServiceLevel'] as $key => $quote) {
+                                $key = isset($shipments[$shipment]['q']) ? count($shipments[$shipment]['q']) : 0;
+                                $shipments[$shipment]['q'][$key] = $quote;
+                                $shipments[$shipment]['q'][$key]['serviceType'] = $quote['Code'] ?? '';
+                                $shipments[$shipment]['q'][$key]['serviceDesc'] = $quote['Title'] ?? '';
+                                $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = (float)str_replace('$', '', str_replace(',', '', $quote['NetCharge']));
+                                $shipments[$shipment]['q'][$key]['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
+                                $shipments[$shipment]['q'][$key]['transitTime'] = $quote['transitTime'] ?? '';
+                                $shipments[$shipment]['q'][$key]['totalTransitTimeInDays'] = $quote['totalTransitTimeInDays'] ?? '';
+                                $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $this->liftGateFees($quotes);
+                            }
+                        }
+                        if (isset($quotes['InstorPickupLocalDelivery'])) {
+                            $shipments[$shipment]['InstorPickupLocalDelivery'] = $quotes['InstorPickupLocalDelivery'];
+                        }
+                    //}
                 }
 
                 if(isset($quotes['holdAtTerminalResponse']['serviceLevels'])){
@@ -87,9 +93,10 @@ class QuotesResults
                         unset($shipments[$shipment]['q'][$key]['totalNetCharge']);
                         $shipments[$shipment]['q'][$key]['serviceType'] = 'rnlltl+HAT+'.$quote['Code'];
                         $shipments[$shipment]['q'][$key]['serviceDesc'] = $this->titleHAT($quote['Title'], $quotes['holdAtTerminalResponse']['address'], $quotes['holdAtTerminalResponse']['distance']);
-                        $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = $quote['totalNetCharge'] + $quoteSettings['hold_at_terminal_price'];
+                        $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = $this->getPrice($quote['totalNetCharge'], $quoteSettings['hold_at_terminal_price']);
                         $shipments[$shipment]['q'][$key]['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
-                        $shipments[$shipment]['q'][$key]['transitTime'] = $quote['totalTransitTimeInDays'] ?? '';
+                        $shipments[$shipment]['q'][$key]['totalTransitTimeInDays'] = $quote['totalTransitTimeInDays'] ?? '';
+                        $shipments[$shipment]['q'][$key]['transitTime'] = $quote['transitTime'] ?? '';
                     }
                 }
             }
@@ -97,8 +104,22 @@ class QuotesResults
         return $shipments;
     }
 
+    function getPrice($price, $hatPrice){
+        if((strlen($hatPrice) > 0)) {
+            $symbolicHATFee = strpos($hatPrice, '%') ? '%' : '';
+            $hatPrice = (float)$hatPrice ?? 0;
+            if ($symbolicHATFee === '%') {
+                $hatPrice = $hatPrice / 100 * $price;
+                $price = $price + $hatPrice;
+            } else {
+                $price = $price + $hatPrice;
+            }
+        }
+        return $price;
+    }
     function titleHAT($title, $address, $distance){
-        return $title.' | HAT | '.$distance['text']. ' | ' .$address['Code']. ', '. $address['State']. ', '. $address['ZipCode']. ' | '. $address['Phone'];
+        $distance = $distance['text'] ?? '0 mi';
+        return $title.' | Hold At Terminal | '.$distance. ' | ' .$address['Code']. ', '. $address['State']. ', '. $address['ZipCode']. ' | '. $address['Phone'];
     }
 
     function liftGateFees($quotes){

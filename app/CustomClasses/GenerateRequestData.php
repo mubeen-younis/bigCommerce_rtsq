@@ -6,6 +6,7 @@ use App\Http\Controllers\BoxSizeController;
 use Illuminate\Support\Facades\DB;
 use App\CustomClasses\Bin3D\Bin3D;
 use App\CustomClasses\SmartyStreet\SmartyStreet;
+
 /**
  * class that generated request data
  */
@@ -47,7 +48,8 @@ class GenerateRequestData
         $quoteSettings,
         $connectionSettings,
         $storeData
-    ) {
+    )
+    {
         $this->storeData = $storeData;
         $this->quoteSettings = $quoteSettings;
         $this->connectionSettings = $connectionSettings;
@@ -112,7 +114,7 @@ class GenerateRequestData
                     break;
                 case "rl-ltl":
                     $wweLtlArr = $this->rnlLtlEnitArr($con1, $destination, $enitOrigin, $lineItems);
-                    if(!empty($wweLtlArr)) {
+                    if (!empty($wweLtlArr)) {
                         $wweLtlArr['originAddress'] = $enitOrigin;
                         $carriersArr['carriers']['rnl'] = $wweLtlArr;
                     }
@@ -122,17 +124,19 @@ class GenerateRequestData
         return ['carriersArr' => $carriersArr, 'residential' => $this->resiCarrier];
     }
 
-    function destinationIsPOBox($destination){
+    function destinationIsPOBox($destination)
+    {
         $this->isPoBOX = strpos(strtolower($destination['street_1']), 'po box') !== false
-        || strpos(strtolower($destination['street_1']), 'post office box') !== false
-        || strpos(strtolower($destination['street_1']), 'p.o. box') !== false
-        || strpos(strtolower($destination['street_2']), 'po box') !== false
-        || strpos(strtolower($destination['street_2']), 'post office box') !== false
-        || strpos(strtolower($destination['street_2']), 'po box') !== false;
+            || strpos(strtolower($destination['street_1']), 'post office box') !== false
+            || strpos(strtolower($destination['street_1']), 'p.o. box') !== false
+            || strpos(strtolower($destination['street_2']), 'po box') !== false
+            || strpos(strtolower($destination['street_2']), 'post office box') !== false
+            || strpos(strtolower($destination['street_2']), 'po box') !== false;
     }
 
 
-    public function getEnitOrigin($origin){
+    public function getEnitOrigin($origin)
+    {
         $wweLtlArr1['originAddress'] = $origin;
 
         if (count($wweLtlArr1['originAddress']) > 1) {
@@ -171,7 +175,8 @@ class GenerateRequestData
         ];
     }
 
-    function gtzLtlEnitArr($connSettings, $destination, $enitOrigin, $carName){
+    function gtzLtlEnitArr($connSettings, $destination, $enitOrigin, $carName)
+    {
         $api = $this->getApiInfoArrGTZLtl($connSettings, $destination, $carName);
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
@@ -215,7 +220,8 @@ class GenerateRequestData
         ];
     }
 
-    public function upsSmallEnitArr($connSettings, $destination){
+    public function upsSmallEnitArr($connSettings, $destination)
+    {
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
             'serverName' => "https://" . $this->storeData['store']['name'],
@@ -227,7 +233,8 @@ class GenerateRequestData
         ];
     }
 
-    public function fedexSmallEnitArr($connSettings, $destination){
+    public function fedexSmallEnitArr($connSettings, $destination)
+    {
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
             'serverName' => "https://" . $this->storeData['store']['name'],
@@ -253,7 +260,8 @@ class GenerateRequestData
         ];
     }
 
-    public function xpoLtlEnitArr($connSettings, $destination, $enitOrigin){
+    public function xpoLtlEnitArr($connSettings, $destination, $enitOrigin)
+    {
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '', //$this->connectionSettings['license_key'],
             'serverName' => "https://" . $this->storeData['store']['name'], //"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
@@ -266,12 +274,13 @@ class GenerateRequestData
         ];
     }
 
-    function rnlLtlEnitArr($connSettings, $destination, $enitOrigin, $lineItems){
-        if(isset($connSettings['quote_settings']['returnRates']) && $connSettings['quote_settings']['returnRates'] && $this->isPoBOX){
+    function rnlLtlEnitArr($connSettings, $destination, $enitOrigin, $lineItems)
+    {
+        if (isset($connSettings['quote_settings']['returnRates']) && $connSettings['quote_settings']['returnRates'] && $this->isPoBOX) {
             return [];
         }
         $shipmentPrice = $this->calculatePrice($lineItems);
-        if(isset($connSettings['quote_settings']['free_shipping_on_orders']) && $connSettings['quote_settings']['free_shipping_on_orders'] < $shipmentPrice ){
+        if (isset($connSettings['quote_settings']['free_shipping_on_orders']) && $connSettings['quote_settings']['free_shipping_on_orders'] < $shipmentPrice) {
             return [
                 'freeShipment' => true
             ];
@@ -288,10 +297,11 @@ class GenerateRequestData
         ];
     }
 
-    function calculatePrice($lineItems){
+    function calculatePrice($lineItems)
+    {
         $price = 0;
-        foreach ($lineItems as $item){
-            $price += $item['originalPiecesOfLineItem']*$item['lineItemPrice'];
+        foreach ($lineItems as $item) {
+            $price += $item['originalPiecesOfLineItem'] * $item['lineItemPrice'];
         }
         return $price;
     }
@@ -314,10 +324,10 @@ class GenerateRequestData
             $autoResidential = '1';
             $liftGateWithAuto = '1';
         }
-        $binReponse = $boxBins =[];
+        $binReponse = $boxBins = [];
 
-        if ($this->storeData['installed_addon_sbs'])
-        {
+        //
+        if ($this->storeData['installed_addon_sbs']) {
             $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? [];
             $this->itemsArr = $itemsArr;
             $this->carriers = $carriers;
@@ -325,9 +335,9 @@ class GenerateRequestData
             $hasSmall = isset($carriers['wweSmall'])
                 || isset($carriers['upsSmall'])
                 || isset($carriers['fedexSmall']);
-            if($hasSmall){
+            if ($hasSmall) {
                 $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
-                if(empty($multiplePackaging)){
+                if (empty($multiplePackaging)) {
                     return null;
                 }
                 $itemsArr = $multiplePackaging['itemsArr'];
@@ -339,29 +349,29 @@ class GenerateRequestData
                     ?? $carriers['upsSmall']['originAddress']
                     ?? $carriers['fedexSmall']['originAddress'];
 
-                if(isset($carriers['fedexSmall'])){
+                if (isset($carriers['fedexSmall'])) {
                     $this->checkServiceEnabled();
-                    if($this->ground) {
+                    if ($this->ground) {
                         $this->fedexType = 'normal'; // ground services
                         $sbsResponseGround = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
                         $itemsArrGround = $sbsResponseGround['items'] ?? $itemsArr;
 
                         unset($carriers['fedexSmall']['originAddress']);
-                        foreach ($sbsResponseGround['originAddress'] as $key => $origin){
+                        foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
                             $carriers['fedexSmall']['originAddress'][$key] = $origin;
                         }
                         $binReponse['ground'] = $sbsResponseGround['binResponse'];
                     }
 
-                    if($this->oneRate) {
+                    if ($this->oneRate) {
                         $this->fedexType = 'fedex'; // one rate services
                         $sbsResponseOneRate = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
-                        if(empty($sbsResponseOneRate['binResponse'])){
+                        if (empty($sbsResponseOneRate['binResponse'])) {
                             $this->oneRate = false;
-                        }else {
+                        } else {
                             $this->allPacked($sbsResponseOneRate);
                         }
-                        if($this->oneRate) {
+                        if ($this->oneRate) {
                             $itemsArrOneRate = $sbsResponseOneRate['items'] ?? $itemsArr;
                             $commdityDetails['one_rate_commdityDetails'] = $this->lineItems($itemsArrOneRate, $carriers['fedexSmall']['originAddress'], true, $sbsResponseOneRate['binResponse']);
                             $binReponse['oneRate'] = $sbsResponseOneRate['binResponse'];
@@ -369,7 +379,7 @@ class GenerateRequestData
 
                     }
 
-                    if($this->air) {
+                    if ($this->air) {
                         $this->fedexType = 'both'; // air services
                         $sbsResponseAir = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
                         $itemsArrAir = $sbsResponseAir['items'] ?? $itemsArr;
@@ -379,16 +389,16 @@ class GenerateRequestData
                     }
                     $itemsArr = $itemsArrGround;
                     $sbsResponse['binResponse'] = $binReponse;
-                }else {
+                } else {
                     $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
                     $itemsArr = $sbsResponse['items'] ?? $itemsArr;
                 }
 
 
-                if(isset($carriers['wweSmall'])) {
+                if (isset($carriers['wweSmall'])) {
                     $carriers['wweSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                 }
-                if(isset($carriers['upsSmall'])) {
+                if (isset($carriers['upsSmall'])) {
                     $carriers['upsSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                 }
                 $binReponse = $sbsResponse['binResponse'] ?? [];
@@ -398,8 +408,8 @@ class GenerateRequestData
                     || isset($carriers['fedexLTL'])
                     || isset($carriers['cerasis'])
                     || isset($carriers['globalTranz'])
-                || isset($carriers['xpoLogistics']);
-                if($isLtl){
+                    || isset($carriers['xpoLogistics']);
+                if ($isLtl) {
                     $itemsArr = $olditemsArr + $itemsArr;
                 }
             }
@@ -417,15 +427,15 @@ class GenerateRequestData
             'commdityDetails' => $itemsArr,
         ];
 
-        if(isset($carriers['fedexSmall'])) {
-            if($this->smartPost){
+        if (isset($carriers['fedexSmall'])) {
+            if ($this->smartPost) {
                 $requestArr['FedexSmartPostPricing'] = 1;
             }
-            if($this->air){
+            if ($this->air) {
                 $requestArr['FedexAirServicesPricing'] = 1;
                 $requestArr['air_services_commdityDetails'] = $commdityDetails['air_services_commdityDetails'];
             }
-            if($this->oneRate){
+            if ($this->oneRate) {
                 $requestArr['FedexOneRatePricing'] = 1;
                 $requestArr['one_rate_commdityDetails'] = $commdityDetails['one_rate_commdityDetails'];
             }
@@ -434,30 +444,32 @@ class GenerateRequestData
         return $resp;
     }
 
-    public function lineItems($items, $origins, $isOneRate = false, $binResponse = []){
+    public function lineItems($items, $origins, $isOneRate = false, $binResponse = [])
+    {
         $newItems = [];
-        foreach ($items as $key => $item){
+        foreach ($items as $key => $item) {
             $locationId = $origins[$key]['locationId'] ?? 1;
             $newItems[$locationId]['lineItems'][] = $item;
-            if($isOneRate) {
-                $newItems[$locationId]['one_rate_package_type'] = $binResponse[$locationId]->bins_packed[0]->bin_data->name  ?? '';
+            if ($isOneRate) {
+                $newItems[$locationId]['one_rate_package_type'] = $binResponse[$locationId]->bins_packed[0]->bin_data->name ?? '';
             }
         }
         return $newItems;
     }
 
-    public function allPacked($sbsResponseOneRate){
-        if($this->oneRate && isset($sbsResponseOneRate['binResponse'])){
-            foreach($sbsResponseOneRate['binResponse'] as $shipment => $binResponse){
+    public function allPacked($sbsResponseOneRate)
+    {
+        if ($this->oneRate && isset($sbsResponseOneRate['binResponse'])) {
+            foreach ($sbsResponseOneRate['binResponse'] as $shipment => $binResponse) {
                 $bins_packed = $binResponse->bins_packed ?? [];
-                if(!empty($bins_packed)){
-                    foreach ($bins_packed as $packed){
-                        if(isset($packed->bin_data->type) && $packed->bin_data->type == 'item'){
+                if (!empty($bins_packed)) {
+                    foreach ($bins_packed as $packed) {
+                        if (isset($packed->bin_data->type) && $packed->bin_data->type == 'item') {
                             $this->oneRate = false;
                             break 2;
                         }
                     }
-                }else{
+                } else {
                     $this->oneRate = false;
                     break;
                 }
@@ -465,26 +477,27 @@ class GenerateRequestData
         }
     }
 
-    public function checkServiceEnabled(){
+    public function checkServiceEnabled()
+    {
         $carrierServices = $this->connectionSettings['fedex-small']['quote_settings']['carrier_services'] ?? [];
-        foreach ($carrierServices as $key => $service){
+        foreach ($carrierServices as $key => $service) {
             $oneRate = ['one_rate_express_saver', 'one_rate_2_day', 'one_rate_2_day_am', 'one_rate_standard_overnight', 'one_rate_priority_overnight', 'one_rate_first_overnight'];
-            if(!$this->oneRate && $service && in_array($key, $oneRate)){
+            if (!$this->oneRate && $service && in_array($key, $oneRate)) {
                 $this->oneRate = true;
             }
 
             $ground = ['fedex_home_delivery', 'fedex_appointment_home_delivery', 'fedex_ground', 'international_ground', 'fedex_evening_home_delivery', 'fedex_date_certain_home_delivery', 'fedex_smartpost'];
-            if(!$this->ground && $service && in_array($key, $ground)){
+            if (!$this->ground && $service && in_array($key, $ground)) {
                 $this->ground = true;
             }
 
             $smartPost = ['fedex_smartpost'];
-            if(!$this->smartPost && $service && in_array($key, $smartPost)){
+            if (!$this->smartPost && $service && in_array($key, $smartPost)) {
                 $this->smartPost = true;
             }
 
             $air = ['fedex_express_saver', 'fedex_2_day', 'fedex_2_day_am', 'fedex_priority_overnight', 'fedex_first_overnight', 'international_distribution_freight', 'international_economy', 'international_economy_distribution', 'international_economy_freight', 'international_first', 'international_priority', 'international_priority_distribution', 'international_priority_freight', 'priority_overnight', 'standard_overnight'];
-            if(!$this->air && $service && in_array($key, $air)){
+            if (!$this->air && $service && in_array($key, $air)) {
                 $this->air = true;
             }
         }
@@ -495,28 +508,29 @@ class GenerateRequestData
      * handle if item marked as ship as multiple packaging
      * get box related to item id and re create items array according to boxes
      */
-    public function handleShipAsMultiplePackaging($carriers, $itemsArr){
+    public function handleShipAsMultiplePackaging($carriers, $itemsArr)
+    {
         $locationIds = [];
-        foreach ($carriers as $carrierName => $carrier){
-            foreach($carrier['originAddress'] as $varriantId => $origin){
+        foreach ($carriers as $carrierName => $carrier) {
+            foreach ($carrier['originAddress'] as $varriantId => $origin) {
                 $isShipAsMultiplePackage = $itemsArr[$varriantId]['shipMultiplePackage'] ?? false;
-                if(!in_array($origin['locationId'], $locationIds)){
-                    $locationIds[] = (int) $origin['locationId'];
+                if (!in_array($origin['locationId'], $locationIds)) {
+                    $locationIds[] = (int)$origin['locationId'];
                 }
-                if($isShipAsMultiplePackage){
+                if ($isShipAsMultiplePackage) {
                     $boxSizeController = new BoxSizeController();
                     $getBoxes = $boxSizeController->getBoxesByProductId($itemsArr[$varriantId]['id']);
-                    if(empty($getBoxes)){
+                    if (empty($getBoxes)) {
                         return [];
-                    }else{
-                        foreach ($getBoxes as $key => $box){
+                    } else {
+                        foreach ($getBoxes as $key => $box) {
                             $key = substr(str_shuffle("0123456789"), 0, 5);
                             $boxFee = $box['box_fee'] ?? 0;
-                            $variantId = $this->generateVariantId($itemsArr, 'id',$box['product_id']);
+                            $variantId = $this->generateVariantId($itemsArr, 'id', $box['product_id']);
                             $price = $itemsArr[$variantId]['lineItemPrice'] ?? 0;
-                            $price = (($price/count($getBoxes))/$box['quantity'])+$boxFee;
+                            $price = (($price / count($getBoxes)) / $box['quantity']) + $boxFee;
                             $itemsArr[$key] = $itemsArr[$varriantId];
-                            $itemsArr[$key]['piecesOfLineItem'] = $itemsArr[$key]['piecesOfLineItem']*$box['quantity'];
+                            $itemsArr[$key]['piecesOfLineItem'] = $itemsArr[$key]['piecesOfLineItem'] * $box['quantity'];
                             $itemsArr[$key]['lineItemLength'] = $box['length'] ?? 0;
                             $itemsArr[$key]['lineItemWidth'] = $box['width'] ?? 0;
                             $itemsArr[$key]['lineItemHeight'] = $box['height'] ?? 0;
@@ -535,15 +549,15 @@ class GenerateRequestData
         $res = [
             'carriers' => $carriers,
             'itemsArr' => $itemsArr,
-            'isMultishipment' => count($locationIds) > 1 ? true: false
+            'isMultishipment' => count($locationIds) > 1 ? true : false
         ];
         return $res;
     }
 
-    public function generateVariantId($products, $field, $value){
-        foreach($products as $key => $product)
-        {
-            if ( $product[$field] === $value )
+    public function generateVariantId($products, $field, $value)
+    {
+        foreach ($products as $key => $product) {
+            if ($product[$field] === $value)
                 return $key;
         }
         return 0;
@@ -556,7 +570,7 @@ class GenerateRequestData
      */
     public function getApiInfoArrWweLtl($connSettings, $destination)
     {
-        $liftGate = ( (isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
+        $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
         /*
          * Check if rad hit not consumed and residential is enables
@@ -564,31 +578,31 @@ class GenerateRequestData
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
-        if( $this->storeData['installed_addon_rad'] && ( (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))){
-            if($this->radHitConsumed == 0){
+        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+            if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
                 $this->residential = $residential;
-            }else{
+            } else {
                 $residential = $this->residential;
             }
-            if($liftGate != 'Y'){
+            if ($liftGate != 'Y') {
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
-        }else{
+        } else {
             $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
         }
 
         $this->resiCarrier['wweLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['wweLtl'] = $alwaysResi;
 
-        $residentialPickup = ( isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
+        $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
 
         $insurance = [
             'code' => '',
             'value' => ''
         ];
-        if(isset($connSettings['quote_settings']['insurance_category'])){
+        if (isset($connSettings['quote_settings']['insurance_category'])) {
             $insuranceCategory = explode('-', $connSettings['quote_settings']['insurance_category']);
             $insurance = [
                 'code' => $insuranceCategory[0] ?? '',
@@ -604,13 +618,17 @@ class GenerateRequestData
             'speed_freight_lift_gate_delivery' => $liftGate,
             'speed_freight_residential_pickup' => $residentialPickup,
             'insureShipment' => 0,
-            'insuranceCategory' => $insurance
+            'insuranceCategory' => $insurance,
+            'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? '',
+            'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? '',
         ];
-        return $apiArray;
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
+
     }
 
-    public function getApiInfoArrGTZLtl($connSettings, $destination, $carName){
-        $liftGate = ( (isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
+    public function getApiInfoArrGTZLtl($connSettings, $destination, $carName)
+    {
+        $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
         /*
          * Check if rad hit not consumed and residential is enables
@@ -619,20 +637,20 @@ class GenerateRequestData
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
 
-        if( $this->storeData['installed_addon_rad'] && ( (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))){
+        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
 
-            if($this->radHitConsumed == 0){
+            if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
                 $this->residential = $residential;
 
-            }else{
+            } else {
                 $residential = $this->residential;
             }
-            if($liftGate != 'Y'){
+            if ($liftGate != 'Y') {
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
-        }else{
+        } else {
             $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
         }
 
@@ -640,13 +658,13 @@ class GenerateRequestData
         $this->resiCarrier['gtzLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['gtzLtl'] = $alwaysResi;
 
-        $residentialPickup = ( isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
+        $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
 
         $insurance = [
             'code' => '',
             'value' => ''
         ];
-        if(isset($connSettings['quote_settings']['insurance_category'])){
+        if (isset($connSettings['quote_settings']['insurance_category'])) {
             $insuranceCategory = explode('-', $connSettings['quote_settings']['insurance_category']);
             $insurance = [
                 'code' => $insuranceCategory[0] ?? '',
@@ -655,19 +673,19 @@ class GenerateRequestData
         }
         $accessorial = [];
 
-        if($carName === 'globalTranz'){ // for globaltranz
+        if ($carName === 'globalTranz') { // for globaltranz
             $notify = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']);
             $limitedAccess = $connSettings['quote_settings']['offer_limited_access_delivery'] ?? false;
-            if($residential === 'Y' || $alwaysResi) {
+            if ($residential === 'Y' || $alwaysResi) {
                 $accessorial['RSD'] = 14;
             }
-            if($liftGate === 'Y') {
+            if ($liftGate === 'Y') {
                 $accessorial['LGD'] = 12;
             }
-            if($notify){
+            if ($notify) {
                 $accessorial['NBD'] = 17;
             }
-            if($limitedAccess){
+            if ($limitedAccess) {
                 $accessorial['LAD'] = 139;
             }
             $connSettings['creds'] = $connSettings['creds']['global_tranz'];
@@ -685,20 +703,20 @@ class GenerateRequestData
                 'accessorial' => $accessorial,
                 'guaranteedRates' => $guaranteedService
             ];
-        }else { // for cerasis
-            if($residential === 'Y' || $alwaysResi) {
+        } else { // for cerasis
+            if ($residential === 'Y' || $alwaysResi) {
                 $accessorial['RESDEL'] = 'RESDEL';
             }
-            if($liftGate === 'Y') {
+            if ($liftGate === 'Y') {
                 $accessorial['LFTGATDEST'] = 'LFTGATDEST';
             }
             $finalMileService = '';
-            if(isset($connSettings['quote_settings']['final_mile_service_level']) && $connSettings['quote_settings']['final_mile_service_level']){
-                if($connSettings['quote_settings']['final_mile_service_level'] == 'premium'){
+            if (isset($connSettings['quote_settings']['final_mile_service_level']) && $connSettings['quote_settings']['final_mile_service_level']) {
+                if ($connSettings['quote_settings']['final_mile_service_level'] == 'premium') {
                     $finalMileService = 'PREMIUM_FM';
-                }else if($connSettings['quote_settings']['final_mile_service_level'] == 'threshold'){
+                } else if ($connSettings['quote_settings']['final_mile_service_level'] == 'threshold') {
                     $finalMileService = 'THRSHLD_FM';
-                }else if($connSettings['quote_settings']['final_mile_service_level'] == 'room_of_choice'){
+                } else if ($connSettings['quote_settings']['final_mile_service_level'] == 'room_of_choice') {
                     $finalMileService = 'ROOMCHC_FM';
                 }
             }
@@ -708,7 +726,7 @@ class GenerateRequestData
                 'password' => $connSettings['creds']['password'],
                 'accessKey' => $connSettings['creds']['access_key'],
                 'shipperID' => $connSettings['creds']['customer_id'],
-                'isFinalMile' => isset($connSettings['quote_settings']['shipping_service']) && $connSettings['quote_settings']['shipping_service'] == 'final_mile' ? 1:0,
+                'isFinalMile' => isset($connSettings['quote_settings']['shipping_service']) && $connSettings['quote_settings']['shipping_service'] == 'final_mile' ? 1 : 0,
                 'finalMileService' => $finalMileService,
                 'cerasisApiVersion' => '2.0',
                 'direction' => 'Dropship',
@@ -718,11 +736,13 @@ class GenerateRequestData
                 'accessorial' => $accessorial
             ];
         }
-        return $apiArray;
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
+
     }
 
-    public function getApiInfoArrFedexLtl($connSettings, $destination, $enitOrigin){
-        $liftGate = ( (isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
+    public function getApiInfoArrFedexLtl($connSettings, $destination, $enitOrigin)
+    {
+        $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
         /*
          * Check if rad hit not consumed and residential is enables
@@ -730,44 +750,45 @@ class GenerateRequestData
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
-        if( $this->storeData['installed_addon_rad'] && ( (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))){
-            if($this->radHitConsumed == 0){
+        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+            if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
                 $this->residential = $residential;
 
-            }else{
+            } else {
                 $residential = $this->residential;
             }
-            if($liftGate != 'Y'){
+            if ($liftGate != 'Y') {
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
-        }else{
+        } else {
             $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
         }
 
 
         $this->resiCarrier['fedexLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['fedexLtl'] = $alwaysResi;
-        $residentialPickup = ( isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
+        $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
 
         $accessorial = [];
-        if($liftGate == 'Y') {
+        if ($liftGate == 'Y') {
             array_push($accessorial, 'LIFTGATE_DELIVERY');
         }
         $discount = 0;
-        if(isset($connSettings['quote_settings']['account_discount']) && $connSettings['quote_settings']['account_discount'] === 2){
-            $discount = (int) $connSettings['quote_settings']['account_discount_price'] ?? 0;
+        if (isset($connSettings['quote_settings']['account_discount']) && $connSettings['quote_settings']['account_discount'] === 2) {
+            $discount = (int)$connSettings['quote_settings']['account_discount_price'] ?? 0;
         }
         $isShipper = false;
-        if(isset($connSettings['creds']['physical_zip'])){
-            foreach ($enitOrigin as $origin){
-                if($connSettings['creds']['physical_zip'] === $origin['senderZip']){
+        if (isset($connSettings['creds']['physical_zip'])) {
+            foreach ($enitOrigin as $origin) {
+                if ($connSettings['creds']['physical_zip'] === $origin['senderZip']) {
                     $isShipper = true;
                     break;
                 }
             }
         }
+
         $apiArray = [
             'AccountNumber' => $connSettings['creds']['account_number'] ?? '',
             'MeterNumber' => $connSettings['creds']['meter_number'] ?? '',
@@ -787,7 +808,7 @@ class GenerateRequestData
             'shippingChargesBy' => 'SENDER', // valid values RECIPIENT, SENDER and THIRD_PARTY
             'thirdPartyAccount' => $connSettings['creds']['third_party_account'] ?? '',
             'freightAccountType' => 'SENDER', //   SENDER / THIRD_PARTY
-            'accountType' => $isShipper ? 'shipper':'thirdParty', // thirdParty / shipper
+            'accountType' => $isShipper ? 'shipper' : 'thirdParty', // thirdParty / shipper
             //shipper if origin zip and physical address zip is same
             // -------------API INFO------------- //
             'residentialDelivery' => $alwaysResi ? 'Y' : $residential, // Y/N
@@ -818,13 +839,12 @@ class GenerateRequestData
             'accessorial' => $accessorial,
             /*array('DANGEROUS_GOODS', 'LIFTGATE_DELIVERY'),*/
         ];
-
-
-        return $apiArray;
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
 
-    function getApiInfoArrXPOLtl($connSettings, $destination, $enitOrigin){
-        $liftGate = ( (isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
+    function getApiInfoArrXPOLtl($connSettings, $destination, $enitOrigin)
+    {
+        $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
         /*
          * Check if rad hit not consumed and residential is enables
@@ -832,33 +852,33 @@ class GenerateRequestData
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
-        if( $this->storeData['installed_addon_rad'] && ( (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))){
-            if($this->radHitConsumed == 0){
+        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+            if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
                 $this->residential = $residential;
 
-            }else{
+            } else {
                 $residential = $this->residential;
             }
-            if($liftGate != 'Y'){
+            if ($liftGate != 'Y') {
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
-        }else{
+        } else {
             $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
         }
 
 
         $this->resiCarrier['xpoLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['xpoLtl'] = $alwaysResi;
-        $residentialPickup = ( isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
+        $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
 
         $accessorial = [];
 
-        if($residential === 'Y' || $alwaysResi) {
+        if ($residential === 'Y' || $alwaysResi) {
             $accessorial['RSD'] = 'RSD';
         }
-        if($liftGate === 'Y') {
+        if ($liftGate === 'Y') {
             $accessorial['DLG'] = 'DLG';
         }
         $apiArray = [
@@ -872,12 +892,12 @@ class GenerateRequestData
             'accessorial' => $accessorial
         ];
 
-
-        return $apiArray;
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
 
-    function getApiInfoArrRNLLtl($connSettings, $destination, $enitOrigin){
-        $liftGate = ( (isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
+    function getApiInfoArrRNLLtl($connSettings, $destination, $enitOrigin)
+    {
+        $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
         /*
          * Check if rad hit not consumed and residential is enables
@@ -885,19 +905,19 @@ class GenerateRequestData
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
-        if( $this->storeData['installed_addon_rad'] && ( (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))){
-            if($this->radHitConsumed == 0){
+        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+            if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
                 $this->residential = $residential;
 
-            }else{
+            } else {
                 $residential = $this->residential;
             }
-            if($liftGate != 'Y'){
+            if ($liftGate != 'Y') {
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
-        }else{
+        } else {
             $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
         }
 
@@ -928,14 +948,16 @@ class GenerateRequestData
             'storeDateTime' => date('Y-m-d H:i:s'),
             'shipmentWeekDays' => array('4','5'),*/
         ];
-        return $apiArray;
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
+
     }
 
     /*
      * checkRadStatus to check Rad plan if enabled and
      * **/
 
-    private function checkRadStatus($storeId, $address){
+    private function checkRadStatus($storeId, $address)
+    {
         $smarty = new SmartyStreet();
         return $smarty->getSmartyResponse($storeId, $address);
     }
@@ -945,17 +967,17 @@ class GenerateRequestData
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
-        if( $this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])){
-            if($this->radHitConsumed == 0){
+        if ($this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])) {
+            if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
                 $this->residential = $residential;
 
-            }else{
+            } else {
                 $residential = $this->residential;
             }
 
-        }else{
+        } else {
             $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
         }
 
@@ -966,29 +988,30 @@ class GenerateRequestData
             'speed_ship_password' => $connSettings['creds']['password'],
             'authentication_key' => $connSettings['creds']['authentication_key'],
             'world_wide_express_account_number' => $connSettings['creds']['account_number'],
-            'residentials_delivery' =>  ( $alwaysResi ? 'Y' : $residential == 'Y' ) ? 'yes':'no',
+            'residentials_delivery' => ($alwaysResi ? 'Y' : $residential == 'Y') ? 'yes' : 'no',
             'prefferedCurrency' => 'USD',
             'includeDeclaredValue' => "1",
         ];
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
 
-        return $apiArray;
     }
 
-    public function getApiInfoArrUpsSmall($connSettings, $destination){
+    public function getApiInfoArrUpsSmall($connSettings, $destination)
+    {
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
-        if( $this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])){
-            if($this->radHitConsumed == 0){
+        if ($this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])) {
+            if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
                 $this->residential = $residential;
 
-            }else{
+            } else {
                 $residential = $this->residential;
             }
 
-        }else{
+        } else {
             $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
         }
         $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
@@ -1006,9 +1029,9 @@ class GenerateRequestData
             'storeDateTime' => date("Y-m-d H:i:s"), //2020-10-22 14:00:00
             'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
 
-            'ups_small_pkg_resid_delivery' =>  ( $alwaysResi ? 'Y' : $residential == 'Y' ) ? 'yes':'no',
+            'ups_small_pkg_resid_delivery' => ($alwaysResi ? 'Y' : $residential == 'Y') ? 'yes' : 'no',
             'prefferedCurrency' => 'USD',
-            'services'=>[
+            'services' => [
                 'ups_small_pkg_Ground' => $this->issetIndex($carrierServices, 'ups_ground'),
                 'ups_small_pkg_3_Day_Select' => $this->issetIndex($carrierServices, 'ups_3_day_select'),
 
@@ -1036,27 +1059,28 @@ class GenerateRequestData
         return $apiArray;
     }
 
-    function getApiInfoArrFedexSmall($connSettings, $destination){
+    function getApiInfoArrFedexSmall($connSettings, $destination)
+    {
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
-        if( $this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])){
-            if($this->radHitConsumed == 0){
+        if ($this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])) {
+            if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
                 $this->residential = $residential;
 
-            }else{
+            } else {
                 $residential = $this->residential;
             }
 
-        }else{
+        } else {
             $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
         }
         $this->resiCarrier['fedexSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['fedexSmall'] = $alwaysResi;
-        $hubIdindicia = explode('(', $connSettings['creds']['hub_id']);
-        $hubId = trim($hubIdindicia[0]);
+        $hubIdindicia = isset($connSettings['creds']['hub_id']) ? explode('(', $connSettings['creds']['hub_id']) : '';
+        $hubId = isset($hubIdindicia[0]) ? trim($hubIdindicia[0]) : '';
         $indicia = 'PARCEL_SELECT';//trim(explode(')',$hubIdindicia[1])[0]);
         $smartPostData = [
             'hubId' => $hubId,
@@ -1068,9 +1092,9 @@ class GenerateRequestData
             'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
             'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
             'storeDateTime' => date("Y-m-d H:i:s"), //2020-10-22 14:00:00
-            'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days'])?$this->getDays($connSettings['quote_settings']['week_days']):'', //array('1','2','3','4','5'),
+            'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
 
-            'residentialDelivery' =>  ( $alwaysResi ? 'Y' : $residential == 'Y' ) ? 'on':'off',
+            'residentialDelivery' => ($alwaysResi ? 'Y' : $residential == 'Y') ? 'on' : 'off',
 
             'MeterNumber' => $connSettings['creds']['meter_number'],
             'password' => $connSettings['creds']['password'],
@@ -1085,20 +1109,22 @@ class GenerateRequestData
         return $apiArray;
     }
 
-    private function getDays($days){
-        $daysNameKey = ['Monday'=>1, 'Tuesday'=>2, 'Wednesday'=>3, 'Thursday'=>4, 'Friday' => 5];
+    private function getDays($days)
+    {
+        $daysNameKey = ['Monday' => 1, 'Tuesday' => 2, 'Wednesday' => 3, 'Thursday' => 4, 'Friday' => 5];
         $selectedDays = [];
-        foreach ($days as $dayName=>$day){
-            if(isset($daysNameKey[$day])){
+        foreach ($days as $dayName => $day) {
+            if (isset($daysNameKey[$day])) {
                 array_push($selectedDays, $daysNameKey[$day]);
             }
         }
         return $selectedDays;
     }
 
-    private function issetIndex($quoteSettings, $index){
+    private function issetIndex($quoteSettings, $index)
+    {
         $resp = 'N';
-        if(isset($quoteSettings[$index]) && $quoteSettings[$index] === true) {
+        if (isset($quoteSettings[$index]) && $quoteSettings[$index] === true) {
             $resp = 'yes';
         }
         return $resp;
@@ -1107,7 +1133,7 @@ class GenerateRequestData
 
     public function getApiInfoArrUpsLtl($connSettings, $destination)
     {
-        $liftGate = ( (isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
+        $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
         /*
          * Check if rad hit not consumed and residential is enables
@@ -1115,30 +1141,30 @@ class GenerateRequestData
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
-        if( $this->storeData['installed_addon_rad'] && ( (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))){
-            if($this->radHitConsumed == 0){
+        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+            if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
                 $this->residential = $residential;
-            }else{
+            } else {
                 $residential = $this->residential;
             }
-            if($liftGate != 'Y'){
+            if ($liftGate != 'Y') {
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
-        }else{
+        } else {
             $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
         }
 
 
         //$this->resiCarrier['wweLtl'] = $residential;
 
-        $residentialPickup = ( isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
+        $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
 
 
         $this->resiCarrier['upsLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['upsLtl'] = $alwaysResi;
-        $paymentType = isset($connSettings['quote_settings']['shipper_relationship']) && $connSettings['quote_settings']['shipper_relationship'] === 'third_party' ? 'ThirdParty':'shipper';
+        $paymentType = isset($connSettings['quote_settings']['shipper_relationship']) && $connSettings['quote_settings']['shipper_relationship'] === 'third_party' ? 'ThirdParty' : 'shipper';
         $apiArray = [
             'accessLevel' => $connSettings['creds']['access_level'],
             'APIKey' => $connSettings['creds']['ups_api_access_key'],
@@ -1148,8 +1174,8 @@ class GenerateRequestData
             'paymentCode' => '10',
             'paymentDescription' => 'PREPAID',
             'paymentType' => $paymentType,
-            //'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'],
-            //'maxWeightPerHandlingUnit' => '',
+            'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? '',
+            'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? '',
             'serviceCode' => '308',
             'serviceCodeDescription' => 'UPS Freight LTL',
             'timeInTransitIndicator' => 'N',
@@ -1166,10 +1192,10 @@ class GenerateRequestData
                 'payerCity' => $connSettings['quote_settings']['third_party_city'] ?? '',
             ],
         ];
-        if($apiArray['paymentType'] === 'shipper'){
+        if ($apiArray['paymentType'] === 'shipper') {
             unset($apiArray['payerAddress']);
         }
-        return $apiArray;
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
 
     private function checkRadIsSuspend($storeId)
@@ -1179,11 +1205,11 @@ class GenerateRequestData
             ->leftjoin('packages as p', 'ps.package_id', '=', 'p.id')
             ->select('ps.id', 'ps.package_id as package_id', 'ps.expiry_time', 'ps.status', 'ps.created_at', 'ps.total_count as consumed_hits', 'p.htis as total_hits', 'pstbc.status as package_to_to_charge_status', 'pstbc.package_id as to_be_charge_package_id')
             ->where('store_id', $storeId)->where('p.addon_type', 'RAD')->latest()->first();
-        if(!isset($currentPackageSub->status)){
+        if (!isset($currentPackageSub->status)) {
             return true;
-        }else if($currentPackageSub->status == 3){
+        } else if ($currentPackageSub->status == 3) {
             return true;
-        }else{
+        } else {
             return false;
         }
     }
@@ -1191,11 +1217,11 @@ class GenerateRequestData
     public function getStoreBoxes($storeId, $itemsArr, $origins, $cartInfo, $isMultishipment)
     {
         $items = $itemsAlone = [];
-        foreach ($origins as $key => $origin){
+        foreach ($origins as $key => $origin) {
             $isNotLtl = !(isset($itemsArr[$key]['freightClass']) && $itemsArr[$key]['freightClass'] === 'ltl');
             $shipBinAlone = $itemsArr[$key]['shipBinAlone'] ?? false;
-            if($isNotLtl) {
-                if($shipBinAlone){
+            if ($isNotLtl) {
+                if ($shipBinAlone) {
                     $itemsAlone[$origin['locationId']][] = [
                         "variant_id" => $key,
                         "id" => $key,
@@ -1207,7 +1233,7 @@ class GenerateRequestData
                         "vr" => $itemsArr[$key]['vertical_rotation'] ?? 0,
                         "boxFee" => $itemsArr[$key]['boxFee'] ?? 0 //vertical 0 or 1
                     ];
-                }else {
+                } else {
                     $items[$origin['locationId']][] = [
                         "variant_id" => $key,
                         "id" => $key,
@@ -1223,7 +1249,7 @@ class GenerateRequestData
         }
 
         $boxBins = $newOrigins = $newitemsArr = [];
-        switch ($this->fedexType){
+        switch ($this->fedexType) {
             case 'normal':
                 $boxes = DB::table('box_sizes')->where('store_id', $storeId)
                     ->where('is_available', 1)->where('box_type', 1)->get();
@@ -1252,7 +1278,7 @@ class GenerateRequestData
             );
         }
         $hits = count($items);
-        if((count($items) && count($boxBins) ) || count($itemsAlone) ) {
+        if ((count($items) && count($boxBins)) || count($itemsAlone)) {
             $Bin3D = new Bin3D();
             $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment);
             if (count($binResponse)) {
@@ -1260,9 +1286,9 @@ class GenerateRequestData
 
                 foreach ($itemsAlone as $key => $itemAlone) {
                     foreach ($itemAlone as $alone) {
-                        if(count($items) && isset($items[$key])){
+                        if (count($items) && isset($items[$key])) {
                             array_push($items[$key], $alone);
-                        }else{
+                        } else {
                             $items[$key][] = $alone;
                         }
                     }
@@ -1271,8 +1297,8 @@ class GenerateRequestData
 
                 $counting = 0;
                 $counting = 0;
-                foreach ($binResponse as $locationId => $bins){
-                    foreach ($bins->bins_packed as $key => $binPacked){
+                foreach ($binResponse as $locationId => $bins) {
+                    foreach ($bins->bins_packed as $key => $binPacked) {
 
                         $bin = $binPacked;
                         $counting++;
@@ -1329,7 +1355,7 @@ class GenerateRequestData
                 $newOrigins = $this->origins;
                 $newitemsArr = $this->itemsArr;
             }
-        }else{
+        } else {
             $newOrigins = $this->origins;
             $newitemsArr = $this->itemsArr;
         }
@@ -1342,15 +1368,16 @@ class GenerateRequestData
 
     }
 
-    public function updatCommdityDetails($item, $bin, $boxBins, $itemsArr){
+    public function updatCommdityDetails($item, $bin, $boxBins, $itemsArr)
+    {
 
         $boxWeight = 0;
         $price = $item['lineItemPrice'] ?? 0;
-        if(isset($bin->bin_data->id) && isset($boxBins[$bin->bin_data->id])){
+        if (isset($bin->bin_data->id) && isset($boxBins[$bin->bin_data->id])) {
             $boxWeight = $boxBins[$bin->bin_data->id]['box_weight'];
             $price = 0;
-            if(isset($bin->items)) {
-                foreach ($bin->items as $itemData){
+            if (isset($bin->items)) {
+                foreach ($bin->items as $itemData) {
                     $price += $itemsArr[$itemData->id]['lineItemPrice'] ?? 0;
                 }
             }
@@ -1363,24 +1390,25 @@ class GenerateRequestData
 
         //$item['piecesOfLineItem'] = 1 ?? 0;
         $item['shipItemAlone'] = 1;
-        if( (isset($item['shipBinAlone']) && $item['shipBinAlone'] == 0 )){
+        if ((isset($item['shipBinAlone']) && $item['shipBinAlone'] == 0)) {
             $item['piecesOfLineItem'] = 1;
         }
-        if(isset($bin->bin_data->type) && $bin->bin_data->type == 'item' && isset($bin->bin_data->id)) {
+        if (isset($bin->bin_data->type) && $bin->bin_data->type == 'item' && isset($bin->bin_data->id)) {
             $item['variant_id'] = $bin->bin_data->id ?? 0;
         }
         return $item;
     }
 
-    public function addPackagingID($binResponse, $boxBins){
-        foreach ($binResponse as $locationId => $bins){
-            foreach ($bins->bins_packed as $key => $bin){
+    public function addPackagingID($binResponse, $boxBins)
+    {
+        foreach ($binResponse as $locationId => $bins) {
+            foreach ($bins->bins_packed as $key => $bin) {
                 $items = $bin->items;
                 $item = $items[0];
                 $variant_id = $item->id;
                 $binResponse[$locationId]->bins_packed[$key]->bin_data->variant_id = $variant_id;
                 $boxId = $bin->bin_data->id ?? 0;
-                $binResponse[$locationId]->bins_packed[$key]->bin_data->name = isset($boxBins[$boxId]['name']) ? strtoupper(str_replace(' ','_',trim(explode('__',$boxBins[$boxId]['name'])[0]))) : '';
+                $binResponse[$locationId]->bins_packed[$key]->bin_data->name = isset($boxBins[$boxId]['name']) ? strtoupper(str_replace(' ', '_', trim(explode('__', $boxBins[$boxId]['name'])[0]))) : '';
             }
         }
         return $binResponse;
@@ -1487,5 +1515,32 @@ class GenerateRequestData
             }
         }
         return $getMilesGoogleApi;
+    }
+
+
+    /**
+     * @param $connSettings
+     * @return array
+     */
+    public function getCutOffDetails($connSettings): array
+    {
+        $delEstimateOption = $connSettings['quote_settings']['delivery_estimate_options'] ?? 1;
+        $fulfillmentOffsetDays = $connSettings['quote_settings']['fulfillment_offset_days'] ?? null;
+        $orderCutOffTime = $connSettings['quote_settings']['order_cut_off_time'] ?? null;
+        $shipmentWeekDays = isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : null;
+        $modifyShipmentDateTime = $delEstimateOption != 1 && (!blank($fulfillmentOffsetDays) || !blank($orderCutOffTime) || !blank($shipmentWeekDays)) ? '1' : '0';
+        return [
+            'modifyShipmentDateTime' => $modifyShipmentDateTime,
+            'OrderCutoffTime' => $orderCutOffTime,
+            'shipmentOffsetDays' => $fulfillmentOffsetDays,
+            'storeDateTime' => $this->getStoreDateTime(), //2020-10-22 14:00:00
+            'shipmentWeekDays' => $shipmentWeekDays,
+        ];
+    }
+
+
+    public function getStoreDateTime()
+    {
+        return date("Y-m-d H:i:s");
     }
 }
