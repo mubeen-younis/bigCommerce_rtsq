@@ -66,7 +66,7 @@ class Shipping
                     [
                         'isHazmatLineItem' => 'Y',
                         'lineItemHazmatUNNumberHeader' => 'UN #',
-                        'lineItemHazmatUNNumber' => 'UN 1139',
+                        'lineItemHazmatUNNumber' => '1139',
                         'lineItemHazmatClass' => '1.1',
                         'lineItemHazmatEmContactPhone' => '4043308699',
                         'lineItemHazmatPackagingGroup' => 'I',
