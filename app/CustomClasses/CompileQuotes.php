@@ -1245,7 +1245,7 @@ class CompileQuotes
             }
             $originQuotes = [];
             $arraySorting = [];
-            $preCode = 'cerasisltl';
+            $preCode = 'cltl';
             if (isset($quote['q'])) {
                 if (isset($quote['hazardousStatus'])) {
                     $hazShipmentArr[$origin] = $quote['hazardousStatus'] == 'y' ? 'Y' : 'N';
