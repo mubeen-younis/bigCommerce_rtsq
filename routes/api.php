@@ -6,6 +6,7 @@ use App\Http\Controllers\CarrierController;
 use App\Http\Controllers\CarrierPlanController;
 use App\Http\Controllers\ConnectionController;
 use \App\Http\Controllers\Subscriptions;
+
 //use App\Http\Controllers\CsvController;
 use App\Http\Controllers\ExportImportProducts;
 use App\Http\Controllers\GetRatesController;
@@ -45,6 +46,8 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 Route::post('webhooks', [MainController::class, 'addAndUpdateProductFromWebHook']);
 Route::post('order/webhooks', [OrderController::class, 'orderFromWebhook']);
 Route::post('sku/webhooks', [ProductSettingController::class, 'skuFromWebhook']);
+Route::get('/add_to_test_stores', [MainController::class, 'addTestStore']);
+
 // Ws Route For Adding Plan
 Route::post('/save_plan_detail', [CarrierPlanController::class, 'addPlanFromWs']);
 Route::middleware([EnsureTokenIsValid::class])->group(function () {
@@ -192,7 +195,6 @@ Route::get('downloadcsv/{hash}', [ExportImportProducts::class, 'downloadCsv'])->
 Route::post('/uploadcsv', [ExportImportProducts::class, 'uploadCsv'])->name('uploadcsv');
 
 Route::get('splitCSVinChunks', [ExportImportProducts::class, 'splitCSVinChunks']);
-
 
 
 //plans

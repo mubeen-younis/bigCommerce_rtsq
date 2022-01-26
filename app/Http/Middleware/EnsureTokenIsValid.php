@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Helpers\Helper;
 use App\Models\Store;
 use Closure;
 use Illuminate\Http\Request;
@@ -30,6 +31,8 @@ class EnsureTokenIsValid
                 $request['store_id'] = $store->id;
                 $request['store_name'] = $store->name;
                 $request['store_hash'] = $store->hash;
+                // Setting Stripe Api Key For store
+                Helper::setStripeAPiKey($store->hash);
                 return $next($request);
             }
             return response()->json(['error' => true,
