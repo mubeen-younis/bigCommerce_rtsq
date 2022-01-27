@@ -19,9 +19,9 @@ class Helper
         return DB::table('test_stores')->where('store_hash', $storeHash)->exists();
     }
 
-    public static function setStripeAPiKey($storeHash)
+    public static function setStripeAPiKey($testStore)
     {
-        if (Helper::checkIsTestStore($storeHash)) {
+        if ($testStore) {
             Stripe::setApiKey(config('app.stripe_sandbox_secret'));
         } else {
             Stripe::setApiKey(config('app.stripe_secret'));
