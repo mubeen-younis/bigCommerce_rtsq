@@ -1245,7 +1245,7 @@ class CompileQuotes
             }
             $originQuotes = [];
             $arraySorting = [];
-            $preCode = 'cerasisltl';
+            $preCode = 'cltl';
             if (isset($quote['q'])) {
                 if (isset($quote['hazardousStatus'])) {
                     $hazShipmentArr[$origin] = $quote['hazardousStatus'] == 'y' ? 'Y' : 'N';
@@ -1695,11 +1695,15 @@ class CompileQuotes
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
                 if (count($compiledQuotes) > 1) {
                     foreach ($compiledQuotes as $k => $service) {
-                        $allQuotes['simple'][] = $service['simple'];
-                        $multiShipmentQuotes['simple'][$origin] = $service['simple'];
-                        $lgQuotes && isset($service['liftgate']) ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
-                        $lgQuotes && isset($service['liftgate']) ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
+                        $allQuotes['simple'][] = $service['simple'][0] ?? $service['simple'];
+                        $multiShipmentQuotes['simple'][$origin] = $service['simple'][0] ?? $service['simple'];
+                        $lgQuotes && isset($service['liftgate']) ? $allQuotes['liftgate'][] = $service['liftgate'][0] ?? $service['liftgate'] : null;
+                        $lgQuotes && isset($service['liftgate']) ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'][0] ?? $service['liftgate'] : null;
+                        if($this->isMultiShipment){
+                            break;
+                        }
                     }
+
                 } else {
                     $service = reset($compiledQuotes);
                     $allQuotes['simple'][] = $service['simple'] ?? '';

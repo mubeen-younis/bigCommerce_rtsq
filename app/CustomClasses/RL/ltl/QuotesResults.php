@@ -72,7 +72,7 @@ class QuotesResults
                                 $key = isset($shipments[$shipment]['q']) ? count($shipments[$shipment]['q']) : 0;
                                 $shipments[$shipment]['q'][$key] = $quote;
                                 $shipments[$shipment]['q'][$key]['serviceType'] = $quote['Code'] ?? '';
-                                $shipments[$shipment]['q'][$key]['serviceDesc'] = $quote['Title'] ?? '';
+                                $shipments[$shipment]['q'][$key]['serviceDesc'] = $this->title($quote['Code']);//$quote['Title'] ?? '';
                                 $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = (float)str_replace('$', '', str_replace(',', '', $quote['NetCharge']));
                                 $shipments[$shipment]['q'][$key]['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
                                 $shipments[$shipment]['q'][$key]['transitTime'] = $quote['transitTime'] ?? '';
@@ -101,7 +101,20 @@ class QuotesResults
                 }
             }
         }
+        //print_r($shipments); exit;
         return $shipments;
+    }
+
+    function title($code){
+        $title = 'Standard Service';
+        if($code === 'GSDS'){
+            $title = 'Guaranteed PM';
+        }else if($code === 'GSAM'){
+            $title = 'Guaranteed AM';
+        }else if($code === 'GSHW'){
+            $title = 'Guaranteed Hourly Window';
+        }
+        return $title;
     }
 
     function getPrice($price, $hatPrice){
