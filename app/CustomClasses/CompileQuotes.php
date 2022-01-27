@@ -1047,6 +1047,7 @@ class CompileQuotes
             $originQuotes = [];
             $arraySorting = [];
             $preCode = 'gtzltl';
+            //print_r($quote['q']); exit;
             if (isset($quote['q'])) {
                 if (isset($quote['hazardousStatus'])) {
                     $hazShipmentArr[$origin] = $quote['hazardousStatus'] == 'y' ? 'Y' : 'N';
@@ -2711,7 +2712,9 @@ class CompileQuotes
             }
         }
         if (isset($this->quoteSettings['method']) && $this->quoteSettings['method'] != 0) {
+
             $quotes = $this->getGTZQuotes($servicesOriginal, $arraySorting, $lgQuotes);
+
         }
         $quotes = array_merge($quotes, $quickest);
         foreach ($quotes as $key => $quote) {
@@ -2722,6 +2725,7 @@ class CompileQuotes
                 unset($quotes[$key]['liftgate']['titleQuickest']);
             }
         }
+        //print_r($quotes); exit;
         return $quotes;
     }
 
@@ -2739,15 +2743,22 @@ class CompileQuotes
         } else {
             $options = 1;
         }
-        $sliced = array_slice($arraySorting['simple'], 0, $options, true);
+        if($lgQuotes){
+            $sliced = array_slice($arraySorting['liftgate'], 0, $options, true);
+        }else {
+            $sliced = array_slice($arraySorting['simple'], 0, $options, true);
+        }
+
         if ($this->quoteSettings['method'] == 3) {
             return $this->averageRattingMethod($arraySorting, $options, $lgQuotes);
         }
         if ($lgQuotes && $options === 1) {
+
             $slicedLg = array_slice($arraySorting['liftgate'], 0, $options, true);
 
             $resp = array_intersect_key($services, $sliced);
             $respLg = array_intersect_key($services, $slicedLg);
+
             $resp[array_key_first($resp)]['liftgate'] = $respLg[array_key_first($respLg)]['liftgate'];
         } else {
             $resp = array_intersect_key($services, $sliced);
