@@ -37,7 +37,7 @@ class SubscriptionController extends Controller
 
     public function __construct()
     {
-        Stripe::setApiKey(config('app.stripe_secret'));
+        // Stripe::setApiKey(config('app.stripe_secret'));
     }
 
     public function validateRequest($request)
@@ -288,7 +288,8 @@ class SubscriptionController extends Controller
             $hubSpotController = new HubSpotController();
             //Check: If current carriers installed are more than the choosed plan then return with message
             $currentSubscriptionDetail = $this->subscriptionDetailFromDB($request['store_id']);
-            self::getPlansDetails($request['plan']);   //Getting Plan detail from DB
+            $isTestStore = $request['is_test_store'] ?? false;
+            self::getPlansDetails($request['plan'], $isTestStore);   //Getting Plan detail from DB
             $newPlanAllowedCarriers = self::$plansData['carrier_count'];
             if (!is_null($currentSubscriptionDetail) && $currentSubscriptionDetail->total_installed_carriers > $newPlanAllowedCarriers) {
                 return response()->json([
@@ -402,7 +403,7 @@ class SubscriptionController extends Controller
                     'address' => $request['address'] ?? '',
                     'phone' => $request['phone'] ?? '',
                 ];
-                $status = [ 'products_purchased' => true ];
+                $status = ['products_purchased' => true];
                 $hubSpotController->createUpdateHubSpotUser($data['store_id'], $user, $status);
 
             } else {
@@ -420,8 +421,8 @@ class SubscriptionController extends Controller
                 /*
                  * Create Hub spot user and activate trial
                  */
-                $user = [ 'email' => $data['email'] ];
-                $status = [ 'product_trials' => true ];
+                $user = ['email' => $data['email']];
+                $status = ['product_trials' => true];
 
                 $hubSpotController->createUpdateHubSpotUser($data['store_id'], $user, $status);
             }
@@ -445,7 +446,7 @@ class SubscriptionController extends Controller
                     'action' => 'IPF'       // Invoice Payment Failed
                 );
                 Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, 3));
-            }else{
+            } else {
                 /*
                   * Update WS graph data
                   * */
@@ -559,11 +560,11 @@ class SubscriptionController extends Controller
     //*************************************
     // This function is used to get the details of Plan to be subscribe
     //*************************************
-    public static function getPlansDetails($plan = 1)
+    public static function getPlansDetails($plan = 1, $testStore = false)
     {
         $getDefaultFreePlan = Plan::find($plan);
         self::$plansData['plan_id'] = $getDefaultFreePlan->id;
-        self::$plansData['stripe_plan_id'] = $getDefaultFreePlan->stripe_plan_id;
+        self::$plansData['stripe_plan_id'] = $testStore ? $getDefaultFreePlan->stripe_sandbox_plan_id : $getDefaultFreePlan->stripe_plan_id;
         self::$plansData['carrier_count'] = $getDefaultFreePlan->carrier_count;
         self::$plansData['cost'] = $getDefaultFreePlan->price;
         self::$plansData['name'] = $getDefaultFreePlan->name;
@@ -694,6 +695,8 @@ class SubscriptionController extends Controller
     public function cancelSubscriptionPlan(Request $request)
     {
         $storeId = $request['store_id'];
+        $isTestStore = $request['is_test_store'] ?? false;
+
         $dbSub = Subscription::where('store_id', $storeId)->latest()->first();
 
         if (isset($request['cancel']) && $request['cancel'] == 1) {
@@ -707,8 +710,8 @@ class SubscriptionController extends Controller
         } else {
             $subId = $dbSub->subscription_id;
             $planId = (int)$dbSub->plan_id;
-            $stripePlanId = Plan::find($planId)->stripe_plan_id;
-
+            $plan = Plan::find($planId);
+            $stripePlanId = $isTestStore ? $plan->stripe_sandbox_plan_id : $plan->stripe_plan_id;
             $res = $this->reActivateSubscriptionPlan($subId, $stripePlanId);
             if (isset($res['error']) && $res['error'] == false) {
                 //Because of simaltaneous execution of stripe and DB
@@ -892,10 +895,10 @@ class SubscriptionController extends Controller
                 'subscriptionId' => $paymentDetail->data->object->items->data[0]->subscription
             );
         }
-        if(!Subscription::where('stripe_id', $customerId)->exists()){
+        if (!Subscription::where('stripe_id', $customerId)->exists()) {
             return [
                 'error' => true,
-                'msg' =>'Customer does not exists.'
+                'msg' => 'Customer does not exists.'
             ];
         }
         $customer = \Stripe\Customer::retrieve($customerId);
@@ -952,7 +955,7 @@ class SubscriptionController extends Controller
             $userLost = true;
             Mail::to($email)->send(new PaymentFailedByWebHookEmail($emailData, $paymentStatus));
         }
-        if($userLost){
+        if ($userLost) {
             /*
              * Update WS graph data
              * */
@@ -960,8 +963,8 @@ class SubscriptionController extends Controller
             /*
              * Create Hub spot user and activate trial
              */
-            $user = [ 'email' => $customer->email ];
-            $status = [ 'products_lost' => true ];
+            $user = ['email' => $customer->email];
+            $status = ['products_lost' => true];
             $hubSpotController = new HubSpotController();
             $hubSpotController->createUpdateHubSpotUser($oldSubscription->store_id, $user, $status);
         }
@@ -986,10 +989,10 @@ class SubscriptionController extends Controller
         if ($eventType == 'customer.subscription.deleted') {
             $msg = 'Subscription has been cancelled';
             $re = $this->invoicePaymentActionByWebHook($paymentDetail, 2);
-            if(isset($re['error']) && $re['error']){
+            if (isset($re['error']) && $re['error']) {
                 $msg = $re['msg'] ?? $msg;
             }
-        }elseif ($eventType == 'invoice.payment_succeeded'){
+        } elseif ($eventType == 'invoice.payment_succeeded') {
 
             $msg = 'Subscription successful';
             $this->invoicePaymentActionByWebHook($paymentDetail, 1);
