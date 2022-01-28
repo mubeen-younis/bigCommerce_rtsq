@@ -33,7 +33,7 @@ class EnsureTokenIsValid
                 $request['store_hash'] = $store->hash;
                 $isTestStore = Helper::checkIsTestStore($store->hash);
                 $request['is_test_store'] = $isTestStore;
-                // Setting Stripe Api Key For store
+                // Setting Stripe Api Key For stores
                 Helper::setStripeAPiKey($isTestStore);
                 return $next($request);
             }
