@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\HubSpotController;
 use App\Http\Controllers\SaleGraphController;
 use App\Mail\PaymentFailedByWebHookEmail;
+use App\Models\InstalledCarrier;
 use App\Models\Subscription\CarrierCount;
 use App\Models\Subscription\PaymentMethod;
 use App\Models\Subscription\Plan;
@@ -740,6 +741,11 @@ class SubscriptionController extends Controller
         } catch (\Exception $exception) {
             error_log('Card Decrypt' . $exception->getMessage());
         }
+        // Added this block of code for the bug of carrier count issue
+        // Bug of enabling carriers according to plan
+        $totalEnabledCarriersCount = InstalledCarrier::where('store_id', $storeId)->where('is_enabled', 1)->count();
+        $data->total_remaining_carriers= $data->total_allowed_carriers-$totalEnabledCarriersCount;
+        ////////////////////////////
         if (!is_null($data)) {
             $data->total_installed_carriers = $data->total_allowed_carriers - $data->total_remaining_carriers;
             $data->ends_at = date('m/d/Y', strtotime($data->ends_at));
@@ -787,11 +793,11 @@ class SubscriptionController extends Controller
     {
         $number = 1;
         $storeId = $request['store_id'];
-
         //Check: If current carriers installed are more than the choosed plan then return with message
         $currentSubscriptionDetail = $this->subscriptionDetailFromDB($storeId);
-
-        if (($request['action'] == 1) && (is_null($currentSubscriptionDetail) || ($currentSubscriptionDetail->total_remaining_carriers == 0) || ($currentSubscriptionDetail->status == 3))) {
+        if (($request['action'] == 1) && (is_null($currentSubscriptionDetail) ||
+                ($currentSubscriptionDetail->total_remaining_carriers <= 0) ||
+                ($currentSubscriptionDetail->status == 3))) {
             $msg = 'You have reached the subscription carriers limit';
             if (is_null($currentSubscriptionDetail)) {
                 $msg = "You don't have any plan to install or enable the carrier";

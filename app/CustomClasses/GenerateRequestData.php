@@ -590,7 +590,7 @@ class GenerateRequestData
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
         } else {
-            $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
         }
 
         $this->resiCarrier['wweLtl'] = $residential;
@@ -651,7 +651,7 @@ class GenerateRequestData
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
         } else {
-            $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
         }
 
 
@@ -763,7 +763,7 @@ class GenerateRequestData
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
         } else {
-            $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
         }
 
 
@@ -865,7 +865,7 @@ class GenerateRequestData
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
         } else {
-            $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
         }
 
 
@@ -918,7 +918,7 @@ class GenerateRequestData
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
         } else {
-            $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
         }
 
 
@@ -978,7 +978,7 @@ class GenerateRequestData
             }
 
         } else {
-            $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
         }
 
         $this->resiCarrier['wweSmall'] = $residential;
@@ -1012,7 +1012,7 @@ class GenerateRequestData
             }
 
         } else {
-            $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
         }
         $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
         $this->resiCarrier['upsSmall'] = $residential;
@@ -1075,7 +1075,7 @@ class GenerateRequestData
             }
 
         } else {
-            $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
         }
         $this->resiCarrier['fedexSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['fedexSmall'] = $alwaysResi;
@@ -1153,7 +1153,7 @@ class GenerateRequestData
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
         } else {
-            $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
         }
 
 
@@ -1538,6 +1538,12 @@ class GenerateRequestData
         ];
     }
 
+
+    public function checkIsALwaysQuoteResDel($connSettings): bool
+    {
+        return isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery'];
+
+    }
 
     public function getStoreDateTime()
     {

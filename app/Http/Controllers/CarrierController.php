@@ -214,7 +214,7 @@ class CarrierController extends Controller
     public function changeCarrierStatus(Request $request)
     {
         $installedCarrier = InstalledCarrier::where('id', $request->carrier_id)->first();
-        if(!$installedCarrier->is_enabled) {
+        if($installedCarrier->is_enabled==false) {
             $subscirption = new SubscriptionController();
             $changeCount = ['store_id' => $request['store_id'], 'action' => 1];
             $res = $subscirption->changeCarrierCount($changeCount);
