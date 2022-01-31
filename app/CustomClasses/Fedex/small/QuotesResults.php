@@ -40,7 +40,7 @@ class QuotesResults
     public function addHazmatAmountsInServices($amount, $serviceCode, $quoteSettings)
     {
         // Adding hazmat fee to Ground Service
-        if ($serviceCode == "FEDEX_GROUND") {
+        if ($serviceCode == "FEDEX_GROUND" || $serviceCode == "GROUND_HOME_DELIVERY" || $serviceCode == "FEDEX_GROUND_HOME_DELIVERY" || $serviceCode == "GROUND_HOME_DELIVERY_AIR_SERVICE") {
             if (isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
                 $amount = $amount + $quoteSettings['ground_hazardous_material_fee'];
             }

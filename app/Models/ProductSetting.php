@@ -9,10 +9,19 @@ use stdClass;
 class ProductSetting extends Model
 {
     use HasFactory;
+
     protected $table = 'product_settings';
     protected $fillable = [
         'settings',
     ];
+
+    public function deleteIfDropProduct($dropshipId)
+    {
+        self::whereJsonContains('settings', ['dropship_location' => $dropshipId])->update(
+            ['settings' => ['dropship_enabled' => false, 'dropship_location' =>null
+            ],
+        ]);
+    }
 
     public function saveProduct($product, $storeId)
     {

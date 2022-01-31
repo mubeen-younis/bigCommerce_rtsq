@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\CurlRequest;
 use App\Models\Locations;
+use App\Models\ProductSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -292,8 +293,10 @@ class LocationsController extends Controller
         }
 
         if (Locations::where('id', $request->location_id)->exists()) {
+            if ($request->location_type == "Drop ship") {
+                $this->deleteDropshippedProduct($request->location_id);
+            }
             Locations::where('id', $request->location_id)->delete();
-
             return response()->json(['error' => false,
                 'data' => [],
                 'message' => 'Success! ' . $request->location_type . ' deleted successfully',
@@ -304,6 +307,11 @@ class LocationsController extends Controller
                 'message' => 'No Location exists against this Id',
             ], 404);
         }
+    }
+
+    public function deleteDropshippedProduct($dropshipId)
+    {
+        ProductSetting::deleteIfDropProduct($dropshipId);
     }
 
     public function getLocationFromZip(Request $request)
