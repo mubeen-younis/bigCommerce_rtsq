@@ -448,7 +448,7 @@ class SubscriptionController extends Controller
 
                 Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, 3));
             } else {
-               // Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, 1));
+                Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, 1));
 
                 /*
                   * Update WS graph data
