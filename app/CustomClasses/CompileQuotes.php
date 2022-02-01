@@ -1169,11 +1169,6 @@ class CompileQuotes
             return [];
         }
 
-        /*   asort($arraySorting['simple']);
-           if (isset($arraySorting['liftgate'])) {
-               asort($arraySorting['liftgate']);
-           }*/
-
         $this->quoteSettings['method'] = $this->quoteSettings['method'] ?? 1;
         if ($this->quoteSettings['method'] == 2 && $this->isMultiShipment == false) { //Cheapest method
             $options = (int)$this->quoteSettings['number_of_options'] ?? 1;
