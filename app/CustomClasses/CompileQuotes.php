@@ -1120,7 +1120,7 @@ class CompileQuotes
                 if (isset($this->quoteSettings['quickest_service']) && $this->quoteSettings['quickest_service'] == 1 && isset($this->quoteSettings['method']) && $this->quoteSettings['method'] == 0) {
                     $arraySorting = $arraySorting['quickest'] ?? $arraySorting;
                 }
-                $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
+                $compiledQuotes = $this->getGtzMultiShipCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
             }
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
                 if (count($compiledQuotes) > 1) {
@@ -1161,6 +1161,36 @@ class CompileQuotes
         }
 
         return $allQuotes;
+    }
+
+    public function getGtzMultiShipCompiledQuotes($services, $arraySorting, $lgQuotes)
+    {
+        if (empty($arraySorting) || empty($services)) {
+            return [];
+        }
+
+        /*   asort($arraySorting['simple']);
+           if (isset($arraySorting['liftgate'])) {
+               asort($arraySorting['liftgate']);
+           }*/
+
+        $this->quoteSettings['method'] = $this->quoteSettings['method'] ?? 1;
+        if ($this->quoteSettings['method'] == 2 && $this->isMultiShipment == false) { //Cheapest method
+            $options = (int)$this->quoteSettings['number_of_options'] ?? 1;
+        } elseif ($this->quoteSettings['method'] == 3) { //Average rate
+            $options = (int)$this->quoteSettings['number_of_options'];
+        } else {
+            $options = 1;
+        }
+        $sliced = $lgQuotes ?
+            array_slice($arraySorting['liftgate'], 0, $options, true) :
+            array_slice($arraySorting['simple'], 0, $options, true);
+        if ($this->quoteSettings['method'] == 3) {
+            return $this->averageRattingMethod($arraySorting, $options, $lgQuotes);
+        }
+
+        $resp = array_intersect_key($services, $sliced);
+        return $resp;
     }
 
 
@@ -1208,7 +1238,7 @@ class CompileQuotes
             } else if ($this->quoteSettings['final_mile_service_level'] == 'room_of_choice') {
                 $labelAs = $this->quoteSettings['room_of_choice_label'] ?? 'Room of Choice';
             }
-        }else{
+        } else {
             if (isset($this->quoteSettings['rating_method']) && $this->quoteSettings['rating_method'] == 3) { //Average
                 $this->quoteSettings['label_as'] = $this->quoteSettings['average_rate_label'] ?? '';
             } else if (isset($this->quoteSettings['rating_method']) && $this->quoteSettings['rating_method'] == 1) { //cheapest
@@ -1261,9 +1291,9 @@ class CompileQuotes
                           * */
                         $date = $data['deliveryDate'] ?? null;
                         $days = $data['totalTransitTimeInDays'] ?? null;
-                        if($isShippingFinalMile){
+                        if ($isShippingFinalMile) {
                             $dateAndDays = ['deliveryDate' => null, 'totalTransitTimeInDays' => null];
-                        }else {
+                        } else {
                             $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
                         }
                         $title = $this->getTitle($data['serviceDesc'], false, false, $data['transitTime'], [], $dateAndDays);
@@ -1700,7 +1730,7 @@ class CompileQuotes
                         $multiShipmentQuotes['simple'][$origin] = $service['simple'][0] ?? $service['simple'];
                         $lgQuotes && isset($service['liftgate']) ? $allQuotes['liftgate'][] = $service['liftgate'][0] ?? $service['liftgate'] : null;
                         $lgQuotes && isset($service['liftgate']) ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'][0] ?? $service['liftgate'] : null;
-                        if($this->isMultiShipment){
+                        if ($this->isMultiShipment) {
                             break;
                         }
                     }
@@ -2743,9 +2773,9 @@ class CompileQuotes
         } else {
             $options = 1;
         }
-        if($lgQuotes){
+        if ($lgQuotes) {
             $sliced = array_slice($arraySorting['liftgate'], 0, $options, true);
-        }else {
+        } else {
             $sliced = array_slice($arraySorting['simple'], 0, $options, true);
         }
 
@@ -2785,6 +2815,7 @@ class CompileQuotes
         if ($this->quoteSettings['method'] == 3) {
             return $this->averageRattingMethod($arraySorting, $options, $lgQuotes);
         }
+
         $resp = array_intersect_key($services, $sliced);
         return $resp;
     }
