@@ -384,7 +384,7 @@ class PackageSubscriptionController extends Controller
             ->leftjoin('packages as p', 'ps.package_id', '=', 'p.id')
             ->select('ps.id', 'ps.package_id as package_id', 'ps.expiry_time', 'ps.status', 'ps.created_at', 'ps.total_count as consumed_hits', 'p.htis as total_hits', 'pstbc.status as package_to_to_charge_status', 'pstbc.package_id as to_be_charge_package_id')
             ->where('store_id', self::$storeId)->where('p.addon_type', $addonType)->latest()->first();
-        if ($currentPackageSub->status == 0 || $currentPackageSub->status == 3) { //If the package subscription is expired || suspended
+        if (empty($currentPackageSub) || ($currentPackageSub->status == 0 || $currentPackageSub->status == 3)) { //If the package subscription is expired || suspended
             return [
                 'status' => false,
             ];

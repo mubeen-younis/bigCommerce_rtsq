@@ -58,7 +58,7 @@ class HubSpotController extends Controller
         } catch (\Throwable $e) {
             $result = [];
         }
-        if(isset($result['ERROR'])){
+        if(isset($result['ERROR']) || blank($result)){
             return false;
         }
         $CONTACTID = $result['CONTACTID'] ?? '';

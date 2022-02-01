@@ -437,17 +437,19 @@ class SubscriptionController extends Controller
             //Updating: carrier counts that will be allowed in case of trial of PAID plan
             $this->updateCarrierCountsinDB($subscriptionId, $data['store_id']);
             $subscriptionDetail = $this->subscriptionDetailFromDB($data['store_id']);
+            $emailData = array(
+                'receiverEmail' => $data['email'],
+                'productName' => 'Real-time Shipping Quotes',
+                'planName' => self::$plansData['name'],
+                'endsAt' => $subscriptionDetail->ends_at,
+                'action' => 'IPF'       // Invoice Payment Failed
+            );
             if ($request['plan'] == self::$trial) { // if planId is null then it's a trial and we need to send an email for trial
 
-                $emailData = array(
-                    'receiverEmail' => $data['email'],
-                    'productName' => 'Real-time Shipping Quotes',
-                    'planName' => self::$plansData['name'],
-                    'endsAt' => $subscriptionDetail->ends_at,
-                    'action' => 'IPF'       // Invoice Payment Failed
-                );
                 Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, 3));
             } else {
+               // Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, 1));
+
                 /*
                   * Update WS graph data
                   * */
@@ -460,6 +462,11 @@ class SubscriptionController extends Controller
             ], 200);
         } catch (\Exception $exception) {
             Log::info('Exception on subscribing plan ' . json_encode($exception));
+            return response()->json([
+                'error' => true,
+                'data' => [],
+                'message' => 'Something went wrong on subscribing plan.'
+            ], 200);
         }
     }
 
@@ -744,7 +751,7 @@ class SubscriptionController extends Controller
         // Added this block of code for the bug of carrier count issue
         // Bug of enabling carriers according to plan
         $totalEnabledCarriersCount = InstalledCarrier::where('store_id', $storeId)->where('is_enabled', 1)->count();
-        $data->total_remaining_carriers= $data->total_allowed_carriers-$totalEnabledCarriersCount;
+        $data->total_remaining_carriers = $data->total_allowed_carriers - $totalEnabledCarriersCount;
         ////////////////////////////
         if (!is_null($data)) {
             $data->total_installed_carriers = $data->total_allowed_carriers - $data->total_remaining_carriers;
