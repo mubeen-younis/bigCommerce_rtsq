@@ -94,6 +94,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/sbs/change_status', [RADController::class, 'changeStatus']);
 
     //=========Shipping Groups
+    Route::get('/get_shipping_groups',[\App\Http\Controllers\ShippingGroupController::class, 'getShippingGroups']);
     Route::post('/save_shipping_group', [\App\Http\Controllers\ShippingGroupController::class, 'saveShippingGroup']);
     Route::post('/delete_shipping_group', [\App\Http\Controllers\ShippingGroupController::class, 'deleteShippingGroup']);
     Route::get('/get_shipping_group_detail', [\App\Http\Controllers\ShippingGroupController::class, 'getShippingGroupDetail']);

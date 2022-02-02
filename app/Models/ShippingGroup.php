@@ -78,7 +78,7 @@ class ShippingGroup extends Model
      */
     public static function getShippingGroupDetailByUuid($uuid)
     {
-        return optional(self::where('id', $uuid)->first())->toArray() ?? [];
+        return optional(self::where('uuid', $uuid)->first())->toArray() ?? [];
     }
 
 
@@ -106,7 +106,7 @@ class ShippingGroup extends Model
         $shippingGroup->uuid = Helper::getUuid();
         $shippingGroup->checkout_description = $shippingGroupData['checkout_description'] ?? null;
         $shippingGroup->rate = $shippingGroupData['rate'] ?? 0;
-        $shippingGroup->checkout_description = $shippingGroupData['checkout_description'] ?? false;
+        $shippingGroup->rate_x_quantity = $shippingGroupData['rate_x_quantity'] ?? false;
         $shippingGroup->save();
         return $shippingGroup->uuid;
     }

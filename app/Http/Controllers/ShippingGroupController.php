@@ -8,14 +8,25 @@ use Illuminate\Http\Request;
 
 class ShippingGroupController extends Controller
 {
-    
+    /**
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getShippingGroups(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $shippingGroups = ShippingGroup::getStoreShippingGroups($request['store_id']);
+        return Helper::sendJsonResponse(false, "", $shippingGroups);
+    }
+
+
     /**
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function saveShippingGroup(Request $request): \Illuminate\Http\JsonResponse
     {
-        $shippingGroup = ShippingGroup::saveShippingGroup($request->all());
+        $savedShippingGroupUuid = ShippingGroup::saveShippingGroup($request->all());
+        $shippingGroup = ShippingGroup::getShippingGroupDetailByUuid($savedShippingGroupUuid);
         return Helper::sendJsonResponse(false, "Shipping Group saved successfully.", $shippingGroup);
     }
 
