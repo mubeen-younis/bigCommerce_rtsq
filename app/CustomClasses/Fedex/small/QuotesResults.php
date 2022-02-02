@@ -89,8 +89,6 @@ class QuotesResults
 
     public function checkGroundTransit($quote, $quoteSettings)
     {
-        // Check limited to carrier transit days
-        // TODO :  Need to fix transit days QA-7239
         if ($quoteSettings['ground_metric'] == 1) {
             if (isset($quote['TransitTimeInDays']) && isset($quoteSettings['number_of_transit_days']) &&
                 $quote['TransitTimeInDays'] > $quoteSettings['number_of_transit_days']) {
