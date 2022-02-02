@@ -11,6 +11,7 @@ use App\CustomClasses\Fedex\small\ConnectionSettings as FedexSmallConnectionSett
 use App\CustomClasses\GTZ\ltl\ConnectionSettings as GTZLtlConnectionSettings;
 use App\CustomClasses\XPO\ltl\ConnectionSettings as XPOLtlConnectionSettings;
 use App\CustomClasses\RL\ltl\ConnectionSettings as RNLLtlConnectionSettings;
+use App\CustomClasses\Unishippers\small\ConnectionSettings as UnishippersSmallConnectionSettings;
 use App\Models\Connection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -34,6 +35,7 @@ class ConnectionController extends Controller
         $this->gtzLtlTestCon = new GTZLtlConnectionSettings();
         $this->xpoLtlTestCon = new XPOLtlConnectionSettings();
         $this->rnlLtlTestCon = new RNLLtlConnectionSettings();
+        $this->unishippersSmallTestCon = new UnishippersSmallConnectionSettings();
     }
 
     public function index(Request $request)
@@ -113,6 +115,9 @@ class ConnectionController extends Controller
                     return response()->json($response);
                 case 'rl-ltl':
                     $response = $this->rnlLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'unishippers-small':
+                    $response = $this->unishippersSmallTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
                 default:
                     return response()->json(["error" => true, "data" => [],
