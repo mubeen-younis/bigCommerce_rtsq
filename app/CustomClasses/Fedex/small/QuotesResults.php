@@ -90,6 +90,7 @@ class QuotesResults
     public function checkGroundTransit($quote, $quoteSettings)
     {
         // Check limited to carrier transit days
+        // TODO :  Need to fix transit days QA-7239
         if ($quoteSettings['ground_metric'] == 1) {
             if (isset($quote['TransitTimeInDays']) && isset($quoteSettings['number_of_transit_days']) &&
                 $quote['TransitTimeInDays'] > $quoteSettings['number_of_transit_days']) {
@@ -141,6 +142,7 @@ class QuotesResults
         $this->quoteSettings = $connectionSettings['fedex-small']['quote_settings'] ?? [];
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
         $allConfigServices['services'] = $allConfigServices = [];
+
 
         if (isset($this->quoteSettings['carrier_services'])) {
             foreach ($this->quoteSettings['carrier_services'] as $key => $serviceName) {
@@ -234,7 +236,7 @@ class QuotesResults
                     }
                     //  CHecks FOr Only quote ground service if hazardous
                     if ($isHazmat && isset($this->quoteSettings['ground_service_for_hazardous_material']) && $this->quoteSettings['ground_service_for_hazardous_material']) {
-                        if (!($data['serviceType'] == "FEDEX_GROUND" || $data['serviceType'] == "GROUND_HOME_DELIVERY" || $data['serviceType'] == "FEDEX_GROUND_HOME_DELIVERY")) {
+                        if (!($serviceName == "FEDEX_GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "FEDEX_GROUND_HOME_DELIVERY")) {
                             continue;
                         }
                     }
