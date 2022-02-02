@@ -4,6 +4,7 @@ namespace App\Helpers;
 
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Stripe\Stripe;
 
 class Helper
@@ -26,6 +27,25 @@ class Helper
         } else {
             Stripe::setApiKey(config('app.stripe_secret'));
         }
+    }
+
+    public static function getUuid()
+    {
+        return Str::orderedUuid()->toString();
+    }
+
+    
+    public static function sendJsonResponse($error, $message, $data = [])
+    {
+        $response = [
+            'error' => $error,
+            'message' => $message,
+        ];
+        if (!blank($data)) {
+            $response['data'] = $data;
+        }
+        return response()->json($response
+            , 200);
     }
 
 }

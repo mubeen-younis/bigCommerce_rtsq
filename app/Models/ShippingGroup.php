@@ -2,14 +2,32 @@
 
 namespace App\Models;
 
+use App\Helpers\Helper;
 use Illuminate\Database\Eloquent\Model;
+use Psy\Util\Str;
 
 class ShippingGroup extends Model
 {
 
-    protected $guarded = [];
 
+    protected $guarded = [];
     protected $table = "shipping_groups";
+
+
+    /**
+     * @param $storeId
+     * @return array
+     */
+    public static function getStoreShippingGroups($storeId): array
+    {
+        return optional(self::where('store_id', $storeId)->get())->toArray() ?? [];
+    }
+
+
+    public static function deleteShippingGroup($uuid)
+    {
+        self::where('uuid', $uuid)->delete();
+    }
 
     /**
      * @param $shippingGroupItems
@@ -50,12 +68,17 @@ class ShippingGroup extends Model
      */
     public static function getShippingGroupDetail($id): array
     {
-        // TODO: Need to get From DB
-        return ['nickname' => 'group 1',
-            'checkout_description' => 'group 1',
-            'rate' => 0,
-            'rate_x_quantity' => false,
-        ];
+        return optional(self::where('id', $id)->first())->toArray() ?? [];
+    }
+
+
+    /**
+     * @param $uuid
+     * @return array
+     */
+    public static function getShippingGroupDetailByUuid($uuid)
+    {
+        return optional(self::where('id', $uuid)->first())->toArray() ?? [];
     }
 
 
@@ -68,6 +91,38 @@ class ShippingGroup extends Model
     {
         $noOfQuantityInGroup = collect($group)->sum('piecesOfLineItem');
         return $noOfQuantityInGroup * $rate;
+    }
+
+
+    /**
+     * @param $shippingGroupData
+     * @return mixed
+     */
+    public static function saveShippingGroup($shippingGroupData)
+    {
+        $shippingGroup = new self();
+        $shippingGroup->nickname = $shippingGroupData['nickname'] ?? null;
+        $shippingGroup->store_id = $shippingGroupData['store_id'];
+        $shippingGroup->uuid = Helper::getUuid();
+        $shippingGroup->checkout_description = $shippingGroupData['checkout_description'] ?? null;
+        $shippingGroup->rate = $shippingGroupData['rate'] ?? 0;
+        $shippingGroup->checkout_description = $shippingGroupData['checkout_description'] ?? false;
+        $shippingGroup->save();
+        return $shippingGroup->uuid;
+    }
+
+    /**
+     * @param $id
+     * @return array
+     */
+    public static function getShippingGroupDetailTest($id): array
+    {
+        // TODO: Need to get From DB
+        return ['nickname' => 'group 1',
+            'checkout_description' => 'group 1',
+            'rate' => 0,
+            'rate_x_quantity' => false,
+        ];
     }
 
 }
