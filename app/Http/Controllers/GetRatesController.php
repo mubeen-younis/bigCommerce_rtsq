@@ -160,10 +160,10 @@ class GetRatesController extends Controller
                     'freightClass' => $this->isLTL($weight, $ltlCheck) ? 'ltl' : '', //ltl for testing
                     //'freightClass' => '',
                     'lineItemClass' => isset($product_settings['freight_class']) ? $this->getLineItemClass($product_settings['freight_class']) : '',
+                    'shipping_group' => $product_settings['shipping_group'] ?? null
                 ];
             }
         }
-
         return ['lineItemData' => $details];
     }
 
