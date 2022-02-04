@@ -83,7 +83,6 @@ class Shipping
         }
         // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
-
         if (empty($requestArr)) {
             return false;
         }
@@ -261,11 +260,33 @@ class Shipping
 
     private function addBoxFeeToQuotes(array $quotes, array $boxFee): array
     {
-        $parcelCarName = ['wweSmall', 'upsSmall'];
+        $parcelCarName = ['wweSmall', 'upsSmall', 'fedexSmall'];
         if (isset($quotes) && !empty($quotes)) {
             foreach ($quotes as $carName => $quot) {
                 if (in_array($carName, $parcelCarName)) {
                     foreach ($quot as $locId => $q) {
+
+                        // Added Condition for fedex small for adding box fees
+                        if ($carName == "fedexSmall") {
+                            if (isset($q['fedexServices']['q'])) {
+                                foreach ($q['fedexServices']['q'] as $key => $qs) {
+                                    if (isset($qs['totalNetCharge']['Amount'])) {
+                                        if (isset($boxFee[$locId])) {
+                                            $quotes[$carName][$locId]['fedexServices']['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $boxFee[$locId];
+                                            $quotes[$carName][$locId]['fedexServices']['q'][$key]['boxFees']['Amount'] = $boxFee[$locId];
+                                        }
+                                    }
+                                    if (isset($qs['NegotiatedRates']['Amount'])) {
+                                        if (isset($boxFee[$locId])) {
+                                            $quotes[$carName][$locId]['fedexServices']['q'][$key]['NegotiatedRates']['Amount'] = $qs['NegotiatedRates']['Amount'] + $boxFee[$locId];
+                                            $quotes[$carName][$locId]['fedexServices']['q'][$key]['boxFees']['Amount'] = $boxFee[$locId];
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+
                         if (isset($q['q'])) {
                             foreach ($q['q'] as $key => $qs) {
                                 if (isset($qs['totalNetCharge']['Amount'])) {

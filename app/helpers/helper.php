@@ -28,4 +28,15 @@ class Helper
         }
     }
 
+    public static function floatValue($number = 0)
+    {
+        if ($number == 0) {
+            return $number;
+        }
+        $number = rtrim($number, '0');                // 50,00 --> 50,
+        $number = rtrim($number, '.'); // 50,   --> 50
+        return $number;
+
+    }
+
 }
