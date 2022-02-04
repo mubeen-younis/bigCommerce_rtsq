@@ -78,7 +78,8 @@ class ShippingGroup extends Model
      */
     public static function getShippingGroupDetailByUuid($uuid)
     {
-        return optional(self::where('uuid', $uuid)->first())->toArray() ?? [];
+        // return optional(self::where('uuid', $uuid)->first())->toArray() ?? [];
+        return self::where('uuid', $uuid)->first();
     }
 
 
@@ -98,17 +99,40 @@ class ShippingGroup extends Model
      * @param $shippingGroupData
      * @return mixed
      */
-    public static function saveShippingGroup($shippingGroupData)
+    public static function saveOrUpdateShippingGroup($shippingGroupData)
     {
-        $shippingGroup = new self();
+        if(isset($shippingGroupData['uuid'])){
+            $shippingGroup = self::getShippingGroupDetailByUuid($shippingGroupData['uuid']);
+            if (blank($shippingGroup)) {
+                return [
+                        'error' => true,
+                        'message' => 'Shipping group not found.',
+                        'data' => []
+                ];
+            }
+            $message = 'updated successfully.';
+            $save = 0;
+        } else {
+            $shippingGroup = new self();
+            $shippingGroup->uuid = Helper::getUuid();
+            $message = 'added successfully.';
+            $save = 1;
+        }
         $shippingGroup->nickname = $shippingGroupData['nickname'] ?? null;
         $shippingGroup->store_id = $shippingGroupData['store_id'];
-        $shippingGroup->uuid = Helper::getUuid();
         $shippingGroup->checkout_description = $shippingGroupData['checkout_description'] ?? null;
         $shippingGroup->rate = $shippingGroupData['rate'] ?? 0;
         $shippingGroup->rate_x_quantity = $shippingGroupData['rate_x_quantity'] ?? false;
         $shippingGroup->save();
-        return $shippingGroup->uuid;
+
+        return [
+            'error' => false,
+            'message' => $message,
+            'data'=> [
+                'shippingGroup' => $shippingGroup,
+                'save' => $save
+            ]
+        ];
     }
 
     /**

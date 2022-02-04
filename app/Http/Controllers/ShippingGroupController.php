@@ -25,9 +25,8 @@ class ShippingGroupController extends Controller
      */
     public function saveShippingGroup(Request $request): \Illuminate\Http\JsonResponse
     {
-        $savedShippingGroupUuid = ShippingGroup::saveShippingGroup($request->all());
-        $shippingGroup = ShippingGroup::getShippingGroupDetailByUuid($savedShippingGroupUuid);
-        return Helper::sendJsonResponse(false, "Shipping Group saved successfully.", $shippingGroup);
+        $res = ShippingGroup::saveOrUpdateShippingGroup($request->all());
+        return Helper::sendJsonResponse($res['error'], "Shipping Group " . $res['message'], $res['data']);
     }
 
 
