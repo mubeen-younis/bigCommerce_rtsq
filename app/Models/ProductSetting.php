@@ -17,10 +17,17 @@ class ProductSetting extends Model
 
     public function deleteIfDropProduct($dropshipId)
     {
-        self::whereJsonContains('settings', ['dropship_location' => $dropshipId])->update(
-            ['settings' => ['dropship_enabled' => false, 'dropship_location' =>null
-            ],
-        ]);
+        $products = self::whereJsonContains('settings', ['dropship_location' => $dropshipId])->get();
+
+        foreach ($products as $product) {
+            $settings = json_decode($product->settings, true);
+            if (blank($settings)) {
+                continue;
+            }
+            $settings['dropship_enabled'] = false;
+            $settings['dropship_location'] = null;
+            self::where('id', $product->id)->update(['settings' => $settings]);
+        }
     }
 
     public function saveProduct($product, $storeId)
