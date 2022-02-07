@@ -1221,6 +1221,7 @@ class GenerateRequestData
         }
     }
 
+
     public function getStoreBoxes($storeId, $itemsArr, $origins, $cartInfo, $isMultishipment)
     {
         $items = $itemsAlone = [];
@@ -1233,9 +1234,9 @@ class GenerateRequestData
                         "variant_id" => $key,
                         "id" => $key,
                         "wg" => $itemsArr[$key]['lineItemWeight'] ?? 0,
-                        "h" => Helper::floatValue($itemsArr[$key]['lineItemHeight'] ?? 0),
-                        "d" => Helper::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
-                        "w" => Helper::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
+                        "h" => self::floatValue($itemsArr[$key]['lineItemHeight'] ?? 0),
+                        "d" => self::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
+                        "w" => self::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
                         "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
                         "vr" => $itemsArr[$key]['vertical_rotation'] ?? 0,//vertical 0 or 1
                         "boxFee" => $itemsArr[$key]['boxFee'] ?? 0
@@ -1371,6 +1372,17 @@ class GenerateRequestData
         $resp['binResponse'] = $binResponse ?? [];
         $resp['boxBins'] = $boxBins;
         return $resp;
+
+    }
+
+    public static function floatValue($number = 0)
+    {
+        if ($number == 0) {
+            return $number;
+        }
+        $number = rtrim($number, '0');                // 50,00 --> 50,
+        $number = rtrim($number, '.'); // 50,   --> 50
+        return $number;
 
     }
 
