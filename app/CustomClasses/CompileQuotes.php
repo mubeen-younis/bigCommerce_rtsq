@@ -955,10 +955,10 @@ class CompileQuotes
         $this->alwaysResi = $this->residential['alwaysResi']['upsSmall'] ?? false;
         $access = $this->getAccessorialCodeSmall();
         $res = $this->upsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment);
-
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = $res['isMultiShipment'];
         }
+
         return $res['resp'];
     }
 
