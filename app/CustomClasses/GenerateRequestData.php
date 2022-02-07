@@ -2,6 +2,7 @@
 
 namespace App\CustomClasses;
 
+use App\Helpers\Helper;
 use App\Http\Controllers\BoxSizeController;
 use Illuminate\Support\Facades\DB;
 use App\CustomClasses\Bin3D\Bin3D;
@@ -1226,12 +1227,12 @@ class GenerateRequestData
                         "variant_id" => $key,
                         "id" => $key,
                         "wg" => $itemsArr[$key]['lineItemWeight'] ?? 0,
-                        "h" => $itemsArr[$key]['lineItemHeight'] ?? 0,
-                        "d" => $itemsArr[$key]['lineItemLength'] ?? 0,
-                        "w" => $itemsArr[$key]['lineItemWidth'] ?? 0,
+                        "h" => Helper::floatValue($itemsArr[$key]['lineItemHeight'] ?? 0),
+                        "d" => Helper::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
+                        "w" => Helper::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
                         "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
-                        "vr" => $itemsArr[$key]['vertical_rotation'] ?? 0,
-                        "boxFee" => $itemsArr[$key]['boxFee'] ?? 0 //vertical 0 or 1
+                        "vr" => $itemsArr[$key]['vertical_rotation'] ?? 0,//vertical 0 or 1
+                        "boxFee" => $itemsArr[$key]['boxFee'] ?? 0
                     ];
                 } else {
                     $items[$origin['locationId']][] = [
@@ -1363,7 +1364,6 @@ class GenerateRequestData
         $resp['originAddress'] = $newOrigins;
         $resp['binResponse'] = $binResponse ?? [];
         $resp['boxBins'] = $boxBins;
-
         return $resp;
 
     }
