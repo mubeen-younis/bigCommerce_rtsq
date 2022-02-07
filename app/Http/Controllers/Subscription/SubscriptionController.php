@@ -381,7 +381,7 @@ class SubscriptionController extends Controller
                     'action' => 'IPF'       // Invoice Payment Failed
                 );
 
-               // Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, 1));
+                Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, 1));
                 return response()->json($updateSubResponse, 200);
             }
             //END: Upgrade or DownGrade Plans
@@ -470,7 +470,7 @@ class SubscriptionController extends Controller
                 'message' => 'The plan subscribed successfully.'
             ], 200);
         } catch (\Exception $exception) {
-            dd(22,$exception->getMessage());
+            dd(22, $exception->getMessage());
             Log::info('Exception on subscribing plan ' . json_encode($exception->getTraceAsString()));
             return response()->json([
                 'error' => true,
