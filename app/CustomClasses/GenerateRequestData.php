@@ -2,7 +2,7 @@
 
 namespace App\CustomClasses;
 
-use App\Helpers\Helper;
+use App\Helpers\Helpers;
 use App\Http\Controllers\BoxSizeController;
 use Illuminate\Support\Facades\DB;
 use App\CustomClasses\Bin3D\Bin3D;
@@ -1234,9 +1234,9 @@ class GenerateRequestData
                         "variant_id" => $key,
                         "id" => $key,
                         "wg" => $itemsArr[$key]['lineItemWeight'] ?? 0,
-                        "h" => self::floatValue($itemsArr[$key]['lineItemHeight'] ?? 0),
-                        "d" => self::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
-                        "w" => self::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
+                        "h" => Helpers::floatValue($itemsArr[$key]['lineItemHeight'] ?? 0),
+                        "d" => Helpers::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
+                        "w" => Helpers::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
                         "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
                         "vr" => $itemsArr[$key]['vertical_rotation'] ?? 0,//vertical 0 or 1
                         "boxFee" => $itemsArr[$key]['boxFee'] ?? 0

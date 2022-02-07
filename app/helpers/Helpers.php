@@ -2,11 +2,10 @@
 
 namespace App\Helpers;
 
-
 use Illuminate\Support\Facades\DB;
 use Stripe\Stripe;
 
-class Helper
+class Helpers
 {
     public static function jsonValidator($data = NULL)
     {
@@ -38,5 +37,4 @@ class Helper
         return $number;
 
     }
-
 }

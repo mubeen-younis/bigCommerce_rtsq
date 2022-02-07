@@ -381,7 +381,7 @@ class SubscriptionController extends Controller
                     'action' => 'IPF'       // Invoice Payment Failed
                 );
 
-                Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, 1));
+               //git  Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, 1));
                 return response()->json($updateSubResponse, 200);
             }
             //END: Upgrade or DownGrade Plans
