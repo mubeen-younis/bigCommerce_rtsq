@@ -7,6 +7,7 @@ use App\Http\Controllers\BoxSizeController;
 use Illuminate\Support\Facades\DB;
 use App\CustomClasses\Bin3D\Bin3D;
 use App\CustomClasses\SmartyStreet\SmartyStreet;
+use Illuminate\Support\Facades\Log;
 
 /**
  * class that generated request data
@@ -317,6 +318,7 @@ class GenerateRequestData
     public function generateRequestArray($request, $carriersArray, $itemsArr, $cartInfo)
     {
         $carriers = $carriersArray['carriers'];
+        Log::info('Carriers ' . json_encode($carriers));
         $receiverAddress = $this->getReceiverData($request);
 
         $autoResidential = $liftGateWithAuto = '0';
@@ -350,19 +352,9 @@ class GenerateRequestData
                     ?? $carriers['upsSmall']['originAddress']
                     ?? $carriers['fedexSmall']['originAddress'];
 
+
                 if (isset($carriers['fedexSmall'])) {
                     $this->checkServiceEnabled();
-                    if ($this->ground) {
-                        $this->fedexType = 'normal'; // ground services
-                        $sbsResponseGround = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
-                        $itemsArrGround = $sbsResponseGround['items'] ?? $itemsArr;
-
-                        unset($carriers['fedexSmall']['originAddress']);
-                        foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
-                            $carriers['fedexSmall']['originAddress'][$key] = $origin;
-                        }
-                        $binReponse['ground'] = $sbsResponseGround['binResponse'];
-                    }
 
                     if ($this->oneRate) {
                         $this->fedexType = 'fedex'; // one rate services
@@ -376,8 +368,9 @@ class GenerateRequestData
                             $itemsArrOneRate = $sbsResponseOneRate['items'] ?? $itemsArr;
                             $commdityDetails['one_rate_commdityDetails'] = $this->lineItems($itemsArrOneRate, $carriers['fedexSmall']['originAddress'], true, $sbsResponseOneRate['binResponse']);
                             $binReponse['oneRate'] = $sbsResponseOneRate['binResponse'];
+                            $itemsArr = $itemsArrOneRate;
+                            $sbsResponse['binResponse'] = $binReponse;
                         }
-
                     }
 
                     if ($this->air) {
@@ -386,10 +379,22 @@ class GenerateRequestData
                         $itemsArrAir = $sbsResponseAir['items'] ?? $itemsArr;
                         $commdityDetails['air_services_commdityDetails'] = $this->lineItems($itemsArrAir, $carriers['fedexSmall']['originAddress']);
                         $binReponse['air'] = $sbsResponseAir['binResponse'];
-
+                        $itemsArr = $itemsArrAir;
+                        $sbsResponse['binResponse'] = $binReponse;
                     }
-                    $itemsArr = $itemsArrGround;
-                    $sbsResponse['binResponse'] = $binReponse;
+
+                    if ($this->ground) {
+                        $this->fedexType = 'normal'; // ground services
+                        $sbsResponseGround = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
+                        $itemsArrGround = $sbsResponseGround['items'] ?? $itemsArr;
+                        unset($carriers['fedexSmall']['originAddress']);
+                        foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
+                            $carriers['fedexSmall']['originAddress'][$key] = $origin;
+                        }
+                        $binReponse['ground'] = $sbsResponseGround['binResponse'];
+                        $itemsArr = $itemsArrGround;
+                        $sbsResponse['binResponse'] = $binReponse;
+                    }
                 } else {
                     $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
                     $itemsArr = $sbsResponse['items'] ?? $itemsArr;
@@ -502,6 +507,7 @@ class GenerateRequestData
                 $this->air = true;
             }
         }
+
     }
 
     /**

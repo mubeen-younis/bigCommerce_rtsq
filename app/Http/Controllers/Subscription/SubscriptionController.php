@@ -461,7 +461,7 @@ class SubscriptionController extends Controller
                 'message' => 'The plan subscribed successfully.'
             ], 200);
         } catch (\Exception $exception) {
-            Log::info('Exception on subscribing plan ' . json_encode($exception));
+            Log::info('Exception on subscribing plan ' . json_encode($exception->getTraceAsString()));
             return response()->json([
                 'error' => true,
                 'data' => [],
@@ -741,6 +741,9 @@ class SubscriptionController extends Controller
             ->leftJoin('payment_methods as pm', 'pm.store_id', '=', 's.store_id')
             ->select('s.id as subscription_id', 's.store_id', 's.status', 's.ends_at', 's.plan_id', 's.created_at', 'cc.carrier_counts as total_remaining_carriers', 's.amount_charged', 'pl.name', 'pl.carrier_count as total_allowed_carriers', 'pm.last4', 'pm.is_default as is_default_payment_method')
             ->where('s.store_id', $storeId)->latest()->first();
+        if (blank($data)) {
+            return null;
+        }
         try {
             if (isset($data->last4)) {
                 $data->last4 = decrypt($data->last4);
