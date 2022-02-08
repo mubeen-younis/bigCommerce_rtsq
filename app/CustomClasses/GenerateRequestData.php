@@ -355,6 +355,16 @@ class GenerateRequestData
 
                 if (isset($carriers['fedexSmall'])) {
                     $this->checkServiceEnabled();
+                    if ($this->ground) {
+                        $this->fedexType = 'normal'; // ground services
+                        $sbsResponseGround = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
+                        $itemsArrGround = $sbsResponseGround['items'] ?? $itemsArr;
+                        unset($carriers['fedexSmall']['originAddress']);
+                        foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
+                            $carriers['fedexSmall']['originAddress'][$key] = $origin;
+                        }
+                        $binReponse['ground'] = $sbsResponseGround['binResponse'];
+                    }
 
                     if ($this->oneRate) {
                         $this->fedexType = 'fedex'; // one rate services
@@ -368,9 +378,8 @@ class GenerateRequestData
                             $itemsArrOneRate = $sbsResponseOneRate['items'] ?? $itemsArr;
                             $commdityDetails['one_rate_commdityDetails'] = $this->lineItems($itemsArrOneRate, $carriers['fedexSmall']['originAddress'], true, $sbsResponseOneRate['binResponse']);
                             $binReponse['oneRate'] = $sbsResponseOneRate['binResponse'];
-                            $itemsArr = $itemsArrOneRate;
-                            $sbsResponse['binResponse'] = $binReponse;
                         }
+
                     }
 
                     if ($this->air) {
@@ -379,28 +388,15 @@ class GenerateRequestData
                         $itemsArrAir = $sbsResponseAir['items'] ?? $itemsArr;
                         $commdityDetails['air_services_commdityDetails'] = $this->lineItems($itemsArrAir, $carriers['fedexSmall']['originAddress']);
                         $binReponse['air'] = $sbsResponseAir['binResponse'];
-                        $itemsArr = $itemsArrAir;
-                        $sbsResponse['binResponse'] = $binReponse;
-                    }
 
-                    if ($this->ground) {
-                        $this->fedexType = 'normal'; // ground services
-                        $sbsResponseGround = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
-                        $itemsArrGround = $sbsResponseGround['items'] ?? $itemsArr;
-                        unset($carriers['fedexSmall']['originAddress']);
-                        foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
-                            $carriers['fedexSmall']['originAddress'][$key] = $origin;
-                        }
-                        $binReponse['ground'] = $sbsResponseGround['binResponse'];
-                        $itemsArr = $itemsArrGround;
-                        $sbsResponse['binResponse'] = $binReponse;
                     }
+                    $itemsArr = !empty($itemsArrGround) ? $itemsArrGround : $itemsArr;
+                    $sbsResponse['binResponse'] = $binReponse;
+
                 } else {
                     $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
                     $itemsArr = $sbsResponse['items'] ?? $itemsArr;
                 }
-
-
                 if (isset($carriers['wweSmall'])) {
                     $carriers['wweSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                 }
@@ -1291,7 +1287,6 @@ class GenerateRequestData
             $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment);
             if (count($binResponse)) {
 
-
                 foreach ($itemsAlone as $key => $itemAlone) {
                     foreach ($itemAlone as $alone) {
                         if (count($items) && isset($items[$key])) {
@@ -1364,6 +1359,7 @@ class GenerateRequestData
                 $newitemsArr = $this->itemsArr;
             }
         } else {
+
             $newOrigins = $this->origins;
             $newitemsArr = $this->itemsArr;
         }
