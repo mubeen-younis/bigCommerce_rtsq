@@ -20,11 +20,11 @@ class QuotesResults
         $amount = $data['totalNetCharge']['Amount'];
 
         //dd($quoteSettings['rate_source']);
-        if( isset($quoteSettings['rate_source']) && $quoteSettings['rate_source'] === 1 ){
+        if (isset($quoteSettings['rate_source']) && $quoteSettings['rate_source'] === 1) {
             $boxFee = $data['boxFees']['Amount'] ?? 0;
-            $amount = $data['NegotiatedRates']['Amount'] > 0 ? $data['NegotiatedRates']['Amount']+$boxFee : $amount;
+            $amount = $data['NegotiatedRates']['Amount'] > 0 ? $data['NegotiatedRates']['Amount'] + $boxFee : $amount;
         }
-        $markupIndex = strtolower(str_replace(' ','_',$serviceDesc).'_markup');
+        $markupIndex = strtolower(str_replace(' ', '_', $serviceDesc) . '_markup');
         $markupValue = $quoteSettings['carrier_services'][$markupIndex] ?? '';
         if (empty($markupValue) || !is_numeric(str_replace('%', '', $markupValue))) {
             return $amount;
@@ -42,7 +42,7 @@ class QuotesResults
     {
         // Adding hazmat fee to Ground Service
         if ($serviceCode == "03") {
-            if ( isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
+            if (isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
                 $amount = $amount + $quoteSettings['ground_hazardous_material_fee'];
             }
             // Adding hazmat fee to Air Services
@@ -58,7 +58,7 @@ class QuotesResults
 
     public function addHandlingMarkupOfHazmat($amount, $markupValue)
     {
-        $amount = (float) str_replace(',', '', $amount);
+        $amount = (float)str_replace(',', '', $amount);
         if (strpbrk($markupValue, '%') !== FALSE) {
             $amount = $this->getvalueFromPercent($amount, str_replace('%', '', $markupValue));
         } else {
@@ -76,13 +76,13 @@ class QuotesResults
 
     public function getServiceTitle($title, $data, $serviceCode, $quoteSettings, $isResi = false)
     {
-        if($isResi){
+        if ($isResi) {
             $title = $title . Constant::RESI_LABEL;
         }
-        if ( isset($data['totalTransitTimeInDays']) && $data['totalTransitTimeInDays'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2) {
-            $title = $title . ' (Estimated number of days until delivery is '.$data['totalTransitTimeInDays'].')';
-        }else if( isset($data['deliveryTimestamp']) && $data['deliveryTimestamp'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3){
-            $title = $title . ' (Estimated delivery date is '.date ('m-d-Y', strtotime($data['deliveryTimestamp'])).')';
+        if (isset($data['totalTransitTimeInDays']) && $data['totalTransitTimeInDays'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2) {
+            $title = $title . ' (Estimated number of days until delivery is ' . $data['totalTransitTimeInDays'] . ')';
+        } else if (isset($data['deliveryTimestamp']) && $data['deliveryTimestamp'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3) {
+            $title = $title . ' (Estimated delivery date is ' . date('m-d-Y', strtotime($data['deliveryTimestamp'])) . ')';
         }
         return $title;
     }
@@ -97,7 +97,7 @@ class QuotesResults
             }
             // Check by calendar days
         } else {
-            if ( isset($quote['calenderDaysInTransit']) && isset($quoteSettings['number_of_transit_days']) && $quote['calenderDaysInTransit'] > $quoteSettings['number_of_transit_days']) {
+            if (isset($quote['calenderDaysInTransit']) && isset($quoteSettings['number_of_transit_days']) && $quote['calenderDaysInTransit'] > $quoteSettings['number_of_transit_days']) {
                 return true;
             }
         }
@@ -105,8 +105,9 @@ class QuotesResults
     }
 
 
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment)
+    {
 
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment){
         $shipments = $this->formateQuoteBeforeCompile($shipments);
         //print_r($shipments); exit;
         $this->quoteSettings = [];
@@ -114,12 +115,15 @@ class QuotesResults
         $this->quoteSettings = $connectionSettings['ups-small']['quote_settings'] ?? '';
 
         $numberOfShipments = 0;
-        foreach ($shipments as $ship){
-            if (!isset($ship['severity'])) {
+        foreach ($shipments as $ship) {
+            if (!isset($ship['q'])) {
+                continue;
+            }
+            if (!isset($ship['severity'] /*&& isset()*/)) {
                 $numberOfShipments++;
             }
         }
-        if(!$isMultiShipment) {
+        if (!$isMultiShipment) {
             $isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
         $returnResp = [
@@ -170,18 +174,18 @@ class QuotesResults
                     $price = $this->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup'] ?? 0);
                     // Checking hazmat and adding hazmat amounts in services
                     if ($isHazmat) {
-                        if($isMultiShipment){
-                            if ($hazmatAllItems[$origin] == 'Y'){
+                        if ($isMultiShipment) {
+                            if ($hazmatAllItems[$origin] == 'Y') {
                                 $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
                             }
-                        }else{
+                        } else {
                             $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
                         }
                     }
 
                     $title = $this->getServiceTitle($data['serviceDesc'], $data, $data['serviceType'], $this->quoteSettings, $residential);
-                    $price = (float) str_replace(',','',$price);
-                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12ups'.$data['serviceType'] . $access;
+                    $price = (float)str_replace(',', '', $price);
+                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12ups' . $data['serviceType'] . $access;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
 
@@ -192,7 +196,7 @@ class QuotesResults
             $shipmentCount++;
         }
         //dd($multiShipmentQuotes);
-          //dd($originQuotes);
+        //dd($originQuotes);
 
         //$multiShipmentQuotes = $this->sortByOrder($multiShipmentQuotes, 'rate');
         //print_r($originQuotes);  exit;
@@ -206,9 +210,9 @@ class QuotesResults
                 $minValueFromNetChargeArr = min(array_column($netChargeArray, 'rate'));
 
                 $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
-                $originQuotesMulti[0]['code'] = 'Multiups'.$access;
+                $originQuotesMulti[0]['code'] = 'Multiups' . $access;
                 $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
-                $originQuotesMulti[0]['title'] = $residential ? 'Shipping'.Constant::RESI_LABEL  : 'Shipping';
+                $originQuotesMulti[0]['title'] = $residential ? 'Shipping' . Constant::RESI_LABEL : 'Shipping';
             }
             foreach ($multiShipmentQuotes as $shipmentKey => $shipment) {
                 $keys = array_column($shipment, 'rate');
@@ -255,23 +259,24 @@ class QuotesResults
     }
 
 
-    private function formateQuoteBeforeCompile($shipments){
+    private function formateQuoteBeforeCompile($shipments)
+    {
         $servicesDesc = [];
-        foreach ($shipments as $quote){
-            if(isset($quote['ups_services'])) {
+        foreach ($shipments as $quote) {
+            if (isset($quote['ups_services'])) {
                 $servicesDesc = $quote['ups_services'];
                 break;
             }
         }
-        foreach ($shipments as $shipment => $quotes){
+        foreach ($shipments as $shipment => $quotes) {
             $temp = [];
-            if(!isset($quotes['q'])){
+            if (!isset($quotes['q'])) {
                 continue;
             }
-            foreach ($quotes['q'] as $key => $quote){
-                if(!isset($quote['severity']) && isset($servicesDesc[$key])) {
+            foreach ($quotes['q'] as $key => $quote) {
+                if (!isset($quote['severity']) && isset($servicesDesc[$key])) {
 
-                    if(!in_array($quote['totalNetCharge']['Amount'], $temp)) {
+                    if (!in_array($quote['totalNetCharge']['Amount'], $temp)) {
                         $temp[] = $quote['totalNetCharge']['Amount'] ?? 0;
                         $servicesDescKey = $servicesDesc[$key] ?? '';
                         $shipments[$shipment]['q'][$key]['serviceDesc'] = $servicesDescKey;
@@ -282,10 +287,10 @@ class QuotesResults
                                 $shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] = $this->calenderDays($servicesDescKey, $quotes['tnt']['TransitResponse']['ServiceSummary']);
                             }
                         }
-                    }else{
+                    } else {
                         unset($shipments[$shipment]['q'][$key]);
                     }
-                }else{
+                } else {
                     unset($shipments[$shipment]['q'][$key]);
                 }
             }
@@ -293,11 +298,12 @@ class QuotesResults
         return $shipments;
     }
 
-    public function calenderDays($fDesc, $tnts){
+    public function calenderDays($fDesc, $tnts)
+    {
         $resp = '';
-        foreach ($tnts as $key => $tnt){
+        foreach ($tnts as $key => $tnt) {
             $desc = $tnt['Service']['Description'] ?? '';
-            if($desc === $fDesc){
+            if ($desc === $fDesc) {
                 $resp = $tnt['EstimatedArrival']['BusinessDaysInTransit'];
             }
         }

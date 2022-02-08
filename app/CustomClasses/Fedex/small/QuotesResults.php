@@ -6,6 +6,7 @@ namespace App\CustomClasses\Fedex\small;
 
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
+use Illuminate\Support\Str;
 
 class QuotesResults
 {
@@ -75,16 +76,15 @@ class QuotesResults
 
     public function getServiceTitle($title, $data, $serviceCode, $quoteSettings, $isResi = false)
     {
+        if ($isResi) {
+            $title = $title . Constant::RESI_LABEL;
+        }
         if (isset($data['totalTransitTimeInDays']) && $data['totalTransitTimeInDays'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2) {
             $title = $title . ' (Estimated number of days until delivery is ' . $data['totalTransitTimeInDays'] . ')';
         } else if (isset($data['deliveryTimestamp']) && $data['deliveryTimestamp'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3) {
-            $title = $title . ' (Delivery by ' . date('m-d-y h:i A', strtotime($data['deliveryTimestamp'])) . ')';
+            $title = $title . ' (Estimated delivery date is ' . date('m-d-Y', strtotime($data['deliveryTimestamp'])) . ')';
         }
-        $resiTitle = '';
-        if ($isResi) {
-            $resiTitle = Constant::RESI_LABEL;
-        }
-        return $title . $resiTitle;
+        return $title;
     }
 
     public function checkGroundTransit($quote, $quoteSettings)
@@ -258,8 +258,7 @@ class QuotesResults
                             $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
                         }
                     }
-
-
+                    $data['serviceDesc'] = $this->checkAndAppendFedex($data['serviceDesc']);
                     $title = $this->getServiceTitle($data['serviceDesc'], $data, $data['serviceType'], $this->quoteSettings, $residential);
                     $price = (float)str_replace(',', '', $price);
                     /*
@@ -360,8 +359,20 @@ class QuotesResults
         return $randomString;
     }
 
+    public function checkAndAppendFedex($serviceName)
+    {
+        if (!Str::contains($serviceName, 'Fedex')) {
+            $serviceName = 'Fedex ' . $serviceName;
+        }
+        if (Str::contains($serviceName, 'Am')) {
+            $serviceName = Str::replace('Am', 'AM', $serviceName);
+        }
+        return $serviceName;
+    }
 
-    public function formateQuoteBeforeCompile($shipments)
+
+    public
+    function formateQuoteBeforeCompile($shipments)
     {
         //print_r($shipments); exit;
         foreach ($shipments as $shipment => $serviceTypes) {
@@ -407,7 +418,8 @@ class QuotesResults
         return $shipments;
     }
 
-    public function calenderDays($fDesc, $tnts)
+    public
+    function calenderDays($fDesc, $tnts)
     {
         $resp = '';
         foreach ($tnts as $key => $tnt) {
@@ -419,7 +431,8 @@ class QuotesResults
         return $resp;
     }
 
-    public function quoteSettingsData()
+    public
+    function quoteSettingsData()
     {
         $fields = [
             'labelAs' => 'labelAs',
@@ -443,7 +456,8 @@ class QuotesResults
         $this->resiLgLabel = Constant::RESI_LIFT_LABEL;
     }
 
-    public function getCompiledQuotes($services, $arraySorting, $lgQuotes, $isMulitshipment)
+    public
+    function getCompiledQuotes($services, $arraySorting, $lgQuotes, $isMulitshipment)
     {
         if (empty($arraySorting) || empty($services)) {
             return [];
