@@ -29,8 +29,8 @@ class ProductSettingController extends Controller
 
     public function importProducts(Request $request)
     {
-        $isSyncinProgress = ImportProductsModel::where('store_id', $request['store_id'])->where('status', '=',1)->where('created_at', '>', Carbon::now()->subDay(1)->toDateTimeString())->exists();
-        if(!$isSyncinProgress) {
+        $isSyncinProgress = ImportProductsModel::where('store_id', $request['store_id'])->where('status', '=', 1)->where('created_at', '>', Carbon::now()->subDay(1)->toDateTimeString())->exists();
+        if (!$isSyncinProgress) {
             $importPrdModel = new ImportProductsModel();
             $importPrdModel->store_id = $request['store_id'];
             $importPrdModel->status = 1;
@@ -53,8 +53,10 @@ class ProductSettingController extends Controller
         }
 
     }
-    public function importProductsJob($data){
-        $storeUrl = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products?limit='.$data['perpage'].'&page='.$data['page'];
+
+    public function importProductsJob($data)
+    {
+        $storeUrl = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products?limit=' . $data['perpage'] . '&page=' . $data['page'];
         unset($headers);
         $headers[] = 'X-Auth-Token: ' . $data['store_token'];
         $headers[] = 'Content-Type: application/json';
@@ -74,10 +76,10 @@ class ProductSettingController extends Controller
                  * $product['base_variant_id'] = null mean this has variants and iterate those
                  * otherwise base product is as a variant product
                  * */
-                if($product['base_variant_id'] == null){
+                if ($product['base_variant_id'] == null) {
                     $this->saveProducts->saveProduct($product, $data['store_id']);
                     $this->getVariants($product, $data);
-                }else{
+                } else {
                     $this->saveProducts->saveProduct($product, $data['store_id']);
                 }
 
@@ -86,8 +88,9 @@ class ProductSettingController extends Controller
         }
     }
 
-    public function getVariants($product, $data){
-        $metaEndPoint = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products/'.$product['id'].'/variants?limit=250';
+    public function getVariants($product, $data)
+    {
+        $metaEndPoint = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products/' . $product['id'] . '/variants?limit=250';
         unset($headers);
         $headers[] = 'X-Auth-Token: ' . $data['store_token'];
         $headers[] = 'Content-Type: application/json';
@@ -95,8 +98,8 @@ class ProductSettingController extends Controller
         $metaResponse = $this->curlRequest->enSingleCurlRequest($metaEndPoint, [], $headers, 'GET', true);
         $metaResponse = json_decode($metaResponse['response'], true);
         $total_pages = $metaResponse['meta']['pagination']['total_pages'];
-        for($count = 1; $count<=$total_pages; $count++) {
-            $variantEndPoint = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products/'.$product['id'].'/variants?limit=250&page='.$count;
+        for ($count = 1; $count <= $total_pages; $count++) {
+            $variantEndPoint = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products/' . $product['id'] . '/variants?limit=250&page=' . $count;
             $response = $this->curlRequest->enSingleCurlRequest($variantEndPoint, [], $headers, 'GET', true);
             $response = json_decode($response['response'], true);
             if (isset($response['data']) && count($response['data'])) {
@@ -113,12 +116,14 @@ class ProductSettingController extends Controller
             }
         }
     }
+
     /*
      * return number of pages for all products
      */
 
-    public function importProductsGetPages($data){
-        $storeUrl = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products?limit='.$data['perpage'].'&page=0';
+    public function importProductsGetPages($data)
+    {
+        $storeUrl = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products?limit=' . $data['perpage'] . '&page=0';
         $headers[] = 'X-Auth-Token: ' . $data['store_token'];
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
@@ -152,10 +157,10 @@ class ProductSettingController extends Controller
         $response = json_decode($response['response'], true);
         if (isset($response['data']) && count($response['data'])) {
             $product = $response['data'];
-            if($product['base_variant_id'] == null){
+            if ($product['base_variant_id'] == null) {
                 $this->saveProducts->saveProduct($product, $storeId);
                 $this->getVariants($product, $data);
-            }else{
+            } else {
                 $this->saveProducts->saveProduct($product, $storeId);
             }
             return response()->json(['error' => false,
@@ -170,11 +175,11 @@ class ProductSettingController extends Controller
         $storeId = $request['store_id'] ?? '';
         $storeHash = $request['store_hash'] ?? '';
         $source_product_id = $request['source_product_id'] ?? '';
-        $variant_id = (int) $request['variant_id'] ?? 0;
+        $variant_id = (int)$request['variant_id'] ?? 0;
         $storeToken = $this->mainController->getCustAccessTok($storeId);
-        if($variant_id){
-            $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products/' . $source_product_id.'/variants/'.$variant_id;
-        }else{
+        if ($variant_id) {
+            $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products/' . $source_product_id . '/variants/' . $variant_id;
+        } else {
             $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products/' . $source_product_id;
         }
 
@@ -208,15 +213,16 @@ class ProductSettingController extends Controller
         ], 200);
     }*/
 
-    public function getBCProductByID($request){
+    public function getBCProductByID($request)
+    {
         $store = Store::where('hash', $request['store_hash'])->first();
-        if(empty($store)){
+        if (empty($store)) {
             return [];
         }
         $headers[] = 'X-Auth-Token: ' . $store->access_token;
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
-        $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v3/catalog/products/".$request['product_id'];
+        $endpoint = "https://api.bigcommerce.com/stores/" . $request['store_hash'] . "/v3/catalog/products/" . $request['product_id'];
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
         $prd = [];
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
@@ -225,7 +231,7 @@ class ProductSettingController extends Controller
             $prd['width'] = number_format($product['width'], 2);
             $prd['length'] = number_format($product['depth'], 2);
             $prd['height'] = number_format($product['height'], 2);
-            $prdSettings = $this->getProductSettings($request , $store->access_token);
+            $prdSettings = $this->getProductSettings($request, $store->access_token);
             $prd['settings'] = json_encode($prdSettings);
             $prd['id'] = $product['id'];
             //echo "<pre>"; print_r($prd); exit;
@@ -233,23 +239,24 @@ class ProductSettingController extends Controller
         return $prd;
     }
 
-    public function getProductSettings($request, $token){
+    public function getProductSettings($request, $token)
+    {
         $headers[] = 'X-Auth-Token: ' . $token;
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
-        $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v3/catalog/products/".$request['product_id']."/custom-fields?limit=250";
+        $endpoint = "https://api.bigcommerce.com/stores/" . $request['store_hash'] . "/v3/catalog/products/" . $request['product_id'] . "/custom-fields?limit=250";
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
         $settings = [];
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
             $customFields = json_decode($response['response'], true);
 
-            foreach($customFields['data'] as $field){
+            foreach ($customFields['data'] as $field) {
                 $boolIndex = ['dropship_enabled', 'hazardous_enabled', 'freight_enabled', 'insurance'];
                 $name = strtolower($field['name']);
                 $value = strtolower($field['value']);
-                if(in_array( $name, $boolIndex)){
+                if (in_array($name, $boolIndex)) {
                     $settings[$name] = ($value == 'true') ? true : false;
-                }else{
+                } else {
                     $settings[$name] = $value;
                 }
 
@@ -288,33 +295,33 @@ class ProductSettingController extends Controller
             $page = $request['page'] ?? 1;
             $perPage = $request['perpage'] ?? 50;
             $search = $request['search'] ?? null;
-            $sortProd = $request['sortProd'] == "true" ? 'DESC':'ASC';
+            $sortProd = $request['sortProd'] == "true" ? 'DESC' : 'ASC';
             /*$count = ProductSetting::where('store_id', $request->store_id)
                 ->where('name','LIKE','%'.$search.'%')->orderBy('name', $sortProd)->get()->groupBy('source_product_id')->count();*/
 
-            if($search === null || $search == ''){
+            if ($search === null || $search == '') {
                 $count = ProductSetting::where('store_id', $request->store_id)
                     ->orderBy('name', $sortProd)->get();
-            }else{
+            } else {
                 $count = ProductSetting::where('store_id', $request->store_id)
-                    ->where('name','LIKE','%'.$search.'%')->orderBy('name', $sortProd)->get();
+                    ->where('name', 'LIKE', '%' . $search . '%')->orderBy('name', $sortProd)->get();
             }
 
-            if($count->count()){
+            if ($count->count()) {
                 $count = $count->groupBy('source_product_id')->count();
-            }else{
+            } else {
                 $count = 0;
             }
-            if($search === null || $search == ''){
+            if ($search === null || $search == '') {
                 $products = ProductSetting::where('store_id', $request->store_id)
-                    ->groupBy('source_product_id')->orderBy('name', $sortProd)->skip(($page-1)*$perPage)->take($perPage)->get();
-            }else{
+                    ->groupBy('source_product_id')->orderBy('name', $sortProd)->skip(($page - 1) * $perPage)->take($perPage)->get();
+            } else {
                 $products = ProductSetting::where('store_id', $request->store_id)
                     ->groupBy('source_product_id')->orderBy('name', $sortProd)
-                    ->where('name','LIKE','%'.$search.'%')
+                    ->where('name', 'LIKE', '%' . $search . '%')
                     ->orWhere('variant_id', $search)
                     ->orWhere('source_product_id', $search)
-                    ->skip(($page-1)*$perPage)->take($perPage)->get();
+                    ->skip(($page - 1) * $perPage)->take($perPage)->get();
             }
             if ($products->isEmpty()) {
                 return response()->json(['error' => true,
@@ -324,12 +331,12 @@ class ProductSettingController extends Controller
             }
             $resp = response()->json(['error' => false,
                 'data' => $products,
-                'meta' => ['total'=>$count, 'current' => $page, 'perpage'=>$perPage],
+                'meta' => ['total' => $count, 'current' => $page, 'perpage' => $perPage],
                 'message' => '',
             ], 200);
             return $resp;
-        }catch (\Exception $exception){
-            Log::info('catch: '. json_encode($exception->getMessage()));
+        } catch (\Exception $exception) {
+            Log::info('catch: ' . json_encode($exception->getMessage()));
         }
 
     }
@@ -368,6 +375,9 @@ class ProductSettingController extends Controller
             $product->width = $prd['width'];
             $product->height = $prd['height'];
             $product->ship_multiple_package = isset($prd['ship_multiple_package']) && $prd['ship_multiple_package'] ? 1 : 0;
+            if ($prd['dropship_enabled']) {
+                $product->dropship_id = $prd['dropship_location'] ?? null;
+            }
 
             $product->settings = json_encode($this->getSetting($prd));
             /*json_encode($prd->only(['dropship_enabled', 'dropship_location', 'freight_class',
@@ -383,12 +393,13 @@ class ProductSettingController extends Controller
         ], 200);
     }
 
-    public function getSetting($product){
+    public function getSetting($product)
+    {
         $getOnly = ['dropship_enabled', 'dropship_location', 'freight_class',
             'hazardous_enabled', 'freight_enabled', 'parcel_enabled', 'insurance', 'allow_vertical', 'ship_own_package'];
         $settings = new \stdClass();
-        foreach($product as $key => $prd){
-            if(in_array($key, $getOnly)){
+        foreach ($product as $key => $prd) {
+            if (in_array($key, $getOnly)) {
                 $settings->$key = $prd;
             }
         }
@@ -396,22 +407,23 @@ class ProductSettingController extends Controller
     }
 
 
-    public function getAllProducts(Request $request){
+    public function getAllProducts(Request $request)
+    {
         $store = Store::where('hash', $request['store_hash'])->first();
-        if(empty($store)){
+        if (empty($store)) {
             return [];
         }
         $headers[] = 'X-Auth-Token: ' . $store->access_token;
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
-        $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v3/catalog/products";
+        $endpoint = "https://api.bigcommerce.com/stores/" . $request['store_hash'] . "/v3/catalog/products";
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
             $allProducts = json_decode($response['response'], true);
             //$allowed = ['id', 'sku', 'name', 'price'];
             $filteredPrds = [];
             $productsMeta = $allProducts['meta'];
-            foreach ($allProducts['data'] as $key=>$product){
+            foreach ($allProducts['data'] as $key => $product) {
                 $filteredPrds[$key]['id'] = $product['id'];
                 $filteredPrds[$key]['name'] = $product['name'];
                 $filteredPrds[$key]['sku'] = $product['sku'];
@@ -429,8 +441,9 @@ class ProductSettingController extends Controller
         );
     }
 
-    public function getProductImageByID($id, $request, $token){
-        $imageEndPoint = 'https://api.bigcommerce.com/stores/' .$request['store_hash']. '/v3/catalog/products/'.$id.'/images';
+    public function getProductImageByID($id, $request, $token)
+    {
+        $imageEndPoint = 'https://api.bigcommerce.com/stores/' . $request['store_hash'] . '/v3/catalog/products/' . $id . '/images';
         $headers[] = 'X-Auth-Token: ' . $token;
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
@@ -451,7 +464,8 @@ class ProductSettingController extends Controller
      * Update product when option/variants/sku creates/updated
      * */
 
-    public function skuFromWebhook(Request $request){
+    public function skuFromWebhook(Request $request)
+    {
         try {
             $postData = file_get_contents("php://input");
             Log::info('sku data: ' . $postData);
@@ -476,8 +490,8 @@ class ProductSettingController extends Controller
              * Handle first time sku created
              * need to set variant_id null for base product
              * */
-            if($scope == "store/sku/created"){
-                if(ProductSetting::where('source_product_id', $productId)->where('store_id', $store->id)->count() == 1){
+            if ($scope == "store/sku/created") {
+                if (ProductSetting::where('source_product_id', $productId)->where('store_id', $store->id)->count() == 1) {
                     ProductSetting::where('source_product_id', $productId)->where('store_id', $store->id)->update(['variant_id' => null]);
                 }
             }
@@ -491,68 +505,68 @@ class ProductSettingController extends Controller
     }
 
 //
-   /* public function getAllProducts(Request $request)
-    {
-        $this->getProductsFromBC();
-    }
+    /* public function getAllProducts(Request $request)
+     {
+         $this->getProductsFromBC();
+     }
 
-    public function getProductsFromBC()
-    {
-    $client = new Client();
-    $mainController = new MainController();
-    //https://api.bigcommerce.com/stores/{$$.env.store_hash}/v3/catalog/products
+     public function getProductsFromBC()
+     {
+     $client = new Client();
+     $mainController = new MainController();
+     //https://api.bigcommerce.com/stores/{$$.env.store_hash}/v3/catalog/products
 
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, "https://api.bigcommerce.com/stores/uann2u/v3/catalog/products");
-    //curl_setopt($ch, CURLOPT_GET, 1);
-    //curl_setopt($ch, CURLOPT_POSTFIELDS);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    'X-Auth-Token' => 'fo9l40uqj8najktk0t01klrl7dioiuc',
-    'X-Auth-Client' => $mainController->getAppClientId()
-    ]);
-    curl_setopt($ch, CURLOPT_HEADER, true);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    $output = curl_exec($ch);
-    $curlInfo = curl_getinfo($ch);
-    curl_close($ch);
+     $ch = curl_init();
+     curl_setopt($ch, CURLOPT_URL, "https://api.bigcommerce.com/stores/uann2u/v3/catalog/products");
+     //curl_setopt($ch, CURLOPT_GET, 1);
+     //curl_setopt($ch, CURLOPT_POSTFIELDS);
+     curl_setopt($ch, CURLOPT_HTTPHEADER, [
+     'X-Auth-Token' => 'fo9l40uqj8najktk0t01klrl7dioiuc',
+     'X-Auth-Client' => $mainController->getAppClientId()
+     ]);
+     curl_setopt($ch, CURLOPT_HEADER, true);
+     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+     $output = curl_exec($ch);
+     $curlInfo = curl_getinfo($ch);
+     curl_close($ch);
 
-    echo '<pre>';
-    print_r($output);
-    print_r(json_decode($output));
-    echo '</pre>';
-    exit();
+     echo '<pre>';
+     print_r($output);
+     print_r(json_decode($output));
+     echo '</pre>';
+     exit();
 
-    $result = $client->request('GET', 'https://api.bigcommerce.com/stores/uann2u/v3/catalog/products', [
-    'headers' => [
-    'X-Auth-Token' => 'fo9l40uqj8najktk0t01klrl7dioiuc'
-    ],
-    'on_stats' => function (TransferStats $stats) {
-    // You must check if a response was received before using the
-    // response object.
-    if ($stats->hasResponse()) {
-    echo $stats->getResponse()->getStatusCode();
-    dd($stats->getResponse());
-    } else {
-    // Error data is handler specific. You will need to know what
-    // type of error data your handler uses before using this
-    // value.
-    var_dump($stats->getHandlerErrorData());
-    }
-    }
-    ]);
-    /*$store = DB::table('access_tokens')->get()->toArray();
-    $storeHash = explode('/', $store[0]->store_hash);
-    Bigcommerce::configure(array(
-    'client_id' => env('BC_APP_CLIENT_ID'),
-    'auth_token' => $store[0]->access_token,
-    'store_hash' => $storeHash[1]
-    ));
-    $products = Bigcommerce::getProducts();
-    //Debug point added by @Azeem
-    echo '$products';
-    echo '<pre>';
-    print_r($products);
-    echo '</pre>';
-    exit();*/
+     $result = $client->request('GET', 'https://api.bigcommerce.com/stores/uann2u/v3/catalog/products', [
+     'headers' => [
+     'X-Auth-Token' => 'fo9l40uqj8najktk0t01klrl7dioiuc'
+     ],
+     'on_stats' => function (TransferStats $stats) {
+     // You must check if a response was received before using the
+     // response object.
+     if ($stats->hasResponse()) {
+     echo $stats->getResponse()->getStatusCode();
+     dd($stats->getResponse());
+     } else {
+     // Error data is handler specific. You will need to know what
+     // type of error data your handler uses before using this
+     // value.
+     var_dump($stats->getHandlerErrorData());
+     }
+     }
+     ]);
+     /*$store = DB::table('access_tokens')->get()->toArray();
+     $storeHash = explode('/', $store[0]->store_hash);
+     Bigcommerce::configure(array(
+     'client_id' => env('BC_APP_CLIENT_ID'),
+     'auth_token' => $store[0]->access_token,
+     'store_hash' => $storeHash[1]
+     ));
+     $products = Bigcommerce::getProducts();
+     //Debug point added by @Azeem
+     echo '$products';
+     echo '<pre>';
+     print_r($products);
+     echo '</pre>';
+     exit();*/
 // }*/
 }
