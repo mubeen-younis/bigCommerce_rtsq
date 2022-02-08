@@ -29,9 +29,11 @@ class Bin3D
     public function getBinResponse($storeId, $bins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment)
     {
         //loop for each bin request
-        $sbsStatus = $this->consumeHits($storeId, $hits);
-        if (!$sbsStatus['status']) {
-            return [];
+        if ($hits!=0){
+            $sbsStatus = $this->consumeHits($storeId, $hits);
+            if (!$sbsStatus['status']) {
+                return [];
+            }
         }
         if (count($items) && count($itemsAlone)) {
 
