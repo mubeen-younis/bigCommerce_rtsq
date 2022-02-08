@@ -364,6 +364,9 @@ class QuotesResults
         if (!Str::contains($serviceName, 'Fedex')) {
             $serviceName = 'Fedex ' . $serviceName;
         }
+        if (Str::contains($serviceName, 'Am')) {
+            $serviceName = Str::replace('Am', 'AM', $serviceName);
+        }
         return $serviceName;
     }
 
