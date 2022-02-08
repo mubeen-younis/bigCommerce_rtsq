@@ -219,7 +219,9 @@ class QuotesResults
                     // Check if service type is checked to show
                     $serviceName = str_replace('_ONE_RATE', '', $data['serviceType']);
                     $serviceName = str_replace('_AIR_SERVICE', '', $serviceName);
-                    $checkService = $this->checkServiceIsEnabled($origin, $serviceName, $allConfigServices['services']);
+                    // Added to check one rate service check
+                    $tocheckServiceName = Str::contains($data['serviceType'], '_ONE_RATE') ? "ONE_RATE_" . $serviceName : $serviceName;
+                    $checkService = $this->checkServiceIsEnabled($origin, $tocheckServiceName, $allConfigServices['services']);
                     if (!$checkService) {
                         continue;
                     }
@@ -264,7 +266,9 @@ class QuotesResults
                     /*
                     * Generate random code to limit rate_id to 50 chars
                      */
-                    if (strpos($data['serviceType'], '_AIR_SERVICE')) {
+                    if ($serviceName == "FEDEX_GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "FEDEX_GROUND_HOME_DELIVERY") {
+                        $access2 = $access . '+gd';
+                    } elseif (strpos($data['serviceType'], '_AIR_SERVICE')) {
                         $access2 = $access . '+as';
                     } else if (strpos($data['serviceType'], '_ONE_RATE')) {
                         $access2 = $access . '+or';
