@@ -375,7 +375,7 @@ class ProductSettingController extends Controller
             $product->width = $prd['width'];
             $product->height = $prd['height'];
             $product->ship_multiple_package = isset($prd['ship_multiple_package']) && $prd['ship_multiple_package'] ? 1 : 0;
-            if ($prd['dropship_enabled']) {
+            if (isset($prd['dropship_enabled']) && $prd['dropship_enabled']) {
                 $product->dropship_id = $prd['dropship_location'] ?? null;
             }
 
