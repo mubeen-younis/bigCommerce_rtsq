@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Constants\Constant;
 use App\CurlRequest;
+use App\Models\BoxSize;
 use App\Models\Orders;
 use App\Models\RequestData;
 use App\Models\RequestTempData;
@@ -348,19 +349,22 @@ class OrderController extends Controller
 
     public function getBoxName($binId, $store_id, $rate_id, $cart_id)
     {
-        $data = RequestData::where('rate_id', $rate_id)
-            ->where('cart_id', $cart_id)
-            ->where('store_id', $store_id)
-            ->first()->toArray();
-        $binId = (int)$binId;
-        $bins = json_decode($data['box_bins']);
-        if (!empty($bins)) {
-            foreach ($bins as $bin) {
-                if ($binId == $bin->id) {
-                    return $bin->nickname;
-                }
-            }
-        }
+        $nickname = BoxSize::getBoxNicknameAndFee($binId);
+        return $nickname->nickname ?? null;
+
+        /*     $data = RequestData::where('rate_id', $rate_id)
+                 ->where('cart_id', $cart_id)
+                 ->where('store_id', $store_id)
+                 ->first()->toArray();
+             $binId = (int)$binId;
+             $bins = json_decode($data['box_bins']);
+             if (!empty($bins)) {
+                 foreach ($bins as $bin) {
+                     if ($binId == $bin->id) {
+                         return $bin->nickname;
+                     }
+                 }
+             }*/
     }
 
     public function objectToArray($orderWidget)
