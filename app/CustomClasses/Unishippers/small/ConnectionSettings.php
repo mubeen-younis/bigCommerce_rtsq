@@ -20,20 +20,6 @@ class ConnectionSettings
             'message' => 'Something went wrong!',
         ];
         $url = $this->testConnectionUrl;
-
-        // array (
-        //     'username' => 'everestproducts',
-        //     'password' => 'shipping',
-        //     'requestkey' => '3.0',
-        //     'upsaccountnumber' => '7F1E28',
-        //     'unishipperscustomernumber' => 'U18859353891',
-        //     'carrierName' => 'unisheppers',
-        //     'carrier_mode' => 'test',
-        //     'unique_key' => '87676ba67fc1bd58a97e77f05063c177',
-        //     'serverName' => 'wc.eniture-dev.com',
-        //     'dont_auth' => 1,
-        //     'platform' => 'WordPress',
-        //   );
         $params = array(
             'dont_auth' => '1',
             // -------------Carrier Credentials------------- //
@@ -50,9 +36,7 @@ class ConnectionSettings
         );
 
         $queryString = http_build_query($params);
-        // dd($queryString);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
-        dd($output);
 
         if (isset($output['status']) && $output['status'] == false) {
             $response = [
@@ -62,12 +46,12 @@ class ConnectionSettings
         }
 
         $output = json_decode($output['response'], true);
-        if (isset($output['error']) && isset($output['Message'])) {
+        if (isset($output['severity']) && $output['severity'] === 'ERROR' && isset($output['Message'])) {
             $response = [
                 'error' => true,
                 'message' => $output['Message'],
             ];
-        } elseif (isset($output['success'])) {
+        } elseif (isset($output['severity']) && $output['severity'] === 'SUCCESS') {
             $response = [
                 'error' => false,
                 'message' => 'Test connection successful.',
