@@ -165,14 +165,19 @@ class Bin3D
             $resp = json_decode($SBSResp);
             $not_packed_items = $resp->response->not_packed_items;
             if (count($not_packed_items)) {
-                foreach ($items[$key] as $itemKey => $item) {
-                    foreach ($not_packed_items as $not_packed_item) {
-                        for ($i = 1; $i <= $item['q']; $i++) {
+                // foreach ($items[$key] as $itemKey => $item) {
+                foreach ($not_packed_items as $not_packed_item) {
+                    $notPackedQuantity = optional($not_packed_item)->q ?? 0;
+                    if ($notPackedQuantity != 0) {
+                        for ($i = 1; $i <= $notPackedQuantity; $i++) {
                             $not_packed_item = (array)$not_packed_item;
+                            $not_packed_item['q'] = 1;
                             array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
                         }
                     }
+
                 }
+                //  }
             }
         }
         return $data;
