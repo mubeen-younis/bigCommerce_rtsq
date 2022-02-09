@@ -349,7 +349,7 @@ class Shipping
                     $boxFee += $pack->bin_data->boxFee;
                 } else {
                     // $boxId = $pack->bin_data->id;
-                    $boxFee += $pack->bin_data->boxfee;
+                    $boxFee += optional($pack)->bin_data->boxfee ?? 0;
                 }
             }
         }
