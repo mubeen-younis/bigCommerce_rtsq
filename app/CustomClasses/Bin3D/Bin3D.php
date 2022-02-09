@@ -29,7 +29,7 @@ class Bin3D
     public function getBinResponse($storeId, $bins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment)
     {
         //loop for each bin request
-        if ($hits!=0){
+        if ($hits != 0) {
             $sbsStatus = $this->consumeHits($storeId, $hits);
             if (!$sbsStatus['status']) {
                 return [];
@@ -183,7 +183,7 @@ class Bin3D
         foreach ($packedResponse->bins_packed as $key => $packedBox) {
             $boxDetail = BoxSize::getBoxNicknameAndFee($packedBox->bin_data->id);
             $packedResponse->bins_packed[$key]->bin_data->boxname = $boxDetail->nickname ?? null;
-           // $packedResponse->bins_packed[$key]->bin_data->boxFee = $boxDetail->box_fee ?? 0;
+            $packedResponse->bins_packed[$key]->bin_data->boxfee = $boxDetail->box_fee ?? 0;
         }
         return $packedResponse;
 
