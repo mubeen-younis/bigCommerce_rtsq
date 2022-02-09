@@ -373,6 +373,7 @@ class SubscriptionController extends Controller
                 $this->updateSubscriptionInDB($updateSubResponse['data'], $oldSubscription);
                 //Getting Current Plan Detail
                 $updateSubResponse['data'] = $this->subscriptionDetailFromDB($data['store_id']);
+                Log::info('Email ' . $data['email']);
                 $emailData = array(
                     'receiverEmail' => $data['email'],
                     'productName' => 'Real-time Shipping Quotes',
@@ -380,8 +381,8 @@ class SubscriptionController extends Controller
                     'endsAt' => $updateSubResponse['data']->ends_at ?? null,
                     'action' => 'IPF'       // Invoice Payment Failed
                 );
-
-                Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, 1));
+                Log::info('Email of payment Person ' . $data['email']);
+                Mail::to($emailData['receiverEmail'])->send(new PaymentFailedByWebHookEmail($emailData, 1));
                 return response()->json($updateSubResponse, 200);
             }
             //END: Upgrade or DownGrade Plans
