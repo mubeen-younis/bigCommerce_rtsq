@@ -348,12 +348,13 @@ class Shipping
 
     public function getBoxFeeAccordingToService($serviceType, $fedexBoxFee, $boxFee, $locId, $oneRate = false)
     {
+        $commonBoxFee = $boxFee[$locId] ?? 0;
         if ($oneRate) {
-            $fee = $fedexBoxFee[$locId]['oneRate'] ?? $boxFee[$locId];
+            $fee = $fedexBoxFee[$locId]['oneRate'] ?? $commonBoxFee;
         } elseif ($serviceType == "FEDEX_GROUND" || $serviceType == "GROUND_HOME_DELIVERY") {
-            $fee = $fedexBoxFee[$locId]['ground'] ?? $boxFee[$locId];
+            $fee = $fedexBoxFee[$locId]['ground'] ?? $commonBoxFee;
         } else {
-            $fee = $fedexBoxFee[$locId]['air'] ?? $boxFee[$locId];
+            $fee = $fedexBoxFee[$locId]['air'] ?? $commonBoxFee;
         }
         return $fee;
 
