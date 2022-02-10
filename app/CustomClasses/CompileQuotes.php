@@ -1376,7 +1376,7 @@ class CompileQuotes
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
         $lgQuotes = false;
-        $numberOfShipments = 0;
+        $numberOfShipments = 0; 
         foreach ($shipments as $ship) {
             if (!isset($ship['severity'])) {
                 $numberOfShipments++;
@@ -1386,6 +1386,8 @@ class CompileQuotes
             $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;;
         }
         $lableAs = $this->quoteSettings['label_as'] ?? '';
+        $freightEconomyLableAs = $this->quoteSettings['fedex_freight_economy_label'] ?? '';
+        $freightPriorityLableAs = $this->quoteSettings['fedex_freight_priority_label'] ?? '';
         foreach ($shipments as $origin => $quote) {
 
             if (isset($quote['severity'])) {
@@ -1415,10 +1417,16 @@ class CompileQuotes
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices)) {
                         $access = $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
-                        if (isset($this->quoteSettings['label_as']) && isset($data['serviceType'])) {
-                            $EcoPrio = $data['serviceType'] === 'FEDEX_FREIGHT_ECONOMY' ? ' Economy' : ' Priority';
-                            $this->quoteSettings['label_as'] = $lableAs . $EcoPrio;
-                        }
+                        // if (isset($this->quoteSettings['label_as']) && isset($data['serviceType'])) {
+                        //     $EcoPrio = $data['serviceType'] === 'FEDEX_FREIGHT_ECONOMY' ? ' Economy' : ' Priority';
+                        //     $this->quoteSettings['label_as'] = $lableAs . $EcoPrio;
+                        // }
+                        if (isset($data['serviceType']) && $data['serviceType'] === 'FEDEX_FREIGHT_ECONOMY') {
+                            $this->quoteSettings['label_as'] = !blank($freightEconomyLableAs) ? $freightEconomyLableAs : 'LTL Freight Economy';
+                        } 
+                        if (isset($data['serviceType']) && $data['serviceType'] === 'FEDEX_FREIGHT_PRIORITY') {
+                            $this->quoteSettings['label_as'] = !blank($freightPriorityLableAs) ? $freightPriorityLableAs : 'LTL Freight Priority';
+                        } 
                         /*
                          * Date 01-07-22
                          * Adding Functionality of Delivery Estimate Options
