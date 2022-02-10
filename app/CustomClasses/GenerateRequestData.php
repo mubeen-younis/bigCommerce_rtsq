@@ -363,6 +363,27 @@ class GenerateRequestData
                         foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
                             $carriers['fedexSmall']['originAddress'][$key] = $origin;
                         }
+                        /*
+                       * Added Condition if in case of combination of ups small and fedex small
+                       * Only Fedex SMall rates was returning
+                       * We need to cater all small carriers here as well
+                       * */
+                        if (isset($carriers['upsSmall'])) {
+                            unset($carriers['upsSmall']['originAddress']);
+
+                            foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
+                                $carriers['upsSmall']['originAddress'][$key] = $origin;
+                            }
+                        }
+
+                        if (isset($carriers['wweSmall'])) {
+                            unset($carriers['wweSmall']['originAddress']);
+
+                            foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
+                                $carriers['wweSmall']['originAddress'][$key] = $origin;
+                            }
+                        }
+                        ///////////////////////////////////////////
                         $binReponse['ground'] = $sbsResponseGround['binResponse'];
                     }
 
@@ -396,13 +417,14 @@ class GenerateRequestData
                 } else {
                     $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
                     $itemsArr = $sbsResponse['items'] ?? $itemsArr;
+                    if (isset($carriers['wweSmall'])) {
+                        $carriers['wweSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
+                    }
+                    if (isset($carriers['upsSmall'])) {
+                        $carriers['upsSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
+                    }
                 }
-                if (isset($carriers['wweSmall'])) {
-                    $carriers['wweSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
-                }
-                if (isset($carriers['upsSmall'])) {
-                    $carriers['upsSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
-                }
+
                 $binReponse = $sbsResponse['binResponse'] ?? [];
                 $boxBins = $sbsResponse['boxBins'] ?? [];
                 $isLtl = isset($carriers['wweLTL'])
