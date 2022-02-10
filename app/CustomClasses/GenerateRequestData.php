@@ -514,11 +514,6 @@ class GenerateRequestData
                 $this->ground = true;
             }
 
-            /*     $smartPost = ['fedex_smartpost'];
-                 if (!$this->smartPost && $service && in_array($key, $smartPost)) {
-                     $this->smartPost = true;
-                 }*/
-
             // CHecking if we have any fedex box
             if (DB::table('box_sizes')->where('store_id', $this->storeData['store']->id)
                 ->where('is_available', 1)->where('box_type', 2)->count()) {
