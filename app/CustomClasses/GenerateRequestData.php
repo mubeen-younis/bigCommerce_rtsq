@@ -428,7 +428,6 @@ class GenerateRequestData
             'receiverAddress' => $receiverAddress,
             'commdityDetails' => $itemsArr,
         ];
-
         if (isset($carriers['fedexSmall'])) {
             if ($this->smartPost) {
                 $requestArr['FedexSmartPostPricing'] = 1;
@@ -493,14 +492,18 @@ class GenerateRequestData
                 $this->ground = true;
             }
 
-            $smartPost = ['fedex_smartpost'];
-            if (!$this->smartPost && $service && in_array($key, $smartPost)) {
-                $this->smartPost = true;
-            }
+            /*     $smartPost = ['fedex_smartpost'];
+                 if (!$this->smartPost && $service && in_array($key, $smartPost)) {
+                     $this->smartPost = true;
+                 }*/
 
-            $air = ['fedex_express_saver', 'fedex_2_day', 'fedex_2_day_am', 'fedex_priority_overnight', 'fedex_first_overnight', 'international_distribution_freight', 'international_economy', 'international_economy_distribution', 'international_economy_freight', 'international_first', 'international_priority', 'international_priority_distribution', 'international_priority_freight', 'priority_overnight', 'standard_overnight'];
-            if (!$this->air && $service && in_array($key, $air)) {
-                $this->air = true;
+            // CHecking if we have any fedex box
+            if (DB::table('box_sizes')->where('store_id', $this->storeData['store']->id)
+                ->where('is_available', 1)->where('box_type', 2)->count()) {
+                $air = ['fedex_express_saver', 'fedex_2_day', 'fedex_2_day_am', 'fedex_priority_overnight', 'fedex_first_overnight', 'international_distribution_freight', 'international_economy', 'international_economy_distribution', 'international_economy_freight', 'international_first', 'international_priority', 'international_priority_distribution', 'international_priority_freight', 'priority_overnight', 'standard_overnight'];
+                if (!$this->air && $service && in_array($key, $air)) {
+                    $this->air = true;
+                }
             }
         }
 
@@ -1080,15 +1083,12 @@ class GenerateRequestData
         } else {
             $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
         }
+        $this->setIsSmartPost($connSettings);
         $this->resiCarrier['fedexSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['fedexSmall'] = $alwaysResi;
         $hubIdindicia = isset($connSettings['creds']['hub_id']) ? explode('(', $connSettings['creds']['hub_id']) : '';
         $hubId = isset($hubIdindicia[0]) ? trim($hubIdindicia[0]) : '';
         $indicia = 'PARCEL_SELECT';//trim(explode(')',$hubIdindicia[1])[0]);
-        $smartPostData = [
-            'hubId' => $hubId,
-            'indicia' => $indicia
-        ];
         $apiArray = [
 
             'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
@@ -1106,10 +1106,23 @@ class GenerateRequestData
             'prefferedCurrency' => 'USD',
             'includeDeclaredValue' => '1', //insurance active with sbs active 0 or 1
             'pkgType' => '00',
-            'saturdayDelivery' => 'on',
-            'smartPostData' => $smartPostData
+            'saturdayDelivery' => 'on'
         ];
+        if ($this->smartPost) {
+            $apiArray['smartPostData'] = [
+                'hubId' => $hubId,
+                'indicia' => $indicia
+            ];
+        }
         return $apiArray;
+    }
+
+    public function setIsSMartPost($connectionSettings)
+    {
+        if (isset($connectionSettings['quote_settings']['carrier_services']['fedex_smart_post']) &&
+            $connectionSettings['quote_settings']['carrier_services']['fedex_smart_post']) {
+            $this->smartPost = true;
+        }
     }
 
     private function getDays($days)

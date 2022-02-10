@@ -270,18 +270,38 @@ class Shipping
                     foreach ($quot as $locId => $q) {
                         // Added Condition for fedex small for adding box fees
                         if ($carName == "fedexSmall") {
+
+
                             if (isset($q['fedexServices']['q'])) {
                                 foreach ($q['fedexServices']['q'] as $key => $qs) {
                                     $fee = $this->getBoxFeeAccordingToService($qs['serviceType'], $fedexBoxesFee, $boxFee, $locId);
                                     if (isset($qs['totalNetCharge']['Amount'])) {
-                                        if (isset($boxFee[$locId])) {
+                                        if ($fee != 0) {
                                             $quotes[$carName][$locId]['fedexServices']['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $fee;
                                             $quotes[$carName][$locId]['fedexServices']['q'][$key]['boxFees']['Amount'] = $fee;
                                         }
                                     }
                                     if (isset($qs['NegotiatedRates']['Amount'])) {
-                                        if (isset($boxFee[$locId])) {
+                                        if ($fee != 0) {
                                             $quotes[$carName][$locId]['fedexServices']['q'][$key]['NegotiatedRates']['Amount'] = $qs['NegotiatedRates']['Amount'] + $fee;
+                                            $quotes[$carName][$locId]['fedexServices']['q'][$key]['boxFees']['Amount'] = $fee;
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (isset($q['fedexAirServices']['q'])) {
+                                foreach ($q['fedexAirServices']['q'] as $key => $qs) {
+                                    $fee = $this->getBoxFeeAccordingToService($qs['serviceType'], $fedexBoxesFee, $boxFee, $locId);
+                                    if (isset($qs['totalNetCharge']['Amount'])) {
+                                        if ($fee != 0) {
+                                            $quotes[$carName][$locId]['fedexAirServices']['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $fee;
+                                            $quotes[$carName][$locId]['fedexAirServices']['q'][$key]['boxFees']['Amount'] = $fee;
+                                        }
+                                    }
+                                    if (isset($qs['NegotiatedRates']['Amount'])) {
+                                        if ($fee != 0) {
+                                            $quotes[$carName][$locId]['fedexAirServices']['q'][$key]['NegotiatedRates']['Amount'] = $qs['NegotiatedRates']['Amount'] + $fee;
                                             $quotes[$carName][$locId]['fedexServices']['q'][$key]['boxFees']['Amount'] = $fee;
                                         }
                                     }
@@ -293,13 +313,13 @@ class Shipping
                                 foreach ($q['fedexOneRate']['q'] as $key => $qs) {
                                     $fee = $this->getBoxFeeAccordingToService($qs['serviceType'], $fedexBoxesFee, $boxFee, $locId, true);
                                     if (isset($qs['totalNetCharge']['Amount'])) {
-                                        if (isset($boxFee[$locId])) {
+                                        if ($fee != 0) {
                                             $quotes[$carName][$locId]['fedexOneRate']['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $fee;
                                             $quotes[$carName][$locId]['fedexOneRate']['q'][$key]['boxFees']['Amount'] = $fee;
                                         }
                                     }
                                     if (isset($qs['NegotiatedRates']['Amount'])) {
-                                        if (isset($boxFee[$locId])) {
+                                        if ($fee != 0) {
                                             $quotes[$carName][$locId]['fedexOneRate']['q'][$key]['NegotiatedRates']['Amount'] = $qs['NegotiatedRates']['Amount'] + $fee;
                                             $quotes[$carName][$locId]['fedexOneRate']['q'][$key]['boxFees']['Amount'] = $fee;
                                         }

@@ -770,7 +770,7 @@ class OrderController extends Controller
                         unset($data['id']);
                         RequestData::insert($data);
                     }
-                    RequestTempData::where('cart_id', $cartId)->delete();
+                   // RequestTempData::where('cart_id', $cartId)->delete();
                 }
             }
         }
