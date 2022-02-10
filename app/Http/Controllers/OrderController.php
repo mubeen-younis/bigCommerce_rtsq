@@ -692,21 +692,6 @@ class OrderController extends Controller
             echo "<pre>";
             print_r($products);
             exit;
-            foreach ($products as $key => $product) {
-                $prds[$key]['product_id'] = $product->product_id;
-                $prds[$key]['weight'] = $product->weight ?? 0;
-                $prds[$key]['width'] = $product->width ?? 0;
-                $prds[$key]['height'] = $product->height ?? 0;
-                $prds[$key]['depth'] = $product->depth ?? 0;
-                $prds[$key]['color'] = $product->product_options[0]->display_value_customer ?? '';
-                $prdCustomFields = $this->prdCustomFeilds($product->product_id);
-                $prds[$key]['dropship_location'] = $prdCustomFields['dropship_location'] ?? false;
-                $prds[$key]['freight_class'] = $prdCustomFields['freight_class'] ?? false;
-                $prds[$key]['dropship_enabled'] = isset($prdCustomFields['dropship_enabled']) && $prdCustomFields['dropship_enabled'] == "true" ? true : false;
-                $prds[$key]['hazardous_enabled'] = isset($prdCustomFields['hazardous_enabled']) && $prdCustomFields['hazardous_enabled'] == "true" ? true : false;
-                $prds[$key]['freight_enabled'] = isset($prdCustomFields['freight_enabled']) && $prdCustomFields['freight_enabled'] == "true" ? true : false;
-                $prds[$key]['insurance'] = isset($prdCustomFields['insurance']) && $prdCustomFields['insurance'] == "true" ? true : false;
-            }
             //dd($prds);
         }
         return $prds;
@@ -730,18 +715,6 @@ class OrderController extends Controller
         }
         return $prdCustomFieldData;
     }
-
-    /*public function getBCOrderByID($toRequest)
-    {
-        $headers[] = 'X-Auth-Token: ' . $this->accessToken;
-        $headers[] = 'Content-Type: application/json';
-        $headers[] = 'Accept: application/json';
-        $endpoint = 'https://api.bigcommerce.com/stores/' . $toRequest['store_hash'] . '/v2/orders/' . $toRequest['order_id'];
-        $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
-        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
-            return $response['response'];
-        }
-    }*/
 
     /***
      * @param $toRequest
