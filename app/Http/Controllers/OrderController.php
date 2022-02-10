@@ -770,7 +770,7 @@ class OrderController extends Controller
                         unset($data['id']);
                         RequestData::insert($data);
                     }
-                    RequestTempData::where('cart_id', $cartId)->delete();
+                   // RequestTempData::where('cart_id', $cartId)->delete();
                 }
             }
         }
@@ -795,7 +795,7 @@ class OrderController extends Controller
 
     private function hasInsureCarrier($code)
     {
-        $insureCarriers = ['wweltl', 'parcel_12wwe', 'parcel_12ups'];
+        $insureCarriers = ['wweltl', 'parcel_12wwe', 'parcel_12ups','parcel_12fd'];
         foreach ($insureCarriers as $insureCarrier) {
             if (strpos($code, $insureCarrier) !== false) {
                 return true;

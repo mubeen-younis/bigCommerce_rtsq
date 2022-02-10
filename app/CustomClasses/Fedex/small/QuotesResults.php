@@ -185,6 +185,7 @@ class QuotesResults
                 }
             }
         }
+        $allConfigServices = $this->replaceIndexOfSomeOneRateService($allConfigServices);
         $this->quoteSettingsData();
         $this->allConfigServices = $allConfigServices;
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
@@ -350,6 +351,25 @@ class QuotesResults
             'isMultiShipment' => $isMultiShipment
         ];
         return $resp;
+    }
+
+    public function replaceIndexOfSomeOneRateService($allConfigServices)
+    {
+        if (isset($allConfigServices['services']['domestic'])) {
+
+            foreach ($allConfigServices['services']['domestic'] as $key => $value) {
+                if ($value == "ONE_RATE_2_DAY") {
+                    $allConfigServices['services']['domestic'][] = "ONE_RATE_FEDEX_2_DAY";
+                }
+                if ($value == "ONE_RATE_2_DAY_AM") {
+                    $allConfigServices['services']['domestic'][] = "ONE_RATE_FEDEX_2_DAY_AM";
+                }
+                if ($value == "ONE_RATE_EXPRESS_SAVER") {
+                    $allConfigServices['services']['domestic'][] = "ONE_RATE_FEDEX_EXPRESS_SAVER";
+                }
+            }
+        }
+        return $allConfigServices;
     }
 
     function generateRandomString($length = 25)
