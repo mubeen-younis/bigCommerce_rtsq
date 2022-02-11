@@ -271,7 +271,6 @@ class Shipping
                         // Added Condition for fedex small for adding box fees
                         if ($carName == "fedexSmall") {
 
-
                             if (isset($q['fedexServices']['q'])) {
                                 foreach ($q['fedexServices']['q'] as $key => $qs) {
                                     $fee = $this->getBoxFeeAccordingToService($qs['serviceType'], $fedexBoxesFee, $boxFee, $locId);
@@ -326,6 +325,26 @@ class Shipping
                                     }
                                 }
                             }
+                            
+                            /*
+                           * Adds Box fee in SMart POst QUotes
+                             * */
+
+                            if (isset($q['smartPost']['q']['SMART_POST']['serviceType'])) {
+                                if ($fee != 0) {
+                                    if (isset($quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['NegotiatedRates']['Amount'])) {
+                                        $quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['NegotiatedRates']['Amount'] = $quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['NegotiatedRates']['Amount'] + $fee;
+                                        // $quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['boxFees']['Amount'] = $fee;
+                                    }
+                                    if (isset($quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['totalNetCharge']['Amount'])) {
+                                        $quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['totalNetCharge']['Amount'] = $quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['totalNetCharge']['Amount'] + $fee;
+                                        //$quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['boxFees']['Amount'] = $fee;
+                                    }
+
+                                }
+
+                            }
+
                         }
 
 
