@@ -330,6 +330,7 @@ class Shipping
                              * */
 
                             if (isset($q['smartPost']['q']['SMART_POST']['serviceType'])) {
+                                $fee = $this->getBoxFeeAccordingToService('smart_post', $fedexBoxesFee, $boxFee, $locId);
                                 if ($fee != 0) {
                                     if (isset($quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['NegotiatedRates']['Amount'])) {
                                         $quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['NegotiatedRates']['Amount'] = $quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['NegotiatedRates']['Amount'] + $fee;
@@ -369,7 +370,7 @@ class Shipping
         $commonBoxFee = $boxFee[$locId] ?? 0;
         if ($oneRate) {
             $fee = $fedexBoxFee[$locId]['oneRate'] ?? $commonBoxFee;
-        } elseif ($serviceType == "FEDEX_GROUND" || $serviceType == "GROUND_HOME_DELIVERY") {
+        } elseif ($serviceType == "FEDEX_GROUND" || $serviceType == "GROUND_HOME_DELIVERY" || "smart_post") {
             $fee = $fedexBoxFee[$locId]['ground'] ?? $commonBoxFee;
         } else {
             $fee = $fedexBoxFee[$locId]['air'] ?? $commonBoxFee;
