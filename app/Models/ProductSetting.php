@@ -17,7 +17,7 @@ class ProductSetting extends Model
 
     public function deleteIfDropProduct($dropshipId)
     {
-        self::where('dropship_id', $dropshipId)->update(['dropship_location' => null, 'dropship_enabled' => false]);
+        self::where('dropship_location', $dropshipId)->update(['dropship_location' => null, 'dropship_enabled' => false]);
         /*    $products = self::where('settings', '!=', null)->whereJsonContains('settings', ['dropship_location' => "" . $dropshipId])->get();
             foreach ($products as $product) {
                 $settings = json_decode($product->settings, true);
