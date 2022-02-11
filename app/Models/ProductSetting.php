@@ -12,22 +12,22 @@ class ProductSetting extends Model
 
     protected $table = 'product_settings';
     protected $fillable = [
-        'settings', 'dropship_id'
+        'settings', 'dropship_location', 'dropship_enabled'
     ];
 
     public function deleteIfDropProduct($dropshipId)
     {
-        self::where('dropship_id', $dropshipId)->update(['dropship_id' => null]);
-    /*    $products = self::where('settings', '!=', null)->whereJsonContains('settings', ['dropship_location' => "" . $dropshipId])->get();
-        foreach ($products as $product) {
-            $settings = json_decode($product->settings, true);
-            if (blank($settings)) {
-                continue;
-            }
-            $settings['dropship_enabled'] = false;
-            $settings['dropship_location'] = null;
-            self::where('id', $product->id)->update(['settings' => $settings]);
-        }*/
+        self::where('dropship_id', $dropshipId)->update(['dropship_location' => null, 'dropship_enabled' => false]);
+        /*    $products = self::where('settings', '!=', null)->whereJsonContains('settings', ['dropship_location' => "" . $dropshipId])->get();
+            foreach ($products as $product) {
+                $settings = json_decode($product->settings, true);
+                if (blank($settings)) {
+                    continue;
+                }
+                $settings['dropship_enabled'] = false;
+                $settings['dropship_location'] = null;
+                self::where('id', $product->id)->update(['settings' => $settings]);
+            }*/
     }
 
     public function saveProduct($product, $storeId)
