@@ -376,7 +376,11 @@ class ProductSettingController extends Controller
             $product->height = $prd['height'];
             $product->ship_multiple_package = isset($prd['ship_multiple_package']) && $prd['ship_multiple_package'] ? 1 : 0;
             if (isset($prd['dropship_enabled']) && $prd['dropship_enabled']) {
-                $product->dropship_id = $prd['dropship_location'] ?? null;
+                $product->dropship_enabled = true;
+                $product->dropship_location = $prd['dropship_location'] ?? null;
+            } else {
+                $product->dropship_enabled = false;
+                $product->dropship_location = null;
             }
 
             $product->settings = json_encode($this->getSetting($prd));
@@ -395,7 +399,7 @@ class ProductSettingController extends Controller
 
     public function getSetting($product)
     {
-        $getOnly = ['dropship_enabled', 'dropship_location', 'freight_class',
+        $getOnly = ['freight_class',
             'hazardous_enabled', 'freight_enabled', 'parcel_enabled', 'insurance', 'allow_vertical', 'ship_own_package'];
         $settings = new \stdClass();
         foreach ($product as $key => $prd) {
