@@ -76,6 +76,9 @@ class QuotesResults
 
     public function getServiceTitle($title, $data, $serviceCode, $quoteSettings, $isResi = false)
     {
+        if ($title == "Fedex Smart Post") {
+            $title = "Fedex SmartPost";
+        }
         if ($isResi) {
             $title = $title . Constant::RESI_LABEL;
         }
