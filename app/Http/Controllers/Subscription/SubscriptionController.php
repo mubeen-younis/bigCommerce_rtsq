@@ -374,9 +374,10 @@ class SubscriptionController extends Controller
                 //Getting Current Plan Detail
                 $updateSubResponse['data'] = $this->subscriptionDetailFromDB($data['store_id']);
                 Log::info('Email of old subscription' . $oldSubscription->email);
-                if (isset($oldSubscription->email) && !empty($oldSubscription->email)) {
+                $mailToSend = isset($data['email']) && !empty($data['email']) ? $data['email'] : (isset($oldSubscription->email) && !empty($oldSubscription->email) ? $oldSubscription->email : null);
+                if (!empty($mailToSend)) {
                     $emailData = array(
-                        'receiverEmail' => $oldSubscription->email,
+                        'receiverEmail' => $mailToSend,
                         'productName' => 'Real-time Shipping Quotes',
                         'planName' => self::$plansData['name'],
                         'endsAt' => $updateSubResponse['data']->ends_at ?? null,
