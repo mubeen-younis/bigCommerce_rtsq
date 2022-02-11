@@ -270,7 +270,6 @@ class Shipping
                     foreach ($quot as $locId => $q) {
                         // Added Condition for fedex small for adding box fees
                         if ($carName == "fedexSmall") {
-
                             if (isset($q['fedexServices']['q'])) {
                                 foreach ($q['fedexServices']['q'] as $key => $qs) {
                                     $fee = $this->getBoxFeeAccordingToService($qs['serviceType'], $fedexBoxesFee, $boxFee, $locId);
@@ -325,7 +324,7 @@ class Shipping
                                     }
                                 }
                             }
-                            
+
                             /*
                            * Adds Box fee in SMart POst QUotes
                              * */

@@ -215,6 +215,7 @@ class GetRatesController extends Controller
         if (!empty($productSetting)) {
             $productSetting->toArray();
             $settings = isset($productSetting['settings']) ? json_decode($productSetting['settings'], true) : [];
+            $settings['id'] = $productSetting['id'];
             $settings['dropship_enabled'] = $productSetting['dropship_enabled'];
             $settings['dropship_location'] = $productSetting['dropship_location'];
             $settings['ship_multiple_package'] = $productSetting['ship_multiple_package'];
