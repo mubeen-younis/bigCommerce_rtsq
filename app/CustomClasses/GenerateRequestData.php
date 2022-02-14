@@ -328,9 +328,9 @@ class GenerateRequestData
             $liftGateWithAuto = '1';
         }
         $binReponse = $boxBins = [];
-
         //
-        if ($this->storeData['installed_addon_sbs']) {
+        if ($this->storeData['installed_addon_sbs'] && isset($this->storeData['installed_addons'][0]->is_enabled) &&
+            isset($this->storeData['installed_addons'][0]->is_enabled) ) {
             $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? [];
             $this->itemsArr = $itemsArr;
             $this->carriers = $carriers;
