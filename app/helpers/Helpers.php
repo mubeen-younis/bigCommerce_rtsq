@@ -2,12 +2,11 @@
 
 namespace App\Helpers;
 
-
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Stripe\Stripe;
 
-class Helper
+class Helpers
 {
     public static function jsonValidator($data = NULL)
     {
@@ -34,7 +33,7 @@ class Helper
         return Str::orderedUuid()->toString();
     }
 
-    
+
     public static function sendJsonResponse($error, $message, $data = [])
     {
         $response = [
@@ -48,4 +47,14 @@ class Helper
             , 200);
     }
 
+    public static function floatValue($number = 0)
+    {
+        if ($number == 0) {
+            return $number;
+        }
+        $number = rtrim($number, '0');                // 50,00 --> 50,
+        $number = rtrim($number, '.'); // 50,   --> 50
+        return $number;
+
+    }
 }

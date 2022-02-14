@@ -955,10 +955,10 @@ class CompileQuotes
         $this->alwaysResi = $this->residential['alwaysResi']['upsSmall'] ?? false;
         $access = $this->getAccessorialCodeSmall();
         $res = $this->upsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment);
-
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = $res['isMultiShipment'];
         }
+
         return $res['resp'];
     }
 
@@ -1386,6 +1386,8 @@ class CompileQuotes
             $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;;
         }
         $lableAs = $this->quoteSettings['label_as'] ?? '';
+        $freightEconomyLableAs = $this->quoteSettings['fedex_freight_economy_label'] ?? '';
+        $freightPriorityLableAs = $this->quoteSettings['fedex_freight_priority_label'] ?? '';
         foreach ($shipments as $origin => $quote) {
 
             if (isset($quote['severity'])) {
@@ -1415,9 +1417,15 @@ class CompileQuotes
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices)) {
                         $access = $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
-                        if (isset($this->quoteSettings['label_as']) && isset($data['serviceType'])) {
-                            $EcoPrio = $data['serviceType'] === 'FEDEX_FREIGHT_ECONOMY' ? ' Economy' : ' Priority';
-                            $this->quoteSettings['label_as'] = $lableAs . $EcoPrio;
+                        // if (isset($this->quoteSettings['label_as']) && isset($data['serviceType'])) {
+                        //     $EcoPrio = $data['serviceType'] === 'FEDEX_FREIGHT_ECONOMY' ? ' Economy' : ' Priority';
+                        //     $this->quoteSettings['label_as'] = $lableAs . $EcoPrio;
+                        // }
+                        if (isset($data['serviceType']) && $data['serviceType'] === 'FEDEX_FREIGHT_ECONOMY') {
+                            $this->quoteSettings['label_as'] = !blank($freightEconomyLableAs) ? $freightEconomyLableAs : 'LTL Freight Economy';
+                        }
+                        if (isset($data['serviceType']) && $data['serviceType'] === 'FEDEX_FREIGHT_PRIORITY') {
+                            $this->quoteSettings['label_as'] = !blank($freightPriorityLableAs) ? $freightPriorityLableAs : 'LTL Freight Priority';
                         }
                         /*
                          * Date 01-07-22
@@ -1799,7 +1807,7 @@ class CompileQuotes
 
         $numberOfShipments = 0;
         foreach ($shipments as $key => $ship) {
-            if (!isset($ship['severity']) && !in_array($key, ['air', 'ground'])) {
+            if (!isset($ship['severity']) && !in_array($key, ['air', 'ground', 'oneRate'])) {
                 $numberOfShipments++;
             }
         }

@@ -105,8 +105,6 @@ class QuotesResults
         return false;
     }
 
-
-
     public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $isMultiShipment){
         //print_r($shipments); exit;
         $shipments = $this->formateQuoteBeforeCompile($shipments);
@@ -282,6 +280,8 @@ class QuotesResults
     public function quoteSettingsData()
     {
         $fields = [
+            'fedex_freight_economy_label' => 'fedex_freight_economy_label',
+            'fedex_freight_priority_label' => 'fedex_freight_priority_label',
             'labelAs' => 'labelAs',
             'options' => 'options',
             'ratingMethod' => 'ratingMethod',

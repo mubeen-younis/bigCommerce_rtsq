@@ -373,6 +373,18 @@ class SubscriptionController extends Controller
                 $this->updateSubscriptionInDB($updateSubResponse['data'], $oldSubscription);
                 //Getting Current Plan Detail
                 $updateSubResponse['data'] = $this->subscriptionDetailFromDB($data['store_id']);
+                Log::info('Email of old subscription' . $oldSubscription->email);
+                $mailToSend = isset($data['email']) && !empty($data['email']) ? $data['email'] : (isset($oldSubscription->email) && !empty($oldSubscription->email) ? $oldSubscription->email : null);
+                if (!empty($mailToSend)) {
+                    $emailData = array(
+                        'receiverEmail' => $mailToSend,
+                        'productName' => 'Real-time Shipping Quotes',
+                        'planName' => self::$plansData['name'],
+                        'endsAt' => $updateSubResponse['data']->ends_at ?? null,
+                        'action' => 'IPF'       // Invoice Payment Failed
+                    );
+                    Mail::to($emailData['receiverEmail'])->send(new PaymentFailedByWebHookEmail($emailData, 1));
+                }
                 return response()->json($updateSubResponse, 200);
             }
             //END: Upgrade or DownGrade Plans
@@ -461,7 +473,7 @@ class SubscriptionController extends Controller
                 'message' => 'The plan subscribed successfully.'
             ], 200);
         } catch (\Exception $exception) {
-            Log::info('Exception on subscribing plan ' . json_encode($exception));
+            Log::info('Exception on subscribing plan ' . json_encode($exception->getTraceAsString()));
             return response()->json([
                 'error' => true,
                 'data' => [],
@@ -741,6 +753,9 @@ class SubscriptionController extends Controller
             ->leftJoin('payment_methods as pm', 'pm.store_id', '=', 's.store_id')
             ->select('s.id as subscription_id', 's.store_id', 's.status', 's.ends_at', 's.plan_id', 's.created_at', 'cc.carrier_counts as total_remaining_carriers', 's.amount_charged', 'pl.name', 'pl.carrier_count as total_allowed_carriers', 'pm.last4', 'pm.is_default as is_default_payment_method')
             ->where('s.store_id', $storeId)->latest()->first();
+        if (blank($data)) {
+            return null;
+        }
         try {
             if (isset($data->last4)) {
                 $data->last4 = decrypt($data->last4);

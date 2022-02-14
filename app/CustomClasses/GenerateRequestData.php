@@ -2,10 +2,12 @@
 
 namespace App\CustomClasses;
 
+use App\Helpers\Helpers;
 use App\Http\Controllers\BoxSizeController;
 use Illuminate\Support\Facades\DB;
 use App\CustomClasses\Bin3D\Bin3D;
 use App\CustomClasses\SmartyStreet\SmartyStreet;
+use Illuminate\Support\Facades\Log;
 
 /**
  * class that generated request data
@@ -316,6 +318,7 @@ class GenerateRequestData
     public function generateRequestArray($request, $carriersArray, $itemsArr, $cartInfo)
     {
         $carriers = $carriersArray['carriers'];
+        Log::info('Carriers ' . json_encode($carriers));
         $receiverAddress = $this->getReceiverData($request);
 
         $autoResidential = $liftGateWithAuto = '0';
@@ -325,9 +328,9 @@ class GenerateRequestData
             $liftGateWithAuto = '1';
         }
         $binReponse = $boxBins = [];
-
         //
-        if ($this->storeData['installed_addon_sbs']) {
+        if ($this->storeData['installed_addon_sbs'] && isset($this->storeData['installed_addons'][0]->is_enabled) &&
+            isset($this->storeData['installed_addons'][0]->is_enabled) ) {
             $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? [];
             $this->itemsArr = $itemsArr;
             $this->carriers = $carriers;
@@ -349,17 +352,38 @@ class GenerateRequestData
                     ?? $carriers['upsSmall']['originAddress']
                     ?? $carriers['fedexSmall']['originAddress'];
 
+
                 if (isset($carriers['fedexSmall'])) {
                     $this->checkServiceEnabled();
                     if ($this->ground) {
                         $this->fedexType = 'normal'; // ground services
                         $sbsResponseGround = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
                         $itemsArrGround = $sbsResponseGround['items'] ?? $itemsArr;
-
                         unset($carriers['fedexSmall']['originAddress']);
                         foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
                             $carriers['fedexSmall']['originAddress'][$key] = $origin;
                         }
+                        /*
+                       * Added Condition if in case of combination of ups small and fedex small
+                       * Only Fedex SMall rates was returning
+                       * We need to cater all small carriers here as well
+                       * */
+                        if (isset($carriers['upsSmall'])) {
+                            unset($carriers['upsSmall']['originAddress']);
+
+                            foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
+                                $carriers['upsSmall']['originAddress'][$key] = $origin;
+                            }
+                        }
+
+                        if (isset($carriers['wweSmall'])) {
+                            unset($carriers['wweSmall']['originAddress']);
+
+                            foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
+                                $carriers['wweSmall']['originAddress'][$key] = $origin;
+                            }
+                        }
+                        ///////////////////////////////////////////
                         $binReponse['ground'] = $sbsResponseGround['binResponse'];
                     }
 
@@ -387,20 +411,20 @@ class GenerateRequestData
                         $binReponse['air'] = $sbsResponseAir['binResponse'];
 
                     }
-                    $itemsArr = $itemsArrGround;
+                    $itemsArr = !empty($itemsArrGround) ? $itemsArrGround : $itemsArr;
                     $sbsResponse['binResponse'] = $binReponse;
+
                 } else {
                     $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
                     $itemsArr = $sbsResponse['items'] ?? $itemsArr;
+                    if (isset($carriers['wweSmall'])) {
+                        $carriers['wweSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
+                    }
+                    if (isset($carriers['upsSmall'])) {
+                        $carriers['upsSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
+                    }
                 }
 
-
-                if (isset($carriers['wweSmall'])) {
-                    $carriers['wweSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
-                }
-                if (isset($carriers['upsSmall'])) {
-                    $carriers['upsSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
-                }
                 $binReponse = $sbsResponse['binResponse'] ?? [];
                 $boxBins = $sbsResponse['boxBins'] ?? [];
                 $isLtl = isset($carriers['wweLTL'])
@@ -426,7 +450,6 @@ class GenerateRequestData
             'receiverAddress' => $receiverAddress,
             'commdityDetails' => $itemsArr,
         ];
-
         if (isset($carriers['fedexSmall'])) {
             if ($this->smartPost) {
                 $requestArr['FedexSmartPostPricing'] = 1;
@@ -491,16 +514,16 @@ class GenerateRequestData
                 $this->ground = true;
             }
 
-            $smartPost = ['fedex_smartpost'];
-            if (!$this->smartPost && $service && in_array($key, $smartPost)) {
-                $this->smartPost = true;
-            }
-
-            $air = ['fedex_express_saver', 'fedex_2_day', 'fedex_2_day_am', 'fedex_priority_overnight', 'fedex_first_overnight', 'international_distribution_freight', 'international_economy', 'international_economy_distribution', 'international_economy_freight', 'international_first', 'international_priority', 'international_priority_distribution', 'international_priority_freight', 'priority_overnight', 'standard_overnight'];
-            if (!$this->air && $service && in_array($key, $air)) {
-                $this->air = true;
+            // CHecking if we have any fedex box
+            if (DB::table('box_sizes')->where('store_id', $this->storeData['store']->id)
+                ->where('is_available', 1)->where('box_type', 2)->count()) {
+                $air = ['fedex_express_saver', 'fedex_2_day', 'fedex_2_day_am', 'fedex_priority_overnight', 'fedex_first_overnight', 'international_distribution_freight', 'international_economy', 'international_economy_distribution', 'international_economy_freight', 'international_first', 'international_priority', 'international_priority_distribution', 'international_priority_freight', 'priority_overnight', 'standard_overnight'];
+                if (!$this->air && $service && in_array($key, $air)) {
+                    $this->air = true;
+                }
             }
         }
+
     }
 
     /**
@@ -1077,15 +1100,12 @@ class GenerateRequestData
         } else {
             $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
         }
+        $this->setIsSmartPost($connSettings);
         $this->resiCarrier['fedexSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['fedexSmall'] = $alwaysResi;
         $hubIdindicia = isset($connSettings['creds']['hub_id']) ? explode('(', $connSettings['creds']['hub_id']) : '';
         $hubId = isset($hubIdindicia[0]) ? trim($hubIdindicia[0]) : '';
         $indicia = 'PARCEL_SELECT';//trim(explode(')',$hubIdindicia[1])[0]);
-        $smartPostData = [
-            'hubId' => $hubId,
-            'indicia' => $indicia
-        ];
         $apiArray = [
 
             'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
@@ -1103,10 +1123,23 @@ class GenerateRequestData
             'prefferedCurrency' => 'USD',
             'includeDeclaredValue' => '1', //insurance active with sbs active 0 or 1
             'pkgType' => '00',
-            'saturdayDelivery' => 'on',
-            'smartPostData' => $smartPostData
+            'saturdayDelivery' => 'on'
         ];
+        if ($this->smartPost) {
+            $apiArray['smartPostData'] = [
+                'hubId' => $hubId,
+                'indicia' => $indicia
+            ];
+        }
         return $apiArray;
+    }
+
+    public function setIsSMartPost($connectionSettings)
+    {
+        if (isset($connectionSettings['quote_settings']['carrier_services']['fedex_smart_post']) &&
+            $connectionSettings['quote_settings']['carrier_services']['fedex_smart_post']) {
+            $this->smartPost = true;
+        }
     }
 
     private function getDays($days)
@@ -1214,6 +1247,7 @@ class GenerateRequestData
         }
     }
 
+
     public function getStoreBoxes($storeId, $itemsArr, $origins, $cartInfo, $isMultishipment)
     {
         $items = $itemsAlone = [];
@@ -1226,12 +1260,12 @@ class GenerateRequestData
                         "variant_id" => $key,
                         "id" => $key,
                         "wg" => $itemsArr[$key]['lineItemWeight'] ?? 0,
-                        "h" => $itemsArr[$key]['lineItemHeight'] ?? 0,
-                        "d" => $itemsArr[$key]['lineItemLength'] ?? 0,
-                        "w" => $itemsArr[$key]['lineItemWidth'] ?? 0,
+                        "h" => Helpers::floatValue($itemsArr[$key]['lineItemHeight'] ?? 0),
+                        "d" => Helpers::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
+                        "w" => Helpers::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
                         "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
-                        "vr" => $itemsArr[$key]['vertical_rotation'] ?? 0,
-                        "boxFee" => $itemsArr[$key]['boxFee'] ?? 0 //vertical 0 or 1
+                        "vr" => $itemsArr[$key]['vertical_rotation'] ?? 0,//vertical 0 or 1
+                        "boxFee" => $itemsArr[$key]['boxFee'] ?? 0
                     ];
                 } else {
                     $items[$origin['locationId']][] = [
@@ -1282,7 +1316,6 @@ class GenerateRequestData
             $Bin3D = new Bin3D();
             $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment);
             if (count($binResponse)) {
-
 
                 foreach ($itemsAlone as $key => $itemAlone) {
                     foreach ($itemAlone as $alone) {
@@ -1356,6 +1389,7 @@ class GenerateRequestData
                 $newitemsArr = $this->itemsArr;
             }
         } else {
+
             $newOrigins = $this->origins;
             $newitemsArr = $this->itemsArr;
         }
@@ -1363,8 +1397,18 @@ class GenerateRequestData
         $resp['originAddress'] = $newOrigins;
         $resp['binResponse'] = $binResponse ?? [];
         $resp['boxBins'] = $boxBins;
-
         return $resp;
+
+    }
+
+    public static function floatValue($number = 0)
+    {
+        if ($number == 0) {
+            return $number;
+        }
+        $number = rtrim($number, '0');                // 50,00 --> 50,
+        $number = rtrim($number, '.'); // 50,   --> 50
+        return $number;
 
     }
 
