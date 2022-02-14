@@ -103,7 +103,13 @@ class OrderController extends Controller
                 ->where('cart_id', $order['cart_id'])
                 ->where('store_id', $request['store_id'])
                 ->first())->toArray() ?? null;
-        if (empty($data)) {
+        if (blank($data) && !blank($order['full_rate_id'])) {
+            $data = optional(RequestData::where('rate_id', $order['full_rate_id'])
+                    ->where('cart_id', $order['cart_id'])
+                    ->where('store_id', $request['store_id'])
+                    ->first())->toArray() ?? null;
+        }
+        if (blank($data)) {
             return [];
         }
         $carrierHasInsurance = $this->hasInsureCarrier($order['rate_id']);
@@ -398,6 +404,7 @@ class OrderController extends Controller
                 if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
                     $response = json_decode($response['response']);
                     $resp['rate_id'] = $response->rate_id;
+                    $resp['full_rate_id'] = $response->shipping_provider_quote->rateId ?? '';
                     $resp['shipping_name'] = $response->shipping_provider_quote->name ?? '';
                     $resp['shipping_rate'] = $response->shipping_provider_quote->rate->value ?? '';
                 }
@@ -736,14 +743,26 @@ class OrderController extends Controller
                 $endpoint = json_decode($response['response'])[0]->shipping_quotes->url;
                 $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
                 if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
-                    $rateId = json_decode($response['response'])->rate_id;
-                    $reqData = RequestTempData::where('rate_id', $rateId)->where('cart_id', $cartId)->get()->toArray();
-                    Log::info('Orderdata $reqData: ' . json_encode($reqData) . ' RateID: ' . $rateId . ' CartId: ' . $cartId);
-                    foreach ($reqData as $data) {
-                        unset($data['id']);
-                        RequestData::insert($data);
+                    $response = json_decode($response['response']);
+                    $rateId = optional($response)->rate_id ?? null;
+                    /*
+                     * Added this if in case of rate ID characters exceed 36
+                     * Big commerce truncate other characters
+                     * That was the issue reported in Qa for Fedex SMall Testing
+                     *
+                     * */
+                    $fullRateId = optional($response)->shipping_provider_quote->rateId ?? null;
+                    $reqData = optional(RequestTempData::where('rate_id', $rateId)->where('cart_id', $cartId)->get())->toArray();
+                    if (blank($reqData)) {
+                        $reqData = optional(RequestTempData::where('rate_id', $fullRateId)->where('cart_id', $cartId)->first())->toArray();
                     }
-                   // RequestTempData::where('cart_id', $cartId)->delete();
+                    Log::info('Orderdata $reqData: ' . json_encode($reqData) . ' RateID: ' . $rateId . ' CartId: ' . $cartId);
+                    if (!blank($reqData)) {
+                        unset($reqData['id']);
+                        RequestData::insert($reqData);
+                    }
+
+                    // RequestTempData::where('cart_id', $cartId)->delete();
                 }
             }
         }
@@ -768,7 +787,7 @@ class OrderController extends Controller
 
     private function hasInsureCarrier($code)
     {
-        $insureCarriers = ['wweltl', 'parcel_12wwe', 'parcel_12ups','parcel_12fd'];
+        $insureCarriers = ['wweltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd'];
         foreach ($insureCarriers as $insureCarrier) {
             if (strpos($code, $insureCarrier) !== false) {
                 return true;
