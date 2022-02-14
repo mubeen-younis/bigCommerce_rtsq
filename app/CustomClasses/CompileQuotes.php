@@ -1376,7 +1376,7 @@ class CompileQuotes
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
         $lgQuotes = false;
-        $numberOfShipments = 0; 
+        $numberOfShipments = 0;
         foreach ($shipments as $ship) {
             if (!isset($ship['severity'])) {
                 $numberOfShipments++;
@@ -1423,10 +1423,10 @@ class CompileQuotes
                         // }
                         if (isset($data['serviceType']) && $data['serviceType'] === 'FEDEX_FREIGHT_ECONOMY') {
                             $this->quoteSettings['label_as'] = !blank($freightEconomyLableAs) ? $freightEconomyLableAs : 'LTL Freight Economy';
-                        } 
+                        }
                         if (isset($data['serviceType']) && $data['serviceType'] === 'FEDEX_FREIGHT_PRIORITY') {
                             $this->quoteSettings['label_as'] = !blank($freightPriorityLableAs) ? $freightPriorityLableAs : 'LTL Freight Priority';
-                        } 
+                        }
                         /*
                          * Date 01-07-22
                          * Adding Functionality of Delivery Estimate Options
@@ -1807,7 +1807,7 @@ class CompileQuotes
 
         $numberOfShipments = 0;
         foreach ($shipments as $key => $ship) {
-            if (!isset($ship['severity']) && !in_array($key, ['air', 'ground'])) {
+            if (!isset($ship['severity']) && !in_array($key, ['air', 'ground', 'oneRate'])) {
                 $numberOfShipments++;
             }
         }
