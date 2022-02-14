@@ -53,26 +53,33 @@ class OrderController extends Controller
 
     public function getOrderWidget(Request $request)
     {
-        $order = $this->getBCOrderByID($request);
-        if (empty($order)) {
-            return response()->json(['error' => true,
-                'data' => [],
-                'message' => 'No Order Found',
-            ], 404);
-        }
-        $orderWidget = $this->createOrderWidget($request, $order);
-        if (empty($orderWidget)) {
+        try {
+            $order = $this->getBCOrderByID($request);
+            if (empty($order)) {
+                return response()->json(['error' => true,
+                    'data' => [],
+                    'message' => 'No Order Found',
+                ], 404);
+            }
+            $orderWidget = $this->createOrderWidget($request, $order);
+            if (empty($orderWidget)) {
+                return response()->json(['error' => true,
+                    'data' => [],
+                    'message' => 'No Order Widget Found',
+                ], 404);
+            }
+            return response()->json(
+                [
+                    'data' => $orderWidget,
+                    'error' => false,
+                ]
+            );
+        } catch (\Exception $exception) {
             return response()->json(['error' => true,
                 'data' => [],
                 'message' => 'No Order Widget Found',
             ], 404);
         }
-        return response()->json(
-            [
-                'data' => $orderWidget,
-                'error' => false,
-            ]
-        );
     }
 
     public function formateItems($oldItems, $items)
