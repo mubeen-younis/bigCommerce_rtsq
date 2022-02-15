@@ -57,7 +57,9 @@ class Shipping
             $this->setShippingGroupsResponse($itemsWithShippingGroup);
         }
         if (blank($itemsWithoutShippingGroup)) {
-            return $this->formattedShippingGroupResponse();
+            $finalResp = $this->formattedShippingGroupResponse();
+            $this->orderWidgetSave($request, [], [], $finalResp['finalQuotes'], $finalResp['formattedResp'], $cartInfo, [], []);
+            return $finalResp['formattedResp'];
         }
 
         $request['lineItemData']['items'] = $itemsWithoutShippingGroup;
@@ -209,8 +211,7 @@ class Shipping
     {
         $finalQuotes = $this->addRateId($this->shippingGroupResponse);
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
-        //$this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
-        return $resp;
+        return ['finalQuotes' => $finalQuotes, 'formattedResp' => $resp];
     }
 
 

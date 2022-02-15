@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Constants\Constant;
 use App\Helpers\Helper;
 use Illuminate\Database\Eloquent\Model;
 use Psy\Util\Str;
@@ -57,7 +58,7 @@ class ShippingGroup extends Model
             $response[0]['title'] = "Shipping";
         }
         $response[0]['rate'] = $rate;
-        $response[0]['code'] = "ShippingGroup";
+        $response[0]['code'] = "shippingGroup";
         return $response;
     }
 
@@ -101,13 +102,13 @@ class ShippingGroup extends Model
      */
     public static function saveOrUpdateShippingGroup($shippingGroupData)
     {
-        if(isset($shippingGroupData['uuid'])){
+        if (isset($shippingGroupData['uuid'])) {
             $shippingGroup = self::getShippingGroupDetailByUuid($shippingGroupData['uuid']);
             if (blank($shippingGroup)) {
                 return [
-                        'error' => true,
-                        'message' => 'Shipping group not found.',
-                        'data' => []
+                    'error' => true,
+                    'message' => 'Shipping group not found.',
+                    'data' => []
                 ];
             }
             $message = 'updated successfully.';
@@ -128,11 +129,60 @@ class ShippingGroup extends Model
         return [
             'error' => false,
             'message' => $message,
-            'data'=> [
+            'data' => [
                 'shippingGroup' => $shippingGroup,
                 'save' => $save
             ]
         ];
+    }
+
+
+    public static function shippingGroupOrderWidget($data, $order)
+    {
+        $lineItem = json_decode($data['lineitems'])->lineItemData;
+        $origins = $lineItem->origin;
+        $items = $lineItem->items;
+        $count = 0;
+        $insertedIds = $insertedNames = [];
+        //print_r($items); exit;
+        $code = '';
+        foreach ($origins as $key => $origin) {
+            $item = $items->$key;
+            $city = $origin->senderCity ? $origin->senderCity . ',' : '';
+            $state = $origin->senderState ?? '';
+            $zip = $origin->locationId != '' ? $origin->locationId : $origin->senderZip;
+            $senderZip = $origin->senderZip ?? '';
+            $orderWidget[$zip]['sbs'] = [];
+            $orderWidget[$zip]['locationtype'] = $item->dropship_enabled == 'N' ? 'Warehouse' : 'Dropship';
+            $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
+            $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
+            $sRate = $order['shipping_rate'];
+            //print_r($multiShipmentresponse); exit;
+
+            $shipping_name = explode('(', $order['shipping_name']);
+            $sName = $shipping_name[0] ?? '';
+            $sName = str_replace(Constant::RESI_LABEL, '', $sName);
+            $sName = str_replace(Constant::LIFT_LABEL, '', $sName);
+            $sName = str_replace(Constant::RESI_LIFT_LABEL, '', $sName);
+            $sMethod = isset($shipping_name[1]) ? '(' . $shipping_name[1] : '';
+
+            $orderWidget[$zip]['shipping_method'] = $sName . $sMethod;
+            $orderWidget[$zip]['shipping_rate'] = '$' . number_format((float)$sRate, 2,);
+            if ($item->shipMultiplePackage) {
+                if ((!in_array($item->lineItemName, $insertedNames))) {
+                    $insertedNames[] = $item->lineItemName;
+                    $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
+                }
+            } else {
+                if ((!in_array($item->id, $insertedIds))) {
+                    $insertedIds[] = $item->id;
+                    $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
+                }
+            }
+            $orderWidget[$zip]['accessories'] = [];
+            $count++;
+        }
+        return $orderWidget;
     }
 
     /**

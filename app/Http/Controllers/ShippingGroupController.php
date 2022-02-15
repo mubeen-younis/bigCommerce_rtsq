@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\Helper;
+use App\Helpers\Helpers;
 use App\Models\ShippingGroup;
 use Illuminate\Http\Request;
 
@@ -15,7 +16,7 @@ class ShippingGroupController extends Controller
     public function getShippingGroups(Request $request): \Illuminate\Http\JsonResponse
     {
         $shippingGroups = ShippingGroup::getStoreShippingGroups($request['store_id']);
-        return Helper::sendJsonResponse(false, "", $shippingGroups);
+        return Helpers::sendJsonResponse(false, "", $shippingGroups);
     }
 
 
@@ -26,7 +27,7 @@ class ShippingGroupController extends Controller
     public function saveShippingGroup(Request $request): \Illuminate\Http\JsonResponse
     {
         $res = ShippingGroup::saveOrUpdateShippingGroup($request->all());
-        return Helper::sendJsonResponse($res['error'], "Shipping Group " . $res['message'], $res['data']);
+        return Helpers::sendJsonResponse($res['error'], "Shipping Group " . $res['message'], $res['data']);
     }
 
 
@@ -37,7 +38,7 @@ class ShippingGroupController extends Controller
     public function deleteShippingGroup(Request $request): \Illuminate\Http\JsonResponse
     {
         ShippingGroup::deleteShippingGroup($request->uuid);
-        return Helper::sendJsonResponse(false, "Shipping Group deleted successfully.", $request->uuid);
+        return Helpers::sendJsonResponse(false, "Shipping Group deleted successfully.", $request->uuid);
     }
 
 
@@ -48,6 +49,6 @@ class ShippingGroupController extends Controller
     public function getShippingGroupDetail(Request $request)
     {
         $shippingGroupDetail = ShippingGroup::getShippingGroupDetailByUuid($request->uuid);
-        return Helper::sendJsonResponse(false, null, $shippingGroupDetail);
+        return Helpers::sendJsonResponse(false, null, $shippingGroupDetail);
     }
 }

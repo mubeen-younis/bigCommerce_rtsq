@@ -209,7 +209,7 @@ class GetRatesController extends Controller
     public function getProductSetting($productId, $variantId)
     {
         $settings = [];
-        $productSetting = ProductSetting::select('settings', 'id', 'dropship_enabled', 'dropship_location', 'ship_multiple_package')
+        $productSetting = ProductSetting::select('settings', 'id', 'dropship_enabled', 'dropship_location', 'shipping_group', 'ship_multiple_package')
             ->where(['source_product_id' => $productId, 'variant_id' => $variantId])
             ->first();
         if (!empty($productSetting)) {
@@ -219,6 +219,7 @@ class GetRatesController extends Controller
             $settings['dropship_enabled'] = $productSetting['dropship_enabled'];
             $settings['dropship_location'] = $productSetting['dropship_location'];
             $settings['ship_multiple_package'] = $productSetting['ship_multiple_package'];
+            $settings['shipping_group'] = $productSetting['shipping_group'];
         }
         return $settings;
     }

@@ -8,6 +8,7 @@ use App\Models\BoxSize;
 use App\Models\Orders;
 use App\Models\RequestData;
 use App\Models\RequestTempData;
+use App\Models\ShippingGroup;
 use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -106,31 +107,37 @@ class OrderController extends Controller
 
     public function createOrderWidget($request, $order)
     {
-        $data = optional(RequestData::where('rate_id', $order['rate_id'])
-                ->where('cart_id', $order['cart_id'])
+        $rateId = $order['rate_id'] ?? null;
+        $cartId = $order['cart_id'] ?? null;
+        $data = optional(RequestData::where('rate_id', $rateId)
+                ->where('cart_id', $cartId)
                 ->where('store_id', $request['store_id'])
                 ->first())->toArray() ?? null;
         if (blank($data) && !blank($order['full_rate_id'])) {
             $data = optional(RequestData::where('rate_id', $order['full_rate_id'])
-                    ->where('cart_id', $order['cart_id'])
+                    ->where('cart_id', $cartId)
                     ->where('store_id', $request['store_id'])
                     ->first())->toArray() ?? null;
+            $rateId = $order['full_rate_id'] ?? null;
         }
         if (blank($data)) {
             return [];
         }
-        $carrierHasInsurance = $this->hasInsureCarrier($order['rate_id']);
-        $index = explode('idx+', $order['rate_id'])[1];
+        $carrierHasInsurance = $this->hasInsureCarrier($rateId);
+        $index = explode('idx+', $rateId)[1];
         if (!empty($index)) {
             $index = (int)substr($index, 0, 1);
         }
-        $isSmallLtlrate = substr($order['rate_id'], 0, 5) == 'multi' ? true : false;
-        $isHAT = strpos(strtolower($order['rate_id']), '+hat');
+        if ($index == "shippingGroup") {
+            return $this->shippingGroupOrderWidget($data, $order);
+        }
+        $isSmallLtlrate = substr($rateId, 0, 5) == 'multi' ? true : false;
+        $isHAT = strpos(strtolower($rateId), '+hat');
 
-        $order['rate_id'] = strtolower($order['rate_id']);
-        $isSmallrate = substr($order['rate_id'], 0, 9) == 'parcel_12' || substr($order['rate_id'], 0, 5) == 'multi' ? true : false;
-        $isLG = strpos($order['rate_id'], '+lg');
-        $isOwnArrangement = strpos($order['rate_id'], 'own_arrangement') === 0 || strpos($order['rate_id'], 'freernlltl') === 0 ? true : false;
+        $rateId = strtolower($rateId);
+        $isSmallrate = substr($rateId, 0, 9) == 'parcel_12' || substr($rateId, 0, 5) == 'multi' ? true : false;
+        $isLG = strpos($rateId, '+lg');
+        $isOwnArrangement = strpos($rateId, 'own_arrangement') === 0 || strpos($rateId, 'freernlltl') === 0 ? true : false;
         $lineItem = json_decode($data['lineitems'])->lineItemData;
         $responseFromWS = json_decode($data['quotes']);
 
@@ -144,15 +151,15 @@ class OrderController extends Controller
         $liftGateStatus = 'n';
         $binPackagingData = '';
         $orderWidget = [];
-        $isOneRate = strpos($order['rate_id'], '+or');
-        $isGround = strpos($order['rate_id'], '+gd');
-        $isAir = strpos($order['rate_id'], '+as');
+        $isOneRate = strpos($rateId, '+or');
+        $isGround = strpos($rateId, '+gd');
+        $isAir = strpos($rateId, '+as');
         foreach ($responseFromWS as $carrrierName => $WsResp) {
             foreach ($WsResp as $zip => $ws) {
 
                 if (!(isset($ws->severity) && $ws->severity == 'ERROR')) {
 
-                    $liftResidentialStatus = $this->getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate, $order['rate_id']);
+                    $liftResidentialStatus = $this->getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate, $rateId);
                     if ($isLG) {
                         $liftGateStatus = $liftResidentialStatus['liftG'] ?? 'n';
                     }
@@ -189,7 +196,7 @@ class OrderController extends Controller
                             $orderWidgetData['h'] = $binPacked->bin_data->h;
                             $orderWidgetData['quantity'] = $quantity;
 
-                            $orderWidgetData['nickname'] = $this->getBoxName($binPacked->bin_data->id, $request['store_id'], $order['rate_id'], $order['cart_id']);
+                            $orderWidgetData['nickname'] = $this->getBoxName($binPacked->bin_data->id, $request['store_id'], $rateId, $cartId);
                             foreach ($binPacked->items as $item) {
                                 $productid = $item->id;
 
@@ -329,6 +336,15 @@ class OrderController extends Controller
         return $resp;
     }
 
+
+    public function shippingGroupOrderWidget($data, $order)
+    {
+        $orderWidget = ShippingGroup::shippingGroupOrderWidget($data, $order);
+        $resp = [
+            'widget' => $this->objectToArray($orderWidget)
+        ];
+        return $resp;
+    }
 
     public function getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate, $rateId)
     {
