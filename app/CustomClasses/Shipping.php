@@ -189,6 +189,9 @@ class Shipping
             }
         }
         if (!blank($this->shippingGroupResponse)) {
+            $items = data_get($request, 'lineItemData.items');
+            $items = $items + $itemsWithShippingGroup;
+            $request['lineItemData']['items'] = $items;
             $finalQuotes = $this->addShipGroupRatesInQuotes($finalQuotes);
         }
         $finalQuotes = $this->addRateId($finalQuotes);

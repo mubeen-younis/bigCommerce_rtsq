@@ -327,6 +327,26 @@ class OrderController extends Controller
             }
             $count++;
         }
+        /*
+         * Added For Catering items that ship as SHippping Group*/
+        $itemsWithShipGroup = collect($items)->where('shipping_group', '!=', null)->all();
+        if (!blank($itemsWithShipGroup)) {
+            $itemsForm = [];
+            foreach ($itemsWithShipGroup as $item) {
+                $itemsForm[] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
+            }
+            foreach ($orderWidget as $key => $data) {
+                $items = data_get($data, 'items');
+                if (count($orderWidget) > 1) {
+                    if ($data['locationtype'] == "Warehouse") {
+                        $items = array_merge($items, $itemsForm);
+                    }
+                } else {
+                    $items = array_merge($items, $itemsForm);
+                }
+                $orderWidget[$key]['items'] = $items;
+            }
+        }
         $sbs = '';
         //print_r($orderWidget); exit;
         $resp = [
