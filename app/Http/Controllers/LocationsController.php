@@ -286,8 +286,6 @@ class LocationsController extends Controller
     public function deleteLocation(Request $request)
     {
         try {
-
-
             if (empty($request->location_id)) {
                 return response()->json(['error' => true,
                     'data' => [],
@@ -312,8 +310,8 @@ class LocationsController extends Controller
             }
         } catch (\Exception $exception) {
             return response()->json(['error' => true,
-                'data' => [],
-                'message' => $exception->getMessage(),
+                'data' => [$exception->getMessage()],
+                'message' => 'Something went Wrong',
             ], 404);
         }
     }
