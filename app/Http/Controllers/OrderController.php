@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Constants\Constant;
 use App\CurlRequest;
+use App\Models\BoxSize;
 use App\Models\Orders;
 use App\Models\RequestData;
 use App\Models\RequestTempData;
@@ -31,7 +32,7 @@ class OrderController extends Controller
     {
         $orders = $this->getBCOrders($request);
         $orders['cpage'] = $request['page'] ?? 1;
-        if(empty($orders['allOrders'])){
+        if (empty($orders['allOrders'])) {
             return response()->json(
                 [
                     'data' => [],
@@ -39,7 +40,7 @@ class OrderController extends Controller
                     'error' => true,
                 ]
             );
-        }else {
+        } else {
             return response()->json(
                 [
                     'data' => $orders['allOrders'],
@@ -50,32 +51,41 @@ class OrderController extends Controller
         }
     }
 
-    public function getOrderWidget(Request $request){
-        $order = $this->getBCOrderByID($request);
-        if(empty($order)){
-            return response()->json(['error' => true,
-                'data' => [],
-                'message' => 'No Order Found',
-            ], 404);
-        }
-        $orderWidget = $this->createOrderWidget($request, $order);
-        if(empty($orderWidget)){
+    public function getOrderWidget(Request $request)
+    {
+        try {
+            $order = $this->getBCOrderByID($request);
+            if (empty($order)) {
+                return response()->json(['error' => true,
+                    'data' => [],
+                    'message' => 'No Order Found',
+                ], 404);
+            }
+            $orderWidget = $this->createOrderWidget($request, $order);
+            if (empty($orderWidget)) {
+                return response()->json(['error' => true,
+                    'data' => [],
+                    'message' => 'No Order Widget Found',
+                ], 404);
+            }
+            return response()->json(
+                [
+                    'data' => $orderWidget,
+                    'error' => false,
+                ]
+            );
+        } catch (\Exception $exception) {
             return response()->json(['error' => true,
                 'data' => [],
                 'message' => 'No Order Widget Found',
             ], 404);
         }
-        return response()->json(
-            [
-                'data' => $orderWidget,
-                'error' => false,
-            ]
-        );
     }
 
-    public function formateItems($oldItems, $items){
+    public function formateItems($oldItems, $items)
+    {
         $tempItems = $items;
-        foreach ($tempItems as $key => $item){
+        foreach ($tempItems as $key => $item) {
             $variant_id = $item->variant_id;
             $oldItems->$variant_id = $item;
             $oldItems->$key = $item;
@@ -83,34 +93,42 @@ class OrderController extends Controller
         return $oldItems;
     }
 
-    public function formateOrigins($carriers){
+    public function formateOrigins($carriers)
+    {
         $newOrigin = new \stdClass();
-        foreach ($carriers as $carrier){
-            foreach ($carrier->originAddress as $key => $origin){
+        foreach ($carriers as $carrier) {
+            foreach ($carrier->originAddress as $key => $origin) {
                 $newOrigin->$key = $origin;
             }
         }
         return $newOrigin;
     }
 
-    public function createOrderWidget($request, $order){
-        $data = RequestData::where('rate_id', $order['rate_id'])
-            ->where('cart_id', $order['cart_id'])
-            ->where('store_id', $request['store_id'])
-            ->first()->toArray();
-        if(empty($data)){
+    public function createOrderWidget($request, $order)
+    {
+        $data = optional(RequestData::where('rate_id', $order['rate_id'])
+                ->where('cart_id', $order['cart_id'])
+                ->where('store_id', $request['store_id'])
+                ->first())->toArray() ?? null;
+        if (blank($data) && !blank($order['full_rate_id'])) {
+            $data = optional(RequestData::where('rate_id', $order['full_rate_id'])
+                    ->where('cart_id', $order['cart_id'])
+                    ->where('store_id', $request['store_id'])
+                    ->first())->toArray() ?? null;
+        }
+        if (blank($data)) {
             return [];
         }
         $carrierHasInsurance = $this->hasInsureCarrier($order['rate_id']);
-        $index = explode('idx+',$order['rate_id'])[1];
-        if(!empty($index)){
-            $index = (int) substr($index, 0, 1);
+        $index = explode('idx+', $order['rate_id'])[1];
+        if (!empty($index)) {
+            $index = (int)substr($index, 0, 1);
         }
-        $isSmallLtlrate = substr($order['rate_id'], 0, 5) == 'multi'  ? true : false;
+        $isSmallLtlrate = substr($order['rate_id'], 0, 5) == 'multi' ? true : false;
         $isHAT = strpos(strtolower($order['rate_id']), '+hat');
 
         $order['rate_id'] = strtolower($order['rate_id']);
-        $isSmallrate = substr($order['rate_id'], 0, 9) == 'parcel_12' || substr($order['rate_id'], 0, 5) == 'multi'  ? true : false;
+        $isSmallrate = substr($order['rate_id'], 0, 9) == 'parcel_12' || substr($order['rate_id'], 0, 5) == 'multi' ? true : false;
         $isLG = strpos($order['rate_id'], '+lg');
         $isOwnArrangement = strpos($order['rate_id'], 'own_arrangement') === 0 || strpos($order['rate_id'], 'freernlltl') === 0 ? true : false;
         $lineItem = json_decode($data['lineitems'])->lineItemData;
@@ -129,27 +147,27 @@ class OrderController extends Controller
         $isOneRate = strpos($order['rate_id'], '+or');
         $isGround = strpos($order['rate_id'], '+gd');
         $isAir = strpos($order['rate_id'], '+as');
-        foreach($responseFromWS as $carrrierName => $WsResp){
-            foreach($WsResp as $zip => $ws){
+        foreach ($responseFromWS as $carrrierName => $WsResp) {
+            foreach ($WsResp as $zip => $ws) {
 
-                if( !(isset($ws->severity) && $ws->severity == 'ERROR') ){
+                if (!(isset($ws->severity) && $ws->severity == 'ERROR')) {
 
-                    $liftResidentialStatus = $this->getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate,$order['rate_id'] );
-                    if($isLG) {
+                    $liftResidentialStatus = $this->getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate, $order['rate_id']);
+                    if ($isLG) {
                         $liftGateStatus = $liftResidentialStatus['liftG'] ?? 'n';
                     }
                     $autoResidentialsStatus = $liftResidentialStatus['resi'] ?? 'n';
                     $residentialsPickup = $liftResidentialStatus['resiPickup'] ?? 'n';
 
                     $totalBoxes = 1;
-                    if(isset($ws->binPackagingData) && !empty($ws->binPackagingData) && $isSmallrate){
-                        if($isGround){
+                    if (isset($ws->binPackagingData) && !empty($ws->binPackagingData) && $isSmallrate) {
+                        if ($isGround) {
                             $sbsData = $ws->binPackagingData->response->ground->bins_packed;
-                        }else if($isAir){
+                        } else if ($isAir) {
                             $sbsData = $ws->binPackagingData->response->air->bins_packed;
-                        }else if($isOneRate){
+                        } else if ($isOneRate) {
                             $sbsData = $ws->binPackagingData->response->oneRate->bins_packed;
-                        }else{
+                        } else {
                             $sbsData = $ws->binPackagingData->response->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->oneRate->bins_packed;
                         }
                         //print_r($ws->binPackagingData->response); exit;
@@ -166,7 +184,7 @@ class OrderController extends Controller
                             $count = 0;
                             $orderWidgetData['type'] = $type;
                             $orderWidgetData['image_complete'] = $binPacked->image_complete;
-                            $orderWidgetData['d'] = $binPacked->bin_data->d. ' x ';
+                            $orderWidgetData['d'] = $binPacked->bin_data->d . ' x ';
                             $orderWidgetData['w'] = $binPacked->bin_data->w . ' x ';
                             $orderWidgetData['h'] = $binPacked->bin_data->h;
                             $orderWidgetData['quantity'] = $quantity;
@@ -175,24 +193,24 @@ class OrderController extends Controller
                             foreach ($binPacked->items as $item) {
                                 $productid = $item->id;
 
-                                    $orderWidgetData['items'][$count]['product_name'] = $lineItem->items->$productid->lineItemName ?? '';
-                                    $orderWidgetData['items'][$count]['w'] = $item->w;
-                                    $orderWidgetData['items'][$count]['h'] = $item->h;
-                                    $orderWidgetData['items'][$count]['d'] = $item->d;
+                                $orderWidgetData['items'][$count]['product_name'] = $lineItem->items->$productid->lineItemName ?? '';
+                                $orderWidgetData['items'][$count]['w'] = $item->w;
+                                $orderWidgetData['items'][$count]['h'] = $item->h;
+                                $orderWidgetData['items'][$count]['d'] = $item->d;
 
-                                    $orderWidgetData['items'][$count]['image_separated'] = $item->image_separated;
-                                    $orderWidgetData['items'][$count]['image_sbs'] = $item->image_sbs;
+                                $orderWidgetData['items'][$count]['image_separated'] = $item->image_separated;
+                                $orderWidgetData['items'][$count]['image_sbs'] = $item->image_sbs;
 
-                                    $orderWidget[$zip]['sbs'][$key] = $orderWidgetData;
-                                    ++$count;
+                                $orderWidget[$zip]['sbs'][$key] = $orderWidgetData;
+                                ++$count;
 
                             }
                             unset($orderWidgetData);
-                            if($count) {
+                            if ($count) {
                                 $orderWidget[$zip]['sbs'][$key]['number_of_items'] = $count;
                             }
                         }
-                        $totalBoxes = $key+1-$itemCount;
+                        $totalBoxes = $key + 1 - $itemCount;
 
 
                     }
@@ -208,9 +226,9 @@ class OrderController extends Controller
         $insertedIds = $insertedNames = [];
         //print_r($items); exit;
         $code = '';
-        foreach($origins as $key => $origin){
-            $item =  $items->$key;
-            $city = $origin->senderCity ? $origin->senderCity.',': '';
+        foreach ($origins as $key => $origin) {
+            $item = $items->$key;
+            $city = $origin->senderCity ? $origin->senderCity . ',' : '';
             $state = $origin->senderState ?? '';
             $zip = $origin->locationId != '' ? $origin->locationId : $origin->senderZip;
             $senderZip = $origin->senderZip ?? '';
@@ -219,15 +237,15 @@ class OrderController extends Controller
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
             $sRate = $order['shipping_rate'];
             //print_r($multiShipmentresponse); exit;
-            if($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement){
-                if($isHAT){
+            if ($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement) {
+                if ($isHAT) {
                     $sRate = $multiShipmentresponse->$index->hat->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->hat->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
-                }else if($isLG) {
+                } else if ($isLG) {
                     $sRate = $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->liftgate->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
                     $code = $multiShipmentresponse->$index->liftgate->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
-                }else {
+                } else {
                     $sRate = $multiShipmentresponse->$index->simple->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->simple->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? '';
                     $code = $multiShipmentresponse->$index->simple->$zip->code ?? $multiShipmentresponse->$index->liftgate->$zip->code ?? '';
@@ -237,34 +255,34 @@ class OrderController extends Controller
                 $isMulti = true;
             }
 
-            $shipping_name = explode('(',$order['shipping_name']);
+            $shipping_name = explode('(', $order['shipping_name']);
             $sName = $shipping_name[0] ?? '';
             $sName = str_replace(Constant::RESI_LABEL, '', $sName);
             $sName = str_replace(Constant::LIFT_LABEL, '', $sName);
             $sName = str_replace(Constant::RESI_LIFT_LABEL, '', $sName);
-            $sMethod = isset($shipping_name[1]) ? '('.$shipping_name[1] : '';
+            $sMethod = isset($shipping_name[1]) ? '(' . $shipping_name[1] : '';
 
-            $orderWidget[$zip]['shipping_method'] = $sName.$sMethod;
-            $orderWidget[$zip]['shipping_rate'] = '$'. number_format((float)$sRate, 2, );
-            if( $item->shipMultiplePackage ) {
-                if((!in_array($item->lineItemName, $insertedNames))) {
+            $orderWidget[$zip]['shipping_method'] = $sName . $sMethod;
+            $orderWidget[$zip]['shipping_rate'] = '$' . number_format((float)$sRate, 2,);
+            if ($item->shipMultiplePackage) {
+                if ((!in_array($item->lineItemName, $insertedNames))) {
                     $insertedNames[] = $item->lineItemName;
                     $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
                 }
-            }else{
-                if((!in_array($item->id, $insertedIds))) {
+            } else {
+                if ((!in_array($item->id, $insertedIds))) {
                     $insertedIds[] = $item->id;
                     $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
                 }
             }
             $addedHazmat = false;
-            if(isset($orderWidget[$zip]['accessories'])){
-                $addedHazmat = in_array('Hazardous Material',$orderWidget[$zip]['accessories']);
+            if (isset($orderWidget[$zip]['accessories'])) {
+                $addedHazmat = in_array('Hazardous Material', $orderWidget[$zip]['accessories']);
             }
             $oldAccessorial = $orderWidget[$zip]['accessories'] ?? [];
             $orderWidget[$zip]['accessories'] = [];
-            if(!$isMulti){
-                if($carrierHasInsurance) {
+            if (!$isMulti) {
+                if ($carrierHasInsurance) {
                     if (isset($item->product_insurance_active) && $item->product_insurance_active == 1) {
                         array_push($orderWidget[$zip]['accessories'], 'Insurance');
                         $addedInsurance = true;
@@ -272,30 +290,30 @@ class OrderController extends Controller
                         array_push($orderWidget[$zip]['accessories'], 'Insurance');
                     }
                 }
-                if(isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') {
+                if (isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') {
                     array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
                     $addHazmat = true;
-                }else if($addHazmat){
+                } else if ($addHazmat) {
                     array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
                 }
-            }else{
-                if((isset($item->product_insurance_active) && $item->product_insurance_active == 1 && $carrierHasInsurance) || in_array('Insurance',$oldAccessorial)){
+            } else {
+                if ((isset($item->product_insurance_active) && $item->product_insurance_active == 1 && $carrierHasInsurance) || in_array('Insurance', $oldAccessorial)) {
                     array_push($orderWidget[$zip]['accessories'], 'Insurance');
                 }
-                if( (isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') || $addedHazmat) {
+                if ((isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') || $addedHazmat) {
                     array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
                     $addHazmat = true;
                 }
             }
             $isSmall = $this->isSmallQuote($sName);
-            if($isMulti){
+            if ($isMulti) {
                 strpos(strtolower($code), '+r') ? array_push($orderWidget[$zip]['accessories'], 'Residential Delivery') : '';
-            }else{
+            } else {
                 $autoResidentialsStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Delivery') : '';
             }
 
             $isHAT ? array_push($orderWidget[$zip]['accessories'], 'Hold At Terminal') : '';
-            if(!$isSmall) {
+            if (!$isSmall) {
 
                 $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Pickup') : '';
                 $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Delivery') : '';
@@ -305,14 +323,15 @@ class OrderController extends Controller
         $sbs = '';
         //print_r($orderWidget); exit;
         $resp = [
-            'widget' => $this->objectToArray( $orderWidget ),
+            'widget' => $this->objectToArray($orderWidget),
             'sbs' => $sbs
         ];
         return $resp;
     }
 
 
-    public function getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate,$rateId){
+    public function getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate, $rateId)
+    {
         //dd($isSmallLtlrate);
         $response = ['resi' => 'n', 'liftG' => 'n', 'resiPickup' => 'n'];
         /*if($isSmallrate && !$isSmallLtlrate){
@@ -340,43 +359,50 @@ class OrderController extends Controller
         $response['resiPickup'] = strpos($rateId, '+pu') ? 'Y' : 'n';
         return $response;
     }
-    public function getBoxName($binId, $store_id, $rate_id, $cart_id){
-        $data = RequestData::where('rate_id', $rate_id)
-            ->where('cart_id', $cart_id)
-            ->where('store_id', $store_id)
-            ->first()->toArray();
-        $binId = (int) $binId;
-        $bins = json_decode($data['box_bins']);
-        if(!empty($bins)){
-            foreach ($bins as $bin){
-                if($binId == $bin->id){
-                    return $bin->nickname;
-                }
-            }
-        }
+
+    public function getBoxName($binId, $store_id, $rate_id, $cart_id)
+    {
+        $nickname = BoxSize::getBoxNicknameAndFee($binId);
+        return $nickname->nickname ?? null;
+
+        /*     $data = RequestData::where('rate_id', $rate_id)
+                 ->where('cart_id', $cart_id)
+                 ->where('store_id', $store_id)
+                 ->first()->toArray();
+             $binId = (int)$binId;
+             $bins = json_decode($data['box_bins']);
+             if (!empty($bins)) {
+                 foreach ($bins as $bin) {
+                     if ($binId == $bin->id) {
+                         return $bin->nickname;
+                     }
+                 }
+             }*/
     }
 
-    public function objectToArray($orderWidget){
-        $resp= [];
-        foreach ($orderWidget as $widget){
+    public function objectToArray($orderWidget)
+    {
+        $resp = [];
+        foreach ($orderWidget as $widget) {
             $resp[] = $widget;
         }
         return $resp;
     }
 
-    public function getBCOrderByID($request){
+    public function getBCOrderByID($request)
+    {
         $store = Store::where('hash', $request['store_hash'])->first();
-        if(empty($store)){
+        if (empty($store)) {
             return [];
         }
         $headers[] = 'X-Auth-Token: ' . $store->access_token;
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
-        $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders/".$request['order_id'];
+        $endpoint = "https://api.bigcommerce.com/stores/" . $request['store_hash'] . "/v2/orders/" . $request['order_id'];
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
         $resp = [];
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
-            $resp  = json_decode($response['response'], true);
+            $resp = json_decode($response['response'], true);
             $endpoint = json_decode($response['response'])->shipping_addresses->url;
             $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
             if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
@@ -385,6 +411,7 @@ class OrderController extends Controller
                 if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
                     $response = json_decode($response['response']);
                     $resp['rate_id'] = $response->rate_id;
+                    $resp['full_rate_id'] = $response->shipping_provider_quote->rateId ?? '';
                     $resp['shipping_name'] = $response->shipping_provider_quote->name ?? '';
                     $resp['shipping_rate'] = $response->shipping_provider_quote->rate->value ?? '';
                 }
@@ -393,42 +420,43 @@ class OrderController extends Controller
         return $resp;
     }
 
-    public function getBCOrders($request){
+    public function getBCOrders($request)
+    {
         $store = Store::where('hash', $request['store_hash'])->first();
-        if(empty($store)){
+        if (empty($store)) {
             return null;
         }
         $page = $request['page'] ?? 1;
         $perPage = $request['perpage'] ?? 50;
         $status = $request['status'] ?? '';
-        $sortProd = (isset($request['sortOrder']) && $request['sortOrder'] === "true") ? 'desc':'asc';
+        $sortProd = (isset($request['sortOrder']) && $request['sortOrder'] === "true") ? 'desc' : 'asc';
         //dd($status);
-        $search = (int) $request['search'] ?? 0;
+        $search = (int)$request['search'] ?? 0;
         $headers[] = 'X-Auth-Token: ' . $store->access_token;
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
         $total = 1;
-        if($search){
-            if($status == ''){
-                $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders/".$search;
-            }else{
-                $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders/".$search."?status_id=".$status;
+        if ($search) {
+            if ($status == '') {
+                $endpoint = "https://api.bigcommerce.com/stores/" . $request['store_hash'] . "/v2/orders/" . $search;
+            } else {
+                $endpoint = "https://api.bigcommerce.com/stores/" . $request['store_hash'] . "/v2/orders/" . $search . "?status_id=" . $status;
             }
 
-        }else{
-            if($status == ''){
-                $countEndPoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders/count";
-            }else{
-                $countEndPoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders/count?status_id=".$status;
+        } else {
+            if ($status == '') {
+                $countEndPoint = "https://api.bigcommerce.com/stores/" . $request['store_hash'] . "/v2/orders/count";
+            } else {
+                $countEndPoint = "https://api.bigcommerce.com/stores/" . $request['store_hash'] . "/v2/orders/count?status_id=" . $status;
             }
             $response = $this->curlRequest->enSingleCurlRequest($countEndPoint, [], $headers, 'GET', false);
-            $total = (int) ceil(json_decode($response['response'])->count);
+            $total = (int)ceil(json_decode($response['response'])->count);
 
-            if($status !== ''){
-                $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders?sort=id:".$sortProd."&status_id=".$status."&limit=".$perPage."&page=".$page;
-            }else{
+            if ($status !== '') {
+                $endpoint = "https://api.bigcommerce.com/stores/" . $request['store_hash'] . "/v2/orders?sort=id:" . $sortProd . "&status_id=" . $status . "&limit=" . $perPage . "&page=" . $page;
+            } else {
                 /*$endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders?sort=id:desc&limit=".$perPage."&page=".$page;*/
-                $endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders?sort=id:".$sortProd."&limit=".$perPage."&page=".$page;
+                $endpoint = "https://api.bigcommerce.com/stores/" . $request['store_hash'] . "/v2/orders?sort=id:" . $sortProd . "&limit=" . $perPage . "&page=" . $page;
             }
 
         }
@@ -440,13 +468,13 @@ class OrderController extends Controller
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
             $response = json_decode($response['response'], true);
             //dd($endpoint,$response);
-            if( !(isset($response[0]['status']) && $search)){
+            if (!(isset($response[0]['status']) && $search)) {
                 $orders = $search ? [$response] : $response;
 
                 // $orders = $sortProd ==='desc' ? $orders : array_reverse($orders);
 
                 $count = 0;
-                if($orders) {
+                if ($orders) {
                     foreach ($orders as $count => $order) {
                         //$count++;
                         $resp['allOrders'][$count]['id'] = $order['id'];
@@ -460,7 +488,7 @@ class OrderController extends Controller
             }
         }
 
-        $resp['meta']  =[
+        $resp['meta'] = [
             'total' => $total,
             'current' => $page,
             'perpage' => $perPage
@@ -468,6 +496,7 @@ class OrderController extends Controller
 
         return $resp;
     }
+
     /**
      * Show the form for creating a new resource.
      *
@@ -481,7 +510,7 @@ class OrderController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
@@ -492,7 +521,7 @@ class OrderController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\Order  $order
+     * @param \App\Models\Order $order
      * @return \Illuminate\Http\Response
      */
     public function show(Order $order)
@@ -503,7 +532,7 @@ class OrderController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  \App\Models\Order  $order
+     * @param \App\Models\Order $order
      * @return \Illuminate\Http\Response
      */
     public function edit(Orders $order, Request $request)
@@ -536,8 +565,8 @@ class OrderController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Order  $order
+     * @param \Illuminate\Http\Request $request
+     * @param \App\Models\Order $order
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request, Orders $order)
@@ -573,7 +602,7 @@ class OrderController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\Order  $order
+     * @param \App\Models\Order $order
      * @return \Illuminate\Http\Response
      */
     public function destroy(Orders $order)
@@ -675,22 +704,8 @@ class OrderController extends Controller
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
             $products = json_decode($response['response']);
             echo "<pre>";
-            print_r($products);exit;
-            foreach ($products as $key => $product) {
-                $prds[$key]['product_id'] = $product->product_id;
-                $prds[$key]['weight'] = $product->weight ?? 0;
-                $prds[$key]['width'] = $product->width ?? 0;
-                $prds[$key]['height'] = $product->height ?? 0;
-                $prds[$key]['depth'] = $product->depth ?? 0;
-                $prds[$key]['color'] = $product->product_options[0]->display_value_customer ?? '';
-                $prdCustomFields = $this->prdCustomFeilds($product->product_id);
-                $prds[$key]['dropship_location'] = $prdCustomFields['dropship_location'] ?? false;
-                $prds[$key]['freight_class'] = $prdCustomFields['freight_class'] ?? false;
-                $prds[$key]['dropship_enabled'] = isset($prdCustomFields['dropship_enabled']) && $prdCustomFields['dropship_enabled'] == "true" ? true : false;
-                $prds[$key]['hazardous_enabled'] = isset($prdCustomFields['hazardous_enabled']) && $prdCustomFields['hazardous_enabled'] == "true" ? true : false;
-                $prds[$key]['freight_enabled'] = isset($prdCustomFields['freight_enabled']) && $prdCustomFields['freight_enabled'] == "true" ? true : false;
-                $prds[$key]['insurance'] = isset($prdCustomFields['insurance']) && $prdCustomFields['insurance'] == "true" ? true : false;
-            }
+            print_r($products);
+            exit;
             //dd($prds);
         }
         return $prds;
@@ -715,24 +730,13 @@ class OrderController extends Controller
         return $prdCustomFieldData;
     }
 
-    /*public function getBCOrderByID($toRequest)
-    {
-        $headers[] = 'X-Auth-Token: ' . $this->accessToken;
-        $headers[] = 'Content-Type: application/json';
-        $headers[] = 'Accept: application/json';
-        $endpoint = 'https://api.bigcommerce.com/stores/' . $toRequest['store_hash'] . '/v2/orders/' . $toRequest['order_id'];
-        $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
-        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
-            return $response['response'];
-        }
-    }*/
-
     /***
      * @param $toRequest
      * Move row from request_temp to request table after order placing
      * delete all rows from request_temp relevant to cart_id
      */
-    public function moveQuotesTempToReq($toRequest){
+    public function moveQuotesTempToReq($toRequest)
+    {
         $headers[] = 'X-Auth-Token: ' . $this->accessToken;
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
@@ -746,21 +750,33 @@ class OrderController extends Controller
                 $endpoint = json_decode($response['response'])[0]->shipping_quotes->url;
                 $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
                 if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
-                    $rateId = json_decode($response['response'])->rate_id;
-                    $reqData = RequestTempData::where('rate_id', $rateId)->where('cart_id', $cartId)->get()->toArray();
-                    Log::info('Orderdata $reqData: ' . json_encode($reqData). ' RateID: '.$rateId .' CartId: '.$cartId);
-                    foreach ($reqData as $data)
-                    {
-                        unset($data['id']);
-                        RequestData::insert($data);
+                    $response = json_decode($response['response']);
+                    $rateId = optional($response)->rate_id ?? null;
+                    /*
+                     * Added this if in case of rate ID characters exceed 36
+                     * Big commerce truncate other characters
+                     * That was the issue reported in Qa for Fedex SMall Testing
+                     *
+                     * */
+                    $fullRateId = optional($response)->shipping_provider_quote->rateId ?? null;
+                    $reqData = optional(RequestTempData::where('rate_id', $rateId)->where('cart_id', $cartId)->get())->toArray();
+                    if (blank($reqData)) {
+                        $reqData = optional(RequestTempData::where('rate_id', $fullRateId)->where('cart_id', $cartId)->first())->toArray();
                     }
-                    RequestTempData::where('cart_id', $cartId)->delete();
+                    Log::info('Orderdata $reqData: ' . json_encode($reqData) . ' RateID: ' . $rateId . ' CartId: ' . $cartId);
+                    if (!blank($reqData)) {
+                        unset($reqData['id']);
+                        RequestData::insert($reqData);
+                    }
+
+                    // RequestTempData::where('cart_id', $cartId)->delete();
                 }
             }
         }
     }
 
-    private function isSmallQuote($quote){
+    private function isSmallQuote($quote)
+    {
         $quote = explode('(', $quote)[0];
         $quote = trim($quote);
         $small = [
@@ -776,10 +792,11 @@ class OrderController extends Controller
         return in_array($quote, $small);
     }
 
-    private function hasInsureCarrier($code){
-        $insureCarriers = ['wweltl', 'parcel_12wwe','parcel_12ups'];
-        foreach ($insureCarriers as $insureCarrier){
-            if(strpos($code, $insureCarrier) !== false){
+    private function hasInsureCarrier($code)
+    {
+        $insureCarriers = ['wweltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd'];
+        foreach ($insureCarriers as $insureCarrier) {
+            if (strpos($code, $insureCarrier) !== false) {
                 return true;
             }
         }

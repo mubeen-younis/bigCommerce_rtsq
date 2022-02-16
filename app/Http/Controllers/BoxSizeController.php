@@ -62,7 +62,7 @@ class BoxSizeController extends Controller
             return response()->json(['error' => true, 'message' => $validator->errors()], 200);
         }
 
-        $data = $request->except(['store_name', 'store_hash']);
+        $data = $request->except(['store_name', 'store_hash','is_test_store']);
 
         $boxsize = BoxSize::create($data);
         $boxsize->save();
@@ -123,7 +123,7 @@ class BoxSizeController extends Controller
                         'message' => "The nickname has already been taken."
                     ]);
             }
-            $data = $request->except(['store_name', 'store_hash']);
+            $data = $request->except(['store_name', 'store_hash','is_test_store']);
 
             $boxsize = BoxSize::where('id', $request->id)->update($data);
             $box = BoxSize::find($request->id);
