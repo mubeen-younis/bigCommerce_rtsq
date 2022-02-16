@@ -1047,7 +1047,6 @@ class CompileQuotes
             $originQuotes = [];
             $arraySorting = [];
             $preCode = 'gtzltl';
-            //print_r($quote['q']); exit;
             if (isset($quote['q'])) {
                 if (isset($quote['hazardousStatus'])) {
                     $hazShipmentArr[$origin] = $quote['hazardousStatus'] == 'y' ? 'Y' : 'N';
@@ -1417,10 +1416,6 @@ class CompileQuotes
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices)) {
                         $access = $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
-                        // if (isset($this->quoteSettings['label_as']) && isset($data['serviceType'])) {
-                        //     $EcoPrio = $data['serviceType'] === 'FEDEX_FREIGHT_ECONOMY' ? ' Economy' : ' Priority';
-                        //     $this->quoteSettings['label_as'] = $lableAs . $EcoPrio;
-                        // }
                         if (isset($data['serviceType']) && $data['serviceType'] === 'FEDEX_FREIGHT_ECONOMY') {
                             $this->quoteSettings['label_as'] = !blank($freightEconomyLableAs) ? $freightEconomyLableAs : 'LTL Freight Economy';
                         }
