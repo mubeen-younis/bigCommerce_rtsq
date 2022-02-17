@@ -209,14 +209,14 @@ class MainController extends BaseController
     public function load(Request $request)
     {
         $signedPayload = $request->input('signed_payload');
+
         if (!empty($signedPayload)) {
             $verifiedSignedRequestData = $this->verifySignedRequest($signedPayload, $request);
             if ($verifiedSignedRequestData !== null) {
                 $storeHash = explode('/', $verifiedSignedRequestData['context']);
                 $storeHash = $storeHash[1] ?? $verifiedSignedRequestData['context'];
-
-                $toAppendHash = Crypt::encryptString($storeHash);
-                Store::where('hash', $storeHash)->update(['token' => $toAppendHash]);
+                /*Function for checking time of the token update and getting token from db*/
+                $toAppendHash = $this->getAndUpdateToken($storeHash);
                 if (Store::where('hash', $verifiedSignedRequestData['store_hash'])->where('is_webhook_created', false)->exists()) {
                     $store = Store::where('hash', $verifiedSignedRequestData['store_hash'])->where('is_webhook_created', false)->first();
                     $this->registerWebHook([
@@ -233,6 +233,53 @@ class MainController extends BaseController
         //header('location: http://bc-fe.eniture-dev3.com/?store='.$toAppendHash);
         //return redirect('/');
         return Redirect::to(Constant::FRONTEND_URL . '/?store=' . $toAppendHash);
+    }
+
+
+    /**
+     * @param $storeHash
+     * @return mixed|string|null
+     * This function is written for a bug of only one person can use app at a particular time
+     */
+    public function getAndUpdateToken($storeHash)
+    {
+        $toAppendHash = Crypt::encryptString($storeHash);
+        $storeDetail = optional(Store::where('hash', $storeHash)->first())->toArray() ?? [];
+        if (blank($storeDetail)) {
+            return $toAppendHash;
+        }
+        $token = $storeDetail['token'] ?? null;
+        $updatedAt = $storeDetail['updated_at'] ?? null;
+        if (blank($token) || blank($updatedAt)) {
+            Store::where('hash', $storeHash)->update(['token' => $toAppendHash]);
+            return $toAppendHash;
+        }
+        if ($this->isTimeToUpdateToken($updatedAt)) {
+            Store::where('hash', $storeHash)->update(['token' => $toAppendHash]);
+            return $toAppendHash;
+        }
+        /*
+         * Same token will be returned
+         * */
+        return $token;
+
+    }
+
+
+    /**
+     * @param $updatedAt
+     * @return bool
+     */
+    public function isTimeToUpdateToken($updatedAt): bool
+    {
+        $t1 = strtotime(now());
+        $t2 = strtotime($updatedAt);
+        $diff = $t1 - $t2;
+        $hours = $diff / (60 * 60);
+        if ($hours > 24) {
+            return true;
+        }
+        return false;
     }
 
     public function registerWebHook($request)
