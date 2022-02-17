@@ -48,6 +48,9 @@ Route::post('order/webhooks', [OrderController::class, 'orderFromWebhook']);
 Route::post('sku/webhooks', [ProductSettingController::class, 'skuFromWebhook']);
 Route::get('/add_to_test_stores', [MainController::class, 'addTestStore']);
 
+Route::get('/order/{orderId}.json', [\App\Http\Controllers\FDOOrderController::class, 'getOrderDetails']);
+
+
 // Ws Route For Adding Plan
 Route::post('/save_plan_detail', [CarrierPlanController::class, 'addPlanFromWs']);
 Route::middleware([EnsureTokenIsValid::class])->group(function () {
