@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Constants\Constant;
 use App\CurlRequest;
+use App\CustomClasses\Functions;
 use App\Endpoints\Endpoints;
 use App\Helpers\Helpers;
 use App\Models\RequestData;
@@ -37,6 +38,7 @@ class FDOOrderController extends Controller
             }
             Helpers::sendJsonResponseFdo(false, '', $orderDetail);
         } catch (\Exception $exception) {
+            dd(123, $exception);
             Helpers::sendJsonResponseFdo(true, 'Something went wrong', ['exception' => $exception->getMessage()]);
         }
     }
@@ -108,105 +110,38 @@ class FDOOrderController extends Controller
         if (blank($data)) {
             return [];
         }
-        dd(1234, $data);
-        $carrierHasInsurance = $this->hasInsureCarrier($rateId);
+        $carrierHasInsurance = Functions::hasInsureCarrier($rateId);
         $index = explode('idx+', $rateId)[1];
         if (!empty($index)) {
             $index = (int)substr($index, 0, 1);
         }
         $isSmallLtlrate = substr($rateId, 0, 5) == 'multi' ? true : false;
         $isHAT = strpos(strtolower($rateId), '+hat');
-
         $rateId = strtolower($rateId);
         $isSmallrate = substr($rateId, 0, 9) == 'parcel_12' || substr($rateId, 0, 5) == 'multi' ? true : false;
         $isLG = strpos($rateId, '+lg');
         $isOwnArrangement = strpos($rateId, 'own_arrangement') === 0 || strpos($rateId, 'freernlltl') === 0 ? true : false;
         $lineItem = json_decode($data['lineitems'])->lineItemData;
         $responseFromWS = json_decode($data['quotes']);
-
         $requestToWS = json_decode($data['request']);
         $lineItem->items = $this->formatItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
-//print_r($lineItem->items); exit;
         $lineItem->origin = $this->formatOrigins($requestToWS->requestArr->carriers);
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
-        $autoResidentialsStatus = 'n';
-        $residentialsPickup = 'n';
         $liftGateStatus = 'n';
-        $binPackagingData = '';
         $orderWidget = [];
         $isOneRate = strpos($rateId, '+or');
         $isGround = strpos($rateId, '+gd');
         $isAir = strpos($rateId, '+as');
-        foreach ($responseFromWS as $carrrierName => $WsResp) {
-            foreach ($WsResp as $zip => $ws) {
-
-                if (!(isset($ws->severity) && $ws->severity == 'ERROR')) {
-
-                    $liftResidentialStatus = $this->getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate, $rateId);
-                    if ($isLG) {
-                        $liftGateStatus = $liftResidentialStatus['liftG'] ?? 'n';
-                    }
-                    $autoResidentialsStatus = $liftResidentialStatus['resi'] ?? 'n';
-                    $residentialsPickup = $liftResidentialStatus['resiPickup'] ?? 'n';
-
-                    $totalBoxes = 1;
-                    if (isset($ws->binPackagingData) && !empty($ws->binPackagingData) && $isSmallrate) {
-                        if ($isGround) {
-                            $sbsData = $ws->binPackagingData->response->ground->bins_packed;
-                        } else if ($isAir) {
-                            $sbsData = $ws->binPackagingData->response->air->bins_packed;
-                        } else if ($isOneRate) {
-                            $sbsData = $ws->binPackagingData->response->oneRate->bins_packed;
-                        } else {
-                            $sbsData = $ws->binPackagingData->response->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->oneRate->bins_packed;
-                        }
-                        //print_r($ws->binPackagingData->response); exit;
-                        $itemCount = 0;
-                        foreach ($sbsData as $key => $binPacked) {
-                            $type = '';
-                            $quantity = 1;
-                            if (isset($binPacked->bin_data->type) && $binPacked->bin_data->type == 'item') {
-                                $type = 'item';
-                                $product_id = $binPacked->bin_data->id;
-                                $quantity = $binPacked->bin_data->quantity ?? 1;
-                                $itemCount++;
-                            }
-                            $count = 0;
-                            $orderWidgetData['type'] = $type;
-                            $orderWidgetData['image_complete'] = $binPacked->image_complete;
-                            $orderWidgetData['d'] = $binPacked->bin_data->d . ' x ';
-                            $orderWidgetData['w'] = $binPacked->bin_data->w . ' x ';
-                            $orderWidgetData['h'] = $binPacked->bin_data->h;
-                            $orderWidgetData['quantity'] = $quantity;
-
-                            $orderWidgetData['nickname'] = $this->getBoxName($binPacked->bin_data->id, $storeId, $rateId, $order['cart_id']);
-                            foreach ($binPacked->items as $item) {
-                                $productid = $item->id;
-
-                                $orderWidgetData['items'][$count]['product_name'] = $lineItem->items->$productid->lineItemName ?? '';
-                                $orderWidgetData['items'][$count]['w'] = $item->w;
-                                $orderWidgetData['items'][$count]['h'] = $item->h;
-                                $orderWidgetData['items'][$count]['d'] = $item->d;
-
-                                $orderWidgetData['items'][$count]['image_separated'] = $item->image_separated;
-                                $orderWidgetData['items'][$count]['image_sbs'] = $item->image_sbs;
-
-                                $orderWidget[$zip]['sbs'][$key] = $orderWidgetData;
-                                ++$count;
-
-                            }
-                            unset($orderWidgetData);
-                            if ($count) {
-                                $orderWidget[$zip]['sbs'][$key]['number_of_items'] = $count;
-                            }
-                        }
-                        $totalBoxes = $key + 1 - $itemCount;
-
-
-                    }
-                }
-            }
+        $rateType = $isGround ? 'ground' : ($isAir ? 'air' : ($isOneRate ? 'one_rate' : ""));
+        $liftResidentialStatus = Functions::getLiftResidentialStatus($rateId);
+        if ($isLG) {
+            $liftGateStatus = $liftResidentialStatus['liftG'] ?? 'n';
         }
+        $autoResidentialsStatus = $liftResidentialStatus['resi'] ?? 'n';
+        $residentialsPickup = $liftResidentialStatus['resiPickup'] ?? 'n';
+        // Removed Sbs COde From Here
+        $packagingDetail = $this->getPackagingDetail($responseFromWS, $isSmallrate, $rateType);
+        dd(123, $packagingDetail);
         $origins = $lineItem->origin;
         $items = $lineItem->items;
         $count = 0;
@@ -340,6 +275,75 @@ class FDOOrderController extends Controller
             }
         }
         return $newOrigin;
+    }
+
+
+    public function getPackagingDetail($responseFromWS, $isSmallrate, $rateType)
+    {
+        $packagingDetail = [];
+        foreach ($responseFromWS as $carrierName => $WsResp) {
+            foreach ($WsResp as $zip => $ws) {
+
+                if (!(isset($ws->severity) && $ws->severity == 'ERROR')) {
+
+                    $totalBoxes = 1;
+                    if (isset($ws->binPackagingData) && !empty($ws->binPackagingData) && $isSmallrate) {
+                        if ($rateType == "ground") {
+                            $sbsData = $ws->binPackagingData->response->ground->bins_packed;
+                        } else if ($rateType == "air") {
+                            $sbsData = $ws->binPackagingData->response->air->bins_packed;
+                        } else if ($rateType == "one_rate") {
+                            $sbsData = $ws->binPackagingData->response->oneRate->bins_packed;
+                        } else {
+                            $sbsData = $ws->binPackagingData->response->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->oneRate->bins_packed;
+                        }
+                        $itemCount = 0;
+                        foreach ($sbsData as $key => $binPacked) {
+                            $type = '';
+                            $quantity = 1;
+                            if (isset($binPacked->bin_data->type) && $binPacked->bin_data->type == 'item') {
+                                $type = 'item';
+                                $product_id = $binPacked->bin_data->id;
+                                $quantity = $binPacked->bin_data->quantity ?? 1;
+                                $itemCount++;
+                            }
+                            $count = 0;
+                            $orderWidgetData['type'] = $type;
+                            $orderWidgetData['image_complete'] = $binPacked->image_complete;
+                            $orderWidgetData['d'] = $binPacked->bin_data->d . ' x ';
+                            $orderWidgetData['w'] = $binPacked->bin_data->w . ' x ';
+                            $orderWidgetData['h'] = $binPacked->bin_data->h;
+                            $orderWidgetData['quantity'] = $quantity;
+
+                            $orderWidgetData['nickname'] = Functions::getBoxName($binPacked->bin_data->id);
+                            foreach ($binPacked->items as $item) {
+                                $productid = $item->id;
+
+                                $orderWidgetData['items'][$count]['product_name'] = $lineItem->items->$productid->lineItemName ?? '';
+                                $orderWidgetData['items'][$count]['w'] = $item->w;
+                                $orderWidgetData['items'][$count]['h'] = $item->h;
+                                $orderWidgetData['items'][$count]['d'] = $item->d;
+
+                                $orderWidgetData['items'][$count]['image_separated'] = $item->image_separated;
+                                $orderWidgetData['items'][$count]['image_sbs'] = $item->image_sbs;
+
+                                $packagingDetail[$zip]['sbs'][$key] = $orderWidgetData;
+                                ++$count;
+
+                            }
+                            unset($orderWidgetData);
+                            if ($count) {
+                                $packagingDetail[$zip]['sbs'][$key]['number_of_items'] = $count;
+                            }
+                        }
+                        $totalBoxes = $key + 1 - $itemCount;
+
+
+                    }
+                }
+            }
+        }
+        return $packagingDetail;
     }
 
 }
