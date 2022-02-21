@@ -23,7 +23,7 @@ class FDOOrderController extends Controller
     public function getOrderDetails(Request $request, $orderId)
     {
         try {
-            $storeHash = $request->header('store_hash') ?? null;
+            $storeHash = $request->header('store-hash') ?? null;
             if (blank($storeHash) || blank($orderId)) {
                 return Helpers::sendJsonResponseFdo(true, 'Store hash and order id required');
 

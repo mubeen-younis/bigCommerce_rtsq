@@ -50,7 +50,7 @@ Route::get('/add_to_test_stores', [MainController::class, 'addTestStore']);
 
 // FDO ROUTES
 Route::get('/order/{orderId}.json', [\App\Http\Controllers\FDOOrderController::class, 'getOrderDetails']);
-Route::get('/product/{variantID}.json', [\App\Http\Controllers\FDOOrderController::class, 'getOrderDetails']);
+Route::get('/product/{variantID}.json', [\App\Http\Controllers\FDOProductController::class, 'getVariantDetail']);
 
 
 /////
