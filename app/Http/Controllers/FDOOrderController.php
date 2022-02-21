@@ -25,21 +25,20 @@ class FDOOrderController extends Controller
         try {
             $storeHash = $request->header('store_hash') ?? null;
             if (blank($storeHash) || blank($orderId)) {
-                Helpers::sendJsonResponseFdo(true, 'Store hash and order id required');
+                return Helpers::sendJsonResponseFdo(true, 'Store hash and order id required');
 
             }
             $order = $this->getBCOrderByID($storeHash, $orderId);
             if (blank($order)) {
-                Helpers::sendJsonResponseFdo(true, 'No Order Detail Found From BigCommerce');
+                return Helpers::sendJsonResponseFdo(true, 'No Order Detail Found From BigCommerce');
             }
             $orderDetail = $this->getDetail($order);
             if (empty($orderDetail)) {
-                Helpers::sendJsonResponseFdo(true, 'No order detail found from DB');
+                return Helpers::sendJsonResponseFdo(true, 'No order detail found from DB');
             }
-            Helpers::sendJsonResponseFdo(false, '', $orderDetail);
+            return Helpers::sendJsonResponseFdo(false, '', $orderDetail);
         } catch (\Exception $exception) {
-            dd(123, $exception);
-            Helpers::sendJsonResponseFdo(true, 'Something went wrong', ['exception' => $exception->getMessage()]);
+            return Helpers::sendJsonResponseFdo(true, 'Something went wrong', ['exception' => $exception->getMessage()]);
         }
     }
 
@@ -111,6 +110,7 @@ class FDOOrderController extends Controller
             return [];
         }
         $carrierHasInsurance = Functions::hasInsureCarrier($rateId);
+        $carrierName = Functions::getCarrierName($rateId);
         $index = explode('idx+', $rateId)[1];
         if (!empty($index)) {
             $index = (int)substr($index, 0, 1);
@@ -141,7 +141,6 @@ class FDOOrderController extends Controller
         $residentialsPickup = $liftResidentialStatus['resiPickup'] ?? 'n';
         // Removed Sbs COde From Here
         $packagingDetail = $this->getPackagingDetail($responseFromWS, $isSmallrate, $rateType);
-        dd(123, $packagingDetail);
         $origins = $lineItem->origin;
         $items = $lineItem->items;
         $count = 0;
@@ -151,14 +150,20 @@ class FDOOrderController extends Controller
         $insertedIds = $insertedNames = [];
         //print_r($items); exit;
         $code = '';
+        $orderDetails = [];
         foreach ($origins as $key => $origin) {
             $item = $items->$key;
             $city = $origin->senderCity ? $origin->senderCity . ',' : '';
             $state = $origin->senderState ?? '';
             $zip = $origin->locationId != '' ? $origin->locationId : $origin->senderZip;
             $senderZip = $origin->senderZip ?? '';
-            $orderWidget[$zip]['locationtype'] = $item->dropship_enabled == 'N' ? 'Warehouse' : 'Dropship';
-            $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
+            $orderWidget[$zip]['ship_type'] = $item->dropship_enabled == 'N' ? 'Warehouse' : 'Dropship';
+            $orderWidget[$zip]['address']['city'] = $city;
+            $orderWidget[$zip]['address']['state'] = $state;
+            $orderWidget[$zip]['address']['country'] = $origin->senderCountryCode;
+            $orderWidget[$zip]['address']['postal_code'] = $senderZip;
+
+
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
             $sRate = $order['shipping_rate'];
             //print_r($multiShipmentresponse); exit;
@@ -175,8 +180,8 @@ class FDOOrderController extends Controller
                     $order['shipping_name'] = $multiShipmentresponse->$index->simple->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? '';
                     $code = $multiShipmentresponse->$index->simple->$zip->code ?? $multiShipmentresponse->$index->liftgate->$zip->code ?? '';
                 }
-                $carrierHasInsurance = $code ? $this->hasInsureCarrier($code) : false;
-
+                $carrierHasInsurance = $code ? Functions::hasInsureCarrier($code) : false;
+                $carrierName = $code ? Functions::getCarrierName($code) : "Multi Carrier";
                 $isMulti = true;
             }
 
@@ -187,71 +192,87 @@ class FDOOrderController extends Controller
             $sName = str_replace(Constant::RESI_LIFT_LABEL, '', $sName);
             $sMethod = isset($shipping_name[1]) ? '(' . $shipping_name[1] : '';
 
-            $orderWidget[$zip]['shipping_method'] = $sName . $sMethod;
-            $orderWidget[$zip]['shipping_rate'] = '$' . number_format((float)$sRate, 2,);
-            if ($item->shipMultiplePackage) {
-                if ((!in_array($item->lineItemName, $insertedNames))) {
-                    $insertedNames[] = $item->lineItemName;
-                    $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
-                }
-            } else {
-                if ((!in_array($item->id, $insertedIds))) {
-                    $insertedIds[] = $item->id;
-                    $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
-                }
-            }
+            $orderWidget[$zip]['service_name'] = $sName . $sMethod;
+            $orderWidget[$zip]['ship_price'] = '$' . number_format((float)$sRate, 2,);
+            $orderWidget[$zip]['app_name'] = $carrierName;
+            $orderWidget[$zip]['carrier_name'] = $carrierName;
+
             $addedHazmat = false;
-            if (isset($orderWidget[$zip]['accessories'])) {
-                $addedHazmat = in_array('Hazardous Material', $orderWidget[$zip]['accessories']);
+            if (isset($orderWidget[$zip]['accessorials'])) {
+                $addedHazmat = in_array('Hazardous Material', $orderWidget[$zip]['accessorials']);
             }
-            $oldAccessorial = $orderWidget[$zip]['accessories'] ?? [];
-            $orderWidget[$zip]['accessories'] = [];
+            $oldAccessorial = $orderWidget[$zip]['accessorials'] ?? [];
+            $orderWidget[$zip]['accessorials'] = [];
             if (!$isMulti) {
                 if ($carrierHasInsurance) {
                     if (isset($item->product_insurance_active) && $item->product_insurance_active == 1) {
-                        array_push($orderWidget[$zip]['accessories'], 'Insurance');
+                        array_push($orderWidget[$zip]['accessorials'], 'Insurance');
                         $addedInsurance = true;
                     } else if ($addedInsurance) {
-                        array_push($orderWidget[$zip]['accessories'], 'Insurance');
+                        array_push($orderWidget[$zip]['accessorials'], 'Insurance');
                     }
                 }
                 if (isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') {
-                    array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
+                    array_push($orderWidget[$zip]['accessorials'], 'Hazardous Material');
                     $addHazmat = true;
                 } else if ($addHazmat) {
-                    array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
+                    array_push($orderWidget[$zip]['accessorials'], 'Hazardous Material');
                 }
             } else {
                 if ((isset($item->product_insurance_active) && $item->product_insurance_active == 1 && $carrierHasInsurance) || in_array('Insurance', $oldAccessorial)) {
-                    array_push($orderWidget[$zip]['accessories'], 'Insurance');
+                    array_push($orderWidget[$zip]['accessorials'], 'Insurance');
                 }
                 if ((isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') || $addedHazmat) {
-                    array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
+                    array_push($orderWidget[$zip]['accessorials'], 'Hazardous Material');
                     $addHazmat = true;
                 }
             }
-            $isSmall = $this->isSmallQuote($sName);
+            $isSmall = Functions::isSmallQuote($sName);
             if ($isMulti) {
-                strpos(strtolower($code), '+r') ? array_push($orderWidget[$zip]['accessories'], 'Residential Delivery') : '';
+                strpos(strtolower($code), '+r') ? array_push($orderWidget[$zip]['accessorials'], 'Residential Delivery') : '';
             } else {
-                $autoResidentialsStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Delivery') : '';
+                $autoResidentialsStatus != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Residential Delivery') : '';
             }
 
-            $isHAT ? array_push($orderWidget[$zip]['accessories'], 'Hold At Terminal') : '';
+            $isHAT ? array_push($orderWidget[$zip]['accessorials'], 'Hold At Terminal') : '';
             if (!$isSmall) {
 
-                $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Pickup') : '';
-                $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Delivery') : '';
+                $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Residential Pickup') : '';
+                $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Lift Gate Delivery') : '';
             }
+            $accessorials = $this->formatAccessorials($orderWidget[$zip]['accessorials']);
+            $orderWidget[$zip]['accessorials'] = $accessorials;
+
+            $orderWidget[$zip]['packing_detail'] = $packagingDetail[$zip] ?? [];
+            $orderWidget[$zip]['items'][] = $item;
+            $typeOfShip = $orderWidget[$zip]['ship_type'] == 'Warehouse' ? 'w' : 'd';
+            $locType = $typeOfShip . $zip;
+            $orderWidget[$zip]['loc_code'] = $locType;
+            $orderDetails[$locType]['ship_details'] = $orderWidget[$zip];
+            // $orderWidget = [];
             $count++;
         }
-        $sbs = '';
-        //print_r($orderWidget); exit;
-        $resp = [
-            'widget' => $this->objectToArray($orderWidget),
-            'sbs' => $sbs
-        ];
-        return $resp;
+        return $this->formatOrderDetailItems($orderDetails);
+    }
+
+
+    public function formatOrderDetailItems($orderDetails)
+    {
+        $formattedItems = [];
+        foreach ($orderDetails as $locId => $orderDetail) {
+            foreach ($orderDetail['ship_details']['items'] as $item) {
+                $item = (array)$item;
+                if (array_key_exists($item['id'], $formattedItems)) {
+                    $formattedItems[$item['id']]['quantity'] = $formattedItems[$item['id']]['quantity'] + $item['piecesOfLineItem'];
+                } else {
+                    $formattedItems[$item['id']] = $item;
+                    $formattedItems[$item['id']]['quantity'] = $item['piecesOfLineItem'];
+                }
+
+            }
+            $orderDetails[$locId]['ship_details']['items'] = array_values($formattedItems);
+        }
+        return $orderDetails;
     }
 
     public function formatItems($oldItems, $items)
@@ -277,6 +298,23 @@ class FDOOrderController extends Controller
         return $newOrigin;
     }
 
+
+    public function formatAccessorials($accessorials)
+    {
+        $formAccess = ['residential' => false, 'liftgate' => false, 'hazmat' => false];
+        foreach ($accessorials as $accessorial) {
+            if ($accessorial == "Residential Delivery") {
+                $formAccess['residential'] = true;
+            }
+            if ($accessorial == "Lift Gate Delivery") {
+                $formAccess['liftgate'] = true;
+            }
+            if ($accessorial == "Hazardous Material") {
+                $formAccess['hazmat'] = true;
+            }
+        }
+        return $formAccess;
+    }
 
     public function getPackagingDetail($responseFromWS, $isSmallrate, $rateType)
     {
@@ -327,13 +365,15 @@ class FDOOrderController extends Controller
                                 $orderWidgetData['items'][$count]['image_separated'] = $item->image_separated;
                                 $orderWidgetData['items'][$count]['image_sbs'] = $item->image_sbs;
 
-                                $packagingDetail[$zip]['sbs'][$key] = $orderWidgetData;
+                                $packagingDetail[$zip]['all_boxes_rtsq'][$key] = $orderWidgetData;
+                                $packagingDetail[$zip]['all_boxes_rtsq'][$key] = $orderWidgetData;
                                 ++$count;
 
                             }
                             unset($orderWidgetData);
                             if ($count) {
-                                $packagingDetail[$zip]['sbs'][$key]['number_of_items'] = $count;
+                                $packagingDetail[$zip]['all_boxes_rtsq'][$key]['number_of_items'] = $count;
+                                $packagingDetail[$zip]['all_boxes_rtsq'][$key]['number_of_items'] = $count;
                             }
                         }
                         $totalBoxes = $key + 1 - $itemCount;
