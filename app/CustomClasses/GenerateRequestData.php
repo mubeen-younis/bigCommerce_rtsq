@@ -119,6 +119,11 @@ class GenerateRequestData
                         $carriersArr['carriers']['rnl'] = $wweLtlArr;
                     }
                     break;
+                case 'unishippers-small':
+                    $wweLtlArr = $this->unishippersSmallEnitArr($con1, $destination);
+                    $wweLtlArr['originAddress'] = $enitOrigin;
+                    $carriersArr['carriers']['unishippersSmall'] = $wweLtlArr;
+                    break;
             }
         }
         return ['carriersArr' => $carriersArr, 'residential' => $this->resiCarrier];
@@ -294,6 +299,19 @@ class GenerateRequestData
             'returnQuotesOnExceedWeight' => 1,
             'api' => $this->getApiInfoArrRNLLtl($connSettings, $destination, $enitOrigin),
             'getDistance' => 0
+        ];
+    }
+
+    public function unishippersSmallEnitArr($connSettings, $destination)
+    {
+        return [
+            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'serverName' => "https://" . $this->storeData['store']['name'],
+            'carrierMode' => 'pro',
+            'quotestType' => 'small', // ltl / small
+            'version' => '1.0.0',
+            'api' => $this->getApiInfoArrUnishippersSmall($connSettings, $destination),
+            'getDistance' => 0,
         ];
     }
 
@@ -1106,6 +1124,74 @@ class GenerateRequestData
             'saturdayDelivery' => 'on',
             'smartPostData' => $smartPostData
         ];
+        return $apiArray;
+    }
+
+    public function getApiInfoArrUnishippersSmall($connSettings, $destination)
+    {
+        $residential = 'N';
+        $alwaysResi = false;
+        $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
+        if ($this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])) {
+            if ($this->radHitConsumed == 0) {
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+
+            } else {
+                $residential = $this->residential;
+            }
+
+        } else {
+            $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
+        }
+        $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
+        $this->resiCarrier['unishippersSmall'] = $residential;
+        $this->resiCarrier['alwaysResi']['unishippersSmall'] = $alwaysResi;
+        $apiArray = [
+            'username' => $connSettings['creds']['username'],
+            'password' => $connSettings['creds']['password'],
+            'requestkey' => $connSettings['creds']['request_key'],
+            'upsaccountnumber' => $connSettings['creds']['ups_account_number'],
+            'unishipperscustomernumber' => $connSettings['creds']['unishippers_customer_number'],
+            'packagetype' => 'P',
+            'doNesting' => '0',
+
+            'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
+            'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
+            'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
+            'storeDateTime' => date("Y-m-d H:i:s"), //2020-10-22 14:00:00
+            'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
+
+            'prefferedCurrency' => 'USD',
+            'includeDeclaredValue' => '1',
+
+            'services' => [
+                'ups_small_pkg_Ground' => $this->issetIndex($carrierServices, 'ups_ground'),
+                'ups_small_pkg_3_Day_Select' => $this->issetIndex($carrierServices, 'ups_3_day_select'),
+
+                'ups_small_pkg_2nd_Day_Air' => $this->issetIndex($carrierServices, 'ups_2nd_day_ air'),
+                'ups_small_pkg_2nd_Day_Air_AM' => $this->issetIndex($carrierServices, 'ups_2nd_day_air_am'),
+
+                'ups_small_pkg_Next_Day_Air' => $this->issetIndex($carrierServices, 'ups_next_day_air'),
+                'ups_small_pkg_Next_Day_Air_Saver' => $this->issetIndex($carrierServices, 'ups_next_day_air_saver'),
+                'ups_small_pkg_Next_Day_Air_Early_AM' => $this->issetIndex($carrierServices, 'ups_next_day_air_early'),
+
+                "ups_small_surepost_less_than_1LB" => $this->issetIndex($carrierServices, 'ups_surepost_less_than_1lb'),
+                "ups_small_surepost_1LB_or_greater" => $this->issetIndex($carrierServices, 'ups_surepost_1lb_or_greater'),
+                "ups_small_surepost_bpm" => $this->issetIndex($carrierServices, 'ups_surepost_bound_printed_matter'),
+                "ups_small_surepost_media_mail" => $this->issetIndex($carrierServices, 'ups_surepost_media_mail'),
+                "ups_small_pkg_Ground_Freight_Pricing" => $this->issetIndex($carrierServices, 'ups_ground_with_freight_pricing'),
+
+                'ups_small_pkg_Standard' => $this->issetIndex($carrierServices, 'ups_standard'),
+                'ups_small_pkg_Worldwide_Express' => $this->issetIndex($carrierServices, 'ups_worldwide_express'),
+                'ups_small_pkg_Worldwide_Express_Plus' => $this->issetIndex($carrierServices, 'ups_worldwide_express_plus'),
+                'ups_small_pkg_Worldwide_Expedited' => $this->issetIndex($carrierServices, 'ups_worldwide_expedited'),
+                'ups_small_pkg_Saver' => $this->issetIndex($carrierServices, 'ups_worldwide_saver'),
+                'ups_small_pkg_aditional_handling' => $this->issetIndex($carrierServices, 'ups_ground_with_freight_pricing')
+            ],
+        ];
+        
         return $apiArray;
     }
 
