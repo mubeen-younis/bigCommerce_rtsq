@@ -49,9 +49,10 @@ Route::post('sku/webhooks', [ProductSettingController::class, 'skuFromWebhook'])
 Route::get('/add_to_test_stores', [MainController::class, 'addTestStore']);
 
 // FDO ROUTES
-Route::get('/order/{orderId}.json', [\App\Http\Controllers\FDOOrderController::class, 'getOrderDetails']);
-Route::get('/product/{variantID}.json', [\App\Http\Controllers\FDOProductController::class, 'getVariantDetail']);
-
+Route::middleware([\App\Http\Middleware\FDOValidity::class])->group(function () {
+    Route::get('/order/{orderId}.json', [\App\Http\Controllers\FDOOrderController::class, 'getOrderDetails']);
+    Route::get('/product/{variantID}.json', [\App\Http\Controllers\FDOProductController::class, 'getVariantDetail']);
+});
 
 /////
 

@@ -110,7 +110,9 @@ class FDOOrderController extends Controller
             return [];
         }
         $carrierHasInsurance = Functions::hasInsureCarrier($rateId);
-        $carrierName = Functions::getCarrierName($rateId);
+        $carrierName = Functions::getCarrierNameOrCode($rateId);
+        $wsCarrierCode = Functions::getCarrierNameOrCode($rateId, 1);
+
         $index = explode('idx+', $rateId)[1];
         if (!empty($index)) {
             $index = (int)substr($index, 0, 1);
@@ -152,6 +154,7 @@ class FDOOrderController extends Controller
         $code = '';
         $orderDetails = [];
         foreach ($origins as $key => $origin) {
+
             $item = $items->$key;
             $city = $origin->senderCity ? $origin->senderCity . ',' : '';
             $state = $origin->senderState ?? '';
@@ -181,10 +184,11 @@ class FDOOrderController extends Controller
                     $code = $multiShipmentresponse->$index->simple->$zip->code ?? $multiShipmentresponse->$index->liftgate->$zip->code ?? '';
                 }
                 $carrierHasInsurance = $code ? Functions::hasInsureCarrier($code) : false;
-                $carrierName = $code ? Functions::getCarrierName($code) : "Multi Carrier";
+                $carrierName = $code ? Functions::getCarrierNameOrCode($code) : "Multi Carrier";
+                $wsCarrierCode = Functions::getCarrierNameOrCode($rateId, 1);
                 $isMulti = true;
             }
-
+            $handlingUnitDetails = optional($responseFromWS)->$wsCarrierCode->$zip->debug ?? [];
             $shipping_name = explode('(', $order['shipping_name']);
             $sName = $shipping_name[0] ?? '';
             $sName = str_replace(Constant::RESI_LABEL, '', $sName);
@@ -193,7 +197,7 @@ class FDOOrderController extends Controller
             $sMethod = isset($shipping_name[1]) ? '(' . $shipping_name[1] : '';
 
             $orderWidget[$zip]['service_name'] = $sName . $sMethod;
-            $orderWidget[$zip]['ship_price'] = '$' . number_format((float)$sRate, 2,);
+            $orderWidget[$zip]['ship_price'] = number_format((float)$sRate, 2);
             $orderWidget[$zip]['app_name'] = $carrierName;
             $orderWidget[$zip]['carrier_name'] = $carrierName;
 
@@ -248,7 +252,15 @@ class FDOOrderController extends Controller
             $typeOfShip = $orderWidget[$zip]['ship_type'] == 'Warehouse' ? 'w' : 'd';
             $locType = $typeOfShip . $zip;
             $orderWidget[$zip]['loc_code'] = $locType;
+            $orderWidget[$zip]['carrier_type'] = 'small';
+            if (!$isSmall) {
+                $orderWidget[$zip]['carrier_type'] = 'ltl';
+                $orderWidget[$zip]['handling_unit_details'] = $handlingUnitDetails;
+            }
+
             $orderDetails[$locType]['ship_details'] = $orderWidget[$zip];
+            // For Overriding Buf;c
+            $orderDetails[$locType]['ship_details']['items'] = $orderWidget[$zip]['items'];
             // $orderWidget = [];
             $count++;
         }
@@ -256,10 +268,10 @@ class FDOOrderController extends Controller
     }
 
 
-    public function formatOrderDetailItems($orderDetails)
+    public function formatOrderDetailItems($orderDetails): array
     {
-        $formattedItems = [];
         foreach ($orderDetails as $locId => $orderDetail) {
+            $formattedItems = [];
             foreach ($orderDetail['ship_details']['items'] as $item) {
                 $item = (array)$item;
                 if (array_key_exists($item['id'], $formattedItems)) {
@@ -348,9 +360,11 @@ class FDOOrderController extends Controller
                             $count = 0;
                             $orderWidgetData['type'] = $type;
                             $orderWidgetData['image_complete'] = $binPacked->image_complete;
-                            $orderWidgetData['d'] = $binPacked->bin_data->d . ' x ';
-                            $orderWidgetData['w'] = $binPacked->bin_data->w . ' x ';
-                            $orderWidgetData['h'] = $binPacked->bin_data->h;
+                            $orderWidgetData['bin_data']['d'] = $binPacked->bin_data->d;
+                            $orderWidgetData['bin_data']['w'] = $binPacked->bin_data->w;
+                            $orderWidgetData['bin_data']['h'] = $binPacked->bin_data->h;
+                            $orderWidgetData['weight'] = $binPacked->bin_data->weight ?? 0;
+                            $orderWidgetData['used_weight'] = $binPacked->bin_data->used_weight ?? 0;
                             $orderWidgetData['quantity'] = $quantity;
 
                             $orderWidgetData['nickname'] = Functions::getBoxName($binPacked->bin_data->id);
