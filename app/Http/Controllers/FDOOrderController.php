@@ -249,6 +249,8 @@ class FDOOrderController extends Controller
             $locType = $typeOfShip . $zip;
             $orderWidget[$zip]['loc_code'] = $locType;
             $orderDetails[$locType]['ship_details'] = $orderWidget[$zip];
+            // For Overriding Buf;c
+            $orderDetails[$locType]['ship_details']['items'] = $orderWidget[$zip]['items'];
             // $orderWidget = [];
             $count++;
         }
@@ -256,10 +258,10 @@ class FDOOrderController extends Controller
     }
 
 
-    public function formatOrderDetailItems($orderDetails)
+    public function formatOrderDetailItems($orderDetails): array
     {
-        $formattedItems = [];
         foreach ($orderDetails as $locId => $orderDetail) {
+            $formattedItems = [];
             foreach ($orderDetail['ship_details']['items'] as $item) {
                 $item = (array)$item;
                 if (array_key_exists($item['id'], $formattedItems)) {
