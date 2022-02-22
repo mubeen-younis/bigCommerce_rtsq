@@ -27,7 +27,7 @@ use App\Models\Locations;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BoxSizeController;
-
+use App\Http\Controllers\FDOController;
 
 /*
 |--------------------------------------------------------------------------
@@ -53,7 +53,7 @@ Route::get('/order/{orderId}.json', [\App\Http\Controllers\FDOOrderController::c
 
 // Ws Route For Adding Plan
 Route::post('/save_plan_detail', [CarrierPlanController::class, 'addPlanFromWs']);
-Route::middleware([EnsureTokenIsValid::class])->group(function () {
+Route::middleware([ TokenIsValid::class])->group(function () {
     //========Product Routes
     Route::get('/getProducts', [ProductSettingController::class, 'getAllProducts']);
     Route::get('/import_products', [ProductSettingController::class, 'importProducts']);
@@ -177,6 +177,8 @@ Route::get('/get_conn_settings', [ConnectionController::class, 'index']);
 Route::get('/get_qoute_settings/{carrierId}', [QuoteSettingsController::class, 'getSettings']);
 Route::post('/submit_quote_settings', [QuoteSettingsController::class, 'saveSettings']);
 
+Route::get('/get_fdo_info', [FDOController::class, 'index']);
+Route::post('/update_fdo_connection', [FDOController::class, 'update']);
 /*------Services tab-------*/
 
 
