@@ -197,7 +197,7 @@ class FDOOrderController extends Controller
             $sMethod = isset($shipping_name[1]) ? '(' . $shipping_name[1] : '';
 
             $orderWidget[$zip]['service_name'] = $sName . $sMethod;
-            $orderWidget[$zip]['ship_price'] = '$' . number_format((float)$sRate, 2,);
+            $orderWidget[$zip]['ship_price'] =  number_format((float)$sRate, 2);
             $orderWidget[$zip]['app_name'] = $carrierName;
             $orderWidget[$zip]['carrier_name'] = $carrierName;
 
