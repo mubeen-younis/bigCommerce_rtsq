@@ -363,8 +363,8 @@ class FDOOrderController extends Controller
                             $orderWidgetData['bin_data']['d'] = $binPacked->bin_data->d;
                             $orderWidgetData['bin_data']['w'] = $binPacked->bin_data->w;
                             $orderWidgetData['bin_data']['h'] = $binPacked->bin_data->h;
-                            $orderWidgetData['weight'] = $binPacked->bin_data->weight ?? 0;
-                            $orderWidgetData['used_weight'] = $binPacked->bin_data->used_weight ?? 0;
+                            $orderWidgetData['bin_data']['weight'] = $binPacked->bin_data->weight ?? 0;
+                            $orderWidgetData['bin_data']['used_weight'] = $binPacked->bin_data->used_weight ?? 0;
                             $orderWidgetData['quantity'] = $quantity;
 
                             $orderWidgetData['nickname'] = Functions::getBoxName($binPacked->bin_data->id);
