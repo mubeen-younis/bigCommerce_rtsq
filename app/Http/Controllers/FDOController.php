@@ -12,7 +12,12 @@ class FDOController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index(Request $request)
+    public function index()
+    {
+        //
+    }
+
+    public function getFdoCompanyInfo(Request $request)
     {
         $store = Store::where('id', $request['store_id'])->first();
 
@@ -21,7 +26,6 @@ class FDOController extends Controller
             'message' => '',
         ], 200);
     }
-
     /**
      * Show the form for creating a new resource.
      *
@@ -78,7 +82,7 @@ class FDOController extends Controller
         $messgae = 'FreightDesk Online ';
 
         if ($store) {
-            if ($request['freightdesk_company_id']) {
+            if ($request['freightdesk_company_id'] && isset($request['freightdesk_company_id'])) {
                 $store->freightdesk_company_id = $request['freightdesk_company_id'];
                 $messgae .= 'connected successfully';
             } else {

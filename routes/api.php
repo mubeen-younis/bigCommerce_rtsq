@@ -58,7 +58,7 @@ Route::get('/product/{variantID}.json', [\App\Http\Controllers\FDOProductControl
 
 // Ws Route For Adding Plan
 Route::post('/save_plan_detail', [CarrierPlanController::class, 'addPlanFromWs']);
-Route::middleware([ TokenIsValid::class])->group(function () {
+Route::middleware([EnsureTokenIsValid::class])->group(function () {
     //========Product Routes
     Route::get('/getProducts', [ProductSettingController::class, 'getAllProducts']);
     Route::get('/import_products', [ProductSettingController::class, 'importProducts']);
@@ -139,10 +139,12 @@ Route::middleware([ TokenIsValid::class])->group(function () {
 
     //subscription
     Route::post('/create_subscription', [Subscriptions::class, 'createSubscription']);
-
-
+    
+    
     //stores
     Route::get('/store', [StoreController::class, 'index']);
+    Route::get('/get_fdo_info', [FDOController::class, 'getFdoCompanyInfo']);
+    Route::post('/update_fdo_connection', [FDOController::class, 'update']);
 
     //Start: Subscription Module Routes are given below
     Route::post('/subscribe-plan', [SubscriptionController::class, 'subscribeToPlan']);
@@ -182,8 +184,6 @@ Route::get('/get_conn_settings', [ConnectionController::class, 'index']);
 Route::get('/get_qoute_settings/{carrierId}', [QuoteSettingsController::class, 'getSettings']);
 Route::post('/submit_quote_settings', [QuoteSettingsController::class, 'saveSettings']);
 
-Route::get('/get_fdo_info', [FDOController::class, 'index']);
-Route::post('/update_fdo_connection', [FDOController::class, 'update']);
 /*------Services tab-------*/
 
 
