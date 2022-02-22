@@ -17,15 +17,27 @@ class Functions
         return false;
     }
 
-    public static function getCarrierName($code): ?string
+    public static function getCarrierNameOrCode($code, $getWsCode = 0): ?string
     {
         $carrierCodes = ['wweltl', 'rnlltl', 'xpoltl', 'fedexltl', 'gtzltl', 'cltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd'];
         foreach ($carrierCodes as $carrierCode) {
             if (strpos($code, $carrierCode) !== false) {
-                return self::getCarrierNameFromCode($carrierCode);
+                if ($getWsCode == 0) {
+                    return self::getCarrierNameFromCode($carrierCode);
+                } else {
+                    return self::getCarrierCodeWs($carrierCode);
+                }
             }
         }
         return null;
+    }
+
+    public static function getCarrierCodeWs($carrierCode): ?string
+    {
+        $carrierCodesWithName = ['wweltl' => 'wweLTL', 'rnlltl' => 'rnl', 'xpoltl' => 'xpoLogistics',
+            'fedexltl' => 'fedexLTL', 'gtzltl' => 'globalTranz', 'cltl' => 'cerasis',
+            'parcel_12wwe' => 'wweSmall', 'parcel_12ups' => 'upsSmall', 'parcel_12fd' => 'fedexSmall'];
+        return $carrierCodesWithName[$carrierCode] ?? null;
     }
 
     public static function getCarrierNameFromCode($carrierCode): ?string

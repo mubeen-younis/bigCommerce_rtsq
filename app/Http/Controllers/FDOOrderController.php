@@ -110,7 +110,9 @@ class FDOOrderController extends Controller
             return [];
         }
         $carrierHasInsurance = Functions::hasInsureCarrier($rateId);
-        $carrierName = Functions::getCarrierName($rateId);
+        $carrierName = Functions::getCarrierNameOrCode($rateId);
+        $wsCarrierCode = Functions::getCarrierNameOrCode($rateId, 1);
+
         $index = explode('idx+', $rateId)[1];
         if (!empty($index)) {
             $index = (int)substr($index, 0, 1);
@@ -152,6 +154,7 @@ class FDOOrderController extends Controller
         $code = '';
         $orderDetails = [];
         foreach ($origins as $key => $origin) {
+
             $item = $items->$key;
             $city = $origin->senderCity ? $origin->senderCity . ',' : '';
             $state = $origin->senderState ?? '';
@@ -181,10 +184,11 @@ class FDOOrderController extends Controller
                     $code = $multiShipmentresponse->$index->simple->$zip->code ?? $multiShipmentresponse->$index->liftgate->$zip->code ?? '';
                 }
                 $carrierHasInsurance = $code ? Functions::hasInsureCarrier($code) : false;
-                $carrierName = $code ? Functions::getCarrierName($code) : "Multi Carrier";
+                $carrierName = $code ? Functions::getCarrierNameOrCode($code) : "Multi Carrier";
+                $wsCarrierCode = Functions::getCarrierNameOrCode($rateId, 1);
                 $isMulti = true;
             }
-
+            $handlingUnitDetails = optional($responseFromWS)->$wsCarrierCode->$zip->debug ?? [];
             $shipping_name = explode('(', $order['shipping_name']);
             $sName = $shipping_name[0] ?? '';
             $sName = str_replace(Constant::RESI_LABEL, '', $sName);
@@ -248,6 +252,10 @@ class FDOOrderController extends Controller
             $typeOfShip = $orderWidget[$zip]['ship_type'] == 'Warehouse' ? 'w' : 'd';
             $locType = $typeOfShip . $zip;
             $orderWidget[$zip]['loc_code'] = $locType;
+            if (!$isSmall) {
+                $orderWidget[$zip]['handling_unit_details'] = $handlingUnitDetails;
+            }
+
             $orderDetails[$locType]['ship_details'] = $orderWidget[$zip];
             // For Overriding Buf;c
             $orderDetails[$locType]['ship_details']['items'] = $orderWidget[$zip]['items'];
