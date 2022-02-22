@@ -197,7 +197,7 @@ class FDOOrderController extends Controller
             $sMethod = isset($shipping_name[1]) ? '(' . $shipping_name[1] : '';
 
             $orderWidget[$zip]['service_name'] = $sName . $sMethod;
-            $orderWidget[$zip]['ship_price'] =  number_format((float)$sRate, 2);
+            $orderWidget[$zip]['ship_price'] = number_format((float)$sRate, 2);
             $orderWidget[$zip]['app_name'] = $carrierName;
             $orderWidget[$zip]['carrier_name'] = $carrierName;
 
@@ -360,9 +360,11 @@ class FDOOrderController extends Controller
                             $count = 0;
                             $orderWidgetData['type'] = $type;
                             $orderWidgetData['image_complete'] = $binPacked->image_complete;
-                            $orderWidgetData['d'] = $binPacked->bin_data->d . ' x ';
-                            $orderWidgetData['w'] = $binPacked->bin_data->w . ' x ';
-                            $orderWidgetData['h'] = $binPacked->bin_data->h;
+                            $orderWidgetData['bin_data']['d'] = $binPacked->bin_data->d;
+                            $orderWidgetData['bin_data']['w'] = $binPacked->bin_data->w;
+                            $orderWidgetData['bin_data']['h'] = $binPacked->bin_data->h;
+                            $orderWidgetData['weight'] = $binPacked->bin_data->weight ?? 0;
+                            $orderWidgetData['used_weight'] = $binPacked->bin_data->used_weight ?? 0;
                             $orderWidgetData['quantity'] = $quantity;
 
                             $orderWidgetData['nickname'] = Functions::getBoxName($binPacked->bin_data->id);
