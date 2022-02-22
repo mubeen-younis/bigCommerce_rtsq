@@ -252,7 +252,9 @@ class FDOOrderController extends Controller
             $typeOfShip = $orderWidget[$zip]['ship_type'] == 'Warehouse' ? 'w' : 'd';
             $locType = $typeOfShip . $zip;
             $orderWidget[$zip]['loc_code'] = $locType;
+            $orderWidget[$zip]['carrier_type'] = 'small';
             if (!$isSmall) {
+                $orderWidget[$zip]['carrier_type'] = 'ltl';
                 $orderWidget[$zip]['handling_unit_details'] = $handlingUnitDetails;
             }
 
