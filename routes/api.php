@@ -52,6 +52,8 @@ Route::get('/add_to_test_stores', [MainController::class, 'addTestStore']);
 Route::middleware([\App\Http\Middleware\FDOValidity::class])->group(function () {
     Route::get('/order/{orderId}.json', [\App\Http\Controllers\FDOOrderController::class, 'getOrderDetails']);
     Route::get('/product/{variantID}.json', [\App\Http\Controllers\FDOProductController::class, 'getVariantDetail']);
+    Route::get('/locations.json', [\App\Http\Controllers\FDOLocationsController::class, 'getLocations']);
+
 });
 
 /////
@@ -140,8 +142,8 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
 
     //subscription
     Route::post('/create_subscription', [Subscriptions::class, 'createSubscription']);
-    
-    
+
+
     //stores
     Route::get('/store', [StoreController::class, 'index']);
     Route::get('/get_fdo_info', [FDOController::class, 'getFdoCompanyInfo']);
