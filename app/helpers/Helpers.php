@@ -27,6 +27,33 @@ class Helpers
         }
     }
 
+
+    public static function sendJsonResponse($error, $message, $data = [])
+    {
+        $response = [
+            'error' => $error,
+            'message' => $message,
+        ];
+        if (!blank($data)) {
+            $response['data'] = $data;
+        }
+        return response()->json($response
+            , 200);
+    }
+
+    public static function sendJsonResponseFdo($error, $message, $data = [])
+    {
+        $response = [
+            'error' => $error,
+            'message' => $message,
+        ];
+        if (!blank($data)) {
+            $response['data'] = $data;
+        }
+        return response()->json($response
+            , 200);
+    }
+
     public static function floatValue($number = 0)
     {
         if ($number == 0) {

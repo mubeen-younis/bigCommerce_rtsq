@@ -27,7 +27,7 @@ use App\Models\Locations;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BoxSizeController;
-
+use App\Http\Controllers\FDOController;
 
 /*
 |--------------------------------------------------------------------------
@@ -47,6 +47,15 @@ Route::post('webhooks', [MainController::class, 'addAndUpdateProductFromWebHook'
 Route::post('order/webhooks', [OrderController::class, 'orderFromWebhook']);
 Route::post('sku/webhooks', [ProductSettingController::class, 'skuFromWebhook']);
 Route::get('/add_to_test_stores', [MainController::class, 'addTestStore']);
+
+// FDO ROUTES
+Route::middleware([\App\Http\Middleware\FDOValidity::class])->group(function () {
+    Route::get('/order/{orderId}.json', [\App\Http\Controllers\FDOOrderController::class, 'getOrderDetails']);
+    Route::get('/product/{variantID}.json', [\App\Http\Controllers\FDOProductController::class, 'getVariantDetail']);
+});
+
+/////
+
 
 // Ws Route For Adding Plan
 Route::post('/save_plan_detail', [CarrierPlanController::class, 'addPlanFromWs']);
@@ -131,10 +140,12 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
 
     //subscription
     Route::post('/create_subscription', [Subscriptions::class, 'createSubscription']);
-
-
+    
+    
     //stores
     Route::get('/store', [StoreController::class, 'index']);
+    Route::get('/get_fdo_info', [FDOController::class, 'getFdoCompanyInfo']);
+    Route::post('/update_fdo_connection', [FDOController::class, 'update']);
 
     //Start: Subscription Module Routes are given below
     Route::post('/subscribe-plan', [SubscriptionController::class, 'subscribeToPlan']);
