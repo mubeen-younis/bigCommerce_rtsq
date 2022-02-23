@@ -154,7 +154,7 @@ class FDOOrderController extends Controller
         foreach ($origins as $key => $origin) {
 
             $item = $items->$key;
-            $city = $origin->senderCity ? $origin->senderCity . ',' : '';
+            $city = $origin->senderCity ??   '';
             $state = $origin->senderState ?? '';
             $zip = $origin->locationId != '' ? $origin->locationId : $origin->senderZip;
             $senderZip = $origin->senderZip ?? '';
