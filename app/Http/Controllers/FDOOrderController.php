@@ -149,8 +149,6 @@ class FDOOrderController extends Controller
         $addedInsurance = $addHazmat = false;
 
         $isMulti = false;
-        $insertedIds = $insertedNames = [];
-        //print_r($items); exit;
         $code = '';
         $orderDetails = [];
         foreach ($origins as $key => $origin) {
@@ -189,6 +187,9 @@ class FDOOrderController extends Controller
                 $isMulti = true;
             }
             $handlingUnitDetails = optional($responseFromWS)->$wsCarrierCode->$zip->debug ?? [];
+            if (blank($handlingUnitDetails)){
+                $handlingUnitDetails = optional($responseFromWS)->$wsCarrierCode->$zip->DEBUG ?? [];
+            }
             $shipping_name = explode('(', $order['shipping_name']);
             $sName = $shipping_name[0] ?? '';
             $sName = str_replace(Constant::RESI_LABEL, '', $sName);
