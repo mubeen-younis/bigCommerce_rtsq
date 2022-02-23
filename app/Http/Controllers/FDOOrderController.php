@@ -111,6 +111,7 @@ class FDOOrderController extends Controller
         }
         $carrierHasInsurance = Functions::hasInsureCarrier($rateId);
         $carrierName = Functions::getCarrierNameOrCode($rateId);
+        $isSmall = Functions::isSmallCarrier($rateId);
         $wsCarrierCode = Functions::getCarrierNameOrCode($rateId, 1);
 
         $index = explode('idx+', $rateId)[1];
@@ -184,10 +185,11 @@ class FDOOrderController extends Controller
                 $carrierHasInsurance = $code ? Functions::hasInsureCarrier($code) : false;
                 $carrierName = $code ? Functions::getCarrierNameOrCode($code) : "Multi Carrier";
                 $wsCarrierCode = Functions::getCarrierNameOrCode($rateId, 1);
+                $isSmall = Functions::isSmallCarrier($code);
                 $isMulti = true;
             }
             $handlingUnitDetails = optional($responseFromWS)->$wsCarrierCode->$zip->debug ?? [];
-            if (blank($handlingUnitDetails)){
+            if (blank($handlingUnitDetails)) {
                 $handlingUnitDetails = optional($responseFromWS)->$wsCarrierCode->$zip->DEBUG ?? [];
             }
             $shipping_name = explode('(', $order['shipping_name']);
@@ -232,7 +234,6 @@ class FDOOrderController extends Controller
                     $addHazmat = true;
                 }
             }
-            $isSmall = Functions::isSmallQuote($sName);
             if ($isMulti) {
                 strpos(strtolower($code), '+r') ? array_push($orderWidget[$zip]['accessorials'], 'Residential Delivery') : '';
             } else {
