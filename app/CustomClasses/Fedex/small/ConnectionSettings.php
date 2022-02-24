@@ -6,7 +6,7 @@ use App\CustomClasses\CurlRequest;
 
 class ConnectionSettings
 {
-    private $testConnectionUrl = 'https://eniture-qa.com/ws/s/fedex/fedex_shipment_rates_test.php';
+    private $testConnectionUrl = 'https://eniture.com/ws/s/fedex/fedex_shipment_rates_test.php';
     public function __construct()
     {
         $this->curlRequest = new CurlRequest();

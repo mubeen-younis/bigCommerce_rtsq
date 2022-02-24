@@ -330,7 +330,7 @@ class GenerateRequestData
         $binReponse = $boxBins = [];
         //
         if ($this->storeData['installed_addon_sbs'] && isset($this->storeData['installed_addons'][0]->is_enabled) &&
-            isset($this->storeData['installed_addons'][0]->is_enabled) ) {
+            isset($this->storeData['installed_addons'][0]->is_enabled)) {
             $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? [];
             $this->itemsArr = $itemsArr;
             $this->carriers = $carriers;
@@ -800,7 +800,7 @@ class GenerateRequestData
         }
         $discount = 0;
         if (isset($connSettings['quote_settings']['account_discount']) && $connSettings['quote_settings']['account_discount'] === 2) {
-            $discount = (int)$connSettings['quote_settings']['account_discount_price'] ?? 0;
+            $discount = (float)$connSettings['quote_settings']['account_discount_price'] ?? 0;
         }
         $isShipper = false;
         if (isset($connSettings['creds']['physical_zip'])) {

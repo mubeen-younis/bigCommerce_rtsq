@@ -285,26 +285,33 @@ class LocationsController extends Controller
 
     public function deleteLocation(Request $request)
     {
-        if (empty($request->location_id)) {
-            return response()->json(['error' => true,
-                'data' => [],
-                'message' => 'No Location Id',
-            ], 404);
-        }
-
-        if (Locations::where('id', $request->location_id)->exists()) {
-            if ($request->location_type == "Drop ship") {
-                $this->deleteDropshippedProduct($request->location_id);
+        try {
+            if (empty($request->location_id)) {
+                return response()->json(['error' => true,
+                    'data' => [],
+                    'message' => 'No Location Id',
+                ], 404);
             }
-            Locations::where('id', $request->location_id)->delete();
-            return response()->json(['error' => false,
-                'data' => [],
-                'message' => 'Success! ' . $request->location_type . ' deleted successfully',
-            ], 200);
-        } else {
+
+            if (Locations::where('id', $request->location_id)->exists()) {
+                if ($request->location_type == "Drop ship") {
+                    $this->deleteDropshippedProduct($request->location_id);
+                }
+                Locations::where('id', $request->location_id)->delete();
+                return response()->json(['error' => false,
+                    'data' => [],
+                    'message' => 'Success! ' . $request->location_type . ' deleted successfully',
+                ], 200);
+            } else {
+                return response()->json(['error' => true,
+                    'data' => [],
+                    'message' => 'No Location exists against this Id',
+                ], 404);
+            }
+        } catch (\Exception $exception) {
             return response()->json(['error' => true,
-                'data' => [],
-                'message' => 'No Location exists against this Id',
+                'data' => [$exception->getMessage()],
+                'message' => 'Something went Wrong',
             ], 404);
         }
     }
