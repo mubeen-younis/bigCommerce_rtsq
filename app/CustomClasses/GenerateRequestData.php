@@ -346,13 +346,14 @@ class GenerateRequestData
 
         //
         if ($this->storeData['installed_addon_sbs']) {
-            $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? [];
+            $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ? $carriers['unishippersSmall']['originAddress'] : [];
             $this->itemsArr = $itemsArr;
             $this->carriers = $carriers;
 
             $hasSmall = isset($carriers['wweSmall'])
                 || isset($carriers['upsSmall'])
-                || isset($carriers['fedexSmall']);
+                || isset($carriers['fedexSmall'])
+                || isset($carriers['unishippersSmall']);
             if ($hasSmall) {
                 $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
                 if (empty($multiplePackaging)) {
@@ -365,9 +366,9 @@ class GenerateRequestData
                 $olditemsArr = $itemsArr;
                 $carriersoriginAddress = $carriers['wweSmall']['originAddress']
                     ?? $carriers['upsSmall']['originAddress']
-                    ?? $carriers['fedexSmall']['originAddress'];
+                    ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'];
 
-                if (isset($carriers['fedexSmall'])) {
+                    if (isset($carriers['fedexSmall'])) {
                     $this->checkServiceEnabled();
                     if ($this->ground) {
                         $this->fedexType = 'normal'; // ground services
@@ -412,13 +413,16 @@ class GenerateRequestData
                     $itemsArr = $sbsResponse['items'] ?? $itemsArr;
                 }
 
-
                 if (isset($carriers['wweSmall'])) {
                     $carriers['wweSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                 }
                 if (isset($carriers['upsSmall'])) {
                     $carriers['upsSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                 }
+                if (isset($carriers['unishippersSmall'])) {
+                    $carriers['unishippersSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
+                }
+
                 $binReponse = $sbsResponse['binResponse'] ?? [];
                 $boxBins = $sbsResponse['boxBins'] ?? [];
                 $isLtl = isset($carriers['wweLTL'])
@@ -538,7 +542,7 @@ class GenerateRequestData
                 if ($isShipAsMultiplePackage) {
                     $boxSizeController = new BoxSizeController();
                     $getBoxes = $boxSizeController->getBoxesByProductId($itemsArr[$varriantId]['id']);
-                    if (empty($getBoxes)) {
+                       if (empty($getBoxes)) {
                         return [];
                     } else {
                         foreach ($getBoxes as $key => $box) {
@@ -1165,33 +1169,9 @@ class GenerateRequestData
 
             'prefferedCurrency' => 'USD',
             'includeDeclaredValue' => '1',
-
-            'services' => [
-                'ups_small_pkg_Ground' => $this->issetIndex($carrierServices, 'ups_ground'),
-                'ups_small_pkg_3_Day_Select' => $this->issetIndex($carrierServices, 'ups_3_day_select'),
-
-                'ups_small_pkg_2nd_Day_Air' => $this->issetIndex($carrierServices, 'ups_2nd_day_ air'),
-                'ups_small_pkg_2nd_Day_Air_AM' => $this->issetIndex($carrierServices, 'ups_2nd_day_air_am'),
-
-                'ups_small_pkg_Next_Day_Air' => $this->issetIndex($carrierServices, 'ups_next_day_air'),
-                'ups_small_pkg_Next_Day_Air_Saver' => $this->issetIndex($carrierServices, 'ups_next_day_air_saver'),
-                'ups_small_pkg_Next_Day_Air_Early_AM' => $this->issetIndex($carrierServices, 'ups_next_day_air_early'),
-
-                "ups_small_surepost_less_than_1LB" => $this->issetIndex($carrierServices, 'ups_surepost_less_than_1lb'),
-                "ups_small_surepost_1LB_or_greater" => $this->issetIndex($carrierServices, 'ups_surepost_1lb_or_greater'),
-                "ups_small_surepost_bpm" => $this->issetIndex($carrierServices, 'ups_surepost_bound_printed_matter'),
-                "ups_small_surepost_media_mail" => $this->issetIndex($carrierServices, 'ups_surepost_media_mail'),
-                "ups_small_pkg_Ground_Freight_Pricing" => $this->issetIndex($carrierServices, 'ups_ground_with_freight_pricing'),
-
-                'ups_small_pkg_Standard' => $this->issetIndex($carrierServices, 'ups_standard'),
-                'ups_small_pkg_Worldwide_Express' => $this->issetIndex($carrierServices, 'ups_worldwide_express'),
-                'ups_small_pkg_Worldwide_Express_Plus' => $this->issetIndex($carrierServices, 'ups_worldwide_express_plus'),
-                'ups_small_pkg_Worldwide_Expedited' => $this->issetIndex($carrierServices, 'ups_worldwide_expedited'),
-                'ups_small_pkg_Saver' => $this->issetIndex($carrierServices, 'ups_worldwide_saver'),
-                'ups_small_pkg_aditional_handling' => $this->issetIndex($carrierServices, 'ups_ground_with_freight_pricing')
-            ],
+            'service' => 'ALL',
         ];
-        
+
         return $apiArray;
     }
 

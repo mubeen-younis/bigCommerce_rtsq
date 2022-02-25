@@ -2027,9 +2027,9 @@ class CompileQuotes
     }
 
 
-    private function compileUnishippersSmallQuotes($shipments, $connectionSettings, $allOrigins,$smalLtlHazmat, $hazmatAllItems, $residential)
+    private function compileUnishippersSmallQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
-        $this->upsSmallQuotesResults = new unishippersSmallQuotesResults();
+        $this->unishippersSmallQuotesResults = new unishippersSmallQuotesResults();
         if ($residential['unishippersSmall'] == 'Y') {
             $this->isResi = true;
             $this->residentialDlvry = 1;
@@ -2039,7 +2039,7 @@ class CompileQuotes
         }
         $this->alwaysResi = $this->residential['alwaysResi']['unishippersSmall'] ?? false;
         $access = $this->getAccessorialCodeSmall();
-        $res = $this->unishippersSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment);
+        $res = $this->unishippersSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment); 
 
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = $res['isMultiShipment'];

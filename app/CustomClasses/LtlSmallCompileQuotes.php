@@ -266,7 +266,7 @@ class LtlSmallCompileQuotes{
     }
 
     private function requestContainSmallLlt($carriers, $quotes){
-        $smallCarriers = ['wweSmall','upsSmall', 'fedexSmall'];
+        $smallCarriers = ['wweSmall','upsSmall', 'fedexSmall', 'unishippersSmall'];
         $ltlCarriers = ['wweLTL','upsLTL', 'fedexLTL', 'globalTranz', 'cerasis', 'xpoLogistics', 'rnl'];
         $ltl = $small = false;
         foreach ($smallCarriers as $carName){
