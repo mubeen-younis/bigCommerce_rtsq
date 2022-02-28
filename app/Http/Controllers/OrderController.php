@@ -140,6 +140,7 @@ class OrderController extends Controller
         $isOwnArrangement = strpos($rateId, 'own_arrangement') === 0 || strpos($rateId, 'freernlltl') === 0 ? true : false;
         $lineItem = json_decode($data['lineitems'])->lineItemData;
         $responseFromWS = json_decode($data['quotes']);
+        $shippingGroupResp = !blank($data['shipping_group_resp']) ? json_decode($data['shipping_group_resp']) : [];
 
         $requestToWS = json_decode($data['request']);
         $lineItem->items = $this->formateItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
@@ -259,6 +260,12 @@ class OrderController extends Controller
                 }
                 $carrierHasInsurance = $code ? $this->hasInsureCarrier($code) : false;
 
+                /*Added condition if in case of multi shipment
+                The rate of shipping group will be added to warehouse rate*/
+                if ($shippingGroupResp != null && $orderWidget[$zip]['locationtype'] == "Warehouse") {
+                    $shippingGroupRate = $shippingGroupResp[0]['rate'] ?? 0;
+                    $sRate = $sRate + $shippingGroupRate;
+                }
                 $isMulti = true;
             }
 

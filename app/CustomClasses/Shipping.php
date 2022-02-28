@@ -188,12 +188,16 @@ class Shipping
                 $finalQuotes = $this->removeParcelIfLtl($finalQuotes);
             }
         }
+
+        /*Adding shipping group rates response in quotes
+        */
         if (!blank($this->shippingGroupResponse)) {
             $items = data_get($request, 'lineItemData.items');
             $items = $items + $itemsWithShippingGroup;
             $request['lineItemData']['items'] = $items;
             $finalQuotes = $this->addShipGroupRatesInQuotes($finalQuotes);
         }
+        
         $finalQuotes = $this->addRateId($finalQuotes);
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
         $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
@@ -258,6 +262,11 @@ class Shipping
     private function makeMultishipmentSmallLtl($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr)
     {
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
+        /*
+         * Need to add entry if every carrier here as well
+         * there is some caompatibility code of multi shipment here
+         *
+         * */
         $resp = $ltlSmallCompileQuotes->compileQuotes($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr);
         return $resp;
     }
@@ -471,6 +480,7 @@ class Shipping
             $RequestTempData->rate_id = $finalQuote['rate_id'];
             $RequestTempData->cart_id = $cartInfo['cartId'];
             $RequestTempData->box_bins = json_encode($boxbins);
+            $RequestTempData->shipping_group_resp = !blank($this->shippingGroupResponse) ? json_encode($this->shippingGroupResponse) : null;
             $RequestTempData->save();
         }
     }
