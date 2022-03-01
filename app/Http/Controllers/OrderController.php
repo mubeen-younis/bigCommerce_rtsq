@@ -124,13 +124,15 @@ class OrderController extends Controller
             return [];
         }
         $carrierHasInsurance = $this->hasInsureCarrier($rateId);
+        $index = explode('idx+', $rateId);
+        if (is_string($index[0]) && $index[0]== "shippingGroup") {
+            return $this->shippingGroupOrderWidget($data, $order);
+        }
         $index = explode('idx+', $rateId)[1];
         if (!empty($index)) {
             $index = (int)substr($index, 0, 1);
         }
-        if (is_string($index) && $index == "shippingGroup") {
-            return $this->shippingGroupOrderWidget($data, $order);
-        }
+
         $isSmallLtlrate = substr($rateId, 0, 5) == 'multi' ? true : false;
         $isHAT = strpos(strtolower($rateId), '+hat');
 
