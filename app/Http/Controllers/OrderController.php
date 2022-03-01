@@ -125,7 +125,7 @@ class OrderController extends Controller
         }
         $carrierHasInsurance = $this->hasInsureCarrier($rateId);
         $index = explode('idx+', $rateId);
-        if (is_string($index[0]) && $index[0]== "shippingGroup") {
+        if (is_string($index[0]) && $index[0] == "shippingGroup") {
             return $this->shippingGroupOrderWidget($data, $order);
         }
         $index = explode('idx+', $rateId)[1];
@@ -265,7 +265,7 @@ class OrderController extends Controller
                 /*Added condition if in case of multi shipment
                 The rate of shipping group will be added to warehouse rate*/
                 if ($shippingGroupResp != null && $orderWidget[$zip]['locationtype'] == "Warehouse") {
-                    $shippingGroupRate = $shippingGroupResp[0]['rate'] ?? 0;
+                    $shippingGroupRate = $shippingGroupResp[0]->rate ?? 0;
                     $sRate = $sRate + $shippingGroupRate;
                 }
                 $isMulti = true;
