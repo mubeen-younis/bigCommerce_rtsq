@@ -461,11 +461,12 @@ class SubscriptionController extends Controller
                 Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, 3));
             } else {
                 Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, 1));
-
                 /*
                   * Update WS graph data
                   * */
-                SaleGraphController::updateGraphData();
+                if (!$isTestStore) {
+                    SaleGraphController::updateGraphData();
+                }
             }
             return response()->json([
                 'error' => false,
