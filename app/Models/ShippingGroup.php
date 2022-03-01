@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Constants\Constant;
 use App\Helpers\Helper;
+use App\Helpers\Helpers;
 use Illuminate\Database\Eloquent\Model;
 use Psy\Util\Str;
 
@@ -115,7 +116,7 @@ class ShippingGroup extends Model
             $save = 0;
         } else {
             $shippingGroup = new self();
-            $shippingGroup->uuid = Helper::getUuid();
+            $shippingGroup->uuid = Helpers::getUuid();
             $message = 'added successfully.';
             $save = 1;
         }
