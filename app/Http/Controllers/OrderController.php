@@ -128,7 +128,7 @@ class OrderController extends Controller
         if (!empty($index)) {
             $index = (int)substr($index, 0, 1);
         }
-        if ($index == "shippingGroup") {
+        if (is_string($index) && $index == "shippingGroup") {
             return $this->shippingGroupOrderWidget($data, $order);
         }
         $isSmallLtlrate = substr($rateId, 0, 5) == 'multi' ? true : false;
