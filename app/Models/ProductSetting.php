@@ -12,7 +12,7 @@ class ProductSetting extends Model
 
     protected $table = 'product_settings';
     protected $fillable = [
-        'settings', 'dropship_location', 'dropship_enabled'
+        'settings', 'dropship_location', 'dropship_enabled','shipping_group','shipping_group_enabled'
     ];
 
     public static function deleteIfDropProduct($dropshipId)
@@ -28,6 +28,11 @@ class ProductSetting extends Model
                 $settings['dropship_location'] = null;
                 self::where('id', $product->id)->update(['settings' => $settings]);
             }*/
+    }
+
+    public static function updateShippingGroupProduct($shippingGroupId)
+    {
+        self::where('shipping_group', $shippingGroupId)->update(['shipping_group' => null, 'shipping_group_enabled' => false]);
     }
 
     public function saveProduct($product, $storeId)

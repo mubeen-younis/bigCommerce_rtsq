@@ -28,7 +28,17 @@ class ShippingGroup extends Model
 
     public static function deleteShippingGroup($uuid)
     {
+        $id = optional(self::where('uuid', $uuid)->first())->id;
+        if (!blank($id)) {
+            self::updateShippingGroupProduct($id);
+        }
         self::where('uuid', $uuid)->delete();
+    }
+
+
+    public static function updateShippingGroupProduct($id)
+    {
+        ProductSetting::updateShippingGroupProduct($id);
     }
 
     /**
