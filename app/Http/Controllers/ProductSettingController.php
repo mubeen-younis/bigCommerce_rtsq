@@ -383,6 +383,14 @@ class ProductSettingController extends Controller
                 $product->dropship_location = null;
             }
 
+            if (isset($prd['shipping_group_enabled']) && $prd['shipping_group_enabled']) {
+                $product->shipping_group_enabled = true;
+                $product->shipping_group = $prd['shipping_group'] ?? null;
+            } else {
+                $product->shipping_group_enabled = false;
+                $product->shipping_group = null;
+            }
+
             $product->settings = json_encode($this->getSetting($prd));
             /*json_encode($prd->only(['dropship_enabled', 'dropship_location', 'freight_class',
                 'hazardous_enabled', 'freight_enabled', 'parcel_enabled', 'insurance']));*/
