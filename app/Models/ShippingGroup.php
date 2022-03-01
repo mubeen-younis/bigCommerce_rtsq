@@ -46,9 +46,10 @@ class ShippingGroup extends Model
         }
         $rate = 0;
         $response = [];
+        $title = [];
         foreach ($groupItemsByShippingGroup as $shippingGroupId => $group) {
             $groupDetail = self::getShippingGroupDetail($shippingGroupId);
-            $response[0]['title'] = $groupDetail['checkout_description'];
+            $response[0]['title'] = $title[] = $groupDetail['checkout_description'];
             if ($groupDetail['rate_x_quantity']) {
                 $rate += self::getSumAftermultipItemGroupwithQty($group, $groupDetail['rate']);
             } else {
@@ -56,7 +57,12 @@ class ShippingGroup extends Model
             }
         }
         if (count($groupItemsByShippingGroup) > 1) {
-            $response[0]['title'] = "Shipping";
+            if (count(array_unique($title)) == 1) {
+                $response[0]['title'] = $title[0] ?? "Shipping";
+            } else {
+                $response[0]['title'] = "Shipping";
+
+            }
         }
         $response[0]['rate'] = $rate;
         $response[0]['code'] = "shippingGroup";
