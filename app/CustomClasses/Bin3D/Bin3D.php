@@ -255,7 +255,7 @@ class Bin3D
          * Check hash if available same request in last 24 hours then no need to send request to 3dbin
          * **/
         if (BinRequestLog::where('request_hash', '=', $requestHash)->where('created_at', '>', Carbon::now()->subDay(1))->exists()) {
-            $response = BinRequestLog::select('api_response')->where('request_hash', '=', $requestHash)->where('created_at', '>', Carbon::now()->subDay(1))->first();
+            $response = BinRequestLog::select('api_response')->where('request_hash', '=', $requestHash)->where('created_at', '>', Carbon::now()->subDay(1))->latest()->first();
             return (array)json_decode($response['api_response']);
         }
         $binRequestLog = new BinRequestLog();
@@ -314,7 +314,7 @@ class Bin3D
         }
         // close multi handle
         curl_multi_close($mh);
-        $extBoxDimOfPackBoxes = $this->AddExtDimOnPackedBox($responses);
+        $extBoxDimOfPackBoxes = $this->addExtDimOnPackedBox($responses);
         $binRequestLog = BinRequestLog::find($binRequestLogId);
         $binRequestLog->api_response = json_encode($extBoxDimOfPackBoxes);
         $binRequestLog->not_updated_api_response = json_encode($responses);
@@ -323,7 +323,7 @@ class Bin3D
         return $extBoxDimOfPackBoxes;
     }
 
-    private function AddExtDimOnPackedBox($responses)
+    private function addExtDimOnPackedBox($responses)
     {
         foreach ($responses as $locId => $response) {
             $decResp = json_decode($response);
