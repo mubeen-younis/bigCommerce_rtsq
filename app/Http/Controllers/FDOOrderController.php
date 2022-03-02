@@ -155,7 +155,7 @@ class FDOOrderController extends Controller
         foreach ($origins as $key => $origin) {
 
             $item = $items->$key;
-            $city = $origin->senderCity ??   '';
+            $city = $origin->senderCity ?? '';
             $state = $origin->senderState ?? '';
             $zip = $origin->locationId != '' ? $origin->locationId : $origin->senderZip;
             $senderZip = $origin->senderZip ?? '';
@@ -347,7 +347,7 @@ class FDOOrderController extends Controller
                         } else if ($rateType == "one_rate") {
                             $sbsData = $ws->binPackagingData->response->oneRate->bins_packed;
                         } else {
-                            $sbsData = $ws->binPackagingData->response->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->oneRate->bins_packed;
+                            $sbsData = $ws->binPackagingData->response->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->oneRate->bins_packed ?? [];
                         }
                         $itemCount = 0;
                         foreach ($sbsData as $key => $binPacked) {
@@ -392,7 +392,7 @@ class FDOOrderController extends Controller
                                 $packagingDetail[$zip]['all_boxes_rtsq'][$key]['number_of_items'] = $count;
                             }
                         }
-                        $totalBoxes = $key + 1 - $itemCount;
+                        $totalBoxes = isset($key) ? $key + 1 - $itemCount : 0;
 
 
                     }
