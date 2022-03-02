@@ -172,7 +172,7 @@ class OrderController extends Controller
                     $totalBoxes = 1;
                     if (isset($ws->binPackagingData) && !empty($ws->binPackagingData) && $isSmallrate) {
                         if ($isGround) {
-                            $sbsData = $ws->binPackagingData->response->ground->bins_packed;
+                            $sbsData = $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->bins_packed ?? [];
                         } else if ($isAir) {
                             $sbsData = $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->bins_packed ?? [];
                         } else if ($isOneRate) {
