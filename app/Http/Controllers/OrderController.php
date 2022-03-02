@@ -174,9 +174,9 @@ class OrderController extends Controller
                         if ($isGround) {
                             $sbsData = $ws->binPackagingData->response->ground->bins_packed;
                         } else if ($isAir) {
-                            $sbsData = $ws->binPackagingData->response->air->bins_packed;
+                            $sbsData = $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->bins_packed ?? [];
                         } else if ($isOneRate) {
-                            $sbsData = $ws->binPackagingData->response->oneRate->bins_packed;
+                            $sbsData = $ws->binPackagingData->response->oneRate->bins_packed ?? [];
                         } else {
                             $sbsData = $ws->binPackagingData->response->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->oneRate->bins_packed ?? [];
                         }
