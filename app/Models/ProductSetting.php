@@ -12,7 +12,7 @@ class ProductSetting extends Model
 
     protected $table = 'product_settings';
     protected $fillable = [
-        'settings', 'dropship_location', 'dropship_enabled','shipping_group','shipping_group_enabled'
+        'settings', 'dropship_location', 'dropship_enabled', 'shipping_group', 'shipping_group_enabled'
     ];
 
     public static function deleteIfDropProduct($dropshipId)
@@ -57,10 +57,19 @@ class ProductSetting extends Model
         $saveProduct->width = $product['width'];
         $saveProduct->height = $product['height'];
         $saveProduct->price = $product['price'];
-        $product_settings = new stdClass();
-        $product_settings->insurance = false;
-        $product_settings->freight_enabled = false;
-        //$saveProduct->settings = json_encode($product_settings);
+        
+        /*Start - Added FOr Default Quoting Method*/
+        $productSettings = new stdClass();
+        if (!empty($product['weight']) && $product['weight'] > 150) {
+            $productSettings->freight_enabled = true;
+            $productSettings->parcel_enabled = false;
+        } else {
+            $productSettings->freight_enabled = false;
+            $productSettings->parcel_enabled = true;
+        }
+        $saveProduct->settings = json_encode($productSettings);
+        /*END*/
+
         $saveProduct->store_id = $storeId;
         $saveProduct->save();
     }
