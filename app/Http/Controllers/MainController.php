@@ -351,6 +351,7 @@ class MainController extends BaseController
     {
         try {
             $postData = file_get_contents("php://input");
+            Log::info('Products data ' . $postData);
             $postData = json_decode($postData, true);
             $storeHash = explode('/', $postData['producer']);
             $storeHash = $storeHash[1];
@@ -371,8 +372,9 @@ class MainController extends BaseController
             }
             $prodSetCon = new ProductSettingController();
             $prodSetCon->getSingleProductFromApi($toRequest);
+            Log::info('Successfully imported product' . json_encode($toRequest));
         } catch (\Exception $exception) {
-            //  Have to LOg Here
+            Log::info('Products data Exception ' . $exception->getMessage());
         }
 
 //        echo 'I am from Webhook';
