@@ -53,7 +53,7 @@ class Shipping
         $resp = $generateReqData->generateEnitureArray($originAddress, $destination, $package['items']);
         $residential = $resp['residential'];
         $carriersArray = $resp['carriersArr'];
-
+        
         // Checking if any productis hazardous
         $hazmatAllItems = $this->isHazmatMaterial($package);
 

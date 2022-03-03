@@ -42,7 +42,8 @@ class QuotesResults
                 continue;
             }
 
-            if ($count == 0) { //To be checked only once
+            if ($count == 0) {
+                //To be checked only once
                 // $this->getAutoResidentialTitle('');
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
                 unset($quote['InstorPickupLocalDelivery']);
@@ -91,13 +92,46 @@ class QuotesResults
                     $price = (float) str_replace(',', '', $price);
 
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12unishippers' . $srvcType . $access;
-                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
+                    $originQuotes[
+                        $shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
 
                     $multiShipmentQuotes[$origin][$key] = $originQuotes[$shipmentCount]['shipment'][$key]['simple'];
                 }
             }
+
             $shipmentCount++;
+
+            //$multiShipmentQuotes = $this->sortByOrder($multiShipmentQuotes, 'rate');
+            // Check for multi-shipment, finding lowest price in each shipment and adding them for multi shipment
+            if ($isMultiShipment) {
+                $originQuotesMulti = [];
+                $multiShipPrice = 0;
+
+                foreach ($originQuotes as $shipmentKey => $shipment) {
+                    $netChargeArray = array_column($shipment['shipment'], 'simple');
+                    $minValueFromNetChargeArr = min(array_column($netChargeArray, 'rate'));
+
+                    $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
+                    $originQuotesMulti[0]['code'] = 'Multiups' . $access;
+                    $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
+                    $originQuotesMulti[0]['title'] = $residential ? 'Shipping' . Constant::RESI_LABEL : 'Shipping';
+                }
+
+                foreach ($multiShipmentQuotes as $shipmentKey => $shipment) {
+                    $keys = array_column($shipment, 'rate');
+                    array_multisort($keys, SORT_ASC, $shipment);
+                    $multiShipmentQuote['simple'][$shipmentKey] = array_values($shipment)[0];
+                }
+
+                $resp = [
+                    'checkoutQuotes' => $originQuotesMulti,
+                    'multiShipmentQuotes' => $multiShipmentQuote,
+                ];
+                $returnResp['resp'] = $resp;
+
+                return $returnResp;
+            }
 
             // Handling single shipment
             if (!empty($originQuotes)) {
@@ -145,11 +179,13 @@ class QuotesResults
                 break;
             }
         }
+
         foreach ($shipments as $shipment => $quotes) {
             $temp = [];
             if (!isset($quotes['q'])) {
                 continue;
             }
+
             foreach ($quotes['q'] as $key => $quote) {
                 if (!isset($quote['severity']) && isset($servicesDesc[$key])) {
                     if (!in_array($quote['totalNetCharge']['Amount'], $temp)) {
@@ -229,9 +265,11 @@ class QuotesResults
 
     private function onylQuoteGroundServices($isHazmat, $srvcType)
     {
+        $grdServicesArr = ['SG', 'SGR'];
         $grdSrvcForHazMat = $this->quoteSettings['ground_service_for_hazardous_material'] ?? false;
+
         if ($isHazmat && isset($grdSrvcForHazMat) && $grdSrvcForHazMat) {
-            if ($srvcType != 'SG' && $srvcType != 'SGR') {
+            if (!in_array($srvcType, $grdServicesArr)) {
                 return true;
             }
         }
@@ -241,78 +279,16 @@ class QuotesResults
 
     private function getServiceIndexFromServiceType($srvcType)
     {
-        switch ($srvcType) {
-            case 'ND':
-                return 'ups_next_day_air';
-            case 'ND4':
-                return 'ups_next_day_air_saver';
-            case 'ND5':
-                return 'ups_next_day_air_early_am';
-            case 'SC':
-                return 'ups_2nd_day_air';
-            case 'SC25':
-                return 'ups_2nd_day_air_am';
-            case 'SC3':
-                return 'ups_3_day_select';
-            case 'SG':
-                return 'ups_ground';
-            case 'SGR':
-                return 'ups_ground_residential_delivery';
-            case 'SND':
-                return 'ups_next_day_air_saturday';
-            case 'SND5':
-                return 'ups_next_day_air_early_am_saturday';
-            case 'SSC':
-                return 'ups_2nd_day_air_saturday';
-            case 'ZZ1':
-                return 'ups_worldwide_express';
-            case 'ZZ2':
-                return 'ups_worldwide_expedited';
-            case 'ZZ90':
-                return 'ups_worldwide_saver';
-            case 'ZZ11':
-                return 'ups_standard';
-            default:
-                break;
-        }
+        $indexesArr = ['ND' => 'ups_next_day_air', 'ND4' => 'ups_next_day_air_saver', 'ND5' => 'ups_next_day_air_early_am', 'SC' => 'ups_2nd_day_air', 'SC25' => 'ups_2nd_day_air_am', 'SC3' => 'ups_3_day_select', 'SG' => 'ups_ground', 'SGR' => 'ups_ground_residential_delivery', 'SND' => 'ups_next_day_air_saturday', 'SND5' => 'ups_next_day_air_early_am_saturday', 'SSC' => 'ups_2nd_day_air_saturday', 'ZZ1' => 'ups_worldwide_express', 'ZZ2' => 'ups_worldwide_expedited', 'ZZ90' => 'ups_worldwide_saver', 'ZZ11' => 'ups_standard'];
+
+        return $indexesArr[$srvcType] ?? '';
     }
 
     private function getServiceTitleFromServiceType($srvcType)
     {
-        switch ($srvcType) {
-            case 'ND':
-                return 'UPS Next Day Air';
-            case 'ND4':
-                return 'UPS Next Day Air Saver';
-            case 'ND5':
-                return 'UPS Next Day Air Early A.M.';
-            case 'SC':
-                return 'UPS 2nd Day Air';
-            case 'SC25':
-                return 'UPS 2nd Day Air A.M.';
-            case 'SC3':
-                return 'UPS 3 Day Select';
-            case 'SG':
-                return 'UPS Ground';
-            case 'SGR':
-                return 'UPS Ground (Residential Delivery)';
-            case 'SND':
-                return 'Saturday - UPS Next Day Air';
-            case 'SND5':
-                return 'Saturday - UPS Next Day Air Early A.M.';
-            case 'SSC':
-                return 'Saturday - UPS 2nd Day Air';
-            case 'ZZ1':
-                return 'Worldwide Express';
-            case 'ZZ2':
-                return 'Worldwide Expedited';
-            case 'ZZ90':
-                return 'Worldwide Saver';
-            case 'ZZ11':
-                return 'Standard (Canada)';
-            default:
-                break;
-        }
+        $titlesArr = ['ND' => 'UPS Next Day Air', 'ND4' => 'UPS Next Day Air Saver', 'ND5' => 'UPS Next Day Air Early A.M.', 'SC' => 'UPS 2nd Day Air', 'SC25' => 'UPS 2nd Day Air A.M.', 'SC3' => 'UPS 3 Day Select', 'SG' => 'UPS Ground', 'SGR' => 'UPS Ground (Residential Delivery)', 'SND' => 'Saturday - UPS Next Day Air', 'SND5' => 'Saturday - UPS Next Day Air Early A.M.', 'SSC' => 'Saturday - UPS 2nd Day Air', 'ZZ1' => 'Worldwide Express', 'ZZ2' => 'Worldwide Expedited', 'ZZ90' => 'Worldwide Saver', 'ZZ11' => 'Standard (Canada)'];
+
+        return $titlesArr[$srvcType] ?? '';
     }
 
     public function addHazmatAmountsInServices($amount, $serviceCode)
