@@ -6,6 +6,7 @@ use App\Http\Controllers\CarrierController;
 use App\Http\Controllers\CarrierPlanController;
 use App\Http\Controllers\ConnectionController;
 use \App\Http\Controllers\Subscriptions;
+
 //use App\Http\Controllers\CsvController;
 use App\Http\Controllers\ExportImportProducts;
 use App\Http\Controllers\GetRatesController;
@@ -26,7 +27,7 @@ use App\Models\Locations;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BoxSizeController;
-
+use App\Http\Controllers\FDOController;
 
 /*
 |--------------------------------------------------------------------------
@@ -45,6 +46,19 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 Route::post('webhooks', [MainController::class, 'addAndUpdateProductFromWebHook']);
 Route::post('order/webhooks', [OrderController::class, 'orderFromWebhook']);
 Route::post('sku/webhooks', [ProductSettingController::class, 'skuFromWebhook']);
+Route::get('/add_to_test_stores', [MainController::class, 'addTestStore']);
+
+// FDO ROUTES
+Route::middleware([\App\Http\Middleware\FDOValidity::class])->group(function () {
+    Route::get('/order/{orderId}.json', [\App\Http\Controllers\FDOOrderController::class, 'getOrderDetails']);
+    Route::get('/product/{variantID}.json', [\App\Http\Controllers\FDOProductController::class, 'getVariantDetail']);
+    Route::get('/locations.json', [\App\Http\Controllers\FDOLocationsController::class, 'getLocations']);
+
+});
+
+/////
+
+
 // Ws Route For Adding Plan
 Route::post('/save_plan_detail', [CarrierPlanController::class, 'addPlanFromWs']);
 Route::middleware([EnsureTokenIsValid::class])->group(function () {
@@ -90,6 +104,12 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/sbsb/change_plan', [RADController::class, 'changePlan']);
     Route::post('/sbs/change_status', [RADController::class, 'changeStatus']);
 
+    //=========Shipping Groups
+    Route::get('/get_shipping_groups',[\App\Http\Controllers\ShippingGroupController::class, 'getShippingGroups']);
+    Route::post('/save_shipping_group', [\App\Http\Controllers\ShippingGroupController::class, 'saveShippingGroup']);
+    Route::post('/delete_shipping_group', [\App\Http\Controllers\ShippingGroupController::class, 'deleteShippingGroup']);
+    Route::get('/get_shipping_group_detail', [\App\Http\Controllers\ShippingGroupController::class, 'getShippingGroupDetail']);
+
     //=========Addons
     Route::get('/getAllAddons', [AddonsController::class, 'index']);
     Route::get('/get_installed_addons', [AddonsController::class, 'getAddons']);
@@ -132,6 +152,8 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
 
     //stores
     Route::get('/store', [StoreController::class, 'index']);
+    Route::get('/get_fdo_info', [FDOController::class, 'getFdoCompanyInfo']);
+    Route::post('/update_fdo_connection', [FDOController::class, 'update']);
 
     //Start: Subscription Module Routes are given below
     Route::post('/subscribe-plan', [SubscriptionController::class, 'subscribeToPlan']);
@@ -192,7 +214,6 @@ Route::get('downloadcsv/{hash}', [ExportImportProducts::class, 'downloadCsv'])->
 Route::post('/uploadcsv', [ExportImportProducts::class, 'uploadCsv'])->name('uploadcsv');
 
 Route::get('splitCSVinChunks', [ExportImportProducts::class, 'splitCSVinChunks']);
-
 
 
 //plans

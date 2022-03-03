@@ -9,10 +9,31 @@ use stdClass;
 class ProductSetting extends Model
 {
     use HasFactory;
+
     protected $table = 'product_settings';
     protected $fillable = [
-        'settings',
+        'settings', 'dropship_location', 'dropship_enabled','shipping_group','shipping_group_enabled'
     ];
+
+    public static function deleteIfDropProduct($dropshipId)
+    {
+        self::where('dropship_location', $dropshipId)->update(['dropship_location' => null, 'dropship_enabled' => false]);
+        /*    $products = self::where('settings', '!=', null)->whereJsonContains('settings', ['dropship_location' => "" . $dropshipId])->get();
+            foreach ($products as $product) {
+                $settings = json_decode($product->settings, true);
+                if (blank($settings)) {
+                    continue;
+                }
+                $settings['dropship_enabled'] = false;
+                $settings['dropship_location'] = null;
+                self::where('id', $product->id)->update(['settings' => $settings]);
+            }*/
+    }
+
+    public static function updateShippingGroupProduct($shippingGroupId)
+    {
+        self::where('shipping_group', $shippingGroupId)->update(['shipping_group' => null, 'shipping_group_enabled' => false]);
+    }
 
     public function saveProduct($product, $storeId)
     {

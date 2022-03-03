@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\CurlRequest;
 use App\Models\Locations;
+use App\Models\ProductSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -284,26 +285,40 @@ class LocationsController extends Controller
 
     public function deleteLocation(Request $request)
     {
-        if (empty($request->location_id)) {
+        try {
+            if (empty($request->location_id)) {
+                return response()->json(['error' => true,
+                    'data' => [],
+                    'message' => 'No Location Id',
+                ], 404);
+            }
+
+            if (Locations::where('id', $request->location_id)->exists()) {
+                if ($request->location_type == "Drop ship") {
+                    $this->deleteDropshippedProduct($request->location_id);
+                }
+                Locations::where('id', $request->location_id)->delete();
+                return response()->json(['error' => false,
+                    'data' => [],
+                    'message' => 'Success! ' . $request->location_type . ' deleted successfully',
+                ], 200);
+            } else {
+                return response()->json(['error' => true,
+                    'data' => [],
+                    'message' => 'No Location exists against this Id',
+                ], 404);
+            }
+        } catch (\Exception $exception) {
             return response()->json(['error' => true,
-                'data' => [],
-                'message' => 'No Location Id',
+                'data' => [$exception->getMessage()],
+                'message' => 'Something went Wrong',
             ], 404);
         }
+    }
 
-        if (Locations::where('id', $request->location_id)->exists()) {
-            Locations::where('id', $request->location_id)->delete();
-
-            return response()->json(['error' => false,
-                'data' => [],
-                'message' => 'Success! ' . $request->location_type . ' deleted successfully',
-            ], 200);
-        } else {
-            return response()->json(['error' => true,
-                'data' => [],
-                'message' => 'No Location exists against this Id',
-            ], 404);
-        }
+    public function deleteDropshippedProduct($dropshipId)
+    {
+        ProductSetting::deleteIfDropProduct($dropshipId);
     }
 
     public function getLocationFromZip(Request $request)

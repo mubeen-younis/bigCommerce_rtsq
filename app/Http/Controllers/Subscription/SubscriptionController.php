@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\HubSpotController;
 use App\Http\Controllers\SaleGraphController;
 use App\Mail\PaymentFailedByWebHookEmail;
+use App\Models\InstalledCarrier;
 use App\Models\Subscription\CarrierCount;
 use App\Models\Subscription\PaymentMethod;
 use App\Models\Subscription\Plan;
@@ -37,7 +38,7 @@ class SubscriptionController extends Controller
 
     public function __construct()
     {
-        Stripe::setApiKey(config('app.stripe_secret'));
+        // Stripe::setApiKey(config('app.stripe_secret'));
     }
 
     public function validateRequest($request)
@@ -288,7 +289,8 @@ class SubscriptionController extends Controller
             $hubSpotController = new HubSpotController();
             //Check: If current carriers installed are more than the choosed plan then return with message
             $currentSubscriptionDetail = $this->subscriptionDetailFromDB($request['store_id']);
-            self::getPlansDetails($request['plan']);   //Getting Plan detail from DB
+            $isTestStore = $request['is_test_store'] ?? false;
+            self::getPlansDetails($request['plan'], $isTestStore);   //Getting Plan detail from DB
             $newPlanAllowedCarriers = self::$plansData['carrier_count'];
             if (!is_null($currentSubscriptionDetail) && $currentSubscriptionDetail->total_installed_carriers > $newPlanAllowedCarriers) {
                 return response()->json([
@@ -371,6 +373,18 @@ class SubscriptionController extends Controller
                 $this->updateSubscriptionInDB($updateSubResponse['data'], $oldSubscription);
                 //Getting Current Plan Detail
                 $updateSubResponse['data'] = $this->subscriptionDetailFromDB($data['store_id']);
+                Log::info('Email of old subscription' . $oldSubscription->email);
+                $mailToSend = isset($data['email']) && !empty($data['email']) ? $data['email'] : (isset($oldSubscription->email) && !empty($oldSubscription->email) ? $oldSubscription->email : null);
+                if (!empty($mailToSend)) {
+                    $emailData = array(
+                        'receiverEmail' => $mailToSend,
+                        'productName' => 'Real-time Shipping Quotes',
+                        'planName' => self::$plansData['name'],
+                        'endsAt' => $updateSubResponse['data']->ends_at ?? null,
+                        'action' => 'IPF'       // Invoice Payment Failed
+                    );
+                    Mail::to($emailData['receiverEmail'])->send(new PaymentFailedByWebHookEmail($emailData, 1));
+                }
                 return response()->json($updateSubResponse, 200);
             }
             //END: Upgrade or DownGrade Plans
@@ -402,7 +416,7 @@ class SubscriptionController extends Controller
                     'address' => $request['address'] ?? '',
                     'phone' => $request['phone'] ?? '',
                 ];
-                $status = [ 'products_purchased' => true ];
+                $status = ['products_purchased' => true];
                 $hubSpotController->createUpdateHubSpotUser($data['store_id'], $user, $status);
 
             } else {
@@ -420,8 +434,8 @@ class SubscriptionController extends Controller
                 /*
                  * Create Hub spot user and activate trial
                  */
-                $user = [ 'email' => $data['email'] ];
-                $status = [ 'product_trials' => true ];
+                $user = ['email' => $data['email']];
+                $status = ['product_trials' => true];
 
                 $hubSpotController->createUpdateHubSpotUser($data['store_id'], $user, $status);
             }
@@ -435,21 +449,24 @@ class SubscriptionController extends Controller
             //Updating: carrier counts that will be allowed in case of trial of PAID plan
             $this->updateCarrierCountsinDB($subscriptionId, $data['store_id']);
             $subscriptionDetail = $this->subscriptionDetailFromDB($data['store_id']);
+            $emailData = array(
+                'receiverEmail' => $data['email'],
+                'productName' => 'Real-time Shipping Quotes',
+                'planName' => self::$plansData['name'],
+                'endsAt' => $subscriptionDetail->ends_at,
+                'action' => 'IPF'       // Invoice Payment Failed
+            );
             if ($request['plan'] == self::$trial) { // if planId is null then it's a trial and we need to send an email for trial
 
-                $emailData = array(
-                    'receiverEmail' => $data['email'],
-                    'productName' => 'Real-time Shipping Quotes',
-                    'planName' => self::$plansData['name'],
-                    'endsAt' => $subscriptionDetail->ends_at,
-                    'action' => 'IPF'       // Invoice Payment Failed
-                );
                 Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, 3));
-            }else{
+            } else {
+                Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, 1));
                 /*
                   * Update WS graph data
                   * */
-                SaleGraphController::updateGraphData();
+                if (!$isTestStore) {
+                    SaleGraphController::updateGraphData();
+                }
             }
             return response()->json([
                 'error' => false,
@@ -457,7 +474,12 @@ class SubscriptionController extends Controller
                 'message' => 'The plan subscribed successfully.'
             ], 200);
         } catch (\Exception $exception) {
-            Log::info('Exception on subscribing plan ' . json_encode($exception));
+            Log::info('Exception on subscribing plan ' . json_encode($exception->getTraceAsString()));
+            return response()->json([
+                'error' => true,
+                'data' => [],
+                'message' => 'Something went wrong on subscribing plan.'
+            ], 200);
         }
     }
 
@@ -559,11 +581,11 @@ class SubscriptionController extends Controller
     //*************************************
     // This function is used to get the details of Plan to be subscribe
     //*************************************
-    public static function getPlansDetails($plan = 1)
+    public static function getPlansDetails($plan = 1, $testStore = false)
     {
         $getDefaultFreePlan = Plan::find($plan);
         self::$plansData['plan_id'] = $getDefaultFreePlan->id;
-        self::$plansData['stripe_plan_id'] = $getDefaultFreePlan->stripe_plan_id;
+        self::$plansData['stripe_plan_id'] = $testStore ? $getDefaultFreePlan->stripe_sandbox_plan_id : $getDefaultFreePlan->stripe_plan_id;
         self::$plansData['carrier_count'] = $getDefaultFreePlan->carrier_count;
         self::$plansData['cost'] = $getDefaultFreePlan->price;
         self::$plansData['name'] = $getDefaultFreePlan->name;
@@ -694,6 +716,8 @@ class SubscriptionController extends Controller
     public function cancelSubscriptionPlan(Request $request)
     {
         $storeId = $request['store_id'];
+        $isTestStore = $request['is_test_store'] ?? false;
+
         $dbSub = Subscription::where('store_id', $storeId)->latest()->first();
 
         if (isset($request['cancel']) && $request['cancel'] == 1) {
@@ -707,8 +731,8 @@ class SubscriptionController extends Controller
         } else {
             $subId = $dbSub->subscription_id;
             $planId = (int)$dbSub->plan_id;
-            $stripePlanId = Plan::find($planId)->stripe_plan_id;
-
+            $plan = Plan::find($planId);
+            $stripePlanId = $isTestStore ? $plan->stripe_sandbox_plan_id : $plan->stripe_plan_id;
             $res = $this->reActivateSubscriptionPlan($subId, $stripePlanId);
             if (isset($res['error']) && $res['error'] == false) {
                 //Because of simaltaneous execution of stripe and DB
@@ -730,6 +754,9 @@ class SubscriptionController extends Controller
             ->leftJoin('payment_methods as pm', 'pm.store_id', '=', 's.store_id')
             ->select('s.id as subscription_id', 's.store_id', 's.status', 's.ends_at', 's.plan_id', 's.created_at', 'cc.carrier_counts as total_remaining_carriers', 's.amount_charged', 'pl.name', 'pl.carrier_count as total_allowed_carriers', 'pm.last4', 'pm.is_default as is_default_payment_method')
             ->where('s.store_id', $storeId)->latest()->first();
+        if (blank($data)) {
+            return null;
+        }
         try {
             if (isset($data->last4)) {
                 $data->last4 = decrypt($data->last4);
@@ -737,6 +764,11 @@ class SubscriptionController extends Controller
         } catch (\Exception $exception) {
             error_log('Card Decrypt' . $exception->getMessage());
         }
+        // Added this block of code for the bug of carrier count issue
+        // Bug of enabling carriers according to plan
+        $totalEnabledCarriersCount = InstalledCarrier::where('store_id', $storeId)->where('is_enabled', 1)->count();
+        $data->total_remaining_carriers = $data->total_allowed_carriers - $totalEnabledCarriersCount;
+        ////////////////////////////
         if (!is_null($data)) {
             $data->total_installed_carriers = $data->total_allowed_carriers - $data->total_remaining_carriers;
             $data->ends_at = date('m/d/Y', strtotime($data->ends_at));
@@ -784,11 +816,11 @@ class SubscriptionController extends Controller
     {
         $number = 1;
         $storeId = $request['store_id'];
-
         //Check: If current carriers installed are more than the choosed plan then return with message
         $currentSubscriptionDetail = $this->subscriptionDetailFromDB($storeId);
-
-        if (($request['action'] == 1) && (is_null($currentSubscriptionDetail) || ($currentSubscriptionDetail->total_remaining_carriers == 0) || ($currentSubscriptionDetail->status == 3))) {
+        if (($request['action'] == 1) && (is_null($currentSubscriptionDetail) ||
+                ($currentSubscriptionDetail->total_remaining_carriers <= 0) ||
+                ($currentSubscriptionDetail->status == 3))) {
             $msg = 'You have reached the subscription carriers limit';
             if (is_null($currentSubscriptionDetail)) {
                 $msg = "You don't have any plan to install or enable the carrier";
@@ -892,10 +924,10 @@ class SubscriptionController extends Controller
                 'subscriptionId' => $paymentDetail->data->object->items->data[0]->subscription
             );
         }
-        if(!Subscription::where('stripe_id', $customerId)->exists()){
+        if (!Subscription::where('stripe_id', $customerId)->exists()) {
             return [
                 'error' => true,
-                'msg' =>'Customer does not exists.'
+                'msg' => 'Customer does not exists.'
             ];
         }
         $customer = \Stripe\Customer::retrieve($customerId);
@@ -952,7 +984,7 @@ class SubscriptionController extends Controller
             $userLost = true;
             Mail::to($email)->send(new PaymentFailedByWebHookEmail($emailData, $paymentStatus));
         }
-        if($userLost){
+        if ($userLost) {
             /*
              * Update WS graph data
              * */
@@ -960,8 +992,8 @@ class SubscriptionController extends Controller
             /*
              * Create Hub spot user and activate trial
              */
-            $user = [ 'email' => $customer->email ];
-            $status = [ 'products_lost' => true ];
+            $user = ['email' => $customer->email];
+            $status = ['products_lost' => true];
             $hubSpotController = new HubSpotController();
             $hubSpotController->createUpdateHubSpotUser($oldSubscription->store_id, $user, $status);
         }
@@ -986,10 +1018,10 @@ class SubscriptionController extends Controller
         if ($eventType == 'customer.subscription.deleted') {
             $msg = 'Subscription has been cancelled';
             $re = $this->invoicePaymentActionByWebHook($paymentDetail, 2);
-            if(isset($re['error']) && $re['error']){
+            if (isset($re['error']) && $re['error']) {
                 $msg = $re['msg'] ?? $msg;
             }
-        }elseif ($eventType == 'invoice.payment_succeeded'){
+        } elseif ($eventType == 'invoice.payment_succeeded') {
 
             $msg = 'Subscription successful';
             $this->invoicePaymentActionByWebHook($paymentDetail, 1);

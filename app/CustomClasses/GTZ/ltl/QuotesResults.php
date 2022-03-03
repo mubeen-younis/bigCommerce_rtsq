@@ -35,6 +35,9 @@ class QuotesResults
                             $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $surcharge['Charge'] ?? 0;
                             unset($shipments[$shipment]['q'][$key]['Charges']);
                         }
+                        if(!isset($shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'])){
+                            $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = 0;
+                        }
                         if(isset($surcharge['AccessorialID']) && $surcharge['AccessorialID'] == 17){
                             $shipments[$shipment]['q'][$key]['surcharges']['notifyDeliveryFee'] = $surcharge['Charge'] ?? 0;
                             unset($shipments[$shipment]['q'][$key]['Charges']);
@@ -79,11 +82,33 @@ class QuotesResults
     }
 
     public function formateCerasisQuoteBeforeCompile($shipments){
+
+        foreach ($shipments as $shipment => $quotes){
+            unset($shipments[$shipment]['q']);
+            unset($shipments[$shipment]['quotesWithLiftGate']);
+            unset($shipments[$shipment]['debug']);
+            if(!isset($quotes['q'])){
+                continue;
+            }
+            foreach ($quotes['q'] as $key => $quote){
+                $key = $quote['CarrierScac'];
+                $shipments[$shipment]['q'][$key] = $quote;
+            }
+            if(isset($quotes['quotesWithLiftGate'])) {
+                foreach ($quotes['quotesWithLiftGate'] as $key => $quote){
+                    $key = $quote['CarrierScac'];
+                    $shipments[$shipment]['quotesWithLiftGate'][$key] = $quote;
+                }
+            }
+
+        }
+        //print_r($shipments); exit;
         foreach ($shipments as $shipment => $quotes){
             if(!isset($quotes['q'])){
                 continue;
             }
             foreach ($quotes['q'] as $key => $quote){
+                //$key = $quote['CarrierScac'];
                 $shipments[$shipment]['q'][$key]['serviceType'] = $quote['CarrierScac'] ?? '';
                 $shipments[$shipment]['q'][$key]['serviceDesc'] = $quote['CarrierName'] ?? '';
                 $shipments[$shipment]['q'][$key]['transitTime'] = $quote['TransitDays'] ?? '';
@@ -96,6 +121,7 @@ class QuotesResults
             unset($shipments[$shipment]['quotesWithLiftGate']);
             unset($shipments[$shipment]['debug']);
         }
+
         return $shipments;
     }
 

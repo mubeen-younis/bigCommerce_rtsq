@@ -6,6 +6,7 @@ namespace App\CustomClasses\Fedex\small;
 
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
+use Illuminate\Support\Str;
 
 class QuotesResults
 {
@@ -40,7 +41,7 @@ class QuotesResults
     public function addHazmatAmountsInServices($amount, $serviceCode, $quoteSettings)
     {
         // Adding hazmat fee to Ground Service
-        if ($serviceCode == "FEDEX_GROUND") {
+        if ($serviceCode == "FEDEX_GROUND" || $serviceCode == "GROUND_HOME_DELIVERY" || $serviceCode == "FEDEX_GROUND_HOME_DELIVERY" || $serviceCode == "GROUND_HOME_DELIVERY_AIR_SERVICE") {
             if (isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
                 $amount = $amount + $quoteSettings['ground_hazardous_material_fee'];
             }
@@ -75,21 +76,22 @@ class QuotesResults
 
     public function getServiceTitle($title, $data, $serviceCode, $quoteSettings, $isResi = false)
     {
+        if ($title == "Fedex Smart Post") {
+            $title = "Fedex SmartPost";
+        }
+        if ($isResi) {
+            $title = $title . Constant::RESI_LABEL;
+        }
         if (isset($data['totalTransitTimeInDays']) && $data['totalTransitTimeInDays'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2) {
             $title = $title . ' (Estimated number of days until delivery is ' . $data['totalTransitTimeInDays'] . ')';
         } else if (isset($data['deliveryTimestamp']) && $data['deliveryTimestamp'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3) {
-            $title = $title . ' (Delivery by ' . date('m-d-y h:i A', strtotime($data['deliveryTimestamp'])) . ')';
+            $title = $title . ' (Estimated delivery date is ' . date('m-d-Y', strtotime($data['deliveryTimestamp'])) . ')';
         }
-        $resiTitle = '';
-        if ($isResi) {
-            $resiTitle = Constant::RESI_LABEL;
-        }
-        return $title . $resiTitle;
+        return $title;
     }
 
     public function checkGroundTransit($quote, $quoteSettings)
     {
-        // Check limited to carrier transit days
         if ($quoteSettings['ground_metric'] == 1) {
             if (isset($quote['TransitTimeInDays']) && isset($quoteSettings['number_of_transit_days']) &&
                 $quote['TransitTimeInDays'] > $quoteSettings['number_of_transit_days']) {
@@ -142,6 +144,7 @@ class QuotesResults
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
         $allConfigServices['services'] = $allConfigServices = [];
 
+
         if (isset($this->quoteSettings['carrier_services'])) {
             foreach ($this->quoteSettings['carrier_services'] as $key => $serviceName) {
                 if ($serviceName) {
@@ -185,6 +188,7 @@ class QuotesResults
                 }
             }
         }
+        $allConfigServices = $this->replaceIndexOfSomeOneRateService($allConfigServices);
         $this->quoteSettingsData();
         $this->allConfigServices = $allConfigServices;
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
@@ -219,7 +223,9 @@ class QuotesResults
                     // Check if service type is checked to show
                     $serviceName = str_replace('_ONE_RATE', '', $data['serviceType']);
                     $serviceName = str_replace('_AIR_SERVICE', '', $serviceName);
-                    $checkService = $this->checkServiceIsEnabled($origin, $serviceName, $allConfigServices['services']);
+                    // Added to check one rate service check
+                    $tocheckServiceName = Str::contains($data['serviceType'], '_ONE_RATE') ? "ONE_RATE_" . $serviceName : $serviceName;
+                    $checkService = $this->checkServiceIsEnabled($origin, $tocheckServiceName, $allConfigServices['services']);
                     if (!$checkService) {
                         continue;
                     }
@@ -234,7 +240,7 @@ class QuotesResults
                     }
                     //  CHecks FOr Only quote ground service if hazardous
                     if ($isHazmat && isset($this->quoteSettings['ground_service_for_hazardous_material']) && $this->quoteSettings['ground_service_for_hazardous_material']) {
-                        if (!($data['serviceType'] == "FEDEX_GROUND" || $data['serviceType'] == "GROUND_HOME_DELIVERY" || $data['serviceType'] == "FEDEX_GROUND_HOME_DELIVERY")) {
+                        if (!($serviceName == "FEDEX_GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "FEDEX_GROUND_HOME_DELIVERY")) {
                             continue;
                         }
                     }
@@ -258,14 +264,15 @@ class QuotesResults
                             $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
                         }
                     }
-
-
+                    $data['serviceDesc'] = $this->checkAndAppendFedex($data['serviceDesc']);
                     $title = $this->getServiceTitle($data['serviceDesc'], $data, $data['serviceType'], $this->quoteSettings, $residential);
                     $price = (float)str_replace(',', '', $price);
                     /*
                     * Generate random code to limit rate_id to 50 chars
                      */
-                    if (strpos($data['serviceType'], '_AIR_SERVICE')) {
+                    if ($serviceName == "FEDEX_GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "FEDEX_GROUND_HOME_DELIVERY") {
+                        $access2 = $access . '+gd';
+                    } elseif (strpos($data['serviceType'], '_AIR_SERVICE')) {
                         $access2 = $access . '+as';
                     } else if (strpos($data['serviceType'], '_ONE_RATE')) {
                         $access2 = $access . '+or';
@@ -349,6 +356,25 @@ class QuotesResults
         return $resp;
     }
 
+    public function replaceIndexOfSomeOneRateService($allConfigServices)
+    {
+        if (isset($allConfigServices['services']['domestic'])) {
+
+            foreach ($allConfigServices['services']['domestic'] as $key => $value) {
+                if ($value == "ONE_RATE_2_DAY") {
+                    $allConfigServices['services']['domestic'][] = "ONE_RATE_FEDEX_2_DAY";
+                }
+                if ($value == "ONE_RATE_2_DAY_AM") {
+                    $allConfigServices['services']['domestic'][] = "ONE_RATE_FEDEX_2_DAY_AM";
+                }
+                if ($value == "ONE_RATE_EXPRESS_SAVER") {
+                    $allConfigServices['services']['domestic'][] = "ONE_RATE_FEDEX_EXPRESS_SAVER";
+                }
+            }
+        }
+        return $allConfigServices;
+    }
+
     function generateRandomString($length = 25)
     {
         $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -360,8 +386,20 @@ class QuotesResults
         return $randomString;
     }
 
+    public function checkAndAppendFedex($serviceName)
+    {
+        if (!Str::contains($serviceName, 'Fedex')) {
+            $serviceName = 'Fedex ' . $serviceName;
+        }
+        if (Str::contains($serviceName, 'Am')) {
+            $serviceName = Str::replace('Am', 'AM', $serviceName);
+        }
+        return $serviceName;
+    }
 
-    public function formateQuoteBeforeCompile($shipments)
+
+    public
+    function formateQuoteBeforeCompile($shipments)
     {
         //print_r($shipments); exit;
         foreach ($shipments as $shipment => $serviceTypes) {
@@ -382,22 +420,24 @@ class QuotesResults
                 }
                 if (isset($quotes['q'])) {
                     foreach ($quotes['q'] as $key => $quote) {
-                        if ($isAir) {
-                            if (!$this->isGroundService($key)) {
+                        if (isset($quote['serviceType'])) {
+                            if ($isAir) {
+                                if (!$this->isGroundService($key)) {
+                                    $key = $key . $append;
+                                    $quote['serviceType'] = $quote['serviceType'] . $append;
+                                    $shipments[$shipment]['q'][$key] = $quote;
+                                    $shipments[$shipment]['q'][$key]['serviceDesc'] = ucwords(strtolower(str_replace('_', ' ', $quote['serviceType'])));
+                                    $shipments[$shipment]['q'][$key]['serviceType'] = $quote['serviceType'] . '_AIR_SERVICE';
+                                }
+                            } else {
                                 $key = $key . $append;
                                 $quote['serviceType'] = $quote['serviceType'] . $append;
                                 $shipments[$shipment]['q'][$key] = $quote;
                                 $shipments[$shipment]['q'][$key]['serviceDesc'] = ucwords(strtolower(str_replace('_', ' ', $quote['serviceType'])));
-                                $shipments[$shipment]['q'][$key]['serviceType'] = $quote['serviceType'] . '_AIR_SERVICE';
                             }
-                        } else {
-                            $key = $key . $append;
-                            $quote['serviceType'] = $quote['serviceType'] . $append;
-                            $shipments[$shipment]['q'][$key] = $quote;
-                            $shipments[$shipment]['q'][$key]['serviceDesc'] = ucwords(strtolower(str_replace('_', ' ', $quote['serviceType'])));
-                        }
-                        if (!empty($inStoreLocal)) {
-                            $shipments[$shipment]['InstorPickupLocalDelivery'] = $inStoreLocal;
+                            if (!empty($inStoreLocal)) {
+                                $shipments[$shipment]['InstorPickupLocalDelivery'] = $inStoreLocal;
+                            }
                         }
                     }
                     unset($shipments[$shipment][$serviceName]);
@@ -407,7 +447,8 @@ class QuotesResults
         return $shipments;
     }
 
-    public function calenderDays($fDesc, $tnts)
+    public
+    function calenderDays($fDesc, $tnts)
     {
         $resp = '';
         foreach ($tnts as $key => $tnt) {
@@ -419,7 +460,8 @@ class QuotesResults
         return $resp;
     }
 
-    public function quoteSettingsData()
+    public
+    function quoteSettingsData()
     {
         $fields = [
             'labelAs' => 'labelAs',
@@ -443,7 +485,8 @@ class QuotesResults
         $this->resiLgLabel = Constant::RESI_LIFT_LABEL;
     }
 
-    public function getCompiledQuotes($services, $arraySorting, $lgQuotes, $isMulitshipment)
+    public
+    function getCompiledQuotes($services, $arraySorting, $lgQuotes, $isMulitshipment)
     {
         if (empty($arraySorting) || empty($services)) {
             return [];
