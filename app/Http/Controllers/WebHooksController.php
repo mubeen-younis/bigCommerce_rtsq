@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\CurlRequest;
 use App\Models\Store;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 
 class WebHooksController extends Controller
@@ -41,7 +40,6 @@ class WebHooksController extends Controller
             "is_active" => true
         ];
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, json_encode($request), $headers, 'POST', false);
-        Log::info('Response of Product Webhook'.$response['response']);
         $response=json_decode($response['response'],true);
         // will update store column of webhook
         if(isset($response['data']['id'])){
