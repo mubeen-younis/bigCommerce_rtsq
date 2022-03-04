@@ -130,7 +130,7 @@ class SubscriptionController extends Controller
     //*************************************
     // This function is used to create or update the subscription in DB when the plan is upgraded or downgraded from stripe
     //*************************************
-    public function updateSubscriptionInDB($subscriptionReponse, $oldSubscription)
+    public function updateSubscriptionInDB($subscriptionReponse, $oldSubscription, $testStore = false)
     {
         if (isset($oldSubscription->status) && $oldSubscription->status == 2) {
             $subscription = [
@@ -139,6 +139,7 @@ class SubscriptionController extends Controller
                 'name' => $oldSubscription->name ?? '',
                 'email' => self::$email ?? null,
                 'stripe_id' => $oldSubscription->stripe_id ?? '',
+                'is_test_subscription' => $testStore,
                 'subscription_id' => $subscriptionReponse->id ?? '',
                 'quantity' => $subscriptionReponse->quantity ?? '',
                 'plan_id' => self::$plansData['plan_id'] ?? self::$trial,
@@ -370,7 +371,9 @@ class SubscriptionController extends Controller
                 if ($updateSubResponse['error'] == true) {
                     return response()->json($updateSubResponse);
                 }
-                $this->updateSubscriptionInDB($updateSubResponse['data'], $oldSubscription);
+
+
+                $this->updateSubscriptionInDB($updateSubResponse['data'], $oldSubscription, $isTestStore);
                 //Getting Current Plan Detail
                 $updateSubResponse['data'] = $this->subscriptionDetailFromDB($data['store_id']);
                 Log::info('Email of old subscription' . $oldSubscription->email);

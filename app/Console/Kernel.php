@@ -3,6 +3,7 @@
 namespace App\Console;
 
 use App\Console\Commands\ExpireTrials;
+use App\Console\Commands\WsGraphCron;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -14,7 +15,8 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        ExpireTrials::class
+        ExpireTrials::class,
+        WsGraphCron::class
     ];
 
     /**
@@ -26,6 +28,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule->command('expire:trials')->daily();
+        $schedule->command('wsgraph:cron')->everyMinute();
     }
 
     /**
@@ -36,7 +39,6 @@ class Kernel extends ConsoleKernel
     protected function commands()
     {
         $this->load(__DIR__.'/Commands');
-
         require base_path('routes/console.php');
     }
 }

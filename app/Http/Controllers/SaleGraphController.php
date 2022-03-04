@@ -11,10 +11,11 @@ use Illuminate\Support\Facades\Log;
 class SaleGraphController extends Controller
 {
 
-    static function updateGraphData(){
+    static function updateGraphData()
+    {
         $url = Constant::GRAPH_UPDATE_DATA;
-        $activeStores = Subscription::where('status', 1)->where('plan_id', '>', 1)->get()->count();
-        Log::info('active store count '. json_encode($activeStores));
+        $activeStores = Subscription::where('status', 1)->where('plan_id', '>', 1)->where('is_test_subscription', 0)->get()->count();
+        Log::info('active store count ' . json_encode($activeStores));
         $data = array(
             'platform' => 'bigcommerce',
             'licenseKey' => 'V1T9ZBIG-COMMERCE-01MMZZ3W-O0TOJAQG',
@@ -29,6 +30,6 @@ class SaleGraphController extends Controller
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         $output = curl_exec($ch);
         curl_close($ch);
-        Log::info('update data on graphs '. json_encode($output));
+        Log::info('update data on graphs ' . json_encode($output));
     }
 }
