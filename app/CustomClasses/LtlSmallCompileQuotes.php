@@ -232,7 +232,7 @@ class LtlSmallCompileQuotes{
             $ltl[] = $key;
         }
 
-        $smallQuotes = $quotes['wweSmall'] ?? $quotes['upsSmall'] ?? $quotes['fedexSmall'] ?? [];
+        $smallQuotes = $quotes['wweSmall'] ?? $quotes['upsSmall'] ?? $quotes['fedexSmall'] ?? $quotes['unishippersSmall'] ?? [];
         foreach ($smallQuotes as $key=>$quote){
             $small[]=$key;
         }
