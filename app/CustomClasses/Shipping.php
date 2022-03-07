@@ -5,6 +5,7 @@ namespace App\CustomClasses;
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
 use App\Models\ShippingGroup;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use App\Models\RequestTempData;
 use App\Models\Store;
@@ -35,6 +36,7 @@ class Shipping
         $this->shippingGroupResponse = [];
     }
 
+
     /**
      * @param $request
      * @param $storeData
@@ -49,10 +51,15 @@ class Shipping
         //   init is a function to to call it explixitlitly rather constructor
 
         $generateReqData->_init($quoteSettings, $connectionSettings, $storeData);
+        $origins = $request['lineItemData']['origin'];
         // Items that is not associated with Shipping Group and need to get rates from Ws
         $itemsWithoutShippingGroup = collect($request['lineItemData']['items'])->where('shipping_group', null)->all();
         // Items that is associated with Shipping Group
         $itemsWithShippingGroup = collect($request['lineItemData']['items'])->where('shipping_group', '!=', null)->all();
+        $originsWithoutShippingGroup = $this->getOriginsAccShipGroup($itemsWithoutShippingGroup, $origins);
+        // Items that is associated with Shipping Group
+        $originsWithShippingGroup = $this->getOriginsAccShipGroup($itemsWithShippingGroup, $origins);
+
         if (!blank($itemsWithShippingGroup)) {
             $this->setShippingGroupsResponse($itemsWithShippingGroup);
         }
@@ -63,6 +70,7 @@ class Shipping
         }
 
         $request['lineItemData']['items'] = $itemsWithoutShippingGroup;
+        $request['lineItemData']['origin'] = $originsWithoutShippingGroup;
         $package = $request['lineItemData'];
 
         // Disabling instore pickup if there is multi shipment case
@@ -197,11 +205,25 @@ class Shipping
             $request['lineItemData']['items'] = $items;
             $finalQuotes = $this->addShipGroupRatesInQuotes($finalQuotes);
         }
-        
+
         $finalQuotes = $this->addRateId($finalQuotes);
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
         $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
         return $resp;
+    }
+
+    public function getOriginsAccShipGroup($items, $origins)
+    {
+        $formOrigins = [];
+        foreach ($origins as $originKey => $origin) {
+            foreach ($items as $itemKey => $item) {
+                if ($originKey == $itemKey) {
+                    $formOrigins[$itemKey] = $origin;
+                }
+            }
+        }
+        return $formOrigins;
+
     }
 
 

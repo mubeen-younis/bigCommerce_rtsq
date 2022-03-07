@@ -77,7 +77,7 @@ class OrderController extends Controller
             );
         } catch (\Exception $exception) {
             return response()->json(['error' => true,
-                'data' => [],
+                'data' => [$exception->getMessage()],
                 'message' => 'No Order Widget Found',
             ], 404);
         }
@@ -124,12 +124,14 @@ class OrderController extends Controller
             return [];
         }
         $carrierHasInsurance = $this->hasInsureCarrier($rateId);
+        $index = explode('idx+', $rateId);
+        if (is_string($index[0]) && $index[0] == "shippingGroup") {
+            return $this->shippingGroupOrderWidget($data, $order);
+        }
         $index = explode('idx+', $rateId)[1];
         if (!empty($index)) {
-            $index = (int)substr($index, 0, 1);
-        }
-        if ($index == "shippingGroup") {
-            return $this->shippingGroupOrderWidget($data, $order);
+            $index = strlen($index) <= 11 ? (int)substr($index, 0, 1) : (int)substr($index, 0, 2);
+            // $index = (int)substr($index, 0, 1);
         }
         $isSmallLtlrate = substr($rateId, 0, 5) == 'multi' ? true : false;
         $isHAT = strpos(strtolower($rateId), '+hat');
@@ -170,13 +172,13 @@ class OrderController extends Controller
                     $totalBoxes = 1;
                     if (isset($ws->binPackagingData) && !empty($ws->binPackagingData) && $isSmallrate) {
                         if ($isGround) {
-                            $sbsData = $ws->binPackagingData->response->ground->bins_packed;
+                            $sbsData = $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->bins_packed ?? [];
                         } else if ($isAir) {
-                            $sbsData = $ws->binPackagingData->response->air->bins_packed;
+                            $sbsData = $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->bins_packed ?? [];
                         } else if ($isOneRate) {
-                            $sbsData = $ws->binPackagingData->response->oneRate->bins_packed;
+                            $sbsData = $ws->binPackagingData->response->oneRate->bins_packed ?? [];
                         } else {
-                            $sbsData = $ws->binPackagingData->response->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->oneRate->bins_packed;
+                            $sbsData = $ws->binPackagingData->response->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->oneRate->bins_packed ?? [];
                         }
                         //print_r($ws->binPackagingData->response); exit;
                         $itemCount = 0;
@@ -218,7 +220,7 @@ class OrderController extends Controller
                                 $orderWidget[$zip]['sbs'][$key]['number_of_items'] = $count;
                             }
                         }
-                        $totalBoxes = $key + 1 - $itemCount;
+                        $totalBoxes = isset($key) ? $key + 1 - $itemCount : 0;
 
 
                     }
@@ -263,7 +265,7 @@ class OrderController extends Controller
                 /*Added condition if in case of multi shipment
                 The rate of shipping group will be added to warehouse rate*/
                 if ($shippingGroupResp != null && $orderWidget[$zip]['locationtype'] == "Warehouse") {
-                    $shippingGroupRate = $shippingGroupResp[0]['rate'] ?? 0;
+                    $shippingGroupRate = $shippingGroupResp[0]->rate ?? 0;
                     $sRate = $sRate + $shippingGroupRate;
                 }
                 $isMulti = true;

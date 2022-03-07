@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Constants\Constant;
 use App\Helpers\Helper;
+use App\Helpers\Helpers;
 use Illuminate\Database\Eloquent\Model;
 use Psy\Util\Str;
 
@@ -27,7 +28,17 @@ class ShippingGroup extends Model
 
     public static function deleteShippingGroup($uuid)
     {
+        $id = optional(self::where('uuid', $uuid)->first())->id;
+        if (!blank($id)) {
+            self::updateShippingGroupProduct($id);
+        }
         self::where('uuid', $uuid)->delete();
+    }
+
+
+    public static function updateShippingGroupProduct($id)
+    {
+        ProductSetting::updateShippingGroupProduct($id);
     }
 
     /**
@@ -45,9 +56,10 @@ class ShippingGroup extends Model
         }
         $rate = 0;
         $response = [];
+        $title = [];
         foreach ($groupItemsByShippingGroup as $shippingGroupId => $group) {
             $groupDetail = self::getShippingGroupDetail($shippingGroupId);
-            $response[0]['title'] = $groupDetail['checkout_description'];
+            $response[0]['title'] = $title[] = $groupDetail['checkout_description'];
             if ($groupDetail['rate_x_quantity']) {
                 $rate += self::getSumAftermultipItemGroupwithQty($group, $groupDetail['rate']);
             } else {
@@ -55,7 +67,12 @@ class ShippingGroup extends Model
             }
         }
         if (count($groupItemsByShippingGroup) > 1) {
-            $response[0]['title'] = "Shipping";
+            if (count(array_unique($title)) == 1) {
+                $response[0]['title'] = $title[0] ?? "Shipping";
+            } else {
+                $response[0]['title'] = "Shipping";
+
+            }
         }
         $response[0]['rate'] = $rate;
         $response[0]['code'] = "shippingGroup";
@@ -115,7 +132,7 @@ class ShippingGroup extends Model
             $save = 0;
         } else {
             $shippingGroup = new self();
-            $shippingGroup->uuid = Helper::getUuid();
+            $shippingGroup->uuid = Helpers::getUuid();
             $message = 'added successfully.';
             $save = 1;
         }
