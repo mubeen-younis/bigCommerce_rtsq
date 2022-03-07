@@ -255,7 +255,7 @@ class Bin3D
          * Check hash if available same request in last 24 hours then no need to send request to 3dbin
          * **/
         if (BinRequestLog::where('request_hash', '=', $requestHash)->where('created_at', '>', Carbon::now()->subDay(1))->exists()) {
-            $response = BinRequestLog::select('api_response')->where('request_hash', '=', $requestHash)->where('created_at', '>', Carbon::now()->subDay(1))->first();
+            $response = BinRequestLog::select('api_response')->where('request_hash', '=', $requestHash)->where('created_at', '>', Carbon::now()->subDay(1))->latest()->first();
             return (array)json_decode($response['api_response']);
         }
         $binRequestLog = new BinRequestLog();
@@ -314,10 +314,41 @@ class Bin3D
         }
         // close multi handle
         curl_multi_close($mh);
+        $extBoxDimOfPackBoxes = $this->addExtDimOnPackedBox($responses);
         $binRequestLog = BinRequestLog::find($binRequestLogId);
-        $binRequestLog->api_response = json_encode($responses);
+        $binRequestLog->api_response = json_encode($extBoxDimOfPackBoxes);
+        $binRequestLog->not_updated_api_response = json_encode($responses);
         $binRequestLog->response_time = now();
         $binRequestLog->save();
+        return $extBoxDimOfPackBoxes;
+    }
+
+    private function addExtDimOnPackedBox($responses)
+    {
+        foreach ($responses as $locId => $response) {
+            $decResp = json_decode($response);
+            if (blank($decResp)) {
+                continue;
+            }
+            if (isset($decResp->response->bins_packed) && !empty($decResp->response->bins_packed)) {
+                foreach ($decResp->response->bins_packed as $boxKey => $packedResp) {
+                    $boxDetails = BoxSize::getBoxDetail($packedResp->bin_data->id);
+                    if (blank($boxDetails)) {
+                        continue;
+                    }
+                    if (!blank($boxDetails->ext_width)) {
+                        $decResp->response->bins_packed[$boxKey]->bin_data->w = $boxDetails->ext_width;
+                    }
+                    if (!blank($boxDetails->ext_height)) {
+                        $decResp->response->bins_packed[$boxKey]->bin_data->h = $boxDetails->ext_height;
+                    }
+                    if (!blank($boxDetails->ext_length)) {
+                        $decResp->response->bins_packed[$boxKey]->bin_data->d = $boxDetails->ext_length;
+                    }
+                }
+            }
+            $responses[$locId] = json_encode($decResp);
+        }
         return $responses;
     }
 
