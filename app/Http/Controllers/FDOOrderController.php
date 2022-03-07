@@ -126,6 +126,7 @@ class FDOOrderController extends Controller
         $isOwnArrangement = strpos($rateId, 'own_arrangement') === 0 || strpos($rateId, 'freernlltl') === 0 ? true : false;
         $lineItem = json_decode($data['lineitems'])->lineItemData;
         $responseFromWS = json_decode($data['quotes']);
+        $shippingGroupResp = !blank($data['shipping_group_resp']) ? json_decode($data['shipping_group_resp']) : [];
         $requestToWS = json_decode($data['request']);
         $lineItem->items = $this->formatItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
         $lineItem->origin = $this->formatOrigins($requestToWS->requestArr->carriers);
@@ -186,6 +187,13 @@ class FDOOrderController extends Controller
                 $carrierName = $code ? Functions::getCarrierNameOrCode($code) : "Multi Carrier";
                 $wsCarrierCode = Functions::getCarrierNameOrCode($rateId, 1);
                 $isSmall = Functions::isSmallCarrier($code);
+                /*Added condition if in case of multi shipment
+             The rate of shipping group will be added to warehouse rate*/
+                if ($shippingGroupResp != null && $orderWidget[$zip]['locationtype'] == "Warehouse") {
+                    $shippingGroupRate = $shippingGroupResp[0]->rate ?? 0;
+                    $sRate = $sRate + $shippingGroupRate;
+                }
+
                 $isMulti = true;
             }
             $handlingUnitDetails = optional($responseFromWS)->$wsCarrierCode->$zip->debug ?? [];
@@ -266,6 +274,26 @@ class FDOOrderController extends Controller
             // $orderWidget = [];
             $count++;
         }
+        /*
+  * Added For Catering items that ship as SHippping Group*/
+  /*      $itemsWithShipGroup = collect($items)->where('shipping_group', '!=', null)->all();
+        if (!blank($itemsWithShipGroup)) {
+            $itemsForm = [];
+            foreach ($itemsWithShipGroup as $item) {
+                $itemsForm[] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
+            }
+            foreach ($orderDetails as $key => $data) {
+                $items = data_get($data, 'items');
+                if (count($orderDetails) > 1) {
+                    if ($data['locationtype'] == "Warehouse") {
+                        $items = array_merge($items, $itemsForm);
+                    }
+                } else {
+                    $items = array_merge($items, $itemsForm);
+                }
+                $orderDetails[$key]['items'] = $items;
+            }
+        }*/
         return $this->formatOrderDetailItems($orderDetails);
     }
 
