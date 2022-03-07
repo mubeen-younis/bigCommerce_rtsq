@@ -276,11 +276,11 @@ class FDOOrderController extends Controller
         }
         /*
   * Added For Catering items that ship as SHippping Group*/
-  /*      $itemsWithShipGroup = collect($items)->where('shipping_group', '!=', null)->all();
+        $itemsWithShipGroup = collect($items)->where('shipping_group', '!=', null)->all();
         if (!blank($itemsWithShipGroup)) {
             $itemsForm = [];
             foreach ($itemsWithShipGroup as $item) {
-                $itemsForm[] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
+                $itemsForm[] = $item;
             }
             foreach ($orderDetails as $key => $data) {
                 $items = data_get($data, 'items');
@@ -293,7 +293,7 @@ class FDOOrderController extends Controller
                 }
                 $orderDetails[$key]['items'] = $items;
             }
-        }*/
+        }
         return $this->formatOrderDetailItems($orderDetails);
     }
 
