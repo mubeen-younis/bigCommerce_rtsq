@@ -4,6 +4,8 @@ namespace App\CustomClasses;
 
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
+use App\Models\ShippingGroup;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use App\Models\RequestTempData;
 use App\Models\Store;
@@ -25,12 +27,15 @@ class Shipping
     private $compileQuotes;
     private $isInsurance = 'N';
     private $isRequestMultishipment = false;
+    private $shippingGroupResponse;
 
     public function __construct()
     {
         $this->shipmentPkg = new WweLTLShipmentPackage();
         $this->compileQuotes = new CompileQuotes();
+        $this->shippingGroupResponse = [];
     }
+
 
     /**
      * @param $request
@@ -46,7 +51,28 @@ class Shipping
         //   init is a function to to call it explixitlitly rather constructor
 
         $generateReqData->_init($quoteSettings, $connectionSettings, $storeData);
+        $origins = $request['lineItemData']['origin'];
+        // Items that is not associated with Shipping Group and need to get rates from Ws
+        $itemsWithoutShippingGroup = collect($request['lineItemData']['items'])->where('shipping_group', null)->all();
+        // Items that is associated with Shipping Group
+        $itemsWithShippingGroup = collect($request['lineItemData']['items'])->where('shipping_group', '!=', null)->all();
+        $originsWithoutShippingGroup = $this->getOriginsAccShipGroup($itemsWithoutShippingGroup, $origins);
+        // Items that is associated with Shipping Group
+        $originsWithShippingGroup = $this->getOriginsAccShipGroup($itemsWithShippingGroup, $origins);
+
+        if (!blank($itemsWithShippingGroup)) {
+            $this->setShippingGroupsResponse($itemsWithShippingGroup);
+        }
+        if (blank($itemsWithoutShippingGroup)) {
+            $finalResp = $this->formattedShippingGroupResponse();
+            $this->orderWidgetSave($request, [], [], $finalResp['finalQuotes'], $finalResp['formattedResp'], $cartInfo, [], []);
+            return $finalResp['formattedResp'];
+        }
+
+        $request['lineItemData']['items'] = $itemsWithoutShippingGroup;
+        $request['lineItemData']['origin'] = $originsWithoutShippingGroup;
         $package = $request['lineItemData'];
+
         // Disabling instore pickup if there is multi shipment case
         $originAddress = $this->checkInstorePickup($package['origin']);
         // Generating carrier creds and origin array
@@ -171,10 +197,63 @@ class Shipping
             }
         }
 
+        /*Adding shipping group rates response in quotes
+        */
+        if (!blank($this->shippingGroupResponse)) {
+            $items = data_get($request, 'lineItemData.items');
+            $items = $items + $itemsWithShippingGroup;
+            $request['lineItemData']['items'] = $items;
+            $finalQuotes = $this->addShipGroupRatesInQuotes($finalQuotes);
+        }
+
         $finalQuotes = $this->addRateId($finalQuotes);
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
         $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
         return $resp;
+    }
+
+    public function getOriginsAccShipGroup($items, $origins)
+    {
+        $formOrigins = [];
+        foreach ($origins as $originKey => $origin) {
+            foreach ($items as $itemKey => $item) {
+                if ($originKey == $itemKey) {
+                    $formOrigins[$itemKey] = $origin;
+                }
+            }
+        }
+        return $formOrigins;
+
+    }
+
+
+    protected function setShippingGroupsResponse($shippingGroupItems)
+    {
+        $this->shippingGroupResponse = ShippingGroup::setShippingGroup($shippingGroupItems);
+    }
+
+
+    /**
+     * @return array
+     */
+    protected function formattedShippingGroupResponse(): array
+    {
+        $finalQuotes = $this->addRateId($this->shippingGroupResponse);
+        $resp = $this->generateQuoteFormatResponse($finalQuotes);
+        return ['finalQuotes' => $finalQuotes, 'formattedResp' => $resp];
+    }
+
+
+    /**
+     * @param $finalQuotes
+     * @return array
+     */
+    protected function addShipGroupRatesInQuotes($finalQuotes): array
+    {
+        foreach ($finalQuotes as $key => $quote) {
+            $finalQuotes[$key]['rate'] = $quote['rate'] + $this->shippingGroupResponse[0]['rate'];
+        }
+        return $finalQuotes;
     }
 
     private function removeParcelIfLtl($finalQuotes)
@@ -205,6 +284,11 @@ class Shipping
     private function makeMultishipmentSmallLtl($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr)
     {
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
+        /*
+         * Need to add entry if every carrier here as well
+         * there is some caompatibility code of multi shipment here
+         *
+         * */
         $resp = $ltlSmallCompileQuotes->compileQuotes($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr);
         return $resp;
     }
@@ -418,6 +502,7 @@ class Shipping
             $RequestTempData->rate_id = $finalQuote['rate_id'];
             $RequestTempData->cart_id = $cartInfo['cartId'];
             $RequestTempData->box_bins = json_encode($boxbins);
+            $RequestTempData->shipping_group_resp = !blank($this->shippingGroupResponse) ? json_encode($this->shippingGroupResponse) : null;
             $RequestTempData->save();
         }
     }

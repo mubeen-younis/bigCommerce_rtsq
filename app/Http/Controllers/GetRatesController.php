@@ -160,10 +160,10 @@ class GetRatesController extends Controller
                     'freightClass' => $this->isLTL($weight, $ltlCheck) ? 'ltl' : '', //ltl for testing
                     //'freightClass' => '',
                     'lineItemClass' => isset($product_settings['freight_class']) ? $this->getLineItemClass($product_settings['freight_class']) : '',
+                    'shipping_group' => $product_settings['shipping_group'] ?? null
                 ];
             }
         }
-
         return ['lineItemData' => $details];
     }
 
@@ -209,7 +209,7 @@ class GetRatesController extends Controller
     public function getProductSetting($productId, $variantId)
     {
         $settings = [];
-        $productSetting = ProductSetting::select('settings', 'id', 'dropship_enabled', 'dropship_location', 'ship_multiple_package')
+        $productSetting = ProductSetting::select('settings', 'id', 'dropship_enabled', 'dropship_location', 'shipping_group', 'ship_multiple_package')
             ->where(['source_product_id' => $productId, 'variant_id' => $variantId])
             ->first();
         if (!empty($productSetting)) {
@@ -219,6 +219,7 @@ class GetRatesController extends Controller
             $settings['dropship_enabled'] = $productSetting['dropship_enabled'];
             $settings['dropship_location'] = $productSetting['dropship_location'];
             $settings['ship_multiple_package'] = $productSetting['ship_multiple_package'];
+            $settings['shipping_group'] = $productSetting['shipping_group'];
         }
         return $settings;
     }
