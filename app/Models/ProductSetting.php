@@ -45,6 +45,17 @@ class ProductSetting extends Model
                 ->where('store_id', $storeId)->first();
         } else {
             $saveProduct = new ProductSetting();
+            /*Start - Added FOr Default Quoting Method*/
+            $productSettings = new stdClass();
+            if (!empty($product['weight']) && $product['weight'] > 150) {
+                $productSettings->freight_enabled = true;
+                $productSettings->parcel_enabled = false;
+            } else {
+                $productSettings->freight_enabled = false;
+                $productSettings->parcel_enabled = true;
+            }
+            $saveProduct->settings = json_encode($productSettings);
+            /*END*/
         }
         $saveProduct->name = $product['name'];
         $saveProduct->source_product_id = $product['id'];
@@ -57,19 +68,6 @@ class ProductSetting extends Model
         $saveProduct->width = $product['width'];
         $saveProduct->height = $product['height'];
         $saveProduct->price = $product['price'];
-        
-        /*Start - Added FOr Default Quoting Method*/
-        $productSettings = new stdClass();
-        if (!empty($product['weight']) && $product['weight'] > 150) {
-            $productSettings->freight_enabled = true;
-            $productSettings->parcel_enabled = false;
-        } else {
-            $productSettings->freight_enabled = false;
-            $productSettings->parcel_enabled = true;
-        }
-        $saveProduct->settings = json_encode($productSettings);
-        /*END*/
-
         $saveProduct->store_id = $storeId;
         $saveProduct->save();
     }
