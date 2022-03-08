@@ -132,6 +132,7 @@ class SubscriptionController extends Controller
     //*************************************
     public function updateSubscriptionInDB($subscriptionReponse, $oldSubscription, $testStore = false)
     {
+        Log::info('Is Test Stddore ' . $testStore . 'Stripe Api key' . json_encode(Stripe::getApiKey()));
         if (isset($oldSubscription->status) && $oldSubscription->status == 2) {
             $subscription = [
                 'store_id' => $oldSubscription->store_id,
@@ -160,6 +161,8 @@ class SubscriptionController extends Controller
         $oldSubscription->ends_at = gmdate("Y-m-d\TH:i:s\Z", $subscriptionReponse->current_period_end);
         $oldSubscription->charge_object = json_encode($subscriptionReponse);
         $oldSubscription->amount_charged = self::$plansData['cost'];
+        /*Added for TEst subscription functionality*/
+        $oldSubscription->is_test_subscription = $testStore;
         $oldSubscription->update();
 
         //Get: Previous Plan Allowed Carrier Limit
@@ -467,9 +470,8 @@ class SubscriptionController extends Controller
                 /*
                   * Update WS graph data
                   * */
-                if (!$isTestStore) {
-                    SaleGraphController::updateGraphData();
-                }
+                SaleGraphController::updateGraphData();
+
             }
             return response()->json([
                 'error' => false,

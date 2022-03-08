@@ -28,7 +28,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule->command('expire:trials')->daily();
-        $schedule->command('wsgraph:cron')->everyMinute();
+        $schedule->command('wsgraph:cron')->daily();
     }
 
     /**
