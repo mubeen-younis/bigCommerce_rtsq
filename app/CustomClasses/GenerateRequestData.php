@@ -349,7 +349,7 @@ class GenerateRequestData
         //
         if ($this->storeData['installed_addon_sbs'] && isset($this->storeData['installed_addons'][0]->is_enabled) &&
         isset($this->storeData['installed_addons'][0]->is_enabled)) {
-                $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ? $carriers['unishippersSmall']['originAddress'] : [];            
+                $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? [];
                 $this->itemsArr = $itemsArr;
                 $this->carriers = $carriers;
 
@@ -369,9 +369,8 @@ class GenerateRequestData
                 $olditemsArr = $itemsArr;
                 $carriersoriginAddress = $carriers['wweSmall']['originAddress']
                     ?? $carriers['upsSmall']['originAddress']
-                    ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'];
-
-
+                    ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? [];
+ 
                 if (isset($carriers['fedexSmall'])) {
                     $this->checkServiceEnabled();
                     if ($this->ground) {
@@ -1393,7 +1392,6 @@ class GenerateRequestData
                     }
                 }
                 $binResponse = $this->addPackagingID($binResponse, $boxBins);
-
                 $counting = 0;
                 $counting = 0;
                 foreach ($binResponse as $locationId => $bins) {

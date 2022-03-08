@@ -150,6 +150,17 @@ class QuotesResults
             return $returnResp;
         }
 
+        /**
+         * get quotes if supress is enables
+         * refferce issue: https://eniture.atlassian.net/browse/QA-5458
+         */
+        if (!$isMultiShipment && isset($inStoreLdData) && $inStoreLdData) {
+            $allQuotes = $this->CompileQuotes->inStoreLocalDeliveryQuotes($quote, $inStoreLdData, $allOrigins);
+            $resp = $allQuotes;
+            $returnResp['resp'] = $resp;
+            return $returnResp;
+        }
+
         $resp = [
             'resp' => $return ?? [],
             'isMultiShipment' => $isMultiShipment,
