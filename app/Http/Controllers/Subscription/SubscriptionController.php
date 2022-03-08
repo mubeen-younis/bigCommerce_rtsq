@@ -132,7 +132,6 @@ class SubscriptionController extends Controller
     //*************************************
     public function updateSubscriptionInDB($subscriptionReponse, $oldSubscription, $testStore = false)
     {
-        Log::info('Is Test Stddore ' . $testStore . 'Stripe Api key' . json_encode(Stripe::getApiKey()));
         if (isset($oldSubscription->status) && $oldSubscription->status == 2) {
             $subscription = [
                 'store_id' => $oldSubscription->store_id,
