@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\CustomClasses\WweLTLShipmentPackage;
+use App\Helpers\Helpers;
 use App\Models\AdditionalCarrierTabSetting;
 use App\Models\Connection;
 use App\Models\InstalledAddon;
@@ -49,6 +50,13 @@ class GetRatesController extends Controller
         Log::info('Request ' . json_encode($request->all()));
         $storeHash = $request->base_options['store_id'] ?? null;
         $storeData = $this->getStoreData($storeHash);
+        /*Setting Stripe APi key
+        Bug fix of plan auto renews
+        */
+        $isTestStore = Helpers::checkIsTestStore($storeHash);
+        Helpers::setStripeAPiKey($isTestStore);
+
+
         //echo "<pre>"; print_r($storeData['store']['id']); exit;
 
         if ($storeData == null) {
