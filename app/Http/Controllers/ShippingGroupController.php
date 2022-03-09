@@ -6,6 +6,7 @@ use App\Helpers\Helper;
 use App\Helpers\Helpers;
 use App\Models\ShippingGroup;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ShippingGroupController extends Controller
 {
@@ -16,6 +17,7 @@ class ShippingGroupController extends Controller
     public function getShippingGroups(Request $request)
     {
         $shippingGroups = ShippingGroup::getStoreShippingGroups($request['store_id']);
+        Log::info('Shipping Group Store Id '.$request['store_id']. ' Shipping Groups '.json_encode($shippingGroups));
         return Helpers::sendJsonResponse(false, "", $shippingGroups);
     }
 

@@ -6,6 +6,7 @@ use App\Constants\Constant;
 use App\Helpers\Helper;
 use App\Helpers\Helpers;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 use Psy\Util\Str;
 
 class ShippingGroup extends Model
