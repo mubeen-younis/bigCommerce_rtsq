@@ -256,7 +256,10 @@ class Bin3D
          * **/
         if (BinRequestLog::where('request_hash', '=', $requestHash)->where('created_at', '>', Carbon::now()->subDay(1))->exists()) {
             $response = BinRequestLog::select('api_response')->where('request_hash', '=', $requestHash)->where('created_at', '>', Carbon::now()->subDay(1))->latest()->first();
-            return (array)json_decode($response['api_response']);
+            $response = (array)json_decode($response['api_response']) ?? [];
+            if (!blank($response)) {
+                return $response;
+            }
         }
         $binRequestLog = new BinRequestLog();
         $binRequestLog->store_id = $storeId;
