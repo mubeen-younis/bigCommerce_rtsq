@@ -13,7 +13,7 @@ class ShippingGroupController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function getShippingGroups(Request $request): \Illuminate\Http\JsonResponse
+    public function getShippingGroups(Request $request)
     {
         $shippingGroups = ShippingGroup::getStoreShippingGroups($request['store_id']);
         return Helpers::sendJsonResponse(false, "", $shippingGroups);
