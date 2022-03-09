@@ -130,7 +130,7 @@ class SubscriptionController extends Controller
     //*************************************
     // This function is used to create or update the subscription in DB when the plan is upgraded or downgraded from stripe
     //*************************************
-    public function updateSubscriptionInDB($subscriptionReponse, $oldSubscription)
+    public function updateSubscriptionInDB($subscriptionReponse, $oldSubscription, $testStore = false)
     {
         if (isset($oldSubscription->status) && $oldSubscription->status == 2) {
             $subscription = [
@@ -139,6 +139,7 @@ class SubscriptionController extends Controller
                 'name' => $oldSubscription->name ?? '',
                 'email' => self::$email ?? null,
                 'stripe_id' => $oldSubscription->stripe_id ?? '',
+                'is_test_subscription' => $testStore,
                 'subscription_id' => $subscriptionReponse->id ?? '',
                 'quantity' => $subscriptionReponse->quantity ?? '',
                 'plan_id' => self::$plansData['plan_id'] ?? self::$trial,
@@ -159,6 +160,8 @@ class SubscriptionController extends Controller
         $oldSubscription->ends_at = gmdate("Y-m-d\TH:i:s\Z", $subscriptionReponse->current_period_end);
         $oldSubscription->charge_object = json_encode($subscriptionReponse);
         $oldSubscription->amount_charged = self::$plansData['cost'];
+        /*Added for TEst subscription functionality*/
+        $oldSubscription->is_test_subscription = $testStore;
         $oldSubscription->update();
 
         //Get: Previous Plan Allowed Carrier Limit
@@ -370,7 +373,9 @@ class SubscriptionController extends Controller
                 if ($updateSubResponse['error'] == true) {
                     return response()->json($updateSubResponse);
                 }
-                $this->updateSubscriptionInDB($updateSubResponse['data'], $oldSubscription);
+
+
+                $this->updateSubscriptionInDB($updateSubResponse['data'], $oldSubscription, $isTestStore);
                 //Getting Current Plan Detail
                 $updateSubResponse['data'] = $this->subscriptionDetailFromDB($data['store_id']);
                 Log::info('Email of old subscription' . $oldSubscription->email);
@@ -464,9 +469,8 @@ class SubscriptionController extends Controller
                 /*
                   * Update WS graph data
                   * */
-                if (!$isTestStore) {
-                    SaleGraphController::updateGraphData();
-                }
+                SaleGraphController::updateGraphData();
+
             }
             return response()->json([
                 'error' => false,
