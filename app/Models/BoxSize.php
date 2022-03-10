@@ -15,4 +15,9 @@ class BoxSize extends Model
         return optional(DB::table('box_sizes')->where('id', $boxId)
             ->select('nickname','box_fee')->first());
     }
+
+    public static function getBoxDetail($boxId)
+    {
+        return optional(DB::table('box_sizes')->where('id', $boxId)->first());
+    }
 }

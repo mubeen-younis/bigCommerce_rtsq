@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Route;
 /*Route::get('/', function () {
     return view('welcome');
 });*/
+Route::get('logs', [\Rap2hpoutre\LaravelLogViewer\LogViewerController::class, 'index']);
 Route::post('webhooks', [MainController::class, 'addAndUpdateProductFromWebHook']);
 Route::get('uninstall1', function () {
     $arr = ['R', 'L','N', 'A'];

@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\CustomClasses\Functions;
 use App\CustomClasses\WweLTLShipmentPackage;
+use App\Helpers\Helpers;
 use App\Models\AdditionalCarrierTabSetting;
 use App\Models\Connection;
 use App\Models\InstalledAddon;
@@ -10,6 +12,7 @@ use App\Models\InstalledCarrier;
 use App\Models\Locations;
 use App\Models\QuoteSetting;
 use App\Models\Store;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\CustomClasses\Origin;
 use App\Models\ProductSetting;
@@ -49,6 +52,13 @@ class GetRatesController extends Controller
         Log::info('Request ' . json_encode($request->all()));
         $storeHash = $request->base_options['store_id'] ?? null;
         $storeData = $this->getStoreData($storeHash);
+        /*Setting Stripe APi key
+        Bug fix of plan auto renews
+        */
+        $isTestStore = Helpers::checkIsTestStore($storeHash);
+        Helpers::setStripeAPiKey($isTestStore);
+
+
         //echo "<pre>"; print_r($storeData['store']['id']); exit;
 
         if ($storeData == null) {
@@ -99,10 +109,15 @@ class GetRatesController extends Controller
     {
         $subsciption = Subscription::where('store_id', $store_id)->latest()->first();
         if (empty($subsciption) || $subsciption->status === 3) { // not plan or expired plan
+            Log::info('Expired Subscription ' . json_encode($subsciption));
             return false;
-        } else {
-            return true;
         }
+        if (Functions::isExpiredSubscription($subsciption->ends_at)) { // Expiry date is less then current date
+            Log::info('Expired Subscription due to expiry date' . json_encode($subsciption));
+            return false;
+        }
+        return true;
+
     }
 
 

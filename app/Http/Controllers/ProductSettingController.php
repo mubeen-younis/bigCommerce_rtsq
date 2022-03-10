@@ -29,6 +29,7 @@ class ProductSettingController extends Controller
 
     public function importProducts(Request $request)
     {
+        set_time_limit(0);
         $isSyncinProgress = ImportProductsModel::where('store_id', $request['store_id'])->where('status', '=', 1)->where('created_at', '>', Carbon::now()->subDay(1)->toDateTimeString())->exists();
         if (!$isSyncinProgress) {
             $importPrdModel = new ImportProductsModel();

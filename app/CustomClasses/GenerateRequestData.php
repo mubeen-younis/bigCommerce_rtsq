@@ -1374,6 +1374,13 @@ class GenerateRequestData
                 'id' => $box->id,
                 'max_wg' => $box->max_weight,
                 'box_weight' => $box->box_weight,
+                /*Start- Added in case of Customer removes external dimesnions and bin request log issue
+                NO use of it in3dbin Request
+                Just adding in array For Request Hash*/
+                'ext_width' => $box->ext_width ?? 0,
+                'ext_length' => $box->ext_length ?? 0,
+                'ext_height' => $box->ext_height ?? 0
+                /*END*/
             );
         }
         $hits = count($items);

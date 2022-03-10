@@ -371,8 +371,11 @@ class MainController extends BaseController
             }
             $prodSetCon = new ProductSettingController();
             $prodSetCon->getSingleProductFromApi($toRequest);
+            Log::info('Successfully imported product' . json_encode($toRequest));
+            return response()->json(true,200);
         } catch (\Exception $exception) {
-            //  Have to LOg Here
+            Log::info('Products data Exception ' . $exception->getMessage());
+            return response()->json(true,200);
         }
 
 //        echo 'I am from Webhook';
