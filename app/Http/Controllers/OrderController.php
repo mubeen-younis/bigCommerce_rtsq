@@ -140,13 +140,16 @@ class OrderController extends Controller
         $isSmallrate = substr($rateId, 0, 9) == 'parcel_12' || substr($rateId, 0, 5) == 'multi' ? true : false;
         $isLG = strpos($rateId, '+lg');
         $isOwnArrangement = strpos($rateId, 'own_arrangement') === 0 || strpos($rateId, 'freernlltl') === 0 ? true : false;
+
+        /* 
+        * Stored Response from WS */
         $lineItem = json_decode($data['lineitems'])->lineItemData;
         $responseFromWS = json_decode($data['quotes']);
         $shippingGroupResp = !blank($data['shipping_group_resp']) ? json_decode($data['shipping_group_resp']) : [];
 
         $requestToWS = json_decode($data['request']);
         $lineItem->items = $this->formateItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
-//print_r($lineItem->items); exit;
+        //print_r($lineItem->items); exit;
         $lineItem->origin = $this->formateOrigins($requestToWS->requestArr->carriers);
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
         $autoResidentialsStatus = 'n';
@@ -157,9 +160,12 @@ class OrderController extends Controller
         $isOneRate = strpos($rateId, '+or');
         $isGround = strpos($rateId, '+gd');
         $isAir = strpos($rateId, '+as');
+        
+        /* 
+        * Shipment Packaging */
         foreach ($responseFromWS as $carrrierName => $WsResp) {
             foreach ($WsResp as $zip => $ws) {
-
+                
                 if (!(isset($ws->severity) && $ws->severity == 'ERROR')) {
 
                     $liftResidentialStatus = $this->getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate, $rateId);
@@ -227,6 +233,9 @@ class OrderController extends Controller
                 }
             }
         }
+        
+        /* 
+        * Shipment Origins */
         $origins = $lineItem->origin;
         $items = $lineItem->items;
         $count = 0;
@@ -236,6 +245,7 @@ class OrderController extends Controller
         $insertedIds = $insertedNames = [];
         //print_r($items); exit;
         $code = '';
+
         foreach ($origins as $key => $origin) {
             $item = $items->$key;
             $city = $origin->senderCity ? $origin->senderCity . ',' : '';
@@ -291,6 +301,9 @@ class OrderController extends Controller
                     $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
                 }
             }
+
+            /* 
+            * Item Accessorials */
             $addedHazmat = false;
             if (isset($orderWidget[$zip]['accessories'])) {
                 $addedHazmat = in_array('Hazardous Material', $orderWidget[$zip]['accessories']);
@@ -321,6 +334,8 @@ class OrderController extends Controller
                     $addHazmat = true;
                 }
             }
+
+            // TODO:need to change implementation of this function
             $isSmall = $this->isSmallQuote($sName);
             if ($isMulti) {
                 strpos(strtolower($code), '+r') ? array_push($orderWidget[$zip]['accessories'], 'Residential Delivery') : '';
@@ -336,6 +351,7 @@ class OrderController extends Controller
             }
             $count++;
         }
+
         /*
          * Added For Catering items that ship as SHippping Group*/
         $itemsWithShipGroup = collect($items)->where('shipping_group', '!=', null)->all();
@@ -839,7 +855,7 @@ class OrderController extends Controller
 
     private function hasInsureCarrier($code)
     {
-        $insureCarriers = ['wweltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd'];
+        $insureCarriers = ['wweltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship'];
         foreach ($insureCarriers as $insureCarrier) {
             if (strpos($code, $insureCarrier) !== false) {
                 return true;
