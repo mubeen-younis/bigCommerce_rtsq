@@ -3,9 +3,12 @@
 namespace App\CustomClasses;
 
 use App\Models\BoxSize;
+use Illuminate\Support\Facades\Log;
 
 class Functions
 {
+    protected static $daysAfterExpiry = 4;
+
     public static function hasInsureCarrier($code)
     {
         $insureCarriers = ['wweltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd'];
@@ -91,5 +94,28 @@ class Functions
             }
         }
         return false;
+    }
+
+    public static function isExpiredSubscription($endDate): bool
+    {
+        try {
+            if (blank($endDate)) {
+                return false;
+            }
+            $endDate= date('m/d/Y', strtotime($endDate));
+            $endDate = new \DateTime($endDate);
+            $now = new \DateTime(now());
+            // CHecks either the diff is positive or negative
+            $invert = $endDate->diff($now)->invert ?? 0;
+            $days = $endDate->diff($now)->days ?? 0;
+            if ($invert == false && $days > self::$daysAfterExpiry) {
+                return true;
+            }
+            return false;
+        } catch (\Exception $exception) {
+            Log::info('Exception on checking expiry ' . json_encode($exception->getMessage()));
+            return false;
+        }
+
     }
 }

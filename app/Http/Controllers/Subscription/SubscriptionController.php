@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Subscription;
 
 
+use App\CustomClasses\Functions;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\HubSpotController;
 use App\Http\Controllers\SaleGraphController;
@@ -130,8 +131,9 @@ class SubscriptionController extends Controller
     //*************************************
     // This function is used to create or update the subscription in DB when the plan is upgraded or downgraded from stripe
     //*************************************
-    public function updateSubscriptionInDB($subscriptionReponse, $oldSubscription)
+    public function updateSubscriptionInDB($subscriptionReponse, $oldSubscription, $testStore = false)
     {
+        Log::info('Is Test Store on adding plan to DB ' . $testStore);
         if (isset($oldSubscription->status) && $oldSubscription->status == 2) {
             $subscription = [
                 'store_id' => $oldSubscription->store_id,
@@ -139,6 +141,7 @@ class SubscriptionController extends Controller
                 'name' => $oldSubscription->name ?? '',
                 'email' => self::$email ?? null,
                 'stripe_id' => $oldSubscription->stripe_id ?? '',
+                'is_test_subscription' => $testStore,
                 'subscription_id' => $subscriptionReponse->id ?? '',
                 'quantity' => $subscriptionReponse->quantity ?? '',
                 'plan_id' => self::$plansData['plan_id'] ?? self::$trial,
@@ -159,6 +162,8 @@ class SubscriptionController extends Controller
         $oldSubscription->ends_at = gmdate("Y-m-d\TH:i:s\Z", $subscriptionReponse->current_period_end);
         $oldSubscription->charge_object = json_encode($subscriptionReponse);
         $oldSubscription->amount_charged = self::$plansData['cost'];
+        /*Added for TEst subscription functionality*/
+        $oldSubscription->is_test_subscription = $testStore;
         $oldSubscription->update();
 
         //Get: Previous Plan Allowed Carrier Limit
@@ -362,6 +367,7 @@ class SubscriptionController extends Controller
                 }
 
                 if ($oldSubscription->status == 2) { //If the previous subscription is expired
+                    // TODO: We can remove previous subscription from here
                     $updateSubResponse = $this->createnewSubscriptionPlan($oldSubscription->stripe_id, $planId);
                 } else { //If the previous subscription is active
                     $updateSubResponse = $this->updateSubscriptionPlan($oldSubscription->subscription_id, $planId);
@@ -370,7 +376,9 @@ class SubscriptionController extends Controller
                 if ($updateSubResponse['error'] == true) {
                     return response()->json($updateSubResponse);
                 }
-                $this->updateSubscriptionInDB($updateSubResponse['data'], $oldSubscription);
+
+
+                $this->updateSubscriptionInDB($updateSubResponse['data'], $oldSubscription, $isTestStore);
                 //Getting Current Plan Detail
                 $updateSubResponse['data'] = $this->subscriptionDetailFromDB($data['store_id']);
                 Log::info('Email of old subscription' . $oldSubscription->email);
@@ -461,13 +469,13 @@ class SubscriptionController extends Controller
                 Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, 3));
             } else {
                 Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, 1));
-                /*
-                  * Update WS graph data
-                  * */
-                if (!$isTestStore) {
-                    SaleGraphController::updateGraphData();
-                }
+
             }
+            /*
+            * Update WS graph data
+            * */
+            SaleGraphController::updateGraphData();
+
             return response()->json([
                 'error' => false,
                 'data' => $subscriptionDetail,
@@ -801,7 +809,8 @@ class SubscriptionController extends Controller
             $subscriptionDetail['status'] = 2; //Trial is expired
         }
         $plan = Plan::find($subscriptionDetail['plan_id']);
-
+        /*Added for paid plan expiry date*/
+        $subscriptionDetail['is_expired'] = Functions::isExpiredSubscription($subscriptionDetail['ends_at']);
         $subscriptionDetail['total_installed_carriers'] = $plan->carrier_count - $subscriptionDetail['total_installed_carriers'];
         $subscriptionDetail['total_installable_carriers'] = $plan->carrier_count;
         return response()->json(['error' => false,
