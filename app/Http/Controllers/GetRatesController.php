@@ -112,6 +112,10 @@ class GetRatesController extends Controller
             Log::info('Expired Subscription ' . json_encode($subsciption));
             return false;
         }
+        if ( $subsciption->status === 2) { // not plan or expired plan
+            Log::info('Expired Subscription with status 2' . json_encode($subsciption));
+            return false;
+        }
         if (Functions::isExpiredSubscription($subsciption->ends_at)) { // Expiry date is less then current date
             Log::info('Expired Subscription due to expiry date' . json_encode($subsciption));
             return false;
