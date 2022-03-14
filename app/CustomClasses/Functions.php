@@ -92,4 +92,45 @@ class Functions
         }
         return false;
     }
+
+
+    public static function isExpiredSubscription($endDate): bool
+    {
+        try {
+            if (blank($endDate)) {
+                return false;
+            }
+            $endDate = date('m/d/Y', strtotime($endDate));
+            $endDate = new \DateTime($endDate);
+            $now = new \DateTime(now());
+            // CHecks either the diff is positive or negative
+            $invert = $endDate->diff($now)->invert ?? 0;
+            $days = $endDate->diff($now)->days ?? 0;
+            if ($invert == false && $days > self::$daysAfterExpiry) {
+                return true;
+            }
+            return false;
+        } catch (\Exception $exception) {
+            Log::info('Exception on checking expiry ' . json_encode($exception->getMessage()));
+            return false;
+        }
+
+    }
+
+    public static function getDaysBwDates($startDate, $endDate)
+    {
+        try {
+            if (blank($endDate) || blank($startDate)) {
+                return 0;
+            }
+            $startDate = new \DateTime($startDate);
+            $endDate = new \DateTime($endDate);
+            $days = $endDate->diff($startDate)->days ?? 0;
+            return $days;
+        } catch (\Exception $exception) {
+            Log::info('Exception on checking expiry ' . json_encode($exception->getMessage()));
+            return 0;
+        }
+
+    }
 }
