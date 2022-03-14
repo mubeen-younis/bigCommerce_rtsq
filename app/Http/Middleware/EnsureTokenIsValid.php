@@ -37,7 +37,6 @@ class EnsureTokenIsValid
                 $request['is_test_store'] = $isTestStore;
                 // Setting Stripe Api Key For store
                 Helpers::setStripeAPiKey($isTestStore);
-                Log::info('Stripe APi Key : ' . Stripe::getApiKey().'Store Hash '.$request['store_hash']);
                 return $next($request);
             }
             return response()->json(['error' => true,
@@ -52,7 +51,6 @@ class EnsureTokenIsValid
             'data' => [],
             'message' => 'Token Not Found'
         ], 404);
-
 
     }
 }

@@ -3,9 +3,12 @@
 namespace App\CustomClasses;
 
 use App\Models\BoxSize;
+use Illuminate\Support\Facades\Log;
 
 class Functions
 {
+    protected static $daysAfterExpiry = 4;
+
     public static function hasInsureCarrier($code)
     {
         $insureCarriers = ['wweltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd'];
@@ -100,7 +103,8 @@ class Functions
             if (blank($endDate)) {
                 return false;
             }
-            $endDate = date('m/d/Y', strtotime($endDate));
+
+            $endDate= date('m/d/Y', strtotime($endDate));
             $endDate = new \DateTime($endDate);
             $now = new \DateTime(now());
             // CHecks either the diff is positive or negative
@@ -116,6 +120,7 @@ class Functions
         }
 
     }
+
 
     public static function getDaysBwDates($startDate, $endDate)
     {
