@@ -11,7 +11,8 @@ class Store extends Model
 
     protected $fillable=[
         'token',
-        'app_status'
+        'app_status',
+        'is_trial_completed'
     ];
     public function installedCarriers()
     {
