@@ -1176,10 +1176,11 @@ class GenerateRequestData
         $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
         $this->resiCarrier['unishippersSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['unishippersSmall'] = $alwaysResi;
+
         $apiArray = [
             'username' => $connSettings['creds']['username'],
             'password' => $connSettings['creds']['password'],
-            'requestkey' => $connSettings['creds']['request_key'],
+            'requestkey' => $connSettings['creds']['request_key'] ?? '',
             'upsaccountnumber' => $connSettings['creds']['ups_account_number'],
             'unishipperscustomernumber' => $connSettings['creds']['unishippers_customer_number'],
             'packagetype' => 'P',
