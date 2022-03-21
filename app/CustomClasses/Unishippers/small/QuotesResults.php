@@ -149,24 +149,6 @@ class QuotesResults
 
             return $returnResp;
         }
-
-        /**
-         * get quotes if supress is enables
-         * refferce issue: https://eniture.atlassian.net/browse/QA-5458
-         */
-        if (!$isMultiShipment && isset($inStoreLdData) && $inStoreLdData) {
-            $allQuotes = $this->CompileQuotes->inStoreLocalDeliveryQuotes($quote, $inStoreLdData, $allOrigins);
-            $resp = $allQuotes;
-            $returnResp['resp'] = $resp;
-            return $returnResp;
-        }
-
-        $resp = [
-            'resp' => $return ?? [],
-            'isMultiShipment' => $isMultiShipment,
-        ];
-
-        return $resp;
     }
 
     private function formateQuoteBeforeCompile($shipments)
@@ -227,14 +209,13 @@ class QuotesResults
             if (isset($this->quoteSettings['number_of_transit_days']) && $this->quoteSettings['number_of_transit_days'] != null && isset($this->quoteSettings['ground_metric']) && $this->quoteSettings['ground_metric'] != null) {
                 // Check limited to carrier transit days
                 if ($this->quoteSettings['ground_metric'] == 1) {
-                    //  2 > 3
-                    if (isset($quote['TransitTimeInDays']) && isset($this->quoteSettings['number_of_transit_days']) && $quote['TransitTimeInDays'] > $this->quoteSettings['number_of_transit_days']) {
+                    if (isset($quote['serviceDesc']['TransitTimeInDays']) && $quote['serviceDesc']['TransitTimeInDays'] > $this->quoteSettings['number_of_transit_days']) {
                         $islimited = true;
                     }
                 }
                 // Check by calendar days
                 else {
-                    if (isset($quote['CalenderDaysInTransit']) && isset($this->quoteSettings['number_of_transit_days']) && $quote['CalenderDaysInTransit'] > $this->quoteSettings['number_of_transit_days']) {
+                    if (isset($quote['serviceDesc']['CalenderDaysInTransit']) && $quote['serviceDesc']['CalenderDaysInTransit'] > $this->quoteSettings['number_of_transit_days']) {
                         $islimited = true;
                     }
                 }

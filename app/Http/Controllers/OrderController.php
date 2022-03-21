@@ -164,8 +164,7 @@ class OrderController extends Controller
         /* 
         * Shipment Packaging */
         foreach ($responseFromWS as $carrrierName => $WsResp) {
-            foreach ($WsResp as $zip => $ws) {
-                
+            foreach ($WsResp as $zip => $ws) {                
                 if (!(isset($ws->severity) && $ws->severity == 'ERROR')) {
 
                     $liftResidentialStatus = $this->getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate, $rateId);
@@ -240,7 +239,6 @@ class OrderController extends Controller
         $items = $lineItem->items;
         $count = 0;
         $addedInsurance = $addHazmat = false;
-
         $isMulti = false;
         $insertedIds = $insertedNames = [];
         //print_r($items); exit;
@@ -301,7 +299,6 @@ class OrderController extends Controller
                     $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
                 }
             }
-
             /* 
             * Item Accessorials */
             $addedHazmat = false;
@@ -336,22 +333,20 @@ class OrderController extends Controller
             }
 
             // TODO:need to change implementation of this function
-            $isSmall = $this->isSmallQuote($sName);
+            $isSmall = $this->isSmallQuote($sName) || $isSmallrate;
             if ($isMulti) {
                 strpos(strtolower($code), '+r') ? array_push($orderWidget[$zip]['accessories'], 'Residential Delivery') : '';
             } else {
                 $autoResidentialsStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Delivery') : '';
             }
-
+            
             $isHAT ? array_push($orderWidget[$zip]['accessories'], 'Hold At Terminal') : '';
             if (!$isSmall) {
-
                 $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Pickup') : '';
                 $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Delivery') : '';
             }
             $count++;
         }
-
         /*
          * Added For Catering items that ship as SHippping Group*/
         $itemsWithShipGroup = collect($items)->where('shipping_group', '!=', null)->all();
@@ -849,6 +844,8 @@ class OrderController extends Controller
             'UPS Next Day Air',
             'UPS Next Day Air Early',
             'Fedex Ground',
+            'UPS 2nd Day Air A.M.',
+            'UPS Next Day Air Early A.M.',
         ];
         return in_array($quote, $small);
     }
