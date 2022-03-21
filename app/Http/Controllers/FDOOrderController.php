@@ -77,7 +77,7 @@ class FDOOrderController extends Controller
                 $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
                 if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
                     $response = json_decode($response['response']);
-                    $resp['rate_id'] = $response->rate_id;
+                    $resp['rate_id'] = $response->rate_id ?? '';
                     $resp['full_rate_id'] = $response->shipping_provider_quote->rateId ?? '';
                     $resp['shipping_name'] = $response->shipping_provider_quote->name ?? '';
                     $resp['shipping_rate'] = $response->shipping_provider_quote->rate->value ?? '';

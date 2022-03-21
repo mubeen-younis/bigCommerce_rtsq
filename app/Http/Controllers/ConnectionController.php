@@ -12,6 +12,8 @@ use App\CustomClasses\GTZ\ltl\ConnectionSettings as GTZLtlConnectionSettings;
 use App\CustomClasses\XPO\ltl\ConnectionSettings as XPOLtlConnectionSettings;
 use App\CustomClasses\RL\ltl\ConnectionSettings as RNLLtlConnectionSettings;
 use App\CustomClasses\Unishippers\small\ConnectionSettings as UnishippersSmallConnectionSettings;
+use App\CustomClasses\FreightQuote\Ltl\ConnectionSettings as FreightQuoteConSett;
+
 use App\Models\Connection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +21,11 @@ use Illuminate\Support\Facades\Http;
 
 class ConnectionController extends Controller
 {
+    /**
+     * @var FreightQuoteConSett
+     */
+    private $freightQuoteLtlTestCon;
+
     /**
      * Display a listing of the resource.
      *
@@ -36,6 +43,7 @@ class ConnectionController extends Controller
         $this->xpoLtlTestCon = new XPOLtlConnectionSettings();
         $this->rnlLtlTestCon = new RNLLtlConnectionSettings();
         $this->unishippersSmallTestCon = new UnishippersSmallConnectionSettings();
+        $this->freightQuoteLtlTestCon = new FreightQuoteConSett();
     }
 
     public function index(Request $request)
@@ -78,7 +86,7 @@ class ConnectionController extends Controller
 
         $checkCarrierType = DB::table('carriers')->select('slug', 'stores.name')
             ->leftJoin('installed_carriers', 'carriers.id', 'installed_carriers.carrier_id')
-            ->leftJoin('stores', 'stores.id','=','installed_carriers.store_id')
+            ->leftJoin('stores', 'stores.id', '=', 'installed_carriers.store_id')
             ->where('installed_carriers.id', $request->carrierId)
             ->first();
 
@@ -118,6 +126,9 @@ class ConnectionController extends Controller
                     return response()->json($response);
                 case 'unishippers-small':
                     $response = $this->unishippersSmallTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'freightquote-ltl':
+                    $response = $this->freightQuoteLtlTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
                 default:
                     return response()->json(["error" => true, "data" => [],
