@@ -112,7 +112,7 @@ class GetRatesController extends Controller
             Log::info('Expired Subscription ' . json_encode($subsciption));
             return false;
         }
-        if ( $subsciption->status === 2) { // not plan or expired plan
+        if ($subsciption->status === 2) { // not plan or expired plan
             Log::info('Expired Subscription with status 2' . json_encode($subsciption));
             return false;
         }
@@ -179,8 +179,16 @@ class GetRatesController extends Controller
                     'freightClass' => $this->isLTL($weight, $ltlCheck) ? 'ltl' : '', //ltl for testing
                     //'freightClass' => '',
                     'lineItemClass' => isset($product_settings['freight_class']) ? $this->getLineItemClass($product_settings['freight_class']) : '',
-                    'shipping_group' => $product_settings['shipping_group'] ?? null
+                    'shipping_group' => $product_settings['shipping_group'] ?? null,
+                    'exclude_packaging' => 0
                 ];
+                if (
+                    (blank($details['items'][$key]['lineItemLength']) || $details['items'][$key]['lineItemLength'] <= 0) ||
+                    (blank($details['items'][$key]['lineItemWidth']) || $details['items'][$key]['lineItemWidth'] <= 0) ||
+                    (blank($details['items'][$key]['lineItemHeight']) || $details['items'][$key]['lineItemHeight'] <= 0)
+                ) {
+                    $details['items'][$key]['exclude_packaging'] = 1;
+                }
             }
         }
         return ['lineItemData' => $details];

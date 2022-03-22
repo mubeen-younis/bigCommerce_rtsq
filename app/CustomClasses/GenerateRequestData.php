@@ -1254,6 +1254,7 @@ class GenerateRequestData
         foreach ($origins as $key => $origin) {
             $isNotLtl = !(isset($itemsArr[$key]['freightClass']) && $itemsArr[$key]['freightClass'] === 'ltl');
             $shipBinAlone = $itemsArr[$key]['shipBinAlone'] ?? false;
+            $weightBasedItem = $itemsArr[$key]['exclude_packaging'] ?? false;
             if ($isNotLtl) {
                 if ($shipBinAlone) {
                     $itemsAlone[$origin['locationId']][] = [
@@ -1266,6 +1267,20 @@ class GenerateRequestData
                         "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
                         "vr" => $itemsArr[$key]['vertical_rotation'] ?? 0,//vertical 0 or 1
                         "boxFee" => $itemsArr[$key]['boxFee'] ?? 0
+                    ];
+                } /*Added COndition after not requiring dimesnions*/
+                elseif ($weightBasedItem) {
+                    $itemsAlone[$origin['locationId']][] = [
+                        "variant_id" => $key,
+                        "id" => $key,
+                        "wg" => $itemsArr[$key]['lineItemWeight'] ?? 0,
+                        "h" => '',
+                        "d" => '',
+                        "w" => '',
+                        "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
+                        "vr" => 0,//vertical 0 or 1
+                        "boxFee" => 0,
+                        "weight_based" => 1
                     ];
                 } else {
                     $items[$origin['locationId']][] = [
@@ -1348,49 +1363,6 @@ class GenerateRequestData
                         $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins, $itemsArr);
                     }
                 }
-                //echo $counting; exit;
-                /*$count1 = $count2 = $count11 = $count22 = 0;
-                foreach ($items as $locationId => $item) {
-                    foreach ($item as $keyItem => $itm) {
-                        if(!empty($itm)) {
-                            $bins = $binResponse[$locationId]->bins_packed ?? [];
-                            $hasBoth = true;
-                            foreach ($bins as $key => $bin) {
-                                $binId = $bin->bin_data->id;
-
-                                $items = $bin->items;
-                                $itemId = $items[0]->id ?? 0;
-                                if($itemId !== $binId){
-                                    ++$count1;
-                                    $origin = $itm['id'];
-                                    if($key == $keyItem) {
-                                        ++$count11;
-                                        if (isset($itemsArr[$origin]['shipBinAlone']) && $itemsArr[$origin]['shipBinAlone'] == 1) {
-                                            $newkey = $origin . $key;
-
-                                        } else {
-                                            $newkey = $origin . $key;
-                                        }
-                                        $newOrigins[$newkey] = $origins[$origin];
-                                        $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins, $itemsArr);
-                                        $hasBoth = false;
-                                    }
-                                }else{
-                                    ++$count2;
-                                    $origin = $itm['id'];
-                                    if($key == $keyItem){
-                                        ++$count22;
-                                        $counting++;
-                                        $newkey = $origin . $key;
-                                        $newOrigins[$newkey] = $origins[$origin];
-                                        $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins, $itemsArr);
-                                    }
-                                }
-
-                            }
-                        }
-                    }
-                }*/
             } else {
                 $newOrigins = $this->origins;
                 $newitemsArr = $this->itemsArr;
