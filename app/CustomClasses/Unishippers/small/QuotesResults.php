@@ -154,18 +154,13 @@ class QuotesResults
     private function formateQuoteBeforeCompile($shipments)
     {
         $servicesDesc = [];
-        foreach ($shipments as $quote) {
-            if (isset($quote['q'])) {
-                $servicesDesc = $quote['q'];
-                break;
-            }
-        }
 
         foreach ($shipments as $shipment => $quotes) {
             $temp = [];
             if (!isset($quotes['q'])) {
                 continue;
             }
+            $servicesDesc = $quotes['q'];
 
             foreach ($quotes['q'] as $key => $quote) {
                 if (!isset($quote['severity']) && isset($servicesDesc[$key])) {
