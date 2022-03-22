@@ -1256,20 +1256,10 @@ class GenerateRequestData
             $shipBinAlone = $itemsArr[$key]['shipBinAlone'] ?? false;
             $weightBasedItem = $itemsArr[$key]['exclude_packaging'] ?? false;
             if ($isNotLtl) {
-                if ($shipBinAlone) {
-                    $itemsAlone[$origin['locationId']][] = [
-                        "variant_id" => $key,
-                        "id" => $key,
-                        "wg" => $itemsArr[$key]['lineItemWeight'] ?? 0,
-                        "h" => Helpers::floatValue($itemsArr[$key]['lineItemHeight'] ?? 0),
-                        "d" => Helpers::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
-                        "w" => Helpers::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
-                        "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
-                        "vr" => $itemsArr[$key]['vertical_rotation'] ?? 0,//vertical 0 or 1
-                        "boxFee" => $itemsArr[$key]['boxFee'] ?? 0
-                    ];
-                } /*Added COndition after not requiring dimesnions*/
-                elseif ($weightBasedItem) {
+                /*Added COndition after not requiring dimesnions*/
+                if ($weightBasedItem) {
+
+
                     $itemsAlone[$origin['locationId']][] = [
                         "variant_id" => $key,
                         "id" => $key,
@@ -1281,6 +1271,18 @@ class GenerateRequestData
                         "vr" => 0,//vertical 0 or 1
                         "boxFee" => 0,
                         "weight_based" => 1
+                    ];
+                } elseif ($shipBinAlone) {
+                    $itemsAlone[$origin['locationId']][] = [
+                        "variant_id" => $key,
+                        "id" => $key,
+                        "wg" => $itemsArr[$key]['lineItemWeight'] ?? 0,
+                        "h" => Helpers::floatValue($itemsArr[$key]['lineItemHeight'] ?? 0),
+                        "d" => Helpers::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
+                        "w" => Helpers::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
+                        "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
+                        "vr" => $itemsArr[$key]['vertical_rotation'] ?? 0,//vertical 0 or 1
+                        "boxFee" => $itemsArr[$key]['boxFee'] ?? 0
                     ];
                 } else {
                     $items[$origin['locationId']][] = [
@@ -1338,7 +1340,6 @@ class GenerateRequestData
             $Bin3D = new Bin3D();
             $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment);
             if (count($binResponse)) {
-
                 foreach ($itemsAlone as $key => $itemAlone) {
                     foreach ($itemAlone as $alone) {
                         if (count($items) && isset($items[$key])) {
@@ -1352,12 +1353,14 @@ class GenerateRequestData
 
                 $counting = 0;
                 $counting = 0;
+
                 foreach ($binResponse as $locationId => $bins) {
                     foreach ($bins->bins_packed as $key => $binPacked) {
-
                         $bin = $binPacked;
                         $counting++;
                         $origin = $bin->bin_data->variant_id;
+                       // dd(12,$binResponse,$itemsArr[$origin]);
+
                         $newkey = $origin . $key;
                         $newOrigins[$newkey] = $origins[$origin];
                         $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins, $itemsArr);

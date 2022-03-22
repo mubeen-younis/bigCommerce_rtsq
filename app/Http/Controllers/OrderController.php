@@ -108,7 +108,6 @@ class OrderController extends Controller
     public function createOrderWidget($request, $order)
     {
         $rateId = $order['rate_id'] ?? null;
-        //$rateId='parcel_12fdww84K+R+oridx+131647862932';
         $cartId = $order['cart_id'] ?? null;
         $data = optional(RequestData::where('rate_id', $rateId)
                 ->where('cart_id', $cartId)

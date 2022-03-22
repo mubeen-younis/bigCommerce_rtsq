@@ -188,6 +188,7 @@ class GetRatesController extends Controller
                     (blank($details['items'][$key]['lineItemHeight']) || $details['items'][$key]['lineItemHeight'] <= 0)
                 ) {
                     $details['items'][$key]['exclude_packaging'] = 1;
+                    $details['items'][$key]['shipBinAlone'] = 1;
                 }
             }
         }
