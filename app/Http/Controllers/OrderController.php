@@ -183,9 +183,9 @@ class OrderController extends Controller
                         //print_r($ws->binPackagingData->response); exit;
                         $itemCount = 0;
                         foreach ($sbsData as $key => $binPacked) {
-                            $type = '';
+                            $type = optional($binPacked->bin_data)->type ?? '';
                             $quantity = 1;
-                            if (isset($binPacked->bin_data->type) && $binPacked->bin_data->type == 'item' || $binPacked->bin_data->type == 'weight_based') {
+                            if ($type == 'item' || $type == 'weight_based') {
                                 $type = $binPacked->bin_data->type;
                                 $product_id = $binPacked->bin_data->id;
                                 $quantity = $binPacked->bin_data->quantity ?? 1;
