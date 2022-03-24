@@ -1299,6 +1299,9 @@ class GenerateRequestData
                 }
             }
         }
+        if (!empty($itemsAlone)){
+            $this->oneRate=false;
+        }
 
         $boxBins = $newOrigins = $newitemsArr = [];
         switch ($this->fedexType) {
