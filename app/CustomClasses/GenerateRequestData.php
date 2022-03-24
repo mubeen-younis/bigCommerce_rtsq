@@ -322,15 +322,16 @@ class GenerateRequestData
         $receiverAddress = $this->getReceiverData($request);
 
         $autoResidential = $liftGateWithAuto = '0';
-        $isRAD = isset($this->storeData['installed_addons']) && isset($this->storeData['installed_addons'][0]->is_enabled) && isset($this->storeData['installed_addons'][0]->is_enabled) && $this->storeData['installed_addons'][0]->is_enabled == 1 && isset($this->storeData['installed_addons'][0]->is_suspend) && $this->storeData['installed_addons'][0]->is_suspend == 0;
+        //$isRAD = isset($this->storeData['installed_addons']) && isset($this->storeData['installed_addons'][0]->is_enabled) && isset($this->storeData['installed_addons'][0]->is_enabled) && $this->storeData['installed_addons'][0]->is_enabled == 1 && isset($this->storeData['installed_addons'][0]->is_suspend) && $this->storeData['installed_addons'][0]->is_suspend == 0;
+        $isRAD = isset($this->storeData['enabled_addon_rad']) && $this->storeData['enabled_addon_rad'];
+
         if ($isRAD) {
             $autoResidential = '1';
             $liftGateWithAuto = '1';
         }
         $binReponse = $boxBins = [];
         //
-        if ($this->storeData['installed_addon_sbs'] && isset($this->storeData['installed_addons'][0]->is_enabled) &&
-            isset($this->storeData['installed_addons'][0]->is_enabled)) {
+        if (isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs']) {
             $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? [];
             $this->itemsArr = $itemsArr;
             $this->carriers = $carriers;
@@ -1359,7 +1360,7 @@ class GenerateRequestData
                         $bin = $binPacked;
                         $counting++;
                         $origin = $bin->bin_data->variant_id;
-                       // dd(12,$binResponse,$itemsArr[$origin]);
+                        // dd(12,$binResponse,$itemsArr[$origin]);
 
                         $newkey = $origin . $key;
                         $newOrigins[$newkey] = $origins[$origin];
