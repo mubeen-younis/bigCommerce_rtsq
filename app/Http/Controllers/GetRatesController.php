@@ -183,14 +183,17 @@ class GetRatesController extends Controller
                     'shipping_group' => $product_settings['shipping_group'] ?? null,
                     'exclude_packaging' => 0
                 ];
-                if (
-                    (blank($details['items'][$key]['lineItemLength']) || $details['items'][$key]['lineItemLength'] <= 0) ||
-                    (blank($details['items'][$key]['lineItemWidth']) || $details['items'][$key]['lineItemWidth'] <= 0) ||
-                    (blank($details['items'][$key]['lineItemHeight']) || $details['items'][$key]['lineItemHeight'] <= 0)
-                ) {
-                    $details['items'][$key]['exclude_packaging'] = 1;
-                    $details['items'][$key]['shipBinAlone'] = 1;
+                if (!$details['items'][$key]['shipMultiplePackage']) {
+                    if (
+                        (blank($details['items'][$key]['lineItemLength']) || $details['items'][$key]['lineItemLength'] <= 0) ||
+                        (blank($details['items'][$key]['lineItemWidth']) || $details['items'][$key]['lineItemWidth'] <= 0) ||
+                        (blank($details['items'][$key]['lineItemHeight']) || $details['items'][$key]['lineItemHeight'] <= 0)
+                    ) {
+                        $details['items'][$key]['exclude_packaging'] = 1;
+                        $details['items'][$key]['shipBinAlone'] = 1;
+                    }
                 }
+
             }
         }
         return ['lineItemData' => $details];
