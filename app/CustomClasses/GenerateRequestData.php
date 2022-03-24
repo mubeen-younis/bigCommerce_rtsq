@@ -1259,15 +1259,13 @@ class GenerateRequestData
             if ($isNotLtl) {
                 /*Added COndition after not requiring dimesnions*/
                 if ($weightBasedItem) {
-
-
                     $itemsAlone[$origin['locationId']][] = [
                         "variant_id" => $key,
                         "id" => $key,
                         "wg" => $itemsArr[$key]['lineItemWeight'] ?? 0,
-                        "h" => '',
-                        "d" => '',
-                        "w" => '',
+                        "h" => Helpers::floatValue($itemsArr[$key]['lineItemHeight'] ?? 0),
+                        "d" => Helpers::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
+                        "w" => Helpers::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
                         "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
                         "vr" => 0,//vertical 0 or 1
                         "boxFee" => 0,
