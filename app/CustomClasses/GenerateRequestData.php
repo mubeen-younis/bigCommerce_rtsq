@@ -488,7 +488,7 @@ class GenerateRequestData
                 $bins_packed = $binResponse->bins_packed ?? [];
                 if (!empty($bins_packed)) {
                     foreach ($bins_packed as $packed) {
-                        if (isset($packed->bin_data->type) && $packed->bin_data->type == 'item') {
+                        if (isset($packed->bin_data->type) && ($packed->bin_data->type == 'item' || $packed->bin_data->type == 'weight_based')) {
                             $this->oneRate = false;
                             break 2;
                         }
@@ -1299,8 +1299,9 @@ class GenerateRequestData
                 }
             }
         }
-        if (!empty($itemsAlone)){
-            $this->oneRate=false;
+
+        if (!empty($itemsAlone)) {
+            $this->oneRate = false;
         }
 
         $boxBins = $newOrigins = $newitemsArr = [];
