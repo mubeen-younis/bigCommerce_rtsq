@@ -382,9 +382,9 @@ class FDOOrderController extends Controller
                         }
                         $itemCount = 0;
                         foreach ($sbsData as $key => $binPacked) {
-                            $type = '';
+                            $type = optional($binPacked->bin_data)->type ?? '';
                             $quantity = 1;
-                            if (isset($binPacked->bin_data->type) && $binPacked->bin_data->type == 'item') {
+                            if ($type == 'item' || $type == 'weight_based') {
                                 $type = 'item';
                                 $product_id = $binPacked->bin_data->id;
                                 $quantity = $binPacked->bin_data->quantity ?? 1;
