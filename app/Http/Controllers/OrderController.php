@@ -183,10 +183,10 @@ class OrderController extends Controller
                         //print_r($ws->binPackagingData->response); exit;
                         $itemCount = 0;
                         foreach ($sbsData as $key => $binPacked) {
-                            $type = '';
+                            $type = optional($binPacked->bin_data)->type ?? '';
                             $quantity = 1;
-                            if (isset($binPacked->bin_data->type) && $binPacked->bin_data->type == 'item') {
-                                $type = 'item';
+                            if ($type == 'item' || $type == 'weight_based') {
+                                $type = $binPacked->bin_data->type;
                                 $product_id = $binPacked->bin_data->id;
                                 $quantity = $binPacked->bin_data->quantity ?? 1;
                                 $itemCount++;
@@ -194,10 +194,18 @@ class OrderController extends Controller
                             $count = 0;
                             $orderWidgetData['type'] = $type;
                             $orderWidgetData['image_complete'] = $binPacked->image_complete;
-                            $orderWidgetData['d'] = $binPacked->bin_data->d . ' x ';
-                            $orderWidgetData['w'] = $binPacked->bin_data->w . ' x ';
-                            $orderWidgetData['h'] = $binPacked->bin_data->h;
                             $orderWidgetData['quantity'] = $quantity;
+                            /*For Weight Based Products*/
+                            if ($type == 'weight_based') {
+                                $orderWidgetData['d'] = '';
+                                $orderWidgetData['w'] = '';
+                                $orderWidgetData['h'] = '';
+                                $orderWidgetData['weight'] = $binPacked->bin_data->weight ?? '';
+                            } else {
+                                $orderWidgetData['d'] = $binPacked->bin_data->d . ' x ';
+                                $orderWidgetData['w'] = $binPacked->bin_data->w . ' x ';
+                                $orderWidgetData['h'] = $binPacked->bin_data->h;
+                            }
 
                             $orderWidgetData['nickname'] = $this->getBoxName($binPacked->bin_data->id, $request['store_id'], $rateId, $cartId);
                             foreach ($binPacked->items as $item) {

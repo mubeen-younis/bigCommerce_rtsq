@@ -12,6 +12,7 @@ use App\Models\InstalledCarrier;
 use App\Models\Locations;
 use App\Models\QuoteSetting;
 use App\Models\Store;
+use App\Models\Subscription\PackageSubscription;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\CustomClasses\Origin;
@@ -112,7 +113,7 @@ class GetRatesController extends Controller
             Log::info('Expired Subscription ' . json_encode($subsciption));
             return false;
         }
-        if ( $subsciption->status === 2) { // not plan or expired plan
+        if ($subsciption->status === 2) { // not plan or expired plan
             Log::info('Expired Subscription with status 2' . json_encode($subsciption));
             return false;
         }
@@ -179,8 +180,20 @@ class GetRatesController extends Controller
                     'freightClass' => $this->isLTL($weight, $ltlCheck) ? 'ltl' : '', //ltl for testing
                     //'freightClass' => '',
                     'lineItemClass' => isset($product_settings['freight_class']) ? $this->getLineItemClass($product_settings['freight_class']) : '',
-                    'shipping_group' => $product_settings['shipping_group'] ?? null
+                    'shipping_group' => $product_settings['shipping_group'] ?? null,
+                    'exclude_packaging' => 0
                 ];
+                if (!$details['items'][$key]['shipMultiplePackage']) {
+                    if (
+                        (blank($details['items'][$key]['lineItemLength']) || $details['items'][$key]['lineItemLength'] <= 0) ||
+                        (blank($details['items'][$key]['lineItemWidth']) || $details['items'][$key]['lineItemWidth'] <= 0) ||
+                        (blank($details['items'][$key]['lineItemHeight']) || $details['items'][$key]['lineItemHeight'] <= 0)
+                    ) {
+                        $details['items'][$key]['exclude_packaging'] = 1;
+                        $details['items'][$key]['shipBinAlone'] = 1;
+                    }
+                }
+
             }
         }
         return ['lineItemData' => $details];
@@ -276,11 +289,23 @@ class GetRatesController extends Controller
             $installedAddonSbs = InstalledAddon::join('addons', 'addons.id', 'installed_addons.addon_id')
                 ->where(['installed_addons.store_id' => $store->id,
                     'installed_addons.is_enabled' => 1,
-                    //'installed_addons.is_suspend' => 0,
-                    //'installed_addons.is_expired' => 0,
+
                     'addons.short_code' => 'SBS',
                 ])
                 ->exists();
+            $enabledAddonSbs = false;
+            if ($installedAddonSbs) {
+                $addonSbs = PackageSubscription::leftJoin('packages as p', 'package_subscriptions.package_id', '=', 'p.id')
+                    ->where('store_id', $store->id)
+                    ->where('addon_type', 'SBS')
+                    ->where('package_subscriptions.status', '!=', 3)
+                    ->select('package_subscriptions.id', 'package_subscriptions.status', 'package_subscriptions.created_at')
+                    ->latest()->first();
+                if (!blank($addonSbs)) {
+                    $enabledAddonSbs = true;
+                }
+            }
+
             $installedAddonRad = InstalledAddon::join('addons', 'addons.id', 'installed_addons.addon_id')
                 ->where(['installed_addons.store_id' => $store->id,
                     'installed_addons.is_enabled' => 1,
@@ -289,13 +314,27 @@ class GetRatesController extends Controller
                     'addons.short_code' => 'RAD',
                 ])
                 ->exists();
+            $enabledAddonRad = false;
+            if ($installedAddonRad) {
+                $addonRad = PackageSubscription::leftJoin('packages as p', 'package_subscriptions.package_id', '=', 'p.id')
+                    ->where('store_id', $store->id)
+                    ->where('addon_type', 'RAD')
+                    ->where('package_subscriptions.status', '!=', 3)
+                    ->select('package_subscriptions.id', 'package_subscriptions.status', 'package_subscriptions.created_at')
+                    ->latest()->first();
+                if (!blank($addonRad)) {
+                    $enabledAddonRad = true;
+                }
+            }
             if (!empty($installedCarriers) && count($installedCarriers)) {
                 return [
                     'installed_carriers' => $installedCarriers,
                     'installed_addons' => $installedAddons,
                     'store' => $store,
                     'installed_addon_sbs' => $installedAddonSbs,
-                    'installed_addon_rad' => $installedAddonRad
+                    'installed_addon_rad' => $installedAddonRad,
+                    'enabled_addon_sbs' => $enabledAddonSbs,
+                    'enabled_addon_rad' => $enabledAddonRad
                 ];
             }
         }

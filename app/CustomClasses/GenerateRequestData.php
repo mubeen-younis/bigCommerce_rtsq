@@ -322,15 +322,16 @@ class GenerateRequestData
         $receiverAddress = $this->getReceiverData($request);
 
         $autoResidential = $liftGateWithAuto = '0';
-        $isRAD = isset($this->storeData['installed_addons']) && isset($this->storeData['installed_addons'][0]->is_enabled) && isset($this->storeData['installed_addons'][0]->is_enabled) && $this->storeData['installed_addons'][0]->is_enabled == 1 && isset($this->storeData['installed_addons'][0]->is_suspend) && $this->storeData['installed_addons'][0]->is_suspend == 0;
+        //$isRAD = isset($this->storeData['installed_addons']) && isset($this->storeData['installed_addons'][0]->is_enabled) && isset($this->storeData['installed_addons'][0]->is_enabled) && $this->storeData['installed_addons'][0]->is_enabled == 1 && isset($this->storeData['installed_addons'][0]->is_suspend) && $this->storeData['installed_addons'][0]->is_suspend == 0;
+        $isRAD = isset($this->storeData['enabled_addon_rad']) && $this->storeData['enabled_addon_rad'];
+
         if ($isRAD) {
             $autoResidential = '1';
             $liftGateWithAuto = '1';
         }
         $binReponse = $boxBins = [];
         //
-        if ($this->storeData['installed_addon_sbs'] && isset($this->storeData['installed_addons'][0]->is_enabled) &&
-            isset($this->storeData['installed_addons'][0]->is_enabled)) {
+        if (isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs']) {
             $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? [];
             $this->itemsArr = $itemsArr;
             $this->carriers = $carriers;
@@ -487,7 +488,7 @@ class GenerateRequestData
                 $bins_packed = $binResponse->bins_packed ?? [];
                 if (!empty($bins_packed)) {
                     foreach ($bins_packed as $packed) {
-                        if (isset($packed->bin_data->type) && $packed->bin_data->type == 'item') {
+                        if (isset($packed->bin_data->type) && ($packed->bin_data->type == 'item' || $packed->bin_data->type == 'weight_based')) {
                             $this->oneRate = false;
                             break 2;
                         }
@@ -1254,8 +1255,23 @@ class GenerateRequestData
         foreach ($origins as $key => $origin) {
             $isNotLtl = !(isset($itemsArr[$key]['freightClass']) && $itemsArr[$key]['freightClass'] === 'ltl');
             $shipBinAlone = $itemsArr[$key]['shipBinAlone'] ?? false;
+            $weightBasedItem = $itemsArr[$key]['exclude_packaging'] ?? false;
             if ($isNotLtl) {
-                if ($shipBinAlone) {
+                /*Added COndition after not requiring dimesnions*/
+                if ($weightBasedItem) {
+                    $itemsAlone[$origin['locationId']][] = [
+                        "variant_id" => $key,
+                        "id" => $key,
+                        "wg" => $itemsArr[$key]['lineItemWeight'] ?? 0,
+                        "h" => Helpers::floatValue($itemsArr[$key]['lineItemHeight'] ?? 0),
+                        "d" => Helpers::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
+                        "w" => Helpers::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
+                        "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
+                        "vr" => 0,//vertical 0 or 1
+                        "boxFee" => 0,
+                        "weight_based" => 1
+                    ];
+                } elseif ($shipBinAlone) {
                     $itemsAlone[$origin['locationId']][] = [
                         "variant_id" => $key,
                         "id" => $key,
@@ -1280,6 +1296,10 @@ class GenerateRequestData
                     ];
                 }
             }
+        }
+
+        if (!empty($itemsAlone)) {
+            $this->oneRate = false;
         }
 
         $boxBins = $newOrigins = $newitemsArr = [];
@@ -1323,7 +1343,6 @@ class GenerateRequestData
             $Bin3D = new Bin3D();
             $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment);
             if (count($binResponse)) {
-
                 foreach ($itemsAlone as $key => $itemAlone) {
                     foreach ($itemAlone as $alone) {
                         if (count($items) && isset($items[$key])) {
@@ -1337,60 +1356,19 @@ class GenerateRequestData
 
                 $counting = 0;
                 $counting = 0;
+
                 foreach ($binResponse as $locationId => $bins) {
                     foreach ($bins->bins_packed as $key => $binPacked) {
-
                         $bin = $binPacked;
                         $counting++;
                         $origin = $bin->bin_data->variant_id;
+                        // dd(12,$binResponse,$itemsArr[$origin]);
+
                         $newkey = $origin . $key;
                         $newOrigins[$newkey] = $origins[$origin];
                         $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins, $itemsArr);
                     }
                 }
-                //echo $counting; exit;
-                /*$count1 = $count2 = $count11 = $count22 = 0;
-                foreach ($items as $locationId => $item) {
-                    foreach ($item as $keyItem => $itm) {
-                        if(!empty($itm)) {
-                            $bins = $binResponse[$locationId]->bins_packed ?? [];
-                            $hasBoth = true;
-                            foreach ($bins as $key => $bin) {
-                                $binId = $bin->bin_data->id;
-
-                                $items = $bin->items;
-                                $itemId = $items[0]->id ?? 0;
-                                if($itemId !== $binId){
-                                    ++$count1;
-                                    $origin = $itm['id'];
-                                    if($key == $keyItem) {
-                                        ++$count11;
-                                        if (isset($itemsArr[$origin]['shipBinAlone']) && $itemsArr[$origin]['shipBinAlone'] == 1) {
-                                            $newkey = $origin . $key;
-
-                                        } else {
-                                            $newkey = $origin . $key;
-                                        }
-                                        $newOrigins[$newkey] = $origins[$origin];
-                                        $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins, $itemsArr);
-                                        $hasBoth = false;
-                                    }
-                                }else{
-                                    ++$count2;
-                                    $origin = $itm['id'];
-                                    if($key == $keyItem){
-                                        ++$count22;
-                                        $counting++;
-                                        $newkey = $origin . $key;
-                                        $newOrigins[$newkey] = $origins[$origin];
-                                        $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins, $itemsArr);
-                                    }
-                                }
-
-                            }
-                        }
-                    }
-                }*/
             } else {
                 $newOrigins = $this->origins;
                 $newitemsArr = $this->itemsArr;

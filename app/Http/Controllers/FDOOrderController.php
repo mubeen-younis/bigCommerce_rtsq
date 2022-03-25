@@ -77,6 +77,9 @@ class FDOOrderController extends Controller
                 $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
                 if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
                     $response = json_decode($response['response']);
+                    if (blank($response)) {
+                        return [];
+                    }
                     $resp['rate_id'] = $response->rate_id;
                     $resp['full_rate_id'] = $response->shipping_provider_quote->rateId ?? '';
                     $resp['shipping_name'] = $response->shipping_provider_quote->name ?? '';
@@ -379,9 +382,9 @@ class FDOOrderController extends Controller
                         }
                         $itemCount = 0;
                         foreach ($sbsData as $key => $binPacked) {
-                            $type = '';
+                            $type = optional($binPacked->bin_data)->type ?? '';
                             $quantity = 1;
-                            if (isset($binPacked->bin_data->type) && $binPacked->bin_data->type == 'item') {
+                            if ($type == 'item' || $type == 'weight_based') {
                                 $type = 'item';
                                 $product_id = $binPacked->bin_data->id;
                                 $quantity = $binPacked->bin_data->quantity ?? 1;
