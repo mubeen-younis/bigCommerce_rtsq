@@ -48,7 +48,6 @@ class GetRatesController extends Controller
         //echo "<pr>"; print_r($request->all()); exit;
 
         //return $testQuotes = $this->testQuotes();
-
         Log::info('Request ' . json_encode($request->all()));
         $storeHash = $request->base_options['store_id'] ?? null;
         $storeData = $this->getStoreData($storeHash);
@@ -58,9 +57,7 @@ class GetRatesController extends Controller
         $isTestStore = Helpers::checkIsTestStore($storeHash);
         Helpers::setStripeAPiKey($isTestStore);
 
-
         //echo "<pre>"; print_r($storeData['store']['id']); exit;
-
         if ($storeData == null) {
             return [];
         }
@@ -74,7 +71,6 @@ class GetRatesController extends Controller
         $this->getCarrierSettings($storeData['installed_carriers']);
 
         $formatReq = $this->formatRequest($request->all(), $storeData);
-
         if (
             $formatReq['lineItemData']['destination']['zip'] == null ||
             $formatReq['lineItemData']['destination']['state'] == null ||
