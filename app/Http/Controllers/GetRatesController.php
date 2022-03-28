@@ -60,7 +60,6 @@ class GetRatesController extends Controller
 
 
         //echo "<pre>"; print_r($storeData['store']['id']); exit;
-
         if ($storeData == null) {
             return [];
         }
@@ -74,7 +73,7 @@ class GetRatesController extends Controller
         $this->getCarrierSettings($storeData['installed_carriers']);
 
         $formatReq = $this->formatRequest($request->all(), $storeData);
-
+ 
         if (
             $formatReq['lineItemData']['destination']['zip'] == null ||
             $formatReq['lineItemData']['destination']['state'] == null ||

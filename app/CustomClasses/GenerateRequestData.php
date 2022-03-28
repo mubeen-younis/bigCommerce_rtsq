@@ -334,7 +334,7 @@ class GenerateRequestData
      * @return array|bool
      */
     public function generateRequestArray($request, $carriersArray, $itemsArr, $cartInfo)
-    {
+    {   
         $carriers = $carriersArray['carriers'];
         Log::info('Carriers ' . json_encode($carriers));
         $receiverAddress = $this->getReceiverData($request);
@@ -399,6 +399,14 @@ class GenerateRequestData
 
                             foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
                                 $carriers['wweSmall']['originAddress'][$key] = $origin;
+                            }
+                        }
+
+                        if (isset($carriers['unishippersSmall'])) {
+                            unset($carriers['unishippersSmall']['originAddress']);
+
+                            foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
+                                $carriers['unishippersSmall']['originAddress'][$key] = $origin;
                             }
                         }
                         ///////////////////////////////////////////
@@ -1159,7 +1167,7 @@ class GenerateRequestData
     {
         $residential = 'N';
         $alwaysResi = false;
-        $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
+
         if ($this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
@@ -1171,15 +1179,16 @@ class GenerateRequestData
             }
 
         } else {
-            $alwaysResi = ($radStatus) && (isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery']) ? true : false;
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
         }
-        $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
+
         $this->resiCarrier['unishippersSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['unishippersSmall'] = $alwaysResi;
+
         $apiArray = [
             'username' => $connSettings['creds']['username'],
             'password' => $connSettings['creds']['password'],
-            'requestkey' => $connSettings['creds']['request_key'],
+            'requestkey' => $connSettings['creds']['request_key'] ?? '',
             'upsaccountnumber' => $connSettings['creds']['ups_account_number'],
             'unishipperscustomernumber' => $connSettings['creds']['unishippers_customer_number'],
             'packagetype' => 'P',
@@ -1194,6 +1203,7 @@ class GenerateRequestData
             'prefferedCurrency' => 'USD',
             'includeDeclaredValue' => '1',
             'service' => 'ALL',
+            'accessorial' => ($alwaysResi ? 'Y' : $residential == 'Y') ? ['REP'] : []
         ];
 
         return $apiArray;
