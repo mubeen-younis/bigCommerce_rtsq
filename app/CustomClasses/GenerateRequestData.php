@@ -472,7 +472,7 @@ class GenerateRequestData
                     || isset($carriers['cerasis'])
                     || isset($carriers['globalTranz'])
                     || isset($carriers['xpoLogistics'])
-                    || isset($carriers['yrcLTL']);
+                    || isset($carriers['yrc']);
                 if ($isLtl) {
                     $itemsArr = $olditemsArr + $itemsArr;
                 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\CustomClasses\Fedex\ltl;
+namespace App\CustomClasses\YrcLTL;
 
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
@@ -10,66 +10,6 @@ class QuotesResults
     public function __construct()
     {
         $this->CompileQuotes = new CompileQuotes();
-    }
-
-    public function getServiceRate($data, $serviceDesc, $quoteSettings)
-    {
-        $amount = $data['totalNetCharge']['Amount'];
-
-        //dd($quoteSettings['rate_source']);
-        if (isset($quoteSettings['rate_source']) && $quoteSettings['rate_source'] === 1) {
-            $boxFee = $data['boxFees']['Amount'] ?? 0;
-            $amount = $data['NegotiatedRates']['Amount'] > 0 ? $data['NegotiatedRates']['Amount'] + $boxFee : $amount;
-        }
-        $markupIndex = strtolower(str_replace(' ', '_', $serviceDesc) . '_markup');
-        $markupValue = $quoteSettings['carrier_services'][$markupIndex] ?? '';
-        if (empty($markupValue) || !is_numeric(str_replace('%', '', $markupValue))) {
-            return $amount;
-        }
-        if (strpbrk($markupValue, '%') !== false) {
-            $amount = $this->getvalueFromPercent($amount, str_replace('%', '', $markupValue));
-        } else {
-            $amount = $amount + $markupValue;
-        }
-
-        return number_format($amount, 2);
-
-    }
-
-    public function addHazmatAmountsInServices($amount, $serviceCode, $quoteSettings)
-    {
-        // Adding hazmat fee to Ground Service
-        if ($serviceCode == "03") {
-            if (isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
-                $amount = $amount + $quoteSettings['ground_hazardous_material_fee'];
-            }
-            // Adding hazmat fee to Air Services
-        } else {
-            if (isset($quoteSettings['air_hazardous_material_fee']) && is_numeric($quoteSettings['air_hazardous_material_fee']) && !empty($quoteSettings['air_hazardous_material_fee'])) {
-                $amount = $amount + $quoteSettings['air_hazardous_material_fee'];
-            }
-        }
-        // $amount = $this->addHandlingMarkupOfHazmat($amount, $quoteSettings['handling_fee_markup']);
-        return number_format($amount, 2);
-
-    }
-
-    public function addHandlingMarkupOfHazmat($amount, $markupValue)
-    {
-        $amount = (float) str_replace(',', '', $amount);
-        if (strpbrk($markupValue, '%') !== false) {
-            $amount = $this->getvalueFromPercent($amount, str_replace('%', '', $markupValue));
-        } else {
-            $amount = $amount + $markupValue;
-        }
-        return $amount;
-    }
-
-    public function getvalueFromPercent($amount, $markupPercentage)
-    {
-        $markupValue = $markupPercentage / 100 * $amount;
-        $amountWithMarkup = $amount + $markupValue;
-        return $amountWithMarkup;
     }
 
     public function getServiceTitle($title, $data, $serviceCode, $quoteSettings, $isResi = false)
@@ -86,23 +26,6 @@ class QuotesResults
         return $title . $resiTitle;
     }
 
-    public function checkGroundTransit($quote, $quoteSettings)
-    {
-        // Check limited to carrier transit days
-        if ($quoteSettings['ground_metric'] == 1) {
-            //  2>3
-            if (isset($quote['totalTransitTimeInDays']) && isset($quoteSettings['number_of_transit_days']) && $quote['totalTransitTimeInDays'] > $quoteSettings['number_of_transit_days']) {
-                return true;
-            }
-            // Check by calendar days
-        } else {
-            if (isset($quote['CalenderDaysInTransit']) && isset($quoteSettings['number_of_transit_days']) && $quote['CalenderDaysInTransit'] > $quoteSettings['number_of_transit_days']) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $isMultiShipment)
     {
         //print_r($shipments); exit;
@@ -115,19 +38,23 @@ class QuotesResults
         if (isset($this->quoteSettings['fedex_freight_priority']) && $this->quoteSettings['fedex_freight_priority']) {
             array_push($allConfigServices, 'FEDEX_FREIGHT_PRIORITY');
         }
+
         $this->quoteSettingsData();
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
         $lgQuotes = false;
         $numberOfShipments = 0;
+
         foreach ($shipments as $ship) {
             if (!isset($ship['severity'])) {
                 $numberOfShipments++;
             }
         }
+
         if (!$isMultiShipment) {
             $isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
+
         foreach ($shipments as $origin => $quote) {
 
             if (isset($quote['severity'])) {
@@ -244,37 +171,26 @@ class QuotesResults
 
     public function formateQuoteBeforeCompile($shipments)
     {
+        // dd(174, $shipments);
         foreach ($shipments as $shipment => $quotes) {
             if (!isset($quotes['q'])) {
                 continue;
             }
+
             foreach ($quotes['q'] as $key => $quote) {
-                $shipments[$shipment]['q'][$key]['serviceDesc'] = $quote['serviceType'] === 'FEDEX_FREIGHT_PRIORITY' ? 'Freight Priority' : 'Freight Economy';
-                if (isset($quote['surcharges'])) {
-                    foreach ($quote['surcharges'] as $surcharge) {
-                        if (isset($surcharge['SurchargeType']) && $surcharge['SurchargeType'] === 'LIFTGATE_DELIVERY') {
-                            unset($shipments[$shipment]['q'][$key]['surcharges']);
-                            $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $surcharge['Amount']['Amount'] ?? 0;
-                        }
-
-                    }
-
+                // $shipments[$shipment]['q'][$key]['serviceDesc'] = $quote;
+                if (isset($quote['bodyMain'])) {
+                    // foreach ($quote['bodyMain']['ratedCharges'] as $surcharge) {
+                    //     if (isset($surcharge['totalChargers']) && $surcharge['SurchargeType'] === 'LIFTGATE_DELIVERY') {
+                    //         unset($shipments[$shipment]['q'][$key]['surcharges']);
+                    //         $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $surcharge['Amount']['Amount'] ?? 0;
+                    //     }
+                    // }
                 }
             }
         }
-        return $shipments;
-    }
 
-    public function calenderDays($fDesc, $tnts)
-    {
-        $resp = '';
-        foreach ($tnts as $key => $tnt) {
-            $desc = $tnt['Service']['Description'] ?? '';
-            if ($desc === $fDesc) {
-                $resp = $tnt['EstimatedArrival']['BusinessDaysInTransit'];
-            }
-        }
-        return $resp;
+        return $shipments;
     }
 
     public function quoteSettingsData()
@@ -295,9 +211,11 @@ class QuotesResults
             'hndlngFee' => 'hndlngFee',
             'symbolicHndlngFee' => 'symbolicHndlngFee',
         ];
+
         foreach ($fields as $key => $field) {
             $this->$key = $this->configSettings[$field] ?? '';
         }
+
         $this->resiLabel = Constant::RESI_LABEL;
         $this->lgLabel = Constant::LIFT_LABEL;
         $this->resiLgLabel = Constant::RESI_LIFT_LABEL;
@@ -314,5 +232,4 @@ class QuotesResults
         $resp = array_intersect_key($services, $sliced);
         return $resp;
     }
-
 }
