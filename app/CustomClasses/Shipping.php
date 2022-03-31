@@ -115,7 +115,6 @@ class Shipping
         $url = Constant::QUOTES_URL;
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
-        // return response()->json($requestArr);
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
           /*
         * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
@@ -137,7 +136,6 @@ class Shipping
         Log::info('after addBinResponseToQuotes ' . json_encode($quotes));
 
         $quotesFromWs = $quotes ?? [];
-        // dd(140, $quotesFromWs);
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination);
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
@@ -159,6 +157,7 @@ class Shipping
         $isUpsLtlCodeExist = gettype(array_search('upsltl', $finalCodesTemp)) == 'integer';
         $isFedexLtlCodeExist = gettype(array_search('fedexltl', $finalCodesTemp)) == 'integer';
         $isxpoLtlCodeExist = gettype(array_search('xpoltl', $finalCodesTemp)) == 'integer';
+        $isYrcLtlCodeExist = gettype(array_search('yrcltl', $finalCodesTemp)) == 'integer';
         $freightCode = '';
         $finalCost = 0;
 
@@ -184,7 +183,7 @@ class Shipping
             $finalQuotes = $_finalQuotes;
         } else {
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
-            if ($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist)) {
+            if ($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist)) {
                 $isShippingOrFreight = false;
             }
             if ($this->isRequestMultishipment && !$isShippingOrFreight) {
