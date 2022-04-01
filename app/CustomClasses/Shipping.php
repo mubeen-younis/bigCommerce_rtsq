@@ -68,7 +68,6 @@ class Shipping
             $this->orderWidgetSave($request, [], [], $finalResp['finalQuotes'], $finalResp['formattedResp'], $cartInfo, [], []);
             return $finalResp['formattedResp'];
         }
-
         $request['lineItemData']['items'] = $itemsWithoutShippingGroup;
         $request['lineItemData']['origin'] = $originsWithoutShippingGroup;
         $package = $request['lineItemData'];
@@ -207,7 +206,7 @@ class Shipping
         }
 
         $finalQuotes = $this->addRateId($finalQuotes);
-        $resp = $this->generateQuoteFormatResponse($finalQuotes);
+        $resp = $this->generateQuoteFormatResponse($finalQuotes, ['text' => 'Your products can not be shipped to your location']);
         $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
         return $resp;
     }
@@ -610,27 +609,40 @@ class Shipping
         return $quotes = $quotes ?? [];
     }
 
-    public function generateQuoteFormatResponse($quotes)
+    public function generateQuoteFormatResponse($quotes, $message = [])
     {
+        if (!blank($message)) {
+            $resp['valid'] = false;
+            $resp['messages'][0]['text'] = $message['text'];
+            $resp['messages'][0]['type'] = 'ERROR';
+            return $resp;
+        }
+
         $quotes = array_values($quotes);
         $current = str_replace(' ', 'T', Carbon::now()) . "-00:00";
         if (!empty(array_filter($quotes))) {
             $resp['quote_id'] = (string)rand(1, 9);// need to change
-            $resp['messages'] = [];// need to change
+            $resp['messages'][0] = !empty($message) ? ['text' => $message['text'], 'type' => 'ERROR'] : [];// need to change
+            // if (empty($message)) {
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'eniture_quotes', 'display_name' => $this->limitTitle($quotes[0])]];
+
             foreach ($quotes as $key => $quote) {
                 $resp['carrier_quotes'][0]['quotes'][$key] = [
                     'code' => $quote['code'],
                     'rate_id' => $quote['rate_id'],
                     'display_name' => $this->limitTitle($quote),
                     'cost' => ['currency' => 'USD', 'amount' => str_replace(',', '', $quote['rate'])],
-                    'dispatch_date' => "$current"
+                    'dispatch_date' => "$current",
+                   // 'messages' => $resp['messages']// need to change
+
                     //'cost' => ['currency' => 'USD', 'amount' => number_format($quote['rate'], 2, '.', ',')],
                     //'transit_time' => ['units' => 'BUSINESS_DAYS', 'duration' => 1],
                     // TODO: Will be set
 
                 ];
             }
+            // }
+
         } else {
             $resp = [];
         }
@@ -640,7 +652,8 @@ class Shipping
     }
 
 
-    public function limitTitle($quote)
+    public
+    function limitTitle($quote)
     {
         $res = $quote['title'];
         if (strlen($quote['title']) > 100) {
@@ -659,7 +672,8 @@ class Shipping
      * @param $postData
      * @return object|array
      */
-    public function sendCurlRequest($url, $postData)
+    public
+    function sendCurlRequest($url, $postData)
     {
         Log::info('$postData ' . json_encode($postData));
         $fieldString = http_build_query($postData);
@@ -681,7 +695,8 @@ class Shipping
         return $result;
     }
 
-    public function isSmall($carrier)
+    public
+    function isSmall($carrier)
     {
         $smallCarriers = ['wweSmall', 'upsSmall', 'fedexSmall'];
         return in_array($carrier, $smallCarriers);
