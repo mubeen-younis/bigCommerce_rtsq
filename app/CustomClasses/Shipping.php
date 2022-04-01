@@ -28,6 +28,7 @@ class Shipping
     private $isInsurance = 'N';
     private $isRequestMultishipment = false;
     private $shippingGroupResponse;
+    private $isErroredResp = false;
 
     public function __construct()
     {
@@ -67,6 +68,10 @@ class Shipping
             $finalResp = $this->formattedShippingGroupResponse();
             $this->orderWidgetSave($request, [], [], $finalResp['finalQuotes'], $finalResp['formattedResp'], $cartInfo, [], []);
             return $finalResp['formattedResp'];
+        }
+        /*TODO: Setting temporaily*/
+        if (isset($itemsWithoutShippingGroup[78])) {
+            $this->isErroredResp = true;
         }
         $request['lineItemData']['items'] = $itemsWithoutShippingGroup;
         $request['lineItemData']['origin'] = $originsWithoutShippingGroup;
@@ -206,7 +211,11 @@ class Shipping
         }
 
         $finalQuotes = $this->addRateId($finalQuotes);
-        $resp = $this->generateQuoteFormatResponse($finalQuotes, ['text' => 'Your products can not be shipped to your location']);
+        $message = [];
+        if ($this->isErroredResp) {
+            $message = ['text' => 'Your products can not be shipped to your location'];
+        }
+        $resp = $this->generateQuoteFormatResponse($finalQuotes, $message);
         $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
         return $resp;
     }
@@ -633,7 +642,7 @@ class Shipping
                     'display_name' => $this->limitTitle($quote),
                     'cost' => ['currency' => 'USD', 'amount' => str_replace(',', '', $quote['rate'])],
                     'dispatch_date' => "$current",
-                   // 'messages' => $resp['messages']// need to change
+                    // 'messages' => $resp['messages']// need to change
 
                     //'cost' => ['currency' => 'USD', 'amount' => number_format($quote['rate'], 2, '.', ',')],
                     //'transit_time' => ['units' => 'BUSINESS_DAYS', 'duration' => 1],
