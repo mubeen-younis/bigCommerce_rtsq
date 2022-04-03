@@ -211,7 +211,9 @@ class Shipping
         }
 
         $finalQuotes = $this->addRateId($finalQuotes);
+        //TODO : Need to change
         $message = [];
+        $this->isErroredResp = true;
         if ($this->isErroredResp) {
             $message = ['text' => 'Your products can not be shipped to your location'];
         }
@@ -632,7 +634,10 @@ class Shipping
         if (!empty(array_filter($quotes))) {
             $resp['quote_id'] = (string)rand(1, 9);// need to change
             $resp['messages'] = [];// need to change
+
+            // $resp['messages'][0] =  ['text' => 'Your products can not be shipped to your location', 'type' => 'INFO'] ;// need to change
             // if (empty($message)) {
+            // $resp['carrier_quotes']=[];
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'eniture_quotes', 'display_name' => $this->limitTitle($quotes[0])]];
 
             foreach ($quotes as $key => $quote) {
