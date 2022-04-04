@@ -71,7 +71,6 @@ class Shipping
         $request['lineItemData']['items'] = $itemsWithoutShippingGroup;
         $request['lineItemData']['origin'] = $originsWithoutShippingGroup;
         $package = $request['lineItemData'];
-
         // Disabling instore pickup if there is multi shipment case
         $originAddress = $this->checkInstorePickup($package['origin']);
         // Generating carrier creds and origin array
