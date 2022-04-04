@@ -332,6 +332,21 @@ class OrderController extends Controller
                         array_push($orderWidget[$zip]['accessories'], 'Insurance');
                     }
                 }
+                if (!empty($sbsItems[$zip])) {
+                    foreach ($sbsItems[$zip] as $sbsVariant => $sbsItem) {
+                        $hazardous = isset($items->$sbsVariant->isHazmatLineItem) && $items->$sbsVariant->isHazmatLineItem == 'Y' ? true : false;
+                        $insurance = isset($items->$sbsVariant->product_insurance_active) && $items->$sbsVariant->product_insurance_active == 1 ? true : false;
+                        if ($hazardous) {
+                            $addHazmat = true;
+                            array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
+                        }
+                        if ($insurance) {
+                            array_push($orderWidget[$zip]['accessories'], 'Insurance');
+                        }
+                    }
+                }
+
+
                 if (isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') {
                     array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
                     $addHazmat = true;
@@ -361,6 +376,7 @@ class OrderController extends Controller
                 $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Pickup') : '';
                 $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Delivery') : '';
             }
+            $orderWidget[$zip]['accessories'] = array_unique($orderWidget[$zip]['accessories']);
             $count++;
         }
         /*
