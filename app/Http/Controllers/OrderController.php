@@ -846,6 +846,9 @@ class OrderController extends Controller
             'Fedex Ground',
             'UPS 2nd Day Air A.M.',
             'UPS Next Day Air Early A.M.',
+            'Saturday - UPS Next Day Air',
+            'Saturday - UPS Next Day Air Early A.M.',
+            'Saturday - UPS 2nd Day Air',
         ];
         return in_array($quote, $small);
     }

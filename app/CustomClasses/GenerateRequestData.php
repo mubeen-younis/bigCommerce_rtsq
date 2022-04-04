@@ -370,7 +370,6 @@ class GenerateRequestData
                 $carriersoriginAddress = $carriers['wweSmall']['originAddress']
                     ?? $carriers['upsSmall']['originAddress']
                     ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? [];
- 
                 if (isset($carriers['fedexSmall'])) {
                     $this->checkServiceEnabled();
                     if ($this->ground) {
@@ -1184,6 +1183,7 @@ class GenerateRequestData
 
         $this->resiCarrier['unishippersSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['unishippersSmall'] = $alwaysResi;
+        $accessorial = ($alwaysResi ? 'Y' : $residential == 'Y') ? ['REP'] : [];
 
         $apiArray = [
             'username' => $connSettings['creds']['username'],
@@ -1203,9 +1203,10 @@ class GenerateRequestData
             'prefferedCurrency' => 'USD',
             'includeDeclaredValue' => '1',
             'service' => 'ALL',
-            'accessorial' => ($alwaysResi ? 'Y' : $residential == 'Y') ? ['REP'] : []
+            'accessorial' => $accessorial,
+            'residentials_delivery' => isset($accessorial) && !blank($accessorial) ? 'yes' : 'no'
         ];
-
+        
         return $apiArray;
     }
 
