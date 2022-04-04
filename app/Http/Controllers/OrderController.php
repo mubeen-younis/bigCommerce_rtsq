@@ -141,7 +141,7 @@ class OrderController extends Controller
         $isLG = strpos($rateId, '+lg');
         $isOwnArrangement = strpos($rateId, 'own_arrangement') === 0 || strpos($rateId, 'freernlltl') === 0 ? true : false;
 
-        /* 
+        /*
         * Stored Response from WS */
         $lineItem = json_decode($data['lineitems'])->lineItemData;
         $responseFromWS = json_decode($data['quotes']);
@@ -160,11 +160,12 @@ class OrderController extends Controller
         $isOneRate = strpos($rateId, '+or');
         $isGround = strpos($rateId, '+gd');
         $isAir = strpos($rateId, '+as');
-        
-        /* 
+
+        /*
         * Shipment Packaging */
+        $sbsItems = [];
         foreach ($responseFromWS as $carrrierName => $WsResp) {
-            foreach ($WsResp as $zip => $ws) {                
+            foreach ($WsResp as $zip => $ws) {
                 if (!(isset($ws->severity) && $ws->severity == 'ERROR')) {
 
                     $liftResidentialStatus = $this->getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate, $rateId);
@@ -207,6 +208,7 @@ class OrderController extends Controller
                             $orderWidgetData['nickname'] = $this->getBoxName($binPacked->bin_data->id, $request['store_id'], $rateId, $cartId);
                             foreach ($binPacked->items as $item) {
                                 $productid = $item->id;
+                                $sbsItems[$zip][$productid] = 1;
 
                                 $orderWidgetData['items'][$count]['product_name'] = $lineItem->items->$productid->lineItemName ?? '';
                                 $orderWidgetData['items'][$count]['w'] = $item->w;
@@ -232,8 +234,8 @@ class OrderController extends Controller
                 }
             }
         }
-        
-        /* 
+
+        /*
         * Shipment Origins */
         $origins = $lineItem->origin;
         $items = $lineItem->items;
@@ -288,10 +290,22 @@ class OrderController extends Controller
 
             $orderWidget[$zip]['shipping_method'] = $sName . $sMethod;
             $orderWidget[$zip]['shipping_rate'] = '$' . number_format((float)$sRate, 2,);
+
             if ($item->shipMultiplePackage) {
                 if ((!in_array($item->lineItemName, $insertedNames))) {
                     $insertedNames[] = $item->lineItemName;
                     $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
+                }
+
+                /*Added Else if BLock for Catering BUg of MUltiple Products IN ONe BOX*/
+            } elseif (isset($sbsItems[$zip]) && !empty($sbsItems[$zip])) {
+                foreach ($sbsItems[$zip] as $sbsVariantKey => $sbsItem) {
+                    $itemDetail = $this->getSbsItemDetail($sbsVariantKey, $items);
+                    if (!blank($itemDetail) && (!in_array($itemDetail->lineItemName, $insertedNames)) && (!in_array($itemDetail->id, $insertedIds))) {
+                        $insertedNames[] = $itemDetail->lineItemName;
+                        $insertedIds[] = $itemDetail->id;
+                        $orderWidget[$zip]['items'][] = $itemDetail->originalPiecesOfLineItem . ' X ' . $itemDetail->lineItemName;
+                    }
                 }
             } else {
                 if ((!in_array($item->id, $insertedIds))) {
@@ -299,7 +313,9 @@ class OrderController extends Controller
                     $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
                 }
             }
-            /* 
+
+
+            /*
             * Item Accessorials */
             $addedHazmat = false;
             if (isset($orderWidget[$zip]['accessories'])) {
@@ -316,6 +332,21 @@ class OrderController extends Controller
                         array_push($orderWidget[$zip]['accessories'], 'Insurance');
                     }
                 }
+                if (!empty($sbsItems[$zip])) {
+                    foreach ($sbsItems[$zip] as $sbsVariant => $sbsItem) {
+                        $hazardous = isset($items->$sbsVariant->isHazmatLineItem) && $items->$sbsVariant->isHazmatLineItem == 'Y' ? true : false;
+                        $insurance = isset($items->$sbsVariant->product_insurance_active) && $items->$sbsVariant->product_insurance_active == 1 ? true : false;
+                        if ($hazardous) {
+                            $addHazmat = true;
+                            array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
+                        }
+                        if ($insurance) {
+                            array_push($orderWidget[$zip]['accessories'], 'Insurance');
+                        }
+                    }
+                }
+
+
                 if (isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') {
                     array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
                     $addHazmat = true;
@@ -339,12 +370,13 @@ class OrderController extends Controller
             } else {
                 $autoResidentialsStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Delivery') : '';
             }
-            
+
             $isHAT ? array_push($orderWidget[$zip]['accessories'], 'Hold At Terminal') : '';
             if (!$isSmall) {
                 $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Pickup') : '';
                 $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Delivery') : '';
             }
+            $orderWidget[$zip]['accessories'] = array_values(array_unique($orderWidget[$zip]['accessories']));
             $count++;
         }
         /*
@@ -374,6 +406,11 @@ class OrderController extends Controller
             'sbs' => $sbs
         ];
         return $resp;
+    }
+
+    public function getSbsItemDetail($sbsItemKey, $items)
+    {
+        return $items->$sbsItemKey ?? [];
     }
 
 
@@ -846,6 +883,9 @@ class OrderController extends Controller
             'Fedex Ground',
             'UPS 2nd Day Air A.M.',
             'UPS Next Day Air Early A.M.',
+            'Saturday - UPS Next Day Air',
+            'Saturday - UPS Next Day Air Early A.M.',
+            'Saturday - UPS 2nd Day Air',
         ];
         return in_array($quote, $small);
     }
