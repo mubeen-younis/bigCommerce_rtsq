@@ -126,6 +126,11 @@ class GenerateRequestData
                     $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['unishippersSmall'] = $wweLtlArr;
                     break;
+                case 'freightquote-ltl':
+                    $wweLtlArr = $this->freightquoteLtlEnitArr($con1, $destination);
+                    $wweLtlArr['originAddress'] = $enitOrigin;
+                    $carriersArr['carriers']['freightquote'] = $wweLtlArr;
+                    break;
             }
         }
         return ['carriersArr' => $carriersArr, 'residential' => $this->resiCarrier];
@@ -317,6 +322,23 @@ class GenerateRequestData
         ];
     }
 
+    public function freightquoteLtlEnitArr($connSettings, $destination)
+    {
+        return [
+
+            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'serverName' => "https://" . $this->storeData['store']['name'],
+            'carrierMode' => 'pro',
+            'quotestType' => 'ltl', // ltl / small
+            'version' => '1.0.0',
+            // 'returnQuotesOnExceedWeight' => $connSettings['quote_settings']['weightExeeds'],
+            'returnQuotesOnExceedWeight' => 1,
+            'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
+            'api' => $this->getApiInfoArrWweLtl($connSettings, $destination),
+            'getDistance' => 0,
+        ];
+    }
+
     function calculatePrice($lineItems)
     {
         $price = 0;
@@ -348,10 +370,10 @@ class GenerateRequestData
         $binReponse = $boxBins = [];
         //
         if ($this->storeData['installed_addon_sbs'] && isset($this->storeData['installed_addons'][0]->is_enabled) &&
-        isset($this->storeData['installed_addons'][0]->is_enabled)) {
-                $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? [];
-                $this->itemsArr = $itemsArr;
-                $this->carriers = $carriers;
+            isset($this->storeData['installed_addons'][0]->is_enabled)) {
+            $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? [];
+            $this->itemsArr = $itemsArr;
+            $this->carriers = $carriers;
 
             $hasSmall = isset($carriers['wweSmall'])
                 || isset($carriers['upsSmall'])
@@ -370,7 +392,7 @@ class GenerateRequestData
                 $carriersoriginAddress = $carriers['wweSmall']['originAddress']
                     ?? $carriers['upsSmall']['originAddress']
                     ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? [];
- 
+
                 if (isset($carriers['fedexSmall'])) {
                     $this->checkServiceEnabled();
                     if ($this->ground) {
@@ -453,7 +475,8 @@ class GenerateRequestData
                     || isset($carriers['fedexLTL'])
                     || isset($carriers['cerasis'])
                     || isset($carriers['globalTranz'])
-                    || isset($carriers['xpoLogistics']);
+                    || isset($carriers['xpoLogistics'])
+                    || isset($carriers['freightquote']);
                 if ($isLtl) {
                     $itemsArr = $olditemsArr + $itemsArr;
                 }
@@ -564,7 +587,7 @@ class GenerateRequestData
                 if ($isShipAsMultiplePackage) {
                     $boxSizeController = new BoxSizeController();
                     $getBoxes = $boxSizeController->getBoxesByProductId($itemsArr[$varriantId]['id']);
-                       if (empty($getBoxes)) {
+                    if (empty($getBoxes)) {
                         return [];
                     } else {
                         foreach ($getBoxes as $key => $box) {
