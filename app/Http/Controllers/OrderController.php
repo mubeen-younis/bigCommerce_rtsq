@@ -376,7 +376,7 @@ class OrderController extends Controller
                 $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Pickup') : '';
                 $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Delivery') : '';
             }
-            $orderWidget[$zip]['accessories'] = array_unique($orderWidget[$zip]['accessories']);
+            $orderWidget[$zip]['accessories'] = array_values(array_unique($orderWidget[$zip]['accessories']));
             $count++;
         }
         /*
