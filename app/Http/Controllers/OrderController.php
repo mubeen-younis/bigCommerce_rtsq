@@ -332,20 +332,6 @@ class OrderController extends Controller
                         array_push($orderWidget[$zip]['accessories'], 'Insurance');
                     }
                 }
-                if (!empty($sbsItems[$zip])) {
-                    foreach ($sbsItems[$zip] as $sbsVariant => $sbsItem) {
-                        $hazardous = isset($items->$sbsVariant->isHazmatLineItem) && $items->$sbsVariant->isHazmatLineItem == 'Y' ? true : false;
-                        $insurance = isset($items->$sbsVariant->product_insurance_active) && $items->$sbsVariant->product_insurance_active == 1 ? true : false;
-                        if ($hazardous) {
-                            $addHazmat = true;
-                            array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
-                        }
-                        if ($insurance) {
-                            array_push($orderWidget[$zip]['accessories'], 'Insurance');
-                        }
-                    }
-                }
-
 
                 if (isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') {
                     array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
@@ -360,6 +346,20 @@ class OrderController extends Controller
                 if ((isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') || $addedHazmat) {
                     array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
                     $addHazmat = true;
+                }
+            }
+            /*Added For hazmat and INsurance in case of one box and multi products*/
+            if (!empty($sbsItems[$zip])) {
+                foreach ($sbsItems[$zip] as $sbsVariant => $sbsItem) {
+                    $hazardous = isset($items->$sbsVariant->isHazmatLineItem) && $items->$sbsVariant->isHazmatLineItem == 'Y' ? true : false;
+                    $insurance = isset($items->$sbsVariant->product_insurance_active) && $items->$sbsVariant->product_insurance_active == 1 ? true : false;
+                    if ($hazardous) {
+                        $addHazmat = true;
+                        array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
+                    }
+                    if ($insurance) {
+                        array_push($orderWidget[$zip]['accessories'], 'Insurance');
+                    }
                 }
             }
 
