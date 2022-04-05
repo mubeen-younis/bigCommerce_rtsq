@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Constants\Constant;
 use App\CurlRequest;
+use App\CustomClasses\Functions;
 use App\Models\BoxSize;
 use App\Models\Orders;
 use App\Models\RequestData;
@@ -363,8 +364,8 @@ class OrderController extends Controller
                 }
             }
 
-            // TODO:need to change implementation of this function
-            $isSmall = $this->isSmallQuote($sName) || $isSmallrate;
+            $isSmall = Functions::isSmallCarrier($code);
+
             if ($isMulti) {
                 strpos(strtolower($code), '+r') ? array_push($orderWidget[$zip]['accessories'], 'Residential Delivery') : '';
             } else {
