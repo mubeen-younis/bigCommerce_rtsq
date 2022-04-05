@@ -87,7 +87,7 @@ class Functions
 
     public static function isSmallCarrier($code)
     {
-        $carriers = ['parcel_12wwe', 'parcel_12ups', 'parcel_12fd'];
+        $carriers = ['parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship'];
         foreach ($carriers as $carrier) {
             if (strpos($code, $carrier) !== false) {
                 return true;
