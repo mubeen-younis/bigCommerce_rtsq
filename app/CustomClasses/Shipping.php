@@ -78,7 +78,7 @@ class Shipping
         $resp = $generateReqData->generateEnitureArray($originAddress, $destination, $package['items']);
         $residential = $resp['residential'];
         $carriersArray = $resp['carriersArr'];
-        
+
         // Checking if any productis hazardous
         $hazmatAllItems = $this->isHazmatMaterial($package);
 
@@ -115,9 +115,9 @@ class Shipping
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
-          /*
-        * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
-        */
+        /*
+      * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
+      */
         $this->isRequestMultishipment = $ltlSmallCompileQuotes->checkIsRequestMiltiShipment($requestArr['requestArr'], $quotes);
         $boxbins = $requestArr['boxBins'] ?? [];
         if (isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])) {
