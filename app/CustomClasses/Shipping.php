@@ -199,12 +199,7 @@ class Shipping
                 $finalQuotes = $finalQuotesMulti['checkoutQuotes'] ?? [];
                 $multiShipmentQuotes = $finalQuotesMulti['multiShipmentQuotes'] ?? [];
             }
-
-            /*TODO: COmmented COde for displaying parcels as well for the case of both parcel and ltl*/
-
-            /*else {
-                $finalQuotes = $this->removeParcelIfLtl($finalQuotes);
-            }*/
+            /*Removed Code of removing parcel and ltl*/
         }
 
         /*Adding shipping group rates response in quotes
