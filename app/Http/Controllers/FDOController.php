@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Coupon;
 use App\Models\Store;
 use Illuminate\Http\Request;
 
@@ -19,13 +20,24 @@ class FDOController extends Controller
 
     public function getFdoCompanyInfo(Request $request)
     {
+
         $store = Store::where('id', $request['store_id'])->first();
+        $coupon = Coupon::where('store_id', $request['store_id'])->first();
+        if ($coupon === null) {
+            $couponCodeFdoResp = $this->getCouponCodeFdo($request['store_id']);
+        }
 
         return response()->json(['error' => false,
             'data' => $store,
             'message' => '',
         ], 200);
     }
+
+    public function getCouponCodeFdo($storeId)
+    {
+        return Coupon::getCouponFdo($storeId);
+    }
+
     /**
      * Show the form for creating a new resource.
      *
@@ -39,7 +51,7 @@ class FDOController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
@@ -50,7 +62,7 @@ class FDOController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\Response
      */
     public function show($id)
@@ -61,7 +73,7 @@ class FDOController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\Response
      */
     public function edit($id)
@@ -72,8 +84,8 @@ class FDOController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request)
@@ -106,7 +118,7 @@ class FDOController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\Response
      */
     public function destroy($id)

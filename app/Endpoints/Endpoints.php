@@ -9,4 +9,13 @@ class Endpoints
     {
         return "https://api.bigcommerce.com/stores/";
     }
+
+    public static function getFDOCouponEndpoint()
+    {
+        if (env('APP_ENV') == 'staging') {
+            return "https://freightdesk.eniture-qa.com/use_coupon?shop=";
+
+        }
+        return "https://freightdesk.online/use_coupon?shop=";
+    }
 }
