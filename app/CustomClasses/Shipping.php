@@ -627,15 +627,10 @@ class Shipping
                     'display_name' => $this->limitTitle($quote),
                     'cost' => ['currency' => 'USD', 'amount' => str_replace(',', '', $quote['rate'])],
                     'dispatch_date' => "$current",
-                    // 'messages' => $resp['messages']// need to change
 
-                    //'cost' => ['currency' => 'USD', 'amount' => number_format($quote['rate'], 2, '.', ',')],
-                    //'transit_time' => ['units' => 'BUSINESS_DAYS', 'duration' => 1],
-                    // TODO: Will be set
 
                 ];
             }
-            // }
 
         } else {
             $resp = [];
