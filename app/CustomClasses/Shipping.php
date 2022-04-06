@@ -202,9 +202,9 @@ class Shipping
 
             /*TODO: COmmented COde for displaying parcels as well for the case of both parcel and ltl*/
 
-            else {
+            /*else {
                 $finalQuotes = $this->removeParcelIfLtl($finalQuotes);
-            }
+            }*/
         }
 
         /*Adding shipping group rates response in quotes
