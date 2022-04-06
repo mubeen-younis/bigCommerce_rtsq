@@ -28,7 +28,6 @@ class Shipping
     private $isInsurance = 'N';
     private $isRequestMultishipment = false;
     private $shippingGroupResponse;
-    private $isErroredResp = false;
 
     public function __construct()
     {
@@ -68,10 +67,6 @@ class Shipping
             $finalResp = $this->formattedShippingGroupResponse();
             $this->orderWidgetSave($request, [], [], $finalResp['finalQuotes'], $finalResp['formattedResp'], $cartInfo, [], []);
             return $finalResp['formattedResp'];
-        }
-        /*TODO: Setting temporaily*/
-        if (isset($itemsWithoutShippingGroup[78])) {
-            $this->isErroredResp = true;
         }
         $request['lineItemData']['items'] = $itemsWithoutShippingGroup;
         $request['lineItemData']['origin'] = $originsWithoutShippingGroup;
