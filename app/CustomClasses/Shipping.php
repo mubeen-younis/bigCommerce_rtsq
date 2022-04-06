@@ -158,6 +158,7 @@ class Shipping
         foreach ($finalCodes as $key => $finalCode) {
             $finalCodesTemp[$key] = explode('+', $finalCode)[0];
         }
+        /*TODO :Need to Add LTL Carriers here as well*/
         $isFreightTitleExist = array_search('Freight', $finalTitlesTemp);
         $isShippingTitleExist = array_search('Shipping', $finalTitlesTemp);
         $isAVGCodeExist = gettype(array_search('AVG', $finalCodesTemp)) == 'integer';
@@ -189,6 +190,7 @@ class Shipping
             $finalQuotes = $_finalQuotes;
         } else {
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
+            //TODO : Need to Add LTL Carriers Here as well
             if ($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist)) {
                 $isShippingOrFreight = false;
             }
@@ -196,7 +198,11 @@ class Shipping
                 $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings, $residential, $quotesFromWs, $requestArr['requestArr']);
                 $finalQuotes = $finalQuotesMulti['checkoutQuotes'] ?? [];
                 $multiShipmentQuotes = $finalQuotesMulti['multiShipmentQuotes'] ?? [];
-            } else {
+            }
+
+            /*TODO: COmmented COde for displaying parcels as well for the case of both parcel and ltl*/
+
+            else {
                 $finalQuotes = $this->removeParcelIfLtl($finalQuotes);
             }
         }
@@ -211,13 +217,7 @@ class Shipping
         }
 
         $finalQuotes = $this->addRateId($finalQuotes);
-        //TODO : Need to change
-        $message = [];
-        $this->isErroredResp = true;
-        if ($this->isErroredResp) {
-            $message = ['text' => 'Your products can not be shipped to your location'];
-        }
-        $resp = $this->generateQuoteFormatResponse($finalQuotes, $message);
+        $resp = $this->generateQuoteFormatResponse($finalQuotes);
         $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
         return $resp;
     }
@@ -620,24 +620,14 @@ class Shipping
         return $quotes = $quotes ?? [];
     }
 
-    public function generateQuoteFormatResponse($quotes, $message = [])
+    public function generateQuoteFormatResponse($quotes)
     {
-        if (!blank($message)) {
-            $resp['valid'] = false;
-            $resp['messages'][0]['text'] = $message['text'];
-            $resp['messages'][0]['type'] = 'ERROR';
-            return $resp;
-        }
-
         $quotes = array_values($quotes);
         $current = str_replace(' ', 'T', Carbon::now()) . "-00:00";
         if (!empty(array_filter($quotes))) {
             $resp['quote_id'] = (string)rand(1, 9);// need to change
             $resp['messages'] = [];// need to change
 
-            // $resp['messages'][0] =  ['text' => 'Your products can not be shipped to your location', 'type' => 'INFO'] ;// need to change
-            // if (empty($message)) {
-            // $resp['carrier_quotes']=[];
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'eniture_quotes', 'display_name' => $this->limitTitle($quotes[0])]];
 
             foreach ($quotes as $key => $quote) {
