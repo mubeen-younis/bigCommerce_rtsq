@@ -86,15 +86,17 @@ class QuotesResults
         $this->resiLgLabel = Constant::RESI_LIFT_LABEL;
     }
 
-    public function getCompiledQuotes($services, $arraySorting, $lgQuotes, $isMulitshipment)
+    public function getCompiledQuotes($services, $arraySorting, $isMulitshipment)
     {
         if (empty($arraySorting) || empty($services)) {
             return [];
         }
+
         asort($arraySorting['simple']);
         $options = $isMulitshipment ? 1 : 2;
         $sliced = array_slice($arraySorting['simple'], 0, $options, true);
         $resp = array_intersect_key($services, $sliced);
+
         return $resp;
     }
 }

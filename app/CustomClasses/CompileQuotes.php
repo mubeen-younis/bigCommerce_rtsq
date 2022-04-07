@@ -733,7 +733,7 @@ class CompileQuotes
                     }
                     break;
                 case 'yrc':
-                    $resp = $this->compileYRCLtlQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential);
+                    $resp = $this->compileYRCLtlQuotes($shipment, $connectionSettings, $allOrigins, $residential);
                     $quotesTemp['yrc'] = $resp;
                     if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
                         $quotesRes = array_merge($quotesRes, $resp);
@@ -2085,7 +2085,7 @@ class CompileQuotes
         return $res['resp'];
     }
 
-    private function compileYRCLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
+    private function compileYRCLtlQuotes($shipments, $connectionSettings, $allOrigins,$residential)
     {
         $yrcLtl = new yrcLtlQuotesResults();
         
@@ -2184,7 +2184,7 @@ class CompileQuotes
                 }
             }
 
-            $compiledQuotes = $yrcLtl->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes, $this->isMultiShipment);
+            $compiledQuotes = $yrcLtl->getCompiledQuotes($originQuotes, $arraySorting, $this->isMultiShipment);
 
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
                 if (count($compiledQuotes) > 1) {
@@ -2215,6 +2215,17 @@ class CompileQuotes
         /* Quotes for instore delivery */
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
+        }
+
+        /* Multishipment quotes with LGD  */
+        if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1)) {
+            $allQuotes = $this->forceChangeTitle($allQuotes);
+            $resp = [
+                'checkoutQuotes' => $allQuotes,
+                'multiShipmentQuotes' => $multiShipmentQuotes,
+            ];
+
+            return $resp;
         }
 
         $resp = $allQuotes;
@@ -2270,7 +2281,9 @@ class CompileQuotes
         if (empty($quotes)) {
             return [];
         }
+
         $lfg = (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery'] == 1) || ($this->isResi && isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']);
+        
         if ($this->isMultiShipment == false) {
             if (
                 isset($quotes['liftgate'])
