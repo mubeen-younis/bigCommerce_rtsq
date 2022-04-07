@@ -155,6 +155,7 @@ class Shipping
         $isUpsLtlCodeExist = gettype(array_search('upsltl', $finalCodesTemp)) == 'integer';
         $isFedexLtlCodeExist = gettype(array_search('fedexltl', $finalCodesTemp)) == 'integer';
         $isxpoLtlCodeExist = gettype(array_search('xpoltl', $finalCodesTemp)) == 'integer';
+        $isYrcLtlCodeExist = gettype(array_search('yrcltl', $finalCodesTemp)) == 'integer';
         $freightCode = '';
         $finalCost = 0;
 
@@ -180,7 +181,7 @@ class Shipping
             $finalQuotes = $_finalQuotes;
         } else {
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
-            if ($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist)) {
+            if ($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist)) {
                 $isShippingOrFreight = false;
             }
             if ($this->isRequestMultishipment && !$isShippingOrFreight) {
@@ -337,6 +338,7 @@ class Shipping
             'globalTranz',
             'xpoLTL',
             'rnlLTL',
+            'yrcLTL'
         ];
         return in_array($carrierName, $ltlCarriers);
     }
@@ -552,7 +554,7 @@ class Shipping
     private function checkIndividualHazmat($request)
     {
         $smallOrigins = $marketItemSmall = $request['carriers']['wweSmall']['originAddress'] ?? $request['carriers']['upsSmall']['originAddress'] ?? $request['carriers']['fedexSmall']['originAddress'] ?? $request['carriers']['unishippersSmall']['originAddress'] ?? [];
-        $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? $request['carriers']['upsLTL']['originAddress'] ?? [];
+        $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? $request['carriers']['upsLTL']['originAddress'] ?? $request['carriers']['yrcLTL']['originAddress'] ?? [];
         $items = $request['commdityDetails'] ?? [];
         $smallHazmat = $ltlHazmat = false;
         if (!empty($smallOrigins)) {
