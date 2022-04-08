@@ -292,6 +292,7 @@ class ProductSettingController extends Controller
 
     public function getStoreProductsFromDb(Request $request)
     {
+        ini_set('memory_limit', -1);
         try {
             $page = $request['page'] ?? 1;
             $perPage = $request['perpage'] ?? 50;
@@ -315,7 +316,7 @@ class ProductSettingController extends Controller
             }
             if ($search === null || $search == '') {
                 $products = ProductSetting::where('store_id', $request->store_id)
-                ->groupBy('source_product_id')->orderBy('name', $sortProd)->skip(($page - 1) * $perPage)->take($perPage)->get();
+                    ->groupBy('source_product_id')->orderBy('name', $sortProd)->skip(($page - 1) * $perPage)->take($perPage)->get();
             } else {
                 $products = ProductSetting::where('store_id', $request->store_id)
                     ->groupBy('source_product_id')->orderBy('name', $sortProd)
