@@ -292,7 +292,6 @@ class ProductSettingController extends Controller
 
     public function getStoreProductsFromDb(Request $request)
     {
-        ini_set('memory_limit', -1);
         try {
             $page = $request['page'] ?? 1;
             $perPage = $request['perpage'] ?? 50;
