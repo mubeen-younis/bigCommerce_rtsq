@@ -46,17 +46,22 @@ class FDOController extends Controller
     public function getMessageForCoupon($used, $couponCode, $storeId)
     {
         $registerUrl = "https://freightdesk.online/register";
+        $loginUrl = "https://freightdesk.online/login";
         $note = "<strong>Note! </strong>";
         $congrats = "<strong>Congratulations! </strong>";
         if ($used === null) {
-            $clickHere = "<a target='_blank' rel='noreferrer' href='" . $registerUrl . "'>here<a/>";
+            $clickHere = "<a target='_blank' rel='noreferrer' href='" . $registerUrl . "'>here</a>";
             return $note . "To establish a connection, you must have a FreightDesk Online account. If you don’t have one, click " . $clickHere . " to register";
         }
         if ($used == 0) {
             $code = $this->makeBase64code($storeId, $couponCode);
             $registerUrl = $registerUrl . '?code=' . $code;
-            $clickHere = "<a target='_blank' rel='noreferrer' href='" . $registerUrl . "'>here<a/>";
-            return $note . "To establish a connection, you must have a FreightDesk Online account. If you don’t have one, get FreightDesk Online free for one year by using promo code [" . $couponCode . "]. Register for FreightDesk Online using the promo code now. Click " . $clickHere;
+            $loginUrl = $loginUrl . '?code=' . $code;
+            $clickHere = "<a target='_blank' rel='noreferrer' href='" . $registerUrl . "'>here</a>";
+            $msg = $note . "To establish a connection, you must have a FreightDesk Online account. If you don’t have one, get FreightDesk Online free for one year by using promo code [" . $couponCode . "]. Register for FreightDesk Online using the promo code now. Click " . $clickHere . '.<br/>';
+            $clickHereLogin = "<a target='_blank' rel='noreferrer' href='" . $loginUrl . "'>here</a>";
+            $msg = $msg . "Already have an account. Click " . $clickHereLogin . '.<br><strong>Please refresh the page after registering or logging in. </strong>';
+            return $msg;
         }
         if ($used >= 1) {
             return $congrats . "You have activated your Promo Code [" . $couponCode . "]. Now you can enjoy free shipments with FreightDesk Online.";
@@ -71,8 +76,9 @@ class FDOController extends Controller
      */
     public function makeBase64code($storeId, $couponCode): string
     {
-        $storeUrl = Store::getStoreUrlFromStoreId($storeId);
-        $email = Subscription::getEmail($storeId);
+        $storeDetails = Store::getStoreDetailsFromStoreId($storeId);
+        $storeUrl = $storeDetails['url'] ?? '';
+        $email = $storeDetails['owner_email'] ?? '';
         $phone = '';
         $apps = $this->getProvsSepByPipe($storeId);
         $encodedCode = base64_encode(http_build_query(['shop' => $storeUrl, 'promocode' => $couponCode,
@@ -113,6 +119,7 @@ class FDOController extends Controller
     public function updateCouponDetailsFromFDO(Request $request): \Illuminate\Http\JsonResponse
     {
         $request = $request->all();
+        $fdoCompanyId = $request['fdo_company_id'] ?? '';
         $couponCode = $request['promo']['coupon'] ?? '';
         $storeUrl = $request['promo']['store_url'] ?? '';
         $startDate = $request['promo']['start_date'] ?? '';
@@ -125,6 +132,9 @@ class FDOController extends Controller
             return Helpers::sendJsonResponseFdo(true, 'Coupon not found', []);
         }
         Coupon::updateCouponDetails($coupon['id'], $startDate, $endDate);
+        if (!blank($fdoCompanyId)) {
+            Store::where('id', $coupon['store_id'])->update(['freightdesk_company_id' => $fdoCompanyId]);
+        }
         return Helpers::sendJsonResponseFdo(false, 'Updated coupon details', []);
 
 

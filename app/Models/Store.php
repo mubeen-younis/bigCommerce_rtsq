@@ -11,7 +11,8 @@ class Store extends Model
 
     protected $fillable = [
         'token',
-        'app_status'
+        'app_status',
+        'freightdesk_company_id'
     ];
 
     public function installedCarriers()
@@ -23,4 +24,11 @@ class Store extends Model
     {
         return optional(self::where('id', $storeId)->first())->url ?? null;
     }
+
+    public static function getStoreDetailsFromStoreId($storeId): array
+    {
+        return optional(self::where('id', $storeId)->first())->toArray() ?? [];
+    }
+
+
 }
