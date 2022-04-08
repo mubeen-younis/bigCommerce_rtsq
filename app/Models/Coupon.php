@@ -20,6 +20,11 @@ class Coupon extends Model
         return optional(self::where(['code' => $couponCode, 'shop' => $storeUrl])->first())->toArray() ?? [];
     }
 
+    public static function getCouponCodeFromStoreId($storeId)
+    {
+        return optional(self::where('store_id', $storeId)->first())->code ?? null;
+    }
+
     public static function updateCouponDetails($id, $startDate, $endDate)
     {
         self::where('id', $id)->update(['valid_from' => $startDate, 'valid_upto' => $endDate, 'used' => 1]);

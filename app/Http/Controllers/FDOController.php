@@ -2,10 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\CurlRequest;
+use App\CustomClasses\Functions;
+use App\Endpoints\Endpoints;
 use App\Helpers\Helpers;
 use App\Models\Coupon;
+use App\Models\InstalledCarrier;
 use App\Models\Store;
+use App\Models\Subscription\Subscription;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class FDOController extends Controller
 {
@@ -21,18 +27,74 @@ class FDOController extends Controller
 
     public function getFdoCompanyInfo(Request $request)
     {
-        $store = optional(Store::where('id', $request['store_id'])->first())->toArray() ?? [];
-        $coupon = Coupon::where('store_id', $request['store_id'])->first();
+        $storeId = $request['store_id'];
+        $store = optional(Store::where('id', $storeId)->first())->toArray() ?? [];
+        $coupon = Coupon::where('store_id', $storeId)->first();
         if ($coupon === null) {
-            $coupon = $this->getCouponCodeFdo($request['store_id']);
+            $coupon = $this->getCouponCodeFdo($storeId);
         }
-        // TODO: Need to CHeck COupon Validity as well in future
         $store['coupon_code'] = $coupon->code ?? null;
         $store['used'] = $coupon->used ?? null;
+        $store['message'] = $this->getMessageForCoupon($store['used'], $store['coupon_code'], $storeId);
         return response()->json(['error' => false,
             'data' => $store,
             'message' => '',
         ], 200);
+    }
+
+
+    public function getMessageForCoupon($used, $couponCode, $storeId)
+    {
+        $registerUrl = "https://freightdesk.online/register";
+        $note = "<strong>Note! </strong>";
+        $congrats = "<strong>Congratulations! </strong>";
+        if ($used === null) {
+            $clickHere = "<a target='_blank' rel='noreferrer' href='" . $registerUrl . "'>here<a/>";
+            return $note . "To establish a connection, you must have a FreightDesk Online account. If you don’t have one, click " . $clickHere . " to register";
+        }
+        if ($used == 0) {
+            $code = $this->makeBase64code($storeId, $couponCode);
+            $registerUrl = $registerUrl . '?code=' . $code;
+            $clickHere = "<a target='_blank' rel='noreferrer' href='" . $registerUrl . "'>here<a/>";
+            return $note . "To establish a connection, you must have a FreightDesk Online account. If you don’t have one, get FreightDesk Online free for one year by using promo code [" . $couponCode . "]. Register for FreightDesk Online using the promo code now. Click " . $clickHere;
+        }
+        if ($used >= 1) {
+            return $congrats . "You have activated your Promo Code [" . $couponCode . "]. Now you can enjoy free shipments with FreightDesk Online.";
+        }
+    }
+
+
+    /**
+     * @param $storeId
+     * @param $couponCode
+     * @return string
+     */
+    public function makeBase64code($storeId, $couponCode): string
+    {
+        $storeUrl = Store::getStoreUrlFromStoreId($storeId);
+        $email = Subscription::getEmail($storeId);
+        $phone = '';
+        $apps = $this->getProvsSepByPipe($storeId);
+        $encodedCode = base64_encode(http_build_query(['shop' => $storeUrl, 'promocode' => $couponCode,
+            'email' => $email, 'phone' => $phone, 'apps' => $apps]));
+        return $encodedCode;
+    }
+
+
+    public function getProvsSepByPipe($storeId): string
+    {
+        $installedProvSlugs = InstalledCarrier::getinstalledProvidersSlug($storeId);
+        $slugArr = [];
+        foreach ($installedProvSlugs as $installedProvSlug) {
+            $slug = Functions::fdoSLugForCarriers($installedProvSlug['slug']);
+            if (!blank($slug)) {
+                $slugArr[] = $slug;
+            }
+        }
+        if (!blank($slugArr)) {
+            return implode('|', $slugArr);
+        }
+        return "";
     }
 
     /**
@@ -68,17 +130,34 @@ class FDOController extends Controller
 
     }
 
-    // TODO:  Will be called when carrier is enabled or disabled
-    public static function updateProviderCouponFDO()
+
+    /**
+     * @param $enabled
+     * @param $installedCarrierId
+     * @param $storeId
+     * @return void|null
+     */
+    public static function updateProviderCouponFDO($enabled, $installedCarrierId, $storeId)
     {
+        $carrierSlug = InstalledCarrier::getInstalledProviderSlug($installedCarrierId);
+        if (blank($carrierSlug)) {
+            return null;
+        }
+        $fdoSlug = Functions::fdoSLugForCarriers($carrierSlug['slug']);
+        $promoCode = Coupon::getCouponCodeFromStoreId($storeId);
+        if (blank($fdoSlug) || blank($promoCode)) {
+            return null;
+        }
+        $arr['action'] = $enabled ? "install" : "uninstall";
+        $arr['carrier'] = $fdoSlug;
+        $arr['promocode'] = $promoCode;
+        $data = http_build_query($arr);
+        $endPoint = Endpoints::updateProviderFDOEndpoint() . $data;
+        $curlResp = (new CurlRequest())->enSingleCurlRequest($endPoint, [], [], 'GET');
+        Log::info('FDO resp for changing carrier status ' . json_encode($curlResp));
+
+
         // promocode=FD014GW&action=install&carrier=GTZ
-        /*        'WWE_PL' => 'Worldwide Express (Parcel)
-        ',
-        'WWE_LTL' => 'Worldwide Express (LTL)',
-         'GTZ' => 'GlobalTranz',
-         'Unishiper' => 'Unishippers (LTL)',
-        'UNI_PL' => 'Unishippers (Parcel)
-        ',*/
     }
 
     /**
