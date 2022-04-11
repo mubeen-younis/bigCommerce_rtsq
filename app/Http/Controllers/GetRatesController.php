@@ -223,7 +223,6 @@ class GetRatesController extends Controller
                 }
             }
         }
-        dd(123, $details);
         return ['lineItemData' => $details];
     }
 
