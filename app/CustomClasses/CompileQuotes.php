@@ -2098,7 +2098,7 @@ class CompileQuotes
         }
 
         $this->alwaysResi = $this->residential['alwaysResi']['yrcLtl'] ?? false;
-        $shipments = $yrcLtl->formateQuoteBeforeCompile($shipments);
+        $shipments = $yrcLtl->formateQuoteBeforeCompile($shipments, $connectionSettings['yrc-ltl']['creds']);
         $this->quoteSettings = $connectionSettings['yrc-ltl']['quote_settings'] ?? [];
         $this->quoteSettingsData(); 
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];

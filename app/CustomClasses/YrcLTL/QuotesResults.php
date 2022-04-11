@@ -28,7 +28,7 @@ class QuotesResults
         return $title . $resiTitle;
     }
 
-    public function formateQuoteBeforeCompile($shipments): array
+    public function formateQuoteBeforeCompile($shipments, $connSettings): array
     {
         $formattedShipments = [];
         foreach ($shipments as $shipment => $quotes) {
@@ -37,31 +37,63 @@ class QuotesResults
             }
 
             $quotesArr = $quotes['q'];
-            $quotesDataIndex = $quotesArr['pageRoot'];
             $lgStatus = $quotes['liftGateStatus'] ?? '';
             $radStatus = $quotes['residentialStatus'] ?? '';
+            $lgFee = 0;
 
-            $formattedShipments[$shipment]['q'] = array(
-                'serviceType' => $quotesDataIndex['bodyMain']['rateQuote']['delivery']['requestedServiceType']['value'] ?? '',
-                'serviceDesc' => $quotesDataIndex['pageHead']['pageTitle'] ?? '',
-                'lineItems' => $quotesDataIndex['bodyMain']['rateQuote']['lineItem'],
-                'liftGateStatus' => $lgStatus,
-                'residentialStatus' => $radStatus,
-                'deliveryDate' => $quotesArr['deliveryDate'] ?? '',
-                'totalTransitTimeInDays' => $quotesArr['totalTransitTimeInDays'] ?? 0,
-                'totalNetCharge' => array('Amount' => $quotesDataIndex['bodyMain']['rateQuote']['ratedCharges']['totalCharges'] ?? 0),
-            );
+            if ($connSettings['yrc_rates'] == 1) {
+                $quotesDataIndex = $quotesArr['pageRoot'];
+                $rateQuote = $quotesDataIndex['bodyMain']['rateQuote'];
 
-            if (isset($quotes['quotesWithoutLiftGate']) && isset($lgStatus) && $lgStatus != 'n') {
-                $chargesWithoutLG = $quotes['quotesWithoutLiftGate']['pageRoot']['bodyMain']['rateQuote']['ratedCharges']['totalCharges'] ?? 0;
-                $totalCharges = $quotesDataIndex['bodyMain']['rateQuote']['ratedCharges']['totalCharges'];
-                $lgFee = $totalCharges - $chargesWithoutLG;
+                $formattedShipments[$shipment]['q'] = $this->formatShipments($quotesArr, $rateQuote['delivery']['requestedServiceType']['value'], $quotesDataIndex['pageHead']['pageTitle'], $rateQuote['lineItem'], $lgStatus, $radStatus, $rateQuote['ratedCharges']['totalCharges']);
 
-                $formattedShipments[$shipment]['q']['surcharges']['liftgateFee'] = $lgFee;
+                if (isset($quotes['quotesWithoutLiftGate']) && isset($lgStatus) && $lgStatus != 'n') {
+                    $chargesWithoutLG = $quotes['quotesWithoutLiftGate']['pageRoot']['bodyMain']['rateQuote']['ratedCharges']['totalCharges'] ?? 0;
+                    $totalCharges = $quotesDataIndex['bodyMain']['rateQuote']['ratedCharges']['totalCharges'];
+                    $lgFee = number_format(($totalCharges - $chargesWithoutLG) / 100, 2);
+
+                    $formattedShipments[$shipment]['q']['surcharges']['liftgateFee'] = $lgFee;
+                }
+            } else {
+                $items = $quotesArr['LineItem'] ?? [];
+                $lineItems = [];
+                $isLG = false;
+
+                foreach ($items as $key => $value) {
+                    if ($value['@attributes']['Type'] == 'Commodity') {
+                        $lineItems[] = $value;
+                        $lineItems[$key]['hazardous'] = $value['Hazardous'] ?? '';
+                    }
+
+                    if (isset($value['Description']) && $value['Description'] == 'LIFTGATE SERVICE DESTINATION' && isset($value['Code']) && $value['Code'] == 'LFTD') {
+                        $lgFee = number_format($value['Charges'] / 100, 2) ?? 0;
+                        $isLG = true;
+                    }
+                }
+
+                $formattedShipments[$shipment]['q'] = $this->formatShipments($quotesArr,
+                    $quotesArr['Delivery']['RequestedServiceType'], 'YRC', $lineItems, $lgStatus, $radStatus, $quotesArr['RatedCharges']['TotalCharges']);
+
+                if (isset($lgStatus) && $lgStatus != 'n' && $isLG) {
+                    $formattedShipments[$shipment]['q']['surcharges']['liftgateFee'] = $lgFee;
+                }
             }
         }
-
         return $formattedShipments;
+    }
+
+    private function formatShipments($quotesArr, $srvcType, $srvcDesc, $lineItems, $lgStatus, $radStatus, $charges): array
+    {
+        return array(
+            'serviceType' => $srvcType ?? '',
+            'serviceDesc' => $srvcDesc ?? '',
+            'lineItems' => $lineItems,
+            'liftGateStatus' => $lgStatus,
+            'residentialStatus' => $radStatus,
+            'deliveryDate' => $quotesArr['deliveryDate'] ?? '',
+            'totalTransitTimeInDays' => $quotesArr['totalTransitTimeInDays'] ?? 0,
+            'totalNetCharge' => array('Amount' => number_format($charges / 100, 2) ?? 0),
+        );
     }
 
     public function quoteSettingsData()
