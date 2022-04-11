@@ -67,6 +67,23 @@ class WweLTLShipmentPackage
         $this->httpRequest = $httpRequest;
     }
 
+
+    public function getDropshipLocationDetail($dropShipID, $receiverZipCode)
+    {
+        if (blank($dropShipID)) {
+            return null;
+        }
+        $originList = LocationsController::getLocationById($dropShipID);
+        if (blank($originList)) {
+            return null;
+        }
+        $origin[] = $originList;
+        $originLoca = $this->formatOriginDet($origin);
+        $originLoca = reset($originLoca);
+        return $this->wweLTLOriginArray($originLoca, $receiverZipCode, true);
+
+    }
+
     /**
      * function that returns address array
      * @param $request
@@ -75,58 +92,37 @@ class WweLTLShipmentPackage
      * @param $storeData
      * @return array
      */
-    public function wweLTLOriginAddress(
-        $request,
-        $_product,
-        $receiverZipCode,
-        $storeData,
-        $connectionSettings
-    )
+    public function getNearestWarehouse($request, $receiverZipCode, $storeData, $connectionSettings)
     {
-        //dd(1,$request,$_product,$receiverZipCode,$storeData,$connectionSettings);
-        //Todo: need to check which warehouse is selected and method params conflict also must be fixed. fetchWarehouseSecData()
         $this->request = $request;
         $this->storeData = $storeData;
         $this->connectionSettings = $connectionSettings;
-        $whQuery = LocationsController::getAllLocations($storeData['store']->id, 1);
-
-        $dropship_enabled = $_product['dropship_enabled'] ?? false;
-
-        if ($dropship_enabled) {
-            $dropShipID = $_product['dropship_location'];
-            $originList = LocationsController::getLocationById($dropShipID);
-            //dd($whQuery, $dropShipID, $originList);
-            if (empty($originList)) {
-                $origin = $whQuery;
-            } else {
-                $origin[] = $originList;
-            }
-        } else {
-            $origin = $whQuery;
+        $origin = LocationsController::getAllLocations($storeData['store']->id, 1);
+        if (blank($origin)) {
+            return null;
         }
-        $originLoca = [];
-
-        foreach ($origin as $key => $ori) {
-            /*   echo '<pre>';
-               print_r($ori);
-               echo '</pre>';
-               die();*/
-
-            $originLoca[$key]['warehouse_id'] = $ori->id ?? '';
-            $originLoca[$key]['address'] = $ori->address ?? '';
-            $originLoca[$key]['phone'] = $ori->phone ?? '';
-            $originLoca[$key]['type'] = $ori->type ?? '';
-            $originLoca[$key]['city'] = $ori->city ?? '';
-            $originLoca[$key]['state'] = $ori->state ?? '';
-            $originLoca[$key]['zip'] = isset($ori->zip_code) ? str_replace(' ', '',$ori->zip_code) : '';
-            $originLoca[$key]['country'] = $ori->country ?? '';
-            $originLoca[$key]['additionals'] = $ori->additionals ?? [];
-        }
-
+        $originLoca = $this->formatOriginDet($origin);
         $origin = $originLoca;
         if ($origin !== null && count($origin)) {
             return $this->multiWarehouse($origin, $receiverZipCode);
         }
+    }
+
+    public function formatOriginDet($origin): array
+    {
+        $formattedOrigins = [];
+        foreach ($origin as $key => $ori) {
+            $formattedOrigins[$key]['warehouse_id'] = $ori->id ?? '';
+            $formattedOrigins[$key]['address'] = $ori->address ?? '';
+            $formattedOrigins[$key]['phone'] = $ori->phone ?? '';
+            $formattedOrigins[$key]['type'] = $ori->type ?? '';
+            $formattedOrigins[$key]['city'] = $ori->city ?? '';
+            $formattedOrigins[$key]['state'] = $ori->state ?? '';
+            $formattedOrigins[$key]['zip'] = isset($ori->zip_code) ? str_replace(' ', '', $ori->zip_code) : '';
+            $formattedOrigins[$key]['country'] = $ori->country ?? '';
+            $formattedOrigins[$key]['additionals'] = $ori->additionals ?? [];
+        }
+        return $formattedOrigins;
     }
 
     /**
@@ -165,7 +161,7 @@ class WweLTLShipmentPackage
      * @param $receiverZipCode
      * @return array
      */
-    public function wweLTLOriginArray($shortOrigin, $receiverZipCode)
+    public function wweLTLOriginArray($shortOrigin, $receiverZipCode, $isDropship = false)
     {
         if (isset($shortOrigin) && count($shortOrigin)) {
             //$origin = reset($origin);
@@ -221,7 +217,6 @@ class WweLTLShipmentPackage
         $url = Constant::GOOGLE_URL;
 
         $curlRes = $shipping->sendCurlRequest($url, $post);
-
         if (!isset($curlRes->error)) {
             $response = $curlRes;
         } else {
