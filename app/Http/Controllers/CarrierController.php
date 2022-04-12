@@ -233,8 +233,8 @@ class CarrierController extends Controller
         if ($carrier) {
             $enabled = !$carrier->is_enabled;
             InstalledCarrier::where('id', $request->carrier_id)->update(['is_enabled' => $enabled]);
-            /*Updating Carrier INstallation on FDO side*/
-            FDOController::updateProviderCouponFDO($enabled, $carrier->id, $request['store_id']);
+            /*Updating Carrier INstallation on FDO side and Address Validation Side*/
+            FDOController::updateProviderCoupon($enabled, $carrier->id, $request['store_id']);
             return response()->json(['error' => false, 'data' => $carrier, 'message' => 'Carrier Status updated'], 200);
         } else {
             return response()->json([

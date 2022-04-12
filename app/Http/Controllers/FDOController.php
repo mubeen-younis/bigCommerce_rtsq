@@ -29,7 +29,7 @@ class FDOController extends Controller
     {
         $storeId = $request['store_id'];
         $store = optional(Store::where('id', $storeId)->first())->toArray() ?? [];
-        $coupon = Coupon::where('store_id', $storeId)->first();
+        $coupon = Coupon::getFDOCoupon($storeId);
         if ($coupon === null) {
             $coupon = $this->getCouponCodeFdo($storeId);
         }
@@ -45,8 +45,8 @@ class FDOController extends Controller
 
     public function getMessageForCoupon($used, $couponCode, $storeId)
     {
-        $registerUrl = "https://freightdesk.online/register";
-        $loginUrl = "https://freightdesk.online/login";
+        $registerUrl = Endpoints::getFDORegisterUrl();
+        $loginUrl = Endpoints::getFDOLoginUrl();
         $note = "<strong>Note! </strong>";
         $congrats = "<strong>Congratulations! </strong>";
         if ($used === null) {
@@ -82,7 +82,7 @@ class FDOController extends Controller
         $phone = '';
         $apps = $this->getProvsSepByPipe($storeId);
         $encodedCode = base64_encode(http_build_query(['shop' => $storeUrl, 'promocode' => $couponCode,
-            'email' => $email, 'phone' => $phone, 'apps' => $apps]));
+            'email' => $email, 'phone' => $phone, 'apps' => $apps, 'marketplace' => 'bc']));
         return $encodedCode;
     }
 
@@ -119,7 +119,13 @@ class FDOController extends Controller
     public function updateCouponDetailsFromFDO(Request $request): \Illuminate\Http\JsonResponse
     {
         $request = $request->all();
-        $fdoCompanyId = $request['fdo_company_id'] ?? '';
+        if (isset($request['av_company_id'])) {
+            $platformCompanyId = $request['av_company_id'] ?? '';
+            $platform = 'av';
+        } else {
+            $platformCompanyId = $request['fdo_company_id'] ?? '';
+            $platform = 'fdo';
+        }
         $couponCode = $request['promo']['coupon'] ?? '';
         $storeUrl = $request['promo']['store_url'] ?? '';
         $startDate = $request['promo']['start_date'] ?? '';
@@ -127,15 +133,16 @@ class FDOController extends Controller
         if (blank($couponCode) || blank($storeUrl)) {
             return Helpers::sendJsonResponseFdo(true, 'Invalid request format', []);
         }
-        $coupon = Coupon::getCouponFromStoreUrlAndCoupCode($couponCode, $storeUrl);
+        $coupon = Coupon::getCouponFromStoreUrlAndCoupCode($couponCode, $storeUrl, $platform);
         if (blank($coupon)) {
             return Helpers::sendJsonResponseFdo(true, 'Coupon not found', []);
         }
         Coupon::updateCouponDetails($coupon['id'], $startDate, $endDate);
-        if (!blank($fdoCompanyId)) {
-            Store::where('id', $coupon['store_id'])->update(['freightdesk_company_id' => $fdoCompanyId]);
+        if (!blank($platformCompanyId)) {
+            Store::where('id', $coupon['store_id'])->update(['freightdesk_company_id' => $platformCompanyId]);
         }
-        return Helpers::sendJsonResponseFdo(false, 'Updated coupon details', []);
+        $installedProviders = $this->getProvsSepByPipe($coupon['store_id']);
+        return Helpers::sendJsonResponseFdo(false, 'Updated coupon details', ['installed_providers' => $installedProviders]);
 
 
     }
@@ -147,27 +154,42 @@ class FDOController extends Controller
      * @param $storeId
      * @return void|null
      */
-    public static function updateProviderCouponFDO($enabled, $installedCarrierId, $storeId)
+    public static function updateProviderCoupon($enabled, $installedCarrierId, $storeId)
     {
+
         $carrierSlug = InstalledCarrier::getInstalledProviderSlug($installedCarrierId);
         if (blank($carrierSlug)) {
             return null;
         }
         $fdoSlug = Functions::fdoSLugForCarriers($carrierSlug['slug']);
-        $promoCode = Coupon::getCouponCodeFromStoreId($storeId);
-        if (blank($fdoSlug) || blank($promoCode)) {
+        $promoCodeFDO = Coupon::getCouponCodeFromStoreIdandType($storeId);
+        $promoCodeAv = Coupon::getCouponCodeFromStoreIdandType($storeId, 'av');
+        if (blank($fdoSlug)) {
             return null;
         }
+
         $arr['action'] = $enabled ? "install" : "uninstall";
         $arr['carrier'] = $fdoSlug;
-        $arr['promocode'] = $promoCode;
-        $data = http_build_query($arr);
-        $endPoint = Endpoints::updateProviderFDOEndpoint() . $data;
-        $curlResp = (new CurlRequest())->enSingleCurlRequest($endPoint, [], [], 'GET');
-        Log::info('FDO resp for changing carrier status ' . json_encode($curlResp));
 
+        // FOR FDO
+        if (!blank($promoCodeFDO)) {
+            $arr['promocode'] = $promoCodeFDO;
+            $data = http_build_query($arr);
+            $endPoint = Endpoints::updateProviderFDOEndpoint() . $data;
+            $curlResp = (new CurlRequest())->enSingleCurlRequest($endPoint, [], [], 'GET');
+            Log::info('FDO resp for changing carrier status ' . json_encode($curlResp));
 
-        // promocode=FD014GW&action=install&carrier=GTZ
+        }
+
+        // FOR AV
+        if (!blank($promoCodeAv)) {
+            $arr['promocode'] = $promoCodeAv;
+            $data = http_build_query($arr);
+            $endPoint = Endpoints::updateProviderAvEndpoint() . $data;
+            $curlResp = (new CurlRequest())->enSingleCurlRequest($endPoint, [], [], 'GET');
+            Log::info('Av resp for changing carrier status ' . json_encode($curlResp));
+
+        }
     }
 
     /**

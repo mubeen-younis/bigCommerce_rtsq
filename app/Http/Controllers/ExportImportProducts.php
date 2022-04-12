@@ -264,6 +264,7 @@ class ExportImportProducts extends Controller
         ImportProductsNotification::dispatch($data['importEmailAddress'])->delay(Carbon::now()->addSecond($delay + 10));
         // start running queue
         \Artisan::call('queue:work');
+        dd(12);
         return response()->json([
             'error' => false,
             'data' => $data,
