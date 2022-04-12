@@ -35,7 +35,7 @@ class FDOController extends Controller
         }
         $store['coupon_code'] = $coupon->code ?? null;
         $store['used'] = $coupon->used ?? null;
-        $store['message'] = $this->getMessageForCoupon($store['used'], $store['coupon_code'], $storeId);
+        $store['message'] = $this->getMessageForCoupon($store['used'], $store['coupon_code'], $storeId, $store['freightdesk_company_id']);
         return response()->json(['error' => false,
             'data' => $store,
             'message' => '',
@@ -43,12 +43,13 @@ class FDOController extends Controller
     }
 
 
-    public function getMessageForCoupon($used, $couponCode, $storeId)
+    public function getMessageForCoupon($used, $couponCode, $storeId, $fdoCompanyId)
     {
         $registerUrl = Endpoints::getFDORegisterUrl();
         $loginUrl = Endpoints::getFDOLoginUrl();
         $note = "<strong>Note! </strong>";
         $couponCodeHtml = "<strong>[" . $couponCode . "]</strong>";
+        $fdoCompanyIdHtml = "<strong>[" . $fdoCompanyId . "]</strong>";
         $congrats = "<strong>Congratulations! </strong>";
         if ($used === null) {
             $clickHere = "<a target='_blank' rel='noreferrer' href='" . $registerUrl . "'>here</a>";
@@ -65,7 +66,7 @@ class FDOController extends Controller
             return $msg;
         }
         if ($used >= 1) {
-            return $congrats . "You have activated your Promo Code  " . $couponCodeHtml . ". Now you can enjoy free shipments with FreightDesk Online.";
+            return $congrats . "You have activated your Promo Code  " . $couponCodeHtml . " with FreightDesk Online account " . $fdoCompanyIdHtml . ". Now you can enjoy free shipments with FreightDesk Online.";
         }
     }
 
