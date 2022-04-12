@@ -2152,7 +2152,6 @@ class CompileQuotes
                 $quotesArr[] = $quote['q'];
                 foreach ($quotesArr as $key => $data) {
                     $srvcType = $data['serviceType'] ?? '';
-                 
                     if (isset($srvcType)) {
                         $access = $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
