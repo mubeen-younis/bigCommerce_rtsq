@@ -48,6 +48,7 @@ class FDOController extends Controller
         $registerUrl = Endpoints::getFDORegisterUrl();
         $loginUrl = Endpoints::getFDOLoginUrl();
         $note = "<strong>Note! </strong>";
+        $couponCodeHtml = "<strong>[" . $couponCode . "]</strong>";
         $congrats = "<strong>Congratulations! </strong>";
         if ($used === null) {
             $clickHere = "<a target='_blank' rel='noreferrer' href='" . $registerUrl . "'>here</a>";
@@ -58,13 +59,13 @@ class FDOController extends Controller
             $registerUrl = $registerUrl . '?code=' . $code;
             $loginUrl = $loginUrl . '?code=' . $code;
             $clickHere = "<a target='_blank' rel='noreferrer' href='" . $registerUrl . "'>here</a>";
-            $msg = $note . "To establish a connection, you must have a FreightDesk Online account. If you don’t have one, get FreightDesk Online free for one year by using promo code [" . $couponCode . "]. Register for FreightDesk Online using the promo code now. Click " . $clickHere . '.<br/>';
+            $msg = $note . "To establish a connection, you must have a FreightDesk Online account. If you don’t have one, get FreightDesk Online free for one year by using promo code " . $couponCodeHtml . ". Register for FreightDesk Online using the promo code now. Click " . $clickHere . '.<br/>';
             $clickHereLogin = "<a target='_blank' rel='noreferrer' href='" . $loginUrl . "'>here</a>";
             $msg = $msg . "Already have an account. Click " . $clickHereLogin . '.<br><strong>Please refresh the page after registering or logging in. </strong>';
             return $msg;
         }
         if ($used >= 1) {
-            return $congrats . "You have activated your Promo Code [" . $couponCode . "]. Now you can enjoy free shipments with FreightDesk Online.";
+            return $congrats . "You have activated your Promo Code  " . $couponCodeHtml . ". Now you can enjoy free shipments with FreightDesk Online.";
         }
     }
 
@@ -139,7 +140,11 @@ class FDOController extends Controller
         }
         Coupon::updateCouponDetails($coupon['id'], $startDate, $endDate);
         if (!blank($platformCompanyId)) {
-            Store::where('id', $coupon['store_id'])->update(['freightdesk_company_id' => $platformCompanyId]);
+            if ($platform == 'av') {
+                Store::where('id', $coupon['store_id'])->update(['av_company_id' => $platformCompanyId]);
+            } else {
+                Store::where('id', $coupon['store_id'])->update(['freightdesk_company_id' => $platformCompanyId]);
+            }
         }
         $installedProviders = $this->getProvsSepByPipe($coupon['store_id']);
         return Helpers::sendJsonResponseFdo(false, 'Updated coupon details', ['installed_providers' => $installedProviders]);
