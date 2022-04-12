@@ -66,7 +66,7 @@ class FDOController extends Controller
             return $msg;
         }
         if ($used >= 1) {
-            return $congrats . "You have activated your Promo Code  " . $couponCodeHtml . " with FreightDesk Online account " . $fdoCompanyIdHtml . ". Now you can enjoy free shipments with FreightDesk Online.";
+            return $congrats . "You have activated your Promo Code  " . $couponCodeHtml . " with FreightDesk Online account " . $fdoCompanyIdHtml . ". Now you can enjoy free shipments with FreightDesk Online for 1-year.";
         }
     }
 
