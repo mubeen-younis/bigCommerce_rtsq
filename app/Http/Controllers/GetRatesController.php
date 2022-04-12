@@ -140,8 +140,9 @@ class GetRatesController extends Controller
             ]
         ];
 
+        $variantKeys = [];
         if (count($data['base_options']['items'])) {
-            foreach ($data['base_options']['items'] as $product) {
+            foreach ($data['base_options']['items'] as $productKey => $product) {
                 $product_settings = $this->getProductSetting($product['product_id'], $product['variant_id']);
                 $product_price = $this->getProductPrice($product['product_id'], $product['variant_id']);
                 $weight = (isset($product['weight']['value']) && isset($product['weight']['units'])) ? $this->convertWeight($product['weight']['value'], strtolower($product['weight']['units'])) : 0;
@@ -153,6 +154,12 @@ class GetRatesController extends Controller
                 $shipBinAlone = (isset($product_settings['ship_multiple_package']) && $product_settings['ship_multiple_package'])
                 || (isset($product_settings['ship_own_package']) && $product_settings['ship_own_package']) ? 1 : 0;
                 $key = $product['variant_id'] ?? $product['product_id'];
+                /*Added this block of code for catering an item with diff product rules*/
+                if (!empty($variantKeys) && array_key_exists($key, $variantKeys)) {
+                    $key = $key . $productKey;
+                }
+                $variantKeys[$key] = $key;
+
                 $details['origin'][$key] = $originAddress;
                 $details['items'][$key] = [
                     'id' => $product_settings['id'] ?? '',

@@ -85,8 +85,7 @@ class OrderController extends Controller
 
     public function formateItems($oldItems, $items)
     {
-        $tempItems = $items;
-        foreach ($tempItems as $key => $item) {
+        foreach ($items as $key => $item) {
             $variant_id = $item->variant_id;
             $oldItems->$variant_id = $item;
             $oldItems->$key = $item;
@@ -299,6 +298,8 @@ class OrderController extends Controller
                     $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
                 }
             }
+
+
             $addedHazmat = false;
             if (isset($orderWidget[$zip]['accessories'])) {
                 $addedHazmat = in_array('Hazardous Material', $orderWidget[$zip]['accessories']);
@@ -364,6 +365,7 @@ class OrderController extends Controller
                 $orderWidget[$key]['items'] = $items;
             }
         }
+
         $sbs = '';
         //print_r($orderWidget); exit;
         $resp = [
@@ -689,7 +691,7 @@ class OrderController extends Controller
             //$saveOrderId = $this->saveUpdateOrderByID($toRequest);
             //$this->setOrderMeta($toRequest);
         } catch (\Exception $exception) {
-            //  Have to LOg Here
+            Log::info('Exception On Moving Quotes ' . json_encode($exception));
         }
     }
 
@@ -812,7 +814,8 @@ class OrderController extends Controller
                      *
                      * */
                     $fullRateId = optional($response)->shipping_provider_quote->rateId ?? null;
-                    $reqData = optional(RequestTempData::where('rate_id', $rateId)->where('cart_id', $cartId)->get())->toArray();
+                    $reqData = optional(RequestTempData::where('rate_id', $rateId)->where('cart_id', $cartId)->first())->toArray();
+
                     if (blank($reqData)) {
                         $reqData = optional(RequestTempData::where('rate_id', $fullRateId)->where('cart_id', $cartId)->first())->toArray();
                     }
