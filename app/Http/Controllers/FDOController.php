@@ -89,7 +89,7 @@ class FDOController extends Controller
     }
 
 
-    public function getProvsSepByPipe($storeId): string
+    public function getProvsSepByPipe($storeId, $sendArray = false)
     {
         $installedProvSlugs = InstalledCarrier::getinstalledProvidersSlug($storeId);
         $slugArr = [];
@@ -98,6 +98,9 @@ class FDOController extends Controller
             if (!blank($slug)) {
                 $slugArr[] = $slug;
             }
+        }
+        if ($sendArray) {
+            return $slugArr;
         }
         if (!blank($slugArr)) {
             return implode('|', $slugArr);
@@ -147,9 +150,8 @@ class FDOController extends Controller
                 Store::where('id', $coupon['store_id'])->update(['freightdesk_company_id' => $platformCompanyId]);
             }
         }
-        $installedProviders = $this->getProvsSepByPipe($coupon['store_id']);
-        return Helpers::sendJsonResponseFdo(false, 'Updated coupon details', ['installed_providers' => $installedProviders]);
-
+        $installedProviders = $this->getProvsSepByPipe($coupon['store_id'], true);
+        return response()->json(['error' => false, 'message' => 'Updated coupon details', 'install_carriers' => $installedProviders]);
 
     }
 
