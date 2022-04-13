@@ -55,6 +55,8 @@ Route::middleware([\App\Http\Middleware\FDOValidity::class])->group(function () 
     Route::get('/locations.json', [\App\Http\Controllers\FDOLocationsController::class, 'getLocations']);
 
 });
+Route::post('update_coupon_details_fdo', [FDOController::class, 'updateCouponDetailsFromFDO']);
+
 
 /////
 
@@ -105,7 +107,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/sbs/change_status', [RADController::class, 'changeStatus']);
 
     //=========Shipping Groups
-    Route::get('/get_shipping_groups',[\App\Http\Controllers\ShippingGroupController::class, 'getShippingGroups']);
+    Route::get('/get_shipping_groups', [\App\Http\Controllers\ShippingGroupController::class, 'getShippingGroups']);
     Route::post('/save_shipping_group', [\App\Http\Controllers\ShippingGroupController::class, 'saveShippingGroup']);
     Route::post('/delete_shipping_group', [\App\Http\Controllers\ShippingGroupController::class, 'deleteShippingGroup']);
     Route::get('/get_shipping_group_detail', [\App\Http\Controllers\ShippingGroupController::class, 'getShippingGroupDetail']);

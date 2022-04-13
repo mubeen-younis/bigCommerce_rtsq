@@ -102,7 +102,7 @@ class Functions
             if (blank($endDate)) {
                 return false;
             }
-            $endDate= date('m/d/Y', strtotime($endDate));
+            $endDate = date('m/d/Y', strtotime($endDate));
             $endDate = new \DateTime($endDate);
             $now = new \DateTime(now());
             // CHecks either the diff is positive or negative
@@ -117,5 +117,18 @@ class Functions
             return false;
         }
 
+    }
+
+    public static function fdoSLugForCarriers($carrierSlug)
+    {
+        $arr = ['small-package' => 'WWE_PL',
+            'ltl-quotes' => 'WWE_LTL',
+            'gtz-ltl' => 'GTZ',
+            'unishippers-small' => 'UNI_PL'
+        ];
+        if (isset($arr[$carrierSlug])) {
+            return $arr[$carrierSlug];
+        }
+        return null;
     }
 }

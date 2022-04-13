@@ -64,7 +64,7 @@ class CarrierController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
@@ -75,7 +75,7 @@ class CarrierController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Carrier  $carrier
+     * @param \App\Carrier $carrier
      * @return \Illuminate\Http\Response
      */
     public function show(Carrier $carrier)
@@ -86,7 +86,7 @@ class CarrierController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  \App\Carrier  $carrier
+     * @param \App\Carrier $carrier
      * @return \Illuminate\Http\Response
      */
     public function edit(Carrier $carrier)
@@ -97,8 +97,8 @@ class CarrierController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Carrier  $carrier
+     * @param \Illuminate\Http\Request $request
+     * @param \App\Carrier $carrier
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request, Carrier $carrier)
@@ -109,7 +109,7 @@ class CarrierController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Carrier  $carrier
+     * @param \App\Carrier $carrier
      * @return \Illuminate\Http\Response
      */
     public function destroy(Carrier $carrier)
@@ -125,9 +125,9 @@ class CarrierController extends Controller
     public function installCarrier(Request $request)
     {
         $subscirption = new SubscriptionController();
-        $changeCount = ['store_id'=> $request['store_id'], 'action'=>1];
+        $changeCount = ['store_id' => $request['store_id'], 'action' => 1];
         $res = $subscirption->changeCarrierCount($changeCount);
-        if($res['error']){
+        if ($res['error']) {
             return response()->json([
                 'error' => true,
                 'message' => $res['message'],
@@ -169,7 +169,7 @@ class CarrierController extends Controller
     {
         $store_id = $request->store_id;
 
-        $installedCarriers = Carrier::select('carriers.name', 'installed_carriers.id', 'carriers.logo', 'installed_carriers.carrier_id', 'carriers.carrier_type','carriers.slug', 'installed_carriers.is_enabled')
+        $installedCarriers = Carrier::select('carriers.name', 'installed_carriers.id', 'carriers.logo', 'installed_carriers.carrier_id', 'carriers.carrier_type', 'carriers.slug', 'installed_carriers.is_enabled')
             ->join('installed_carriers', 'installed_carriers.carrier_id', '=', 'carriers.id')
             ->where('installed_carriers.store_id', $store_id)->get();
 
@@ -179,7 +179,6 @@ class CarrierController extends Controller
                 'message' => 'No Installed Carriers Found',
             ], 200);
         }
-
 
 
         $response['error'] = false;
@@ -214,7 +213,7 @@ class CarrierController extends Controller
     public function changeCarrierStatus(Request $request)
     {
         $installedCarrier = InstalledCarrier::where('id', $request->carrier_id)->first();
-        if($installedCarrier->is_enabled==false) {
+        if ($installedCarrier->is_enabled == false) {
             $subscirption = new SubscriptionController();
             $changeCount = ['store_id' => $request['store_id'], 'action' => 1];
             $res = $subscirption->changeCarrierCount($changeCount);
@@ -224,7 +223,7 @@ class CarrierController extends Controller
                     'message' => $res['message'],
                 ], 200);
             }
-        }else{
+        } else {
             $subscirption = new SubscriptionController();
             $changeCount = ['store_id' => $request['store_id'], 'action' => 0];
             $subscirption->changeCarrierCount($changeCount);
@@ -232,9 +231,11 @@ class CarrierController extends Controller
         $carrier = InstalledCarrier::find($request->carrier_id);
 
         if ($carrier) {
-            InstalledCarrier::where('id', $request->carrier_id)->update(['is_enabled' => !$carrier->is_enabled]);
-
-            return response()->json(['error' => false, 'data' => InstalledCarrier::find($carrier->id), 'message' => 'Carrier Status updated'], 200);
+            $enabled = !$carrier->is_enabled;
+            InstalledCarrier::where('id', $request->carrier_id)->update(['is_enabled' => $enabled]);
+            /*Updating Carrier INstallation on FDO side and Address Validation Side*/
+            FDOController::updateProviderCoupon($enabled, $carrier->id, $request['store_id']);
+            return response()->json(['error' => false, 'data' => $carrier, 'message' => 'Carrier Status updated'], 200);
         } else {
             return response()->json([
                 'error' => true,
@@ -283,7 +284,7 @@ class CarrierController extends Controller
 
             $query = http_build_query($query);
             $end_point = Constant::PLAN_URL . '?' . $query;
-            $res = (array) json_decode(file_get_contents($end_point));
+            $res = (array)json_decode(file_get_contents($end_point));
 // Means that it is trial plan
             if ($res['plan_type'] == 1 && $res['pakg_group'] == '' && $res['message'] == 'Subscription Not Found.') {
                 $response['plan_type'] = 0;
@@ -317,15 +318,16 @@ class CarrierController extends Controller
 
     }
 
-    public function getCarrierForPlanInfoRequest($installedCarrierId){
+    public function getCarrierForPlanInfoRequest($installedCarrierId)
+    {
         $slug = InstalledCarrier::where('installed_carriers.id', $installedCarrierId)
             ->join('carriers', 'carriers.id', '=', 'installed_carriers.carrier_id')
             ->select('carriers.slug')->first();
-        if(!isset($slug->slug)) {
+        if (!isset($slug->slug)) {
             return 0;
         }
         $slug = $slug->slug;
-        switch ($slug){
+        switch ($slug) {
             case 'ltl-quotes':
                 return 1;
                 break;
