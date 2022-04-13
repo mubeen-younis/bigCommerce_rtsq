@@ -89,21 +89,23 @@ class Shipping
 
         foreach ($carriersArray['carriers'] as $key => $carriers) {
             if ($this->isHazmat == 'Y') {
-                $carriersArray['carriers'][$key]['api']['lineItemHazmatInfo'] = [
-                    [
-                        'isHazmatLineItem' => 'Y',
-                        'lineItemHazmatUNNumberHeader' => 'UN #',
-                        'lineItemHazmatUNNumber' => '1139',
-                        'lineItemHazmatClass' => '1.1',
-                        'lineItemHazmatEmContactPhone' => '4043308699',
-                        'lineItemHazmatPackagingGroup' => 'I',
-                    ],
-                ];
+                if ($key == 'wweLTL') {
+                    $carriersArray['carriers'][$key]['api']['lineItemHazmatInfo'] = [
+                        [
+                            'isHazmatLineItem' => 'Y',
+                            'lineItemHazmatUNNumberHeader' => 'UN #',
+                            'lineItemHazmatUNNumber' => '1139',
+                            'lineItemHazmatClass' => '1.1',
+                            'lineItemHazmatEmContactPhone' => '4043308699',
+                            'lineItemHazmatPackagingGroup' => 'I',
+                        ],
+                    ];
+                }
             }
             if ($this->isInsurance === 'Y') {
                 if ($this->isSmall($key)) {
                     $carriersArray['carriers'][$key]['api']['includeDeclaredValue'] = 1;
-                } else {
+                } else if ($key == 'wweLTL') {
                     $carriersArray['carriers'][$key]['api']['insureShipment'] = 1;
                 }
             }

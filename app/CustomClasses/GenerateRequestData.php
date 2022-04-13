@@ -127,9 +127,9 @@ class GenerateRequestData
                     $carriersArr['carriers']['unishippersSmall'] = $wweLtlArr;
                     break;
                 case 'freightquote-ltl':
-                    $wweLtlArr = $this->freightquoteLtlEnitArr($con1, $destination);
-                    $wweLtlArr['originAddress'] = $enitOrigin;
-                    $carriersArr['carriers']['freightquote'] = $wweLtlArr;
+                    $fqLtlArr = $this->freightQuoteLtlEnitArr($con1, $destination);
+                    $fqLtlArr['originAddress'] = $enitOrigin;
+                    $carriersArr['carriers']['freightQuote'] = $fqLtlArr;
                     break;
             }
         }
@@ -322,20 +322,16 @@ class GenerateRequestData
         ];
     }
 
-    public function freightquoteLtlEnitArr($connSettings, $destination)
+    public function freightQuoteLtlEnitArr($connSettings, $destination)
     {
         return [
-
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
             'serverName' => "https://" . $this->storeData['store']['name'],
             'carrierMode' => 'pro',
-            'quotestType' => 'ltl', // ltl / small
+            'quotestType' => 'ltl', 
             'version' => '1.0.0',
-            // 'returnQuotesOnExceedWeight' => $connSettings['quote_settings']['weightExeeds'],
-            'returnQuotesOnExceedWeight' => 1,
             'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
-            'api' => $this->getApiInfoArrWweLtl($connSettings, $destination),
-            'getDistance' => 0,
+            'api' => $this->getApiInfoArrFQLtl($connSettings, $destination),
         ];
     }
 
@@ -476,7 +472,7 @@ class GenerateRequestData
                     || isset($carriers['cerasis'])
                     || isset($carriers['globalTranz'])
                     || isset($carriers['xpoLogistics'])
-                    || isset($carriers['freightquote']);
+                    || isset($carriers['freightQuote']);
                 if ($isLtl) {
                     $itemsArr = $olditemsArr + $itemsArr;
                 }
@@ -1017,6 +1013,58 @@ class GenerateRequestData
         ];
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
 
+    }
+
+    function getApiInfoArrFQLtl($connSettings, $destination)
+    {
+        $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
+        (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+        /*
+         * Check if rad hit not consumed and residential is enables
+         * **/
+        $residential = 'N';
+        $alwaysResi = false;
+        
+        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+            if ($this->radHitConsumed == 0) {
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+
+            } else {
+                $residential = $this->residential;
+            }
+            if ($liftGate != 'Y') {
+                $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
+            }
+        } else {
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+        }
+
+        $this->resiCarrier['freightQuoteLtl'] = $residential;
+        $this->resiCarrier['alwaysResi']['freightQuoteLtl'] = $alwaysResi;
+
+        $accessorial = [];
+        if ($liftGate == 'Y') {
+            array_push($accessorial, 'LIFTGAT');
+        }
+        if ($residential == 'Y' || $alwaysResi) {
+            array_push($accessorial, 'RESDEL');
+        }
+
+        $apiArray = [
+            'name' => $connSettings['creds']['username'] ?? '',
+            'password' => $connSettings['creds']['password'] ?? '',
+
+            'HazardousMaterialContactName' => 'test',
+            'HazardousMaterialContactPhone' => '4545464875',
+            'residentialDelivery' => $alwaysResi ? 'Y' : $residential, 
+            'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
+            'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
+            'accessorial' => $accessorial,
+        ];
+        
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
 
     /*
