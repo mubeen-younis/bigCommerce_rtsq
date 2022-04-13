@@ -157,9 +157,6 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::get('/get_fdo_info', [FDOController::class, 'getFdoCompanyInfo']);
     Route::post('/update_fdo_connection', [FDOController::class, 'update']);
 
-    // Address Validation
-    Route::get('/get_av_info', [\App\Http\Controllers\AddressValidationController::class, 'getAvCompanyInfo']);
-
     //Start: Subscription Module Routes are given below
     Route::post('/subscribe-plan', [SubscriptionController::class, 'subscribeToPlan']);
     Route::post('/cancel-subscription', [SubscriptionController::class, 'cancelSubscriptionPlan']);
