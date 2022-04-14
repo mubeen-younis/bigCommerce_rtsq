@@ -39,10 +39,10 @@ pipelines:
         script:
           - pipe: atlassian/ssh-run:0.2.2
             variables:
-              SSH_USER: 'eniture'
-              SERVER: '3.94.2.214'
+              SSH_USER: 'ec2-user'
+              SERVER: '34.197.112.152'
               MODE: 'command'
-              COMMAND: '/home/eniture/public_html/bigcommerce/bc/remote-script.sh'
+              COMMAND: '/var/www/html/bigcommerce/bc/remote-script.sh'
 
     ws-elb:
     - step:
