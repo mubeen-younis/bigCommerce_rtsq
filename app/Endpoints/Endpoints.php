@@ -19,6 +19,14 @@ class Endpoints
         return "https://freightdesk.online/use_coupon?shop=";
     }
 
+    public static function applyPromoCodeFdoEndpoint()
+    {
+        if (env('APP_ENV') == 'staging') {
+            return "https://freightdesk.eniture-qa.com/apply_promo_code?";
+
+        }
+        return "https://freightdesk.online/apply_promo_code?";
+    }
 
     public static function updateProviderFDOEndpoint()
     {
