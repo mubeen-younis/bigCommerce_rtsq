@@ -25,6 +25,19 @@ class FDOController extends Controller
         //
     }
 
+    public function deleteCoupon(Request $request)
+    {
+        $coupon = $request->coupon ?? null;
+        if (blank($coupon)) {
+            return 'Not valid';
+        }
+        $abc = Coupon::where('code', $coupon)->delete();
+        if ($abc) {
+            return 'Deleted';
+        }
+        return 'Nae delete hua';
+    }
+
     public function getFdoCompanyInfo(Request $request)
     {
         $storeId = $request['store_id'];
