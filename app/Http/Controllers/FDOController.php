@@ -151,10 +151,11 @@ class FDOController extends Controller
                 $couponDet['message'] = $this->getMessageForCoupon($couponDet['used'], $couponDet['coupon_code'], $storeId, $response['fdo_company_id'], false);
                 return response()->json(['error' => false,
                     'data' => $couponDet,
-                    'message' => '',
+                    'message' => 'Successfully applied promo code',
                 ], 200);
             }
         }
+        return Helpers::sendJsonResponse(true, 'Something went wrong');
     }
 
     /**
