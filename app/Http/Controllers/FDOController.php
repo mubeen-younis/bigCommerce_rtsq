@@ -34,8 +34,9 @@ class FDOController extends Controller
             $coupon = $this->getCouponCodeFdo($storeId);
         }
         $store['coupon_code'] = $coupon->code ?? null;
+        $store['is_already_user'] = $coupon->is_already_user ?? false;
         $store['used'] = $coupon->used ?? null;
-        $store['message'] = $this->getMessageForCoupon($store['used'], $store['coupon_code'], $storeId, $store['freightdesk_company_id']);
+        $store['message'] = $this->getMessageForCoupon($store['used'], $store['coupon_code'], $storeId, $store['freightdesk_company_id'], $store['is_already_user']);
         return response()->json(['error' => false,
             'data' => $store,
             'message' => '',
@@ -43,7 +44,7 @@ class FDOController extends Controller
     }
 
 
-    public function getMessageForCoupon($used, $couponCode, $storeId, $fdoCompanyId)
+    public function getMessageForCoupon($used, $couponCode, $storeId, $fdoCompanyId, $IsAlrUser = false)
     {
         $registerUrl = Endpoints::getFDORegisterUrl();
         $loginUrl = Endpoints::getFDOLoginUrl();
@@ -51,6 +52,12 @@ class FDOController extends Controller
         $couponCodeHtml = "<strong>[" . $couponCode . "]</strong>";
         $fdoCompanyIdHtml = "<strong>[" . $fdoCompanyId . "]</strong>";
         $congrats = "<strong>Congratulations! </strong>";
+        if ($used >= 1) {
+            return $congrats . "You have activated your Promo Code  " . $couponCodeHtml . " with FreightDesk Online account " . $fdoCompanyIdHtml . ". Now you can enjoy free shipments with FreightDesk Online for 1-year.";
+        }
+        if ($IsAlrUser) {
+            return "Note! To establish a connection, you must have a FreightDesk Online account. If you don’t have one, get FreightDesk Online free for one year by using promo code " . $couponCodeHtml . ". Click the button below to apply the promo code";
+        }
         if ($used === null) {
             $clickHere = "<a target='_blank' rel='noreferrer' href='" . $registerUrl . "'>here</a>";
             return $note . "To establish a connection, you must have a FreightDesk Online account. If you don’t have one, click " . $clickHere . " to register";
@@ -65,9 +72,7 @@ class FDOController extends Controller
             $msg = $msg . "Already have an account. Click " . $clickHereLogin . '.<br><strong>Please refresh the page after registering or logging in. </strong>';
             return $msg;
         }
-        if ($used >= 1) {
-            return $congrats . "You have activated your Promo Code  " . $couponCodeHtml . " with FreightDesk Online account " . $fdoCompanyIdHtml . ". Now you can enjoy free shipments with FreightDesk Online for 1-year.";
-        }
+
     }
 
 
@@ -115,6 +120,41 @@ class FDOController extends Controller
     public function getCouponCodeFdo($storeId)
     {
         return Coupon::getCouponFdo($storeId);
+    }
+
+
+    public function applyPromoCode(Request $request)
+    {
+        $type = $request->type ?? "fdo";
+        $storeId = $request->store_id;
+        $promoDetail = $type == "av" ? Coupon::getAvCoupon($storeId) : Coupon::getFDOCoupon($storeId);
+        if (blank($promoDetail)) {
+            return Helpers::sendJsonResponse(true, 'No promo code found');
+        }
+        $id = $promoDetail->id;
+        $coupon = $promoDetail->code;
+        $shop = $promoDetail->shop;
+        $carriers = $this->getProvsSepByPipe($storeId);
+        $queryParams = http_build_query(['coupon' => $coupon, 'shop' => $shop, 'carriers' => $carriers]);
+        if ($type == "fdo") {
+            $endPoint = Endpoints::applyPromoCodeFdoEndpoint() . $queryParams;
+            $curlResponse = (new CurlRequest())->enSingleCurlRequest($endPoint, [], [], 'GET');
+            $response = json_decode($curlResponse['response'], true);
+            if (!empty($response) && $response['status'] == false) {
+                return Helpers::sendJsonResponse(true, $response['message'] ?? 'No promo code found');
+            }
+            if (isset($response['promo'])) {
+                Store::where('id', $storeId)->update(['freightdesk_company_id' => $response['fdo_company_id']]);
+                Coupon::updateCouponDetails($id, $response['promo']['start_date'], $response['promo']['end_date']);
+                $couponDet = Coupon::getFDOCoupon($storeId)->toArray();
+                $couponDet['coupon_code'] = $couponDet['code'] ?? null;
+                $couponDet['message'] = $this->getMessageForCoupon($couponDet['used'], $couponDet['coupon_code'], $storeId, $response['fdo_company_id'], false);
+                return response()->json(['error' => false,
+                    'data' => $couponDet,
+                    'message' => '',
+                ], 200);
+            }
+        }
     }
 
     /**

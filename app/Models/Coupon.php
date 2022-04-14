@@ -94,6 +94,7 @@ class Coupon extends Model
         }
         $coupon->name = $couponResponse['message'] ?? '';
         $coupon->type = $type;
+        $coupon->is_already_user = $couponResponse['fdo_user'] ?? false;
         $coupon->code = $couponResponse['promo']['coupon'] ?? '';
         $coupon->shop = $couponResponse['promo']['store_url'] ?? '';
         $coupon->store_id = $storeId;
