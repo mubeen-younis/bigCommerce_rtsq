@@ -200,7 +200,9 @@ class GetRatesController extends Controller
                     //'freightClass' => '',
                     'lineItemClass' => isset($product_settings['freight_class']) ? $this->getLineItemClass($product_settings['freight_class']) : '',
                     'shipping_group' => $product_settings['shipping_group'] ?? null,
-                    'exclude_packaging' => 0
+                    'exclude_packaging' => 0,
+                    'instore_enabled' => $product_settings['instore_enabled'] ?? false,
+                    'loc_del_enabled' => $product_settings['local_del_enabled'] ?? false
                 ];
 
 

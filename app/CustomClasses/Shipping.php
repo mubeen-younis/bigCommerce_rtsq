@@ -28,12 +28,14 @@ class Shipping
     private $isInsurance = 'N';
     private $isRequestMultishipment = false;
     private $shippingGroupResponse;
+    private $showOnlyLocAndInstoreQuote;
 
     public function __construct()
     {
         $this->shipmentPkg = new WweLTLShipmentPackage();
         $this->compileQuotes = new CompileQuotes();
         $this->shippingGroupResponse = [];
+        $this->showOnlyLocAndInstoreQuote = false;
     }
 
 
@@ -52,6 +54,13 @@ class Shipping
 
         $generateReqData->_init($quoteSettings, $connectionSettings, $storeData);
         $origins = $request['lineItemData']['origin'];
+        // Check if any of the item in the cart has selected quote as instore or local delivery
+        $this->showOnlyLocAndInstoreQuote = $this->showOnlyLocAndInstoreQuote($request['lineItemData']['items']);
+        // Set SUppress Rates to true if to show only instore and local
+        if ($this->showOnlyLocAndInstoreQuote) {
+            $origins = $this->enableSuppressRatesInOrigins($origins);
+        }
+        dd(123, $origins);
         // Items that is not associated with Shipping Group and need to get rates from Ws
         $itemsWithoutShippingGroup = collect($request['lineItemData']['items'])->where('shipping_group', null)->all();
         // Items that is associated with Shipping Group
@@ -210,6 +219,33 @@ class Shipping
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
         $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
         return $resp;
+    }
+
+    public function showOnlyLocAndInstoreQuote($items): bool
+    {
+        foreach ($items as $item) {
+            if ((isset($item['instore_enabled']) && $item['instore_enabled']) ||
+                (isset($item['loc_del_enabled']) && $item['loc_del_enabled'])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public function enableSuppressRatesInOrigins($origins)
+    {
+        // TODO Need to set some status for WS to suppress quotes and ignore destination origin
+        $found = false;
+        foreach ($origins as $key => $origin) {
+            if (isset($origin['InstorPickupLocalDelivery']['localDelivery']['suppressOtherRates'])) {
+                $found = true;
+                $origins[$key]['InstorPickupLocalDelivery']['localDelivery']['suppressOtherRates'] = 1;
+            }
+        }
+        if (!$found) {
+            $this->showOnlyLocAndInstoreQuote = false;
+        }
+        return $origins;
     }
 
     public function getOriginsAccShipGroup($items, $origins)
