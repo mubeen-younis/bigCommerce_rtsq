@@ -168,6 +168,27 @@ class FDOController extends Controller
                 ], 200);
             }
         }
+
+        
+        if ($type == "av") {
+            $endPoint = Endpoints::applyPromoCodeAVEndpoint() . $queryParams;
+            $curlResponse = (new CurlRequest())->enSingleCurlRequest($endPoint, [], [], 'GET');
+            $response = json_decode($curlResponse['response'], true);
+            if (!empty($response) && $response['status'] == false) {
+                return Helpers::sendJsonResponse(true, $response['message'] ?? 'No promo code found');
+            }
+            if (isset($response['promo'])) {
+                Store::where('id', $storeId)->update(['av_company_id' => $response['av_company_id']]);
+                Coupon::updateCouponDetails($id, $response['promo']['start_date'], $response['promo']['end_date']);
+                $couponDet = Coupon::getAvCoupon($storeId)->toArray();
+                $couponDet['coupon_code'] = $couponDet['code'] ?? null;
+                $couponDet['message'] = $this->getMessageForCoupon($couponDet['used'], $couponDet['coupon_code'], $storeId, $response['av_company_id'], false);
+                return response()->json(['error' => false,
+                    'data' => $couponDet,
+                    'message' => 'Successfully applied promo code',
+                ], 200);
+            }
+        }
         return Helpers::sendJsonResponse(true, 'Something went wrong');
     }
 

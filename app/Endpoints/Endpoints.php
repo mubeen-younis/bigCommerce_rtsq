@@ -88,6 +88,15 @@ class Endpoints
 
     }
 
+    public static function applyPromoCodeAVEndpoint()
+    {
+        if (env('APP_ENV') == 'staging') {
+            return "https://address-validation.eniture-dev3.com/apply_promo_code?";
+
+        }
+        return "https://validate-addresses.com/apply_promo_code?";
+    }
+
     public static function updateProviderAvEndpoint()
     {
 
