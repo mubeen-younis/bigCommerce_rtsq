@@ -304,7 +304,7 @@ class CompileQuotes
             }
 
             // TODO : Need to fetch SUppress Status From WS and make quotes array empty
-            if (isset($inStoreLd['inStorePickup']['suppress']) && $inStoreLd['inStorePickup']['suppress'] == 1) {
+            if (isset($inStoreLd['suppress']) && ['suppress'] == 1) {
                 $quotesArray = [];
             }
 
