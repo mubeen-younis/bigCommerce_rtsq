@@ -29,6 +29,8 @@ class Shipping
     private $isRequestMultishipment = false;
     private $shippingGroupResponse;
     private $showOnlyLocAndInstoreQuote;
+    private $instoreQuotes;
+    private $locDelQuotes;
 
     public function __construct()
     {
@@ -36,6 +38,8 @@ class Shipping
         $this->compileQuotes = new CompileQuotes();
         $this->shippingGroupResponse = [];
         $this->showOnlyLocAndInstoreQuote = false;
+        $this->instoreQuotes = false;
+        $this->locDelQuotes = false;
     }
 
 
@@ -224,22 +228,30 @@ class Shipping
     public function showOnlyLocAndInstoreQuote($items): bool
     {
         foreach ($items as $item) {
-            if ((isset($item['instore_enabled']) && $item['instore_enabled']) ||
-                (isset($item['loc_del_enabled']) && $item['loc_del_enabled'])) {
-                return true;
+            if (isset($item['instore_enabled']) && $item['instore_enabled']) {
+                $this->instoreQuotes = true;
+            }
+            if (isset($item['loc_del_enabled']) && $item['loc_del_enabled']) {
+                $this->locDelQuotes = true;
             }
         }
-        return false;
+        return $this->instoreQuotes || $this->locDelQuotes;
     }
 
     public function enableSuppressRatesInOrigins($origins)
     {
-        // TODO Need to set some status for WS to suppress quotes and ignore destination origin
+        //  Need to set some status for WS to suppress quotes and ignore destination origin
         $found = false;
         foreach ($origins as $key => $origin) {
-            if (isset($origin['InstorPickupLocalDelivery']['localDelivery']['suppressOtherRates'])) {
+            if (isset($origin['InstorPickupLocalDelivery']['localDelivery']['postalCodeMatch'])) {
+                $origins[$key]['InstorPickupLocalDelivery']['suppress'] = 1;
+                $origins[$key]['InstorPickupLocalDelivery']['localDelivery']['postalCodeMatch'] = 1;
                 $found = true;
-                $origins[$key]['InstorPickupLocalDelivery']['localDelivery']['suppressOtherRates'] = 1;
+            }
+            if (isset($origin['InstorPickupLocalDelivery']['inStorePickup']['postalCodeMatch'])) {
+                $origins[$key]['InstorPickupLocalDelivery']['suppress'] = 1;
+                $origins[$key]['InstorPickupLocalDelivery']['inStorePickup']['postalCodeMatch'] = 1;
+                $found = true;
             }
         }
         if (!$found) {
