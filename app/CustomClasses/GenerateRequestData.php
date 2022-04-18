@@ -334,7 +334,7 @@ class GenerateRequestData
      * @return array|bool
      */
     public function generateRequestArray($request, $carriersArray, $itemsArr, $cartInfo)
-    {   
+    {
         $carriers = $carriersArray['carriers'];
         Log::info('Carriers ' . json_encode($carriers));
         $receiverAddress = $this->getReceiverData($request);
@@ -348,11 +348,10 @@ class GenerateRequestData
         $binReponse = $boxBins = [];
         //
         if ($this->storeData['installed_addon_sbs'] && isset($this->storeData['installed_addons'][0]->is_enabled) &&
-        isset($this->storeData['installed_addons'][0]->is_enabled)) {
-                $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? [];
-                $this->itemsArr = $itemsArr;
-                $this->carriers = $carriers;
-
+            isset($this->storeData['installed_addons'][0]->is_enabled)) {
+            $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? [];
+            $this->itemsArr = $itemsArr;
+            $this->carriers = $carriers;
             $hasSmall = isset($carriers['wweSmall'])
                 || isset($carriers['upsSmall'])
                 || isset($carriers['fedexSmall'])
@@ -571,7 +570,7 @@ class GenerateRequestData
                 if ($isShipAsMultiplePackage) {
                     $boxSizeController = new BoxSizeController();
                     $getBoxes = $boxSizeController->getBoxesByProductId($itemsArr[$varriantId]['id']);
-                       if (empty($getBoxes)) {
+                    if (empty($getBoxes)) {
                         return [];
                     } else {
                         foreach ($getBoxes as $key => $box) {
@@ -1206,7 +1205,7 @@ class GenerateRequestData
             'accessorial' => $accessorial,
             'residentials_delivery' => isset($accessorial) && !blank($accessorial) ? 'yes' : 'no'
         ];
-        
+
         return $apiArray;
     }
 
@@ -1496,14 +1495,17 @@ class GenerateRequestData
 
     public function updatCommdityDetails($item, $bin, $boxBins, $itemsArr)
     {
-
         $boxWeight = 0;
         $price = $item['lineItemPrice'] ?? 0;
+        $hazmat = 'N';
         if (isset($bin->bin_data->id) && isset($boxBins[$bin->bin_data->id])) {
             $boxWeight = $boxBins[$bin->bin_data->id]['box_weight'];
             $price = 0;
             if (isset($bin->items)) {
                 foreach ($bin->items as $itemData) {
+                    if ($hazmat == 'N') {
+                        $hazmat = $itemsArr[$itemData->id]['isHazmatLineItem'];
+                    }
                     $price += $itemsArr[$itemData->id]['lineItemPrice'] ?? 0;
                 }
             }
@@ -1513,6 +1515,8 @@ class GenerateRequestData
         $item['lineItemHeight'] = $bin->bin_data->h ?? 0;
         $item['lineItemPrice'] = $price;//$item['lineItemPrice']*$quantityPacked;
         $item['lineItemWeight'] = $bin->bin_data->weight + $boxWeight;
+        $item['isHazmatLineItem'] = $hazmat;
+
 
         //$item['piecesOfLineItem'] = 1 ?? 0;
         $item['shipItemAlone'] = 1;
