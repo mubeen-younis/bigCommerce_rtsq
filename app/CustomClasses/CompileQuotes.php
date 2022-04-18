@@ -2071,10 +2071,10 @@ class CompileQuotes
         $res = $this->unishippersSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment); 
 
         if (!$this->isMultiShipment) {
-            $this->isMultiShipment = $res['isMultiShipment'];
+            $this->isMultiShipment = $res['isMultiShipment'] ?? false;
         }
 
-        return $res['resp'];
+        return $res['resp'] ?? [];
     }
 
 
