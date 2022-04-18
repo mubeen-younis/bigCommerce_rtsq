@@ -2086,6 +2086,8 @@ class CompileQuotes
 
     private function compileFreightQuoteLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
+        $this->isFQ = true;
+
         if ($this->residential['freightQuoteLtl'] == 'Y') {
             $this->isResi = true;
             $this->residentialDlvry = 1;
@@ -2134,17 +2136,15 @@ class CompileQuotes
 
             $originQuotes = [];
             $arraySorting = [];
-            
+
             if (isset($quote['q'])) {
                 if (isset($quote['hazardousStatus'])) {
                     $hazShipmentArr[$origin] = $quote['hazardousStatus'] == 'y' ? 'Y' : 'N';
                 }
 
                 foreach ($quote['q'] as $key => $data) {
-                    // if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) && isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y') {
-                    if (isset($data['serviceType'])) {
+                    if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices)) {
                         $access = $this->getAccessorialCode() . $resiPickup;
-                        $charges['totalNetCharge']['Amount'] = $data['totalNetCharge'];
                         $charges = array(
                             'totalNetCharge' => array(
                                 'Amount' => $data['totalNetCharge']
@@ -2153,7 +2153,6 @@ class CompileQuotes
                         );
                         $price = $this->calculatePrice($charges);
                         /*
-                       * Date 01-07-22
                        * Adding Functionality of Delivery Estimate Options
                        * */
                         $date = $data['deliveryTimestamp'] ?? null;
@@ -2182,20 +2181,11 @@ class CompileQuotes
             $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
 
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
-                if (count($compiledQuotes) > 1) {
-                    foreach ($compiledQuotes as $k => $service) {
-                        $allQuotes['simple'][] = $service['simple'];
-                        $multiShipmentQuotes['simple'][$origin] = $service['simple'];
-                        $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
-                        $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
-                    }
-                } else {
                     $service = reset($compiledQuotes);
                     $allQuotes['simple'][] = $service['simple'] ?? '';
                     $multiShipmentQuotes['simple'][$origin] = $service['simple'] ?? '';
                     $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
                     $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
-                }
             }
 
             if ($this->isMultiShipment) {
@@ -2209,17 +2199,7 @@ class CompileQuotes
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
-
-        if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1)) {
-            $allQuotes = $this->forceChangeTitle($allQuotes);
-            $resp = [
-                'checkoutQuotes' => $allQuotes,
-                'multiShipmentQuotes' => $multiShipmentQuotes
-            ];
-
-            return $resp;
-        }
-
+        
         $resp = $allQuotes;
         return $resp;
     }
@@ -3007,6 +2987,7 @@ class CompileQuotes
         $sliced = array_slice($ratesArray['simple'], 0, $options, true);
         $simplePrice = $this->getAveragePrice($sliced, $options);
         $prefix = $this->isGTZCerasis ? 'AVG' : 'AVGwweltl';
+        $prefix = $this->isFQ ? 'AVGfqltl' : $prefix;
         $serviceName = $this->customLabel('Freight');
         $averageRateService[0]['simple'] = [
             'title' => $this->getTitle($serviceName, false),//$serviceName,
