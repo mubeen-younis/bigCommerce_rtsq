@@ -39,7 +39,7 @@ class Functions
     {
         $carrierCodesWithName = ['wweltl' => 'wweLTL', 'rnlltl' => 'rnl', 'xpoltl' => 'xpoLogistics', 'upsltl' => 'upsLTL',
             'fedexltl' => 'fedexLTL', 'gtzltl' => 'globalTranz', 'cltl' => 'cerasis',
-            'parcel_12wwe' => 'wweSmall', 'parcel_12ups' => 'upsSmall', 'parcel_12fd' => 'fedexSmall',];
+            'parcel_12wwe' => 'wweSmall', 'parcel_12ups' => 'upsSmall', 'parcel_12fd' => 'fedexSmall', 'parcel_12uniship' => 'unishippersSmall'];
         return $carrierCodesWithName[$carrierCode] ?? null;
     }
 
@@ -47,7 +47,7 @@ class Functions
     {
         $carrierCodesWithName = ['wweltl' => 'Worldwide Express LTL', 'upsltl' => 'UPS LTL', 'rnlltl' => 'R&L Carriers', 'xpoltl' => 'XPO Logistics',
             'fedexltl' => 'FedEx LTL', 'gtzltl' => 'GlobalTranz LTL', 'cltl' => 'Cerasis Ltl',
-            'parcel_12wwe' => 'Worldwide Express Small', 'parcel_12ups' => 'UPS Small', 'parcel_12fd' => 'FedEx Small'];
+            'parcel_12wwe' => 'Worldwide Express Small', 'parcel_12ups' => 'UPS Small', 'parcel_12fd' => 'FedEx Small', 'parcel_12uniship' => 'Unishipper Small'];
         return $carrierCodesWithName[$carrierCode] ?? null;
 
 
@@ -87,7 +87,7 @@ class Functions
 
     public static function isSmallCarrier($code)
     {
-        $carriers = ['parcel_12wwe', 'parcel_12ups', 'parcel_12fd'];
+        $carriers = ['parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship'];
         foreach ($carriers as $carrier) {
             if (strpos($code, $carrier) !== false) {
                 return true;
@@ -96,12 +96,14 @@ class Functions
         return false;
     }
 
+
     public static function isExpiredSubscription($endDate): bool
     {
         try {
             if (blank($endDate)) {
                 return false;
             }
+
             $endDate = date('m/d/Y', strtotime($endDate));
             $endDate = new \DateTime($endDate);
             $now = new \DateTime(now());
@@ -117,6 +119,23 @@ class Functions
             return false;
         }
 
+    }
+
+
+    public static function getDaysBwDates($startDate, $endDate)
+    {
+        try {
+            if (blank($endDate) || blank($startDate)) {
+                return 0;
+            }
+            $startDate = new \DateTime($startDate);
+            $endDate = new \DateTime($endDate);
+            $days = $endDate->diff($startDate)->days ?? 0;
+            return $days;
+        } catch (\Exception $exception) {
+            Log::info('Exception on checking expiry ' . json_encode($exception->getMessage()));
+            return 0;
+        }
     }
 
     public static function fdoSLugForCarriers($carrierSlug)

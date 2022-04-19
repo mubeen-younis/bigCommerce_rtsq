@@ -121,6 +121,11 @@ class GenerateRequestData
                         $carriersArr['carriers']['rnl'] = $wweLtlArr;
                     }
                     break;
+                case 'unishippers-small':
+                    $wweLtlArr = $this->unishippersSmallEnitArr($con1, $destination);
+                    $wweLtlArr['originAddress'] = $enitOrigin;
+                    $carriersArr['carriers']['unishippersSmall'] = $wweLtlArr;
+                    break;
             }
         }
         return ['carriersArr' => $carriersArr, 'residential' => $this->resiCarrier];
@@ -299,6 +304,19 @@ class GenerateRequestData
         ];
     }
 
+    public function unishippersSmallEnitArr($connSettings, $destination)
+    {
+        return [
+            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'serverName' => "https://" . $this->storeData['store']['name'],
+            'carrierMode' => 'pro',
+            'quotestType' => 'small', // ltl / small
+            'version' => '1.0.0',
+            'api' => $this->getApiInfoArrUnishippersSmall($connSettings, $destination),
+            'getDistance' => 0,
+        ];
+    }
+
     function calculatePrice($lineItems)
     {
         $price = 0;
@@ -331,14 +349,15 @@ class GenerateRequestData
         }
         $binReponse = $boxBins = [];
         //
+
         if (isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs']) {
             $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? [];
             $this->itemsArr = $itemsArr;
             $this->carriers = $carriers;
-
             $hasSmall = isset($carriers['wweSmall'])
                 || isset($carriers['upsSmall'])
-                || isset($carriers['fedexSmall']);
+                || isset($carriers['fedexSmall'])
+                || isset($carriers['unishippersSmall']);
             if ($hasSmall) {
                 $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
                 if (empty($multiplePackaging)) {
@@ -351,9 +370,7 @@ class GenerateRequestData
                 $olditemsArr = $itemsArr;
                 $carriersoriginAddress = $carriers['wweSmall']['originAddress']
                     ?? $carriers['upsSmall']['originAddress']
-                    ?? $carriers['fedexSmall']['originAddress'];
-
-
+                    ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? [];
                 if (isset($carriers['fedexSmall'])) {
                     $this->checkServiceEnabled();
                     if ($this->ground) {
@@ -382,6 +399,14 @@ class GenerateRequestData
 
                             foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
                                 $carriers['wweSmall']['originAddress'][$key] = $origin;
+                            }
+                        }
+
+                        if (isset($carriers['unishippersSmall'])) {
+                            unset($carriers['unishippersSmall']['originAddress']);
+
+                            foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
+                                $carriers['unishippersSmall']['originAddress'][$key] = $origin;
                             }
                         }
                         ///////////////////////////////////////////
@@ -423,6 +448,9 @@ class GenerateRequestData
                     }
                     if (isset($carriers['upsSmall'])) {
                         $carriers['upsSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
+                    }
+                    if (isset($carriers['unishippersSmall'])) {
+                        $carriers['unishippersSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                     }
                 }
 
@@ -1135,6 +1163,54 @@ class GenerateRequestData
         return $apiArray;
     }
 
+    public function getApiInfoArrUnishippersSmall($connSettings, $destination)
+    {
+        $residential = 'N';
+        $alwaysResi = false;
+
+        if ($this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])) {
+            if ($this->radHitConsumed == 0) {
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+
+            } else {
+                $residential = $this->residential;
+            }
+
+        } else {
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+        }
+
+        $this->resiCarrier['unishippersSmall'] = $residential;
+        $this->resiCarrier['alwaysResi']['unishippersSmall'] = $alwaysResi;
+        $accessorial = ($alwaysResi ? 'Y' : $residential == 'Y') ? ['REP'] : [];
+
+        $apiArray = [
+            'username' => $connSettings['creds']['username'],
+            'password' => $connSettings['creds']['password'],
+            'requestkey' => $connSettings['creds']['request_key'] ?? '',
+            'upsaccountnumber' => $connSettings['creds']['ups_account_number'],
+            'unishipperscustomernumber' => $connSettings['creds']['unishippers_customer_number'],
+            'packagetype' => 'P',
+            'doNesting' => '0',
+
+            'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
+            'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
+            'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
+            'storeDateTime' => date("Y-m-d H:i:s"), //2020-10-22 14:00:00
+            'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
+
+            'prefferedCurrency' => 'USD',
+            'includeDeclaredValue' => '1',
+            'service' => 'ALL',
+            'accessorial' => $accessorial,
+            'residentials_delivery' => isset($accessorial) && !blank($accessorial) ? 'yes' : 'no'
+        ];
+
+        return $apiArray;
+    }
+
     public function setIsSMartPost($connectionSettings)
     {
         if (isset($connectionSettings['quote_settings']['carrier_services']['fedex_smart_post']) &&
@@ -1353,7 +1429,6 @@ class GenerateRequestData
                     }
                 }
                 $binResponse = $this->addPackagingID($binResponse, $boxBins);
-
                 $counting = 0;
                 $counting = 0;
 
@@ -1399,14 +1474,17 @@ class GenerateRequestData
 
     public function updatCommdityDetails($item, $bin, $boxBins, $itemsArr)
     {
-
         $boxWeight = 0;
         $price = $item['lineItemPrice'] ?? 0;
+        $hazmat = 'N';
         if (isset($bin->bin_data->id) && isset($boxBins[$bin->bin_data->id])) {
             $boxWeight = $boxBins[$bin->bin_data->id]['box_weight'];
             $price = 0;
             if (isset($bin->items)) {
                 foreach ($bin->items as $itemData) {
+                    if ($hazmat == 'N') {
+                        $hazmat = $itemsArr[$itemData->id]['isHazmatLineItem'];
+                    }
                     $price += $itemsArr[$itemData->id]['lineItemPrice'] ?? 0;
                 }
             }
@@ -1416,6 +1494,8 @@ class GenerateRequestData
         $item['lineItemHeight'] = $bin->bin_data->h ?? 0;
         $item['lineItemPrice'] = $price;//$item['lineItemPrice']*$quantityPacked;
         $item['lineItemWeight'] = $bin->bin_data->weight + $boxWeight;
+        $item['isHazmatLineItem'] = $hazmat;
+
 
         //$item['piecesOfLineItem'] = 1 ?? 0;
         $item['shipItemAlone'] = 1;
