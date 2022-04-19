@@ -61,7 +61,6 @@ class GetRatesController extends Controller
 
 
         //echo "<pre>"; print_r($storeData['store']['id']); exit;
-
         if ($storeData == null) {
             return [];
         }

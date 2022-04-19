@@ -10,6 +10,7 @@ use App\CustomClasses\XPO\ltl\QuotesResults as xpoLtlQuotesResults;
 use App\CustomClasses\GTZ\ltl\QuotesResults as globalTranzQuotesResults;
 use App\CustomClasses\RL\ltl\QuotesResults as rnlLtlQuotesResults;
 use App\CustomClasses\WWESMALL\WweSmallQuoteResults;
+use App\CustomClasses\Unishippers\small\QuotesResults as unishippersSmallQuotesResults;
 use App\CustomClasses\Shipping;
 use App\Models\Locations;
 use Illuminate\Support\Facades\DB;
@@ -726,6 +727,13 @@ class CompileQuotes
                 case "rnl":
                     $resp = $this->compileRNLLtlQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL);
                     $quotesTemp['rnlLTL'] = $resp;
+                    if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
+                        $quotesRes = array_merge($quotesRes, $resp);
+                    }
+                    break;
+                case "unishippersSmall":
+                    $resp = $this->compileUnishippersSmallQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential);
+                    $quotesTemp['unishippersSmall'] = $resp;
                     if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
                         $quotesRes = array_merge($quotesRes, $resp);
                     }
@@ -2053,6 +2061,29 @@ class CompileQuotes
 
         return $allQuotes;
     }
+
+
+    private function compileUnishippersSmallQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
+    {
+        $this->unishippersSmallQuotesResults = new unishippersSmallQuotesResults();
+        if ($residential['unishippersSmall'] == 'Y') {
+            $this->isResi = true;
+            $this->residentialDlvry = 1;
+        } else {
+            $this->isResi = false;
+            $this->residentialDlvry = 0;
+        }
+        $this->alwaysResi = $this->residential['alwaysResi']['unishippersSmall'] ?? false;
+        $access = $this->getAccessorialCodeSmall();
+        $res = $this->unishippersSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment); 
+
+        if (!$this->isMultiShipment) {
+            $this->isMultiShipment = $res['isMultiShipment'] ?? false;
+        }
+
+        return $res['resp'] ?? [];
+    }
+
 
     /**
      * Calculate Handling Fee
