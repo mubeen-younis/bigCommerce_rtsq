@@ -744,7 +744,7 @@ class SubscriptionController extends Controller
             ];
 
             return $responce;
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $responce = [
                 'error' => true,
                 'data' => [],

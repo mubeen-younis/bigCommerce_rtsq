@@ -68,11 +68,9 @@ class Shipping
             $this->orderWidgetSave($request, [], [], $finalResp['finalQuotes'], $finalResp['formattedResp'], $cartInfo, [], []);
             return $finalResp['formattedResp'];
         }
-
         $request['lineItemData']['items'] = $itemsWithoutShippingGroup;
         $request['lineItemData']['origin'] = $originsWithoutShippingGroup;
         $package = $request['lineItemData'];
-
         // Disabling instore pickup if there is multi shipment case
         $originAddress = $this->checkInstorePickup($package['origin']);
         // Generating carrier creds and origin array
@@ -80,7 +78,7 @@ class Shipping
         $resp = $generateReqData->generateEnitureArray($originAddress, $destination, $package['items']);
         $residential = $resp['residential'];
         $carriersArray = $resp['carriersArr'];
-        
+
         // Checking if any productis hazardous
         $hazmatAllItems = $this->isHazmatMaterial($package);
 
@@ -119,9 +117,9 @@ class Shipping
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
-          /*
-        * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
-        */
+        /*
+      * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
+      */
         $this->isRequestMultishipment = $ltlSmallCompileQuotes->checkIsRequestMiltiShipment($requestArr['requestArr'], $quotes);
         $boxbins = $requestArr['boxBins'] ?? [];
         if (isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])) {
@@ -144,7 +142,6 @@ class Shipping
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];
         }
-
         $_finalQuotes = $finalTitlesTemp = $finalCodesTemp = [];
         $finalTitles = array_column($finalQuotes, 'title');
         $finalCodes = array_column($finalQuotes, 'code');
@@ -154,6 +151,7 @@ class Shipping
         foreach ($finalCodes as $key => $finalCode) {
             $finalCodesTemp[$key] = explode('+', $finalCode)[0];
         }
+        /*TODO :Need to Add LTL Carriers here as well*/
         $isFreightTitleExist = array_search('Freight', $finalTitlesTemp);
         $isShippingTitleExist = array_search('Shipping', $finalTitlesTemp);
         $isAVGCodeExist = gettype(array_search('AVG', $finalCodesTemp)) == 'integer';
@@ -185,6 +183,7 @@ class Shipping
             $finalQuotes = $_finalQuotes;
         } else {
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
+            //TODO : Need to Add LTL Carriers Here as well
             if ($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist)) {
                 $isShippingOrFreight = false;
             }
@@ -192,9 +191,8 @@ class Shipping
                 $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings, $residential, $quotesFromWs, $requestArr['requestArr']);
                 $finalQuotes = $finalQuotesMulti['checkoutQuotes'] ?? [];
                 $multiShipmentQuotes = $finalQuotesMulti['multiShipmentQuotes'] ?? [];
-            } else {
-                $finalQuotes = $this->removeParcelIfLtl($finalQuotes);
             }
+            /*Removed Code of removing parcel and ltl*/
         }
 
         /*Adding shipping group rates response in quotes
@@ -556,6 +554,7 @@ class Shipping
 
     private function checkIndividualHazmat($request)
     {
+        // TODO: Need to Add small and Ltl Carriers Here as well
         $smallOrigins = $marketItemSmall = $request['carriers']['wweSmall']['originAddress'] ?? $request['carriers']['upsSmall']['originAddress'] ?? $request['carriers']['fedexSmall']['originAddress'] ?? $request['carriers']['unishippersSmall']['originAddress'] ?? [];
         $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? $request['carriers']['upsLTL']['originAddress'] ?? [];
         $items = $request['commdityDetails'] ?? [];
@@ -618,20 +617,21 @@ class Shipping
         if (!empty(array_filter($quotes))) {
             $resp['quote_id'] = (string)rand(1, 9);// need to change
             $resp['messages'] = [];// need to change
+
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'eniture_quotes', 'display_name' => $this->limitTitle($quotes[0])]];
+
             foreach ($quotes as $key => $quote) {
                 $resp['carrier_quotes'][0]['quotes'][$key] = [
                     'code' => $quote['code'],
                     'rate_id' => $quote['rate_id'],
                     'display_name' => $this->limitTitle($quote),
                     'cost' => ['currency' => 'USD', 'amount' => str_replace(',', '', $quote['rate'])],
-                    'dispatch_date' => "$current"
-                    //'cost' => ['currency' => 'USD', 'amount' => number_format($quote['rate'], 2, '.', ',')],
-                    //'transit_time' => ['units' => 'BUSINESS_DAYS', 'duration' => 1],
-                    // TODO: Will be set
+                    'dispatch_date' => "$current",
+
 
                 ];
             }
+
         } else {
             $resp = [];
         }
@@ -641,7 +641,8 @@ class Shipping
     }
 
 
-    public function limitTitle($quote)
+    public
+    function limitTitle($quote)
     {
         $res = $quote['title'];
         if (strlen($quote['title']) > 100) {
@@ -660,7 +661,8 @@ class Shipping
      * @param $postData
      * @return object|array
      */
-    public function sendCurlRequest($url, $postData)
+    public
+    function sendCurlRequest($url, $postData)
     {
         Log::info('$postData ' . json_encode($postData));
         $fieldString = http_build_query($postData);
@@ -682,7 +684,8 @@ class Shipping
         return $result;
     }
 
-    public function isSmall($carrier)
+    public
+    function isSmall($carrier)
     {
         $smallCarriers = ['wweSmall', 'upsSmall', 'fedexSmall', 'unishippersSmall'];
         return in_array($carrier, $smallCarriers);
