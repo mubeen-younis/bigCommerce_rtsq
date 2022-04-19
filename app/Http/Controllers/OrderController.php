@@ -86,8 +86,7 @@ class OrderController extends Controller
 
     public function formateItems($oldItems, $items)
     {
-        $tempItems = $items;
-        foreach ($tempItems as $key => $item) {
+        foreach ($items as $key => $item) {
             $variant_id = $item->variant_id;
             $oldItems->$variant_id = $item;
             $oldItems->$key = $item;
@@ -190,10 +189,10 @@ class OrderController extends Controller
                         //print_r($ws->binPackagingData->response); exit;
                         $itemCount = 0;
                         foreach ($sbsData as $key => $binPacked) {
-                            $type = '';
+                            $type = optional($binPacked->bin_data)->type ?? '';
                             $quantity = 1;
-                            if (isset($binPacked->bin_data->type) && $binPacked->bin_data->type == 'item') {
-                                $type = 'item';
+                            if ($type == 'item' || $type == 'weight_based') {
+                                $type = $binPacked->bin_data->type;
                                 $product_id = $binPacked->bin_data->id;
                                 $quantity = $binPacked->bin_data->quantity ?? 1;
                                 $itemCount++;
@@ -201,10 +200,18 @@ class OrderController extends Controller
                             $count = 0;
                             $orderWidgetData['type'] = $type;
                             $orderWidgetData['image_complete'] = $binPacked->image_complete;
-                            $orderWidgetData['d'] = $binPacked->bin_data->d . ' x ';
-                            $orderWidgetData['w'] = $binPacked->bin_data->w . ' x ';
-                            $orderWidgetData['h'] = $binPacked->bin_data->h;
                             $orderWidgetData['quantity'] = $quantity;
+                            /*For Weight Based Products*/
+                            if ($type == 'weight_based') {
+                                $orderWidgetData['d'] = '';
+                                $orderWidgetData['w'] = '';
+                                $orderWidgetData['h'] = '';
+                                $orderWidgetData['weight'] = $binPacked->bin_data->weight ?? '';
+                            } else {
+                                $orderWidgetData['d'] = $binPacked->bin_data->d . ' x ';
+                                $orderWidgetData['w'] = $binPacked->bin_data->w . ' x ';
+                                $orderWidgetData['h'] = $binPacked->bin_data->h;
+                            }
 
                             $orderWidgetData['nickname'] = $this->getBoxName($binPacked->bin_data->id, $request['store_id'], $rateId, $cartId);
                             foreach ($binPacked->items as $item) {
@@ -316,6 +323,7 @@ class OrderController extends Controller
             }
 
 
+
             /*
             * Item Accessorials */
             $addedHazmat = false;
@@ -400,6 +408,7 @@ class OrderController extends Controller
                 $orderWidget[$key]['items'] = $items;
             }
         }
+
         $sbs = '';
         //print_r($orderWidget); exit;
         $resp = [
@@ -730,7 +739,7 @@ class OrderController extends Controller
             //$saveOrderId = $this->saveUpdateOrderByID($toRequest);
             //$this->setOrderMeta($toRequest);
         } catch (\Exception $exception) {
-            //  Have to LOg Here
+            Log::info('Exception On Moving Quotes ' . json_encode($exception));
         }
     }
 
@@ -853,7 +862,8 @@ class OrderController extends Controller
                      *
                      * */
                     $fullRateId = optional($response)->shipping_provider_quote->rateId ?? null;
-                    $reqData = optional(RequestTempData::where('rate_id', $rateId)->where('cart_id', $cartId)->get())->toArray();
+                    $reqData = optional(RequestTempData::where('rate_id', $rateId)->where('cart_id', $cartId)->first())->toArray();
+
                     if (blank($reqData)) {
                         $reqData = optional(RequestTempData::where('rate_id', $fullRateId)->where('cart_id', $cartId)->first())->toArray();
                     }

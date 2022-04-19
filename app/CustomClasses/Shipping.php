@@ -149,6 +149,7 @@ class Shipping
         foreach ($finalCodes as $key => $finalCode) {
             $finalCodesTemp[$key] = explode('+', $finalCode)[0];
         }
+        /*TODO :Need to Add LTL Carriers here as well*/
         $isFreightTitleExist = array_search('Freight', $finalTitlesTemp);
         $isShippingTitleExist = array_search('Shipping', $finalTitlesTemp);
         $isAVGCodeExist = gettype(array_search('AVG', $finalCodesTemp)) == 'integer';
@@ -180,6 +181,7 @@ class Shipping
             $finalQuotes = $_finalQuotes;
         } else {
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
+            //TODO : Need to Add LTL Carriers Here as well
             if ($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist)) {
                 $isShippingOrFreight = false;
             }
@@ -187,9 +189,8 @@ class Shipping
                 $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings, $residential, $quotesFromWs, $requestArr['requestArr']);
                 $finalQuotes = $finalQuotesMulti['checkoutQuotes'] ?? [];
                 $multiShipmentQuotes = $finalQuotesMulti['multiShipmentQuotes'] ?? [];
-            } else {
-                $finalQuotes = $this->removeParcelIfLtl($finalQuotes);
             }
+            /*Removed Code of removing parcel and ltl*/
         }
 
         /*Adding shipping group rates response in quotes
@@ -614,20 +615,21 @@ class Shipping
         if (!empty(array_filter($quotes))) {
             $resp['quote_id'] = (string)rand(1, 9);// need to change
             $resp['messages'] = [];// need to change
+
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'eniture_quotes', 'display_name' => $this->limitTitle($quotes[0])]];
+
             foreach ($quotes as $key => $quote) {
                 $resp['carrier_quotes'][0]['quotes'][$key] = [
                     'code' => $quote['code'],
                     'rate_id' => $quote['rate_id'],
                     'display_name' => $this->limitTitle($quote),
                     'cost' => ['currency' => 'USD', 'amount' => str_replace(',', '', $quote['rate'])],
-                    'dispatch_date' => "$current"
-                    //'cost' => ['currency' => 'USD', 'amount' => number_format($quote['rate'], 2, '.', ',')],
-                    //'transit_time' => ['units' => 'BUSINESS_DAYS', 'duration' => 1],
-                    // TODO: Will be set
+                    'dispatch_date' => "$current",
+
 
                 ];
             }
+
         } else {
             $resp = [];
         }
@@ -637,7 +639,8 @@ class Shipping
     }
 
 
-    public function limitTitle($quote)
+    public
+    function limitTitle($quote)
     {
         $res = $quote['title'];
         if (strlen($quote['title']) > 100) {
@@ -656,7 +659,8 @@ class Shipping
      * @param $postData
      * @return object|array
      */
-    public function sendCurlRequest($url, $postData)
+    public
+    function sendCurlRequest($url, $postData)
     {
         Log::info('$postData ' . json_encode($postData));
         $fieldString = http_build_query($postData);
@@ -678,7 +682,8 @@ class Shipping
         return $result;
     }
 
-    public function isSmall($carrier)
+    public
+    function isSmall($carrier)
     {
         $smallCarriers = ['wweSmall', 'upsSmall', 'fedexSmall', 'unishippersSmall'];
         return in_array($carrier, $smallCarriers);
