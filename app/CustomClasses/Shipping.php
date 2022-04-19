@@ -64,7 +64,6 @@ class Shipping
         if ($this->showOnlyLocAndInstoreQuote) {
             $origins = $this->enableSuppressRatesInOrigins($origins);
         }
-        dd(123, $origins);
         // Items that is not associated with Shipping Group and need to get rates from Ws
         $itemsWithoutShippingGroup = collect($request['lineItemData']['items'])->where('shipping_group', null)->all();
         // Items that is associated with Shipping Group
@@ -228,10 +227,10 @@ class Shipping
     public function showOnlyLocAndInstoreQuote($items): bool
     {
         foreach ($items as $item) {
-            if (isset($item['instore_enabled']) && $item['instore_enabled']) {
+            if (isset($item['quote_as_instore']) && $item['quote_as_instore']) {
                 $this->instoreQuotes = true;
             }
-            if (isset($item['loc_del_enabled']) && $item['loc_del_enabled']) {
+            if (isset($item['quote_as_local']) && $item['quote_as_local']) {
                 $this->locDelQuotes = true;
             }
         }
@@ -243,15 +242,24 @@ class Shipping
         //  Need to set some status for WS to suppress quotes and ignore destination origin
         $found = false;
         foreach ($origins as $key => $origin) {
-            if (isset($origin['InstorPickupLocalDelivery']['localDelivery']['postalCodeMatch'])) {
-                $origins[$key]['InstorPickupLocalDelivery']['suppress'] = 1;
-                $origins[$key]['InstorPickupLocalDelivery']['localDelivery']['postalCodeMatch'] = 1;
-                $found = true;
+            if ($this->locDelQuotes) {
+                if (isset($origin['InstorPickupLocalDelivery']['localDelivery']['postalCodeMatch'])) {
+                    $origins[$key]['InstorPickupLocalDelivery']['suppress'] = 1;
+                    $origins[$key]['InstorPickupLocalDelivery']['localDelivery']['postalCodeMatch'] = 1;
+                    $found = true;
+                }
+            } else {
+                unset($origins[$key]['InstorPickupLocalDelivery']['localDelivery']);
             }
-            if (isset($origin['InstorPickupLocalDelivery']['inStorePickup']['postalCodeMatch'])) {
-                $origins[$key]['InstorPickupLocalDelivery']['suppress'] = 1;
-                $origins[$key]['InstorPickupLocalDelivery']['inStorePickup']['postalCodeMatch'] = 1;
-                $found = true;
+
+            if ($this->instoreQuotes) {
+                if (isset($origin['InstorPickupLocalDelivery']['inStorePickup']['postalCodeMatch'])) {
+                    $origins[$key]['InstorPickupLocalDelivery']['suppress'] = 1;
+                    $origins[$key]['InstorPickupLocalDelivery']['inStorePickup']['postalCodeMatch'] = 1;
+                    $found = true;
+                }
+            } else {
+                unset($origins[$key]['InstorPickupLocalDelivery']['inStorePickup']);
             }
         }
         if (!$found) {
@@ -260,7 +268,8 @@ class Shipping
         return $origins;
     }
 
-    public function getOriginsAccShipGroup($items, $origins)
+    public
+    function getOriginsAccShipGroup($items, $origins)
     {
         $formOrigins = [];
         foreach ($origins as $originKey => $origin) {
@@ -275,7 +284,8 @@ class Shipping
     }
 
 
-    protected function setShippingGroupsResponse($shippingGroupItems)
+    protected
+    function setShippingGroupsResponse($shippingGroupItems)
     {
         $this->shippingGroupResponse = ShippingGroup::setShippingGroup($shippingGroupItems);
     }
@@ -284,7 +294,8 @@ class Shipping
     /**
      * @return array
      */
-    protected function formattedShippingGroupResponse(): array
+    protected
+    function formattedShippingGroupResponse(): array
     {
         $finalQuotes = $this->addRateId($this->shippingGroupResponse);
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
@@ -296,7 +307,8 @@ class Shipping
      * @param $finalQuotes
      * @return array
      */
-    protected function addShipGroupRatesInQuotes($finalQuotes): array
+    protected
+    function addShipGroupRatesInQuotes($finalQuotes): array
     {
         foreach ($finalQuotes as $key => $quote) {
             $finalQuotes[$key]['rate'] = $quote['rate'] + $this->shippingGroupResponse[0]['rate'];
@@ -304,7 +316,8 @@ class Shipping
         return $finalQuotes;
     }
 
-    private function removeParcelIfLtl($finalQuotes)
+    private
+    function removeParcelIfLtl($finalQuotes)
     {
         $finalQuotes = $finalQuotes['checkoutQuotes'] ?? $finalQuotes;
         $hasLtl = false;
@@ -329,7 +342,8 @@ class Shipping
         return $finalQuotes;
     }
 
-    private function makeMultishipmentSmallLtl($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr)
+    private
+    function makeMultishipmentSmallLtl($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr)
     {
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
         /*
@@ -341,7 +355,8 @@ class Shipping
         return $resp;
     }
 
-    private function addBinResponseToQuotes($binReponse, $quotes)
+    private
+    function addBinResponseToQuotes($binReponse, $quotes)
     {
         $boxFee = [];
         $fedexBoxesFee = [];
@@ -370,7 +385,8 @@ class Shipping
         return $quotes;
     }
 
-    public function isSmallCarrier($carrierName)
+    public
+    function isSmallCarrier($carrierName)
     {
         $smallCarriers = [
             'wweSmall',
@@ -380,7 +396,8 @@ class Shipping
         return in_array($carrierName, $smallCarriers);
     }
 
-    public function isLtlCarrier($carrierName)
+    public
+    function isLtlCarrier($carrierName)
     {
         $ltlCarriers = [
             'wweLTL',
@@ -393,7 +410,8 @@ class Shipping
         return in_array($carrierName, $ltlCarriers);
     }
 
-    private function addBoxFeeToQuotes(array $quotes, array $boxFee, $fedexBoxesFee = []): array
+    private
+    function addBoxFeeToQuotes(array $quotes, array $boxFee, $fedexBoxesFee = []): array
     {
         $parcelCarName = ['wweSmall', 'upsSmall', 'fedexSmall'];
         if (isset($quotes) && !empty($quotes)) {
@@ -497,7 +515,8 @@ class Shipping
         return $quotes;
     }
 
-    public function getBoxFeeAccordingToService($serviceType, $fedexBoxFee, $boxFee, $locId, $oneRate = false)
+    public
+    function getBoxFeeAccordingToService($serviceType, $fedexBoxFee, $boxFee, $locId, $oneRate = false)
     {
         $commonBoxFee = $boxFee[$locId] ?? 0;
         if ($oneRate) {
@@ -511,7 +530,8 @@ class Shipping
 
     }
 
-    private function getCumulativeBoxFee($bins): float
+    private
+    function getCumulativeBoxFee($bins): float
     {
 
         $boxFee = 0;
@@ -528,7 +548,8 @@ class Shipping
         return $boxFee;
     }
 
-    private function BoxFeeByID(int $boxId)
+    private
+    function BoxFeeByID(int $boxId)
     {
         if (BoxSize::where('id', $boxId)->exists()) {
             return BoxSize::find($boxId)->pluck('box_fee')->first();
@@ -536,7 +557,8 @@ class Shipping
         return 0;
     }
 
-    public function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null)
+    public
+    function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null)
     {
         //print_r($resp); print_r($multiShipmentQuotes); exit;
         foreach ($finalQuotes as $finalQuote) {
@@ -555,7 +577,8 @@ class Shipping
         }
     }
 
-    public function addRateId($finalQuotes)
+    public
+    function addRateId($finalQuotes)
     {
         $time = time();
         foreach ($finalQuotes as $key => $finalQuote) {
@@ -564,7 +587,8 @@ class Shipping
         return $finalQuotes;
     }
 
-    public function checkInstorePickup($origin)
+    public
+    function checkInstorePickup($origin)
     {
         if (count($origin) > 1) {
             $whIDs = [];
@@ -587,7 +611,8 @@ class Shipping
     /**
      * to enable hazmat property for Api
      */
-    public function isHazmatMaterial($items)
+    public
+    function isHazmatMaterial($items)
     {
         $hazmatAllItems = [];
         foreach ($items['items'] as $key => $item) {
@@ -601,7 +626,8 @@ class Shipping
         return $hazmatAllItems;
     }
 
-    private function checkIndividualHazmat($request)
+    private
+    function checkIndividualHazmat($request)
     {
         $smallOrigins = $marketItemSmall = $request['carriers']['wweSmall']['originAddress'] ?? $request['carriers']['upsSmall']['originAddress'] ?? $request['carriers']['fedexSmall']['originAddress'] ?? [];
         $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? $request['carriers']['upsLTL']['originAddress'] ?? [];
@@ -632,7 +658,8 @@ class Shipping
     /**
      * to enable insurance property for Api
      */
-    public function isInsurance($items)
+    public
+    function isInsurance($items)
     {
         foreach ($items['items'] as $key => $item) {
             if (isset($item['product_insurance_active']) && $item['product_insurance_active'] === 1) {
@@ -644,7 +671,8 @@ class Shipping
     /**
      * @return array
      */
-    public function getAllowedMethods()
+    public
+    function getAllowedMethods()
     {
         return [$this->_code => $this->getConfigData('name')];
     }
@@ -653,12 +681,14 @@ class Shipping
      * @param $quotes
      * @return array
      */
-    public function setCarrierRates($quotes)
+    public
+    function setCarrierRates($quotes)
     {
         return $quotes = $quotes ?? [];
     }
 
-    public function generateQuoteFormatResponse($quotes)
+    public
+    function generateQuoteFormatResponse($quotes)
     {
         $quotes = array_values($quotes);
         $current = str_replace(' ', 'T', Carbon::now()) . "-00:00";
