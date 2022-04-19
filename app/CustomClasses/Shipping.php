@@ -63,6 +63,9 @@ class Shipping
         // Set SUppress Rates to true if to show only instore and local
         if ($this->showOnlyLocAndInstoreQuote) {
             $origins = $this->enableSuppressRatesInOrigins($origins);
+            if (blank($origins)) {
+                return [];
+            }
         }
         // Items that is not associated with Shipping Group and need to get rates from Ws
         $itemsWithoutShippingGroup = collect($request['lineItemData']['items'])->where('shipping_group', null)->all();
@@ -259,6 +262,7 @@ class Shipping
             }
         }
         if (!$found) {
+            // TODO  will return empty array if the customer dont enabled instore or local delivery and product quotes as instore or local
             $this->showOnlyLocAndInstoreQuote = false;
         }
         return $origins;
