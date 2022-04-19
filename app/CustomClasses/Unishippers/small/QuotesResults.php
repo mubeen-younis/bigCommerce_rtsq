@@ -131,7 +131,7 @@ class QuotesResults
 
             return $returnResp;
         }
-
+        
         // Handling single shipment
         if (!empty($originQuotes)) {
             $originQuotes = array_column(array_values($originQuotes), 'shipment');
@@ -149,6 +149,9 @@ class QuotesResults
 
             return $returnResp;
         }
+        
+        $returnResp['resp'] = [];
+        return $returnResp;
     }
 
     private function formateQuoteBeforeCompile($shipments)
