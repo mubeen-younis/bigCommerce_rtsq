@@ -359,7 +359,7 @@ class ExportImportProducts extends Controller
 
         /*Start -  For Dropship CHange*/
         $dropShipId = $this->updateDropShip($product, $indexes, $store_id);
-        if ($dropShipId) {
+        if ($dropShipId!=false) {
             $update['dropship_enabled'] = true;
             $update['dropship_location'] = $dropShipId;
         } else {
