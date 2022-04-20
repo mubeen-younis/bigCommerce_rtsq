@@ -226,6 +226,7 @@ class GetRatesController extends Controller
                 Log::info('No warehouse added');
                 return null;
             }
+            $originAddress = $this->getAddressForQuotes($originAddress);
             foreach ($details['origin'] as $key => $origin) {
                 if ($origin == "warehouse") {
                     $details['origin'][$key] = $originAddress;
@@ -233,6 +234,33 @@ class GetRatesController extends Controller
             }
         }
         return ['lineItemData' => $details];
+    }
+
+
+    public function getAddressForQuotes($originAddress)
+    {
+        $locationAdditionalDetail = Locations::getLocationAdditionalDetail($originAddress['locationId']);
+        if (is_string($locationAdditionalDetail) && $locationAdditionalDetail == "default") {
+            return $originAddress;
+        }
+        if (is_string($locationAdditionalDetail) && $locationAdditionalDetail == "suppress") {
+            $originAddress['InstorPickupLocalDelivery']['suppress'] = 1;
+            return $originAddress;
+        }
+        return $this->changeOriginDetail($originAddress, $locationAdditionalDetail);
+
+    }
+
+
+    public function changeOriginDetail($originAddress, $locationAdditionalDetail)
+    {
+        $originAddress['instore_and_loc_id'] = $originAddress['locationId'];
+        $originAddress['locationId'] = $locationAdditionalDetail['id'];
+        $originAddress['senderZip'] = $locationAdditionalDetail['zip_code'];
+        $originAddress['senderCity'] = $locationAdditionalDetail['city'];
+        $originAddress['senderState'] = $locationAdditionalDetail['state'];
+        $originAddress['senderCountryCode'] = $locationAdditionalDetail['country'];
+        return $originAddress;
     }
 
     /**

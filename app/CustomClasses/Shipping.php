@@ -223,6 +223,7 @@ class Shipping
         return $resp;
     }
 
+
     public function showOnlyLocAndInstoreQuote($items): bool
     {
         foreach ($items as $item) {
@@ -235,6 +236,7 @@ class Shipping
         }
         return $this->instoreQuotes || $this->locDelQuotes;
     }
+
 
     public function enableSuppressRatesInOrigins($origins)
     {
