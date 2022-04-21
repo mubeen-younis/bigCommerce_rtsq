@@ -161,6 +161,7 @@ class OrderController extends Controller
         $isHAT = strpos(strtolower($rateId), '+hat');
 
         $rateId = strtolower($rateId);
+        $isInspOrLocal = substr($rateId, 0, 4) == 'insp' || substr($rateId, 0, 6) == 'locdel';
         $isSmallrate = substr($rateId, 0, 9) == 'parcel_12' || substr($rateId, 0, 5) == 'multi' ? true : false;
         $isLG = strpos($rateId, '+lg');
         $isOwnArrangement = strpos($rateId, 'own_arrangement') === 0 || strpos($rateId, 'freernlltl') === 0 ? true : false;
@@ -201,7 +202,7 @@ class OrderController extends Controller
                     $residentialsPickup = $liftResidentialStatus['resiPickup'] ?? 'n';
 
                     $totalBoxes = 1;
-                    if (isset($ws->binPackagingData) && !empty($ws->binPackagingData) && $isSmallrate) {
+                    if (isset($ws->binPackagingData) && !empty($ws->binPackagingData) && ($isSmallrate || $isInspOrLocal)) {
                         if ($isGround) {
                             $sbsData = $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->bins_packed ?? [];
                         } else if ($isAir) {
@@ -326,7 +327,7 @@ class OrderController extends Controller
 
             $orderWidget[$zip]['shipping_method'] = $sName . $sMethod;
             $orderWidget[$zip]['shipping_rate'] = '$' . number_format((float)$sRate, 2,);
-        // TODO : Need to change originalPiecesOfLineItem -> itemQuantity
+            // TODO : Need to change originalPiecesOfLineItem -> itemQuantity
             if ($item->shipMultiplePackage) {
                 if ((!in_array($item->lineItemName, $insertedNames))) {
                     $insertedNames[] = $item->lineItemName;
