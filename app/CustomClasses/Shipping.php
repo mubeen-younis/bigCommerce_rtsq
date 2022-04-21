@@ -31,6 +31,7 @@ class Shipping
     private $showOnlyLocAndInstoreQuote;
     private $instoreQuotes;
     private $locDelQuotes;
+    private $multiOrigins;
 
     public function __construct()
     {
@@ -40,6 +41,7 @@ class Shipping
         $this->showOnlyLocAndInstoreQuote = false;
         $this->instoreQuotes = false;
         $this->locDelQuotes = false;
+        $this->multiOrigins = false;
     }
 
 
@@ -93,6 +95,13 @@ class Shipping
         $resp = $generateReqData->generateEnitureArray($originAddress, $destination, $package['items']);
         $residential = $resp['residential'];
         $carriersArray = $resp['carriersArr'];
+
+        $this->multiOrigins = $this->checkIsMultiShipment($carriersArray['carriers']);
+
+        /*Check for MUlti shipment and product marked as instore or local delivery*/
+        if ($this->multiOrigins && $this->showOnlyLocAndInstoreQuote) {
+            return [];
+        }
 
         // Checking if any productis hazardous
         $hazmatAllItems = $this->isHazmatMaterial($package);
@@ -221,6 +230,18 @@ class Shipping
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
         $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
         return $resp;
+    }
+
+
+    public function checkIsMultiShipment($carriers)
+    {
+        foreach ($carriers as $carrier) {
+            $output = Functions::checkMultiUnique($carrier['originAddress']);
+            if (count($output) > 1) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public function showOnlyLocAndInstoreQuote($items): bool
