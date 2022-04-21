@@ -39,7 +39,7 @@ class Functions
     {
         $carrierCodesWithName = ['wweltl' => 'wweLTL', 'rnlltl' => 'rnl', 'xpoltl' => 'xpoLogistics', 'upsltl' => 'upsLTL',
             'fedexltl' => 'fedexLTL', 'gtzltl' => 'globalTranz', 'cltl' => 'cerasis',
-            'parcel_12wwe' => 'wweSmall', 'parcel_12ups' => 'upsSmall', 'parcel_12fd' => 'fedexSmall',];
+            'parcel_12wwe' => 'wweSmall', 'parcel_12ups' => 'upsSmall', 'parcel_12fd' => 'fedexSmall', 'parcel_12uniship' => 'unishippersSmall'];
         return $carrierCodesWithName[$carrierCode] ?? null;
     }
 
@@ -47,7 +47,7 @@ class Functions
     {
         $carrierCodesWithName = ['wweltl' => 'Worldwide Express LTL', 'upsltl' => 'UPS LTL', 'rnlltl' => 'R&L Carriers', 'xpoltl' => 'XPO Logistics',
             'fedexltl' => 'FedEx LTL', 'gtzltl' => 'GlobalTranz LTL', 'cltl' => 'Cerasis Ltl',
-            'parcel_12wwe' => 'Worldwide Express Small', 'parcel_12ups' => 'UPS Small', 'parcel_12fd' => 'FedEx Small'];
+            'parcel_12wwe' => 'Worldwide Express Small', 'parcel_12ups' => 'UPS Small', 'parcel_12fd' => 'FedEx Small', 'parcel_12uniship' => 'Unishipper Small'];
         return $carrierCodesWithName[$carrierCode] ?? null;
 
 
@@ -104,7 +104,7 @@ class Functions
                 return false;
             }
 
-            $endDate= date('m/d/Y', strtotime($endDate));
+            $endDate = date('m/d/Y', strtotime($endDate));
             $endDate = new \DateTime($endDate);
             $now = new \DateTime(now());
             // CHecks either the diff is positive or negative
@@ -136,6 +136,25 @@ class Functions
             Log::info('Exception on checking expiry ' . json_encode($exception->getMessage()));
             return 0;
         }
+    }
 
+    public static function fdoSLugForCarriers($carrierSlug)
+    {
+        $arr = ['small-package' => 'WWE_PL',
+            'ltl-quotes' => 'WWE_LTL',
+            'gtz-ltl' => 'GTZ',
+            'unishippers-small' => 'UNI_PL'
+        ];
+        if (isset($arr[$carrierSlug])) {
+            return $arr[$carrierSlug];
+        }
+        return null;
+    }
+
+    public static function checkMultiUnique($src)
+    {
+        $output = array_map("unserialize",
+            array_unique(array_map("serialize", $src)));
+        return $output;
     }
 }

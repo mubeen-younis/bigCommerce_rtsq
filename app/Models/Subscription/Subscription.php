@@ -29,7 +29,14 @@ class Subscription extends Model
         'paymentMethod_id',
     ];
 
-    public function subscriptionStatus(){
+    public function subscriptionStatus()
+    {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+
+    public static function getEmail($storeId)
+    {
+        return optional(self::where('store_id', $storeId)->where('status', '!=', 2)->latest()->first())->email ?? '';
     }
 }

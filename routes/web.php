@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\Route;
     return view('welcome');
 });*/
 Route::get('logs', [\Rap2hpoutre\LaravelLogViewer\LogViewerController::class, 'index']);
+Route::get('delete_coupon_store', [\App\Http\Controllers\FDOController::class, 'deleteCoupon']);
+
 Route::post('webhooks', [MainController::class, 'addAndUpdateProductFromWebHook']);
 Route::get('uninstall1', function () {
     $arr = ['R', 'L','N', 'A'];

@@ -85,26 +85,33 @@ class ExportImportProducts extends Controller
                     fputs($fp, $line);
                 }
                 foreach ($products as $key => $product) {
-                    $line = 'P' . $product->source_product_id;
-                    $line .= $comma . 'V' . $product->variant_id;
-                    $line .= $comma . $product->name;
-                    $line .= $comma . $product->sku;
-                    $line .= $comma . $product->weight;
-                    $line .= $comma . $product->length;
-                    $line .= $comma . $product->width;
-                    $line .= $comma . $product->height;
+                    $productLine = [];
+                    $productLine[] = 'P' . $product->source_product_id;
+                    $productLine[] = 'V' . $product->variant_id;
+                    $productLine[] = $product->name ?? '';
+                    $productLine[] = $product->sku ?? '';
+                    $productLine[] = $product->weight ?? '';
+                    $productLine[] = $product->length ?? '';
+                    $productLine[] = $product->width ?? '';
+                    $productLine[] = $product->height ?? '';
 
                     $settings = json_decode($product->settings);
                     $quoteMethod = '';
+                    // Added INstore and local quoting methods
                     if (isset($settings->freight_enabled) && $settings->freight_enabled) {
                         $quoteMethod = 'L';
                     } else if (isset($settings->parcel_enabled) && $settings->parcel_enabled) {
                         $quoteMethod = 'S';
+                    } else if (isset($settings->quote_as_instore) && $settings->quote_as_instore) {
+                        $quoteMethod = 'IS';
+                    } else if (isset($settings->quote_as_local) && $settings->quote_as_local) {
+                        $quoteMethod = 'LD';
                     }
-                    $line .= $comma . $quoteMethod;
-                    $line .= isset($settings->freight_class) ? $comma . $settings->freight_class : $comma;
-                    $line .= isset($settings->hazardous_enabled) && $settings->hazardous_enabled ? $comma . 1 : $comma . 0;
-                    $line .= isset($settings->insurance) && $settings->insurance ? $comma . 1 : $comma . 0;
+                    $productLine[] = $quoteMethod;
+                    $productLine[] = $settings->freight_class ?? '';
+                    $productLine[] = isset($settings->hazardous_enabled) && $settings->hazardous_enabled ? 1 : 0;
+                    $productLine[] = isset($settings->insurance) && $settings->insurance ? 1 : 0;
+
                     $nickname = $zip = $city = $state = $country = '';
                     if (isset($product->dropship_enabled) && $product->dropship_enabled) {
                         $location = $product->dropship_location ?? false;
@@ -117,16 +124,14 @@ class ExportImportProducts extends Controller
                             $country = $dropShip['country'] ?? '';
                         }
                     }
-                    $line .= $comma . $nickname;
-                    $line .= $comma . $zip;
-                    $line .= $comma . $city;
-                    $line .= $comma . $state;
-                    $line .= $comma . $country;
-                    $line .= isset($settings->ship_own_package) && $settings->ship_own_package ? $comma . 1 : $comma . 0;
-                    $line .= isset($settings->allow_vertical) && $settings->allow_vertical ? $comma . 1 : $comma . 0;
-
-                    $line .= "\n";
-                    fputs($fp, $line);
+                    $productLine[] = $nickname;
+                    $productLine[] = $zip;
+                    $productLine[] = $city;
+                    $productLine[] = $state;
+                    $productLine[] = $country;
+                    $productLine[] = isset($settings->ship_own_package) && $settings->ship_own_package ? 1 : 0;
+                    $productLine[] = isset($settings->allow_vertical) && $settings->allow_vertical ? 1 : 0;
+                    fputcsv($fp, $productLine);
                 }
             });
             ExportProductsModel::find($request['exportProductsId'])->update(['status' => 1]);
@@ -354,7 +359,7 @@ class ExportImportProducts extends Controller
 
         /*Start -  For Dropship CHange*/
         $dropShipId = $this->updateDropShip($product, $indexes, $store_id);
-        if ($dropShipId) {
+        if ($dropShipId!=false) {
             $update['dropship_enabled'] = true;
             $update['dropship_location'] = $dropShipId;
         } else {
@@ -408,10 +413,18 @@ class ExportImportProducts extends Controller
             if (array_key_exists($key, $product)) {
                 $settings->parcel_enabled = false;
                 $settings->freight_enabled = false;
+                $settings->quote_as_instore = false;
+                $settings->quote_as_local = false;
+                // Added instore and local delivery quoting method here as well Instore-local
+
                 if ($quoteMethod === 's') {
                     $settings->parcel_enabled = true;
                 } else if ($quoteMethod === 'l') {
                     $settings->freight_enabled = true;
+                } else if ($quoteMethod === 'is') {
+                    $settings->quote_as_instore = true;
+                } else if ($quoteMethod === 'ld') {
+                    $settings->quote_as_local = true;
                 }
             }
         }

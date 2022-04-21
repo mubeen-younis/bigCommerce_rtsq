@@ -304,6 +304,13 @@ class CompileQuotes
                     $quotesArray = [];
                 }
             }
+
+            //  Fetching SUppress Status From WS and make quotes array empty
+            if (isset($inStoreLd['suppress']) && $inStoreLd['suppress'] == 1) {
+                $quotesArray = [];
+            }
+
+
             /* dd(2,$inStoreLd);*/
             if (isset($inStoreLd['inStorePickup']['status']) && $inStoreLd['inStorePickup']['status'] == 1) {
                 $title = $warehouseData['inStoreTitle'] ?? '';
@@ -2076,13 +2083,13 @@ class CompileQuotes
         }
         $this->alwaysResi = $this->residential['alwaysResi']['unishippersSmall'] ?? false;
         $access = $this->getAccessorialCodeSmall();
-        $res = $this->unishippersSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment); 
+        $res = $this->unishippersSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment);
 
         if (!$this->isMultiShipment) {
-            $this->isMultiShipment = $res['isMultiShipment'];
+            $this->isMultiShipment = $res['isMultiShipment'] ?? false;
         }
 
-        return $res['resp'];
+        return $res['resp'] ?? [];
     }
 
     private function compileYRCLtlQuotes($shipments, $connectionSettings, $allOrigins,$residential)
