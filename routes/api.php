@@ -155,6 +155,8 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     //stores
     Route::get('/store', [StoreController::class, 'index']);
     Route::get('/get_fdo_info', [FDOController::class, 'getFdoCompanyInfo']);
+    Route::get('/get_fdo_coupon_info', [FDOController::class, 'getFDOCouponInfo']);
+    Route::get('/get_fdo_coupon_carrier_info', [FDOController::class, 'getFDOCouponCarrierInfo']);
     Route::post('/apply_promo_code', [FDOController::class, 'applyPromoCode']);
     Route::post('/update_fdo_connection', [FDOController::class, 'update']);
 

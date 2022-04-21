@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\CurlRequest;
 use App\CustomClasses\UpsLTL\UpsLtlConnectionSettings;
 use App\CustomClasses\WweLTL\WweLtlConnectionSettings;
 use App\CustomClasses\WWESMALL\SmallConnectionSettings;
@@ -11,7 +12,12 @@ use App\CustomClasses\Fedex\small\ConnectionSettings as FedexSmallConnectionSett
 use App\CustomClasses\GTZ\ltl\ConnectionSettings as GTZLtlConnectionSettings;
 use App\CustomClasses\XPO\ltl\ConnectionSettings as XPOLtlConnectionSettings;
 use App\CustomClasses\RL\ltl\ConnectionSettings as RNLLtlConnectionSettings;
+use App\Endpoints\Endpoints;
+use App\Helpers\Helpers;
 use App\Models\Connection;
+use App\Models\Coupon;
+use App\Models\CouponCarrier;
+use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -85,6 +91,11 @@ class ConnectionController extends Controller
                 'message' => 'Carrier Not Found']);
         }
 
+        $carriersArr = ['ltl-quotes', 'small-package', 'gtz-ltl', 'unishippers-small'];
+        if (in_array($checkCarrierType->slug, $carriersArr)) {
+            $fdoCouponResponse = $this->getFDOCouponCarrierInfo($request, $checkCarrierType->slug);
+        }
+
         if (!empty($request->testType)) {
             switch ($checkCarrierType->slug) {
                 case "ltl-quotes":
@@ -119,13 +130,49 @@ class ConnectionController extends Controller
                         'message' => 'No carrier Matches']);
             }
         }
-
+        
         $con = Connection::firstOrNew(['installed_carrier_id' => $request->carrierId]);
         $con->value = json_encode($request->all());
         $con->installed_carrier_id = $request->carrierId;
         $con->save();
 
         return response()->json(["error" => false, 'message' => "Connection settings has been saved.", "data" => $con]);
+    }
+
+    public function getFDOCouponCarrierInfo(Request $request, $carrierSlug)
+    {
+        $storeId = $request->store_id;
+        $promoDetail = Coupon::getFDOCoupon($storeId);
+        if (blank($promoDetail)) {
+            return;
+        }
+
+        $id = $promoDetail->id;
+        $coupon = $promoDetail->code;
+        $shop = $promoDetail->shop;
+        $arr = [
+            'small-package' => 'WWE_PL',
+            'ltl-quotes' => 'WWE_LTL',
+            'gtz-ltl' => 'GTZ',
+            'unishippers-small' => 'UNI_PL'
+        ];
+
+        $carrier = '';
+        if (isset($arr[$carrierSlug])) {
+            $carrier = $arr[$carrierSlug];
+        }
+
+        $queryParams = http_build_query(['coupon' => $coupon, 'shop' => $shop, 'carriers' => $carrier]);
+        $endPoint = Endpoints::applyPromoCodeFdoEndpoint() . $queryParams;
+        $curlResponse = (new CurlRequest())->enSingleCurlRequest($endPoint, [], [], 'GET');
+        $response = json_decode($curlResponse['response'], true);
+
+        if (isset($response['promo'])) {
+            $carrier = CouponCarrier::addOrUpdateCarrierInfo($carrierSlug, $id, $coupon,$response);
+            return $carrier;
+        }
+        
+        return null;
     }
 
     public function testConnection($data)

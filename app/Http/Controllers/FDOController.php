@@ -7,6 +7,7 @@ use App\CustomClasses\Functions;
 use App\Endpoints\Endpoints;
 use App\Helpers\Helpers;
 use App\Models\Coupon;
+use App\Models\CouponCarrier;
 use App\Models\InstalledCarrier;
 use App\Models\Store;
 use App\Models\Subscription\Subscription;
@@ -88,6 +89,26 @@ class FDOController extends Controller
 
     }
 
+    public function getFDOCouponInfo(Request $request)
+    {
+        $storeId = $request['store_id'];
+        $coupon = Coupon::getFDOCoupon($storeId);
+
+        return response()->json(['error' => false,
+            'data' => $coupon,
+            'message' => '',
+        ], 200);
+    }
+
+    public function getFDOCouponCarrierInfo(Request $request)
+    {
+        $carrierInfo = CouponCarrier::getCarrierInfoByName($request['carrier_name']);
+     
+        return response()->json(['error' => false,
+            'data' => $carrierInfo,
+            'message' => '',
+        ], 200);
+    }
 
     /**
      * @param $storeId
@@ -159,6 +180,7 @@ class FDOController extends Controller
             if (isset($response['promo'])) {
                 Store::where('id', $storeId)->update(['freightdesk_company_id' => $response['fdo_company_id']]);
                 Coupon::updateCouponDetails($id, $response['promo']['start_date'], $response['promo']['end_date']);
+                // TODO: need to insert carrier in DB
                 $couponDet = Coupon::getFDOCoupon($storeId)->toArray();
                 $couponDet['coupon_code'] = $couponDet['code'] ?? null;
                 $couponDet['message'] = $this->getMessageForCoupon($couponDet['used'], $couponDet['coupon_code'], $storeId, $response['fdo_company_id'], false);
