@@ -265,7 +265,7 @@ class Shipping
             if ($this->locDelQuotes) {
                 if (isset($origin['InstorPickupLocalDelivery']['localDelivery']['postalCodeMatch'])) {
                     $origins[$key]['InstorPickupLocalDelivery']['suppress'] = 1;
-                    $origins[$key]['InstorPickupLocalDelivery']['localDelivery']['postalCodeMatch'] = 1;
+                    // $origins[$key]['InstorPickupLocalDelivery']['localDelivery']['postalCodeMatch'] = 1;
                     $found = true;
                 }
             } else {
@@ -275,7 +275,7 @@ class Shipping
             if ($this->instoreQuotes) {
                 if (isset($origin['InstorPickupLocalDelivery']['inStorePickup']['postalCodeMatch'])) {
                     $origins[$key]['InstorPickupLocalDelivery']['suppress'] = 1;
-                    $origins[$key]['InstorPickupLocalDelivery']['inStorePickup']['postalCodeMatch'] = 1;
+                    // $origins[$key]['InstorPickupLocalDelivery']['inStorePickup']['postalCodeMatch'] = 1;
                     $found = true;
                 }
             } else {
