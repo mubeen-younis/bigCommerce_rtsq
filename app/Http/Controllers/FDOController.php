@@ -102,7 +102,7 @@ class FDOController extends Controller
 
     public function getFDOCouponCarrierInfo(Request $request)
     {
-        $carrierInfo = CouponCarrier::getCarrierInfoByName($request['carrier_name']);
+        $carrierInfo = CouponCarrier::getCarrierInfoByName($request);
      
         return response()->json(['error' => false,
             'data' => $carrierInfo,

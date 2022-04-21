@@ -11,7 +11,7 @@ class CouponCarrier extends Model
 
     protected $table = "coupon_code_carriers";
 
-    public static function getCarrierInfoByName($carrierName)
+    public static function getCarrierInfoByName($request)
     {
         $couponCarriers = [
             'small-package' => 'WWE_PL',
@@ -20,8 +20,12 @@ class CouponCarrier extends Model
             'unishippers-small' => 'UNI_PL',
         ];
 
-        if (in_array($carrierName, array_keys($couponCarriers))) {
-            return self::where('carrier_name', $carrierName)->where('carrier_code', $couponCarriers[$carrierName])->first();
+        $carrierName = $request['carrier_name'] ?? '';
+        $code = $request['coupon_code'] ?? '';
+        $coupon = Coupon::where('code', $code)->first();
+
+        if (in_array($carrierName, array_keys($couponCarriers)) && isset($coupon) && !empty($coupon)) {
+            return self::where('carrier_name', $carrierName)->where('carrier_code', $couponCarriers[$carrierName])->where('coupon_code_id', $coupon->id)->first();
         }
 
         return null;

@@ -92,24 +92,13 @@ class ConnectionController extends Controller
                 'message' => 'Carrier Not Found']);
         }
 
-        $carriersArr = ['ltl-quotes', 'small-package', 'gtz-ltl', 'unishippers-small'];
-        if (in_array($checkCarrierType->slug, $carriersArr)) {
-            $fdoCouponResponse = $this->getFDOCouponCarrierInfo($request, $checkCarrierType->slug);
-        }
-
         if (!empty($request->testType)) {
             switch ($checkCarrierType->slug) {
                 case "ltl-quotes":
                     $response = $this->wweLtlTestCon->testLtlConnection($request, $checkCarrierType->name);
-                    if (isset($fdoCouponResponse) && !empty($fdoCouponResponse)) {
-                        $response = array_merge($response, $fdoCouponResponse);
-                    }
                     return response()->json($response);
                 case "small-package":
                     $response = $this->wweSmallTestCon->testSmallConnection($request, $checkCarrierType->name);
-                    if (isset($fdoCouponResponse) && !empty($fdoCouponResponse)) {
-                        $response = array_merge($response, $fdoCouponResponse);
-                    }
                     return response()->json($response);
                 case 'ups-ltl':
                     $response = $this->upsLtlTestCon->testUpsLtlConnection($request, $checkCarrierType->name);
@@ -125,9 +114,6 @@ class ConnectionController extends Controller
                     return response()->json($response);
                 case 'gtz-ltl':
                     $response = $this->gtzLtlTestCon->testConnection($request, $checkCarrierType->name);
-                    if (isset($fdoCouponResponse) && !empty($fdoCouponResponse)) {
-                        $response = array_merge($response, $fdoCouponResponse);
-                    }
                     return response()->json($response);
                 case 'xpo-ltl':
                     $response = $this->xpoLtlTestCon->testConnection($request, $checkCarrierType->name);
@@ -137,9 +123,6 @@ class ConnectionController extends Controller
                     return response()->json($response);
                 case 'unishippers-small':
                     $response = $this->unishippersSmallTestCon->testConnection($request, $checkCarrierType->name);
-                    if (isset($fdoCouponResponse) && !empty($fdoCouponResponse)) {
-                        $response = array_merge($response, $fdoCouponResponse);
-                    }
                     return response()->json($response);
                 default:
                     return response()->json(["error" => true, "data" => [],
@@ -147,12 +130,24 @@ class ConnectionController extends Controller
             }
         }
 
+        $carriersArr = ['ltl-quotes', 'small-package', 'gtz-ltl', 'unishippers-small'];
+        if (in_array($checkCarrierType->slug, $carriersArr)) {
+            $fdoCouponResponse = $this->getFDOCouponCarrierInfo($request, $checkCarrierType->slug);
+        }
+
+        $message = 'Connection settings has been saved and Promo Code is valid.';
+        if (isset($fdoCouponResponse) && !empty($fdoCouponResponse)) {
+            if (isset($fdoCouponResponse['status']) && $fdoCouponResponse['status'] == false) {
+                $message = 'Connection settings has been saved but the Promo Code is not valid.';
+            }
+        }
+       
         $con = Connection::firstOrNew(['installed_carrier_id' => $request->carrierId]);
         $con->value = json_encode($request->all());
         $con->installed_carrier_id = $request->carrierId;
         $con->save();
 
-        return response()->json(["error" => false, 'message' => "Connection settings has been saved.", "data" => $con]);
+        return response()->json(["error" => false, 'message' => $message, "data" => $con]);
     }
 
     public function getFDOCouponCarrierInfo(Request $request, $carrierSlug)
@@ -160,7 +155,8 @@ class ConnectionController extends Controller
         $storeId = $request->store_id;
         $promoDetail = Coupon::getFDOCoupon($storeId);
         if (blank($promoDetail)) {
-            return;
+            $response = ["status" => false];
+            return $response;
         }
 
         $id = $promoDetail->id;
@@ -185,10 +181,9 @@ class ConnectionController extends Controller
 
         if (isset($response['promo'])) {
             $carrier = CouponCarrier::addOrUpdateCarrierInfo($carrierSlug, $id, $coupon, $response);
-            return $carrier;
         }
 
-        return null;
+        return $response;
     }
 
     public function testConnection($data)
