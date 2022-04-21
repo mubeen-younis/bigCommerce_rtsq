@@ -111,22 +111,26 @@ class Shipping
 
         foreach ($carriersArray['carriers'] as $key => $carriers) {
             if ($this->isHazmat == 'Y') {
-                $carriersArray['carriers'][$key]['api']['lineItemHazmatInfo'] = [
-                    [
-                        'isHazmatLineItem' => 'Y',
-                        'lineItemHazmatUNNumberHeader' => 'UN #',
-                        'lineItemHazmatUNNumber' => '1139',
-                        'lineItemHazmatClass' => '1.1',
-                        'lineItemHazmatEmContactPhone' => '4043308699',
-                        'lineItemHazmatPackagingGroup' => 'I',
-                    ],
-                ];
+                if ($key == 'wweLTL') {
+                    $carriersArray['carriers'][$key]['api']['lineItemHazmatInfo'] = [
+                        [
+                            'isHazmatLineItem' => 'Y',
+                            'lineItemHazmatUNNumberHeader' => 'UN #',
+                            'lineItemHazmatUNNumber' => '1139',
+                            'lineItemHazmatClass' => '1.1',
+                            'lineItemHazmatEmContactPhone' => '4043308699',
+                            'lineItemHazmatPackagingGroup' => 'I',
+                        ],
+                    ];
+                }
             }
             if ($this->isInsurance === 'Y') {
                 if ($this->isSmall($key)) {
                     $carriersArray['carriers'][$key]['api']['includeDeclaredValue'] = 1;
                 } else {
-                    $carriersArray['carriers'][$key]['api']['insureShipment'] = 1;
+                    if($key == 'wweLTL'){
+                        $carriersArray['carriers'][$key]['api']['insureShipment'] = 1;
+                    }
                 }
             }
         }
@@ -180,6 +184,7 @@ class Shipping
         $isUpsLtlCodeExist = gettype(array_search('upsltl', $finalCodesTemp)) == 'integer';
         $isFedexLtlCodeExist = gettype(array_search('fedexltl', $finalCodesTemp)) == 'integer';
         $isxpoLtlCodeExist = gettype(array_search('xpoltl', $finalCodesTemp)) == 'integer';
+        $isYrcLtlCodeExist = gettype(array_search('yrcltl', $finalCodesTemp)) == 'integer';
         $freightCode = '';
         $finalCost = 0;
 
@@ -205,8 +210,7 @@ class Shipping
             $finalQuotes = $_finalQuotes;
         } else {
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
-            //TODO : Need to Add LTL Carriers Here as well
-            if ($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist)) {
+            if ($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist)) {
                 $isShippingOrFreight = false;
             }
             if ($this->isRequestMultishipment && !$isShippingOrFreight) {
@@ -428,6 +432,7 @@ class Shipping
             'globalTranz',
             'xpoLTL',
             'rnlLTL',
+            'yrcLTL'
         ];
         return in_array($carrierName, $ltlCarriers);
     }
@@ -653,7 +658,7 @@ class Shipping
     {
         // TODO: Need to Add small and Ltl Carriers Here as well
         $smallOrigins = $marketItemSmall = $request['carriers']['wweSmall']['originAddress'] ?? $request['carriers']['upsSmall']['originAddress'] ?? $request['carriers']['fedexSmall']['originAddress'] ?? $request['carriers']['unishippersSmall']['originAddress'] ?? [];
-        $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? $request['carriers']['upsLTL']['originAddress'] ?? [];
+        $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? $request['carriers']['upsLTL']['originAddress'] ?? $request['carriers']['yrcLTL']['originAddress'] ?? [];
         $items = $request['commdityDetails'] ?? [];
         $smallHazmat = $ltlHazmat = false;
         if (!empty($smallOrigins)) {
