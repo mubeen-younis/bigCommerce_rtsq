@@ -303,6 +303,13 @@ class CompileQuotes
                     $quotesArray = [];
                 }
             }
+
+            //  Fetching SUppress Status From WS and make quotes array empty
+            if (isset($inStoreLd['suppress']) && $inStoreLd['suppress'] == 1) {
+                $quotesArray = [];
+            }
+
+
             /* dd(2,$inStoreLd);*/
             if (isset($inStoreLd['inStorePickup']['status']) && $inStoreLd['inStorePickup']['status'] == 1) {
                 $title = $warehouseData['inStoreTitle'] ?? '';
