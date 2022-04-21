@@ -12,6 +12,7 @@ class Store extends Model
     protected $fillable = [
         'token',
         'app_status',
+        'is_trial_completed',
         'freightdesk_company_id'
     ];
 

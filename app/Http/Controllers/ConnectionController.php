@@ -3,17 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\CurlRequest;
-use App\CustomClasses\UpsLTL\UpsLtlConnectionSettings;
-use App\CustomClasses\WweLTL\WweLtlConnectionSettings;
-use App\CustomClasses\WWESMALL\SmallConnectionSettings;
-use App\CustomClasses\UpsSmall\ConnectionSettings;
 use App\CustomClasses\Fedex\ltl\ConnectionSettings as FedexLtlConnectionSettings;
 use App\CustomClasses\Fedex\small\ConnectionSettings as FedexSmallConnectionSettings;
 use App\CustomClasses\GTZ\ltl\ConnectionSettings as GTZLtlConnectionSettings;
-use App\CustomClasses\XPO\ltl\ConnectionSettings as XPOLtlConnectionSettings;
 use App\CustomClasses\RL\ltl\ConnectionSettings as RNLLtlConnectionSettings;
+use App\CustomClasses\UpsLTL\UpsLtlConnectionSettings;
+use App\CustomClasses\UpsSmall\ConnectionSettings;
+use App\CustomClasses\WweLTL\WweLtlConnectionSettings;
+use App\CustomClasses\WWESMALL\SmallConnectionSettings;
+use App\CustomClasses\XPO\ltl\ConnectionSettings as XPOLtlConnectionSettings;
+use App\CustomClasses\Unishippers\small\ConnectionSettings as UnishippersSmallConnectionSettings;
 use App\Endpoints\Endpoints;
-use App\Helpers\Helpers;
 use App\Models\Connection;
 use App\Models\Coupon;
 use App\Models\CouponCarrier;
@@ -40,6 +40,7 @@ class ConnectionController extends Controller
         $this->gtzLtlTestCon = new GTZLtlConnectionSettings();
         $this->xpoLtlTestCon = new XPOLtlConnectionSettings();
         $this->rnlLtlTestCon = new RNLLtlConnectionSettings();
+        $this->unishippersSmallTestCon = new UnishippersSmallConnectionSettings();
     }
 
     public function index(Request $request)
@@ -82,7 +83,7 @@ class ConnectionController extends Controller
 
         $checkCarrierType = DB::table('carriers')->select('slug', 'stores.name')
             ->leftJoin('installed_carriers', 'carriers.id', 'installed_carriers.carrier_id')
-            ->leftJoin('stores', 'stores.id','=','installed_carriers.store_id')
+            ->leftJoin('stores', 'stores.id', '=', 'installed_carriers.store_id')
             ->where('installed_carriers.id', $request->carrierId)
             ->first();
 
@@ -100,9 +101,15 @@ class ConnectionController extends Controller
             switch ($checkCarrierType->slug) {
                 case "ltl-quotes":
                     $response = $this->wweLtlTestCon->testLtlConnection($request, $checkCarrierType->name);
+                    if (isset($fdoCouponResponse) && !empty($fdoCouponResponse)) {
+                        $response = array_merge($response, $fdoCouponResponse);
+                    }
                     return response()->json($response);
                 case "small-package":
                     $response = $this->wweSmallTestCon->testSmallConnection($request, $checkCarrierType->name);
+                    if (isset($fdoCouponResponse) && !empty($fdoCouponResponse)) {
+                        $response = array_merge($response, $fdoCouponResponse);
+                    }
                     return response()->json($response);
                 case 'ups-ltl':
                     $response = $this->upsLtlTestCon->testUpsLtlConnection($request, $checkCarrierType->name);
@@ -118,6 +125,9 @@ class ConnectionController extends Controller
                     return response()->json($response);
                 case 'gtz-ltl':
                     $response = $this->gtzLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    if (isset($fdoCouponResponse) && !empty($fdoCouponResponse)) {
+                        $response = array_merge($response, $fdoCouponResponse);
+                    }
                     return response()->json($response);
                 case 'xpo-ltl':
                     $response = $this->xpoLtlTestCon->testConnection($request, $checkCarrierType->name);
@@ -125,12 +135,18 @@ class ConnectionController extends Controller
                 case 'rl-ltl':
                     $response = $this->rnlLtlTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
+                case 'unishippers-small':
+                    $response = $this->unishippersSmallTestCon->testConnection($request, $checkCarrierType->name);
+                    if (isset($fdoCouponResponse) && !empty($fdoCouponResponse)) {
+                        $response = array_merge($response, $fdoCouponResponse);
+                    }
+                    return response()->json($response);
                 default:
                     return response()->json(["error" => true, "data" => [],
                         'message' => 'No carrier Matches']);
             }
         }
-        
+
         $con = Connection::firstOrNew(['installed_carrier_id' => $request->carrierId]);
         $con->value = json_encode($request->all());
         $con->installed_carrier_id = $request->carrierId;
@@ -154,7 +170,7 @@ class ConnectionController extends Controller
             'small-package' => 'WWE_PL',
             'ltl-quotes' => 'WWE_LTL',
             'gtz-ltl' => 'GTZ',
-            'unishippers-small' => 'UNI_PL'
+            'unishippers-small' => 'UNI_PL',
         ];
 
         $carrier = '';
@@ -168,10 +184,10 @@ class ConnectionController extends Controller
         $response = json_decode($curlResponse['response'], true);
 
         if (isset($response['promo'])) {
-            $carrier = CouponCarrier::addOrUpdateCarrierInfo($carrierSlug, $id, $coupon,$response);
+            $carrier = CouponCarrier::addOrUpdateCarrierInfo($carrierSlug, $id, $coupon, $response);
             return $carrier;
         }
-        
+
         return null;
     }
 
