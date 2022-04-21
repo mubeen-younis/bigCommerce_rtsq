@@ -150,4 +150,11 @@ class Functions
         }
         return null;
     }
+
+    public static function checkMultiUnique($src)
+    {
+        $output = array_map("unserialize",
+            array_unique(array_map("serialize", $src)));
+        return $output;
+    }
 }

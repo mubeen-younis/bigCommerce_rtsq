@@ -31,6 +31,7 @@ class Shipping
     private $showOnlyLocAndInstoreQuote;
     private $instoreQuotes;
     private $locDelQuotes;
+    private $multiOrigins;
 
     public function __construct()
     {
@@ -40,6 +41,7 @@ class Shipping
         $this->showOnlyLocAndInstoreQuote = false;
         $this->instoreQuotes = false;
         $this->locDelQuotes = false;
+        $this->multiOrigins = false;
     }
 
 
@@ -93,6 +95,13 @@ class Shipping
         $resp = $generateReqData->generateEnitureArray($originAddress, $destination, $package['items']);
         $residential = $resp['residential'];
         $carriersArray = $resp['carriersArr'];
+
+        $this->multiOrigins = $this->checkIsMultiShipment($carriersArray['carriers']);
+
+        /*Check for MUlti shipment and product marked as instore or local delivery*/
+        if ($this->multiOrigins && $this->showOnlyLocAndInstoreQuote) {
+            return [];
+        }
 
         // Checking if any productis hazardous
         $hazmatAllItems = $this->isHazmatMaterial($package);
@@ -223,6 +232,18 @@ class Shipping
         return $resp;
     }
 
+
+    public function checkIsMultiShipment($carriers)
+    {
+        foreach ($carriers as $carrier) {
+            $output = Functions::checkMultiUnique($carrier['originAddress']);
+            if (count($output) > 1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public function showOnlyLocAndInstoreQuote($items): bool
     {
         foreach ($items as $item) {
@@ -244,7 +265,7 @@ class Shipping
             if ($this->locDelQuotes) {
                 if (isset($origin['InstorPickupLocalDelivery']['localDelivery']['postalCodeMatch'])) {
                     $origins[$key]['InstorPickupLocalDelivery']['suppress'] = 1;
-                    $origins[$key]['InstorPickupLocalDelivery']['localDelivery']['postalCodeMatch'] = 1;
+                    // $origins[$key]['InstorPickupLocalDelivery']['localDelivery']['postalCodeMatch'] = 1;
                     $found = true;
                 }
             } else {
@@ -254,7 +275,7 @@ class Shipping
             if ($this->instoreQuotes) {
                 if (isset($origin['InstorPickupLocalDelivery']['inStorePickup']['postalCodeMatch'])) {
                     $origins[$key]['InstorPickupLocalDelivery']['suppress'] = 1;
-                    $origins[$key]['InstorPickupLocalDelivery']['inStorePickup']['postalCodeMatch'] = 1;
+                    // $origins[$key]['InstorPickupLocalDelivery']['inStorePickup']['postalCodeMatch'] = 1;
                     $found = true;
                 }
             } else {
