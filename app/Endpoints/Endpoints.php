@@ -48,6 +48,25 @@ class Endpoints
 
     }
 
+    public static function verifyFdoCompDetEndpoint()
+    {
+        if (env('APP_ENV') == 'staging') {
+            return "https://freightdesk.eniture-qa.com/register";
+        }
+        return "https://freightdesk.online/register";
+
+    }
+
+    public static function fdoCredsEndpoint()
+    {
+        if (env('APP_ENV') == 'staging') {
+            return "https://freightdesk.eniture-qa.com/register";
+        }
+        return "https://freightdesk.online/register";
+
+    }
+
+
     public static function getFDOLoginUrl()
     {
 
