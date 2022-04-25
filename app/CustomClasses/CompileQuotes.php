@@ -2181,11 +2181,20 @@ class CompileQuotes
             $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
 
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
+                if (count($compiledQuotes) > 1) {
+                    foreach ($compiledQuotes as $k => $service) {
+                        $allQuotes['simple'][] = $service['simple'];
+                        $multiShipmentQuotes['simple'][$origin] = $service['simple'];
+                        $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
+                        $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
+                    }
+                } else {
                     $service = reset($compiledQuotes);
                     $allQuotes['simple'][] = $service['simple'] ?? '';
                     $multiShipmentQuotes['simple'][$origin] = $service['simple'] ?? '';
                     $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
                     $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
+                }
             }
 
             if ($this->isMultiShipment) {
@@ -2198,6 +2207,16 @@ class CompileQuotes
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
+        }
+
+        if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1)) {
+            $allQuotes = $this->forceChangeTitle($allQuotes);
+            $resp = [
+                'checkoutQuotes' => $allQuotes,
+                'multiShipmentQuotes' => $multiShipmentQuotes,
+            ];
+        
+            return $resp;
         }
         
         $resp = $allQuotes;
@@ -2987,7 +3006,7 @@ class CompileQuotes
         $sliced = array_slice($ratesArray['simple'], 0, $options, true);
         $simplePrice = $this->getAveragePrice($sliced, $options);
         $prefix = $this->isGTZCerasis ? 'AVG' : 'AVGwweltl';
-        $prefix = $this->isFQ ? 'AVGfqltl' : $prefix;
+        $prefix = isset($this->isFQ) && $this->isFQ ? 'AVGfqltl' : $prefix;
         $serviceName = $this->customLabel('Freight');
         $averageRateService[0]['simple'] = [
             'title' => $this->getTitle($serviceName, false),//$serviceName,
