@@ -9,30 +9,31 @@ options:
 pipelines:
   branches:
     laravel8:
-    - step:
-        caches:
-          - composer
-        script:
-          - pipe: atlassian/ssh-run:0.2.2
-            variables:
-              SSH_USER: 'eniture'
-              SERVER: '3.210.152.102'
-              MODE: 'command'
-              COMMAND: '/home/eniture/public_html/bigcommerce/backend/remote-script.sh'
+      - step:
+          caches:
+            - composer
+          script:
+            - pipe: atlassian/ssh-run:0.2.2
+              variables:
+                SSH_USER: 'eniture'
+                SERVER: '3.210.152.102'
+                MODE: 'command'
+                COMMAND: '/home/eniture/public_html/bigcommerce/backend/remote-script.sh'
 
     staging:
-    - step:
-        caches:
-          - composer
-        script:
-          - pipe: atlassian/ssh-run:0.2.2
-            variables:
-              SSH_USER: 'eniture'
-              SERVER: '3.213.234.241'
-              MODE: 'command'
-              COMMAND: '/home/eniture/public_html/bigcommerce/bc/remote-script.sh'
+      - step:
+          caches:
+            - composer
+          script:
+            - pipe: atlassian/ssh-run:0.2.2
+              variables:
+                SSH_USER: 'ec2-user'
+                SERVER: '34.197.112.152'
+                MODE: 'command'
+                COMMAND: '/var/www/html/bigcommerce/bc/remote-script.sh'
 
     master:
+
     - step:
         caches:
           - composer
@@ -45,13 +46,13 @@ pipelines:
               COMMAND: '/var/www/html/bigcommerce/bc/remote-script.sh'
 
     ws-elb:
-    - step:
-        caches:
-          - composer
-        script:
-          - pipe: atlassian/ssh-run:0.2.2
-            variables:
-              SSH_USER: 'ec2-user'
-              SERVER: '54.159.170.144'
-              MODE: 'command'
-              COMMAND: '/var/www/html/ws/carriers/cerasis/remote-script.sh'
+      - step:
+          caches:
+            - composer
+          script:
+            - pipe: atlassian/ssh-run:0.2.2
+              variables:
+                SSH_USER: 'ec2-user'
+                SERVER: '54.159.170.144'
+                MODE: 'command'
+                COMMAND: '/var/www/html/ws/carriers/cerasis/remote-script.sh'

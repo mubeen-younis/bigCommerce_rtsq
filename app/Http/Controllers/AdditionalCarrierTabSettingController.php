@@ -215,7 +215,7 @@ class AdditionalCarrierTabSettingController extends Controller
     }
 
     public function isInusreCarrier($slug){
-        $insureCarrier = ['ltl-quotes', 'small-package', 'ups-small','fedex-small'];
+        $insureCarrier = ['ltl-quotes', 'small-package', 'ups-small','fedex-small', 'unishippers-small'];
         return in_array($slug, $insureCarrier);
     }
 }
