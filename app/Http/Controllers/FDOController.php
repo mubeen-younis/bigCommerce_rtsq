@@ -113,7 +113,7 @@ class FDOController extends Controller
     public function getFDOCouponCarrierInfo(Request $request)
     {
         $carrierInfo = CouponCarrier::getCarrierInfoByName($request);
-     
+
         return response()->json(['error' => false,
             'data' => $carrierInfo,
             'message' => '',
@@ -365,7 +365,7 @@ class FDOController extends Controller
         $storeUrl = $storeDetails->url ?? '';
         $storeHash = $storeDetails->hash ?? '';
         $accessToken = $storeDetails->access_token ?? '';
-        $request = ['store_url' => $storeUrl, 'company_id' => $fdoCompanyId];
+        $request = ['store_url' => $storeUrl, 'company_id' => $fdoCompanyId,'action'=>'install'];
         $endpoint = Endpoints::verifyFdoCompDetEndpoint();
         $curlResp = (new CurlRequest())->enSingleCurlRequest($endpoint, json_encode($request), [], 'POST');
         $curlResp = json_decode($curlResp['response'], true);
@@ -373,7 +373,7 @@ class FDOController extends Controller
             return ['error' => true, 'message' => $curlResp['message']];
         }
         if (isset($curlResp['error']) && $curlResp['error'] == false) {
-            $request = ['store_url' => $storeUrl, 'store_hash' => $storeHash, 'access_token' => $accessToken, 'company_id' => $fdoCompanyId];
+            $request = ['store_url' => $storeUrl,'action'=>'install', 'store_hash' => $storeHash, 'access_token' => $accessToken, 'company_id' => $fdoCompanyId];
             $endpoint = Endpoints::fdoCredsEndpoint();
             $curlResp = (new CurlRequest())->enSingleCurlRequest($endpoint, json_encode($request), [], 'POST');
             $curlResp = json_decode($curlResp['response'], true);
@@ -381,7 +381,7 @@ class FDOController extends Controller
                 return ['error' => false, 'message' => 'Successfully connected to FreightDesk Online'];
             }
         }
-        return ['error' => true, 'message' => 'Something went wrong'];
+        return ['error' => true, 'message' => 'Something went wrong on establishing connection with FreightDesk Online'];
 
 
     }
