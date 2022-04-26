@@ -154,14 +154,14 @@ class ConnectionController extends Controller
     {
         $storeId = $request->store_id;
         $promoDetail = Coupon::getFDOCoupon($storeId);
-        if (blank($promoDetail)) {
+        if ((blank($promoDetail) && blank($request['promo_code']) && isset($request['is_enabled']) && (!$request['is_enabled'] || $request['is_enabled'] == false))) {
             $response = ["status" => false];
             return $response;
         }
 
-        $id = $promoDetail->id;
-        $coupon = $promoDetail->code;
-        $shop = $promoDetail->shop;
+        $id = $promoDetail ? $promoDetail->id : '';
+        $coupon = $promoDetail->code ?? $request['promo_code'] ?? '';
+        $shop = $promoDetail->shop ?? Store::getStoreUrlFromStoreId($storeId);
         $arr = [
             'small-package' => 'WWE_PL',
             'ltl-quotes' => 'WWE_LTL',
@@ -173,7 +173,7 @@ class ConnectionController extends Controller
         if (isset($arr[$carrierSlug])) {
             $carrier = $arr[$carrierSlug];
         }
-
+ 
         $queryParams = http_build_query(['coupon' => $coupon, 'shop' => $shop, 'carriers' => $carrier]);
         $endPoint = Endpoints::applyPromoCodeFdoEndpoint() . $queryParams;
         $curlResponse = (new CurlRequest())->enSingleCurlRequest($endPoint, [], [], 'GET');

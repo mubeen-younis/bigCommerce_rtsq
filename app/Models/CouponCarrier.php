@@ -34,7 +34,7 @@ class CouponCarrier extends Model
     public static function addOrUpdateCarrierInfo($slug, $id, $code, $response)
     {
         $carrier = self::getCarrierInfoByName($slug);
-        if (blank($carrier)) {
+        if (blank($carrier) || blank($id) || !$id) {
             $carrier = new self();
         }
 
