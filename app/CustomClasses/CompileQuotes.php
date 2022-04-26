@@ -2162,7 +2162,8 @@ class CompileQuotes
                     if (isset($srvcType)) {
                         $access = $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
-                        $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : 'LTL Freight';
+                        dd(2162, $data, $price);
+                        $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : 'Freight';
                         /*
                          * Date 01-07-22
                          * Adding Functionality of Delivery Estimate Options
@@ -2416,7 +2417,8 @@ class CompileQuotes
     public function calculatePrice($data, $lgOption = false, $getCost = false, $isUpsLtl = false)
     {
         $lgCost = $lgOption ? 0 : $this->getLiftGateCost($data, $getCost, $isUpsLtl);
-        $basePrice = (float)$data['totalNetCharge']['Amount'];
+        $basePrice = str_replace(',', '', $data['totalNetCharge']['Amount']);
+        $basePrice = (float)$basePrice; 
         $basePrice = $basePrice - $lgCost;
         $basePrice = $this->calculateHandlingFee($basePrice);
         return $basePrice;
