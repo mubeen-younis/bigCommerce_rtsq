@@ -47,7 +47,7 @@ class Endpoints
         return "https://freightdesk.online/register";
 
     }
-
+// TODO:
     public static function verifyFdoCompDetEndpoint()
     {
         if (env('APP_ENV') == 'staging') {
@@ -57,6 +57,17 @@ class Endpoints
 
     }
 
+    // TODO:
+    public static function disconnectFdoCompDetEndpoint()
+    {
+        if (env('APP_ENV') == 'staging') {
+            return "https://freightdesk.eniture-qa.com/register";
+        }
+        return "https://freightdesk.online/register";
+
+    }
+
+// TODO:
     public static function fdoCredsEndpoint()
     {
         if (env('APP_ENV') == 'staging') {

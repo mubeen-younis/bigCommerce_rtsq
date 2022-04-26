@@ -31,4 +31,14 @@ class InstalledCarrier extends Model
                 ->first())->toArray() ?? [];
     }
 
+    public static function checkIsEnbCarFromSlugANdStore($slug, $storeId)
+    {
+        return self::join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
+            ->select('slug')
+            ->where('installed_carriers.store_id', $storeId)
+            ->where('installed_carriers.is_enabled', 1)
+            ->where('carriers.slug', $slug)
+            ->exists();
+    }
+
 }

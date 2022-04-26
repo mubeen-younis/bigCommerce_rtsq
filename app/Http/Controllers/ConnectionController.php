@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\CurlRequest;
 use App\CustomClasses\Fedex\ltl\ConnectionSettings as FedexLtlConnectionSettings;
 use App\CustomClasses\Fedex\small\ConnectionSettings as FedexSmallConnectionSettings;
+use App\CustomClasses\Functions;
 use App\CustomClasses\GTZ\ltl\ConnectionSettings as GTZLtlConnectionSettings;
 use App\CustomClasses\RL\ltl\ConnectionSettings as RNLLtlConnectionSettings;
 use App\CustomClasses\UpsLTL\UpsLtlConnectionSettings;
@@ -129,19 +130,20 @@ class ConnectionController extends Controller
                         'message' => 'No carrier Matches']);
             }
         }
-
+        $message = 'Connection settings has been saved successfully';
         $carriersArr = ['ltl-quotes', 'small-package', 'gtz-ltl', 'unishippers-small'];
-        if (in_array($checkCarrierType->slug, $carriersArr)) {
+        if (!blank($request['promo_code']) &&
+            in_array($checkCarrierType->slug, $carriersArr) &&
+            ((isset($request['is_enabled']) && $request['is_enabled'] == false) || !isset($request['is_enabled']))
+        ) {
             $fdoCouponResponse = $this->getFDOCouponCarrierInfo($request, $checkCarrierType->slug);
-        }
-
-        $message = 'Connection settings has been saved and Promo Code is valid.';
-        if (isset($fdoCouponResponse) && !empty($fdoCouponResponse)) {
-            if (isset($fdoCouponResponse['status']) && $fdoCouponResponse['status'] == false) {
-                $message = 'Connection settings has been saved but the Promo Code is not valid.';
+            if (isset($fdoCouponResponse['status']) && $fdoCouponResponse['status'] == true) {
+                $message = 'Connection settings has been saved and thr Promo Code is applied.';
+            } else {
+                $message = 'Connection settings has been saved but the Promo Code is not applied.';
             }
         }
-       
+
         $con = Connection::firstOrNew(['installed_carrier_id' => $request->carrierId]);
         $con->value = json_encode($request->all());
         $con->installed_carrier_id = $request->carrierId;
@@ -153,34 +155,24 @@ class ConnectionController extends Controller
     public function getFDOCouponCarrierInfo(Request $request, $carrierSlug)
     {
         $storeId = $request->store_id;
+        $storeDetails = Store::where('id', $storeId)->first();
         $promoDetail = Coupon::getFDOCoupon($storeId);
-        if ((blank($promoDetail) && blank($request['promo_code']) && isset($request['is_enabled']) && (!$request['is_enabled'] || $request['is_enabled'] == false))) {
-            $response = ["status" => false];
-            return $response;
+        if ((blank($promoDetail))) {
+            return ["status" => false];
         }
 
         $id = $promoDetail ? $promoDetail->id : '';
         $coupon = $promoDetail->code ?? $request['promo_code'] ?? '';
         $shop = $promoDetail->shop ?? Store::getStoreUrlFromStoreId($storeId);
-        $arr = [
-            'small-package' => 'WWE_PL',
-            'ltl-quotes' => 'WWE_LTL',
-            'gtz-ltl' => 'GTZ',
-            'unishippers-small' => 'UNI_PL',
-        ];
-
-        $carrier = '';
-        if (isset($arr[$carrierSlug])) {
-            $carrier = $arr[$carrierSlug];
-        }
- 
+        $carrier = Functions::fdoSLugForCarriers($carrierSlug);
         $queryParams = http_build_query(['coupon' => $coupon, 'shop' => $shop, 'carriers' => $carrier]);
+        $headers = ['access_token' => $storeDetails->access_token, 'store_hash' => $storeDetails->hash];
         $endPoint = Endpoints::applyPromoCodeFdoEndpoint() . $queryParams;
-        $curlResponse = (new CurlRequest())->enSingleCurlRequest($endPoint, [], [], 'GET');
+        $curlResponse = (new CurlRequest())->enSingleCurlRequest($endPoint, [], $headers, 'GET');
         $response = json_decode($curlResponse['response'], true);
-
         if (isset($response['promo'])) {
-            $carrier = CouponCarrier::addOrUpdateCarrierInfo($carrierSlug, $id, $coupon, $response);
+            Store::where('id', $storeId)->update(['freightdesk_company_id' => $response['fdo_company_id']]);
+            CouponCarrier::addOrUpdateCarrierInfo($carrierSlug, $id, $coupon, $response);
         }
 
         return $response;

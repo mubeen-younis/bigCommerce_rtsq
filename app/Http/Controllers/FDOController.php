@@ -190,14 +190,14 @@ class FDOController extends Controller
             if (isset($response['promo'])) {
                 Store::where('id', $storeId)->update(['freightdesk_company_id' => $response['fdo_company_id']]);
                 Coupon::updateCouponDetails($id, $response['promo']['start_date'], $response['promo']['end_date']);
-                // TODO: need to insert carrier in DB
-                $couponDet = Coupon::getFDOCoupon($storeId)->toArray();
-                $couponDet['coupon_code'] = $couponDet['code'] ?? null;
-                $couponDet['message'] = $this->getMessageForCoupon($couponDet['used'], $couponDet['coupon_code'], $storeId, $response['fdo_company_id'], false);
-                return response()->json(['error' => false,
-                    'data' => $couponDet,
-                    'message' => 'Successfully applied promo code',
-                ], 200);
+                if (isset($response['carriers']) && !empty($response['carriers'])) {
+                    $enabledCarriers = $this->savePromoAppliedCarriers($id, $storeId, $response);
+                }
+                $storeDetails = Store::where('id', $storeId)->first();
+                $storeHash = $storeDetails->hash;
+                $accessToken = $storeDetails->access_token;
+                // TODO: need to change response have to add enabled carriers and store hash
+                return response()->json(['error' => false, 'message' => 'Updated coupon details', 'store_hash' => $storeHash, 'access_token' => $accessToken, 'install_carriers' => $enabledCarriers]);
             }
         }
 
@@ -224,6 +224,25 @@ class FDOController extends Controller
         return Helpers::sendJsonResponse(true, 'Something went wrong');
     }
 
+
+    public function savePromoAppliedCarriers($id, $storeId, $response)
+    {
+        $enabledCarriers = [];
+        foreach ($response['carriers'] as $carrierValue) {
+            $slug = Functions::carrierSlugForFdo($carrierValue);
+            if (!blank($slug)) {
+                if (InstalledCarrier::checkIsEnbCarFromSlugANdStore($slug, $storeId)) {
+                    $enabledCarriers[] = $carrierValue;
+                    CouponCarrier::addOrUpdateCarrierInfo($slug, $id, $carrierValue, $response);
+                }
+            }
+        }
+        if (!blank($enabledCarriers)) {
+            return implode('|', $enabledCarriers);
+        }
+        return null;
+    }
+
     /**
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
@@ -231,7 +250,7 @@ class FDOController extends Controller
     public function updateCouponDetailsFromFDO(Request $request): \Illuminate\Http\JsonResponse
     {
         $request = $request->all();
-        Log::info('Request to Update Coupon Detail '.json_encode($request));
+        Log::info('Request to Update Coupon Detail ' . json_encode($request));
         if (isset($request['av_company_id'])) {
             $platformCompanyId = $request['av_company_id'] ?? '';
             $platform = 'av';
@@ -243,6 +262,7 @@ class FDOController extends Controller
         $storeUrl = $request['promo']['store_url'] ?? '';
         $startDate = $request['promo']['start_date'] ?? '';
         $endDate = $request['promo']['end_date'] ?? '';
+
         if (blank($couponCode) || blank($storeUrl)) {
             return Helpers::sendJsonResponseFdo(true, 'Invalid request format', []);
         }
@@ -251,15 +271,19 @@ class FDOController extends Controller
             return Helpers::sendJsonResponseFdo(true, 'Coupon not found', []);
         }
         Coupon::updateCouponDetails($coupon['id'], $startDate, $endDate);
+        $storeId = $coupon['store_id'];
+        $storeDetails = Store::where('id', $storeId)->first();
+        $storeHash = $storeDetails->hash;
+        $accessToken = $storeDetails->access_token;
         if (!blank($platformCompanyId)) {
             if ($platform == 'av') {
-                Store::where('id', $coupon['store_id'])->update(['av_company_id' => $platformCompanyId]);
+                Store::where('id', $storeId)->update(['av_company_id' => $platformCompanyId]);
             } else {
-                Store::where('id', $coupon['store_id'])->update(['freightdesk_company_id' => $platformCompanyId]);
+                Store::where('id', $storeId)->update(['freightdesk_company_id' => $platformCompanyId]);
             }
         }
-        $installedProviders = $this->getProvsSepByPipe($coupon['store_id'], true);
-        return response()->json(['error' => false, 'message' => 'Updated coupon details', 'install_carriers' => $installedProviders]);
+        $installedProviders = $this->getProvsSepByPipe($storeId, true);
+        return response()->json(['error' => false, 'message' => 'Updated coupon details', 'store_hash' => $storeHash, 'access_token' => $accessToken, 'install_carriers' => $installedProviders]);
 
     }
 
@@ -373,6 +397,7 @@ class FDOController extends Controller
             $store->freightdesk_company_id = $fdoCompanyId;
             $message .= 'connected successfully';
         } else {
+            $this->disConnectFDO($store);
             $store->freightdesk_company_id = null;
             $message .= 'disconnected successfully';
         }
@@ -387,7 +412,7 @@ class FDOController extends Controller
         $storeUrl = $storeDetails->url ?? '';
         $storeHash = $storeDetails->hash ?? '';
         $accessToken = $storeDetails->access_token ?? '';
-        $request = ['store_url' => $storeUrl, 'company_id' => $fdoCompanyId,'action'=>'install'];
+        $request = ['store_url' => $storeUrl, 'company_id' => $fdoCompanyId, 'action' => 'install'];
         $endpoint = Endpoints::verifyFdoCompDetEndpoint();
         $curlResp = (new CurlRequest())->enSingleCurlRequest($endpoint, json_encode($request), [], 'POST');
         $curlResp = json_decode($curlResp['response'], true);
@@ -395,7 +420,7 @@ class FDOController extends Controller
             return ['error' => true, 'message' => $curlResp['message']];
         }
         if (isset($curlResp['error']) && $curlResp['error'] == false) {
-            $request = ['store_url' => $storeUrl,'action'=>'install', 'store_hash' => $storeHash, 'access_token' => $accessToken, 'company_id' => $fdoCompanyId];
+            $request = ['store_url' => $storeUrl, 'action' => 'install', 'store_hash' => $storeHash, 'access_token' => $accessToken, 'company_id' => $fdoCompanyId];
             $endpoint = Endpoints::fdoCredsEndpoint();
             $curlResp = (new CurlRequest())->enSingleCurlRequest($endpoint, json_encode($request), [], 'POST');
             $curlResp = json_decode($curlResp['response'], true);
@@ -405,6 +430,19 @@ class FDOController extends Controller
         }
         return ['error' => true, 'message' => 'Something went wrong on establishing connection with FreightDesk Online'];
 
+
+    }
+
+    public function disConnectFDO($storeDetails)
+    {
+        $storeUrl = $storeDetails->url ?? '';
+        $storeHash = $storeDetails->hash ?? '';
+        $accessToken = $storeDetails->access_token ?? '';
+        $companyId = $storeDetails->freightdesk_company_id ?? '';
+        $request = ['store_url' => $storeUrl, 'action' => 'uninstall', 'store_hash' => $storeHash, 'access_token' => $accessToken, 'company_id' => $companyId];
+        $endpoint = Endpoints::disconnectFdoCompDetEndpoint();
+        $curlResp = (new CurlRequest())->enSingleCurlRequest($endpoint, json_encode($request), [], 'POST');
+        Log::info('Response from FDO after Disconnect ' . json_encode($curlResp));
 
     }
 
