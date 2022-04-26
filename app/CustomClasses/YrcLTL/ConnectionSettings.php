@@ -51,10 +51,10 @@ class ConnectionSettings
 
         $output = json_decode($output['response'], true);
 
-        if (isset($output['severity']) && $output['severity'] === 'ERROR' && isset($output['Message'])) {
+        if (isset($output['severity']) && $output['severity'] == 'ERROR' && isset($output['Message']) || (isset($output['error']) && $output['error'] && $output['error'] == 1)) {
             $response = [
                 'error' => true,
-                'message' => $output['Message'],
+                'message' => $output['Message'] ?? $output['error_desc'],
             ];
         } elseif ((isset($output['severity']) && $output['severity'] === 'SUCCESS') || (isset($output['success']) && $output['success'] == 1)) {
             $response = [
