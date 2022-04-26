@@ -2162,7 +2162,6 @@ class CompileQuotes
                     if (isset($srvcType)) {
                         $access = $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
-                        dd(2162, $data, $price);
                         $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : 'Freight';
                         /*
                          * Date 01-07-22
