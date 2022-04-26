@@ -9,6 +9,7 @@ use App\Http\Controllers\HubSpotController;
 use App\Http\Controllers\SaleGraphController;
 use App\Mail\PaymentFailedByWebHookEmail;
 use App\Models\InstalledCarrier;
+use App\Models\Store;
 use App\Models\Subscription\CarrierCount;
 use App\Models\Subscription\PaymentMethod;
 use App\Models\Subscription\Plan;
@@ -304,6 +305,20 @@ class SubscriptionController extends Controller
                     'message' => 'You enabled more carriers than the allowed carriers limit (' . self::$plansData['carrier_count'] . ') in ' . self::$plansData['name'] . ' Plan. So, you need to disabled some carriers to downgrade your subscription plan'
                 ], 200);
             }
+            /*Added check for trial plan
+            if the store already taken trial plan*/
+            if ($request['plan'] == self::$trial) {
+                $storeDetail = Store::where('id', $request['store_id'])->first();
+                if (!blank($storeDetail)) {
+                    if ($storeDetail->is_trial_completed) {
+                        return response()->json([
+                            'error' => true,
+                            'data' => [],
+                            'message' => 'You have already taken trial plan! Please subscribe to a paid plan if you want to continue using our services.'
+                        ], 200);
+                    }
+                }
+            }
             //END:Check
             if ($request['plan'] != self::$trial) {
                 $data = [
@@ -326,7 +341,7 @@ class SubscriptionController extends Controller
             self::$email = $data['email'] = $request['email'];
             $data['defaultpayment'] = (isset($request['defaultpayment']) && $request['defaultpayment'] == true) ? true : false;
 
-            $planId = self::$plansData['stripe_plan_id'];
+            $stripePlanId = self::$plansData['stripe_plan_id'];
 
             // Intializing Billing info for the stripe customer
             $data = [
@@ -343,7 +358,7 @@ class SubscriptionController extends Controller
                 'cAddress_zip' => isset($data['zip']) ? $data['zip'] : '',
                 'cAddress_country' => isset($data['country']) ? $data['country'] : '',
                 'defaultpayment' => isset($data['defaultpayment']) ? $data['defaultpayment'] : '',
-                'stripePlanId' => $planId
+                'stripePlanId' => $stripePlanId
             ];
             //If the payment method already exists then retrieve it
             $paymentMethod = PaymentMethod::where('store_id', $data['store_id'])->first();
@@ -352,7 +367,7 @@ class SubscriptionController extends Controller
             $oldSubscription = Subscription::where('store_id', $data['store_id'])->latest()->first();
 
             //Start: Upgrade or DownGrade Plans
-            if (!is_null($paymentMethod) && !is_null($oldSubscription) && $planId != null && $oldSubscription->subscription_id != null) {
+            if (!is_null($paymentMethod) && !is_null($oldSubscription) && $stripePlanId != null && $oldSubscription->subscription_id != null) {
                 $oldPaymentMethod = PaymentMethod::where('store_id', $data['store_id'])->first();
                 $last4 = decrypt($oldPaymentMethod->last4);
                 //Update: the customer card if the defaultpayment is false OR the last4 digits of the current card does not match with the new given card
@@ -367,10 +382,12 @@ class SubscriptionController extends Controller
                 }
 
                 if ($oldSubscription->status == 2) { //If the previous subscription is expired
+
                     // TODO: We can remove previous subscription from here
-                    $updateSubResponse = $this->createnewSubscriptionPlan($oldSubscription->stripe_id, $planId);
+                    $updateSubResponse = $this->createnewSubscriptionPlan($oldSubscription->stripe_id, $stripePlanId);
+
                 } else { //If the previous subscription is active
-                    $updateSubResponse = $this->updateSubscriptionPlan($oldSubscription->subscription_id, $planId);
+                    $updateSubResponse = $this->updateSubscriptionPlan($oldSubscription->subscription_id, $stripePlanId);
                 }
 
                 if ($updateSubResponse['error'] == true) {
@@ -396,8 +413,8 @@ class SubscriptionController extends Controller
                 return response()->json($updateSubResponse, 200);
             }
             //END: Upgrade or DownGrade Plans
-            //If planId (null) means, it is trial.
-            if ($planId != null) {
+            //If stripeplan (null) means, it is trial.
+            if ($stripePlanId != null) {
                 $customerResponse = $this->createCustomerOnStripe($data);
             }
             // if stripe customer is not created successfully then return the error
@@ -411,7 +428,6 @@ class SubscriptionController extends Controller
             //else, otherwise we consider it to be a trial
             if (!is_null($customerId) && !is_null($subscriptions)) {
                 $paymentMethodId = $this->savePaymentMethodInDB($customerResponse['data'], $data['store_id']);
-
 
                 $user = [
                     'email' => $data['email'],
@@ -429,14 +445,33 @@ class SubscriptionController extends Controller
 
             } else {
                 //Else part will be executed in case of trial and we need to update the subscription table for a trial
+                /*This block of code will check if customer already subscribe trial plan
+                and is allowed to subscribe trial plan*/
+                $trialDays = Carbon::now()->addDays(14);
+                $trialSubscription = Subscription::where('store_id', $data['store_id'])->where('plan_id', self::$plansData['plan_id'])->first();
+                if (!blank($trialSubscription)) {
+                    $dbTrialEndDate = $trialSubscription->ends_at;
+                    if (!blank($dbTrialEndDate)) {
+                        if (Carbon::now() >= Carbon::parse($dbTrialEndDate)) {
+                            return response()->json([
+                                'error' => true,
+                                'data' => [],
+                                'message' => 'You have already taken trial plan! Please subscribe to a paid plan if you want to continue using our services.'
+                            ], 200);
+                        }
+                        /*Setting remaining trial days for customer*/
+                        $trialDays = Functions::getDaysBwDates(Carbon::now(), $dbTrialEndDate);
+                    }
+                }
+
                 $subscription = new Subscription();
                 $subscription->store_id = $data['store_id'];
                 $subscription->plan_id = self::$plansData['plan_id'];
                 $subscription->name = isset($data['card_name']) ? $data['card_name'] : '';
                 $subscription->email = self::$email;
                 $subscription->status = 1; //Active Status
-                $subscription->trial_ends_at = Carbon::now()->addDays(14);
-                $subscription->ends_at = Carbon::now()->addDays(14);
+                $subscription->trial_ends_at = $trialDays;
+                $subscription->ends_at = $trialDays;
                 $subscription->save();
 
                 /*
@@ -709,7 +744,7 @@ class SubscriptionController extends Controller
             ];
 
             return $responce;
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $responce = [
                 'error' => true,
                 'data' => [],

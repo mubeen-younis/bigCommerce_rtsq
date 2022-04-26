@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Constants\Constant;
 use App\CurlRequest;
+use App\CustomClasses\Functions;
 use App\Models\BoxSize;
 use App\Models\Orders;
 use App\Models\RequestData;
@@ -85,13 +86,36 @@ class OrderController extends Controller
 
     public function formateItems($oldItems, $items)
     {
-        $tempItems = $items;
-        foreach ($tempItems as $key => $item) {
+        foreach ($items as $key => $item) {
             $variant_id = $item->variant_id;
             $oldItems->$variant_id = $item;
             $oldItems->$key = $item;
-        };
+        }
         return $oldItems;
+    }
+
+
+    /**
+     * @param $oldItems
+     * @param $items
+     * @return object
+     */
+    public function newFormatItems($oldItems, $items)
+    {
+        $formItems = [];
+        foreach ($items as $key => $item) {
+            $variant_id = $item->variant_id;
+            if (isset($formItems[$variant_id]) && isset($oldItems->$key)) {
+                $formItems[$variant_id]->itemQuantity = $formItems[$variant_id]->itemQuantity + $item->piecesOfLineItem;
+            } elseif (isset($formItems[$variant_id]) && !isset($oldItems->$key)) {
+                $formItems[$variant_id]->itemQuantity = $item->originalPiecesOfLineItem;
+            } else {
+                $item->itemQuantity = $item->piecesOfLineItem;
+                $formItems[$variant_id] = $item;
+            }
+
+        }
+        return (object)$formItems;
     }
 
     public function formateOrigins($carriers)
@@ -140,13 +164,16 @@ class OrderController extends Controller
         $isSmallrate = substr($rateId, 0, 9) == 'parcel_12' || substr($rateId, 0, 5) == 'multi' ? true : false;
         $isLG = strpos($rateId, '+lg');
         $isOwnArrangement = strpos($rateId, 'own_arrangement') === 0 || strpos($rateId, 'freernlltl') === 0 ? true : false;
+
+        /*
+        * Stored Response from WS */
         $lineItem = json_decode($data['lineitems'])->lineItemData;
         $responseFromWS = json_decode($data['quotes']);
         $shippingGroupResp = !blank($data['shipping_group_resp']) ? json_decode($data['shipping_group_resp']) : [];
 
         $requestToWS = json_decode($data['request']);
-        $lineItem->items = $this->formateItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
-//print_r($lineItem->items); exit;
+        $lineItem->items = $this->newFormatItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
+
         $lineItem->origin = $this->formateOrigins($requestToWS->requestArr->carriers);
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
         $autoResidentialsStatus = 'n';
@@ -157,9 +184,12 @@ class OrderController extends Controller
         $isOneRate = strpos($rateId, '+or');
         $isGround = strpos($rateId, '+gd');
         $isAir = strpos($rateId, '+as');
+
+        /*
+        * Shipment Packaging */
+        $sbsItems = [];
         foreach ($responseFromWS as $carrrierName => $WsResp) {
             foreach ($WsResp as $zip => $ws) {
-
                 if (!(isset($ws->severity) && $ws->severity == 'ERROR')) {
 
                     $liftResidentialStatus = $this->getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate, $rateId);
@@ -210,6 +240,7 @@ class OrderController extends Controller
                             $orderWidgetData['nickname'] = $this->getBoxName($binPacked->bin_data->id, $request['store_id'], $rateId, $cartId);
                             foreach ($binPacked->items as $item) {
                                 $productid = $item->id;
+                                $sbsItems[$zip][$productid] = 1;
 
                                 $orderWidgetData['items'][$count]['product_name'] = $lineItem->items->$productid->lineItemName ?? '';
                                 $orderWidgetData['items'][$count]['w'] = $item->w;
@@ -235,17 +266,23 @@ class OrderController extends Controller
                 }
             }
         }
+
+        /*
+        * Shipment Origins */
         $origins = $lineItem->origin;
         $items = $lineItem->items;
         $count = 0;
         $addedInsurance = $addHazmat = false;
-
         $isMulti = false;
         $insertedIds = $insertedNames = [];
         //print_r($items); exit;
         $code = '';
+
         foreach ($origins as $key => $origin) {
-            $item = $items->$key;
+            $item = optional($items)->$key;
+            if (blank($item)) {
+                continue;
+            }
             $city = $origin->senderCity ? $origin->senderCity . ',' : '';
             $state = $origin->senderState ?? '';
             $zip = $origin->locationId != '' ? $origin->locationId : $origin->senderZip;
@@ -288,17 +325,32 @@ class OrderController extends Controller
 
             $orderWidget[$zip]['shipping_method'] = $sName . $sMethod;
             $orderWidget[$zip]['shipping_rate'] = '$' . number_format((float)$sRate, 2,);
+
             if ($item->shipMultiplePackage) {
                 if ((!in_array($item->lineItemName, $insertedNames))) {
                     $insertedNames[] = $item->lineItemName;
-                    $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
+                    $orderWidget[$zip]['items'][] = $item->itemQuantity . ' X ' . $item->lineItemName;
+                }
+                /*Added Else if BLock for Catering BUg of MUltiple Products IN ONe BOX*/
+            } elseif (isset($sbsItems[$zip]) && !empty($sbsItems[$zip])) {
+                foreach ($sbsItems[$zip] as $sbsVariantKey => $sbsItem) {
+                    $itemDetail = $this->getSbsItemDetail($sbsVariantKey, $items);
+                    if (!blank($itemDetail) && (!in_array($itemDetail->lineItemName, $insertedNames)) && (!in_array($itemDetail->id, $insertedIds))) {
+                        $insertedNames[] = $itemDetail->lineItemName;
+                        $insertedIds[] = $itemDetail->id;
+                        $orderWidget[$zip]['items'][] = $itemDetail->itemQuantity . ' X ' . $itemDetail->lineItemName;
+                    }
                 }
             } else {
                 if ((!in_array($item->id, $insertedIds))) {
                     $insertedIds[] = $item->id;
-                    $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
+                    $orderWidget[$zip]['items'][] = $item->itemQuantity . ' X ' . $item->lineItemName;
                 }
             }
+
+
+            /*
+            * Item Accessorials */
             $addedHazmat = false;
             if (isset($orderWidget[$zip]['accessories'])) {
                 $addedHazmat = in_array('Hazardous Material', $orderWidget[$zip]['accessories']);
@@ -314,6 +366,7 @@ class OrderController extends Controller
                         array_push($orderWidget[$zip]['accessories'], 'Insurance');
                     }
                 }
+
                 if (isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') {
                     array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
                     $addHazmat = true;
@@ -329,7 +382,23 @@ class OrderController extends Controller
                     $addHazmat = true;
                 }
             }
-            $isSmall = $this->isSmallQuote($sName);
+            /*Added For hazmat and INsurance in case of one box and multi products*/
+            if (!empty($sbsItems[$zip])) {
+                foreach ($sbsItems[$zip] as $sbsVariant => $sbsItem) {
+                    $hazardous = isset($items->$sbsVariant->isHazmatLineItem) && $items->$sbsVariant->isHazmatLineItem == 'Y' ? true : false;
+                    $insurance = isset($items->$sbsVariant->product_insurance_active) && $items->$sbsVariant->product_insurance_active == 1 ? true : false;
+                    if ($hazardous) {
+                        $addHazmat = true;
+                        array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
+                    }
+                    if ($insurance) {
+                        array_push($orderWidget[$zip]['accessories'], 'Insurance');
+                    }
+                }
+            }
+
+            $isSmall = Functions::isSmallCarrier($code);
+
             if ($isMulti) {
                 strpos(strtolower($code), '+r') ? array_push($orderWidget[$zip]['accessories'], 'Residential Delivery') : '';
             } else {
@@ -338,10 +407,10 @@ class OrderController extends Controller
 
             $isHAT ? array_push($orderWidget[$zip]['accessories'], 'Hold At Terminal') : '';
             if (!$isSmall) {
-
                 $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Pickup') : '';
                 $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Delivery') : '';
             }
+            $orderWidget[$zip]['accessories'] = array_values(array_unique($orderWidget[$zip]['accessories']));
             $count++;
         }
         /*
@@ -364,6 +433,7 @@ class OrderController extends Controller
                 $orderWidget[$key]['items'] = $items;
             }
         }
+
         $sbs = '';
         //print_r($orderWidget); exit;
         $resp = [
@@ -373,8 +443,14 @@ class OrderController extends Controller
         return $resp;
     }
 
+    public function getSbsItemDetail($sbsItemKey, $items)
+    {
+        return $items->$sbsItemKey ?? [];
+    }
 
-    public function shippingGroupOrderWidget($data, $order)
+
+    public
+    function shippingGroupOrderWidget($data, $order)
     {
         $orderWidget = ShippingGroup::shippingGroupOrderWidget($data, $order);
         $resp = [
@@ -383,7 +459,8 @@ class OrderController extends Controller
         return $resp;
     }
 
-    public function getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate, $rateId)
+    public
+    function getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate, $rateId)
     {
         //dd($isSmallLtlrate);
         $response = ['resi' => 'n', 'liftG' => 'n', 'resiPickup' => 'n'];
@@ -413,7 +490,8 @@ class OrderController extends Controller
         return $response;
     }
 
-    public function getBoxName($binId, $store_id, $rate_id, $cart_id)
+    public
+    function getBoxName($binId, $store_id, $rate_id, $cart_id)
     {
         $nickname = BoxSize::getBoxNicknameAndFee($binId);
         return $nickname->nickname ?? null;
@@ -433,7 +511,8 @@ class OrderController extends Controller
              }*/
     }
 
-    public function objectToArray($orderWidget)
+    public
+    function objectToArray($orderWidget)
     {
         $resp = [];
         foreach ($orderWidget as $widget) {
@@ -442,7 +521,8 @@ class OrderController extends Controller
         return $resp;
     }
 
-    public function getBCOrderByID($request)
+    public
+    function getBCOrderByID($request)
     {
         $store = Store::where('hash', $request['store_hash'])->first();
         if (empty($store)) {
@@ -473,7 +553,8 @@ class OrderController extends Controller
         return $resp;
     }
 
-    public function getBCOrders($request)
+    public
+    function getBCOrders($request)
     {
         $store = Store::where('hash', $request['store_hash'])->first();
         if (empty($store)) {
@@ -555,7 +636,8 @@ class OrderController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function create()
+    public
+    function create()
     {
         //
     }
@@ -566,7 +648,8 @@ class OrderController extends Controller
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public
+    function store(Request $request)
     {
         //
     }
@@ -577,7 +660,8 @@ class OrderController extends Controller
      * @param \App\Models\Order $order
      * @return \Illuminate\Http\Response
      */
-    public function show(Order $order)
+    public
+    function show(Order $order)
     {
         //
     }
@@ -588,7 +672,8 @@ class OrderController extends Controller
      * @param \App\Models\Order $order
      * @return \Illuminate\Http\Response
      */
-    public function edit(Orders $order, Request $request)
+    public
+    function edit(Orders $order, Request $request)
     {
         if (empty($request->order_id)) {
             return response()->json(['error' => true,
@@ -622,7 +707,8 @@ class OrderController extends Controller
      * @param \App\Models\Order $order
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Orders $order)
+    public
+    function update(Request $request, Orders $order)
     {
         if (!$request->order_id || empty($request->order_id)) {
             return response()->json(['error' => true,
@@ -658,12 +744,14 @@ class OrderController extends Controller
      * @param \App\Models\Order $order
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Orders $order)
+    public
+    function destroy(Orders $order)
     {
         //
     }
 
-    public function orderFromWebhook(Request $request)
+    public
+    function orderFromWebhook(Request $request)
     {
         try {
             $postData = file_get_contents("php://input");
@@ -689,11 +777,12 @@ class OrderController extends Controller
             //$saveOrderId = $this->saveUpdateOrderByID($toRequest);
             //$this->setOrderMeta($toRequest);
         } catch (\Exception $exception) {
-            //  Have to LOg Here
+            Log::info('Exception On Moving Quotes ' . json_encode($exception));
         }
     }
 
-    public function setOrderMeta($toRequest, $orderMetaFields, $updateWidgetId)
+    public
+    function setOrderMeta($toRequest, $orderMetaFields, $updateWidgetId)
     {
         $headers[] = 'X-Auth-Token: ' . $this->accessToken;
         $headers[] = 'Content-Type: application/json';
@@ -719,7 +808,8 @@ class OrderController extends Controller
         }
     }
 
-    public function saveUpdateOrderByID($toRequest)
+    public
+    function saveUpdateOrderByID($toRequest)
     {
 
         $order = Orders::where('order_id', $toRequest['order_id'])
@@ -739,13 +829,15 @@ class OrderController extends Controller
         $order->save();
     }
 
-    public function orderSettings($toRequest)
+    public
+    function orderSettings($toRequest)
     {
         $order = $this->getBCOrderByID($toRequest);
         return $this->getBCOrderProducts($order['products']['url']);
     }
 
-    public function getBCOrderProducts($productsUrl)
+    public
+    function getBCOrderProducts($productsUrl)
     {
         $headers[] = 'X-Auth-Token: ' . $this->accessToken;
         $headers[] = 'Content-Type: application/json';
@@ -764,7 +856,8 @@ class OrderController extends Controller
         return $prds;
     }
 
-    public function prdCustomFeilds($productdId)
+    public
+    function prdCustomFeilds($productdId)
     {
         $headers[] = 'X-Auth-Token: ' . $this->accessToken;
         $headers[] = 'Content-Type: application/json';
@@ -788,7 +881,8 @@ class OrderController extends Controller
      * Move row from request_temp to request table after order placing
      * delete all rows from request_temp relevant to cart_id
      */
-    public function moveQuotesTempToReq($toRequest)
+    public
+    function moveQuotesTempToReq($toRequest)
     {
         $headers[] = 'X-Auth-Token: ' . $this->accessToken;
         $headers[] = 'Content-Type: application/json';
@@ -812,7 +906,8 @@ class OrderController extends Controller
                      *
                      * */
                     $fullRateId = optional($response)->shipping_provider_quote->rateId ?? null;
-                    $reqData = optional(RequestTempData::where('rate_id', $rateId)->where('cart_id', $cartId)->get())->toArray();
+                    $reqData = optional(RequestTempData::where('rate_id', $rateId)->where('cart_id', $cartId)->first())->toArray();
+
                     if (blank($reqData)) {
                         $reqData = optional(RequestTempData::where('rate_id', $fullRateId)->where('cart_id', $cartId)->first())->toArray();
                     }
@@ -828,7 +923,8 @@ class OrderController extends Controller
         }
     }
 
-    private function isSmallQuote($quote)
+    private
+    function isSmallQuote($quote)
     {
         $quote = explode('(', $quote)[0];
         $quote = trim($quote);
@@ -841,13 +937,19 @@ class OrderController extends Controller
             'UPS Next Day Air',
             'UPS Next Day Air Early',
             'Fedex Ground',
+            'UPS 2nd Day Air A.M.',
+            'UPS Next Day Air Early A.M.',
+            'Saturday - UPS Next Day Air',
+            'Saturday - UPS Next Day Air Early A.M.',
+            'Saturday - UPS 2nd Day Air',
         ];
         return in_array($quote, $small);
     }
 
-    private function hasInsureCarrier($code)
+    private
+    function hasInsureCarrier($code)
     {
-        $insureCarriers = ['wweltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd'];
+        $insureCarriers = ['wweltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship'];
         foreach ($insureCarriers as $insureCarrier) {
             if (strpos($code, $insureCarrier) !== false) {
                 return true;

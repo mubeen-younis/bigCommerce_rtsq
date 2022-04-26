@@ -94,6 +94,8 @@ class MainController extends BaseController
 
     public function install(Request $request)
     {
+        Log::info('BIgCOmmerce INstallation Request' . json_encode($request->all()) . 'CLient ID ' . $this->getAppClientId() .
+            'client_secret ' . $this->getAppSecret($request));
         // Make sure all required query params have been passed
         if (!$request->has('code') || !$request->has('scope') || !$request->has('context')) {
             return redirect()->action([MainController::class, 'error'])->with('error_message', 'Not enough information was passed to install this app.');
@@ -115,6 +117,7 @@ class MainController extends BaseController
 
             $statusCode = $result->getStatusCode();
             $data = json_decode($result->getBody(), true);
+            Log::info('BIgCOmmerce INstallation Request Data' . json_encode($data));
             if ($statusCode == 200) {
                 $storeHash = explode('/', $data['context']);
                 $storeHash = $storeHash[1] ?? $data['context'];
@@ -372,10 +375,10 @@ class MainController extends BaseController
             $prodSetCon = new ProductSettingController();
             $prodSetCon->getSingleProductFromApi($toRequest);
             Log::info('Successfully imported product' . json_encode($toRequest));
-            return response()->json(true,200);
+            return response()->json(true, 200);
         } catch (\Exception $exception) {
             Log::info('Products data Exception ' . $exception->getMessage());
-            return response()->json(true,200);
+            return response()->json(true, 200);
         }
 
 //        echo 'I am from Webhook';
