@@ -196,7 +196,6 @@ class FDOController extends Controller
                 $storeDetails = Store::where('id', $storeId)->first();
                 $storeHash = $storeDetails->hash;
                 $accessToken = $storeDetails->access_token;
-                // TODO: need to change response have to add enabled carriers and store hash
                 return response()->json(['error' => false, 'message' => 'Updated coupon details', 'store_hash' => $storeHash, 'access_token' => $accessToken, 'install_carriers' => $enabledCarriers]);
             }
         }
@@ -247,7 +246,7 @@ class FDOController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function updateCouponDetailsFromFDO(Request $request): \Illuminate\Http\JsonResponse
+    public function updateCouponDetailsFromFDOAV(Request $request): \Illuminate\Http\JsonResponse
     {
         $request = $request->all();
         Log::info('Request to Update Coupon Detail ' . json_encode($request));
@@ -266,6 +265,7 @@ class FDOController extends Controller
         if (blank($couponCode) || blank($storeUrl)) {
             return Helpers::sendJsonResponseFdo(true, 'Invalid request format', []);
         }
+        Log::info('Coupon :' . $couponCode . 'Store Url: ' . $storeUrl . ' Platfoem: ' . $platform);
         $coupon = Coupon::getCouponFromStoreUrlAndCoupCode($couponCode, $storeUrl, $platform);
         if (blank($coupon)) {
             return Helpers::sendJsonResponseFdo(true, 'Coupon not found', []);
@@ -439,11 +439,32 @@ class FDOController extends Controller
         $storeHash = $storeDetails->hash ?? '';
         $accessToken = $storeDetails->access_token ?? '';
         $companyId = $storeDetails->freightdesk_company_id ?? '';
+        if (blank($companyId)) {
+            return null;
+        }
         $request = ['store_url' => $storeUrl, 'action' => 'uninstall', 'store_hash' => $storeHash, 'access_token' => $accessToken, 'company_id' => $companyId];
-        $endpoint = Endpoints::disconnectFdoCompDetEndpoint();
+        $endpoint = Endpoints::fdoCredsEndpoint();
         $curlResp = (new CurlRequest())->enSingleCurlRequest($endpoint, json_encode($request), [], 'POST');
         Log::info('Response from FDO after Disconnect ' . json_encode($curlResp));
 
+    }
+
+
+    public function connectionUpdateFromFdo(Request $request)
+    {
+        $storeUrl = $request->store_url ?? '';
+        $companyId = $request->company_id ?? '';
+        $status = $request->status ?? false;
+        if (blank($storeUrl) || blank($companyId)) {
+            Helpers::sendJsonResponse(true, 'Store Url and Company Id is required');
+        }
+        if ($status) {
+            Store::where(['url' => $storeUrl, 'freightdesk_company_id' => $companyId])->update(['freightdesk_company_id' => $companyId]);
+            Helpers::sendJsonResponse(false, 'Connection Activated');
+        } else {
+            Store::where(['url' => $storeUrl, 'freightdesk_company_id' => $companyId])->update(['freightdesk_company_id' => null]);
+            Helpers::sendJsonResponse(false, 'Disconnected from BigCommerce');
+        }
     }
 
     /**

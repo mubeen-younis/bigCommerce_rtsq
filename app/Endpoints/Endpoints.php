@@ -47,36 +47,26 @@ class Endpoints
         return "https://freightdesk.online/register";
 
     }
-// TODO:
+
+
     public static function verifyFdoCompDetEndpoint()
     {
         if (env('APP_ENV') == 'staging') {
-            return "https://freightdesk.eniture-qa.com/register";
+            return "https://freightdesk.eniture-qa.com/validate-bc-company";
         }
-        return "https://freightdesk.online/register";
+        return "https://freightdesk.online/validate-bc-company";
 
     }
 
-    // TODO:
-    public static function disconnectFdoCompDetEndpoint()
-    {
-        if (env('APP_ENV') == 'staging') {
-            return "https://freightdesk.eniture-qa.com/register";
-        }
-        return "https://freightdesk.online/register";
 
-    }
-
-// TODO:
     public static function fdoCredsEndpoint()
     {
         if (env('APP_ENV') == 'staging') {
-            return "https://freightdesk.eniture-qa.com/register";
+            return "https://freightdesk.eniture-qa.com/fdo-bc-connection";
         }
-        return "https://freightdesk.online/register";
+        return "https://freightdesk.online/fdo-bc-connection";
 
     }
-
 
     public static function getFDOLoginUrl()
     {
@@ -88,11 +78,39 @@ class Endpoints
 
     }
 
+    public static function verifyAvCompDetEndpoint()
+    {
+        if (env('APP_ENV') == 'staging') {
+            return "https://address-validation.eniture-dev3.com/validateCompany";
+        }
+        return "https://validate-addresses.com/validateCompany";
+
+    }
+
+    public static function avCredsEndpoint()
+    {
+        if (env('APP_ENV') == 'staging') {
+            return "https://address-validation.eniture-dev3.com/connectionFromBC";
+        }
+        return "https://validate-addresses.com/connectionFromBC";
+
+    }
+
+
+    public static function disconnectVACompDetEndpoint()
+    {
+        if (env('APP_ENV') == 'staging') {
+            return "https://address-validation.eniture-dev3.com/disconnectConnectionBC";
+        }
+        return "https://validate-addresses.com/disconnectConnectionBC";
+
+    }
+
+
     public static function getAvCouponEndpoint()
     {
         if (env('APP_ENV') == 'staging') {
-            return "https://address-validation.eniture-qa.com/use_coupon?shop=";
-
+            return "https://address-validation.eniture-dev3.com/use_coupon?shop=";
         }
         return "https://validate-addresses.com/use_coupon?shop=";
     }
@@ -102,7 +120,7 @@ class Endpoints
     {
 
         if (env('APP_ENV') == 'staging') {
-            return "https://address-validation.eniture-qa.com/register";
+            return "https://address-validation.eniture-dev3.com/register";
         }
         return "https://validate-addresses.com/register";
 
@@ -112,7 +130,7 @@ class Endpoints
     {
 
         if (env('APP_ENV') == 'staging') {
-            return "https://address-validation.eniture-qa.com/login";
+            return "https://address-validation.eniture-dev3.com/login";
         }
         return "https://validate-addresses.com/login";
 
@@ -121,7 +139,7 @@ class Endpoints
     public static function applyPromoCodeAVEndpoint()
     {
         if (env('APP_ENV') == 'staging') {
-            return "https://address-validation.eniture-qa.com/apply_promo_code?";
+            return "https://address-validation.eniture-dev3.com/apply_promo_code?";
 
         }
         return "https://validate-addresses.com/apply_promo_code?";
@@ -131,7 +149,7 @@ class Endpoints
     {
 
         if (env('APP_ENV') == 'staging') {
-            return "https://address-validation.eniture-qa.com/change_promo_code_status?";
+            return "https://address-validation.eniture-dev3.com/change_promo_code_status?";
         }
         return "https://validate-addresses.com/change_promo_code_status?";
 

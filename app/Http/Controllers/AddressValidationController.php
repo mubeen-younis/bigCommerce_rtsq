@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\CurlRequest;
 use App\CustomClasses\Functions;
 use App\Endpoints\Endpoints;
+use App\Helpers\Helpers;
 use App\Models\Coupon;
 use App\Models\InstalledCarrier;
 use App\Models\Store;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class AddressValidationController extends Controller
 {
@@ -102,5 +105,92 @@ class AddressValidationController extends Controller
     public function getCouponCodeAv($storeId)
     {
         return Coupon::getCouponAv($storeId);
+    }
+
+
+    public function updateVA(Request $request)
+    {
+        $avCompanyId = $request['av_company_id'] ?? '';
+        $storeId = $request['store_id'] ?? '';
+        $message = 'Address Validation ';
+        $store = Store::where('id', $storeId)->first();
+
+        if (!blank($avCompanyId)) {
+            $fdoConnectivityResp = $this->connectVA($store, $avCompanyId);
+            if ($fdoConnectivityResp['error']) {
+                return Helpers::sendJsonResponse(true, $fdoConnectivityResp['message']);
+            }
+            $store->av_company_id = $avCompanyId;
+            $message .= 'connected successfully';
+        } else {
+            $this->disConnectVA($store);
+            $store->av_company_id = null;
+            $message .= 'disconnected successfully';
+        }
+        $store->save();
+        return Helpers::sendJsonResponse(false, $message);
+
+
+    }
+
+    public function connectVA($storeDetails, $avCompanyId)
+    {
+        $storeUrl = $storeDetails->url ?? '';
+        $storeHash = $storeDetails->hash ?? '';
+        $accessToken = $storeDetails->access_token ?? '';
+        $request = ['store_name' => $storeUrl, 'company_id' => $avCompanyId, 'action' => 'install'];
+        $endpoint = Endpoints::verifyAvCompDetEndpoint();
+        $curlResp = (new CurlRequest())->enSingleCurlRequest($endpoint, json_encode($request), [], 'POST');
+        $curlResp = json_decode($curlResp['response'], true);
+        if (isset($curlResp['is_valid']) && $curlResp['is_valid'] == false) {
+            return ['error' => true, 'message' => 'Not a valid company Id'];
+        }
+        if (isset($curlResp['error']) && $curlResp['is_valid'] == true) {
+            $request = ['store_url' => $storeUrl, 'action' => 'install', 'store_hash' => $storeHash, 'access_token' => $accessToken, 'company_id' => $avCompanyId];
+            $endpoint = Endpoints::avCredsEndpoint();
+            $curlResp = (new CurlRequest())->enSingleCurlRequest($endpoint, json_encode($request), [], 'POST');
+            $curlResp = json_decode($curlResp['response'], true);
+            if (isset($curlResp['error']) && $curlResp['error'] == false) {
+                return ['error' => false, 'message' => 'Successfully connected to Validate Addresses'];
+            }
+        }
+        return ['error' => true, 'message' => 'Something went wrong on establishing connection with Validate Addresses'];
+
+
+    }
+
+    public function disConnectVA($storeDetails)
+    {
+        $storeUrl = $storeDetails->url ?? '';
+        $storeHash = $storeDetails->hash ?? '';
+        $accessToken = $storeDetails->access_token ?? '';
+        $companyId = $storeDetails->av_company_id ?? '';
+        if (blank($companyId)) {
+            return null;
+        }
+        $request = ['store_url' => $storeUrl, 'action' => 'uninstall', 'store_hash' => $storeHash, 'access_token' => $accessToken, 'company_id' => $companyId];
+        $endpoint = Endpoints::disconnectVACompDetEndpoint();
+        $curlResp = (new CurlRequest())->enSingleCurlRequest($endpoint, json_encode($request), [], 'POST');
+        Log::info('Response from AV after Disconnect ' . json_encode($curlResp));
+
+    }
+
+    public function connectionUpdateFromVa(Request $request)
+    {
+        $storeUrl = $request->store_url ?? '';
+        $companyId = $request->company_id ?? '';
+        $status = $request->status ?? false;
+        if (blank($storeUrl) || blank($companyId)) {
+            Helpers::sendJsonResponse(true, 'Store Url and Company Id is required');
+        }
+        if ($status) {
+            Store::where(['url' => $storeUrl, 'av_company_id' => $companyId])->update(['av_company_id' => $companyId]);
+            Helpers::sendJsonResponse(false, 'Connection Activated');
+
+        } else {
+            Store::where(['url' => $storeUrl, 'av_company_id' => $companyId])->update(['av_company_id' => null]);
+            Helpers::sendJsonResponse(false, 'Disconnected from BigCommerce');
+
+        }
     }
 }
