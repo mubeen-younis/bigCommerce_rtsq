@@ -19,6 +19,7 @@ use App\Models\Connection;
 use App\Models\Coupon;
 use App\Models\CouponCarrier;
 use App\Models\Store;
+use App\Models\Subscription\CarrierCount;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -150,6 +151,11 @@ class ConnectionController extends Controller
         $con->installed_carrier_id = $request->carrierId;
         $con->save();
 
+        if (in_array($checkCarrierType->slug, $carriersArr) && isset($this->coupon_code_id)) {
+            $carrierCode = Functions::fdoSLugForCarriers($checkCarrierType->slug);
+            $con->fdoCouponCarrierInfo = CouponCarrier::where('coupon_code_id', $this->coupon_code_id)->where('carrier_name', $checkCarrierType->slug)->where('carrier_code', $carrierCode)->first();
+        }
+
         return response()->json(["error" => false, 'message' => $message, "data" => $con]);
     }
 
@@ -163,6 +169,7 @@ class ConnectionController extends Controller
         }
 
         $id = $promoDetail ? $promoDetail->id : '';
+        $this->coupon_code_id = $id;
         $coupon = $request['promo_code'] ?? $promoDetail->code ?? '';
         $shop = $promoDetail->shop ?? Store::getStoreUrlFromStoreId($storeId);
         $carrierNameFdo = Functions::fdoSLugForCarriers($carrierSlug);
