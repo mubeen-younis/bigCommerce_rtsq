@@ -1,8 +1,6 @@
 <?php
 
-
 namespace App\CustomClasses\Fedex\ltl;
-
 
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
@@ -14,26 +12,26 @@ class QuotesResults
         $this->CompileQuotes = new CompileQuotes();
     }
 
-
     public function getServiceRate($data, $serviceDesc, $quoteSettings)
     {
         $amount = $data['totalNetCharge']['Amount'];
 
         //dd($quoteSettings['rate_source']);
-        if( isset($quoteSettings['rate_source']) && $quoteSettings['rate_source'] === 1 ){
+        if (isset($quoteSettings['rate_source']) && $quoteSettings['rate_source'] === 1) {
             $boxFee = $data['boxFees']['Amount'] ?? 0;
-            $amount = $data['NegotiatedRates']['Amount'] > 0 ? $data['NegotiatedRates']['Amount']+$boxFee : $amount;
+            $amount = $data['NegotiatedRates']['Amount'] > 0 ? $data['NegotiatedRates']['Amount'] + $boxFee : $amount;
         }
-        $markupIndex = strtolower(str_replace(' ','_',$serviceDesc).'_markup');
+        $markupIndex = strtolower(str_replace(' ', '_', $serviceDesc) . '_markup');
         $markupValue = $quoteSettings['carrier_services'][$markupIndex] ?? '';
         if (empty($markupValue) || !is_numeric(str_replace('%', '', $markupValue))) {
             return $amount;
         }
-        if (strpbrk($markupValue, '%') !== FALSE) {
+        if (strpbrk($markupValue, '%') !== false) {
             $amount = $this->getvalueFromPercent($amount, str_replace('%', '', $markupValue));
         } else {
             $amount = $amount + $markupValue;
         }
+
         return number_format($amount, 2);
 
     }
@@ -42,7 +40,7 @@ class QuotesResults
     {
         // Adding hazmat fee to Ground Service
         if ($serviceCode == "03") {
-            if ( isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
+            if (isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
                 $amount = $amount + $quoteSettings['ground_hazardous_material_fee'];
             }
             // Adding hazmat fee to Air Services
@@ -59,7 +57,7 @@ class QuotesResults
     public function addHandlingMarkupOfHazmat($amount, $markupValue)
     {
         $amount = (float) str_replace(',', '', $amount);
-        if (strpbrk($markupValue, '%') !== FALSE) {
+        if (strpbrk($markupValue, '%') !== false) {
             $amount = $this->getvalueFromPercent($amount, str_replace('%', '', $markupValue));
         } else {
             $amount = $amount + $markupValue;
@@ -76,13 +74,13 @@ class QuotesResults
 
     public function getServiceTitle($title, $data, $serviceCode, $quoteSettings, $isResi = false)
     {
-        if ( isset($data['totalTransitTimeInDays']) && $data['totalTransitTimeInDays'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2) {
-            $title = $title . ' (Estimated number of days until delivery is '.$data['totalTransitTimeInDays'].')';
-        }else if( isset($data['deliveryTimestamp']) && $data['deliveryTimestamp'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3){
-            $title = $title . ' (Delivery by '.date ('m-d-y h:i A', strtotime($data['deliveryTimestamp'])).')';
+        if (isset($data['totalTransitTimeInDays']) && $data['totalTransitTimeInDays'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2) {
+            $title = $title . ' (Estimated number of days until delivery is ' . $data['totalTransitTimeInDays'] . ')';
+        } else if (isset($data['deliveryTimestamp']) && $data['deliveryTimestamp'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3) {
+            $title = $title . ' (Delivery by ' . date('m-d-y h:i A', strtotime($data['deliveryTimestamp'])) . ')';
         }
         $resiTitle = '';
-        if($isResi){
+        if ($isResi) {
             $resiTitle = Constant::RESI_LABEL;
         }
         return $title . $resiTitle;
@@ -98,22 +96,23 @@ class QuotesResults
             }
             // Check by calendar days
         } else {
-            if ( isset($quote['CalenderDaysInTransit']) && isset($quoteSettings['number_of_transit_days']) && $quote['CalenderDaysInTransit'] > $quoteSettings['number_of_transit_days']) {
+            if (isset($quote['CalenderDaysInTransit']) && isset($quoteSettings['number_of_transit_days']) && $quote['CalenderDaysInTransit'] > $quoteSettings['number_of_transit_days']) {
                 return true;
             }
         }
         return false;
     }
 
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $isMultiShipment){
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $isMultiShipment)
+    {
         //print_r($shipments); exit;
         $shipments = $this->formateQuoteBeforeCompile($shipments);
         $this->quoteSettings = $connectionSettings['fedex-ltl']['quote_settings'] ?? [];
         $allConfigServices = [];
-        if(isset($this->quoteSettings['fedex_freight_economy']) && $this->quoteSettings['fedex_freight_economy']){
+        if (isset($this->quoteSettings['fedex_freight_economy']) && $this->quoteSettings['fedex_freight_economy']) {
             array_push($allConfigServices, 'FEDEX_FREIGHT_ECONOMY');
         }
-        if(isset($this->quoteSettings['fedex_freight_priority']) && $this->quoteSettings['fedex_freight_priority']){
+        if (isset($this->quoteSettings['fedex_freight_priority']) && $this->quoteSettings['fedex_freight_priority']) {
             array_push($allConfigServices, 'FEDEX_FREIGHT_PRIORITY');
         }
         $this->quoteSettingsData();
@@ -121,12 +120,12 @@ class QuotesResults
         $count = 0;
         $lgQuotes = false;
         $numberOfShipments = 0;
-        foreach ($shipments as $ship){
+        foreach ($shipments as $ship) {
             if (!isset($ship['severity'])) {
                 $numberOfShipments++;
             }
         }
-        if(!$isMultiShipment) {
+        if (!$isMultiShipment) {
             $isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
         foreach ($shipments as $origin => $quote) {
@@ -142,9 +141,9 @@ class QuotesResults
                 $lgQuotes =
                     (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery']) ||
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
-                if(!$lgQuotes){
-                    $lgQuotes = ( ( isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
-                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                if (!$lgQuotes) {
+                    $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
+                        (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
                 }
             }
             $originQuotes = [];
@@ -203,12 +202,12 @@ class QuotesResults
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->CompileQuotes->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
-        if ( (!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1 ) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1 )){
+        if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1)) {
 
             $allQuotes = $this->CompileQuotes->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $this->CompileQuotes->arrangeOwnFreight($allQuotes),
-                'multiShipmentQuotes' => $multiShipmentQuotes
+                'multiShipmentQuotes' => $multiShipmentQuotes,
             ];
             return $resp;
         }
@@ -238,22 +237,22 @@ class QuotesResults
         }
         $resp = [
             'resp' => $return ?? [],
-            'isMultiShipment' => $isMultiShipment
+            'isMultiShipment' => $isMultiShipment,
         ];
         return $resp;
     }
 
-
-    public function formateQuoteBeforeCompile($shipments){
-        foreach ($shipments as $shipment => $quotes){
-            if(!isset($quotes['q'])){
+    public function formateQuoteBeforeCompile($shipments)
+    {
+        foreach ($shipments as $shipment => $quotes) {
+            if (!isset($quotes['q'])) {
                 continue;
             }
-            foreach ($quotes['q'] as $key => $quote){
+            foreach ($quotes['q'] as $key => $quote) {
                 $shipments[$shipment]['q'][$key]['serviceDesc'] = $quote['serviceType'] === 'FEDEX_FREIGHT_PRIORITY' ? 'Freight Priority' : 'Freight Economy';
-                if(isset($quote['surcharges'])) {
-                    foreach ($quote['surcharges'] as $surcharge){
-                        if(isset($surcharge['SurchargeType']) && $surcharge['SurchargeType'] === 'LIFTGATE_DELIVERY'){
+                if (isset($quote['surcharges'])) {
+                    foreach ($quote['surcharges'] as $surcharge) {
+                        if (isset($surcharge['SurchargeType']) && $surcharge['SurchargeType'] === 'LIFTGATE_DELIVERY') {
                             unset($shipments[$shipment]['q'][$key]['surcharges']);
                             $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $surcharge['Amount']['Amount'] ?? 0;
                         }
@@ -266,11 +265,12 @@ class QuotesResults
         return $shipments;
     }
 
-    public function calenderDays($fDesc, $tnts){
+    public function calenderDays($fDesc, $tnts)
+    {
         $resp = '';
-        foreach ($tnts as $key => $tnt){
+        foreach ($tnts as $key => $tnt) {
             $desc = $tnt['Service']['Description'] ?? '';
-            if($desc === $fDesc){
+            if ($desc === $fDesc) {
                 $resp = $tnt['EstimatedArrival']['BusinessDaysInTransit'];
             }
         }

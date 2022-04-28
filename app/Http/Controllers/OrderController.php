@@ -161,6 +161,7 @@ class OrderController extends Controller
         $isHAT = strpos(strtolower($rateId), '+hat');
 
         $rateId = strtolower($rateId);
+        $isInspOrLocal = substr($rateId, 0, 4) == 'insp' || substr($rateId, 0, 6) == 'locdel';
         $isSmallrate = substr($rateId, 0, 9) == 'parcel_12' || substr($rateId, 0, 5) == 'multi' ? true : false;
         $isLG = strpos($rateId, '+lg');
         $isOwnArrangement = strpos($rateId, 'own_arrangement') === 0 || strpos($rateId, 'freernlltl') === 0 ? true : false;
@@ -172,7 +173,8 @@ class OrderController extends Controller
         $shippingGroupResp = !blank($data['shipping_group_resp']) ? json_decode($data['shipping_group_resp']) : [];
 
         $requestToWS = json_decode($data['request']);
-        $lineItem->items = $this->newFormatItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
+        // TODO: Need to chenage implementation e.g new FormatItems
+        $lineItem->items = $this->formateItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
 
         $lineItem->origin = $this->formateOrigins($requestToWS->requestArr->carriers);
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
@@ -200,7 +202,7 @@ class OrderController extends Controller
                     $residentialsPickup = $liftResidentialStatus['resiPickup'] ?? 'n';
 
                     $totalBoxes = 1;
-                    if (isset($ws->binPackagingData) && !empty($ws->binPackagingData) && $isSmallrate) {
+                    if (isset($ws->binPackagingData) && !empty($ws->binPackagingData) && ($isSmallrate || $isInspOrLocal)) {
                         if ($isGround) {
                             $sbsData = $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->bins_packed ?? [];
                         } else if ($isAir) {
@@ -325,11 +327,11 @@ class OrderController extends Controller
 
             $orderWidget[$zip]['shipping_method'] = $sName . $sMethod;
             $orderWidget[$zip]['shipping_rate'] = '$' . number_format((float)$sRate, 2,);
-
+            // TODO : Need to change originalPiecesOfLineItem -> itemQuantity
             if ($item->shipMultiplePackage) {
                 if ((!in_array($item->lineItemName, $insertedNames))) {
                     $insertedNames[] = $item->lineItemName;
-                    $orderWidget[$zip]['items'][] = $item->itemQuantity . ' X ' . $item->lineItemName;
+                    $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
                 }
                 /*Added Else if BLock for Catering BUg of MUltiple Products IN ONe BOX*/
             } elseif (isset($sbsItems[$zip]) && !empty($sbsItems[$zip])) {
@@ -338,13 +340,13 @@ class OrderController extends Controller
                     if (!blank($itemDetail) && (!in_array($itemDetail->lineItemName, $insertedNames)) && (!in_array($itemDetail->id, $insertedIds))) {
                         $insertedNames[] = $itemDetail->lineItemName;
                         $insertedIds[] = $itemDetail->id;
-                        $orderWidget[$zip]['items'][] = $itemDetail->itemQuantity . ' X ' . $itemDetail->lineItemName;
+                        $orderWidget[$zip]['items'][] = $itemDetail->originalPiecesOfLineItem . ' X ' . $itemDetail->lineItemName;
                     }
                 }
             } else {
                 if ((!in_array($item->id, $insertedIds))) {
                     $insertedIds[] = $item->id;
-                    $orderWidget[$zip]['items'][] = $item->itemQuantity . ' X ' . $item->lineItemName;
+                    $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
                 }
             }
 

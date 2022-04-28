@@ -49,7 +49,6 @@ class GetRatesController extends Controller
         //echo "<pr>"; print_r($request->all()); exit;
 
         //return $testQuotes = $this->testQuotes();
-
         Log::info('Request ' . json_encode($request->all()));
         $storeHash = $request->base_options['store_id'] ?? null;
         $storeData = $this->getStoreData($storeHash);
@@ -58,7 +57,6 @@ class GetRatesController extends Controller
         */
         $isTestStore = Helpers::checkIsTestStore($storeHash);
         Helpers::setStripeAPiKey($isTestStore);
-
 
         //echo "<pre>"; print_r($storeData['store']['id']); exit;
         if ($storeData == null) {
@@ -200,7 +198,6 @@ class GetRatesController extends Controller
                     'lineItemClass' => isset($product_settings['freight_class']) ? $this->getLineItemClass($product_settings['freight_class']) : '',
                     'shipping_group' => $product_settings['shipping_group'] ?? null,
                     'exclude_packaging' => 0,
-                    'quote_as_instore' => $product_settings['quote_as_instore'] ?? false,
                     'quote_as_local' => $product_settings['quote_as_local'] ?? false
                 ];
 
@@ -233,6 +230,7 @@ class GetRatesController extends Controller
                 }
             }
         }
+        dd(123, $details);
         return ['lineItemData' => $details];
     }
 
