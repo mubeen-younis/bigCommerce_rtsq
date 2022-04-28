@@ -41,19 +41,28 @@ class AddressValidationController extends Controller
         $congrats = "<strong>Congratulations! </strong>";
         $couponCodeHtml = "<strong>[" . $couponCode . "]</strong>";
         $avCompanyIdHtml = "<strong>[" . $avCompanyId . "]</strong>";
-        if ($used >= 1) {
+        if ($used >= 1 && !blank($avCompanyId)) {
             return $congrats . "You have activated your Promo Code  " . $couponCodeHtml . " with Address Validation account " . $avCompanyIdHtml . ". Now you can enjoy free address validations for 1-year.";
         }
+        if (!blank($avCompanyId) && $used == 0 && $IsAlrUser) {
+            return $note . "Get Address Validation free for one year by using promo code [" . $couponCode . "]. Click the button below to apply the promo code";
+
+        }
+        if (!blank($avCompanyId) && $used == 0 && !$IsAlrUser) {
+            $msg = $note . "Get Address Validation free for one year by using promo code [" . $couponCode . "]. ";
+            $clickHereLogin = "<a target='_blank' rel='noreferrer' href='" . $loginUrl . "'>here</a>";
+            $msg = $msg . "Click " . $clickHereLogin . ' to log in.<br><strong>Please refresh the page after logging in. </strong>';
+            return $msg;
+        }
+
         if ($IsAlrUser) {
-            return $note . "To establish a connection, you must have a Address Validation account. If you don’t have one, get Address Validation free for one year by using promo code " . $couponCodeHtml . ". Click the button below to apply the promo code";
+            return $note . "Get Address Validation free for one year by using promo code " . $couponCodeHtml . ". Click the button below to apply the promo code";
         }
         if ($used === null) {
             $clickHere = "<a target='_blank' rel='noreferrer' href='" . $registerUrl . "'>here</a>";
             return $note . "To establish a connection, you must have a Address Validation account. If you don’t have one, click " . $clickHere . " to register";
         }
-        if (isset($avCompanyId) && !blank($avCompanyId) && $used == 0) {
-            $msg = $note . "You must have a Address Validation account. If you don’t have one, get Address Validation free for one year by using promo code [" . $couponCode . "]. Click the button below to apply the promo code";
-        }
+
         if ($used == 0) {
             $code = $this->makeBase64code($storeId, $couponCode);
             $registerUrl = $registerUrl . '?code=' . $code;

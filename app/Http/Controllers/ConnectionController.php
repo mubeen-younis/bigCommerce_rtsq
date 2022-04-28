@@ -173,12 +173,11 @@ class ConnectionController extends Controller
         $coupon = $request['promo_code'] ?? $promoDetail->code ?? '';
         $shop = $promoDetail->shop ?? Store::getStoreUrlFromStoreId($storeId);
         $carrierNameFdo = Functions::fdoSLugForCarriers($carrierSlug);
-        $queryParams = http_build_query(['coupon' => $coupon, 'shop' => $shop, 'carriers' => $carrierNameFdo]);
-        $headers = ['access_token' => $storeDetails->access_token, 'store_hash' => $storeDetails->hash];
+        $queryParams = http_build_query(['coupon' => $coupon, 'shop' => $shop, 'access_token' => $storeDetails->access_token, 'store_hash' => $storeDetails->hash, 'carriers' => $carrierNameFdo]);
         $endPoint = Endpoints::applyPromoCodeFdoEndpoint() . $queryParams;
-        $curlResponse = (new CurlRequest())->enSingleCurlRequest($endPoint, [], $headers, 'GET');
+        $curlResponse = (new CurlRequest())->enSingleCurlRequest($endPoint, [], [], 'GET');
         $response = json_decode($curlResponse['response'], true);
-        Log::info('Fdo Coupon Response of Carrier ' . json_encode($response) . "Endpoint " . json_encode($endPoint) . "Headers " . json_encode($headers));
+        Log::info('Fdo Coupon Response of Carrier ' . json_encode($response) . "Endpoint " . json_encode($endPoint));
 
         if (isset($response['promo'])) {
             Store::where('id', $storeId)->update(['freightdesk_company_id' => $response['fdo_company_id']]);

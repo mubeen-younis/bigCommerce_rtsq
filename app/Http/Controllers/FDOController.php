@@ -103,6 +103,9 @@ class FDOController extends Controller
     {
         $storeId = $request['store_id'];
         $coupon = Coupon::getFDOCoupon($storeId);
+        if ($coupon === null) {
+            $coupon = $this->getCouponCodeFdo($storeId);
+        }
 
         return response()->json(['error' => false,
             'data' => $coupon,
@@ -267,16 +270,23 @@ class FDOController extends Controller
         if (blank($couponCode) || blank($storeUrl)) {
             return Helpers::sendJsonResponseFdo(true, 'Invalid request format', []);
         }
-        Log::info('Coupon :' . $couponCode . 'Store Url: ' . $storeUrl . ' Platfoem: ' . $platform);
+        Log::info('Coupon :' . $couponCode . 'Store Url: ' . $storeUrl . ' Platfoem: ' . $platform . "Request " . json_encode($request));
         $coupon = Coupon::getCouponFromStoreUrlAndCoupCode($couponCode, $storeUrl, $platform);
         if (blank($coupon)) {
             return Helpers::sendJsonResponseFdo(true, 'Coupon not found', []);
         }
-        Coupon::updateCouponDetails($coupon['id'], $startDate, $endDate);
+        $couponId = $coupon['id'];
         $storeId = $coupon['store_id'];
+        Coupon::updateCouponDetails($coupon['id'], $startDate, $endDate);
+        if ($platform == "fdo") {
+            if (isset($request['carriers']) && !empty($request['carriers'])) {
+                $enabledCarriers = $this->savePromoAppliedCarriers($couponId, $storeId, $request);
+            }
+        }
         $storeDetails = Store::where('id', $storeId)->first();
         $storeHash = $storeDetails->hash;
         $accessToken = $storeDetails->access_token;
+        $storeUrl = $storeDetails->url;
         if (!blank($platformCompanyId)) {
             if ($platform == 'av') {
                 Store::where('id', $storeId)->update(['av_company_id' => $platformCompanyId]);
@@ -285,7 +295,9 @@ class FDOController extends Controller
             }
         }
         $installedProviders = $this->getProvsSepByPipe($storeId, true);
-        return response()->json(['error' => false, 'message' => 'Updated coupon details', 'store_hash' => $storeHash, 'access_token' => $accessToken, 'install_carriers' => $installedProviders]);
+
+        $toSendCarriers = $platform == "fdo" ? (isset($enabledCarriers) && !empty($enabledCarriers) ? $enabledCarriers : null) : $installedProviders;
+        return response()->json(['error' => false, 'message' => 'Updated coupon details', 'store_url' => $storeUrl, 'store_hash' => $storeHash, 'access_token' => $accessToken, 'install_carriers' => $toSendCarriers]);
 
     }
 
