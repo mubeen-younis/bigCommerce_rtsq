@@ -49,6 +49,8 @@ class AddressValidationController extends Controller
 
         }
         if (!blank($avCompanyId) && $used == 0 && !$IsAlrUser) {
+            $code = $this->makeBase64code($storeId, $couponCode);
+            $loginUrl = $loginUrl . '?code=' . $code;
             $msg = $note . "Get Address Validation free for one year by using promo code [" . $couponCode . "]. ";
             $clickHereLogin = "<a target='_blank' rel='noreferrer' href='" . $loginUrl . "'>here</a>";
             $msg = $msg . "Click " . $clickHereLogin . ' to log in.<br><strong>Please refresh the page after logging in. </strong>';
