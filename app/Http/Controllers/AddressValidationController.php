@@ -45,11 +45,14 @@ class AddressValidationController extends Controller
             return $congrats . "You have activated your Promo Code  " . $couponCodeHtml . " with Address Validation account " . $avCompanyIdHtml . ". Now you can enjoy free address validations for 1-year.";
         }
         if ($IsAlrUser) {
-            return "Note! To establish a connection, you must have a Address Validation account. If you don’t have one, get Address Validation free for one year by using promo code " . $couponCodeHtml . ". Click the button below to apply the promo code";
+            return $note . "To establish a connection, you must have a Address Validation account. If you don’t have one, get Address Validation free for one year by using promo code " . $couponCodeHtml . ". Click the button below to apply the promo code";
         }
         if ($used === null) {
             $clickHere = "<a target='_blank' rel='noreferrer' href='" . $registerUrl . "'>here</a>";
             return $note . "To establish a connection, you must have a Address Validation account. If you don’t have one, click " . $clickHere . " to register";
+        }
+        if (isset($avCompanyId) && !blank($avCompanyId) && $used == 0) {
+            $msg = $note . "You must have a Address Validation account. If you don’t have one, get Address Validation free for one year by using promo code [" . $couponCode . "]. Click the button below to apply the promo code";
         }
         if ($used == 0) {
             $code = $this->makeBase64code($storeId, $couponCode);
