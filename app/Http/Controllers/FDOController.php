@@ -212,8 +212,10 @@ class FDOController extends Controller
                 Store::where('id', $storeId)->update(['av_company_id' => $response['av_company_id']]);
                 Coupon::updateCouponDetails($id, $response['promo']['start_date'], $response['promo']['end_date']);
                 $couponDet = Coupon::getAvCoupon($storeId)->toArray();
+                $storeDetails = Store::where('id', $storeId)->first();
+                $couponDet['av_company_id'] = $storeDetails->av_company_id ?? null;
                 $couponDet['coupon_code'] = $couponDet['code'] ?? null;
-                $couponDet['message'] = $this->getMessageForCoupon($couponDet['used'], $couponDet['coupon_code'], $storeId, $response['av_company_id'], false);
+                $couponDet['message'] = (new AddressValidationController())->getMessageForCoupon($couponDet['used'], $couponDet['coupon_code'], $storeId, $response['av_company_id'], false);
                 return response()->json(['error' => false,
                     'data' => $couponDet,
                     'message' => 'Successfully applied promo code',
@@ -414,16 +416,19 @@ class FDOController extends Controller
         $accessToken = $storeDetails->access_token ?? '';
         $request = ['store_url' => $storeUrl, 'company_id' => $fdoCompanyId, 'action' => 'install'];
         $endpoint = Endpoints::verifyFdoCompDetEndpoint();
-        $curlResp = (new CurlRequest())->enSingleCurlRequest($endpoint, json_encode($request), [], 'POST');
+        $curlResp = (new CurlRequest())->enSingleCurlRequest($endpoint, $request, [], 'POST');
         $curlResp = json_decode($curlResp['response'], true);
         if (isset($curlResp['error']) && $curlResp['error']) {
             return ['error' => true, 'message' => $curlResp['message']];
         }
+        Log::info('Curl Response for company validation ' . json_encode($curlResp));
         if (isset($curlResp['error']) && $curlResp['error'] == false) {
+            Log::info('Before second call fdo ');
             $request = ['store_url' => $storeUrl, 'action' => 'install', 'store_hash' => $storeHash, 'access_token' => $accessToken, 'company_id' => $fdoCompanyId];
             $endpoint = Endpoints::fdoCredsEndpoint();
-            $curlResp = (new CurlRequest())->enSingleCurlRequest($endpoint, json_encode($request), [], 'POST');
+            $curlResp = (new CurlRequest())->enSingleCurlRequest($endpoint, $request, [], 'POST');
             $curlResp = json_decode($curlResp['response'], true);
+            Log::info('After second call fdo ' . json_encode($curlResp));
             if (isset($curlResp['error']) && $curlResp['error'] == false) {
                 return ['error' => false, 'message' => 'Successfully connected to FreightDesk Online'];
             }
@@ -444,7 +449,7 @@ class FDOController extends Controller
         }
         $request = ['store_url' => $storeUrl, 'action' => 'uninstall', 'store_hash' => $storeHash, 'access_token' => $accessToken, 'company_id' => $companyId];
         $endpoint = Endpoints::fdoCredsEndpoint();
-        $curlResp = (new CurlRequest())->enSingleCurlRequest($endpoint, json_encode($request), [], 'POST');
+        $curlResp = (new CurlRequest())->enSingleCurlRequest($endpoint, $request, [], 'POST');
         Log::info('Response from FDO after Disconnect ' . json_encode($curlResp));
 
     }

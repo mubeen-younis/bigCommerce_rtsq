@@ -10,6 +10,7 @@ class CouponCarrier extends Model
     use HasFactory;
 
     protected $table = "coupon_code_carriers";
+    public $timestamps = false;
 
     public static function getCarrierInfoByName($request)
     {
@@ -23,8 +24,7 @@ class CouponCarrier extends Model
         $carrierName = $request['carrier_name'] ?? '';
         $code = $request['coupon_code'] ?? '';
         $coupon = Coupon::where('code', $code)->first();
-
-        if (in_array($carrierName, array_keys($couponCarriers)) && isset($coupon) && !empty($coupon)) {
+        if (in_array($carrierName, array_keys($couponCarriers)) && !empty($coupon)) {
             return self::where('carrier_name', $carrierName)->where('carrier_code', $couponCarriers[$carrierName])->where('coupon_code_id', $coupon->id)->first();
         }
 
@@ -33,11 +33,15 @@ class CouponCarrier extends Model
 
     public static function addOrUpdateCarrierInfo($slug, $id, $code, $response)
     {
-        $carrier = self::getCarrierInfoByName($slug);
-        if (blank($carrier) || blank($id) || !$id) {
+        /* $carrier = self::getCarrierInfoByName($slug);
+
+         if (blank($carrier) || blank($id) || !$id) {
+             $carrier = new self();
+         }*/
+        $carrier = self::where('coupon_code_id', $id)->where('carrier_name', $slug)->first();
+        if ($carrier === null) {
             $carrier = new self();
         }
-
         $carrier->coupon_code_id = $id;
         $carrier->carrier_name = $slug;
         $carrier->carrier_code = $code ?? null;

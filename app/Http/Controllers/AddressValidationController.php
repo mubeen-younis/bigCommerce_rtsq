@@ -140,19 +140,23 @@ class AddressValidationController extends Controller
         $accessToken = $storeDetails->access_token ?? '';
         $request = ['store_name' => $storeUrl, 'company_id' => $avCompanyId, 'action' => 'install'];
         $endpoint = Endpoints::verifyAvCompDetEndpoint();
-        $curlResp = (new CurlRequest())->enSingleCurlRequest($endpoint, json_encode($request), [], 'POST');
+        $curlResp = (new CurlRequest())->enSingleCurlRequest($endpoint, $request, [], 'POST');
         $curlResp = json_decode($curlResp['response'], true);
+        Log::info('Curl Response from VA ' . json_encode($curlResp) . 'Request ' . json_encode($request));
         if (isset($curlResp['is_valid']) && $curlResp['is_valid'] == false) {
             return ['error' => true, 'message' => 'Not a valid company Id'];
         }
-        if (isset($curlResp['error']) && $curlResp['is_valid'] == true) {
+        Log::info('Before second call ' . json_encode($curlResp));
+        if (isset($curlResp['is_valid']) && $curlResp['is_valid'] == true) {
+            Log::info('Comming on second call');
             $request = ['store_url' => $storeUrl, 'action' => 'install', 'store_hash' => $storeHash, 'access_token' => $accessToken, 'company_id' => $avCompanyId];
             $endpoint = Endpoints::avCredsEndpoint();
-            $curlResp = (new CurlRequest())->enSingleCurlRequest($endpoint, json_encode($request), [], 'POST');
+            $curlResp = (new CurlRequest())->enSingleCurlRequest($endpoint, $request, [], 'POST');
             $curlResp = json_decode($curlResp['response'], true);
             if (isset($curlResp['error']) && $curlResp['error'] == false) {
                 return ['error' => false, 'message' => 'Successfully connected to Validate Addresses'];
             }
+
         }
         return ['error' => true, 'message' => 'Something went wrong on establishing connection with Validate Addresses'];
 
@@ -170,7 +174,7 @@ class AddressValidationController extends Controller
         }
         $request = ['store_url' => $storeUrl, 'action' => 'uninstall', 'store_hash' => $storeHash, 'access_token' => $accessToken, 'company_id' => $companyId];
         $endpoint = Endpoints::disconnectVACompDetEndpoint();
-        $curlResp = (new CurlRequest())->enSingleCurlRequest($endpoint, json_encode($request), [], 'POST');
+        $curlResp = (new CurlRequest())->enSingleCurlRequest($endpoint, $request, [], 'POST');
         Log::info('Response from AV after Disconnect ' . json_encode($curlResp));
 
     }
