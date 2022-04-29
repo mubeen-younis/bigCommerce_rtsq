@@ -230,7 +230,6 @@ class GetRatesController extends Controller
                 }
             }
         }
-        dd(123, $details);
         return ['lineItemData' => $details];
     }
 
@@ -238,6 +237,7 @@ class GetRatesController extends Controller
     public function getAddressForQuotes($originAddress)
     {
         $locationAdditionalDetail = Locations::getLocationAdditionalDetail($originAddress['locationId']);
+
         if (is_string($locationAdditionalDetail) && $locationAdditionalDetail == "default") {
             return $originAddress;
         }
@@ -252,8 +252,8 @@ class GetRatesController extends Controller
 
     public function changeOriginDetail($originAddress, $locationAdditionalDetail)
     {
-        $originAddress['instore_and_loc_id'] = $originAddress['locationId'];
-        $originAddress['locationId'] = $locationAdditionalDetail['id'];
+        $originAddress['instore_and_loc_id'] = $locationAdditionalDetail['id'];
+        $originAddress['locationId'] = $originAddress['locationId'];
         $originAddress['senderZip'] = $locationAdditionalDetail['zip_code'];
         $originAddress['senderCity'] = $locationAdditionalDetail['city'];
         $originAddress['senderState'] = $locationAdditionalDetail['state'];
