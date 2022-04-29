@@ -331,6 +331,7 @@ class GenerateRequestData
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
             'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
+            'returnQuotesOnExceedWeight' => '1',
             'api' => $this->getApiInfoArrYrcLtl($connSettings, $destination),
         ];
     }
