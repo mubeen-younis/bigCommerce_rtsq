@@ -235,7 +235,8 @@ class FDOController extends Controller
         foreach ($response['carriers'] as $carrierValue) {
             $slug = Functions::carrierSlugForFdo($carrierValue);
             if (!blank($slug)) {
-                if (InstalledCarrier::checkIsEnbCarFromSlugANdStore($slug, $storeId)) {
+                $installedCarrier = InstalledCarrier::getInstCarFromSlugANdStore($slug, $storeId, $response['promo']['coupon']);
+                if ($installedCarrier) {
                     $enabledCarriers[] = $carrierValue;
                     CouponCarrier::addOrUpdateCarrierInfo($slug, $id, $carrierValue, $response);
                 }
@@ -297,7 +298,9 @@ class FDOController extends Controller
         $installedProviders = $this->getProvsSepByPipe($storeId, true);
 
         $toSendCarriers = $platform == "fdo" ? (isset($enabledCarriers) && !empty($enabledCarriers) ? $enabledCarriers : null) : $installedProviders;
-        return response()->json(['error' => false, 'message' => 'Updated coupon details', 'store_url' => $storeUrl, 'store_hash' => $storeHash, 'access_token' => $accessToken, 'install_carriers' => $toSendCarriers]);
+        $responseToSend = ['error' => false, 'message' => 'Updated coupon details', 'store_url' => $storeUrl, 'store_hash' => $storeHash, 'access_token' => $accessToken, 'install_carriers' => $toSendCarriers];
+        Log::info('Response for promo code ' . json_encode($responseToSend));
+        return response()->json($responseToSend);
 
     }
 

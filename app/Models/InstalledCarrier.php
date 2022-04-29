@@ -31,14 +31,21 @@ class InstalledCarrier extends Model
                 ->first())->toArray() ?? [];
     }
 
-    public static function checkIsEnbCarFromSlugANdStore($slug, $storeId)
+    public static function getInstCarFromSlugANdStore($slug, $storeId, $promoCode = null)
     {
-        return self::join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
-            ->select('slug')
+        $carrier = self::join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
+            ->select('slug', 'installed_carriers.id')
             ->where('installed_carriers.store_id', $storeId)
             ->where('installed_carriers.is_enabled', 1)
             ->where('carriers.slug', $slug)
-            ->exists();
+            ->first();
+        if ($carrier === null) {
+            return false;
+        }
+        if (!blank($promoCode)) {
+            Connection::addPromoCodeInConnectionSettings($carrier->id, $promoCode);
+        }
+        return true;
     }
 
 }
