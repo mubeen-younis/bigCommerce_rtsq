@@ -93,6 +93,7 @@ class Shipping
         // Generating carrier creds and origin array
         $destination = $request['lineItemData']['destination'] ?? [];
         $resp = $generateReqData->generateEnitureArray($originAddress, $destination, $package['items']);
+        dd(96, $resp);
         $residential = $resp['residential'];
         $carriersArray = $resp['carriersArr'];
 

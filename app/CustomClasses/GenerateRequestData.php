@@ -1260,11 +1260,14 @@ class GenerateRequestData
         $this->resiCarrier['alwaysResi']['dayrossLtl'] = $alwaysResi;
        
         $accessorial = [];
+        if ($alwaysResi || $residential != 'N') {
+            array_merge($accessorial, ['PRESDL' => 'Private Residence Delivery']);
+        }
         if ($liftGate == 'Y') {
-            array_push($accessorial,  'Tailgate Delivery');
+            array_merge($accessorial, ['TLGDEL' => 'Tailgate Delivery']);
         }
 
-        $apiArray = [
+        $apiArray = [   
                 'emailAddress' => $connSettings['creds']['email'],
                 'password' => $connSettings['creds']['password'],
                 'billToAccountNumber' => $connSettings['creds']['billing_account_number'],
@@ -1272,12 +1275,8 @@ class GenerateRequestData
                 'prefferedCurrency' => 'USD',
                 'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
                 'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
-
-                'accessorial' => array (
-                    'TLGDEL' => 'Tailgate Delivery',
-                    'DANGEROUS' => 'Dangerous Goods',
-                    'PRESDL' => 'Private Residence Delivery',
-                ),
+                /* Accessorial array */
+                'accessorial' => $accessorial
             ];
 
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
