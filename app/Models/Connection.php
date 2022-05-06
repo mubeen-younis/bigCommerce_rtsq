@@ -14,7 +14,7 @@ class Connection extends Model
 
     public static function addPromoCodeInConnectionSettings($installedCarrierId, $promoCode)
     {
-        $connectionSettings = self::where('installed_carrier_id ', $installedCarrierId)->first();
+        $connectionSettings = self::where('installed_carrier_id', $installedCarrierId)->first();
         if ($connectionSettings === null) {
             $connectionSettings = new self();
             $value = json_encode(['promo_code' => $promoCode]);
