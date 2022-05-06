@@ -12,6 +12,7 @@ use App\Models\InstalledCarrier;
 use App\Models\Store;
 use App\Models\Subscription\Subscription;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class FDOController extends Controller
@@ -32,11 +33,13 @@ class FDOController extends Controller
         if (blank($coupon)) {
             return 'Not valid';
         }
-        $abc = Coupon::where('code', $coupon)->delete();
-        if ($abc) {
-            return 'Deleted';
+        $abc = Coupon::where('code', $coupon)->first();
+        if ($abc === null) {
+            return 'Not FOund';
         }
-        return 'Nae delete hua';
+        DB::table('coupon_code_carriers')->where('coupon_code_id', $abc->id)->delete();
+        Coupon::where('code', $coupon)->delete();
+        return 'Deleted';
     }
 
     public function getFdoCompanyInfo(Request $request)
