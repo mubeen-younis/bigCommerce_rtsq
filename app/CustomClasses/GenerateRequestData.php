@@ -126,6 +126,11 @@ class GenerateRequestData
                     $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['unishippersSmall'] = $wweLtlArr;
                     break;
+                case 'dayross-ltl':
+                    $wweLtlArr = $this->rossdayLtlEnitArr($con1, $destination);
+                    $wweLtlArr['originAddress'] = $enitOrigin;
+                    $carriersArr['carriers']['dayross'] = $wweLtlArr;
+                    break;
             }
         }
         return ['carriersArr' => $carriersArr, 'residential' => $this->resiCarrier];
@@ -314,6 +319,20 @@ class GenerateRequestData
             'version' => '1.0.0',
             'api' => $this->getApiInfoArrUnishippersSmall($connSettings, $destination),
             'getDistance' => 0,
+        ];
+    }
+
+    public function rossdayLtlEnitArr($connSettings, $destination)
+    {
+        return [
+            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'serverName' => "https://" . $this->storeData['store']['name'],
+            'carrierMode' => 'pro',
+            'quotestType' => 'ltl',
+            'version' => '1.0.0',
+            'returnQuotesOnExceedWeight' => 1,
+            'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
+            'api' => $this->getApiInfoArrRossdayLtl($connSettings, $destination),
         ];
     }
 
@@ -1209,6 +1228,59 @@ class GenerateRequestData
         ];
 
         return $apiArray;
+    }
+
+    public function getApiInfoArrRossdayLtl($connSettings, $destination)
+    {
+        $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
+            (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+        /*
+         * Check if rad hit not consumed and residential is enables
+         * **/
+        $residential = 'N';
+        $alwaysResi = false;
+
+        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+            if ($this->radHitConsumed == 0) {
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+
+            } else {
+                $residential = $this->residential;
+            }
+            if ($liftGate != 'Y') {
+                $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
+            }
+        } else {
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+        }
+
+        $this->resiCarrier['dayrossLtl'] = $residential;
+        $this->resiCarrier['alwaysResi']['dayrossLtl'] = $alwaysResi;
+       
+        $accessorial = [];
+        if ($liftGate == 'Y') {
+            array_push($accessorial,  'Tailgate Delivery');
+        }
+
+        $apiArray = [
+                'emailAddress' => $connSettings['creds']['email'],
+                'password' => $connSettings['creds']['password'],
+                'billToAccountNumber' => $connSettings['creds']['billing_account_number'],
+
+                'prefferedCurrency' => 'USD',
+                'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
+                'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
+
+                'accessorial' => array (
+                    'TLGDEL' => 'Tailgate Delivery',
+                    'DANGEROUS' => 'Dangerous Goods',
+                    'PRESDL' => 'Private Residence Delivery',
+                ),
+            ];
+
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
 
     public function setIsSMartPost($connectionSettings)
