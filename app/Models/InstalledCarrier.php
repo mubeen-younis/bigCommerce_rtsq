@@ -34,7 +34,7 @@ class InstalledCarrier extends Model
     public static function getInstCarFromSlugANdStore($slug, $storeId, $promoCode = null)
     {
         $carrier = self::join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
-            ->select('slug', 'installed_carriers.id')
+            ->select('slug', 'installed_carriers.id','installed_carriers.store_id', 'installed_carriers.is_enabled','carriers.slug')
             ->where('installed_carriers.store_id', $storeId)
             ->where('installed_carriers.is_enabled', 1)
             ->where('carriers.slug', $slug)
