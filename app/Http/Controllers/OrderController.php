@@ -6,6 +6,7 @@ use App\Constants\Constant;
 use App\CurlRequest;
 use App\CustomClasses\Functions;
 use App\Models\BoxSize;
+use App\Models\Locations;
 use App\Models\Orders;
 use App\Models\RequestData;
 use App\Models\RequestTempData;
@@ -177,7 +178,11 @@ class OrderController extends Controller
         $lineItem->items = $this->formateItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
 
         $lineItem->origin = $this->formateOrigins($requestToWS->requestArr->carriers);
+        $isMultiShipment = false;
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
+        if (!blank($multiShipmentresponse)) {
+            $isMultiShipment = true;
+        }
         $autoResidentialsStatus = 'n';
         $residentialsPickup = 'n';
         $liftGateStatus = 'n';
@@ -202,7 +207,7 @@ class OrderController extends Controller
                     $residentialsPickup = $liftResidentialStatus['resiPickup'] ?? 'n';
 
                     $totalBoxes = 1;
-                    if (isset($ws->binPackagingData) && !empty($ws->binPackagingData) && ($isSmallrate || $isInspOrLocal)) {
+                    if (isset($ws->binPackagingData) && !empty($ws->binPackagingData) && ($isSmallrate/* || $isInspOrLocal*/)) {
                         if ($isGround) {
                             $sbsData = $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->bins_packed ?? [];
                         } else if ($isAir) {
@@ -285,10 +290,17 @@ class OrderController extends Controller
             if (blank($item)) {
                 continue;
             }
+            $zip = $origin->locationId != '' ? $origin->locationId : $origin->senderZip;
             $city = $origin->senderCity ? $origin->senderCity . ',' : '';
             $state = $origin->senderState ?? '';
-            $zip = $origin->locationId != '' ? $origin->locationId : $origin->senderZip;
             $senderZip = $origin->senderZip ?? '';
+            if (!$isMultiShipment && $isInspOrLocal) {
+                $origDetails = $this->getOriginForInsAndLocal($zip);
+                $city = $origDetails['city'] . ',';
+                $state = $origDetails['state'];
+                $senderZip = $origDetails['zip_code'];
+
+            }
             $orderWidget[$zip]['locationtype'] = $item->dropship_enabled == 'N' ? 'Warehouse' : 'Dropship';
             $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
@@ -349,6 +361,12 @@ class OrderController extends Controller
                     $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
                 }
             }
+
+            // TODO : Need to to do this for items as well
+         /*   if (!$isMultiShipment && $isInspOrLocal) {
+
+                $orderWidget[$zip]['items']=[];
+            }*/
 
 
             /*
@@ -443,6 +461,12 @@ class OrderController extends Controller
             'sbs' => $sbs
         ];
         return $resp;
+    }
+
+
+    public function getOriginForInsAndLocal($locationId)
+    {
+        return Locations::getlocationDetail($locationId);
     }
 
     public function getSbsItemDetail($sbsItemKey, $items)

@@ -32,4 +32,10 @@ class Locations extends Model
         }
         return $location;
     }
+
+
+    public static function getlocationDetail($locationId)
+    {
+        return optional(self::where('id', $locationId)->first())->toArray() ?? [];
+    }
 }
