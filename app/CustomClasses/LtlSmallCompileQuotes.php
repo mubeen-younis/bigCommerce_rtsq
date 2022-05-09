@@ -289,7 +289,8 @@ class LtlSmallCompileQuotes{
         foreach ($ltlCarriers as $carName){
             if(isset($carriers[$carName]) && !$ltl){
                 foreach ($quotes[$carName] as $quote){
-                    if(!isset($quote['severity'])){
+                    $dayRossLtlError = $carName === 'dayross' && isset($quote['q']['soapBody']['soapFault']);
+                    if(!isset($quote['severity']) || !$dayRossLtlError){
                         $ltl = true;
                         break 2;
                     }

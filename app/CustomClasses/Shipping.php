@@ -132,12 +132,14 @@ class Shipping
         }
         // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
+        // dd(135, $requestArr);
         if (empty($requestArr)) {
             return false;
         }
         $url = Constant::QUOTES_URL;
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
+        // dd(142, $quotes);
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
         /*
       * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
@@ -180,6 +182,7 @@ class Shipping
         $isUpsLtlCodeExist = gettype(array_search('upsltl', $finalCodesTemp)) == 'integer';
         $isFedexLtlCodeExist = gettype(array_search('fedexltl', $finalCodesTemp)) == 'integer';
         $isxpoLtlCodeExist = gettype(array_search('xpoltl', $finalCodesTemp)) == 'integer';
+        $isDayRossLtlCodeExist = gettype(array_search('dayrossltl', $finalCodesTemp)) == 'integer';
         $freightCode = '';
         $finalCost = 0;
 
@@ -206,7 +209,7 @@ class Shipping
         } else {
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
             //TODO : Need to Add LTL Carriers Here as well
-            if ($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist)) {
+            if ($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isDayRossLtlCodeExist)) {
                 $isShippingOrFreight = false;
             }
             if ($this->isRequestMultishipment && !$isShippingOrFreight) {
