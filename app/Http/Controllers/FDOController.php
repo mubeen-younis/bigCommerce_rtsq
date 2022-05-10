@@ -105,10 +105,12 @@ class FDOController extends Controller
     public function getFDOCouponInfo(Request $request)
     {
         $storeId = $request['store_id'];
+        $store = optional(Store::where('id', $storeId)->first())->toArray() ?? [];
         $coupon = Coupon::getFDOCoupon($storeId);
         if ($coupon === null) {
             $coupon = $this->getCouponCodeFdo($storeId);
         }
+        $coupon['freightdesk_company_id'] = $store['freightdesk_company_id'] ?? '';
 
         return response()->json(['error' => false,
             'data' => $coupon,
