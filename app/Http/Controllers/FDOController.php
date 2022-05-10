@@ -121,7 +121,7 @@ class FDOController extends Controller
         $carrierInfo = CouponCarrier::getCarrierInfoByName($request);
         $registerUrl = Endpoints::getFDORegisterUrl();
         if (isset($request['coupon_code']) && !blank($request['coupon_code'])) {
-            $registerUrl = $registerUrl . '?code=' . $this->makeBase64code($request['store_id'], $request['coupon_code']);
+            $registerUrl = $registerUrl . '?code=' . $this->encodeBase64Code($request);
         }
         
         if($carrierInfo) {
@@ -152,6 +152,18 @@ class FDOController extends Controller
         return $encodedCode;
     }
 
+    public function encodeBase64Code($request): string
+    {
+        $storeId = $request['store_id'];
+        $couponCode = $request['coupon_code'] ?? '';
+        $storeDetails = Store::getStoreDetailsFromStoreId($storeId);
+        $storeUrl = $storeDetails['url'] ?? '';
+        $email = $storeDetails['owner_email'] ?? '';
+        $apps = $request['carrier_name'] ?? '';
+        $encodedCode = base64_encode(http_build_query(['shop' => $storeUrl, 'promocode' => $couponCode, 'email' => $email, 'phone' => '', 'apps' => $apps, 'marketplace' => 'bc']));
+
+        return $encodedCode;
+    }
 
     public function getProvsSepByPipe($storeId, $sendArray = false)
     {
