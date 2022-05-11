@@ -761,6 +761,7 @@ class OrderController extends Controller
             $postData = json_decode($postData, true);
             $storeHash = explode('/', $postData['producer']);
             $storeHash = $storeHash[1];
+            Log::info('Post Data From BigCommerce ' . json_encode($postData));
             $orderId = $postData['data']['id'];
             // Update,delete,create from  webhook
             $scope = $postData['scope'];
