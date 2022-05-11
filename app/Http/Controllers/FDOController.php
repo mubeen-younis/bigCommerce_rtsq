@@ -161,7 +161,7 @@ class FDOController extends Controller
         $storeDetails = Store::getStoreDetailsFromStoreId($storeId);
         $storeUrl = $storeDetails['url'] ?? '';
         $email = $storeDetails['owner_email'] ?? '';
-        $apps = $request['carrier_name'] ?? '';
+        $apps = Functions::fdoSLugForCarriers($request['carrier_name']) ?? '';
         $encodedCode = base64_encode(http_build_query(['shop' => $storeUrl, 'promocode' => $couponCode, 'email' => $email, 'phone' => '', 'apps' => $apps, 'marketplace' => 'bc']));
 
         return $encodedCode;
