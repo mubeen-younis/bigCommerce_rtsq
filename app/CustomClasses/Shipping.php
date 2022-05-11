@@ -110,7 +110,7 @@ class Shipping
 
 
         foreach ($carriersArray['carriers'] as $key => $carriers) {
-            if ($this->isHazmat == 'Y') {
+            if ($this->isHazmat == 'Y' && $key == 'wweLTL') {
                 $carriersArray['carriers'][$key]['api']['lineItemHazmatInfo'] = [
                     [
                         'isHazmatLineItem' => 'Y',
@@ -122,7 +122,7 @@ class Shipping
                     ],
                 ];
             }
-            if ($this->isInsurance === 'Y') {
+            if ($this->isInsurance === 'Y' && $key == 'wweLTL') {
                 if ($this->isSmall($key)) {
                     $carriersArray['carriers'][$key]['api']['includeDeclaredValue'] = 1;
                 } else {
@@ -132,14 +132,13 @@ class Shipping
         }
         // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
-        // dd(135, $requestArr);
         if (empty($requestArr)) {
             return false;
         }
         $url = Constant::QUOTES_URL;
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
-        // dd(142, $quotes);
+        // dd('Shipping.php: line 142', $quotes);
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
         /*
       * $this->isRequestMultishipment => Check if one product ltl and other small with different origin

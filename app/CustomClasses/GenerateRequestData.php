@@ -1262,10 +1262,10 @@ class GenerateRequestData
        
         $accessorial = [];
         if ($alwaysResi || $residential != 'N') {
-            array_merge($accessorial, ['PRESDL' => 'Private Residence Delivery']);
+            $accessorial['PRESDL'] = 'Private Residence Delivery';
         }
         if ($liftGate == 'Y') {
-            array_merge($accessorial, ['TLGDEL' => 'Tailgate Delivery']);
+            $accessorial['TLGDEL'] = 'Tailgate Delivery';
         }
 
         $apiArray = [   

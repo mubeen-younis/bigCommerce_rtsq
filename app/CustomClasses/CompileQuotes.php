@@ -2382,7 +2382,9 @@ class CompileQuotes
     public function calculatePrice($data, $lgOption = false, $getCost = false, $isUpsLtl = false)
     {
         $lgCost = $lgOption ? 0 : $this->getLiftGateCost($data, $getCost, $isUpsLtl);
-        $basePrice = (float)$data['totalNetCharge']['Amount'];
+        $basePrice = str_replace(',', '', $data['totalNetCharge']['Amount']);
+        $basePrice = (float)$basePrice; 
+        // $basePrice = (float)$data['totalNetCharge']['Amount'];
         $basePrice = $basePrice - $lgCost;
         $basePrice = $this->calculateHandlingFee($basePrice);
         return $basePrice;

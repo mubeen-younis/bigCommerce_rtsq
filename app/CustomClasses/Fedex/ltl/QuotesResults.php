@@ -246,7 +246,7 @@ class QuotesResults
 
     public function formateQuoteBeforeCompile($shipments){
         foreach ($shipments as $shipment => $quotes){
-            if(!isset($quotes['q'])){
+            if(!isset($quotes['q']) || isset($quotes['q']['severity'])){
                 continue;
             }
             foreach ($quotes['q'] as $key => $quote){
