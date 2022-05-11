@@ -779,7 +779,7 @@ class OrderController extends Controller
             //$saveOrderId = $this->saveUpdateOrderByID($toRequest);
             //$this->setOrderMeta($toRequest);
         } catch (\Exception $exception) {
-            Log::info('Exception On Moving Quotes ' . json_encode($exception));
+            Log::info('Exception On Moving Quotes ' . json_encode($exception->getTraceAsString()));
         }
     }
 
