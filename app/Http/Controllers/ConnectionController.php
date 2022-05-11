@@ -12,6 +12,8 @@ use App\CustomClasses\GTZ\ltl\ConnectionSettings as GTZLtlConnectionSettings;
 use App\CustomClasses\XPO\ltl\ConnectionSettings as XPOLtlConnectionSettings;
 use App\CustomClasses\RL\ltl\ConnectionSettings as RNLLtlConnectionSettings;
 use App\CustomClasses\Unishippers\small\ConnectionSettings as UnishippersSmallConnectionSettings;
+use App\CustomClasses\EstesLTL\ConnectionSettings as EstesLTLConnectionSettings;
+
 use App\Models\Connection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -36,6 +38,7 @@ class ConnectionController extends Controller
         $this->xpoLtlTestCon = new XPOLtlConnectionSettings();
         $this->rnlLtlTestCon = new RNLLtlConnectionSettings();
         $this->unishippersSmallTestCon = new UnishippersSmallConnectionSettings();
+        $this->estesLTLConL = new EstesLTLConnectionSettings();
     }
 
     public function index(Request $request)
@@ -78,16 +81,19 @@ class ConnectionController extends Controller
 
         $checkCarrierType = DB::table('carriers')->select('slug', 'stores.name')
             ->leftJoin('installed_carriers', 'carriers.id', 'installed_carriers.carrier_id')
-            ->leftJoin('stores', 'stores.id','=','installed_carriers.store_id')
+            ->leftJoin('stores', 'stores.id', '=', 'installed_carriers.store_id')
             ->where('installed_carriers.id', $request->carrierId)
             ->first();
 
         if ($checkCarrierType === null) {
-            return response()->json(["error" => true, "data" => [],
-                'message' => 'Carrier Not Found']);
+            return response()->json([
+                "error" => true, "data" => [],
+                'message' => 'Carrier Not Found'
+            ]);
         }
 
         if (!empty($request->testType)) {
+
             switch ($checkCarrierType->slug) {
                 case "ltl-quotes":
                     $response = $this->wweLtlTestCon->testLtlConnection($request, $checkCarrierType->name);
@@ -119,12 +125,16 @@ class ConnectionController extends Controller
                 case 'unishippers-small':
                     $response = $this->unishippersSmallTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
+                case 'estes-ltl':
+                    $response = $this->estesLTLConL->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
                 default:
-                    return response()->json(["error" => true, "data" => [],
-                        'message' => 'No carrier Matches']);
+                    return response()->json([
+                        "error" => true, "data" => [],
+                        'message' => 'No carrier Matches'
+                    ]);
             }
         }
-
         $con = Connection::firstOrNew(['installed_carrier_id' => $request->carrierId]);
         $con->value = json_encode($request->all());
         $con->installed_carrier_id = $request->carrierId;

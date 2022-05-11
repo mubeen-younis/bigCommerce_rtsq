@@ -59,6 +59,7 @@ class MainController extends BaseController
 
     public function addTestStore(Request $request)
     {
+        
         $storeHash = $request->store_hash ?? null;
         if (blank($storeHash)) {
             return "Store hash is required";

@@ -50,8 +50,7 @@ class GenerateRequestData
         $quoteSettings,
         $connectionSettings,
         $storeData
-    )
-    {
+    ) {
         $this->storeData = $storeData;
         $this->quoteSettings = $quoteSettings;
         $this->connectionSettings = $connectionSettings;
@@ -63,10 +62,10 @@ class GenerateRequestData
      */
     public function generateEnitureArray($origin, $destination, $lineItems)
     {
-
-        $this->destinationIsPOBox($destination);
+        $testing = $this->destinationIsPOBox($destination);
         $carriersArr['carriers'] = [];
         $enitOrigin = $this->getEnitOrigin($origin);
+
         foreach ($this->connectionSettings as $key => $con1) {
             switch ($key) {
                 case "ltl-quotes":
@@ -126,9 +125,14 @@ class GenerateRequestData
                     $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['unishippersSmall'] = $wweLtlArr;
                     break;
+                case 'estes-ltl':
+                    $wweLtlArr = $this->estesltlEnitArr($con1, $destination);
+                    $wweLtlArr['originAddress'] = $enitOrigin;
+                    $carriersArr['carriers']['estes'] = $wweLtlArr;
+                    break;
             }
         }
-        return ['carriersArr' => $carriersArr, 'residential' => $this->resiCarrier];
+       return  ['carriersArr' => $carriersArr, 'residential' => $this->resiCarrier];
     }
 
     function destinationIsPOBox($destination)
@@ -316,7 +320,22 @@ class GenerateRequestData
             'getDistance' => 0,
         ];
     }
+    public function estesltlEnitArr($connSettings, $destination)
+    {
+        return [
+            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'serverName' => "https://" . $this->storeData['store']['name'],
+            'carrierMode' => 'pro',
+            'quotestType' => 'ltl', // ltl / small
+            'version' => '1.0.0',
+            'returnQuotesOnExceedWeight' => 1,
+            'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
+             'api' => $this->getApiInfoEsterLtl($connSettings, $destination),
 
+        ];
+        
+        
+    }
     function calculatePrice($lineItems)
     {
         $price = 0;
@@ -325,6 +344,8 @@ class GenerateRequestData
         }
         return $price;
     }
+    
+
 
     /**
      * function for generate request array
@@ -337,6 +358,7 @@ class GenerateRequestData
     {
         $carriers = $carriersArray['carriers'];
         Log::info('Carriers ' . json_encode($carriers));
+
         $receiverAddress = $this->getReceiverData($request);
 
         $autoResidential = $liftGateWithAuto = '0';
@@ -354,6 +376,7 @@ class GenerateRequestData
             $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? [];
             $this->itemsArr = $itemsArr;
             $this->carriers = $carriers;
+            
             $hasSmall = isset($carriers['wweSmall'])
                 || isset($carriers['upsSmall'])
                 || isset($carriers['fedexSmall'])
@@ -426,7 +449,6 @@ class GenerateRequestData
                             $commdityDetails['one_rate_commdityDetails'] = $this->lineItems($itemsArrOneRate, $carriers['fedexSmall']['originAddress'], true, $sbsResponseOneRate['binResponse']);
                             $binReponse['oneRate'] = $sbsResponseOneRate['binResponse'];
                         }
-
                     }
 
                     if ($this->air) {
@@ -435,11 +457,9 @@ class GenerateRequestData
                         $itemsArrAir = $sbsResponseAir['items'] ?? $itemsArr;
                         $commdityDetails['air_services_commdityDetails'] = $this->lineItems($itemsArrAir, $carriers['fedexSmall']['originAddress']);
                         $binReponse['air'] = $sbsResponseAir['binResponse'];
-
                     }
                     $itemsArr = !empty($itemsArrGround) ? $itemsArrGround : $itemsArr;
                     $sbsResponse['binResponse'] = $binReponse;
-
                 } else {
                     $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
                     $itemsArr = $sbsResponse['items'] ?? $itemsArr;
@@ -545,14 +565,14 @@ class GenerateRequestData
 
             // CHecking if we have any fedex box
             if (DB::table('box_sizes')->where('store_id', $this->storeData['store']->id)
-                ->where('is_available', 1)->where('box_type', 2)->count()) {
+                ->where('is_available', 1)->where('box_type', 2)->count()
+            ) {
                 $air = ['fedex_express_saver', 'fedex_2_day', 'fedex_2_day_am', 'fedex_priority_overnight', 'fedex_first_overnight', 'international_distribution_freight', 'international_economy', 'international_economy_distribution', 'international_economy_freight', 'international_first', 'international_priority', 'international_priority_distribution', 'international_priority_freight', 'priority_overnight', 'standard_overnight'];
                 if (!$this->air && $service && in_array($key, $air)) {
                     $this->air = true;
                 }
             }
         }
-
     }
 
     /**
@@ -675,9 +695,65 @@ class GenerateRequestData
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? '',
         ];
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
-
     }
+    public function getApiInfoEsterLtl($connSettings, $destination)
+    {
+        
+        $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
+            (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+        /*
+         * Check if rad hit not consumed and residential is enables
+         * **/
+        
+        $residential = 'N';
+        $alwaysResi = false;
+        $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
+        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+            if ($this->radHitConsumed == 0) {
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+            } else {
+                $residential = $this->residential;
+            }
+            if ($liftGate != 'Y') {
+                $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
+            }
+        } else {
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+        }
 
+        $this->resiCarrier['estesltl'] = $residential;
+        $this->resiCarrier['alwaysResi']['estesLtl'] = $alwaysResi;
+
+        $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
+
+        $insurance = [
+            'code' => '',
+            'value' => ''
+        ];
+        
+        if (isset($connSettings['quote_settings']['insurance_category'])) {
+            $insuranceCategory = explode('-', $connSettings['quote_settings']['insurance_category']);
+            $insurance = [
+                'code' => $insuranceCategory[0] ?? '',
+                'value' => $insuranceCategory[1] ?? ''
+            ];
+        }
+        $apiArray = [
+            'UserName' => $connSettings['creds']['username'],
+            'Password' => $connSettings['creds']['password'],
+            'CUSTNMBR' => $connSettings['creds']['customer_number'],
+            'Role' => 'S', 
+            'PaymentType' => 'P', 
+            'accessorial' => array(
+                'HD', 
+                'LGATE' 
+            ),
+        ];
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
+    }
+    
     public function getApiInfoArrGTZLtl($connSettings, $destination, $carName)
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
@@ -695,7 +771,6 @@ class GenerateRequestData
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
                 $this->residential = $residential;
-
             } else {
                 $residential = $this->residential;
             }
@@ -789,7 +864,6 @@ class GenerateRequestData
             ];
         }
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
-
     }
 
     public function getApiInfoArrFedexLtl($connSettings, $destination, $enitOrigin)
@@ -807,7 +881,6 @@ class GenerateRequestData
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
                 $this->residential = $residential;
-
             } else {
                 $residential = $this->residential;
             }
@@ -866,18 +939,18 @@ class GenerateRequestData
             'residentialDelivery' => $alwaysResi ? 'Y' : $residential, // Y/N
             'prefferedCurrency' => 'USD',
             'percentDiscount' => $discount, //quote settings
-//                'holdAtTerminal' => '1',
+            //                'holdAtTerminal' => '1',
             'shipmentDate' => date('m/d/Y'),
             'transactionId' => time(),
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
             'role' => 'SHIPPER',
 
-//                'modifyShipmentDateTime' => '0',
-//                'OrderCutoffTime' => '16:00',
-//                'shipmentOffsetDays' => '4',
-//              //  'storeDateTime' => '2019-06-11 16:02:23',
-//                'storeDateTime' => date('Y-m-d H:i:s'),
+            //                'modifyShipmentDateTime' => '0',
+            //                'OrderCutoffTime' => '16:00',
+            //                'shipmentOffsetDays' => '4',
+            //              //  'storeDateTime' => '2019-06-11 16:02:23',
+            //                'storeDateTime' => date('Y-m-d H:i:s'),
 
             'paymentType' => 'PREPAID',
             'collectTermsType' => 'STANDARD',
@@ -909,7 +982,6 @@ class GenerateRequestData
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
                 $this->residential = $residential;
-
             } else {
                 $residential = $this->residential;
             }
@@ -962,7 +1034,6 @@ class GenerateRequestData
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
                 $this->residential = $residential;
-
             } else {
                 $residential = $this->residential;
             }
@@ -1001,7 +1072,6 @@ class GenerateRequestData
             'shipmentWeekDays' => array('4','5'),*/
         ];
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
-
     }
 
     /*
@@ -1024,11 +1094,9 @@ class GenerateRequestData
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
                 $this->residential = $residential;
-
             } else {
                 $residential = $this->residential;
             }
-
         } else {
             $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
         }
@@ -1045,7 +1113,6 @@ class GenerateRequestData
             'includeDeclaredValue' => "1",
         ];
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
-
     }
 
     public function getApiInfoArrUpsSmall($connSettings, $destination)
@@ -1058,11 +1125,9 @@ class GenerateRequestData
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
                 $this->residential = $residential;
-
             } else {
                 $residential = $this->residential;
             }
-
         } else {
             $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
         }
@@ -1121,11 +1186,9 @@ class GenerateRequestData
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
                 $this->residential = $residential;
-
             } else {
                 $residential = $this->residential;
             }
-
         } else {
             $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
         }
@@ -1134,7 +1197,7 @@ class GenerateRequestData
         $this->resiCarrier['alwaysResi']['fedexSmall'] = $alwaysResi;
         $hubIdindicia = isset($connSettings['creds']['hub_id']) ? explode('(', $connSettings['creds']['hub_id']) : '';
         $hubId = isset($hubIdindicia[0]) ? trim($hubIdindicia[0]) : '';
-        $indicia = 'PARCEL_SELECT';//trim(explode(')',$hubIdindicia[1])[0]);
+        $indicia = 'PARCEL_SELECT'; //trim(explode(')',$hubIdindicia[1])[0]);
         $apiArray = [
 
             'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
@@ -1173,11 +1236,9 @@ class GenerateRequestData
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
                 $this->residential = $residential;
-
             } else {
                 $residential = $this->residential;
             }
-
         } else {
             $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
         }
@@ -1213,8 +1274,10 @@ class GenerateRequestData
 
     public function setIsSMartPost($connectionSettings)
     {
-        if (isset($connectionSettings['quote_settings']['carrier_services']['fedex_smart_post']) &&
-            $connectionSettings['quote_settings']['carrier_services']['fedex_smart_post']) {
+        if (
+            isset($connectionSettings['quote_settings']['carrier_services']['fedex_smart_post']) &&
+            $connectionSettings['quote_settings']['carrier_services']['fedex_smart_post']
+        ) {
             $this->smartPost = true;
         }
     }
@@ -1343,7 +1406,7 @@ class GenerateRequestData
                         "d" => Helpers::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
                         "w" => Helpers::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
                         "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
-                        "vr" => 0,//vertical 0 or 1
+                        "vr" => 0, //vertical 0 or 1
                         "boxFee" => 0,
                         "weight_based" => 1
                     ];
@@ -1356,7 +1419,7 @@ class GenerateRequestData
                         "d" => Helpers::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
                         "w" => Helpers::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
                         "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
-                        "vr" => $itemsArr[$key]['vertical_rotation'] ?? 0,//vertical 0 or 1
+                        "vr" => $itemsArr[$key]['vertical_rotation'] ?? 0, //vertical 0 or 1
                         "boxFee" => $itemsArr[$key]['boxFee'] ?? 0
                     ];
                 } else {
@@ -1458,7 +1521,6 @@ class GenerateRequestData
         $resp['binResponse'] = $binResponse ?? [];
         $resp['boxBins'] = $boxBins;
         return $resp;
-
     }
 
     public static function floatValue($number = 0)
@@ -1469,7 +1531,6 @@ class GenerateRequestData
         $number = rtrim($number, '0');                // 50,00 --> 50,
         $number = rtrim($number, '.'); // 50,   --> 50
         return $number;
-
     }
 
     public function updatCommdityDetails($item, $bin, $boxBins, $itemsArr)
@@ -1492,7 +1553,7 @@ class GenerateRequestData
         $item['lineItemLength'] = $bin->bin_data->d ?? 0;
         $item['lineItemWidth'] = $bin->bin_data->w ?? 0;
         $item['lineItemHeight'] = $bin->bin_data->h ?? 0;
-        $item['lineItemPrice'] = $price;//$item['lineItemPrice']*$quantityPacked;
+        $item['lineItemPrice'] = $price; //$item['lineItemPrice']*$quantityPacked;
         $item['lineItemWeight'] = $bin->bin_data->weight + $boxWeight;
         $item['isHazmatLineItem'] = $hazmat;
 
@@ -1651,7 +1712,6 @@ class GenerateRequestData
     public function checkIsALwaysQuoteResDel($connSettings): bool
     {
         return isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery'];
-
     }
 
     public function getStoreDateTime()

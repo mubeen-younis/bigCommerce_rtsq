@@ -131,15 +131,15 @@ class OrderController extends Controller
 
     public function createOrderWidget($request, $order)
     {
+        $order['rate_id']="upsltl+LGidx+131650282623";
         $rateId = $order['rate_id'] ?? null;
         $cartId = $order['cart_id'] ?? null;
         $data = optional(RequestData::where('rate_id', $rateId)
-                ->where('cart_id', $cartId)
                 ->where('store_id', $request['store_id'])
                 ->first())->toArray() ?? null;
         if (blank($data) && !blank($order['full_rate_id'])) {
             $data = optional(RequestData::where('rate_id', $order['full_rate_id'])
-                    ->where('cart_id', $cartId)
+                    // ->where('cart_id', $cartId)
                     ->where('store_id', $request['store_id'])
                     ->first())->toArray() ?? null;
             $rateId = $order['full_rate_id'] ?? null;
@@ -147,6 +147,7 @@ class OrderController extends Controller
         if (blank($data)) {
             return [];
         }
+        
         $carrierHasInsurance = $this->hasInsureCarrier($rateId);
         $index = explode('idx+', $rateId);
         if (is_string($index[0]) && $index[0] == "shippingGroup") {
@@ -533,8 +534,9 @@ class OrderController extends Controller
         $headers[] = 'X-Auth-Token: ' . $store->access_token;
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
-        $endpoint = "https://api.bigcommerce.com/stores/" . $request['store_hash'] . "/v2/orders/" . $request['order_id'];
+        $endpoint = "https://api.bigcommerce.com/stores/" . $request['store_hash'] . "/v2/orders/" . 2817;
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
+      
         $resp = [];
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
             $resp = json_decode($response['response'], true);

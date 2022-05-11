@@ -71,12 +71,19 @@ class Shipping
         }
         // Items that is not associated with Shipping Group and need to get rates from Ws
         $itemsWithoutShippingGroup = collect($request['lineItemData']['items'])->where('shipping_group', null)->all();
+
         // Items that is associated with Shipping Group
         $itemsWithShippingGroup = collect($request['lineItemData']['items'])->where('shipping_group', '!=', null)->all();
+
+        
+
         $originsWithoutShippingGroup = $this->getOriginsAccShipGroup($itemsWithoutShippingGroup, $origins);
+
         // Items that is associated with Shipping Group
         $originsWithShippingGroup = $this->getOriginsAccShipGroup($itemsWithShippingGroup, $origins);
 
+
+        ///// skip  start
         if (!blank($itemsWithShippingGroup)) {
             $this->setShippingGroupsResponse($itemsWithShippingGroup);
         }
@@ -85,19 +92,24 @@ class Shipping
             $this->orderWidgetSave($request, [], [], $finalResp['finalQuotes'], $finalResp['formattedResp'], $cartInfo, [], []);
             return $finalResp['formattedResp'];
         }
+        //// skip ends
+
         $request['lineItemData']['items'] = $itemsWithoutShippingGroup;
         $request['lineItemData']['origin'] = $originsWithoutShippingGroup;
         $package = $request['lineItemData'];
         // Disabling instore pickup if there is multi shipment case
+
         $originAddress = $this->checkInstorePickup($package['origin']);
+
         // Generating carrier creds and origin array
         $destination = $request['lineItemData']['destination'] ?? [];
+
+        /////start here
         $resp = $generateReqData->generateEnitureArray($originAddress, $destination, $package['items']);
         $residential = $resp['residential'];
         $carriersArray = $resp['carriersArr'];
 
         $this->multiOrigins = $this->checkIsMultiShipment($carriersArray['carriers']);
-
         /*Check for MUlti shipment and product marked as instore or local delivery*/
         if ($this->multiOrigins && $this->showOnlyLocAndInstoreQuote) {
             return [];
@@ -106,9 +118,8 @@ class Shipping
         // Checking if any productis hazardous
         $hazmatAllItems = $this->isHazmatMaterial($package);
 
+
         $this->isInsurance($package);
-
-
         foreach ($carriersArray['carriers'] as $key => $carriers) {
             if ($this->isHazmat == 'Y') {
                 $carriersArray['carriers'][$key]['api']['lineItemHazmatInfo'] = [
@@ -130,24 +141,45 @@ class Shipping
                 }
             }
         }
+
         // Genearting final request Array
+
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
+        
+
         if (empty($requestArr)) {
             return false;
         }
         $url = Constant::QUOTES_URL;
+        if (isset($requestArr['requestArr']['carriers']['estes'])) {
+            $url="https://eniture-qa.com/ws/v3.0/index.php";
+        }
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
+
+       
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
         /*
       * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
       */
-        $this->isRequestMultishipment = $ltlSmallCompileQuotes->checkIsRequestMiltiShipment($requestArr['requestArr'], $quotes);
+
+        $this->isRequestMultishipment = $ltlSmallCompileQuotes->checkIsRequestMiltiShipment(
+            $requestArr['requestArr'],
+            $quotes
+        );
+       
+
+
+
         $boxbins = $requestArr['boxBins'] ?? [];
+
+       
         if (isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])) {
+       
             Log::info('BinData ' . json_encode($requestArr['binReponse']));
             $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes);
         }
+
         //;
         //print_r($requestArr['binReponse']);
         //print_r($requestArr['requestArr']); print_r($quotes); exit;
@@ -159,7 +191,11 @@ class Shipping
         Log::info('after addBinResponseToQuotes ' . json_encode($quotes));
 
         $quotesFromWs = $quotes ?? [];
+
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination);
+      
+    
+        
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];
@@ -209,26 +245,39 @@ class Shipping
             if ($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist)) {
                 $isShippingOrFreight = false;
             }
-            if ($this->isRequestMultishipment && !$isShippingOrFreight) {
-                $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings, $residential, $quotesFromWs, $requestArr['requestArr']);
-                $finalQuotes = $finalQuotesMulti['checkoutQuotes'] ?? [];
-                $multiShipmentQuotes = $finalQuotesMulti['multiShipmentQuotes'] ?? [];
-            }
+
+            //////me comment
+
+
+
+
+            // if ($this->isRequestMultishipment && !$isShippingOrFreight) {
+            //     $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings, $residential, $quotesFromWs, $requestArr['requestArr']);
+            //     $finalQuotes = $finalQuotesMulti['checkoutQuotes'] ?? [];
+            //     $multiShipmentQuotes = $finalQuotesMulti['multiShipmentQuotes'] ?? [];
+            // }
             /*Removed Code of removing parcel and ltl*/
         }
 
         /*Adding shipping group rates response in quotes
         */
-        if (!blank($this->shippingGroupResponse)) {
-            $items = data_get($request, 'lineItemData.items');
-            $items = $items + $itemsWithShippingGroup;
-            $request['lineItemData']['items'] = $items;
-            $finalQuotes = $this->addShipGroupRatesInQuotes($finalQuotes);
-        }
+        // if (!blank($this->shippingGroupResponse)) {
+        //     $items = data_get($request, 'lineItemData.items');
+        //     $items = $items + $itemsWithShippingGroup;
+        //     $request['lineItemData']['items'] = $items;
+        //     $finalQuotes = $this->addShipGroupRatesInQuotes($finalQuotes);
+        // }
+
+
+
+        /////  me comments ends
 
         $finalQuotes = $this->addRateId($finalQuotes);
+
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
-        $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
+
+
+        $test = $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
         return $resp;
     }
 
@@ -301,7 +350,6 @@ class Shipping
             }
         }
         return $formOrigins;
-
     }
 
 
@@ -512,11 +560,8 @@ class Shipping
                                         $quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['totalNetCharge']['Amount'] = $quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['totalNetCharge']['Amount'] + $fee;
                                         //$quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['boxFees']['Amount'] = $fee;
                                     }
-
                                 }
-
                             }
-
                         }
 
 
@@ -549,7 +594,6 @@ class Shipping
             $fee = $fedexBoxFee[$locId]['air'] ?? $commonBoxFee;
         }
         return $fee;
-
     }
 
     private
@@ -640,6 +684,7 @@ class Shipping
         foreach ($items['items'] as $key => $item) {
             if (isset($item['isHazmatLineItem']) && $item['isHazmatLineItem'] == 'Y') {
                 $this->isHazmat = 'Y';
+
                 $hazmatAllItems[$items['origin'][$key]['locationId']] = 'Y';
             } else {
                 $hazmatAllItems[$items['origin'][$key]['locationId']] = 'N';
@@ -716,8 +761,8 @@ class Shipping
         $quotes = array_values($quotes);
         $current = str_replace(' ', 'T', Carbon::now()) . "-00:00";
         if (!empty(array_filter($quotes))) {
-            $resp['quote_id'] = (string)rand(1, 9);// need to change
-            $resp['messages'] = [];// need to change
+            $resp['quote_id'] = (string)rand(1, 9); // need to change
+            $resp['messages'] = []; // need to change
 
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'eniture_quotes', 'display_name' => $this->limitTitle($quotes[0])]];
 
@@ -732,7 +777,6 @@ class Shipping
 
                 ];
             }
-
         } else {
             $resp = [];
         }
