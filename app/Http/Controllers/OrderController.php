@@ -131,7 +131,7 @@ class OrderController extends Controller
 
     public function createOrderWidget($request, $order)
     {
-        $order['rate_id']="upsltl+LGidx+131650282623";
+        $order['rate_id']="upsltlidx+01635940138";
         $rateId = $order['rate_id'] ?? null;
         $cartId = $order['cart_id'] ?? null;
         $data = optional(RequestData::where('rate_id', $rateId)
@@ -190,6 +190,7 @@ class OrderController extends Controller
 
         /*
         * Shipment Packaging */
+       
         $sbsItems = [];
         foreach ($responseFromWS as $carrrierName => $WsResp) {
             foreach ($WsResp as $zip => $ws) {
@@ -272,6 +273,7 @@ class OrderController extends Controller
 
         /*
         * Shipment Origins */
+        
         $origins = $lineItem->origin;
         $items = $lineItem->items;
         $count = 0;
@@ -329,7 +331,7 @@ class OrderController extends Controller
             $orderWidget[$zip]['shipping_method'] = $sName . $sMethod;
             $orderWidget[$zip]['shipping_rate'] = '$' . number_format((float)$sRate, 2,);
             // TODO : Need to change originalPiecesOfLineItem -> itemQuantity
-            if ($item->shipMultiplePackage) {
+            if (isset($item->shipMultiplePackage) && $item->shipMultiplePackage) {
                 if ((!in_array($item->lineItemName, $insertedNames))) {
                     $insertedNames[] = $item->lineItemName;
                     $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
@@ -345,15 +347,17 @@ class OrderController extends Controller
                     }
                 }
             } else {
-                if ((!in_array($item->id, $insertedIds))) {
+                if (isset($item->id) && (!in_array($item->id, $insertedIds))) {
                     $insertedIds[] = $item->id;
                     $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
                 }
             }
+      
 
 
             /*
             * Item Accessorials */
+            
             $addedHazmat = false;
             if (isset($orderWidget[$zip]['accessories'])) {
                 $addedHazmat = in_array('Hazardous Material', $orderWidget[$zip]['accessories']);
