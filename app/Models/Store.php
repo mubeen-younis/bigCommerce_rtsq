@@ -13,7 +13,8 @@ class Store extends Model
         'token',
         'app_status',
         'is_trial_completed',
-        'freightdesk_company_id'
+        'freightdesk_company_id',
+        'av_company_id'
     ];
 
     public function installedCarriers()
