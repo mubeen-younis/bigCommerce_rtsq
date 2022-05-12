@@ -34,7 +34,7 @@ class Endpoints
         if (env('APP_ENV') == 'staging') {
             return "https://freightdesk.eniture-qa.com/change_promo_code_status?";
         }
-        return "https://freightdesk.eniture-qa.com/change_promo_code_status?";
+        return "https://freightdesk.online/change_promo_code_status?";
 
     }
 
