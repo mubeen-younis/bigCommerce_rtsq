@@ -131,15 +131,14 @@ class OrderController extends Controller
 
     public function createOrderWidget($request, $order)
     {
-        $order['rate_id']="upsltlidx+01635940138";
         $rateId = $order['rate_id'] ?? null;
         $cartId = $order['cart_id'] ?? null;
-        $data = optional(RequestData::where('rate_id', $rateId)
+        $data = optional(RequestTempData::where('rate_id', $rateId)
                 ->where('store_id', $request['store_id'])
                 ->first())->toArray() ?? null;
         if (blank($data) && !blank($order['full_rate_id'])) {
-            $data = optional(RequestData::where('rate_id', $order['full_rate_id'])
-                    // ->where('cart_id', $cartId)
+            $data = optional(RequestTempData::where('rate_id', $order['full_rate_id'])
+                    ->where('cart_id', $cartId)
                     ->where('store_id', $request['store_id'])
                     ->first())->toArray() ?? null;
             $rateId = $order['full_rate_id'] ?? null;
@@ -592,6 +591,7 @@ class OrderController extends Controller
                 $countEndPoint = "https://api.bigcommerce.com/stores/" . $request['store_hash'] . "/v2/orders/count?status_id=" . $status;
             }
             $response = $this->curlRequest->enSingleCurlRequest($countEndPoint, [], $headers, 'GET', false);
+        
             $total = (int)ceil(json_decode($response['response'])->count);
 
             if ($status !== '') {

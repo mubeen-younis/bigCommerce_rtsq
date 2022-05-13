@@ -911,7 +911,8 @@ class CompileQuotes
 
 
 
-            $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
+            // $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
+            $compiledQuotes = $originQuotes;
 
 
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
@@ -997,6 +998,8 @@ class CompileQuotes
         }
         $this->alwaysResi = $this->residential['alwaysResi']['estesltl'] ?? false;
         $this->quoteSettings = $connectionSettings['estes-ltl']['quote_settings'] ?? [];
+        $labelAs = $this->quoteSettings['label_as'] ?? '';
+        $labelAs = empty($labelAs)  ? "Freight": $labelAs;
         $allConfigServices = $connectionSettings['estes-ltl']['carrier_services'] ?? [];
         $this->quoteSettingsData();
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
@@ -1012,11 +1015,9 @@ class CompileQuotes
             $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
         foreach ($shipments as $origin => $quote) {
-
             if (isset($quote['severity'])) {
                 continue;
             }
-
             if ($count == 0) {
                 //To be checked only once
                 $isRad = $quote['autoResidentialsStatus'] ?? '';
@@ -1037,9 +1038,23 @@ class CompileQuotes
                 if (isset($quote['hazardousStatus'])) {
                     $hazShipmentArr[$origin] = $quote['hazardousStatus'] == 'y' ? 'Y' : 'N';
                 }
-                foreach ($quote['q'] as $key => $data) {
-
+                foreach ($quote['q'] as $key => $data) {  
                     if (isset($data['ratquoteNumber'])) {
+                        if(isset($data['rataccessorialInfo']))
+                        {
+                            foreach($data['rataccessorialInfo'] as $rateEstes)
+                            {
+                              foreach($rateEstes as $rateEstesfecth)
+                              {
+                                if(isset($rateEstesfecth['ratcode']) && $rateEstesfecth['ratcode']=="LGATE")
+                                {
+                                    $data['surcharges']['liftgateFee']=$rateEstesfecth['ratcharge'];
+                                }
+
+                               }
+
+                            }
+                        }
                         $access = $this->getAccessorialCode() . $resiPickup;
 
                         $price = $this->calculateEstesPrice($data);
@@ -1048,11 +1063,10 @@ class CompileQuotes
                        * Date 01-07-22
                        * Adding Functionality of Delivery Estimate Options
                        * */
-
                         $date = $data['deliveryTimestamp'] ?? null;
                         $days = $data['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
-                        $title = $this->getTitle($data['rataccessorialInfo']['rataccessorial'][0]['ratdescription'], true, false, $data['ratdelivery']['totalTransitTimeInDays'], [], $dateAndDays);
+                        $title = $this->getTitle($labelAs, false, false, $data['ratdelivery']['totalTransitTimeInDays'], [], $dateAndDays);                        
                         $arraySorting['simple'][$key] = $price;
                         $originQuotes[$key]['simple']['code'] = 'estesltl' . $data['ratquoteNumber'] . $access;
                         $originQuotes[$key]['simple']['rate'] = $price;
@@ -1060,7 +1074,7 @@ class CompileQuotes
                         if ($lgQuotes) {
                             $lgAccess = 'estesLtl' . $this->getAccessorialCode(true) . $resiPickup;
                             $lgPrice = $this->calculateEstesPrice($data, true);
-                            $lgTitle = $this->getTitle($data['ratserviceLevel']['rattext'], true, false, $data['ratdelivery']['totalTransitTimeInDays'], [], $dateAndDays);
+                            $lgTitle = $this->getTitle($labelAs, true, false, $data['ratdelivery']['totalTransitTimeInDays'], [], $dateAndDays);
                             $arraySorting['liftgate'][$key] = $lgPrice;
                             $originQuotes[$key]['liftgate']['code'] = $data['ratquoteNumber'] . $lgAccess;
                             $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
@@ -1069,9 +1083,9 @@ class CompileQuotes
                     }
                 }
             }
-     
-            $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
-
+   
+            $compiledQuotes = $originQuotes;
+            
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
                 if (count($compiledQuotes) > 1) {
                     foreach ($compiledQuotes as $k => $service) {
@@ -2975,6 +2989,7 @@ class CompileQuotes
 
     public function getCompiledQuotes($services, $arraySorting, $lgQuotes)
     {
+
         if (empty($arraySorting) || empty($services)) {
             return [];
         }

@@ -156,6 +156,7 @@ class Shipping
         }
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
+       
 
        
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
