@@ -78,7 +78,10 @@ class QuotesResults
                     $formattedShipments[$shipment]['q']['surcharges']['liftgateFee'] = $lgFee;
                 }
             }
+
+            $formattedShipments[$shipment]['q']['InstorPickupLocalDelivery'] = $quotes['InstorPickupLocalDelivery'] ?? [];
         }
+
         return $formattedShipments;
     }
 
