@@ -55,7 +55,9 @@ Route::middleware([\App\Http\Middleware\FDOValidity::class])->group(function () 
     Route::get('/locations.json', [\App\Http\Controllers\FDOLocationsController::class, 'getLocations']);
 
 });
-Route::post('update_coupon_details_fdo', [FDOController::class, 'updateCouponDetailsFromFDO']);
+Route::post('update_coupon_details_fdo_av', [FDOController::class, 'updateCouponDetailsFromFDOAV']);
+Route::post('connection_update_from_va', [\App\Http\Controllers\AddressValidationController::class, 'connectionUpdateFromVa']);
+Route::post('connection_update_from_fdo', [\App\Http\Controllers\FDOController::class, 'connectionUpdateFromFdo']);
 
 
 /////
@@ -155,11 +157,14 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     //stores
     Route::get('/store', [StoreController::class, 'index']);
     Route::get('/get_fdo_info', [FDOController::class, 'getFdoCompanyInfo']);
+    Route::get('/get_fdo_coupon_info', [FDOController::class, 'getFDOCouponInfo']);
+    Route::get('/get_fdo_coupon_carrier_info', [FDOController::class, 'getFDOCouponCarrierInfo']);
     Route::post('/apply_promo_code', [FDOController::class, 'applyPromoCode']);
     Route::post('/update_fdo_connection', [FDOController::class, 'update']);
 
     // Address Validation
     Route::get('/get_av_info', [\App\Http\Controllers\AddressValidationController::class, 'getAvCompanyInfo']);
+    Route::post('/update_va_connection', [\App\Http\Controllers\AddressValidationController::class, 'updateVA']);
 
     //Start: Subscription Module Routes are given below
     Route::post('/subscribe-plan', [SubscriptionController::class, 'subscribeToPlan']);
