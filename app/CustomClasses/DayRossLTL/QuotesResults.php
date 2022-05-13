@@ -90,4 +90,22 @@ class QuotesResults
 
         return $isRAD;
     }
+
+    public function getShipmentDateAndDays($data): array
+    {
+        $date = $data['deliveryDate'] ?? null;
+        $days = $data['totalTransitTimeInDays'] ?? null;
+        $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
+
+        return $dateAndDays;
+    }
+
+    public function formatOriginQuotesArray($origin, $index, $access, $price, $title)
+    {
+        $originQuotes[$origin][$index]['code'] = 'dayrossltl' . $access;
+        $originQuotes[$origin][$index]['rate'] = $price;
+        $originQuotes[$origin][$index]['title'] = $title;
+
+        return $originQuotes;
+    }
 }

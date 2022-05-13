@@ -740,7 +740,7 @@ class CompileQuotes
                     }
                     break;
                 case "dayross":
-                    $resp = $this->compileDayRossLtlQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential);
+                    $resp = $this->compileDayRossLtlQuotes($shipment, $connectionSettings, $allOrigins, $hazmatAllItems, $residential);
                     $quotesTemp['dayross'] = $resp;
                     if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
                         $quotesRes = array_merge($quotesRes, $resp);
@@ -2092,7 +2092,7 @@ class CompileQuotes
         return $res['resp'] ?? [];
     }
 
-    private function compileDayRossLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
+    private function compileDayRossLtlQuotes($shipments, $connectionSettings, $allOrigins, $hazmatAllItems, $residential)
     {   
         $dayRossLtl = new dayRossLtlQuotesResults();
         
@@ -2108,6 +2108,7 @@ class CompileQuotes
         $this->quoteSettings = $connectionSettings['dayross-ltl']['quote_settings'] ?? [];
         $shipments = $dayRossLtl->formateQuoteBeforeCompile($shipments, $this->quoteSettings);
         $this->quoteSettingsData(); 
+
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
         $lgQuotes = false;
@@ -2134,8 +2135,7 @@ class CompileQuotes
                 }
             }
 
-            $originQuotes = [];
-            $arraySorting = [];
+            $originQuotes = $arraySorting = [];
 
             if (isset($quote['q'])) {
                 $items = $quote['q']['lineItems'] ?? [];
@@ -2155,9 +2155,8 @@ class CompileQuotes
                         $price = $this->calculatePrice($data);
                         $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : 'Freight';
 
-                        $date = $data['deliveryDate'] ?? null;
                         $days = $data['totalTransitTimeInDays'] ?? null;
-                        $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
+                        $dateAndDays = $dayRossLtl->getShipmentDateAndDays($data);
                         $title = $this->getTitle($data['serviceDesc'], false, false, $days, [], $dateAndDays);
 
                         $arraySorting['simple'][$origin] = $price;
@@ -2178,14 +2177,22 @@ class CompileQuotes
                 }
             }
 
-            $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);    
-
+            $compiledQuotes = $originQuotes;    
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
-                $service = reset($compiledQuotes);
-                $allQuotes['simple'][] = $service['simple'] ?? '';
-                $multiShipmentQuotes['simple'][$origin] = $service['simple'] ?? '';
-                $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
-                $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
+                if (count($compiledQuotes) > 1) {
+                    foreach ($compiledQuotes as $k => $service) {
+                        $allQuotes['simple'][] = $service['simple'];
+                        $multiShipmentQuotes['simple'][$origin] = $service['simple'];
+                        $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
+                        $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
+                    }
+                } else {
+                    $service = reset($compiledQuotes);
+                    $allQuotes['simple'][] = $service['simple'] ?? '';
+                    $multiShipmentQuotes['simple'][$origin] = $service['simple'] ?? '';
+                    $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
+                    $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
+                }
             }
 
             if ($this->isMultiShipment) {
@@ -2200,6 +2207,17 @@ class CompileQuotes
         /* Quotes for instore delivery */
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
+        }
+
+        /* Multishipment quotes with LGD  */
+        if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1)) {
+            $allQuotes = $this->forceChangeTitle($allQuotes);
+            $resp = [
+                'checkoutQuotes' => $allQuotes,
+                'multiShipmentQuotes' => $multiShipmentQuotes,
+            ];
+
+            return $resp;
         }
 
         $resp = $allQuotes;
