@@ -1063,8 +1063,8 @@ class CompileQuotes
                        * Date 01-07-22
                        * Adding Functionality of Delivery Estimate Options
                        * */
-                        $date = $data['deliveryTimestamp'] ?? null;
-                        $days = $data['totalTransitTimeInDays'] ?? null;
+                        $date = $data['ratdelivery']['ratdate'] ?? null;
+                        $days = $data['ratdelivery']['rattime'] ?? null;
                         $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
                         $title = $this->getTitle($labelAs, false, false, $data['ratdelivery']['totalTransitTimeInDays'], [], $dateAndDays);                        
                         $arraySorting['simple'][$key] = $price;
@@ -2558,7 +2558,6 @@ class CompileQuotes
         $serviceTitle = $this->customLabel($serviceName);
         $this->quoteSettings['method'] = $quoteSetting['method'] ?? 0;
         $this->quoteSettings['label_as'] = $quoteSetting['label_as'] ?? '';
-
         $deliveryEstimateLabel = $this->getDeliveryEstimates($dateAndDays);
 
         if ($this->isMultiShipment && $from == false) {

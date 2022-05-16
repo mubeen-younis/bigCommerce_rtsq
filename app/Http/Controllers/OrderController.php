@@ -57,6 +57,7 @@ class OrderController extends Controller
     {
         try {
             $order = $this->getBCOrderByID($request);
+            
             if (empty($order)) {
                 return response()->json(['error' => true,
                     'data' => [],
@@ -138,7 +139,7 @@ class OrderController extends Controller
                 ->first())->toArray() ?? null;
         if (blank($data) && !blank($order['full_rate_id'])) {
             $data = optional(RequestTempData::where('rate_id', $order['full_rate_id'])
-                    ->where('cart_id', $cartId)
+                    // ->where('cart_id', $cartId)
                     ->where('store_id', $request['store_id'])
                     ->first())->toArray() ?? null;
             $rateId = $order['full_rate_id'] ?? null;
@@ -537,9 +538,8 @@ class OrderController extends Controller
         $headers[] = 'X-Auth-Token: ' . $store->access_token;
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
-        $endpoint = "https://api.bigcommerce.com/stores/" . $request['store_hash'] . "/v2/orders/" . 2817;
+        $endpoint = "https://api.bigcommerce.com/stores/" . $request['store_hash'] . "/v2/orders/" . $request['order_id'];
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
-      
         $resp = [];
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
             $resp = json_decode($response['response'], true);
