@@ -28,11 +28,36 @@ class QuotesResults
         return $title . $resiTitle;
     }
 
+    public function isSuppressedRatesShipment($shipments)
+    {
+        $isSuppressedRates = false;
+
+        foreach ($shipments as $origin => $quote) {
+            if (isset($quote['severity']) && isset($quote['q']['error'])) {
+                continue;
+            }
+
+            $insPickupAndLocDel = $quote['InstorPickupLocalDelivery'] ?? [];
+            if (isset($insPickupAndLocDel) && !blank($insPickupAndLocDel)) {
+                if (isset($insPickupAndLocDel['localDelivery']) && isset($insPickupAndLocDel['localDelivery']['suppress']) && $insPickupAndLocDel['localDelivery']['suppress'] == 1) {
+                    $isSuppressedRates = true;
+                    break;
+                }
+            }
+        }
+
+        return $isSuppressedRates;
+    }
+
     public function formateQuoteBeforeCompile($shipments, $connSettings): array
     {
         $formattedShipments = [];
+        if ($this->isSuppressedRatesShipment($shipments)) {
+            return $shipments;
+        }
+
         foreach ($shipments as $shipment => $quotes) {
-            if (!isset($quotes['q'])) {
+            if (!isset($quotes['q']) || isset($quotes['q']['error'])) {
                 continue;
             }
 

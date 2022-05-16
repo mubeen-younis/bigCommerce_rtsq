@@ -2121,7 +2121,7 @@ class CompileQuotes
         }
         
         if (!$this->isMultiShipment) {
-            $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;;
+            $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
         
         $labelAs = $this->quoteSettings['label_as'] ?? '';
@@ -2131,8 +2131,9 @@ class CompileQuotes
             }
 
             if ($count == 0) { 
-                $inStoreLdData = $quote['q']['InstorPickupLocalDelivery'] ?? false;
+                $inStoreLdData = $yrcLtl->isSuppressedRatesShipment($shipments) ? $quote['InstorPickupLocalDelivery'] : $quote['q']['InstorPickupLocalDelivery'] ?? false;
                 unset($quote['InstorPickupLocalDelivery']);
+                unset($quote['q']['InstorPickupLocalDelivery']);
 
                 $lgQuotes =
                     (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery']) ||
@@ -2147,7 +2148,7 @@ class CompileQuotes
             $originQuotes = [];
             $arraySorting = [];
 
-            if (isset($quote['q'])) {
+            if (isset($quote['q']) && !$yrcLtl->isSuppressedRatesShipment($shipments)) {
                 $items = $quote['q']['lineItems'];
                 foreach ($items as $key => $item) {
                     if($item['hazardous'] == 'Y'){
