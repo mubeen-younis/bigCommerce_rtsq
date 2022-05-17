@@ -203,7 +203,7 @@ class LocationsController extends Controller
             $location->city = $request->city;
             $location->state = $request->state;
             $location->country = $request->country;
-            //$location->additionals = json_encode($request->all());
+
             $additionals = [
                 'instore_pickup' => $request->enable_instore ?? '',
                 'local_delivery' => $request->enable_ld ?? '',
@@ -212,6 +212,11 @@ class LocationsController extends Controller
                     'miles' => $request->instore_miles ?? '',
                     'postalCodes' => (!empty($request->instore_zipcodes)) ? implode(',', $request->instore_zipcodes) : '',
                     'checkout_description' => $request->instock_description ?? '',
+                    'default_location' => $request->default_location ?? '',
+                    'instore_postalCode' => $request->instore_postalCode ?? '',
+                    'instore_city' => $request->instore_city ?? '',
+                    'instore_state' => $request->instore_state ?? '',
+                    'instore_country' => $request->instore_country ?? '',
                 ],
                 'local_delivery_data' => [
                     'miles' => $request->ld_miles ?? '',

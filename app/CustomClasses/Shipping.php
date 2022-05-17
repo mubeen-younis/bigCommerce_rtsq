@@ -128,7 +128,7 @@ class Shipping
                 if ($this->isSmall($key)) {
                     $carriersArray['carriers'][$key]['api']['includeDeclaredValue'] = 1;
                 } else {
-                    if($key == 'wweLTL'){
+                    if ($key == 'wweLTL') {
                         $carriersArray['carriers'][$key]['api']['insureShipment'] = 1;
                     }
                 }
@@ -251,44 +251,32 @@ class Shipping
     public function showOnlyLocAndInstoreQuote($items): bool
     {
         foreach ($items as $item) {
-            if (isset($item['quote_as_instore']) && $item['quote_as_instore']) {
-                $this->instoreQuotes = true;
-            }
             if (isset($item['quote_as_local']) && $item['quote_as_local']) {
-                $this->locDelQuotes = true;
+                return true;
             }
         }
-        return $this->instoreQuotes || $this->locDelQuotes;
+        return false;
     }
+
 
     public function enableSuppressRatesInOrigins($origins)
     {
         //  Need to set some status for WS to suppress quotes and ignore destination origin
         $found = false;
         foreach ($origins as $key => $origin) {
-            if ($this->locDelQuotes) {
-                if (isset($origin['InstorPickupLocalDelivery']['localDelivery']['postalCodeMatch'])) {
-                    $origins[$key]['InstorPickupLocalDelivery']['suppress'] = 1;
-                    // $origins[$key]['InstorPickupLocalDelivery']['localDelivery']['postalCodeMatch'] = 1;
-                    $found = true;
-                }
-            } else {
-                unset($origins[$key]['InstorPickupLocalDelivery']['localDelivery']);
+            if (isset($origin['InstorPickupLocalDelivery']['localDelivery']['postalCodeMatch'])) {
+                $origins[$key]['InstorPickupLocalDelivery']['suppress'] = 1;
+                $found = true;
             }
 
-            if ($this->instoreQuotes) {
-                if (isset($origin['InstorPickupLocalDelivery']['inStorePickup']['postalCodeMatch'])) {
-                    $origins[$key]['InstorPickupLocalDelivery']['suppress'] = 1;
-                    // $origins[$key]['InstorPickupLocalDelivery']['inStorePickup']['postalCodeMatch'] = 1;
-                    $found = true;
-                }
-            } else {
-                unset($origins[$key]['InstorPickupLocalDelivery']['inStorePickup']);
+            if (isset($origin['InstorPickupLocalDelivery']['inStorePickup']['postalCodeMatch'])) {
+                $origins[$key]['InstorPickupLocalDelivery']['suppress'] = 1;
+                $found = true;
             }
+
         }
         if (!$found) {
-            // TODO  will return empty array if the customer dont enabled instore or local delivery and product quotes as instore or local
-            $this->showOnlyLocAndInstoreQuote = false;
+            return [];
         }
         return $origins;
     }
