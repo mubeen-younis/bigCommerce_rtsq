@@ -14,6 +14,7 @@ use App\CustomClasses\WweLTL\WweLtlConnectionSettings;
 use App\CustomClasses\WWESMALL\SmallConnectionSettings;
 use App\CustomClasses\XPO\ltl\ConnectionSettings as XPOLtlConnectionSettings;
 use App\CustomClasses\Unishippers\small\ConnectionSettings as UnishippersSmallConnectionSettings;
+use App\CustomClasses\YrcLTL\ConnectionSettings as YrcLtlConnectionSettings;
 use App\Endpoints\Endpoints;
 use App\Models\Connection;
 use App\Models\Coupon;
@@ -44,6 +45,7 @@ class ConnectionController extends Controller
         $this->xpoLtlTestCon = new XPOLtlConnectionSettings();
         $this->rnlLtlTestCon = new RNLLtlConnectionSettings();
         $this->unishippersSmallTestCon = new UnishippersSmallConnectionSettings();
+        $this->yrcLtlTestCon = new YrcLtlConnectionSettings();
     }
 
     public function index(Request $request)
@@ -127,6 +129,9 @@ class ConnectionController extends Controller
                 case 'unishippers-small':
                     $response = $this->unishippersSmallTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
+                case 'yrc-ltl':
+                    $response = $this->yrcLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
                 default:
                     return response()->json(["error" => true, "data" => [],
                         'message' => 'No carrier Matches']);
@@ -136,7 +141,7 @@ class ConnectionController extends Controller
         $carriersArr = ['ltl-quotes', 'small-package', 'gtz-ltl', 'unishippers-small'];
         if (!blank($request['promo_code']) &&
             in_array($checkCarrierType->slug, $carriersArr) &&
-            ((isset($request['is_enabled']) && $request['is_enabled'] == false) || !isset($request['is_enabled']))
+            ((isset($request['is_enabled']) && $re1quest['is_enabled'] == false) || !isset($request['is_enabled']))
         ) {
             $fdoCouponResponse = $this->getFDOCouponCarrierInfo($request, $checkCarrierType->slug);
             if (isset($fdoCouponResponse['status']) && $fdoCouponResponse['status'] == true) {
