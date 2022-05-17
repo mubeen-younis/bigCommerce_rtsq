@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Subscription;
 
 
 use App\CustomClasses\Functions;
+use App\Helpers\Helpers;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\HubSpotController;
 use App\Http\Controllers\SaleGraphController;
@@ -963,6 +964,7 @@ class SubscriptionController extends Controller
                 'updated_date' => $paymentDetail->data->object->webhooks_delivered_at,
                 'subscriptionId' => $paymentDetail->data->object->subscription
             );
+
         } else {
             $params = array(
                 'subscriptionId' => $paymentDetail->data->object->items->data[0]->subscription
@@ -974,6 +976,14 @@ class SubscriptionController extends Controller
                 'msg' => 'Customer does not exists.'
             ];
         }
+        $subscriptionDetail = Subscription::where('stripe_id', $customerId)->first();
+        /*Added this condition due to webhook failure of stripe*/
+        if ($subscriptionDetail->is_test_subscription == 1) {
+            Helpers::setStripeAPiKey(true);
+        } else {
+            Helpers::setStripeAPiKey(false);
+        }
+        
         $customer = \Stripe\Customer::retrieve($customerId);
 
         $email = $customer->email;
@@ -989,7 +999,7 @@ class SubscriptionController extends Controller
         $userLost = false;
         if ($paymentStatus == 1) {
             $emailData = array(
-                'receiverEmail' => $customer->email,
+                'receiverEmail' => $email,
                 'receiverName' => $customer->name,
                 'productName' => 'Real-time Shipping Quotes',
                 'planName' => $planDetail->name,
@@ -1003,7 +1013,7 @@ class SubscriptionController extends Controller
             Mail::to($email)->send(new PaymentFailedByWebHookEmail($emailData, $paymentStatus));
         } elseif ($paymentStatus == 2) {
             $emailData = array(
-                'receiverEmail' => $customer->email,
+                'receiverEmail' => $email,
                 'receiverName' => $customer->name,
                 'productName' => 'Real-time Shipping Quotes',
                 'planName' => $planDetail->name,
@@ -1016,7 +1026,7 @@ class SubscriptionController extends Controller
             Mail::to($email)->send(new PaymentFailedByWebHookEmail($emailData, $paymentStatus));
         } elseif ($paymentStatus == 0) {
             $emailData = array(
-                'receiverEmail' => $customer->email,
+                'receiverEmail' => $email,
                 'receiverName' => $customer->name,
                 'productName' => 'Real-time Shipping Quotes',
                 'planName' => $planDetail->name,
@@ -1036,7 +1046,7 @@ class SubscriptionController extends Controller
             /*
              * Create Hub spot user and activate trial
              */
-            $user = ['email' => $customer->email];
+            $user = ['email' => $email];
             $status = ['products_lost' => true];
             $hubSpotController = new HubSpotController();
             $hubSpotController->createUpdateHubSpotUser($oldSubscription->store_id, $user, $status);

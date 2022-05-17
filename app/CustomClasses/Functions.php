@@ -151,6 +151,19 @@ class Functions
         return null;
     }
 
+    public static function carrierSlugForFdo($carrierSlug)
+    {
+        $arr = ['WWE_PL' => 'small-package',
+            'WWE_LTL' => 'ltl-quotes',
+            'GTZ' => 'gtz-ltl',
+            'UNI_PL' => 'unishippers-small'
+        ];
+        if (isset($arr[$carrierSlug])) {
+            return $arr[$carrierSlug];
+        }
+        return null;
+    }
+
     public static function checkMultiUnique($src)
     {
         $output = array_map("unserialize",
