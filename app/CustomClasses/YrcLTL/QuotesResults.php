@@ -39,7 +39,7 @@ class QuotesResults
 
             $insPickupAndLocDel = $quote['InstorPickupLocalDelivery'] ?? [];
             if (isset($insPickupAndLocDel) && !blank($insPickupAndLocDel)) {
-                if (isset($insPickupAndLocDel['localDelivery']) && isset($insPickupAndLocDel['localDelivery']['suppress']) && $insPickupAndLocDel['localDelivery']['suppress'] == 1) {
+                if (isset($insPickupAndLocDel['suppress']) && $insPickupAndLocDel['suppress'] == 1) {
                     $isSuppressedRates = true;
                     break;
                 }
