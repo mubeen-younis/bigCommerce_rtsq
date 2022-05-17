@@ -2108,6 +2108,7 @@ class CompileQuotes
         $shipments = $yrcLtl->formateQuoteBeforeCompile($shipments, $connectionSettings['yrc-ltl']['creds']);
         $this->quoteSettings = $connectionSettings['yrc-ltl']['quote_settings'] ?? [];
         $this->quoteSettingsData(); 
+
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
         $lgQuotes = false;
@@ -2120,7 +2121,7 @@ class CompileQuotes
         }
         
         if (!$this->isMultiShipment) {
-            $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;;
+            $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
         
         $labelAs = $this->quoteSettings['label_as'] ?? '';
@@ -2129,10 +2130,11 @@ class CompileQuotes
                 continue;
             }
 
-            if ($count == 0) { //To be checked only once
-                $isRad = $quote['autoResidentialsStatus'] ?? '';
-                $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
+            if ($count == 0) { 
+                $inStoreLdData = $yrcLtl->isSuppressedRatesShipment($shipments) ? $quote['InstorPickupLocalDelivery'] : $quote['q']['InstorPickupLocalDelivery'] ?? false;
                 unset($quote['InstorPickupLocalDelivery']);
+                unset($quote['q']['InstorPickupLocalDelivery']);
+
                 $lgQuotes =
                     (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery']) ||
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
@@ -2146,7 +2148,7 @@ class CompileQuotes
             $originQuotes = [];
             $arraySorting = [];
 
-            if (isset($quote['q'])) {
+            if (isset($quote['q']) && !$yrcLtl->isSuppressedRatesShipment($shipments)) {
                 $items = $quote['q']['lineItems'];
                 foreach ($items as $key => $item) {
                     if($item['hazardous'] == 'Y'){

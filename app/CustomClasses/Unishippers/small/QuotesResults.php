@@ -20,11 +20,12 @@ class QuotesResults
         $this->quoteSettings = $connectionSettings['unishippers-small']['quote_settings'] ?? '';
 
         $numberOfShipments = 0;
-        foreach ($shipments as $ship) {
-            if (!isset($ship['severity'])) {
+        foreach ($shipments as $key => $ship) {
+            if (!isset($ship['severity']) && !in_array($key, ['ground', 'air'])) {
                 $numberOfShipments++;
             }
         }
+
         if (!$isMultiShipment) {
             $isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
