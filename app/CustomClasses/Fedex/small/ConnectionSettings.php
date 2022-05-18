@@ -2,13 +2,14 @@
 
 namespace App\CustomClasses\Fedex\small;
 
+use App\CustomClasses\CarriersConnectionSettings;
 use App\CustomClasses\CurlRequest;
 
-class ConnectionSettings
+class ConnectionSettings extends CarriersConnectionSettings
 {
-    private $testConnectionUrl = 'https://eniture.com/ws/s/fedex/fedex_shipment_rates_test.php';
     public function __construct()
     {
+        parent::__construct();
         $this->curlRequest = new CurlRequest();
     }
 

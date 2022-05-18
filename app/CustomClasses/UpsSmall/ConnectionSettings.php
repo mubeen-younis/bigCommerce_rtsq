@@ -3,12 +3,15 @@
 namespace App\CustomClasses\UpsSmall;
 
 use App\CustomClasses\CurlRequest;
+use App\Endpoints\Endpoints;
 
 class ConnectionSettings
 {
-    private $testConnectionUrl = 'https://eniture.com/ws/s/ups/auth.php';
+    private $testConnectionUrl;
+
     public function __construct()
     {
+        $this->testConnectionUrl = Endpoints::upsSmallTestEndpoint();
         $this->curlRequest = new CurlRequest();
     }
 
