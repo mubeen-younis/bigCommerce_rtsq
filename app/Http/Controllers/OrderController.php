@@ -170,6 +170,7 @@ class OrderController extends Controller
         /*
         * Stored Response from WS */
         $lineItem = json_decode($data['lineitems'])->lineItemData;
+        $originalItems = $lineItem->items;
         $responseFromWS = json_decode($data['quotes']);
         $shippingGroupResp = !blank($data['shipping_group_resp']) ? json_decode($data['shipping_group_resp']) : [];
 
@@ -362,11 +363,14 @@ class OrderController extends Controller
                 }
             }
 
-            // TODO : Need to to do this for items as well
-         /*   if (!$isMultiShipment && $isInspOrLocal) {
+            /*If instore and not multi shipment we are showing only instore and local delivery original items*/
+            if (!$isMultiShipment && $isInspOrLocal) {
+                $orderWidget[$zip]['items'] = [];
+                foreach ($originalItems as $originalItem) {
+                    $orderWidget[$zip]['items'][] = $originalItem->originalPiecesOfLineItem . ' X ' . $originalItem->lineItemName;;
+                }
 
-                $orderWidget[$zip]['items']=[];
-            }*/
+            }
 
 
             /*
