@@ -23,16 +23,20 @@ class ConnectionSettings
         $params = array(
             'dont_auth' => '1',
             // -------------Carrier Credentials------------- //
-            'username' => $data->username,
+            'userID' => $data->userID,
             'password' => $data->password,
-            'unishipperscustomernumber' => $data->unishippers_customer_number,
-            'upsaccountnumber' => $data->ups_account_number,
-            'requestkey' => $data->request_key,
-            'carrierName' => 'unisheppers',
+            'accountNumber' => $data->account_number,
+            'application' => $data->third_party_account_number ?? 'ThirdParty',
+            // Inbound, Outbound, ThirdParty
+            'originPostalCode' => $data->original_postal_code,
+
+            'licence_key' => 'TDVB9ONC-M7QJRPRQ-5EDIH32D-DE73Y57I',
+            'serverName' => $storeName,
+
+            'carrierName' => 'saia',
             'carrier_mode' => 'test',
-            'unique_key' => '87676ba67fc1bd58a97e77f05063c177',
+            'apiVersion' => '1.0',
             'platform' => 'bigcommerce',
-            'serverName' => $storeName, // $_SERVER['SERVER_NAME'];
         );
 
         $queryString = http_build_query($params);
