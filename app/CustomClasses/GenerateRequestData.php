@@ -126,6 +126,11 @@ class GenerateRequestData
                     $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['unishippersSmall'] = $wweLtlArr;
                     break;
+                case 'odfl-ltl':
+                    $wweLtlArr = $this->odflLtlEnitArr($con1, $destination);
+                    $wweLtlArr['originAddress'] = $enitOrigin;
+                    $carriersArr['carriers']['odfl4me'] = $wweLtlArr;
+                    break;
             }
         }
         return ['carriersArr' => $carriersArr, 'residential' => $this->resiCarrier];
@@ -181,6 +186,23 @@ class GenerateRequestData
             'getDistance' => 0,
         ];
     }
+    public function odflLtlEnitArr($connSettings, $destination)
+    {
+        return [
+
+            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'serverName' => "https://" . $this->storeData['store']['name'],
+            'carrierMode' => 'pro',
+            'quotestType' => 'ltl', // ltl / small
+            'version' => '1.0.0',
+            // 'returnQuotesOnExceedWeight' => $connSettings['quote_settings']['weightExeeds'],
+            'returnQuotesOnExceedWeight' => 1,
+            'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
+            'api' => $this->getApiInfoArrOdflLtl($connSettings, $destination),
+            'getDistance' => 0,
+        ];
+    }
+    
 
     function gtzLtlEnitArr($connSettings, $destination, $enitOrigin, $carName)
     {
@@ -677,6 +699,61 @@ class GenerateRequestData
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
 
     }
+    public function getApiInfoArrOdflLtl($connSettings, $destination)
+    {
+        $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
+            (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+        /*
+         * Check if rad hit not consumed and residential is enables
+         * **/
+        $residential = 'N';
+        $alwaysResi = false;
+        $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
+        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+            if ($this->radHitConsumed == 0) {
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+            } else {
+                $residential = $this->residential;
+            }
+            if ($liftGate != 'Y') {
+                $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
+            }
+        } else {
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+        }
+
+        $this->resiCarrier['odflLtl'] = $residential;
+        $this->resiCarrier['alwaysResi']['odflLtl'] = $alwaysResi;
+
+        $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
+
+        $insurance = [
+            'code' => '',
+            'value' => ''
+        ];
+        if (isset($connSettings['quote_settings']['insurance_category'])) {
+            $insuranceCategory = explode('-', $connSettings['quote_settings']['insurance_category']);
+            $insurance = [
+                'code' => $insuranceCategory[0] ?? '',
+                'value' => $insuranceCategory[1] ?? ''
+            ];
+        }
+        $apiArray = [
+            'odflUserName' => $connSettings['creds']['username'],
+            'odflPassword' => $connSettings['creds']['password'],
+            'odflCustomerAccount' => $connSettings['creds']['customer_number'],
+            'senderZip' => $connSettings['creds']['billing_postal_Code'],
+            'accessorial' => array(
+                'RDC', // residential delivery
+                'HYD' // liftgate delivery
+            ),
+        ];
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
+
+    }
+    
 
     public function getApiInfoArrGTZLtl($connSettings, $destination, $carName)
     {

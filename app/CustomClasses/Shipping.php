@@ -97,6 +97,7 @@ class Shipping
         $carriersArray = $resp['carriersArr'];
 
         $this->multiOrigins = $this->checkIsMultiShipment($carriersArray['carriers']);
+        
 
         /*Check for MUlti shipment and product marked as instore or local delivery*/
         if ($this->multiOrigins && $this->showOnlyLocAndInstoreQuote) {
@@ -135,10 +136,12 @@ class Shipping
         if (empty($requestArr)) {
             return false;
         }
-        $url = Constant::QUOTES_URL;
+        $url = Constant::QUOTES_URL;        
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
+        $url="https://eniture-qa.com/ws/v3.0/index.php";
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
+        
         /*
       * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
       */
@@ -160,6 +163,8 @@ class Shipping
 
         $quotesFromWs = $quotes ?? [];
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination);
+        
+
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];
@@ -582,6 +587,7 @@ class Shipping
     public
     function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null)
     {
+        
         //print_r($resp); print_r($multiShipmentQuotes); exit;
         foreach ($finalQuotes as $finalQuote) {
             $RequestTempData = new RequestTempData();
@@ -778,7 +784,7 @@ class Shipping
             $output = curl_exec($ch);
             curl_close($ch);
             Log::info('$output ' . $output);
-            return json_decode($output, true);
+           $result=json_decode($output, true);
         } catch (\Throwable $e) {
             $result = [];
         }

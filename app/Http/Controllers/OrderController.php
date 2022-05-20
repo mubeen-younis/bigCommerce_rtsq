@@ -133,12 +133,12 @@ class OrderController extends Controller
     {
         $rateId = $order['rate_id'] ?? null;
         $cartId = $order['cart_id'] ?? null;
-        $data = optional(RequestData::where('rate_id', $rateId)
+        $data = optional(RequestTempData::where('rate_id', $rateId)
                 ->where('cart_id', $cartId)
                 ->where('store_id', $request['store_id'])
                 ->first())->toArray() ?? null;
         if (blank($data) && !blank($order['full_rate_id'])) {
-            $data = optional(RequestData::where('rate_id', $order['full_rate_id'])
+            $data = optional(RequestTempData::where('rate_id', $order['full_rate_id'])
                     ->where('cart_id', $cartId)
                     ->where('store_id', $request['store_id'])
                     ->first())->toArray() ?? null;

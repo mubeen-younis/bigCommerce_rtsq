@@ -15,6 +15,8 @@ use App\CustomClasses\WWESMALL\SmallConnectionSettings;
 use App\CustomClasses\XPO\ltl\ConnectionSettings as XPOLtlConnectionSettings;
 use App\CustomClasses\Unishippers\small\ConnectionSettings as UnishippersSmallConnectionSettings;
 use App\Endpoints\Endpoints;
+use App\CustomClasses\OdflLTL\ConnectionSettings as OdflLTLConnectionSettings;
+
 use App\Models\Connection;
 use App\Models\Coupon;
 use App\Models\CouponCarrier;
@@ -44,6 +46,7 @@ class ConnectionController extends Controller
         $this->xpoLtlTestCon = new XPOLtlConnectionSettings();
         $this->rnlLtlTestCon = new RNLLtlConnectionSettings();
         $this->unishippersSmallTestCon = new UnishippersSmallConnectionSettings();
+        $this->odflLTLConL = new OdflLTLConnectionSettings();
     }
 
     public function index(Request $request)
@@ -126,6 +129,9 @@ class ConnectionController extends Controller
                     return response()->json($response);
                 case 'unishippers-small':
                     $response = $this->unishippersSmallTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'odfl-ltl':
+                    $response = $this->odflLTLConL->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
                 default:
                     return response()->json(["error" => true, "data" => [],
