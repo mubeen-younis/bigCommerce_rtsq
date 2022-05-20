@@ -4,14 +4,16 @@
 namespace App\CustomClasses\WWESMALL;
 
 use App\CustomClasses\CurlRequest;
+use App\Endpoints\Endpoints;
 use App\Models\Connection;
 
 class SmallConnectionSettings
 {
     private $testConnectionUrl = 'https://eniture.com/ws/carriers/wwe-small/speedshipTest.php';
+
     public function __construct()
     {
-
+        $this->testConnectionUrl = Endpoints::wweSmallTestEndpoint();
         $this->curlRequest = new CurlRequest();
     }
 

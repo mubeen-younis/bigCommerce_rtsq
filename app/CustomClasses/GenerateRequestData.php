@@ -389,6 +389,7 @@ class GenerateRequestData
                 $carriersoriginAddress = $carriers['wweSmall']['originAddress']
                     ?? $carriers['upsSmall']['originAddress']
                     ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? [];
+
                 if (isset($carriers['fedexSmall'])) {
                     $this->checkServiceEnabled();
                     if ($this->ground) {
@@ -479,7 +480,8 @@ class GenerateRequestData
                     || isset($carriers['fedexLTL'])
                     || isset($carriers['cerasis'])
                     || isset($carriers['globalTranz'])
-                    || isset($carriers['xpoLogistics']);
+                    || isset($carriers['xpoLogistics'])
+                    || isset($carriers['yrc']);
                 if ($isLtl) {
                     $itemsArr = $olditemsArr + $itemsArr;
                 }
@@ -1244,7 +1246,6 @@ class GenerateRequestData
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
                 $this->residential = $residential;
-
             } else {
                 $residential = $this->residential;
             }

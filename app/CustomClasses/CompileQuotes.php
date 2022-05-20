@@ -2257,7 +2257,9 @@ class CompileQuotes
         if (empty($quotes)) {
             return [];
         }
+
         $lfg = (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery'] == 1) || ($this->isResi && isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']);
+        
         if ($this->isMultiShipment == false) {
             if (
                 isset($quotes['liftgate'])
@@ -2384,7 +2386,8 @@ class CompileQuotes
     public function calculatePrice($data, $lgOption = false, $getCost = false, $isUpsLtl = false)
     {
         $lgCost = $lgOption ? 0 : $this->getLiftGateCost($data, $getCost, $isUpsLtl);
-        $basePrice = (float)$data['totalNetCharge']['Amount'];
+        $basePrice = str_replace(',', '', $data['totalNetCharge']['Amount']);
+        $basePrice = (float)$basePrice; 
         $basePrice = $basePrice - $lgCost;
         $basePrice = $this->calculateHandlingFee($basePrice);
         return $basePrice;
@@ -2465,7 +2468,7 @@ class CompileQuotes
 
         // Here  Making Access title
         $accessTitle = '';
-
+        
         if ($lgOption === true || (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) {
             if ($lgOption && $this->quoteSettings['alwaysLiftGateDelivery'] == '0') {
                 $accessTitle = $this->isResi ? $this->resiLgLabel : $this->lgLabel;
