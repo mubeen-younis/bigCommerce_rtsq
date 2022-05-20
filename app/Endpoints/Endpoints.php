@@ -5,7 +5,7 @@ namespace App\Endpoints;
 class Endpoints
 {
     public static $qaUrl = "https://eniture-qa.com/";
-    public $prodUrl = "https://eniture.com/";
+    public static $prodUrl = "https://eniture.com/";
 
     public static function getBCComEndpoint()
     {

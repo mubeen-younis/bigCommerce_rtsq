@@ -1,6 +1,6 @@
 <?php
 
-namespace App\CustomClasses\SaiaLTL;
+namespace App\CustomClasses\YrcLTL;
 
 use App\CustomClasses\CarriersConnectionSettings;
 use App\CustomClasses\CurlRequest;
@@ -20,23 +20,23 @@ class ConnectionSettings extends CarriersConnectionSettings
             'message' => 'Something went wrong!',
         ];
         $url = $this->testConnectionUrl;
+
         $params = array(
             'dont_auth' => '1',
-            // -------------Carrier Credentials------------- //
-            'userID' => $data->userID,
-            'password' => $data->password,
-            'accountNumber' => $data->account_number,
-            'application' => $data->third_party_account_number ?? 'ThirdParty',
-            // Inbound, Outbound, ThirdParty
-            'originPostalCode' => $data->original_postal_code,
-
             'licence_key' => 'TDVB9ONC-M7QJRPRQ-5EDIH32D-DE73Y57I',
-            'serverName' => $storeName,
+            // -------------Carrier Credentials------------- //
+            'userId' => $data->username,
+            'password' => $data->password,
+            'busId' => $data->business_id,
+            'dimWeightBaseAccount' => $data->yrc_rates,
 
-            'carrierName' => 'saia',
-            'carrier_mode' => 'test',
             'apiVersion' => '1.0',
+            'carrierName' => 'yrc',
+            'carrier_mode' => 'test',
             'platform' => 'bigcommerce',
+            'RequestOption' => 'Rate',
+            'ServiceClass' => 'STD',
+            'sever_name' => $storeName,
         );
 
         $queryString = http_build_query($params);
@@ -50,12 +50,13 @@ class ConnectionSettings extends CarriersConnectionSettings
         }
 
         $output = json_decode($output['response'], true);
-        if (isset($output['severity']) && $output['severity'] === 'ERROR' && isset($output['Message'])) {
+
+        if (isset($output['severity']) && $output['severity'] == 'ERROR' && isset($output['Message']) || (isset($output['error']) && $output['error'] && $output['error'] == 1)) {
             $response = [
                 'error' => true,
-                'message' => $output['Message'],
+                'message' => $output['Message'] ?? $output['error_desc'],
             ];
-        } elseif (isset($output['severity']) && $output['severity'] === 'SUCCESS') {
+        } elseif ((isset($output['severity']) && $output['severity'] === 'SUCCESS') || (isset($output['success']) && $output['success'] == 1)) {
             $response = [
                 'error' => false,
                 'message' => 'Test connection successful.',
