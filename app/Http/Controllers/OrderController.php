@@ -446,7 +446,7 @@ class OrderController extends Controller
                 $itemsForm[] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
             }
             foreach ($orderWidget as $key => $data) {
-                $items = data_get($data, 'items');
+                $items = data_get($data, 'items') ?? [];
                 if (count($orderWidget) > 1) {
                     if ($data['locationtype'] == "Warehouse") {
                         $items = array_merge($items, $itemsForm);
