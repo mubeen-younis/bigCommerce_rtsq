@@ -359,7 +359,7 @@ class ExportImportProducts extends Controller
 
         /*Start -  For Dropship CHange*/
         $dropShipId = $this->updateDropShip($product, $indexes, $store_id);
-        if ($dropShipId!=false) {
+        if ($dropShipId != false) {
             $update['dropship_enabled'] = true;
             $update['dropship_location'] = $dropShipId;
         } else {
@@ -449,7 +449,10 @@ class ExportImportProducts extends Controller
                 $settings->allow_vertical = ($product["$key"] == 1) ? true : false;;
             }
         }
-        if ((isset($settings->allow_vertical) && $settings->allow_vertical ) && (isset($settings->ship_own_package) && $settings->ship_own_package)) {
+
+        $allowVert = optional($settings)->allow_vertical ?? false;
+        $shipOwn = optional($settings)->ship_own_package ?? false;
+        if ($allowVert && $shipOwn) {
             $settings->ship_own_package = false;
         }
         if (isset($indexes['insurance']) && $indexes['insurance']) {
