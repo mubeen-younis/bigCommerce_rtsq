@@ -222,8 +222,6 @@ class MainController extends BaseController
                 $storeHash = $storeHash[1] ?? $verifiedSignedRequestData['context'];
                 /*Function for checking time of the token update and getting token from db*/
                 $toAppendHash = $this->getAndUpdateToken($storeHash);
-                // Updating UNit Of Weight to show on product settings
-                $this->updateWeightUnit($storeHash);
                 if (Store::where('hash', $verifiedSignedRequestData['store_hash'])->where('is_webhook_created', false)->exists()) {
                     $store = Store::where('hash', $verifiedSignedRequestData['store_hash'])->where('is_webhook_created', false)->first();
                     $this->registerWebHook([
@@ -272,24 +270,6 @@ class MainController extends BaseController
 
     }
 
-
-    public function updateWeightUnit($storeHash)
-    {
-        try {
-            $storeDetails = BigCommerceFunctions::getStoreSettings($storeHash);
-            $storeDetails = (new CurlRequest())->enSingleCurlRequest($storeDetails['endpoint'],
-                $storeDetails['request'], $storeDetails['headers'], $storeDetails['method'], false);
-            $storeDetails = json_decode($storeDetails['response'], true);
-            if (isset($storeDetails['weight_units']) && !blank($storeDetails['weight_units'])) {
-                $weightUnit = strtolower($storeDetails['weight_units']) ?? 'lbs';
-                Store::updateWeightUnit($storeHash, $weightUnit);
-            }
-        } catch (\Exception $exception) {
-            Log::info('Exception on getting weight Unit ' . $exception->getMessage());
-        }
-
-
-    }
 
 
     /**
