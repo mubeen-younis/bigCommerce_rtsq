@@ -449,7 +449,7 @@ class ExportImportProducts extends Controller
                 $settings->allow_vertical = ($product["$key"] == 1) ? true : false;;
             }
         }
-
+        
         $allowVert = optional($settings)->allow_vertical ?? false;
         $shipOwn = optional($settings)->ship_own_package ?? false;
         if ($allowVert && $shipOwn) {
