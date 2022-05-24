@@ -27,6 +27,10 @@ class StoreController extends Controller
 
         try {
             $storeHash = $request['store_hash'];
+            $store = Store::where('hash', $storeHash)->first();
+            if (empty($store)) {
+                return [];
+            }
             $storeDetails = BigCommerceFunctions::getStoreSettings($storeHash);
             $storeDetails = (new CurlRequest())->enSingleCurlRequest($storeDetails['endpoint'],
                 $storeDetails['request'], $storeDetails['headers'], $storeDetails['method'], false);
@@ -37,9 +41,7 @@ class StoreController extends Controller
 
         } catch (\Exception $exception) {
             Log::info('Exception on getting Store Details ' . $exception->getMessage());
-            return response()->json(['error' => true,
-                'data' => [],
-            ], 200);
+            return [];
         }
 
     }
