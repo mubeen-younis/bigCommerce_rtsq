@@ -27,6 +27,7 @@ class BigCommerceFunctions
     {
         $accessToken = Store::getAccessToken($storeHash);
         return ['Content-Type: Application/json',
+            'Accept: application/json',
             'X-Auth-Token: ' . $accessToken];
     }
 }
