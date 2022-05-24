@@ -14,8 +14,7 @@ class Store extends Model
         'app_status',
         'is_trial_completed',
         'freightdesk_company_id',
-        'av_company_id',
-        'weight_unit'
+        'av_company_id'
     ];
 
     public function installedCarriers()
