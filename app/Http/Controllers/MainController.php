@@ -3,8 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Constants\Constant;
-use App\CurlRequest;
-use App\CustomClasses\BigCommerceFunctions;
+
 use App\Models\AccessTokens;
 use App\Models\HubSpot;
 use App\Models\ProductSetting;
@@ -19,8 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Bigcommerce\Api\Client as Bigcommerce;
 use Illuminate\Support\Facades\Redirect;
-use App\Http\Controllers\HubSpotController;
-use App\Http\Controllers\SaleGraphController;
+
 
 class MainController extends BaseController
 {
