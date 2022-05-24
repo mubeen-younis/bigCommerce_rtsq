@@ -131,6 +131,11 @@ class GenerateRequestData
                     $yrcLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['yrc'] = $yrcLtlArr;
                     break;
+                case 'usps-small':
+                    $uspsSmallArr = $this->uspsSmallEnitArr($con1, $destination);
+                    $uspsSmallArr['originAddress'] = $enitOrigin;
+                    $carriersArr['carriers']['usps'] = $uspsSmallArr;
+                    break;
             }
         }
         return ['carriersArr' => $carriersArr, 'residential' => $this->resiCarrier];
@@ -333,6 +338,19 @@ class GenerateRequestData
             'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
             'returnQuotesOnExceedWeight' => '1',
             'api' => $this->getApiInfoArrYrcLtl($connSettings, $destination),
+        ];
+    }
+
+    private function uspsSmallEnitArr($connSettings, $destination)
+    {
+        return [
+            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'serverName' => "https://" . $this->storeData['store']['name'],
+            'carrierMode' => 'pro',
+            'quotestType' => 'small',
+            'version' => '1.0',
+            'returnQuotesOnExceedWeight' => 1,
+            'api' => $this->getApiInfoArrUspsSmall($connSettings, $destination),
         ];
     }
 
@@ -1285,6 +1303,78 @@ class GenerateRequestData
         ];
 
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
+    }
+
+    private function getApiInfoArrUspsSmall($connSettings, $destination)
+    {
+        $residential = 'N';
+        $alwaysResi = false;
+
+        if ($this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])) {
+            if ($this->radHitConsumed == 0) {
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+
+            } else {
+                $residential = $this->residential;
+            }
+
+        } else {
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+        }
+
+        $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
+        $this->resiCarrier['uspsSmall'] = $residential;
+        $this->resiCarrier['alwaysResi']['uspsSmall'] = $alwaysResi;
+        $apiArray = [
+            'rateTier' => $connSettings['quote_settings']['rate_tier'] ?? 'retail', //retail, commercialBase, commercialPlus
+            'includeDeclaredValue' => '1',
+            'activeServices' => $this->getUspsActiveServices($carrierServices),
+            // if packaging successfully done by SBS
+            'sbsPackaging' => '0',
+            'binResponse' => [],
+            'binsReqArr' => []
+        ];
+
+        $apiArray = array_merge($apiArray, $this->getCutOffDetails($connSettings));
+        dd(1341, $apiArray);
+        return $apiArray;
+    }
+
+    private function getUspsActiveServices($carrierServices): array
+    {   
+        $domesticServices = [
+            'usps_first_class_mail' => 'First Class Mail',
+            'usps_priority_mail_express' => 'Priority Mail Express',
+            'usps_priority_mail' => 'Priority Mail',
+            'usps_priority_mail_flat_rate' => 'Priority Mail Flat Rate',
+            'usps_retail_ground' => 'Retail Ground',
+        ];
+        $internationalServices = [
+            'usps_priority_mail_international_express' => 'Priority Mail International Express', 
+            'usps_priority_mail_international' => 'Priority Mail International',
+            'usps_priority_mail_international_flat_rate_box' => 'Priority Mail International Flat Rate Box',
+            'usps_first_class_package_international_service' => 'First-Class Package International Service',
+        ];
+        $activeServices = [
+            'domestic' => [],
+            'international' => [],
+        ]; 
+
+        foreach ($domesticServices as $service => $value) {
+            if (isset($carrierServices[$service]) && $carrierServices[$service]) {
+                $activeServices['domestic'][] = $value;
+            }
+        }
+
+        foreach ($internationalServices as $service => $value) {
+            if (isset($carrierServices[$service]) && $carrierServices[$service]) {
+                $activeServices['international'][] = $value;
+            }
+        }
+
+        return $activeServices;
     }
 
     public function setIsSMartPost($connectionSettings)

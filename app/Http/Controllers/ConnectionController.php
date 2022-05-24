@@ -15,6 +15,7 @@ use App\CustomClasses\WWESMALL\SmallConnectionSettings;
 use App\CustomClasses\XPO\ltl\ConnectionSettings as XPOLtlConnectionSettings;
 use App\CustomClasses\Unishippers\small\ConnectionSettings as UnishippersSmallConnectionSettings;
 use App\CustomClasses\YrcLTL\ConnectionSettings as YrcLtlConnectionSettings;
+use App\CustomClasses\UspsSmall\ConnectionSettings as UspsSmallConnectionSettings;
 use App\Endpoints\Endpoints;
 use App\Models\Connection;
 use App\Models\Coupon;
@@ -46,6 +47,7 @@ class ConnectionController extends Controller
         $this->rnlLtlTestCon = new RNLLtlConnectionSettings();
         $this->unishippersSmallTestCon = new UnishippersSmallConnectionSettings();
         $this->yrcLtlTestCon = new YrcLtlConnectionSettings();
+        $this->uspsSmallTestCon = new UspsSmallConnectionSettings();
     }
 
     public function index(Request $request)
@@ -131,6 +133,9 @@ class ConnectionController extends Controller
                     return response()->json($response);
                 case 'yrc-ltl':
                     $response = $this->yrcLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'usps-small':
+                    $response = $this->uspsSmallTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
                 default:
                     return response()->json(["error" => true, "data" => [],
