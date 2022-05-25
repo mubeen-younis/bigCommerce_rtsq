@@ -78,6 +78,7 @@ class OrderController extends Controller
                 ]
             );
         } catch (\Exception $exception) {
+            dd(12, $exception);
             return response()->json(['error' => true,
                 'data' => [$exception->getMessage()],
                 'message' => 'No Order Widget Found',
@@ -170,7 +171,7 @@ class OrderController extends Controller
         /*
         * Stored Response from WS */
         $lineItem = json_decode($data['lineitems'])->lineItemData;
-        $originalItems = $lineItem->items;
+        $originalItemsReq = json_decode(json_encode($lineItem->items));
         $responseFromWS = json_decode($data['quotes']);
         $shippingGroupResp = !blank($data['shipping_group_resp']) ? json_decode($data['shipping_group_resp']) : [];
 
@@ -366,10 +367,9 @@ class OrderController extends Controller
             /*If instore and not multi shipment we are showing only instore and local delivery original items*/
             if (!$isMultiShipment && $isInspOrLocal) {
                 $orderWidget[$zip]['items'] = [];
-                foreach ($originalItems as $originalItem) {
+                foreach ($originalItemsReq as $originalItem) {
                     $orderWidget[$zip]['items'][] = $originalItem->originalPiecesOfLineItem . ' X ' . $originalItem->lineItemName;;
                 }
-
             }
 
 
