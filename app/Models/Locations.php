@@ -15,6 +15,9 @@ class Locations extends Model
             return "default";
         }
         $additionals = json_decode($location['additionals'], true);
+        if (isset($additionals['instore_pickup']) && $additionals['instore_pickup'] == false) {
+            return "default";
+        }
         $locationDet = $additionals['instore_pickup_data']['default_location'] ?? null;
         if (blank($locationDet)) {
             return "default";

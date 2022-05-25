@@ -236,8 +236,8 @@ class GetRatesController extends Controller
 
     public function getAddressForQuotes($originAddress)
     {
-        $locationAdditionalDetail = Locations::getLocationAdditionalDetail($originAddress['locationId']);
 
+        $locationAdditionalDetail = Locations::getLocationAdditionalDetail($originAddress['locationId']);
         if (is_string($locationAdditionalDetail) && $locationAdditionalDetail == "default") {
             return $originAddress;
         }
