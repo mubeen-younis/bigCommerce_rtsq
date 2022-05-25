@@ -316,9 +316,10 @@ class CompileQuotes
             if (isset($inStoreLd['inStorePickup']['status']) && $inStoreLd['inStorePickup']['status'] == 1) {
                 $title = $warehouseData['inStoreTitle'] ?? '';
 
-                if (isset($inStoreLd['totalDistance']) && $inStoreLd['totalDistance'] > 0) {
+                /*cOMMENTED CODE DUE TO inSTORE aND  loCAL DELIVERY tICKET*/
+                /*if (isset($inStoreLd['totalDistance']) && $inStoreLd['totalDistance'] > 0) {
                     $title .= " | " . $inStoreLd['totalDistance'] . " away ";
-                }
+                }*/
                 $title .= " | " . $this->getShortStreetAddress($warehouseData['address']) . " " . $warehouseData['senderCity'] . ", " . $warehouseData['senderState'] . ", " . $warehouseData['senderZip'];
 
                 if (isset($array['phone']) && $array['phone']) {
