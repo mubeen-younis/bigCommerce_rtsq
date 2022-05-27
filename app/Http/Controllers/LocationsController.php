@@ -203,6 +203,7 @@ class LocationsController extends Controller
             $location->city = $request->city;
             $location->state = $request->state;
             $location->country = $request->country;
+            $location->default_location_id = $request->default_location_id ?? '';
 
             $additionals = [
                 'instore_pickup' => $request->enable_instore ?? '',
@@ -212,7 +213,7 @@ class LocationsController extends Controller
                     'miles' => $request->instore_miles ?? '',
                     'postalCodes' => (!empty($request->instore_zipcodes)) ? implode(',', $request->instore_zipcodes) : '',
                     'checkout_description' => $request->instock_description ?? '',
-                    'default_location' => $request->default_location ?? '',
+                    //'default_location' => $request->default_location ?? '',
                     'instore_postalCode' => $request->instore_postalCode ?? '',
                     'instore_city' => $request->instore_city ?? '',
                     'instore_state' => $request->instore_state ?? '',
@@ -302,6 +303,7 @@ class LocationsController extends Controller
                 if ($request->location_type == "Drop ship") {
                     $this->deleteDropshippedProduct($request->location_id);
                 }
+                Locations::where('default_location_id', $request->location_id)->update(['default_location_id'=>'default']);
                 Locations::where('id', $request->location_id)->delete();
                 return response()->json(['error' => false,
                     'data' => [],

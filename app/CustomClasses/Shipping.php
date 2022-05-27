@@ -97,7 +97,6 @@ class Shipping
         $carriersArray = $resp['carriersArr'];
 
         $this->multiOrigins = $this->checkIsMultiShipment($carriersArray['carriers']);
-
         /*Check for MUlti shipment and product marked as instore or local delivery*/
         if ($this->multiOrigins && $this->showOnlyLocAndInstoreQuote) {
             return [];
@@ -139,6 +138,7 @@ class Shipping
         if (empty($requestArr)) {
             return false;
         }
+
         $url = Constant::QUOTES_URL;
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);

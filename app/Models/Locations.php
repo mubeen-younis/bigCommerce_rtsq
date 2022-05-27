@@ -8,6 +8,8 @@ class Locations extends Model
 {
     protected $guarded = [];
 
+    protected $fillable = ['default_location_id'];
+
     public static function getLocationAdditionalDetail($locationId)
     {
         $location = optional(self::where('id', $locationId)->first())->toArray() ?? [];
@@ -18,7 +20,9 @@ class Locations extends Model
         if (isset($additionals['instore_pickup']) && $additionals['instore_pickup'] == false) {
             return "default";
         }
-        $locationDet = $additionals['instore_pickup_data']['default_location'] ?? null;
+        // $locationDet = $additionals['instore_pickup_data']['default_location'] ?? null;
+        $locationDet = $location['default_location_id'] ?? null;
+
         if (blank($locationDet)) {
             return "default";
         }
