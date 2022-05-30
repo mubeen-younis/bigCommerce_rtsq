@@ -316,10 +316,9 @@ class CompileQuotes
             if (isset($inStoreLd['inStorePickup']['status']) && $inStoreLd['inStorePickup']['status'] == 1) {
                 $title = $warehouseData['inStoreTitle'] ?? '';
 
-                /*cOMMENTED CODE DUE TO inSTORE aND  loCAL DELIVERY tICKET*/
-                /*if (isset($inStoreLd['totalDistance']) && $inStoreLd['totalDistance'] > 0) {
+                if (isset($inStoreLd['totalDistance']) && $inStoreLd['totalDistance'] > 0) {
                     $title .= " | " . $inStoreLd['totalDistance'] . " away ";
-                }*/
+                }
                 $title .= " | " . $this->getShortStreetAddress($warehouseData['address']) . " " . $warehouseData['senderCity'] . ", " . $warehouseData['senderState'] . ", " . $warehouseData['senderZip'];
 
                 if (isset($array['phone']) && $array['phone']) {
@@ -367,11 +366,11 @@ class CompileQuotes
         $return = [];
         $locationDetails = $this->fetchWarehouseWithID($data['location'], $data['locationId']);
         $whCollection = json_decode($locationDetails->additionals, true);
-        $return['address']=$locationDetails->address;
-        $return['senderCity']=$locationDetails->city;
-        $return['senderState']=$locationDetails->state;
-        $return['senderZip']=$locationDetails->zip_code;
-        $return['country']=$locationDetails->country;
+        $return['address'] = $locationDetails->address;
+        $return['senderCity'] = $locationDetails->city;
+        $return['senderState'] = $locationDetails->state;
+        $return['senderZip'] = $locationDetails->zip_code;
+        $return['country'] = $locationDetails->country;
         $inStore = $whCollection['instore_pickup_data'] ?? false;
         $locDel = $whCollection['local_delivery_data'] ?? false;
 

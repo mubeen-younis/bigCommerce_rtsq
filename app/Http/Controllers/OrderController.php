@@ -298,10 +298,11 @@ class OrderController extends Controller
             $senderZip = $origin->senderZip ?? '';
             if (!$isMultiShipment && $isInspOrLocal) {
                 $origDetails = $this->getOriginForInsAndLocal($zip);
-                $city = $origDetails['city'] . ',';
-                $state = $origDetails['state'];
-                $senderZip = $origDetails['zip_code'];
-
+                if (!blank($origDetails)){
+                    $city = $origDetails['city'] . ',';
+                    $state = $origDetails['state'];
+                    $senderZip = $origDetails['zip_code'];
+                }
             }
             $orderWidget[$zip]['locationtype'] = $item->dropship_enabled == 'N' ? 'Warehouse' : 'Dropship';
             $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;

@@ -252,8 +252,13 @@ class GetRatesController extends Controller
 
     public function changeOriginDetail($originAddress, $locationAdditionalDetail)
     {
+        $originAddress['originForIPLDFlag']=1;
+        $originAddress['instorSenderCity']=$originAddress['senderCity'];
+        $originAddress['instorSenderState']=$originAddress['senderState'];
+        $originAddress['instorSenderZip']=$originAddress['senderZip'];
+        $originAddress['instorSenderCountryCode']=$originAddress['senderCountryCode'];
         $originAddress['instore_and_loc_id'] = $locationAdditionalDetail['id'];
-        $originAddress['locationId'] = $originAddress['locationId'];
+       // $originAddress['locationId'] = $originAddress['locationId'];
         $originAddress['senderZip'] = $locationAdditionalDetail['zip_code'];
         $originAddress['senderCity'] = $locationAdditionalDetail['city'];
         $originAddress['senderState'] = $locationAdditionalDetail['state'];
