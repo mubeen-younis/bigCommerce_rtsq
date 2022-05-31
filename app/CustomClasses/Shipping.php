@@ -136,6 +136,8 @@ class Shipping
         }
         // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
+        // dd(139, $requestArr);
+        // return response()->json($requestArr);
         if (empty($requestArr)) {
             return false;
         }
