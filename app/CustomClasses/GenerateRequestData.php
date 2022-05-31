@@ -274,13 +274,14 @@ class GenerateRequestData
 
     public function xpoLtlEnitArr($connSettings, $destination, $enitOrigin)
     {
+        $isThresholdLimit=$connSettings['quote_settings']['return_rates_threshold'] ?? false;
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '', //$this->connectionSettings['license_key'],
             'serverName' => "https://" . $this->storeData['store']['name'], //"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
-            'returnQuotesOnExceedWeight' => 1,
+            'returnQuotesOnExceedWeight' => $isThresholdLimit,
             'api' => $this->getApiInfoArrXPOLtl($connSettings, $destination, $enitOrigin),
             'getDistance' => 0,
         ];
@@ -954,6 +955,8 @@ class GenerateRequestData
         if ($liftGate === 'Y') {
             $accessorial['DLG'] = 'DLG';
         }
+        $isThresholdLimit=$connSettings['quote_settings']['return_rates_threshold'] ?? false;
+        $weightThreshold= $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $apiArray = [
             'UserName' => $connSettings['creds']['username'] ?? '',
             'Password' => $connSettings['creds']['password'] ?? '',
@@ -962,6 +965,7 @@ class GenerateRequestData
             'thirdPartyAccountNumber' => $connSettings['creds']['bill_to_account_number'] ?? '',
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
+            'thresholdWeightLimit'=>$isThresholdLimit ? $weightThreshold : Functions::$defaultThresholdLimit,
             'accessorial' => $accessorial
         ];
 
@@ -1236,9 +1240,9 @@ class GenerateRequestData
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
-            
+
         $residential = 'N';
-        $alwaysResi = false;            
+        $alwaysResi = false;
         /*
             * Check if rad hit not consumed and residential is enables
         * **/

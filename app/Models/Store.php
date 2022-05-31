@@ -32,5 +32,22 @@ class Store extends Model
         return optional(self::where('id', $storeId)->first())->toArray() ?? [];
     }
 
+    public static function getAccessToken($storeHash)
+    {
+        return optional(self::where('hash', $storeHash)->first())->access_token ?? null;
+
+    }
+
+    public static function updateWeightUnit($storeHash, $unit)
+    {
+        self::where('hash', $storeHash)->update(['weight_unit' => $unit]);
+    }
+
+    public static function getStoreWeightUnit($storeId)
+    {
+        return optional(self::where('id', $storeId)->first())->weight_unit ?? 'lbs';
+
+    }
+
 
 }

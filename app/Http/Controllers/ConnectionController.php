@@ -141,7 +141,7 @@ class ConnectionController extends Controller
         $carriersArr = ['ltl-quotes', 'small-package', 'gtz-ltl', 'unishippers-small'];
         if (!blank($request['promo_code']) &&
             in_array($checkCarrierType->slug, $carriersArr) &&
-            ((isset($request['is_enabled']) && $request['is_enabled'] == false) || !isset($request['is_enabled']))
+            ((isset($request['is_enabled']) && $re1quest['is_enabled'] == false) || !isset($request['is_enabled']))
         ) {
             $fdoCouponResponse = $this->getFDOCouponCarrierInfo($request, $checkCarrierType->slug);
             if (isset($fdoCouponResponse['status']) && $fdoCouponResponse['status'] == true) {

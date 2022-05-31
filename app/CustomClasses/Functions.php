@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Log;
 class Functions
 {
     protected static $daysAfterExpiry = 4;
+    public static $defaultThresholdLimit = 150;
 
     public static function hasInsureCarrier($code)
     {
@@ -170,4 +171,5 @@ class Functions
             array_unique(array_map("serialize", $src)));
         return $output;
     }
+
 }
