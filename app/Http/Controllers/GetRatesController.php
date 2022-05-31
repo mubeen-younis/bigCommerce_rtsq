@@ -198,7 +198,6 @@ class GetRatesController extends Controller
                     'lineItemClass' => isset($product_settings['freight_class']) ? $this->getLineItemClass($product_settings['freight_class']) : '',
                     'shipping_group' => $product_settings['shipping_group'] ?? null,
                     'exclude_packaging' => 0,
-                    'quote_as_instore' => $product_settings['quote_as_instore'] ?? false,
                     'quote_as_local' => $product_settings['quote_as_local'] ?? false
                 ];
 
@@ -224,6 +223,7 @@ class GetRatesController extends Controller
                 Log::info('No warehouse added');
                 return null;
             }
+            $originAddress = $this->getAddressForQuotes($originAddress);
             foreach ($details['origin'] as $key => $origin) {
                 if ($origin == "warehouse") {
                     $details['origin'][$key] = $originAddress;
@@ -231,6 +231,39 @@ class GetRatesController extends Controller
             }
         }
         return ['lineItemData' => $details];
+    }
+
+
+    public function getAddressForQuotes($originAddress)
+    {
+
+        $locationAdditionalDetail = Locations::getLocationAdditionalDetail($originAddress['locationId']);
+        if (is_string($locationAdditionalDetail) && $locationAdditionalDetail == "default") {
+            return $originAddress;
+        }
+        if (is_string($locationAdditionalDetail) && $locationAdditionalDetail == "suppress") {
+            $originAddress['InstorPickupLocalDelivery']['suppress'] = 1;
+            return $originAddress;
+        }
+        return $this->changeOriginDetail($originAddress, $locationAdditionalDetail);
+
+    }
+
+
+    public function changeOriginDetail($originAddress, $locationAdditionalDetail)
+    {
+        $originAddress['originForIPLDFlag']=1;
+        $originAddress['instorSenderCity']=$originAddress['senderCity'];
+        $originAddress['instorSenderState']=$originAddress['senderState'];
+        $originAddress['instorSenderZip']=$originAddress['senderZip'];
+        $originAddress['instorSenderCountryCode']=$originAddress['senderCountryCode'];
+        $originAddress['instore_and_loc_id'] = $locationAdditionalDetail['id'];
+       // $originAddress['locationId'] = $originAddress['locationId'];
+        $originAddress['senderZip'] = $locationAdditionalDetail['zip_code'];
+        $originAddress['senderCity'] = $locationAdditionalDetail['city'];
+        $originAddress['senderState'] = $locationAdditionalDetail['state'];
+        $originAddress['senderCountryCode'] = $locationAdditionalDetail['country'];
+        return $originAddress;
     }
 
     /**

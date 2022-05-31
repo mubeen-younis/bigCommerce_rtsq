@@ -6,6 +6,7 @@ use App\Constants\Constant;
 use App\CurlRequest;
 use App\CustomClasses\Functions;
 use App\Models\BoxSize;
+use App\Models\Locations;
 use App\Models\Orders;
 use App\Models\RequestData;
 use App\Models\RequestTempData;
@@ -77,6 +78,7 @@ class OrderController extends Controller
                 ]
             );
         } catch (\Exception $exception) {
+            dd(12, $exception);
             return response()->json(['error' => true,
                 'data' => [$exception->getMessage()],
                 'message' => 'No Order Widget Found',
@@ -169,6 +171,7 @@ class OrderController extends Controller
         /*
         * Stored Response from WS */
         $lineItem = json_decode($data['lineitems'])->lineItemData;
+        $originalItemsReq = json_decode(json_encode($lineItem->items));
         $responseFromWS = json_decode($data['quotes']);
         $shippingGroupResp = !blank($data['shipping_group_resp']) ? json_decode($data['shipping_group_resp']) : [];
 
@@ -177,7 +180,11 @@ class OrderController extends Controller
         $lineItem->items = $this->formateItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
 
         $lineItem->origin = $this->formateOrigins($requestToWS->requestArr->carriers);
+        $isMultiShipment = false;
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
+        if (!blank($multiShipmentresponse)) {
+            $isMultiShipment = true;
+        }
         $autoResidentialsStatus = 'n';
         $residentialsPickup = 'n';
         $liftGateStatus = 'n';
@@ -202,7 +209,7 @@ class OrderController extends Controller
                     $residentialsPickup = $liftResidentialStatus['resiPickup'] ?? 'n';
 
                     $totalBoxes = 1;
-                    if (isset($ws->binPackagingData) && !empty($ws->binPackagingData) && ($isSmallrate || $isInspOrLocal)) {
+                    if (isset($ws->binPackagingData) && !empty($ws->binPackagingData) && ($isSmallrate/* || $isInspOrLocal*/)) {
                         if ($isGround) {
                             $sbsData = $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->bins_packed ?? [];
                         } else if ($isAir) {
@@ -285,10 +292,18 @@ class OrderController extends Controller
             if (blank($item)) {
                 continue;
             }
+            $zip = $origin->locationId != '' ? $origin->locationId : $origin->senderZip;
             $city = $origin->senderCity ? $origin->senderCity . ',' : '';
             $state = $origin->senderState ?? '';
-            $zip = $origin->locationId != '' ? $origin->locationId : $origin->senderZip;
             $senderZip = $origin->senderZip ?? '';
+            if (!$isMultiShipment && $isInspOrLocal) {
+                $origDetails = $this->getOriginForInsAndLocal($zip);
+                if (!blank($origDetails)){
+                    $city = $origDetails['city'] . ',';
+                    $state = $origDetails['state'];
+                    $senderZip = $origDetails['zip_code'];
+                }
+            }
             $orderWidget[$zip]['locationtype'] = $item->dropship_enabled == 'N' ? 'Warehouse' : 'Dropship';
             $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
@@ -347,6 +362,14 @@ class OrderController extends Controller
                 if ((!in_array($item->id, $insertedIds))) {
                     $insertedIds[] = $item->id;
                     $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
+                }
+            }
+
+            /*If instore and not multi shipment we are showing only instore and local delivery original items*/
+            if (!$isMultiShipment && $isInspOrLocal) {
+                $orderWidget[$zip]['items'] = [];
+                foreach ($originalItemsReq as $originalItem) {
+                    $orderWidget[$zip]['items'][] = $originalItem->originalPiecesOfLineItem . ' X ' . $originalItem->lineItemName;;
                 }
             }
 
@@ -424,7 +447,7 @@ class OrderController extends Controller
                 $itemsForm[] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
             }
             foreach ($orderWidget as $key => $data) {
-                $items = data_get($data, 'items');
+                $items = data_get($data, 'items') ?? [];
                 if (count($orderWidget) > 1) {
                     if ($data['locationtype'] == "Warehouse") {
                         $items = array_merge($items, $itemsForm);
@@ -443,6 +466,12 @@ class OrderController extends Controller
             'sbs' => $sbs
         ];
         return $resp;
+    }
+
+
+    public function getOriginForInsAndLocal($locationId)
+    {
+        return Locations::getlocationDetail($locationId);
     }
 
     public function getSbsItemDetail($sbsItemKey, $items)

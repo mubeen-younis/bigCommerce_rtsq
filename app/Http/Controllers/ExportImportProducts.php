@@ -105,10 +105,8 @@ class ExportImportProducts extends Controller
                         $quoteMethod = 'L';
                     } else if (isset($settings->parcel_enabled) && $settings->parcel_enabled) {
                         $quoteMethod = 'S';
-                    } else if (isset($settings->quote_as_instore) && $settings->quote_as_instore) {
-                        $quoteMethod = 'IS';
                     } else if (isset($settings->quote_as_local) && $settings->quote_as_local) {
-                        $quoteMethod = 'LD';
+                        $quoteMethod = 'PD';
                     }
                     $productLine[] = $quoteMethod;
                     $productLine[] = $settings->freight_class ?? '';
@@ -432,7 +430,6 @@ class ExportImportProducts extends Controller
             if (array_key_exists($key, $product)) {
                 $settings->parcel_enabled = false;
                 $settings->freight_enabled = false;
-                $settings->quote_as_instore = false;
                 $settings->quote_as_local = false;
                 // Added instore and local delivery quoting method here as well Instore-local
 
@@ -440,9 +437,7 @@ class ExportImportProducts extends Controller
                     $settings->parcel_enabled = true;
                 } else if ($quoteMethod === 'l') {
                     $settings->freight_enabled = true;
-                } else if ($quoteMethod === 'is') {
-                    $settings->quote_as_instore = true;
-                } else if ($quoteMethod === 'ld') {
+                } else if ($quoteMethod === 'pd') {
                     $settings->quote_as_local = true;
                 }
             }

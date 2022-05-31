@@ -132,6 +132,7 @@ class CompileQuotes
     {
         try {
             $location = Locations::where('id', $warehouseId)->first();
+            return $location;
             return json_decode($location->additionals, true);
             /*     $whFactory = $this->warehouseFactory->create();
                  $dsCollection = $whFactory->getCollection()
@@ -318,7 +319,7 @@ class CompileQuotes
                 if (isset($inStoreLd['totalDistance']) && $inStoreLd['totalDistance'] > 0) {
                     $title .= " | " . $inStoreLd['totalDistance'] . " away ";
                 }
-                $title .= " | " . $this->getShortStreetAddress($array['address']) . " " . $array['senderCity'] . ", " . $array['senderState'] . ", " . $array['senderZip'];
+                $title .= " | " . $this->getShortStreetAddress($warehouseData['address']) . " " . $warehouseData['senderCity'] . ", " . $warehouseData['senderState'] . ", " . $warehouseData['senderZip'];
 
                 if (isset($array['phone']) && $array['phone']) {
                     $title .= " | " . $array['phone'];
@@ -362,9 +363,14 @@ class CompileQuotes
      */
     public function getWarehouseData($data)
     {
-
         $return = [];
-        $whCollection = $this->fetchWarehouseWithID($data['location'], $data['locationId']);
+        $locationDetails = $this->fetchWarehouseWithID($data['location'], $data['locationId']);
+        $whCollection = json_decode($locationDetails->additionals, true);
+        $return['address'] = $locationDetails->address;
+        $return['senderCity'] = $locationDetails->city;
+        $return['senderState'] = $locationDetails->state;
+        $return['senderZip'] = $locationDetails->zip_code;
+        $return['country'] = $locationDetails->country;
         $inStore = $whCollection['instore_pickup_data'] ?? false;
         $locDel = $whCollection['local_delivery_data'] ?? false;
 
@@ -2092,10 +2098,10 @@ class CompileQuotes
         return $res['resp'] ?? [];
     }
 
-    private function compileYRCLtlQuotes($shipments, $connectionSettings, $allOrigins,$residential)
+    private function compileYRCLtlQuotes($shipments, $connectionSettings, $allOrigins, $residential)
     {
         $yrcLtl = new yrcLtlQuotesResults();
-        
+
         if ($residential['yrcLtl'] == 'Y') {
             $this->isResi = true;
             $this->residentialDlvry = 1;
@@ -2107,30 +2113,30 @@ class CompileQuotes
         $this->alwaysResi = $this->residential['alwaysResi']['yrcLtl'] ?? false;
         $shipments = $yrcLtl->formateQuoteBeforeCompile($shipments, $connectionSettings['yrc-ltl']['creds']);
         $this->quoteSettings = $connectionSettings['yrc-ltl']['quote_settings'] ?? [];
-        $this->quoteSettingsData(); 
+        $this->quoteSettingsData();
 
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
         $lgQuotes = false;
-        
+
         $numberOfShipments = 0;
         foreach ($shipments as $ship) {
             if (!isset($ship['severity'])) {
                 $numberOfShipments++;
             }
         }
-        
+
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
-        
+
         $labelAs = $this->quoteSettings['label_as'] ?? '';
         foreach ($shipments as $origin => $quote) {
             if (isset($quote['severity'])) {
                 continue;
             }
 
-            if ($count == 0) { 
+            if ($count == 0) {
                 $inStoreLdData = $yrcLtl->isSuppressedRatesShipment($shipments) ? $quote['InstorPickupLocalDelivery'] : $quote['q']['InstorPickupLocalDelivery'] ?? false;
                 unset($quote['InstorPickupLocalDelivery']);
                 unset($quote['q']['InstorPickupLocalDelivery']);
@@ -2139,7 +2145,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery']) ||
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
 
-                    if (!$lgQuotes) {
+                if (!$lgQuotes) {
                     $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
                             (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
                 }
@@ -2151,11 +2157,11 @@ class CompileQuotes
             if (isset($quote['q']) && !$yrcLtl->isSuppressedRatesShipment($shipments)) {
                 $items = $quote['q']['lineItems'];
                 foreach ($items as $key => $item) {
-                    if($item['hazardous'] == 'Y'){
+                    if ($item['hazardous'] == 'Y') {
                         $hazShipmentArr[$origin] = 'Y';
                         break;
                     }
-                        $hazShipmentArr[$origin] = 'N';
+                    $hazShipmentArr[$origin] = 'N';
                 }
 
                 $quotesArr[] = $quote['q'];
@@ -2291,7 +2297,7 @@ class CompileQuotes
         }
 
         $lfg = (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery'] == 1) || ($this->isResi && isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']);
-        
+
         if ($this->isMultiShipment == false) {
             if (
                 isset($quotes['liftgate'])
@@ -2419,7 +2425,7 @@ class CompileQuotes
     {
         $lgCost = $lgOption ? 0 : $this->getLiftGateCost($data, $getCost, $isUpsLtl);
         $basePrice = str_replace(',', '', $data['totalNetCharge']['Amount']);
-        $basePrice = (float)$basePrice; 
+        $basePrice = (float)$basePrice;
         $basePrice = $basePrice - $lgCost;
         $basePrice = $this->calculateHandlingFee($basePrice);
         return $basePrice;
@@ -2500,7 +2506,7 @@ class CompileQuotes
 
         // Here  Making Access title
         $accessTitle = '';
-        
+
         if ($lgOption === true || (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) {
             if ($lgOption && $this->quoteSettings['alwaysLiftGateDelivery'] == '0') {
                 $accessTitle = $this->isResi ? $this->resiLgLabel : $this->lgLabel;
