@@ -83,12 +83,13 @@ class GetRatesController extends Controller
 
             return [];
         }
-        $quotes = $this->shipping->collectRates($formatReq, $storeData, $this->connectionSettings, $cartInfo);
+        try {
+            $quotes = $this->shipping->collectRates($formatReq, $storeData, $this->connectionSettings, $cartInfo);
+        }catch (\Exception $exception){
+            Log::info('Collect Rates Exception '.json_encode($formatReq). 'Exception message'.json_encode($exception->getMessage()));
+            return [];
+        }
         return $quotes;
-        // return $this->generateQuoteFormatResponse($quotes);
-        exit;
-        $originWarehouse = new Origin();
-        $originWarehouse->getNearestWarehouse($formatReq);
     }
 
     function testQuotes()
