@@ -701,7 +701,7 @@ class CompileQuotes
                     try {
                         $resp = $this->compileFedexLtlQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential);
                     } catch (\Exception $exception) {
-                        Log::info('Fedex Ltl Rates Compiling Exception '.json_encode($exception->getMessage()).' Shipment :'.json_encode($shipment) );
+                        Log::info('Fedex Ltl Rates Compiling Exception '.json_encode($exception->getMessage()));
                         $resp = [];
                     }
                     $quotesTemp['fedexLTL'] = $resp;

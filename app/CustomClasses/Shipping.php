@@ -135,7 +135,7 @@ class Shipping
         }
         // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
-       // dd(123,$requestArr);
+        // dd(123,$requestArr);
         if (empty($requestArr)) {
             return false;
         }
@@ -166,8 +166,8 @@ class Shipping
         $quotesFromWs = $quotes ?? [];
         try {
             $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination);
-        }catch (\Exception $exception){
-            Log::info('Exception on Geting Final Rates '.json_encode($exception->getTraceAsString()));
+        } catch (\Exception $exception) {
+            Log::info('Exception on Getting Final Rates ' . json_encode($exception->getMessage()));
             return [];
 
         }

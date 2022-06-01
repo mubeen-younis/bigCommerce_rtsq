@@ -86,7 +86,7 @@ class GetRatesController extends Controller
         try {
             $quotes = $this->shipping->collectRates($formatReq, $storeData, $this->connectionSettings, $cartInfo);
         }catch (\Exception $exception){
-            Log::info('Collect Rates Exception '.json_encode($formatReq). 'Exception message'.json_encode($exception->getMessage()));
+            Log::info('Collect Rates Exception '.json_encode($formatReq). 'Exception message '.json_encode($exception->getMessage()));
             return [];
         }
         return $quotes;
