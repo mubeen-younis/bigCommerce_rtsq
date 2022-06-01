@@ -168,6 +168,7 @@ class Shipping
             $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination);
         }catch (\Exception $exception){
             Log::info('Exception on Geting Final Rates '.json_encode($exception->getTraceAsString()));
+            return [];
 
         }
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
