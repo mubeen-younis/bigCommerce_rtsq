@@ -17,6 +17,7 @@ use App\Models\Locations;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\RADController;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class CompileQuotes
 {
@@ -695,7 +696,14 @@ class CompileQuotes
                     }
                     break;
                 case "fedexLTL":
-                    $resp = $this->compileFedexLtlQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential);
+                    # Added try catch block for fail safe
+                    # Ticket Ref : 931883022
+                    try {
+                        $resp = $this->compileFedexLtlQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential);
+                    } catch (\Exception $exception) {
+                        Log::info('Fedex Ltl Rates Compiling Exception '.json_encode($exception->getMessage()).' Shipment :'.json_encode($shipment) );
+                        $resp = [];
+                    }
                     $quotesTemp['fedexLTL'] = $resp;
                     if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
                         $quotesRes = array_merge($quotesRes, $resp);
