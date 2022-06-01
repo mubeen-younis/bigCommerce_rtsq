@@ -46,10 +46,6 @@ class GetRatesController extends Controller
 
     public function returnRates(Request $request)
     {
-        //echo "<pr>"; print_r($request->all()); exit;
-
-        //return $testQuotes = $this->testQuotes();
-        try {
             Log::info('Request ' . json_encode($request->all()));
             $storeHash = $request->base_options['store_id'] ?? null;
             $storeData = $this->getStoreData($storeHash);
@@ -87,11 +83,7 @@ class GetRatesController extends Controller
 
             $quotes = $this->shipping->collectRates($formatReq, $storeData, $this->connectionSettings, $cartInfo);
             return $quotes;
-        } catch (\Exception $exception) {
-            Log::info('Collect Rates Exception ' . 'Exception message ' . json_encode($exception->getMessage()).
-                'Line :'.json_encode($exception->getLine()) . ' FIle '.json_encode($exception->getFile()));
-            return response()->json([],200);
-        }
+
 
     }
 
