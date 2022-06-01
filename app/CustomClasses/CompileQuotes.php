@@ -696,14 +696,9 @@ class CompileQuotes
                     }
                     break;
                 case "fedexLTL":
-                    # Added try catch block for fail safe
-                    # Ticket Ref : 931883022
-                    try {
-                        $resp = $this->compileFedexLtlQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential);
-                    } catch (\Exception $exception) {
-                        Log::info('Fedex Ltl Rates Compiling Exception '.json_encode($exception->getMessage()));
-                        $resp = [];
-                    }
+
+                    $resp = $this->compileFedexLtlQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential);
+
                     $quotesTemp['fedexLTL'] = $resp;
                     if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
                         $quotesRes = array_merge($quotesRes, $resp);
@@ -1450,7 +1445,7 @@ class CompileQuotes
                     $hazShipmentArr[$origin] = $quote['hazardousStatus'] == 'y' ? 'Y' : 'N';
                 }
                 foreach ($quote['q'] as $key => $data) {
-                    if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices)) {
+                    if (isset($data['serviceType']) && isset($data['serviceDesc']) && in_array($data['serviceType'], $allConfigServices)) {
                         $access = $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
                         if (isset($data['serviceType']) && $data['serviceType'] === 'FEDEX_FREIGHT_ECONOMY') {
