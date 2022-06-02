@@ -330,7 +330,12 @@ class GetRatesController extends Controller
         switch ($unit) {
             case 'oz' :
                 return $value / 16;
-                break;
+            case 'kg':
+                return $value/0.45359237;
+            case 'g':
+                return $value/453.59237;
+            case 't':
+                return $value/0.00045359237;
             default:
                 return $value;
         }

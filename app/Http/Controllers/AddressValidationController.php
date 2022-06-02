@@ -167,6 +167,7 @@ class AddressValidationController extends Controller
             $endpoint = Endpoints::avCredsEndpoint();
             $curlResp = (new CurlRequest())->enSingleCurlRequest($endpoint, $request, [], 'POST');
             $curlResp = json_decode($curlResp['response'], true);
+            Log::info('Response from AV after Connect ' . json_encode($curlResp));
             if (isset($curlResp['error']) && $curlResp['error'] == false) {
                 return ['error' => false, 'message' => 'Successfully connected to Validate Addresses'];
             }
