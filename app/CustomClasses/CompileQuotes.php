@@ -875,7 +875,7 @@ class CompileQuotes
         foreach ($shipments as $origin => $quote) {
 
             if (isset($quote['severity'])) {
-                continue;
+                return [];
             }
 
             if ($count == 0) { //To be checked only once
@@ -1058,7 +1058,7 @@ class CompileQuotes
         foreach ($shipments as $origin => $quote) {
 
             if (isset($quote['severity'])) {
-                continue;
+               return [];
             }
 
             if ($count == 0) { //To be checked only once
@@ -1427,7 +1427,7 @@ class CompileQuotes
         foreach ($shipments as $origin => $quote) {
 
             if (isset($quote['severity'])) {
-                continue;
+               return [];
             }
 
             if ($count == 0) { //To be checked only once
@@ -1991,7 +1991,7 @@ class CompileQuotes
         foreach ($shipments as $origin => $quote) {
 
             if (isset($quote['severity'])) {
-                continue;
+                return [];
             }
 
             if ($count == 0) { //To be checked only once
@@ -2141,7 +2141,7 @@ class CompileQuotes
         $labelAs = $this->quoteSettings['label_as'] ?? '';
         foreach ($shipments as $origin => $quote) {
             if (isset($quote['severity'])) {
-                continue;
+                return [];
             }
 
             if ($count == 0) {

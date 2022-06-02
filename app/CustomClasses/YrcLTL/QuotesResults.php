@@ -58,7 +58,7 @@ class QuotesResults
 
         foreach ($shipments as $shipment => $quotes) {
             if (!isset($quotes['q']) || isset($quotes['q']['error'])) {
-                continue;
+                return [];
             }
 
             $quotesArr = $quotes['q'];

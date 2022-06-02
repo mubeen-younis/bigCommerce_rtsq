@@ -246,7 +246,7 @@ class QuotesResults
     {
         foreach ($shipments as $shipment => $quotes) {
             if (!isset($quotes['q'])) {
-                continue;
+               return [];
             }
             foreach ($quotes['q'] as $key => $quote) {
                 if (isset($quote['serviceType'])) {
