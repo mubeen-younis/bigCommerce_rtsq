@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Log;
 
 class AddressValidationController extends Controller
 {
-    public function getAvCompanyInfo(Request $request)
+    public function getAvCompanyInfo(Request $request, $returnData = false)
     {
         $storeId = $request['store_id'];
         $store = optional(Store::where('id', $storeId)->first())->toArray() ?? [];
@@ -26,6 +26,10 @@ class AddressValidationController extends Controller
         $store['is_already_user'] = $coupon->is_already_user ?? false;
         $store['used'] = $coupon->used ?? null;
         $store['message'] = $this->getMessageForCoupon($store['used'], $store['coupon_code'], $storeId, $store['av_company_id'], $store['is_already_user']);
+        if ($returnData) {
+            return $store;
+        }
+
         return response()->json(['error' => false,
             'data' => $store,
             'message' => '',
@@ -128,26 +132,28 @@ class AddressValidationController extends Controller
         $storeId = $request['store_id'] ?? '';
         $message = 'Address Validation ';
         $store = Store::where('id', $storeId)->first();
+        $data = [];
 
         if (!blank($avCompanyId)) {
-            $fdoConnectivityResp = $this->connectVA($store, $avCompanyId);
+            $fdoConnectivityResp = $this->connectVA($store, $avCompanyId, $request);
             if ($fdoConnectivityResp['error']) {
                 return Helpers::sendJsonResponse(true, $fdoConnectivityResp['message']);
             }
             $store->av_company_id = $avCompanyId;
             $message .= 'connected successfully';
+            $data = $fdoConnectivityResp['data'] ?? [];
         } else {
             $this->disConnectVA($store);
             $store->av_company_id = null;
             $message .= 'disconnected successfully';
         }
         $store->save();
-        return Helpers::sendJsonResponse(false, $message);
+        return Helpers::sendJsonResponse(false, $message, $data);
 
 
     }
 
-    public function connectVA($storeDetails, $avCompanyId)
+    public function connectVA($storeDetails, $avCompanyId, Request $avRequest)
     {
         $storeUrl = $storeDetails->url ?? '';
         $storeHash = $storeDetails->hash ?? '';
@@ -169,7 +175,9 @@ class AddressValidationController extends Controller
             $curlResp = json_decode($curlResp['response'], true);
             Log::info('Response from AV after Connect ' . json_encode($curlResp));
             if (isset($curlResp['error']) && $curlResp['error'] == false) {
-                return ['error' => false, 'message' => 'Successfully connected to Validate Addresses'];
+                $msg = 'Successfully connected to Validate Addresses';
+                $data = $this->getAvCompanyInfo($avRequest, true);
+                return ['error' => false, 'data' => $data, 'message' => $msg];
             }
 
         }
