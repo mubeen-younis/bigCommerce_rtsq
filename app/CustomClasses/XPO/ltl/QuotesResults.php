@@ -18,7 +18,7 @@ class QuotesResults
     public function formateQuoteBeforeCompile($shipments){
         foreach ($shipments as $shipment => $quotes){
             if(!isset($quotes['q'])){
-                continue;
+              return [];
             }
             /*
              * formate if only old versions

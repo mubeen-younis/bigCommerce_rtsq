@@ -23,7 +23,7 @@ class QuotesResults
     public function formateQuoteBeforeCompile($shipments){
         foreach ($shipments as $shipment => $quotes){
             if(!isset($quotes['q'])){
-                continue;
+                return [];
             }
             foreach ($quotes['q'] as $key => $quote){
                 $shipments[$shipment]['q'][$key]['serviceType'] = $quote['CarrierDetail']['CarrierCode'] ?? '';
