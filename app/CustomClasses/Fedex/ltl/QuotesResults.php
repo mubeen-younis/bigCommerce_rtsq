@@ -56,7 +56,7 @@ class QuotesResults
 
     public function addHandlingMarkupOfHazmat($amount, $markupValue)
     {
-        $amount = (float) str_replace(',', '', $amount);
+        $amount = (float)str_replace(',', '', $amount);
         if (strpbrk($markupValue, '%') !== false) {
             $amount = $this->getvalueFromPercent($amount, str_replace('%', '', $markupValue));
         } else {
@@ -143,7 +143,7 @@ class QuotesResults
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
                 if (!$lgQuotes) {
                     $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
-                        (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
                 }
             }
             $originQuotes = [];
@@ -248,8 +248,8 @@ class QuotesResults
             if (!isset($quotes['q'])) {
                 continue;
             }
-            if (isset($quote['serviceType'])){
-                foreach ($quotes['q'] as $key => $quote) {
+            foreach ($quotes['q'] as $key => $quote) {
+                if (isset($quote['serviceType'])) {
                     $shipments[$shipment]['q'][$key]['serviceDesc'] = $quote['serviceType'] === 'FEDEX_FREIGHT_PRIORITY' ? 'Freight Priority' : 'Freight Economy';
                     if (isset($quote['surcharges'])) {
                         foreach ($quote['surcharges'] as $surcharge) {

@@ -46,49 +46,45 @@ class GetRatesController extends Controller
 
     public function returnRates(Request $request)
     {
-        //echo "<pr>"; print_r($request->all()); exit;
+            Log::info('Request ' . json_encode($request->all()));
+            $storeHash = $request->base_options['store_id'] ?? null;
+            $storeData = $this->getStoreData($storeHash);
+            /*Setting Stripe APi key
+            Bug fix of plan auto renews
+            */
+            $isTestStore = Helpers::checkIsTestStore($storeHash);
+            Helpers::setStripeAPiKey($isTestStore);
 
-        //return $testQuotes = $this->testQuotes();
-        Log::info('Request ' . json_encode($request->all()));
-        $storeHash = $request->base_options['store_id'] ?? null;
-        $storeData = $this->getStoreData($storeHash);
-        /*Setting Stripe APi key
-        Bug fix of plan auto renews
-        */
-        $isTestStore = Helpers::checkIsTestStore($storeHash);
-        Helpers::setStripeAPiKey($isTestStore);
+            //echo "<pre>"; print_r($storeData['store']['id']); exit;
+            if ($storeData == null) {
+                return [];
+            }
+            if (!$this->storePlanStatus($storeData['store']['id'])) {
+                return [];
+            }
 
-        //echo "<pre>"; print_r($storeData['store']['id']); exit;
-        if ($storeData == null) {
-            return [];
-        }
-        if (!$this->storePlanStatus($storeData['store']['id'])) {
-            return [];
-        }
-
-        //echo "<pre>"; print_r($storeData['installed_carriers'][0]['store_id']); exit;
-        $cartInfo['cartId'] = $request->base_options['request_context']['reference_values'][0]['value'] ?? 0;
-        $cartInfo['store_id'] = $storeData['installed_carriers'][0]['store_id'] ?? 0;
+            //echo "<pre>"; print_r($storeData['installed_carriers'][0]['store_id']); exit;
+            $cartInfo['cartId'] = $request->base_options['request_context']['reference_values'][0]['value'] ?? 0;
+            $cartInfo['store_id'] = $storeData['installed_carriers'][0]['store_id'] ?? 0;
 // Getting installed carriers there quote settings and services
-        $this->getCarrierSettings($storeData['installed_carriers']);
+            $this->getCarrierSettings($storeData['installed_carriers']);
 
-        $formatReq = $this->formatRequest($request->all(), $storeData);
-        if (
-            $formatReq['lineItemData']['destination']['zip'] == null ||
-            $formatReq['lineItemData']['destination']['state'] == null ||
-            $formatReq['lineItemData']['destination']['country'] == null ||
-            //$formatReq['lineItemData']['destination']['city'] == null ||
-            count($this->connectionSettings) == 0
-        ) {
+            $formatReq = $this->formatRequest($request->all(), $storeData);
+            if (
+                $formatReq['lineItemData']['destination']['zip'] == null ||
+                $formatReq['lineItemData']['destination']['state'] == null ||
+                $formatReq['lineItemData']['destination']['country'] == null ||
+                //$formatReq['lineItemData']['destination']['city'] == null ||
+                count($this->connectionSettings) == 0
+            ) {
 
-            return [];
-        }
-        $quotes = $this->shipping->collectRates($formatReq, $storeData, $this->connectionSettings, $cartInfo);
-        return $quotes;
-        // return $this->generateQuoteFormatResponse($quotes);
-        exit;
-        $originWarehouse = new Origin();
-        $originWarehouse->getNearestWarehouse($formatReq);
+                return [];
+            }
+
+            $quotes = $this->shipping->collectRates($formatReq, $storeData, $this->connectionSettings, $cartInfo);
+            return $quotes;
+
+
     }
 
     function testQuotes()
@@ -252,13 +248,13 @@ class GetRatesController extends Controller
 
     public function changeOriginDetail($originAddress, $locationAdditionalDetail)
     {
-        $originAddress['originForIPLDFlag']=1;
-        $originAddress['instorSenderCity']=$originAddress['senderCity'];
-        $originAddress['instorSenderState']=$originAddress['senderState'];
-        $originAddress['instorSenderZip']=$originAddress['senderZip'];
-        $originAddress['instorSenderCountryCode']=$originAddress['senderCountryCode'];
+        $originAddress['originForIPLDFlag'] = 1;
+        $originAddress['instorSenderCity'] = $originAddress['senderCity'];
+        $originAddress['instorSenderState'] = $originAddress['senderState'];
+        $originAddress['instorSenderZip'] = $originAddress['senderZip'];
+        $originAddress['instorSenderCountryCode'] = $originAddress['senderCountryCode'];
         $originAddress['instore_and_loc_id'] = $locationAdditionalDetail['id'];
-       // $originAddress['locationId'] = $originAddress['locationId'];
+        // $originAddress['locationId'] = $originAddress['locationId'];
         $originAddress['senderZip'] = $locationAdditionalDetail['zip_code'];
         $originAddress['senderCity'] = $locationAdditionalDetail['city'];
         $originAddress['senderState'] = $locationAdditionalDetail['state'];
