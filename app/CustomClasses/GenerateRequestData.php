@@ -1309,11 +1309,12 @@ class GenerateRequestData
 
     private function getApiInfoArrUspsSmall($connSettings, $destination, $enitOrigin, $lineItems)
     {
+        // dd(1312, $enitOrigin, $lineItems);
         $residential = 'N';
         $alwaysResi = false;
         $uspsSmallQuotesResutls = new UspsSmallQuotesResults();
         $uspsSmallPkgReq = new UspsSmallPackagingRequest();
-        $storeId = $this->storeData['store']['id'] ?? '';
+        $storeId = $this->storeData['store']['id'] ?? null;
 
         if ($this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])) {
             if ($this->radHitConsumed == 0) {
@@ -1337,16 +1338,23 @@ class GenerateRequestData
             'rateTier' => $connSettings['quote_settings']['rate_tier'] ?? 'retail', //retail, commercialBase, commercialPlus
             'includeDeclaredValue' => '1',
             'activeServices' => $uspsSmallQuotesResutls->getUspsActiveServices($carrierServices),
-            // if packaging successfully done by SBS
             'sbsPackaging' => $sbsEnabled ? '1' : '0',
         ];
-
-        $req = $uspsSmallPkgReq->setUspsPckgEligAndUspsBoxes($storeId, $connSettings, $enitOrigin, $lineItems);
-        $wsBoxesReq = $req['wsBoxesReq'] ?? [];
-        $apiArray['binsReqArr'] = $wsBoxesReq;
+        
+        if ($sbsEnabled) {
+            $binReqArr = [];
+            // $binReponse = [];
+            foreach ($enitOrigin as $origin) {
+                $binReqArr[$origin['locationId']] = $uspsSmallPkgReq->getGroupedUSPSBoxes($storeId, $enitOrigin, $lineItems);
+                // $binReponse[$origin['locationId']] = $uspsSmallPkgReq->setAndGetBinsResponse($storeId, $connSettings, $enitOrigin, $lineItems);
+            }
+            
+            $apiArray['binsReqArr'] = $binReqArr;
+            $apiArray['binResponse'] = $uspsSmallPkgReq->setAndGetBinsResponse($storeId, $connSettings, $enitOrigin, $lineItems);
+        }
 
         $apiArray = array_merge($apiArray, $this->getCutOffDetails($connSettings));
-        dd(1351, $apiArray);
+        // dd(1351, $apiArray);
         return $apiArray;
     }
 

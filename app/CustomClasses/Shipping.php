@@ -137,14 +137,14 @@ class Shipping
         // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
         // dd(139, $requestArr);
-        // return response()->json($requestArr);
+        return response()->json($requestArr);
         if (empty($requestArr)) {
             return false;
         }
         $url = Constant::QUOTES_URL;
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
-        dd(145, $quotes);
+        dd(147, $quotes);
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
         /*
       * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
