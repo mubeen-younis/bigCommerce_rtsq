@@ -802,11 +802,10 @@ class SubscriptionController extends Controller
             return null;
         }
         try {
-            if (isset($data->last4)) {
-                $data->last4 = decrypt($data->last4);
-            }
+            $data->last4 = decrypt($data->last4);
         } catch (\Exception $exception) {
-            error_log('Card Decrypt' . $exception->getMessage());
+            $data->last4 = '****';
+            Log::info('Card Decrypt Exception' . $exception->getMessage());
         }
         // Added this block of code for the bug of carrier count issue
         // Bug of enabling carriers according to plan
@@ -983,7 +982,7 @@ class SubscriptionController extends Controller
         } else {
             Helpers::setStripeAPiKey(false);
         }
-        
+
         $customer = \Stripe\Customer::retrieve($customerId);
 
         $email = $customer->email;
