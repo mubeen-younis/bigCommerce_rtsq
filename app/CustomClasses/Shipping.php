@@ -137,14 +137,15 @@ class Shipping
         // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
         // dd(139, $requestArr);
-        return response()->json($requestArr);
+        // return response()->json($requestArr);
         if (empty($requestArr)) {
             return false;
         }
         $url = Constant::QUOTES_URL;
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
-        dd(147, $quotes);
+        // dd(147, $quotes);
+        // return response()->json($quotes);
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
         /*
       * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
@@ -420,7 +421,8 @@ class Shipping
             'wweSmall',
             'upsSmall',
             'fedexSmall',
-            'unishippersSmall'
+            'unishippersSmall',
+            'usps'
         ];
         return in_array($carrierName, $smallCarriers);
     }
@@ -660,7 +662,7 @@ class Shipping
     function checkIndividualHazmat($request)
     {
         // TODO: Need to Add small and Ltl Carriers Here as well
-        $smallOrigins = $marketItemSmall = $request['carriers']['wweSmall']['originAddress'] ?? $request['carriers']['upsSmall']['originAddress'] ?? $request['carriers']['fedexSmall']['originAddress'] ?? $request['carriers']['unishippersSmall']['originAddress'] ?? [];
+        $smallOrigins = $marketItemSmall = $request['carriers']['wweSmall']['originAddress'] ?? $request['carriers']['upsSmall']['originAddress'] ?? $request['carriers']['fedexSmall']['originAddress'] ?? $request['carriers']['unishippersSmall']['originAddress'] ?? $request['carriers']['usps']['originAddress'] ?? [];
         $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? $request['carriers']['upsLTL']['originAddress'] ?? $request['carriers']['yrcLTL']['originAddress'] ?? [];
         $items = $request['commdityDetails'] ?? [];
         $smallHazmat = $ltlHazmat = false;

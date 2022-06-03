@@ -119,8 +119,7 @@ class PackagingRequest
         $this->uspsPackagingEligible = true;
 
         foreach ($lineItems as $locId => $itemsDetail) {
-            $itemsDetail['parcel_enabled'] = true;
-            if (isset($itemsDetail['parcel_enabled']) && ($itemsDetail['parcel_enabled'] || $itemsDetail['parcel_enabled'] == 'Y')) {
+            if ((isset($itemsDetail['freight_enabled']) && $itemsDetail['freight_enabled'] == 'N') || (isset($itemsDetail['freightClass']) && $itemsDetail['freightClass'] == '')) {
                 $locId = $origins[$locId]['locationId'] ?? $locId;
                 if ($this->uspsPackagingEligible) {
                     $this->setUspsPackagingRequest($lineItems, $locId);
@@ -384,10 +383,10 @@ class PackagingRequest
             $this->finalBoxesForWs[$locId]['boxes'] = !empty($this->finalBoxesForWs[$locId]['boxes']) ? array_merge($this->finalBoxesForWs[$locId]['boxes'], $bins) : $bins;
             $this->finalBoxesForWs[$locId]['packed'] = !empty($this->finalBoxesForWs[$locId]['packed']) ? array_merge($this->finalBoxesForWs[$locId]['packed'], $bins) : $bins;
         } else {
-            $this->finalBoxesForWs[$locId][$type]['boxes'] = !empty($this->finalBoxesForWs[$locId][$type]['boxes']) ? array_merge($this->finalBoxesForWs[$locId][$type]['boxes'], $bins) : $bins;
-            $this->finalBoxesForWs[$locId][$type]['packed'] = !empty($this->finalBoxesForWs[$locId][$type]['packed']) ? array_merge($this->finalBoxesForWs[$locId][$type]['packed'], $bins) : $bins;
-            // $this->finalBoxesForWs[$locId][$type] = $bins;
-            // $this->finalBoxesForWs[$type][$locId] = $bins;
+            // $this->finalBoxesForWs[$locId][$type]['boxes'] = !empty($this->finalBoxesForWs[$locId][$type]['boxes']) ? array_merge($this->finalBoxesForWs[$locId][$type]['boxes'], $bins) : $bins;
+            // $this->finalBoxesForWs[$locId][$type]['packed'] = !empty($this->finalBoxesForWs[$locId][$type]['packed']) ? array_merge($this->finalBoxesForWs[$locId][$type]['packed'], $bins) : $bins;
+
+            $this->finalBoxesForWs[$locId][$type] = $bins;
         }
     }
 
@@ -423,8 +422,9 @@ class PackagingRequest
                     $this->finalBoxesForWs[$locId]['boxes'][] = $detail;
                     $this->finalBoxesForWs[$locId]['unpacked'][] = $detail;
                 } else {
-                    $this->finalBoxesForWs[$locId][$type]['boxes'][] = $detail;
-                    $this->finalBoxesForWs[$locId][$type]['unpacked'][] = $detail;
+                    // $this->finalBoxesForWs[$locId][$type]['boxes'][] = $detail;
+                    // $this->finalBoxesForWs[$locId][$type]['unpacked'][] = $detail;
+                    $this->finalBoxesForWs[$locId][$type] = $detail;
                 }
             }
         }

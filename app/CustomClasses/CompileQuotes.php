@@ -12,6 +12,7 @@ use App\CustomClasses\RL\ltl\QuotesResults as rnlLtlQuotesResults;
 use App\CustomClasses\WWESMALL\WweSmallQuoteResults;
 use App\CustomClasses\Unishippers\small\QuotesResults as unishippersSmallQuotesResults;
 use App\CustomClasses\YrcLTL\QuotesResults as yrcLtlQuotesResults;
+use App\CustomClasses\UspsSmall\QuotesResults as uspsSmallQuotesResults;
 use App\CustomClasses\Shipping;
 use App\Models\Locations;
 use Illuminate\Support\Facades\DB;
@@ -742,6 +743,13 @@ class CompileQuotes
                 case 'yrc':
                     $resp = $this->compileYRCLtlQuotes($shipment, $connectionSettings, $allOrigins, $residential);
                     $quotesTemp['yrc'] = $resp;
+                    if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
+                        $quotesRes = array_merge($quotesRes, $resp);
+                    }
+                    break;
+                case 'usps':
+                    $resp = $this->compileUspsSmallQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential);
+                    $quotesTemp['usps'] = $resp;
                     if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
                         $quotesRes = array_merge($quotesRes, $resp);
                     }
@@ -2238,6 +2246,23 @@ class CompileQuotes
 
         $resp = $allQuotes;
         return $resp;
+    }
+
+    private function compileUspsSmallQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
+    {
+        $uspsSmallQuotesResults = new uspsSmallQuotesResults();
+        $this->isResi = $residential['uspsSmall'] == 'Y' ? true : false; 
+        $this->residentialDlvry = $residential['uspsSmall'] == 'Y' ? 1 : 0; 
+        $this->alwaysResi = $this->residential['alwaysResi']['uspsSmall'] ?? false;
+
+        $access = $this->getAccessorialCodeSmall();
+        $res = $uspsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment);
+
+        if (!$this->isMultiShipment) {
+            $this->isMultiShipment = $res['isMultiShipment'] ?? false;
+        }
+
+        return $res['resp'] ?? [];
     }
 
     /**

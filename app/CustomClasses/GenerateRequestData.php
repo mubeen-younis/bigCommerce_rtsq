@@ -1256,9 +1256,9 @@ class GenerateRequestData
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
-            
+
         $residential = 'N';
-        $alwaysResi = false;            
+        $alwaysResi = false;
         /*
             * Check if rad hit not consumed and residential is enables
         * **/
@@ -1309,7 +1309,6 @@ class GenerateRequestData
 
     private function getApiInfoArrUspsSmall($connSettings, $destination, $enitOrigin, $lineItems)
     {
-        // dd(1312, $enitOrigin, $lineItems);
         $residential = 'N';
         $alwaysResi = false;
         $uspsSmallQuotesResutls = new UspsSmallQuotesResults();
@@ -1335,20 +1334,32 @@ class GenerateRequestData
         $this->resiCarrier['alwaysResi']['uspsSmall'] = $alwaysResi;
         $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
         $apiArray = [
-            'rateTier' => $connSettings['quote_settings']['rate_tier'] ?? 'retail', //retail, commercialBase, commercialPlus
+            'rateTier' => $connSettings['quote_settings']['rate_tier'] ?? 'retail',
             'includeDeclaredValue' => '1',
             'activeServices' => $uspsSmallQuotesResutls->getUspsActiveServices($carrierServices),
             'sbsPackaging' => $sbsEnabled ? '1' : '0',
         ];
-        
+
         if ($sbsEnabled) {
             $binReqArr = [];
-            // $binReponse = [];
-            foreach ($enitOrigin as $origin) {
-                $binReqArr[$origin['locationId']] = $uspsSmallPkgReq->getGroupedUSPSBoxes($storeId, $enitOrigin, $lineItems);
-                // $binReponse[$origin['locationId']] = $uspsSmallPkgReq->setAndGetBinsResponse($storeId, $connSettings, $enitOrigin, $lineItems);
+            $smallOrigins = [];
+            // dd(1346, $enitOrigin, $lineItems);
+            // dd(1345, $enitOrigin, $lineItems);
+            foreach ($lineItems as $origin => $item) {
+                if ((isset($item['freight_enabled']) && $item['freight_enabled'] == 'N') || (isset($item['freightClass']) && $item['freightClass'] == '')) {
+                    $itemLocId = $enitOrigin[$origin]['locationId'] ?? '';
+                    $smallOrigins[$itemLocId] = $enitOrigin[$origin]; 
+                }
+                // $itemLocId = $enitOrigin[$origin]['locationId'] ?? '';
+                // $smallOrigins[$itemLocId] = $enitOrigin[$origin]; 
             }
-            
+            dd(1352, $smallOrigins);
+            // foreach ($enitOrigin as $origin) {
+            //     $binReqArr[$origin['locationId']] = $uspsSmallPkgReq->getGroupedUSPSBoxes($storeId, $enitOrigin, $lineItems);
+            // }
+            $binReqArr = $uspsSmallPkgReq->getGroupedUSPSBoxes($storeId, $enitOrigin, $lineItems);
+            dd(1350, $binReqArr);
+
             $apiArray['binsReqArr'] = $binReqArr;
             $apiArray['binResponse'] = $uspsSmallPkgReq->setAndGetBinsResponse($storeId, $connSettings, $enitOrigin, $lineItems);
         }
