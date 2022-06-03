@@ -8,8 +8,7 @@ use App\CustomClasses\Fedex\small\ConnectionSettings as FedexSmallConnectionSett
 use App\CustomClasses\Functions;
 use App\CustomClasses\GTZ\ltl\ConnectionSettings as GTZLtlConnectionSettings;
 use App\CustomClasses\RL\ltl\ConnectionSettings as RNLLtlConnectionSettings;
-use App\CustomClasses\
-UpsLTL\UpsLtlConnectionSettings;
+use App\CustomClasses\UpsLTL\UpsLtlConnectionSettings;
 use App\CustomClasses\UpsSmall\ConnectionSettings;
 use App\CustomClasses\WweLTL\WweLtlConnectionSettings;
 use App\CustomClasses\WWESMALL\SmallConnectionSettings;
