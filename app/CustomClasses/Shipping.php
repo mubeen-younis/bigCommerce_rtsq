@@ -28,12 +28,20 @@ class Shipping
     private $isInsurance = 'N';
     private $isRequestMultishipment = false;
     private $shippingGroupResponse;
+    private $showOnlyLocAndInstoreQuote;
+    private $instoreQuotes;
+    private $locDelQuotes;
+    private $multiOrigins;
 
     public function __construct()
     {
         $this->shipmentPkg = new WweLTLShipmentPackage();
         $this->compileQuotes = new CompileQuotes();
         $this->shippingGroupResponse = [];
+        $this->showOnlyLocAndInstoreQuote = false;
+        $this->instoreQuotes = false;
+        $this->locDelQuotes = false;
+        $this->multiOrigins = false;
     }
 
 
@@ -52,6 +60,15 @@ class Shipping
 
         $generateReqData->_init($quoteSettings, $connectionSettings, $storeData);
         $origins = $request['lineItemData']['origin'];
+        // Check if any of the item in the cart has selected quote as instore or local delivery
+        $this->showOnlyLocAndInstoreQuote = $this->showOnlyLocAndInstoreQuote($request['lineItemData']['items']);
+        // Set SUppress Rates to true if to show only instore and local
+        if ($this->showOnlyLocAndInstoreQuote) {
+            $origins = $this->enableSuppressRatesInOrigins($origins);
+            if (blank($origins)) {
+                return [];
+            }
+        }
         // Items that is not associated with Shipping Group and need to get rates from Ws
         $itemsWithoutShippingGroup = collect($request['lineItemData']['items'])->where('shipping_group', null)->all();
         // Items that is associated with Shipping Group
@@ -79,6 +96,12 @@ class Shipping
         $residential = $resp['residential'];
         $carriersArray = $resp['carriersArr'];
 
+        $this->multiOrigins = $this->checkIsMultiShipment($carriersArray['carriers']);
+        /*Check for MUlti shipment and product marked as instore or local delivery*/
+        if ($this->multiOrigins && $this->showOnlyLocAndInstoreQuote) {
+            return [];
+        }
+
         // Checking if any productis hazardous
         $hazmatAllItems = $this->isHazmatMaterial($package);
 
@@ -103,8 +126,10 @@ class Shipping
             if ($this->isInsurance === 'Y') {
                 if ($this->isSmall($key)) {
                     $carriersArray['carriers'][$key]['api']['includeDeclaredValue'] = 1;
-                } else if ($key == 'wweLTL') {
-                    $carriersArray['carriers'][$key]['api']['insureShipment'] = 1;
+                } else {
+                    if ($key == 'wweLTL') {
+                        $carriersArray['carriers'][$key]['api']['insureShipment'] = 1;
+                    }
                 }
             }
         }
@@ -113,6 +138,7 @@ class Shipping
         if (empty($requestArr)) {
             return false;
         }
+
         $url = Constant::QUOTES_URL;
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
@@ -138,6 +164,7 @@ class Shipping
 
         $quotesFromWs = $quotes ?? [];
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination);
+
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];
@@ -159,6 +186,7 @@ class Shipping
         $isFedexLtlCodeExist = gettype(array_search('fedexltl', $finalCodesTemp)) == 'integer';
         $isxpoLtlCodeExist = gettype(array_search('xpoltl', $finalCodesTemp)) == 'integer';
         $isFreightQuoteLtlCodeExist = gettype(array_search('fqltl', $finalCodesTemp)) == 'integer';
+        $isYrcLtlCodeExist = gettype(array_search('yrcltl', $finalCodesTemp)) == 'integer';
         $freightCode = '';
         $finalCost = 0;
 
@@ -185,7 +213,7 @@ class Shipping
         } else {
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
             //TODO : Need to Add LTL Carriers Here as well
-            if ($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isFreightQuoteLtlCodeExist)) {
+            if ($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist)) {
                 $isShippingOrFreight = false;
             }
             if ($this->isRequestMultishipment && !$isShippingOrFreight) {
@@ -211,7 +239,53 @@ class Shipping
         return $resp;
     }
 
-    public function getOriginsAccShipGroup($items, $origins)
+
+    public function checkIsMultiShipment($carriers)
+    {
+        foreach ($carriers as $carrier) {
+            $output = Functions::checkMultiUnique($carrier['originAddress']);
+            if (count($output) > 1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public function showOnlyLocAndInstoreQuote($items): bool
+    {
+        foreach ($items as $item) {
+            if (isset($item['quote_as_local']) && $item['quote_as_local']) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    public function enableSuppressRatesInOrigins($origins)
+    {
+        //  Need to set some status for WS to suppress quotes and ignore destination origin
+        $found = false;
+        foreach ($origins as $key => $origin) {
+            if (isset($origin['InstorPickupLocalDelivery']['localDelivery']['postalCodeMatch'])) {
+                $origins[$key]['InstorPickupLocalDelivery']['suppress'] = 1;
+                $found = true;
+            }
+
+            if (isset($origin['InstorPickupLocalDelivery']['inStorePickup']['postalCodeMatch'])) {
+                $origins[$key]['InstorPickupLocalDelivery']['suppress'] = 1;
+                $found = true;
+            }
+
+        }
+        if (!$found) {
+            return [];
+        }
+        return $origins;
+    }
+
+    public
+    function getOriginsAccShipGroup($items, $origins)
     {
         $formOrigins = [];
         foreach ($origins as $originKey => $origin) {
@@ -226,7 +300,8 @@ class Shipping
     }
 
 
-    protected function setShippingGroupsResponse($shippingGroupItems)
+    protected
+    function setShippingGroupsResponse($shippingGroupItems)
     {
         $this->shippingGroupResponse = ShippingGroup::setShippingGroup($shippingGroupItems);
     }
@@ -235,7 +310,8 @@ class Shipping
     /**
      * @return array
      */
-    protected function formattedShippingGroupResponse(): array
+    protected
+    function formattedShippingGroupResponse(): array
     {
         $finalQuotes = $this->addRateId($this->shippingGroupResponse);
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
@@ -247,7 +323,8 @@ class Shipping
      * @param $finalQuotes
      * @return array
      */
-    protected function addShipGroupRatesInQuotes($finalQuotes): array
+    protected
+    function addShipGroupRatesInQuotes($finalQuotes): array
     {
         foreach ($finalQuotes as $key => $quote) {
             $finalQuotes[$key]['rate'] = $quote['rate'] + $this->shippingGroupResponse[0]['rate'];
@@ -255,7 +332,8 @@ class Shipping
         return $finalQuotes;
     }
 
-    private function removeParcelIfLtl($finalQuotes)
+    private
+    function removeParcelIfLtl($finalQuotes)
     {
         $finalQuotes = $finalQuotes['checkoutQuotes'] ?? $finalQuotes;
         $hasLtl = false;
@@ -280,7 +358,8 @@ class Shipping
         return $finalQuotes;
     }
 
-    private function makeMultishipmentSmallLtl($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr)
+    private
+    function makeMultishipmentSmallLtl($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr)
     {
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
         /*
@@ -292,7 +371,8 @@ class Shipping
         return $resp;
     }
 
-    private function addBinResponseToQuotes($binReponse, $quotes)
+    private
+    function addBinResponseToQuotes($binReponse, $quotes)
     {
         $boxFee = [];
         $fedexBoxesFee = [];
@@ -321,7 +401,8 @@ class Shipping
         return $quotes;
     }
 
-    public function isSmallCarrier($carrierName)
+    public
+    function isSmallCarrier($carrierName)
     {
         $smallCarriers = [
             'wweSmall',
@@ -332,7 +413,8 @@ class Shipping
         return in_array($carrierName, $smallCarriers);
     }
 
-    public function isLtlCarrier($carrierName)
+    public
+    function isLtlCarrier($carrierName)
     {
         $ltlCarriers = [
             'wweLTL',
@@ -341,11 +423,13 @@ class Shipping
             'globalTranz',
             'xpoLTL',
             'rnlLTL',
+            'yrcLTL'
         ];
         return in_array($carrierName, $ltlCarriers);
     }
 
-    private function addBoxFeeToQuotes(array $quotes, array $boxFee, $fedexBoxesFee = []): array
+    private
+    function addBoxFeeToQuotes(array $quotes, array $boxFee, $fedexBoxesFee = []): array
     {
         $parcelCarName = ['wweSmall', 'upsSmall', 'fedexSmall', 'unishippersSmall'];
         if (isset($quotes) && !empty($quotes)) {
@@ -449,7 +533,8 @@ class Shipping
         return $quotes;
     }
 
-    public function getBoxFeeAccordingToService($serviceType, $fedexBoxFee, $boxFee, $locId, $oneRate = false)
+    public
+    function getBoxFeeAccordingToService($serviceType, $fedexBoxFee, $boxFee, $locId, $oneRate = false)
     {
         $commonBoxFee = $boxFee[$locId] ?? 0;
         if ($oneRate) {
@@ -463,7 +548,8 @@ class Shipping
 
     }
 
-    private function getCumulativeBoxFee($bins): float
+    private
+    function getCumulativeBoxFee($bins): float
     {
 
         $boxFee = 0;
@@ -480,7 +566,8 @@ class Shipping
         return $boxFee;
     }
 
-    private function BoxFeeByID(int $boxId)
+    private
+    function BoxFeeByID(int $boxId)
     {
         if (BoxSize::where('id', $boxId)->exists()) {
             return BoxSize::find($boxId)->pluck('box_fee')->first();
@@ -488,7 +575,8 @@ class Shipping
         return 0;
     }
 
-    public function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null)
+    public
+    function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null)
     {
         //print_r($resp); print_r($multiShipmentQuotes); exit;
         foreach ($finalQuotes as $finalQuote) {
@@ -507,7 +595,8 @@ class Shipping
         }
     }
 
-    public function addRateId($finalQuotes)
+    public
+    function addRateId($finalQuotes)
     {
         $time = time();
         foreach ($finalQuotes as $key => $finalQuote) {
@@ -516,7 +605,8 @@ class Shipping
         return $finalQuotes;
     }
 
-    public function checkInstorePickup($origin)
+    public
+    function checkInstorePickup($origin)
     {
         if (count($origin) > 1) {
             $whIDs = [];
@@ -539,7 +629,8 @@ class Shipping
     /**
      * to enable hazmat property for Api
      */
-    public function isHazmatMaterial($items)
+    public
+    function isHazmatMaterial($items)
     {
         $hazmatAllItems = [];
         foreach ($items['items'] as $key => $item) {
@@ -553,11 +644,12 @@ class Shipping
         return $hazmatAllItems;
     }
 
-    private function checkIndividualHazmat($request)
+    private
+    function checkIndividualHazmat($request)
     {
         // TODO: Need to Add small and Ltl Carriers Here as well
         $smallOrigins = $marketItemSmall = $request['carriers']['wweSmall']['originAddress'] ?? $request['carriers']['upsSmall']['originAddress'] ?? $request['carriers']['fedexSmall']['originAddress'] ?? $request['carriers']['unishippersSmall']['originAddress'] ?? [];
-        $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? $request['carriers']['upsLTL']['originAddress'] ?? [];
+        $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? $request['carriers']['upsLTL']['originAddress'] ?? $request['carriers']['yrcLTL']['originAddress'] ?? [];
         $items = $request['commdityDetails'] ?? [];
         $smallHazmat = $ltlHazmat = false;
         if (!empty($smallOrigins)) {
@@ -585,7 +677,8 @@ class Shipping
     /**
      * to enable insurance property for Api
      */
-    public function isInsurance($items)
+    public
+    function isInsurance($items)
     {
         foreach ($items['items'] as $key => $item) {
             if (isset($item['product_insurance_active']) && $item['product_insurance_active'] === 1) {
@@ -597,7 +690,8 @@ class Shipping
     /**
      * @return array
      */
-    public function getAllowedMethods()
+    public
+    function getAllowedMethods()
     {
         return [$this->_code => $this->getConfigData('name')];
     }
@@ -606,12 +700,14 @@ class Shipping
      * @param $quotes
      * @return array
      */
-    public function setCarrierRates($quotes)
+    public
+    function setCarrierRates($quotes)
     {
         return $quotes = $quotes ?? [];
     }
 
-    public function generateQuoteFormatResponse($quotes)
+    public
+    function generateQuoteFormatResponse($quotes)
     {
         $quotes = array_values($quotes);
         $current = str_replace(' ', 'T', Carbon::now()) . "-00:00";

@@ -46,51 +46,45 @@ class GetRatesController extends Controller
 
     public function returnRates(Request $request)
     {
-        //echo "<pr>"; print_r($request->all()); exit;
+            Log::info('Request ' . json_encode($request->all()));
+            $storeHash = $request->base_options['store_id'] ?? null;
+            $storeData = $this->getStoreData($storeHash);
+            /*Setting Stripe APi key
+            Bug fix of plan auto renews
+            */
+            $isTestStore = Helpers::checkIsTestStore($storeHash);
+            Helpers::setStripeAPiKey($isTestStore);
 
-        //return $testQuotes = $this->testQuotes();
+            //echo "<pre>"; print_r($storeData['store']['id']); exit;
+            if ($storeData == null) {
+                return [];
+            }
+            if (!$this->storePlanStatus($storeData['store']['id'])) {
+                return [];
+            }
 
-        Log::info('Request ' . json_encode($request->all()));
-        $storeHash = $request->base_options['store_id'] ?? null;
-        $storeData = $this->getStoreData($storeHash);
-        /*Setting Stripe APi key
-        Bug fix of plan auto renews
-        */
-        $isTestStore = Helpers::checkIsTestStore($storeHash);
-        Helpers::setStripeAPiKey($isTestStore);
-
-
-        //echo "<pre>"; print_r($storeData['store']['id']); exit;
-        if ($storeData == null) {
-            return [];
-        }
-        if (!$this->storePlanStatus($storeData['store']['id'])) {
-            return [];
-        }
-        //echo "<pre>"; print_r($storeData['installed_carriers'][0]['store_id']); exit;
-        $cartInfo['cartId'] = $request->base_options['request_context']['reference_values'][0]['value'] ?? 0;
-        $cartInfo['store_id'] = $storeData['installed_carriers'][0]['store_id'] ?? 0;
+            //echo "<pre>"; print_r($storeData['installed_carriers'][0]['store_id']); exit;
+            $cartInfo['cartId'] = $request->base_options['request_context']['reference_values'][0]['value'] ?? 0;
+            $cartInfo['store_id'] = $storeData['installed_carriers'][0]['store_id'] ?? 0;
 // Getting installed carriers there quote settings and services
-        $this->getCarrierSettings($storeData['installed_carriers']);
+            $this->getCarrierSettings($storeData['installed_carriers']);
 
-        $formatReq = $this->formatRequest($request->all(), $storeData);
- 
-        if (
-            $formatReq['lineItemData']['destination']['zip'] == null ||
-            $formatReq['lineItemData']['destination']['state'] == null ||
-            $formatReq['lineItemData']['destination']['country'] == null ||
-            //$formatReq['lineItemData']['destination']['city'] == null ||
-            count($this->connectionSettings) == 0
-        ) {
+            $formatReq = $this->formatRequest($request->all(), $storeData);
+            if (
+                $formatReq['lineItemData']['destination']['zip'] == null ||
+                $formatReq['lineItemData']['destination']['state'] == null ||
+                $formatReq['lineItemData']['destination']['country'] == null ||
+                //$formatReq['lineItemData']['destination']['city'] == null ||
+                count($this->connectionSettings) == 0
+            ) {
 
-            return [];
-        }
-        $quotes = $this->shipping->collectRates($formatReq, $storeData, $this->connectionSettings, $cartInfo);
-        return $quotes;
-        // return $this->generateQuoteFormatResponse($quotes);
-        exit;
-        $originWarehouse = new Origin();
-        $originWarehouse->getNearestWarehouse($formatReq);
+                return [];
+            }
+
+            $quotes = $this->shipping->collectRates($formatReq, $storeData, $this->connectionSettings, $cartInfo);
+            return $quotes;
+
+
     }
 
     function testQuotes()
@@ -138,18 +132,14 @@ class GetRatesController extends Controller
                 'address_type' => $data['base_options']['destination']['address_type'] ?? null,
             ]
         ];
-
         $variantKeys = [];
+        $wareHouseShipmentExist = false;
         if (count($data['base_options']['items'])) {
             foreach ($data['base_options']['items'] as $productKey => $product) {
                 $product_settings = $this->getProductSetting($product['product_id'], $product['variant_id']);
                 $product_price = $this->getProductPrice($product['product_id'], $product['variant_id']);
                 $weight = (isset($product['weight']['value']) && isset($product['weight']['units'])) ? $this->convertWeight($product['weight']['value'], strtolower($product['weight']['units'])) : 0;
-                // $weight=148;
-
                 $ltlCheck = $product_settings['freight_enabled'] ?? false;
-
-                $originAddress = $this->shipmentPkg->wweLTLOriginAddress($details, $product_settings, $details['destination']['zip'], $storeData, $this->connectionSettings);
                 $shipBinAlone = (isset($product_settings['ship_multiple_package']) && $product_settings['ship_multiple_package'])
                 || (isset($product_settings['ship_own_package']) && $product_settings['ship_own_package']) ? 1 : 0;
                 $key = $product['variant_id'] ?? $product['product_id'];
@@ -159,7 +149,23 @@ class GetRatesController extends Controller
                 }
                 $variantKeys[$key] = $key;
 
+                // $originAddress = $this->shipmentPkg->wweLTLOriginAddress($details, $product_settings, $details['destination']['zip'], $storeData, $this->connectionSettings);
+
+                $dropshipEnabled = $product_settings['dropship_enabled'] ?? false;
+                if ($dropshipEnabled) {
+                    $originAddress = $this->shipmentPkg->getDropshipLocationDetail($product_settings['dropship_location'], $details['destination']['zip']);
+                    if (blank($originAddress)) {
+                        Log::info('No dropship Location Found');
+                        return null;
+                    }
+                } else {
+                    $originAddress = 'warehouse';
+                    $wareHouseShipmentExist = true;
+                }
+
                 $details['origin'][$key] = $originAddress;
+
+
                 $details['items'][$key] = [
                     'id' => $product_settings['id'] ?? '',
                     'product_id' => $product['product_id'] ?? '',
@@ -187,8 +193,11 @@ class GetRatesController extends Controller
                     //'freightClass' => '',
                     'lineItemClass' => isset($product_settings['freight_class']) ? $this->getLineItemClass($product_settings['freight_class']) : '',
                     'shipping_group' => $product_settings['shipping_group'] ?? null,
-                    'exclude_packaging' => 0
+                    'exclude_packaging' => 0,
+                    'quote_as_local' => $product_settings['quote_as_local'] ?? false
                 ];
+
+
                 if (!$details['items'][$key]['shipMultiplePackage']) {
                     if (
                         (blank($details['items'][$key]['lineItemLength']) || $details['items'][$key]['lineItemLength'] <= 0) ||
@@ -202,7 +211,55 @@ class GetRatesController extends Controller
 
             }
         }
+
+
+        if ($wareHouseShipmentExist) {
+            $originAddress = $this->shipmentPkg->getNearestWarehouse($details, $details['destination']['zip'], $storeData, $this->connectionSettings);
+            if (blank($originAddress)) {
+                Log::info('No warehouse added');
+                return null;
+            }
+            $originAddress = $this->getAddressForQuotes($originAddress);
+            foreach ($details['origin'] as $key => $origin) {
+                if ($origin == "warehouse") {
+                    $details['origin'][$key] = $originAddress;
+                }
+            }
+        }
         return ['lineItemData' => $details];
+    }
+
+
+    public function getAddressForQuotes($originAddress)
+    {
+
+        $locationAdditionalDetail = Locations::getLocationAdditionalDetail($originAddress['locationId']);
+        if (is_string($locationAdditionalDetail) && $locationAdditionalDetail == "default") {
+            return $originAddress;
+        }
+        if (is_string($locationAdditionalDetail) && $locationAdditionalDetail == "suppress") {
+            $originAddress['InstorPickupLocalDelivery']['suppress'] = 1;
+            return $originAddress;
+        }
+        return $this->changeOriginDetail($originAddress, $locationAdditionalDetail);
+
+    }
+
+
+    public function changeOriginDetail($originAddress, $locationAdditionalDetail)
+    {
+        $originAddress['originForIPLDFlag'] = 1;
+        $originAddress['instorSenderCity'] = $originAddress['senderCity'];
+        $originAddress['instorSenderState'] = $originAddress['senderState'];
+        $originAddress['instorSenderZip'] = $originAddress['senderZip'];
+        $originAddress['instorSenderCountryCode'] = $originAddress['senderCountryCode'];
+        $originAddress['instore_and_loc_id'] = $locationAdditionalDetail['id'];
+        // $originAddress['locationId'] = $originAddress['locationId'];
+        $originAddress['senderZip'] = $locationAdditionalDetail['zip_code'];
+        $originAddress['senderCity'] = $locationAdditionalDetail['city'];
+        $originAddress['senderState'] = $locationAdditionalDetail['state'];
+        $originAddress['senderCountryCode'] = $locationAdditionalDetail['country'];
+        return $originAddress;
     }
 
     /**
@@ -273,7 +330,12 @@ class GetRatesController extends Controller
         switch ($unit) {
             case 'oz' :
                 return $value / 16;
-                break;
+            case 'kg':
+                return $value/0.45359237;
+            case 'g':
+                return $value/453.59237;
+            case 't':
+                return $value/0.00045359237;
             default:
                 return $value;
         }

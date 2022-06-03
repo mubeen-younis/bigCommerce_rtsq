@@ -20,11 +20,12 @@ class QuotesResults
         $this->quoteSettings = $connectionSettings['unishippers-small']['quote_settings'] ?? '';
 
         $numberOfShipments = 0;
-        foreach ($shipments as $ship) {
-            if (!isset($ship['severity'])) {
+        foreach ($shipments as $key => $ship) {
+            if (!isset($ship['severity']) && !in_array($key, ['ground', 'air'])) {
                 $numberOfShipments++;
             }
         }
+
         if (!$isMultiShipment) {
             $isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
@@ -88,11 +89,10 @@ class QuotesResults
 
                     // Get service title
                     $title = $this->getServiceTitle($data, $srvcType, $this->quoteSettings, $residential);
-                    $price = (float) str_replace(',', '', $price);
+                    $price = (float)str_replace(',', '', $price);
 
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12uniship' . $srvcType . $access;
-                    $originQuotes[
-                        $shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
+                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
 
                     $multiShipmentQuotes[$origin][$key] = $originQuotes[$shipmentCount]['shipment'][$key]['simple'];
@@ -131,27 +131,25 @@ class QuotesResults
 
             return $returnResp;
         }
-        
         // Handling single shipment
         if (!empty($originQuotes)) {
             $originQuotes = array_column(array_values($originQuotes), 'shipment');
             $originQuotes = reset($originQuotes);
             $originQuotes = array_column(array_values($originQuotes), 'simple');
             $resp = $originQuotes;
-
-            // Checkking for instore pickup
-            if (!$isMultiShipment && isset($inStoreLdData) && $inStoreLdData) {
-                $allQuotes = $this->CompileQuotes->inStoreLocalDeliveryQuotes($originQuotes, $inStoreLdData, $allOrigins);
-                $resp = $allQuotes;
-            }
-
-            $returnResp['resp'] = $resp;
-
-            return $returnResp;
         }
-        
-        $returnResp['resp'] = [];
+
+        // Checkking for instore pickup
+        if (!$isMultiShipment && isset($inStoreLdData) && $inStoreLdData) {
+            $allQuotes = $this->CompileQuotes->inStoreLocalDeliveryQuotes($originQuotes, $inStoreLdData, $allOrigins);
+            $resp = $allQuotes;
+        }
+
+        $returnResp['resp'] = isset($resp) && !empty($resp) ? $resp : [];
+
         return $returnResp;
+
+
     }
 
     private function formateQuoteBeforeCompile($shipments)
@@ -210,8 +208,7 @@ class QuotesResults
                     if (isset($quote['serviceDesc']['TransitTimeInDays']) && $quote['serviceDesc']['TransitTimeInDays'] > $this->quoteSettings['number_of_transit_days']) {
                         $islimited = true;
                     }
-                }
-                // Check by calendar days
+                } // Check by calendar days
                 else {
                     if (isset($quote['serviceDesc']['CalenderDaysInTransit']) && $quote['serviceDesc']['CalenderDaysInTransit'] > $this->quoteSettings['number_of_transit_days']) {
                         $islimited = true;
@@ -278,8 +275,7 @@ class QuotesResults
             if (isset($grdHazMatFee) && is_numeric($grdHazMatFee) && !empty($grdHazMatFee)) {
                 $amount = $amount + $grdHazMatFee;
             }
-        }
-        // Adding hazmat fee to Air Services
+        } // Adding hazmat fee to Air Services
         else {
             $airHazMatFee = $quoteSettings['air_hazardous_material_fee'] ?? null;
             if (isset($airHazMatFee) && is_numeric($airHazMatFee) && !empty($airHazMatFee)) {
@@ -293,7 +289,7 @@ class QuotesResults
 
     public function addHandlingMarkupOfHazmat($amount)
     {
-        $amount = (float) str_replace(',', '', $amount);
+        $amount = (float)str_replace(',', '', $amount);
         $markupValue = $this->quoteSettings['handling_fee_markup'] ?? 0;
 
         if (strpbrk($markupValue, '%') !== false) {

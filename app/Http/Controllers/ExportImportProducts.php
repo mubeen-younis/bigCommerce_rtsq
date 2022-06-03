@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\CustomClasses\BigCommerceFunctions;
 use App\Jobs\ImportProducts as ImportProductsJob;
 use App\Jobs\ImportProductsNotification;
 use App\Models\Locations;
@@ -54,6 +55,8 @@ class ExportImportProducts extends Controller
     public function createExportData($request)
     {
         $locations = Locations::where('store_id', $request['store_id'])->where('type', 2)->get()->toArray();
+        $storeHash = $request['store_hash'] ?? null;
+        $weightUnit = $this->getWeightUnitOfStore($storeHash);
         $dropShips = [];
         foreach ($locations as $location) {
             $dropShips[$location['id']] = $location;
@@ -74,13 +77,13 @@ class ExportImportProducts extends Controller
         $folderName = $request['folderName'];
         $folderNamePath = [];
         try {
-            $productsChunk->chunk(2500, function ($products, $chunkCount = 0) use ($comma, $folderName, $dropShips) {
+            $productsChunk->chunk(2500, function ($products, $chunkCount = 0) use ($comma, $folderName, $dropShips, $weightUnit) {
                 $fileName = $chunkCount++ . '-export.csv';
                 $filename = $folderName . '/' . $fileName;
                 $folderNamePath[] = $filename;
                 $fp = fopen($filename, "w");
                 if (true) {
-                    $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (lbs), Length (in), Width (in), Height (in), Quote Method, Freight Class, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Ships Alone, Vertical Rotation';
+                    $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (in), Width (in), Height (in), Quote Method, Freight Class, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Ships Alone, Vertical Rotation';
                     $line .= "\n";
                     fputs($fp, $line);
                 }
@@ -97,10 +100,13 @@ class ExportImportProducts extends Controller
 
                     $settings = json_decode($product->settings);
                     $quoteMethod = '';
+                    // Added INstore and local quoting methods
                     if (isset($settings->freight_enabled) && $settings->freight_enabled) {
                         $quoteMethod = 'L';
                     } else if (isset($settings->parcel_enabled) && $settings->parcel_enabled) {
                         $quoteMethod = 'S';
+                    } else if (isset($settings->quote_as_local) && $settings->quote_as_local) {
+                        $quoteMethod = 'PD';
                     }
                     $productLine[] = $quoteMethod;
                     $productLine[] = $settings->freight_class ?? '';
@@ -142,6 +148,22 @@ class ExportImportProducts extends Controller
                 }
             }
         }
+    }
+
+    public function getWeightUnitOfStore($storeHash)
+    {
+        if (blank($storeHash)) {
+            return 'lbs';
+        }
+        $storeDetails = BigCommerceFunctions::getStoreSettings($storeHash);
+        $storeDetails = (new CurlRequest())->enSingleCurlRequest($storeDetails['endpoint'],
+            $storeDetails['request'], $storeDetails['headers'], $storeDetails['method'], false);
+        $response = json_decode($storeDetails['response'], true);
+        $weightUnit = $response['weight_units'] ?? null;
+        if (!blank($weightUnit)) {
+            return strtolower($weightUnit);
+        }
+        return 'lbs';
     }
 
     public function makeDirectory($path, $mode = 0777, $recursive = false, $force = false)
@@ -354,7 +376,7 @@ class ExportImportProducts extends Controller
 
         /*Start -  For Dropship CHange*/
         $dropShipId = $this->updateDropShip($product, $indexes, $store_id);
-        if ($dropShipId) {
+        if ($dropShipId != false) {
             $update['dropship_enabled'] = true;
             $update['dropship_location'] = $dropShipId;
         } else {
@@ -408,10 +430,15 @@ class ExportImportProducts extends Controller
             if (array_key_exists($key, $product)) {
                 $settings->parcel_enabled = false;
                 $settings->freight_enabled = false;
+                $settings->quote_as_local = false;
+                // Added instore and local delivery quoting method here as well Instore-local
+
                 if ($quoteMethod === 's') {
                     $settings->parcel_enabled = true;
                 } else if ($quoteMethod === 'l') {
                     $settings->freight_enabled = true;
+                } else if ($quoteMethod === 'pd') {
+                    $settings->quote_as_local = true;
                 }
             }
         }
@@ -436,7 +463,10 @@ class ExportImportProducts extends Controller
                 $settings->allow_vertical = ($product["$key"] == 1) ? true : false;;
             }
         }
-        if ($settings->allow_vertical && $settings->ship_own_package) {
+
+        $allowVert = optional($settings)->allow_vertical ?? false;
+        $shipOwn = optional($settings)->ship_own_package ?? false;
+        if ($allowVert && $shipOwn) {
             $settings->ship_own_package = false;
         }
         if (isset($indexes['insurance']) && $indexes['insurance']) {

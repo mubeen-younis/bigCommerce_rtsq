@@ -1,8 +1,6 @@
 <?php
 
-
 namespace App\CustomClasses\Fedex\ltl;
-
 
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
@@ -13,7 +11,6 @@ class QuotesResults
     {
         $this->CompileQuotes = new CompileQuotes();
     }
-
 
     public function getServiceRate($data, $serviceDesc, $quoteSettings)
     {
@@ -29,11 +26,12 @@ class QuotesResults
         if (empty($markupValue) || !is_numeric(str_replace('%', '', $markupValue))) {
             return $amount;
         }
-        if (strpbrk($markupValue, '%') !== FALSE) {
+        if (strpbrk($markupValue, '%') !== false) {
             $amount = $this->getvalueFromPercent($amount, str_replace('%', '', $markupValue));
         } else {
             $amount = $amount + $markupValue;
         }
+
         return number_format($amount, 2);
 
     }
@@ -59,7 +57,7 @@ class QuotesResults
     public function addHandlingMarkupOfHazmat($amount, $markupValue)
     {
         $amount = (float)str_replace(',', '', $amount);
-        if (strpbrk($markupValue, '%') !== FALSE) {
+        if (strpbrk($markupValue, '%') !== false) {
             $amount = $this->getvalueFromPercent($amount, str_replace('%', '', $markupValue));
         } else {
             $amount = $amount + $markupValue;
@@ -209,7 +207,7 @@ class QuotesResults
             $allQuotes = $this->CompileQuotes->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $this->CompileQuotes->arrangeOwnFreight($allQuotes),
-                'multiShipmentQuotes' => $multiShipmentQuotes
+                'multiShipmentQuotes' => $multiShipmentQuotes,
             ];
             return $resp;
         }
@@ -239,11 +237,10 @@ class QuotesResults
         }
         $resp = [
             'resp' => $return ?? [],
-            'isMultiShipment' => $isMultiShipment
+            'isMultiShipment' => $isMultiShipment,
         ];
         return $resp;
     }
-
 
     public function formateQuoteBeforeCompile($shipments)
     {
@@ -252,21 +249,21 @@ class QuotesResults
                 continue;
             }
             foreach ($quotes['q'] as $key => $quote) {
-                if (!isset($quote['serviceType'])) {
-                    continue;
-                }
-                $shipments[$shipment]['q'][$key]['serviceDesc'] = $quote['serviceType'] === 'FEDEX_FREIGHT_PRIORITY' ? 'Freight Priority' : 'Freight Economy';
-                if (isset($quote['surcharges'])) {
-                    foreach ($quote['surcharges'] as $surcharge) {
-                        if (isset($surcharge['SurchargeType']) && $surcharge['SurchargeType'] === 'LIFTGATE_DELIVERY') {
-                            unset($shipments[$shipment]['q'][$key]['surcharges']);
-                            $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $surcharge['Amount']['Amount'] ?? 0;
+                if (isset($quote['serviceType'])) {
+                    $shipments[$shipment]['q'][$key]['serviceDesc'] = $quote['serviceType'] === 'FEDEX_FREIGHT_PRIORITY' ? 'Freight Priority' : 'Freight Economy';
+                    if (isset($quote['surcharges'])) {
+                        foreach ($quote['surcharges'] as $surcharge) {
+                            if (isset($surcharge['SurchargeType']) && $surcharge['SurchargeType'] === 'LIFTGATE_DELIVERY') {
+                                unset($shipments[$shipment]['q'][$key]['surcharges']);
+                                $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $surcharge['Amount']['Amount'] ?? 0;
+                            }
+
                         }
 
                     }
-
                 }
             }
+
         }
         return $shipments;
     }
