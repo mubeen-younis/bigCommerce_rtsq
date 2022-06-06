@@ -751,6 +751,9 @@ class CompileQuotes
                 case 'freightQuote':
                     $resp = $this->compileFreightQuoteLtlQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential);
                     $quotesTemp['freightQuote'] = $resp;
+                    if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
+                        $quotesRes = array_merge($quotesRes, $resp);
+                    }
                     break;
                 case 'yrc':
                     $resp = $this->compileYRCLtlQuotes($shipment, $connectionSettings, $allOrigins, $residential);
