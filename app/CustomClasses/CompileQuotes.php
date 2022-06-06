@@ -751,6 +751,7 @@ class CompileQuotes
                 case 'freightQuote':
                     $resp = $this->compileFreightQuoteLtlQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential);
                     $quotesTemp['freightQuote'] = $resp;
+                    break;
                 case 'yrc':
                     $resp = $this->compileYRCLtlQuotes($shipment, $connectionSettings, $allOrigins, $residential);
                     $quotesTemp['yrc'] = $resp;
