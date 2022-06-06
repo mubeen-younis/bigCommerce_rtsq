@@ -130,6 +130,7 @@ class GenerateRequestData
                     $fqLtlArr = $this->freightQuoteLtlEnitArr($con1, $destination);
                     $fqLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['freightQuote'] = $fqLtlArr;
+                    break;
                 case 'yrc-ltl':
                     $yrcLtlArr = $this->yrcLtlEnitArr($con1, $destination);
                     $yrcLtlArr['originAddress'] = $enitOrigin;
