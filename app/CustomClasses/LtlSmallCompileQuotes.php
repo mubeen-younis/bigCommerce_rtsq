@@ -39,6 +39,11 @@ class LtlSmallCompileQuotes{
                         $quote['alwaysResi'] = $alwaysResi;
                         $quote['isResi'] = $residential['unishippersSmall'] == 'Y';
                     }
+                    else if(strpos($quote['code'], 'parcel_12usps') !== false){
+                        $alwaysResi = (isset($requestArr['carriers']['uspsSmall']['api']['residentials_delivery']) && $requestArr['carriers']['uspsSmall']['api']['residential_delivery'] == 'yes');
+                        $quote['alwaysResi'] = $alwaysResi;
+                        $quote['isResi'] = $residential['uspsSmall'] == 'Y';
+                    }
                     else{
                         $alwaysResi = (isset($requestArr['carriers']['wweSmall']['api']['residentials_delivery']) && $requestArr['carriers']['wweSmall']['api']['residentials_delivery'] == 'yes');
                         $quote['alwaysResi'] = $alwaysResi;

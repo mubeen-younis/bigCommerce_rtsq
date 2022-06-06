@@ -8,6 +8,8 @@ use App\Models\BoxSize;
 
 class PackagingRequest
 {
+    private $binResArr, $finalBoxesForWs;
+
     public function __construct()
     {
         $this->CompileQuotes = new CompileQuotes();
@@ -17,6 +19,7 @@ class PackagingRequest
         $this->uspsPackagingEligible = false;
         $this->packagingRequest = [];
         $this->finalBoxesForWs = [];
+        $this->binResArr = [];
         $this->locId = null;
     }
 
@@ -116,7 +119,6 @@ class PackagingRequest
 
         $this->uspsBoxes = $uspsBoxes;
         $this->setUspsActiveServices($settings);
-        $this->uspsPackagingEligible = true;
 
         foreach ($lineItems as $locId => $itemsDetail) {
             if ((isset($itemsDetail['freight_enabled']) && $itemsDetail['freight_enabled'] == 'N') || (isset($itemsDetail['freightClass']) && $itemsDetail['freightClass'] == '')) {
@@ -124,11 +126,13 @@ class PackagingRequest
                 if ($this->uspsPackagingEligible) {
                     $this->setUspsPackagingRequest($lineItems, $locId);
                 }
+            } else {
+                continue;
             }
         }
 
         $this->getAndSet3dBinResponse();
-        // dd(136, $this->finalBoxesForWs);
+        // dd(132, $this->finalBoxesForWs);
         return $this->finalBoxesForWs;
     }
 
@@ -138,6 +142,8 @@ class PackagingRequest
             $allServices = $settings['quote_settings']['carrier_services'] ?? [];
 
             if (!blank($allServices)) {
+                $this->uspsPackagingEligible = true;
+
                 foreach ($allServices as $key => $service) {
                     if (isset($allServices[$key]) && $service) {
                         $this->setUspsServiceBoxType($key);
@@ -262,7 +268,8 @@ class PackagingRequest
         foreach ($itemsDetail as $item) {
             /*Not ELigible For One Rate*/
             if ($item['shipBinAlone'] == 0 && $item['shipMultiplePackage'] == 0) {
-                return [];
+                // return [];
+                continue;
             }
             /*
              * If item ship as == 0
@@ -293,13 +300,12 @@ class PackagingRequest
 
     public function getAndSet3dBinResponse()
     {
-        // dd(296, $this->packagingRequest);
         if (empty($this->packagingRequest)) {
             return null;
         }
-        // dd(300, $this->packagingRequest);
+        // dd(304, $this->packagingRequest);
         $curlResponse = $this->boxingMultiCurl($this->packagingRequest);
-        // dd(302, $curlResponse);
+        // dd(306, $curlResponse);
 
         $this->formatResponse($curlResponse);
     }
@@ -383,11 +389,10 @@ class PackagingRequest
             $this->finalBoxesForWs[$locId]['boxes'] = !empty($this->finalBoxesForWs[$locId]['boxes']) ? array_merge($this->finalBoxesForWs[$locId]['boxes'], $bins) : $bins;
             $this->finalBoxesForWs[$locId]['packed'] = !empty($this->finalBoxesForWs[$locId]['packed']) ? array_merge($this->finalBoxesForWs[$locId]['packed'], $bins) : $bins;
         } else {
-            // $this->finalBoxesForWs[$locId][$type]['boxes'] = !empty($this->finalBoxesForWs[$locId][$type]['boxes']) ? array_merge($this->finalBoxesForWs[$locId][$type]['boxes'], $bins) : $bins;
-            // $this->finalBoxesForWs[$locId][$type]['packed'] = !empty($this->finalBoxesForWs[$locId][$type]['packed']) ? array_merge($this->finalBoxesForWs[$locId][$type]['packed'], $bins) : $bins;
-
-            $this->finalBoxesForWs[$locId][$type] = $bins;
+            $this->finalBoxesForWs[$locId][$type]['boxes'] = !empty($this->finalBoxesForWs[$locId][$type]['boxes']) ? array_merge($this->finalBoxesForWs[$locId][$type]['boxes'], $bins) : $bins;
+            $this->finalBoxesForWs[$locId][$type]['packed'] = !empty($this->finalBoxesForWs[$locId][$type]['packed']) ? array_merge($this->finalBoxesForWs[$locId][$type]['packed'], $bins) : $bins;
         }
+        // $this->finalBoxesForWs[$locId][$type] = $bins;
     }
 
     public function addBoxWeightInPackedBinsWeight($bins)
@@ -418,14 +423,16 @@ class PackagingRequest
                 $itemDetail['q'] = 1;
 
                 $detail = $this->arrayFormatOf3dBinResponse($boxDetail, $itemDetail);
-                if ($type == Constant::NORMAL_PACKAGING || blank($type)) {
-                    $this->finalBoxesForWs[$locId]['boxes'][] = $detail;
-                    $this->finalBoxesForWs[$locId]['unpacked'][] = $detail;
-                } else {
-                    // $this->finalBoxesForWs[$locId][$type]['boxes'][] = $detail;
-                    // $this->finalBoxesForWs[$locId][$type]['unpacked'][] = $detail;
-                    $this->finalBoxesForWs[$locId][$type] = $detail;
-                }
+                // if ($type == Constant::NORMAL_PACKAGING || blank($type)) {
+                //     $this->finalBoxesForWs[$locId]['boxes'][] = $detail;
+                //     $this->finalBoxesForWs[$locId]['unpacked'][] = $detail;
+                // } else {
+                //     $this->finalBoxesForWs[$locId][$type]['boxes'][] = $detail;
+                //     $this->finalBoxesForWs[$locId][$type]['unpacked'][] = $detail;
+                // }
+
+                $this->binResArr[$locId][$type]['boxes'][] = $detail;
+                $this->binResArr[$locId][$type]['unpacked'][] = $detail;
             }
         }
     }

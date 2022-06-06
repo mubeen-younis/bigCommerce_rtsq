@@ -108,7 +108,7 @@ class QuotesResults
                 $minRateFromNetChargeArr = min(array_column($netChargeArr, 'rate'));
 
                 $multiShipmentPrice += str_replace(',', '', $minRateFromNetChargeArr);
-                $multishipmentCheckoutQuotes[0]['code'] = 'Multiuniship' . $access;
+                $multishipmentCheckoutQuotes[0]['code'] = 'Multiusps' . $access;
                 $multishipmentCheckoutQuotes[0]['rate'] = number_format($multiShipmentPrice, 2);
                 $multishipmentCheckoutQuotes[0]['title'] = $residential ? 'Shipping' . Constant::RESI_LABEL : 'Shipping';
             }
@@ -160,7 +160,7 @@ class QuotesResults
                 $shipments[$shipment]['q'][$quote]['totalNetCharge']['Amount'] = $netCharges;
             }
         }
-
+        // dd(163, $shipments);
         return $shipments;
     }
 

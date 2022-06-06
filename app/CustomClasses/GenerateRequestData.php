@@ -1309,11 +1309,50 @@ class GenerateRequestData
 
     private function getApiInfoArrUspsSmall($connSettings, $destination, $enitOrigin, $lineItems)
     {
-        $residential = 'N';
-        $alwaysResi = false;
         $uspsSmallQuotesResutls = new UspsSmallQuotesResults();
         $uspsSmallPkgReq = new UspsSmallPackagingRequest();
+
         $storeId = $this->storeData['store']['id'] ?? null;
+        $radResp = $this->verifyRADStatus($connSettings, $destination);
+        $this->resiCarrier['uspsSmall'] = $radResp['residential'];
+        $this->resiCarrier['alwaysResi']['uspsSmall'] = $radResp['alwaysResi'];
+        $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
+        $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
+
+        $apiArray = [
+            'rateTier' => $connSettings['quote_settings']['rate_tier'] ?? 'retail',
+            'includeDeclaredValue' => '1',
+            'activeServices' => $uspsSmallQuotesResutls->getUspsActiveServices($carrierServices),
+            'sbsPackaging' => $sbsEnabled ? '1' : '0',
+            'residential_delivery' => $radResp['alwaysResi'] == 'Y' ? 'yes' : 'no',
+        ];
+
+        if ($sbsEnabled) {
+            $binReqArr = [];
+            $smallOrigins = [];
+            $binReqArr = [];
+            foreach ($lineItems as $origin => $item) {
+                if ((isset($item['freight_enabled']) && $item['freight_enabled'] == 'N') || (isset($item['freightClass']) && $item['freightClass'] == '')) {
+                    $itemLocId = $enitOrigin[$origin]['locationId'] ?? '';
+                    $smallOrigins[$itemLocId] = $enitOrigin[$origin]; 
+                    $binReqArr[$itemLocId] = $uspsSmallPkgReq->getGroupedUSPSBoxes($storeId, $smallOrigins, $lineItems);;
+                }
+            }
+
+            $apiArray['binsReqArr'] = $binReqArr;
+            $apiArray['binResponse'] = $uspsSmallPkgReq->setAndGetBinsResponse($storeId, $connSettings, $enitOrigin, $lineItems);
+        }
+
+        $apiArray = array_merge($apiArray, $this->getCutOffDetails($connSettings));
+        return $apiArray;
+    }
+
+    private function verifyRADStatus($connSettings, $destination): array
+    {
+        $storeId = $this->storeData['store']['id'] ?? null;
+        $residential = 'N';
+        $alwaysResi = false;
+        $resp = [];
 
         if ($this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])) {
             if ($this->radHitConsumed == 0) {
@@ -1324,49 +1363,15 @@ class GenerateRequestData
             } else {
                 $residential = $this->residential;
             }
-
         } else {
             $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
         }
 
-        $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
-        $this->resiCarrier['uspsSmall'] = $residential;
-        $this->resiCarrier['alwaysResi']['uspsSmall'] = $alwaysResi;
-        $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
-        $apiArray = [
-            'rateTier' => $connSettings['quote_settings']['rate_tier'] ?? 'retail',
-            'includeDeclaredValue' => '1',
-            'activeServices' => $uspsSmallQuotesResutls->getUspsActiveServices($carrierServices),
-            'sbsPackaging' => $sbsEnabled ? '1' : '0',
+        $resp = [
+            'residential' => $residential,
+            'alwaysResi' => $alwaysResi,
         ];
-
-        if ($sbsEnabled) {
-            $binReqArr = [];
-            $smallOrigins = [];
-            // dd(1346, $enitOrigin, $lineItems);
-            // dd(1345, $enitOrigin, $lineItems);
-            foreach ($lineItems as $origin => $item) {
-                if ((isset($item['freight_enabled']) && $item['freight_enabled'] == 'N') || (isset($item['freightClass']) && $item['freightClass'] == '')) {
-                    $itemLocId = $enitOrigin[$origin]['locationId'] ?? '';
-                    $smallOrigins[$itemLocId] = $enitOrigin[$origin]; 
-                }
-                // $itemLocId = $enitOrigin[$origin]['locationId'] ?? '';
-                // $smallOrigins[$itemLocId] = $enitOrigin[$origin]; 
-            }
-            dd(1352, $smallOrigins);
-            // foreach ($enitOrigin as $origin) {
-            //     $binReqArr[$origin['locationId']] = $uspsSmallPkgReq->getGroupedUSPSBoxes($storeId, $enitOrigin, $lineItems);
-            // }
-            $binReqArr = $uspsSmallPkgReq->getGroupedUSPSBoxes($storeId, $enitOrigin, $lineItems);
-            dd(1350, $binReqArr);
-
-            $apiArray['binsReqArr'] = $binReqArr;
-            $apiArray['binResponse'] = $uspsSmallPkgReq->setAndGetBinsResponse($storeId, $connSettings, $enitOrigin, $lineItems);
-        }
-
-        $apiArray = array_merge($apiArray, $this->getCutOffDetails($connSettings));
-        // dd(1351, $apiArray);
-        return $apiArray;
+        return $resp;
     }
 
     public function setIsSMartPost($connectionSettings)

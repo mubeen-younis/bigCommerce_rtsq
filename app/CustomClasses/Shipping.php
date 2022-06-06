@@ -136,8 +136,8 @@ class Shipping
         }
         // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
-        // dd(139, $requestArr);
         // return response()->json($requestArr);
+        // dd(139, $requestArr);
         if (empty($requestArr)) {
             return false;
         }
@@ -145,7 +145,6 @@ class Shipping
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
         // dd(147, $quotes);
-        // return response()->json($quotes);
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
         /*
       * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
