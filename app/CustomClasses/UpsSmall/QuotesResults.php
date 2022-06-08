@@ -116,6 +116,9 @@ class QuotesResults
 
         $numberOfShipments = 0;
         foreach ($shipments as $ship) {
+            if(isset($ship['tnt']['faultstring'])){
+                dd("helo sir");
+            }
             if (!isset($ship['q'])) {
                 continue;
             }

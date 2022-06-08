@@ -39,7 +39,7 @@ class QuotesResults
 
         foreach ($shipments as $origin => $quote) {
             if (isset($quote['severity'])) {
-                continue;
+               return [];
             }
 
             if ($count == 0) {

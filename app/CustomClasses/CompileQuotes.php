@@ -1853,7 +1853,7 @@ class CompileQuotes
         foreach ($shipments as $origin => $quote) {
 
             if (isset($quote['severity'])) {
-                continue;
+               return [];
             }
             if ($count == 0) { //To be checked only once
                 // $this->getAutoResidentialTitle('');
