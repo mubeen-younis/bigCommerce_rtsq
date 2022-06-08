@@ -98,48 +98,12 @@ class QuotesResults
             $shipmentCount++;
         }
 
-        // Check for multi-shipment, finding lowest price in each shipment and adding them for multi shipment
-        if ($isMultiShipment) {
-            $multishipmentCheckoutQuotes = [];
-            $multiShipmentPrice = 0;
-
-            foreach ($originQuotes as $shipmentKey => $shipment) {
-                $netChargeArr = array_column($shipment['shipment'], 'simple');
-                $minRateFromNetChargeArr = min(array_column($netChargeArr, 'rate'));
-
-                $multiShipmentPrice += str_replace(',', '', $minRateFromNetChargeArr);
-                $multishipmentCheckoutQuotes[0]['code'] = 'Multiusps' . $access;
-                $multishipmentCheckoutQuotes[0]['rate'] = number_format($multiShipmentPrice, 2);
-                $multishipmentCheckoutQuotes[0]['title'] = $residential ? 'Shipping' . Constant::RESI_LABEL : 'Shipping';
-            }
-
-            foreach ($multiShipmentQuotes as $shipmentKey => $shipment) {
-                $keys = array_column($shipment, 'rate');
-                array_multisort($keys, SORT_ASC, $shipment);
-                $multiShipmentQuote['simple'][$shipmentKey] = array_values($shipment)[0];
-            }
-
-            $resp = [
-                'checkoutQuotes' => $multishipmentCheckoutQuotes,
-                'multiShipmentQuotes' => $multiShipmentQuote,
-            ];
-            $returnResp['resp'] = $resp;
-
-            return $returnResp;
-        }
-
         // Handling single shipment
         if (!empty($originQuotes)) {
             $originQuotes = array_column(array_values($originQuotes), 'shipment');
             $originQuotes = reset($originQuotes);
             $originQuotes = array_column(array_values($originQuotes), 'simple');
             $resp = $originQuotes;
-        }
-
-        // Compiling instore pickup and local delivery quotes
-        if (!$isMultiShipment && isset($inStoreLdData) && $inStoreLdData) {
-            $allQuotes = $this->CompileQuotes->inStoreLocalDeliveryQuotes($originQuotes, $inStoreLdData, $allOrigins);
-            $resp = $allQuotes;
         }
 
         $returnResp['resp'] = isset($resp) && !empty($resp) ? $resp : [];
