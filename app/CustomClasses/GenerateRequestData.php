@@ -390,13 +390,14 @@ class GenerateRequestData
         //
 
         if (isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs']) {
-            $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? [];
+            $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? $carriers['usps']['originAddress'] ?? [];
             $this->itemsArr = $itemsArr;
             $this->carriers = $carriers;
             $hasSmall = isset($carriers['wweSmall'])
-                || isset($carriers['upsSmall'])
-                || isset($carriers['fedexSmall'])
-                || isset($carriers['unishippersSmall']);
+            || isset($carriers['upsSmall'])
+            || isset($carriers['fedexSmall'])
+            || isset($carriers['unishippersSmall'])
+            || isset($carriers['usps']);
             if ($hasSmall) {
                 $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
                 if (empty($multiplePackaging)) {
@@ -407,9 +408,7 @@ class GenerateRequestData
                 $carriers = $multiplePackaging['carriers'];
 
                 $olditemsArr = $itemsArr;
-                $carriersoriginAddress = $carriers['wweSmall']['originAddress']
-                    ?? $carriers['upsSmall']['originAddress']
-                    ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? [];
+                $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? $carriers['usps']['originAddress'] ?? [];
 
                 if (isset($carriers['fedexSmall'])) {
                     $this->checkServiceEnabled();
@@ -422,10 +421,10 @@ class GenerateRequestData
                             $carriers['fedexSmall']['originAddress'][$key] = $origin;
                         }
                         /*
-                       * Added Condition if in case of combination of ups small and fedex small
-                       * Only Fedex SMall rates was returning
-                       * We need to cater all small carriers here as well
-                       * */
+                         * Added Condition if in case of combination of ups small and fedex small
+                         * Only Fedex SMall rates was returning
+                         * We need to cater all small carriers here as well
+                         * */
                         if (isset($carriers['upsSmall'])) {
                             unset($carriers['upsSmall']['originAddress']);
 
@@ -447,6 +446,14 @@ class GenerateRequestData
 
                             foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
                                 $carriers['unishippersSmall']['originAddress'][$key] = $origin;
+                            }
+                        }
+
+                        if (isset($carriers['usps'])) {
+                            unset($carriers['usps']['originAddress']);
+
+                            foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
+                                $carriers['usps']['originAddress'][$key] = $origin;
                             }
                         }
                         ///////////////////////////////////////////
@@ -492,17 +499,19 @@ class GenerateRequestData
                     if (isset($carriers['unishippersSmall'])) {
                         $carriers['unishippersSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                     }
+                    if (isset($carriers['usps'])) {
+                        $carriers['usps']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
+                    }
                 }
-
                 $binReponse = $sbsResponse['binResponse'] ?? [];
                 $boxBins = $sbsResponse['boxBins'] ?? [];
                 $isLtl = isset($carriers['wweLTL'])
-                    || isset($carriers['upsLTL'])
-                    || isset($carriers['fedexLTL'])
-                    || isset($carriers['cerasis'])
-                    || isset($carriers['globalTranz'])
-                    || isset($carriers['xpoLogistics'])
-                    || isset($carriers['yrc']);
+                || isset($carriers['upsLTL'])
+                || isset($carriers['fedexLTL'])
+                || isset($carriers['cerasis'])
+                || isset($carriers['globalTranz'])
+                || isset($carriers['xpoLogistics'])
+                || isset($carriers['yrc']);
                 if ($isLtl) {
                     $itemsArr = $olditemsArr + $itemsArr;
                 }
@@ -1314,8 +1323,6 @@ class GenerateRequestData
 
         $storeId = $this->storeData['store']['id'] ?? null;
         $radResp = $this->verifyRADStatus($connSettings, $destination);
-        $this->resiCarrier['uspsSmall'] = $radResp['residential'];
-        $this->resiCarrier['alwaysResi']['uspsSmall'] = $radResp['alwaysResi'];
         $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
         $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
 
@@ -1323,24 +1330,29 @@ class GenerateRequestData
             'rateTier' => $connSettings['quote_settings']['rate_tier'] ?? 'retail',
             'includeDeclaredValue' => '1',
             'activeServices' => $uspsSmallQuotesResutls->getUspsActiveServices($carrierServices),
-            'sbsPackaging' => $sbsEnabled ? '1' : '0',
             'residential_delivery' => $radResp['alwaysResi'] == 'Y' ? 'yes' : 'no',
+            'sbsPackaging' => $sbsEnabled ? '1' : '0',
         ];
 
         if ($sbsEnabled) {
-            $binReqArr = [];
-            $smallOrigins = [];
-            $binReqArr = [];
+            $binReqArr = $binRespArr = $smallOrigins = $owdArr = [];
+
             foreach ($lineItems as $origin => $item) {
                 if ((isset($item['freight_enabled']) && $item['freight_enabled'] == 'N') || (isset($item['freightClass']) && $item['freightClass'] == '')) {
                     $itemLocId = $enitOrigin[$origin]['locationId'] ?? '';
-                    $smallOrigins[$itemLocId] = $enitOrigin[$origin]; 
-                    $binReqArr[$itemLocId] = $uspsSmallPkgReq->getGroupedUSPSBoxes($storeId, $smallOrigins, $lineItems);;
+                    $smallOrigins[$itemLocId] = $enitOrigin[$origin];
+
+                    $binReqArr[$itemLocId] = $uspsSmallPkgReq->getGroupedUSPSBoxes($storeId);
+                    $binRespArr = $uspsSmallPkgReq->setAndGetBinsResponse($storeId, $connSettings, $enitOrigin, $lineItems, $itemLocId);
+                    $apiArray['binResponse'][$itemLocId] = $binRespArr['packedBoxes'];
+                    $owdArr = $binRespArr['owdBoxes'];
+                } else {
+                    continue;
                 }
             }
 
-            $apiArray['binsReqArr'] = $binReqArr;
-            $apiArray['binResponse'] = $uspsSmallPkgReq->setAndGetBinsResponse($storeId, $connSettings, $enitOrigin, $lineItems);
+            $apiArray['binsReqArr'] = $binReqArr ?? [];
+            $apiArray['binResponseArr'] = $owdArr ?? [];
         }
 
         $apiArray = array_merge($apiArray, $this->getCutOffDetails($connSettings));
@@ -1366,6 +1378,9 @@ class GenerateRequestData
         } else {
             $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
         }
+
+        $this->resiCarrier['uspsSmall'] = $residential;
+        $this->resiCarrier['alwaysResi']['uspsSmall'] = $alwaysResi;
 
         $resp = [
             'residential' => $residential,
