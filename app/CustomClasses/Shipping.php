@@ -136,21 +136,36 @@ class Shipping
         }
         // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
-        // return response()->json($requestArr);
-        // dd(139, $requestArr);
         if (empty($requestArr)) {
             return false;
         }
         $url = Constant::QUOTES_URL;
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
-        // dd(147, $quotes);
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
         /*
       * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
       */
         $this->isRequestMultishipment = $ltlSmallCompileQuotes->checkIsRequestMiltiShipment($requestArr['requestArr'], $quotes);
-        $boxbins = $requestArr['boxBins'] ?? [];
+        $uspsCarrierArr = $requestArr['requestArr']['carriers']['usps'] ?? [];         
+        if (isset($uspsCarrierArr) && !empty($uspsCarrierArr)) {
+            $apiArray = $uspsCarrierArr['api'] ?? []; 
+            $boxbins = [];
+            if (isset($apiArray) && !empty($apiArray)) {
+                $boxbins = $apiArray['binsReqArr'] ?? [];
+                $boxbins = ['uspsBoxBins' => $boxbins];
+            }
+            if (isset($apiArray['binResponseArr']) && !empty($apiArray['binResponseArr'])) {
+                $quotes = $this->addBinResponseToQuotes($apiArray['binResponseArr'], $quotes);
+            }
+        }
+        
+        if (isset($boxbins) && !empty($boxbins) && isset($boxbins['uspsBoxBins']) && !empty($boxbins['uspsBoxBins'])) {
+            $boxbins['otherBoxBins'] = $requestArr['boxBins'] ?? [];
+        } else {
+            $boxbins = $requestArr['boxBins'] ?? [];
+        }
+
         if (isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])) {
             Log::info('BinData ' . json_encode($requestArr['binReponse']));
             $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes);
@@ -388,6 +403,7 @@ class Shipping
     {
         $boxFee = [];
         $fedexBoxesFee = [];
+        $uspsBoxesFee = [];
         foreach ($quotes as $carrierName => $quote) {
             if ($this->isSmallCarrier($carrierName)) {
                 if ($carrierName == 'fedexSmall') {
@@ -397,6 +413,20 @@ class Shipping
                             $fee = $this->getCumulativeBoxFee($bin);
                             $boxFee[$locationId] = $fee;
                             $fedexBoxesFee[$locationId][$serviceType] = $fee;
+                        }
+                    }
+                } else if ($carrierName == 'usps') {
+                    foreach ($binReponse as $locationId => $boxTypes) {
+                        if (isset($boxTypes) && !empty($boxTypes)) {
+                            foreach ($boxTypes as $type => $value) {
+                                $quotes[$carrierName][$locationId]['binPackagingData']['response'][$type] = $value;
+                                if ($type == 'UMEB' || $type == 'UPMB') {
+                                    $value = $this->getBinsByBoxType($type, $boxTypes);
+                                }
+                                $fee = $this->getCumulativeBoxFee($value, true);
+                                $boxFee[$locationId] = $fee;
+                                $uspsBoxesFee[$locationId][$type] = $fee;
+                            }
                         }
                     }
                 } else {
@@ -411,6 +441,18 @@ class Shipping
             $quotes = $this->addBoxFeeToQuotes($quotes, $boxFee, $fedexBoxesFee);
         }
         return $quotes;
+    }
+
+    private function getBinsByBoxType($type, $boxes)
+    {
+        if (isset($boxes[$type]) && !empty($boxes[$type]) && isset($boxes[$type]['bins_packed']) && !empty($boxes[$type]['bins_packed'])) {
+            return $boxes[$type];
+        }
+        else if (isset($boxes['customBoxes']) && !empty($boxes['customBoxes']) && isset($boxes['customBoxes']['bins_packed']) && !empty($boxes['customBoxes']['bins_packed'])) {
+            return $boxes['customBoxes'];
+        }
+
+        return [];
     }
 
     public
@@ -444,7 +486,7 @@ class Shipping
     private
     function addBoxFeeToQuotes(array $quotes, array $boxFee, $fedexBoxesFee = []): array
     {
-        $parcelCarName = ['wweSmall', 'upsSmall', 'fedexSmall', 'unishippersSmall'];
+        $parcelCarName = ['wweSmall', 'upsSmall', 'fedexSmall', 'unishippersSmall', 'usps'];
         if (isset($quotes) && !empty($quotes)) {
             foreach ($quotes as $carName => $quot) {
                 if (in_array($carName, $parcelCarName)) {
@@ -561,10 +603,11 @@ class Shipping
 
     }
 
-    private
-    function getCumulativeBoxFee($bins): float
+    private function getCumulativeBoxFee($bins, $usps = false): float
     {
-
+        if ($usps) {
+            $bins = (Object)$bins;
+        }
         $boxFee = 0;
         if (!empty($bins->bins_packed)) {
             foreach ($bins->bins_packed as $pack) {
@@ -576,6 +619,7 @@ class Shipping
                 }
             }
         }
+
         return $boxFee;
     }
 
