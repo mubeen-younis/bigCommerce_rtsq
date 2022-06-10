@@ -2285,8 +2285,8 @@ class CompileQuotes
         }
 
         foreach ($shipments as $origin => $quote) {
-            if (isset($quote['severity'])) {
-                continue;
+            if (isset($quote['severity']) || !isset($quote['q'])) {
+                return [];
             }
 
             if ($count == 0) { 
