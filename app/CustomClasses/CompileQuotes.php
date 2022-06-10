@@ -2265,7 +2265,7 @@ class CompileQuotes
             $this->residentialDlvry = 0;
         }
 
-        $this->alwaysResi = $this->residential['alwaysResi']['freightQuote'] ?? false;
+        $this->alwaysResi = $this->residential['alwaysResi']['freightQuoteLtl'] ?? false;
         $this->quoteSettings = $connectionSettings['freightquote-ltl']['quote_settings'] ?? [];
         $allConfigServices = $connectionSettings['freightquote-ltl']['carrier_services'] ?? [];
         $this->quoteSettingsData();
@@ -2548,7 +2548,7 @@ class CompileQuotes
      */
     public function getAccessorialCode($lgOption = false)
     {
-        //dd($this->residentialDlvry);
+        // dd($this->residentialDlvry);
         $access = '';
         if ($this->residentialDlvry == '1' || $this->isResi || $this->alwaysResi) {
             $access .= '+R';
