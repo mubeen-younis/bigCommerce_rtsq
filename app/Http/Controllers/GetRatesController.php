@@ -55,7 +55,6 @@ class GetRatesController extends Controller
         $isTestStore = Helpers::checkIsTestStore($storeHash);
         Helpers::setStripeAPiKey($isTestStore);
 
-        //echo "<pre>"; print_r($storeData['store']['id']); exit;
         if ($storeData == null) {
             return [];
         }
@@ -63,7 +62,6 @@ class GetRatesController extends Controller
             return [];
         }
 
-        //echo "<pre>"; print_r($storeData['installed_carriers'][0]['store_id']); exit;
         $cartInfo['cartId'] = $request->base_options['request_context']['reference_values'][0]['value'] ?? 0;
         $cartInfo['store_id'] = $storeData['installed_carriers'][0]['store_id'] ?? 0;
 // Getting installed carriers there quote settings and services
@@ -74,7 +72,6 @@ class GetRatesController extends Controller
             $formatReq['lineItemData']['destination']['zip'] == null ||
             $formatReq['lineItemData']['destination']['state'] == null ||
             $formatReq['lineItemData']['destination']['country'] == null ||
-            //$formatReq['lineItemData']['destination']['city'] == null ||
             count($this->connectionSettings) == 0
         ) {
 
