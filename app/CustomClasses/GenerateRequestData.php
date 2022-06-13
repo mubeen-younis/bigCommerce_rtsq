@@ -274,7 +274,7 @@ class GenerateRequestData
 
     public function xpoLtlEnitArr($connSettings, $destination, $enitOrigin)
     {
-        $isThresholdLimit=$connSettings['quote_settings']['return_rates_threshold'] ?? false;
+        $isThresholdLimit = $connSettings['quote_settings']['return_rates_threshold'] ?? false;
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '', //$this->connectionSettings['license_key'],
             'serverName' => "https://" . $this->storeData['store']['name'], //"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
@@ -683,7 +683,7 @@ class GenerateRequestData
                 'value' => $insuranceCategory[1] ?? ''
             ];
         }
-        $weightThreshold= $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
+        $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $apiArray = [
             'speed_freight_username' => $connSettings['creds']['username'],
             'speed_freight_password' => $connSettings['creds']['password'],
@@ -694,7 +694,7 @@ class GenerateRequestData
             'speed_freight_residential_pickup' => $residentialPickup,
             'insureShipment' => 0,
             'insuranceCategory' => $insurance,
-            'thresholdWeightLimit'=>$weightThreshold,
+            'thresholdWeightLimit' => $weightThreshold,
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? '',
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? '',
         ];
@@ -748,6 +748,7 @@ class GenerateRequestData
             ];
         }
         $accessorial = [];
+        $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
 
         if ($carName === 'globalTranz') { // for globaltranz
             $notify = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']);
@@ -774,6 +775,7 @@ class GenerateRequestData
                 'version' => '2.0',
                 'accessLevel' => 'pro',
                 'billingType' => 'Prepaid',
+                'thresholdWeightLimit' => $weightThreshold,
                 'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? '',
                 'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? '',
                 'accessorial' => $accessorial,
@@ -807,6 +809,7 @@ class GenerateRequestData
                 'cerasisApiVersion' => '2.0',
                 'direction' => 'Dropship',
                 'billingType' => 'Prepaid',
+                'thresholdWeightLimit' => $weightThreshold,
                 'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? '',
                 'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? '',
                 'accessorial' => $accessorial
@@ -864,7 +867,7 @@ class GenerateRequestData
                 }
             }
         }
-        $weightThreshold= $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
+        $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $apiArray = [
             'AccountNumber' => $connSettings['creds']['account_number'] ?? '',
             'MeterNumber' => $connSettings['creds']['meter_number'] ?? '',
@@ -893,7 +896,7 @@ class GenerateRequestData
 //                'holdAtTerminal' => '1',
             'shipmentDate' => date('m/d/Y'),
             'transactionId' => time(),
-            'thresholdWeightLimit'=>$weightThreshold,
+            'thresholdWeightLimit' => $weightThreshold,
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
             'role' => 'SHIPPER',
@@ -958,8 +961,8 @@ class GenerateRequestData
         if ($liftGate === 'Y') {
             $accessorial['DLG'] = 'DLG';
         }
-        $isThresholdLimit=$connSettings['quote_settings']['return_rates_threshold'] ?? false;
-        $weightThreshold= $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
+        $isThresholdLimit = $connSettings['quote_settings']['return_rates_threshold'] ?? false;
+        $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $apiArray = [
             'UserName' => $connSettings['creds']['username'] ?? '',
             'Password' => $connSettings['creds']['password'] ?? '',
@@ -968,7 +971,7 @@ class GenerateRequestData
             'thirdPartyAccountNumber' => $connSettings['creds']['bill_to_account_number'] ?? '',
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
-            'thresholdWeightLimit'=>$isThresholdLimit ? $weightThreshold : Functions::$defaultThresholdLimit,
+            'thresholdWeightLimit' => $isThresholdLimit ? $weightThreshold : Functions::$defaultThresholdLimit,
             'accessorial' => $accessorial
         ];
 
@@ -1004,11 +1007,12 @@ class GenerateRequestData
 
         $this->resiCarrier['rnlLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['rnlLtl'] = $alwaysResi;
-
+        $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $apiArray = [
             'UserName' => $connSettings['creds']['username'] ?? '',
             'Password' => $connSettings['creds']['password'] ?? '',
             'APIKey' => $connSettings['creds']['authentication_key'] ?? '',
+            'thresholdWeightLimit' => $weightThreshold,
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
             'liftgateDelivery' => $liftGate,
@@ -1268,13 +1272,13 @@ class GenerateRequestData
         $this->resiCarrier['alwaysResi']['yrcLtl'] = $alwaysResi;
 
         $accessorial = [];
-        if($alwaysResi || $residential == 'Y'){
+        if ($alwaysResi || $residential == 'Y') {
             array_push($accessorial, 'HOMD');
         }
         if ($liftGate == 'Y') {
             array_push($accessorial, 'LFTD');
         }
-
+        $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $apiArray = [
             'userId' => $connSettings['creds']['username'],
             'password' => $connSettings['creds']['password'],
@@ -1286,6 +1290,7 @@ class GenerateRequestData
 
             // -------------API INFO------------- //
             'prefferedCurrency' => 'USD',
+            'thresholdWeightLimit' => $weightThreshold,
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
             'accessorial' => $accessorial,
@@ -1354,7 +1359,7 @@ class GenerateRequestData
 
         $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
 
-        $weightThreshold= $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
+        $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $this->resiCarrier['upsLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['upsLtl'] = $alwaysResi;
         $paymentType = isset($connSettings['quote_settings']['shipper_relationship']) && $connSettings['quote_settings']['shipper_relationship'] === 'third_party' ? 'ThirdParty' : 'shipper';
@@ -1367,7 +1372,7 @@ class GenerateRequestData
             'paymentCode' => '10',
             'paymentDescription' => 'PREPAID',
             'paymentType' => $paymentType,
-            'thresholdWeightLimit'=>$weightThreshold,
+            'thresholdWeightLimit' => $weightThreshold,
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? '',
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? '',
             'serviceCode' => '308',
