@@ -210,11 +210,11 @@ class AddressValidationController extends Controller
             Helpers::sendJsonResponse(true, 'Store Url and Company Id is required');
         }
         if ($status) {
-            Store::where(['url' => $storeUrl, 'av_company_id' => $companyId])->update(['av_company_id' => $companyId]);
+            Store::where(['url' => $storeUrl])->update(['av_company_id' => $companyId]);
             Helpers::sendJsonResponse(false, 'Connection Activated');
 
         } else {
-            Store::where(['url' => $storeUrl, 'av_company_id' => $companyId])->update(['av_company_id' => null]);
+            Store::where(['url' => $storeUrl])->update(['av_company_id' => null]);
             Helpers::sendJsonResponse(false, 'Disconnected from BigCommerce');
 
         }
