@@ -205,6 +205,7 @@ class OrderController extends Controller
 
                     $totalBoxes = 1;
                     if (isset($ws->binPackagingData) && !empty($ws->binPackagingData) && ($isSmallrate || $isInspOrLocal)) {
+                        // dd(208, $ws->binPackagingData);
                         if ($isGround) {
                             $sbsData = $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->bins_packed ?? [];
                         } else if ($isAir) {
@@ -214,6 +215,25 @@ class OrderController extends Controller
                         } else {
                             $sbsData = $ws->binPackagingData->response->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->oneRate->bins_packed ?? [];
                         }
+
+                        /* Usps carrier packaging according to boxes types */     
+                        $customBoxes = $ws->binPackagingData->response->customboxes->bins_packed ?? [];
+                        if (!blank($customBoxes)) {
+                            $this->formatUspsPackaging($customBoxes, $zip, $lineItem);
+                        }
+                        $upmbBoxes = $ws->binPackagingData->response->upmb->bins_packed ?? [];
+                        if (!blank($upmbBoxes)) {
+                            $this->formatUspsPackaging($upmbBoxes, $zip, $lineItem);
+                        }
+                        $umebBoxes = $ws->binPackagingData->response->umeb->bins_packed ?? [];
+                        if (!blank($umebBoxes)) {
+                            $this->formatUspsPackaging($umebBoxes, $zip, $lineItem);
+                        }
+                        $uflatBoxes = $ws->binPackagingData->response->uflat->bins_packed ?? [];
+                        if (!blank($uflatBoxes)) {
+                            $this->formatUspsPackaging($uflatBoxes, $zip, $lineItem);
+                        }
+                                       
                         //print_r($ws->binPackagingData->response); exit;
                         $itemCount = 0;
                         foreach ($sbsData as $key => $binPacked) {
@@ -281,7 +301,7 @@ class OrderController extends Controller
         $insertedIds = $insertedNames = [];
         //print_r($items); exit;
         $code = '';
-
+        // dd(285, $sbsItems);
         foreach ($origins as $key => $origin) {
             $item = optional($items)->$key;
             if (blank($item)) {
@@ -337,6 +357,7 @@ class OrderController extends Controller
                 }
                 /*Added Else if BLock for Catering BUg of MUltiple Products IN ONe BOX*/
             } elseif (isset($sbsItems[$zip]) && !empty($sbsItems[$zip])) {
+                dd(340, $sbsItems, $zip);
                 foreach ($sbsItems[$zip] as $sbsVariantKey => $sbsItem) {
                     $itemDetail = $this->getSbsItemDetail($sbsVariantKey, $items);
                     if (!blank($itemDetail) && (!in_array($itemDetail->lineItemName, $insertedNames)) && (!in_array($itemDetail->id, $insertedIds))) {
@@ -633,6 +654,63 @@ class OrderController extends Controller
         ];
 
         return $resp;
+    }
+
+    public function formatUspsPackaging($binPackagingData, $zip, $lineItem): array
+    {
+        $sbsData = $binPackagingData ?? [];
+        $itemCount = 0;
+        $orderWidget = [];
+
+        foreach ($sbsData as $key => $binPacked) {
+            $type = optional($binPacked->bin_data)->type ?? '';
+            $quantity = 1;
+            if ($type == 'item' || $type == 'weight_based') {
+                $type = $binPacked->bin_data->type;
+                $product_id = $binPacked->bin_data->id;
+                $quantity = $binPacked->bin_data->quantity ?? 1;
+                $itemCount++;
+            }
+            $count = 0;
+            $orderWidgetData['type'] = $type;
+            $orderWidgetData['image_complete'] = $binPacked->image_complete;
+            $orderWidgetData['quantity'] = $quantity;
+            /*For Weight Based Products*/
+            if ($type == 'weight_based') {
+                $orderWidgetData['d'] = '';
+                $orderWidgetData['w'] = '';
+                $orderWidgetData['h'] = '';
+                $orderWidgetData['weight'] = $binPacked->bin_data->weight ?? '';
+            } else {
+                $orderWidgetData['d'] = $binPacked->bin_data->d . ' x ';
+                $orderWidgetData['w'] = $binPacked->bin_data->w . ' x ';
+                $orderWidgetData['h'] = $binPacked->bin_data->h;
+            }
+
+            $orderWidgetData['nickname'] = $this->getBoxName($binPacked->bin_data->id, '', '', '');
+            foreach ($binPacked->items as $item) {
+                $productid = $item->id;
+                $sbsItems[$zip][$productid] = 1;
+
+                $orderWidgetData['items'][$count]['product_name'] = $lineItem->items->$productid->lineItemName ?? '';
+                $orderWidgetData['items'][$count]['w'] = $item->w;
+                $orderWidgetData['items'][$count]['h'] = $item->h;
+                $orderWidgetData['items'][$count]['d'] = $item->d;
+
+                $orderWidgetData['items'][$count]['image_separated'] = $item->image_separated;
+                $orderWidgetData['items'][$count]['image_sbs'] = $item->image_sbs;
+
+                $orderWidget[$zip]['sbs'][$key] = $orderWidgetData;
+                ++$count;
+            }
+
+            unset($orderWidgetData);
+            if ($count) {
+                $orderWidget[$zip]['sbs'][$key]['number_of_items'] = $count;
+            }
+        }
+
+        return $orderWidget;
     }
 
     /**

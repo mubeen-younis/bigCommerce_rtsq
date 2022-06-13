@@ -143,31 +143,26 @@ class Shipping
         $url = Constant::QUOTES_URL;
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
-        dd(146, $quotes);
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
         /*
       * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
       */
         $this->isRequestMultishipment = $ltlSmallCompileQuotes->checkIsRequestMiltiShipment($requestArr['requestArr'], $quotes);
+        /* Catering Usps carrier packaging response */
         $uspsCarrierArr = $requestArr['requestArr']['carriers']['usps'] ?? [];         
         if (isset($uspsCarrierArr) && !empty($uspsCarrierArr)) {
             $apiArray = $uspsCarrierArr['api'] ?? []; 
-            $boxbins = [];
-            if (isset($apiArray) && !empty($apiArray)) {
-                $boxbins = $apiArray['binsReqArr'] ?? [];
-                $boxbins = ['uspsBoxBins' => $boxbins];
-            }
-            if (isset($apiArray['binResponseArr']) && !empty($apiArray['binResponseArr'])) {
+            $uspsBoxBins = $apiArray['boxBins'] ?? [];
+
+             if (isset($apiArray['binResponseArr']) && !empty($apiArray['binResponseArr'])) {
                 $quotes = $this->addBinResponseToQuotes($apiArray['binResponseArr'], $quotes);
             }
         }
-        
-        if (isset($boxbins) && !empty($boxbins) && isset($boxbins['uspsBoxBins']) && !empty($boxbins['uspsBoxBins'])) {
-            $boxbins['otherBoxBins'] = $requestArr['boxBins'] ?? [];
-        } else {
-            $boxbins = $requestArr['boxBins'] ?? [];
+        dd(161, $quotes);
+        $boxbins = $requestArr['boxBins'] ?? [];
+        if (isset($uspsBoxBins) && !empty($uspsBoxBins)) {
+            $boxbins = array_merge($boxbins, $uspsBoxBins);
         }
-
         if (isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])) {
             Log::info('BinData ' . json_encode($requestArr['binReponse']));
             $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes);
@@ -181,7 +176,16 @@ class Shipping
             $freeRNL = true;
         }
         Log::info('after addBinResponseToQuotes ' . json_encode($quotes));
-
+        // dd(184, $quotes);
+        foreach ($quotes as $carr => $quotes) {
+            foreach ($quotes as $key => $value) {
+                foreach ($value as $k => $val) {
+                    if ($k == 'binPackagingData') {
+                        dd(188, array_keys($val['response']));
+                    }
+                }
+            }
+        }
         $quotesFromWs = $quotes ?? [];
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination);
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
@@ -421,7 +425,7 @@ class Shipping
                     foreach ($binReponse as $locationId => $boxTypes) {
                         if (isset($boxTypes) && !empty($boxTypes)) {
                             foreach ($boxTypes as $type => $value) {
-                                $quotes[$carrierName][$locationId]['binPackagingData']['response'][$type] = $value;
+                                $quotes[$carrierName][$locationId]['binPackagingData']['response'][strtolower($type)] = $value;
                                 if ($type == 'UMEB' || $type == 'UPMB') {
                                     $value = $this->getBinsByBoxType($type, $boxTypes);
                                 }

@@ -490,6 +490,11 @@ class GenerateRequestData
                 } else {
                     $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
                     $itemsArr = $sbsResponse['items'] ?? $itemsArr;
+                    if (isset($carriers) && count($carriers) == 1 && isset($carriers['usps'])) {
+                        $sbsResponse['binResponse'] = [];
+                        $sbsResponse['boxBins'] = [];
+                    }
+
                     if (isset($carriers['wweSmall'])) {
                         $carriers['wweSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                     }
@@ -1338,21 +1343,24 @@ class GenerateRequestData
             $binReqArr = $binRespArr = $smallOrigins = $owdArr = [];
 
             foreach ($lineItems as $origin => $item) {
-                if ((isset($item['freight_enabled']) && $item['freight_enabled'] == 'N') || (isset($item['freightClass']) && $item['freightClass'] == '')) {
-                    $itemLocId = $enitOrigin[$origin]['locationId'] ?? '';
-                    $smallOrigins[$itemLocId] = $enitOrigin[$origin];
-
-                    $binReqArr[$itemLocId] = $uspsSmallPkgReq->getGroupedUSPSBoxes($storeId);
-                    $binRespArr = $uspsSmallPkgReq->setAndGetBinsResponse($storeId, $connSettings, $enitOrigin, $lineItems, $itemLocId);
-                    $apiArray['binResponse'][$itemLocId] = $binRespArr['packedBoxes'];
-                    $owdArr = $binRespArr['owdBoxes'];
-                } else {
+                $isLtl = (isset($item['freight_enabled']) && $item['freight_enabled'] == 'Y') || (isset($item['freightClass']) && $item['freightClass'] == 'ltl');
+                $isMultiPackage = isset($item['shipMultiplePackage']) && $item['shipMultiplePackage'] ?? false;
+                if ($isLtl || $isMultiPackage) {
                     continue;
                 }
+
+                $itemLocId = $enitOrigin[$origin]['locationId'] ?? '';
+                $smallOrigins[$itemLocId] = $enitOrigin[$origin];
+
+                $binReqArr[$itemLocId] = $uspsSmallPkgReq->getGroupedUSPSBoxes($storeId);
+                $binRespArr = $uspsSmallPkgReq->setAndGetBinsResponse($storeId, $connSettings, $enitOrigin, $lineItems, $itemLocId);
+                $apiArray['binResponse'][$itemLocId] = $binRespArr['packedBoxes'];
+                $owdArr = $binRespArr['owdBoxes']; 
             }
 
             $apiArray['binsReqArr'] = $binReqArr ?? [];
             $apiArray['binResponseArr'] = $owdArr ?? [];
+            $apiArray['boxBins'] = $uspsSmallPkgReq->getGroupedUSPSBoxes($storeId) ?? [];
         }
 
         $apiArray = array_merge($apiArray, $this->getCutOffDetails($connSettings));

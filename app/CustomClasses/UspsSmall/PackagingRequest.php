@@ -86,26 +86,25 @@ class PackagingRequest
 
         if ($sbsEnabled && $this->uspsPackagingEligible) {
             // Custome Boxes
-            if (isset($boxLocId['customBoxes']) && !empty($boxLocId['customBoxes']['boxes']) && !isset($boxLocId['customBoxes']['bins_unpacked'])) {
+            if (isset($boxLocId['customBoxes']) && !empty($boxLocId['customBoxes']['bins_packed']) && !isset($boxLocId['customBoxes']['bins_unpacked'])) {
                 $binResponse['customBoxes'] = $boxLocId['customBoxes']['bins_packed'];
             }
 
             // USPS Priority MAIL
-            if (isset($boxLocId['UPMB']) && !empty($boxLocId['UPMB']['boxes']) && !isset($boxLocId['UPMB']['bins_unpacked'])) {
+            if (isset($boxLocId['UPMB']) && !empty($boxLocId['UPMB']['bins_packed']) && !isset($boxLocId['UPMB']['bins_unpacked'])) {
                 $binResponse['UPMB'] = $boxLocId['UPMB']['bins_packed'];
             }
 
             // Usps Priority Mail Express
-            if (isset($boxLocId['UMEB']) && !empty($boxLocId['UMEB']['boxes']) && !isset($boxLocId['UMEB']['bins_unpacked'])) {
+            if (isset($boxLocId['UMEB']) && !empty($boxLocId['UMEB']['bins_packed']) && !isset($boxLocId['UMEB']['bins_unpacked'])) {
                 $binResponse['UMEB'] = $boxLocId['UMEB']['bins_packed'];
             }
 
             //Usps Priority Mail Flat Rate*
-            if (isset($boxLocId['UFLAT']) && !empty($boxLocId['UFLAT']['boxes']) && !isset($boxLocId['UFLAT']['bins_unpacked'])) {
+            if (isset($boxLocId['UFLAT']) && !empty($boxLocId['UFLAT']['bins_packed']) && !isset($boxLocId['UFLAT']['bins_unpacked'])) {
                 $binResponse['UFLAT'] = $boxLocId['UFLAT']['bins_packed'];
             }
 
-            // $binResponse[$locId] = $binResponse;
             return $binResponse;
         }
     }
@@ -388,13 +387,7 @@ class PackagingRequest
     public function setPackedItems3dBinResponse($bins, $locId, $type = null)
     {
         $bins = $this->addBoxWeightInPackedBinsWeight($bins);
-        if ($type == Constant::NORMAL_PACKAGING || blank($type)) {
-            $this->finalBoxesForWs[$locId]['boxes'] = !empty($this->finalBoxesForWs[$locId]['boxes']) ? array_merge($this->finalBoxesForWs[$locId]['boxes'], $bins) : $bins;
-            $this->finalBoxesForWs[$locId]['packed'] = !empty($this->finalBoxesForWs[$locId]['packed']) ? array_merge($this->finalBoxesForWs[$locId]['packed'], $bins) : $bins;
-        } else {
-            $this->finalBoxesForWs[$locId][$type]['boxes'] = !empty($this->finalBoxesForWs[$locId][$type]['boxes']) ? array_merge($this->finalBoxesForWs[$locId][$type]['boxes'], $bins) : $bins;
-            $this->finalBoxesForWs[$locId][$type]['bins_packed'] = !empty($this->finalBoxesForWs[$locId][$type]['bins_packed']) ? array_merge($this->finalBoxesForWs[$locId][$type]['bins_packed'], $bins) : $bins;
-        }
+        $this->finalBoxesForWs[$locId][$type]['bins_packed'] = !empty($this->finalBoxesForWs[$locId][$type]['bins_packed']) ? array_merge($this->finalBoxesForWs[$locId][$type]['bins_packed'], $bins) : $bins;
     }
 
     public function addBoxWeightInPackedBinsWeight($bins)
@@ -425,7 +418,6 @@ class PackagingRequest
                 $itemDetail['q'] = 1;
 
                 $detail = $this->arrayFormatOf3dBinResponse($boxDetail, $itemDetail);
-                $this->binResArr[$locId][$type]['boxes'][] = $detail;
                 $this->binResArr[$locId][$type]['bins_unpacked'][] = $detail;
             }
         }
