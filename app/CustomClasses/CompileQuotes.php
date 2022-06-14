@@ -874,7 +874,7 @@ class CompileQuotes
         }
         foreach ($shipments as $origin => $quote) {
 
-            if (isset($quote['severity'])) {
+            if (Functions::isNotSmallShipmentError($quote)) {
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? [];
                 if (!$this->isMultiShipment && !blank($inStoreLdData)) {
                     return $this->inStoreLocalDeliveryQuotes([], $inStoreLdData, $allOrigins);
@@ -1440,7 +1440,7 @@ class CompileQuotes
         $freightEconomyLableAs = $this->quoteSettings['fedex_freight_economy_label'] ?? '';
         $freightPriorityLableAs = $this->quoteSettings['fedex_freight_priority_label'] ?? '';
         foreach ($shipments as $origin => $quote) {
-            if (isset($quote['severity']) || !isset($quote['q']) || (isset($quote['q']) && isset($quote['q']['severity']))) {
+            if (Functions::isNotSmallShipmentError($quote)) {
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? [];
                 if (!$this->isMultiShipment && !blank($inStoreLdData)) {
                     return $this->inStoreLocalDeliveryQuotes([], $inStoreLdData, $allOrigins);
@@ -1881,7 +1881,7 @@ class CompileQuotes
         $count = 0;
         foreach ($shipments as $origin => $quote) {
 
-            if (isset($quote['severity'])) {
+            if (Functions::isNotLtlShipmentError($quote)) {
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? [];
                 if (!$this->isMultiShipment && !blank($inStoreLdData)) {
                     return $this->inStoreLocalDeliveryQuotes([], $inStoreLdData, $allOrigins);
@@ -2024,7 +2024,7 @@ class CompileQuotes
         $key = 1;
         foreach ($shipments as $origin => $quote) {
 
-            if (isset($quote['severity'])) {
+            if (Functions::isNotSmallShipmentError($quote)) {
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? [];
                 if (!$this->isMultiShipment && !blank($inStoreLdData)) {
                     return $this->inStoreLocalDeliveryQuotes([], $inStoreLdData, $allOrigins);
@@ -2179,7 +2179,7 @@ class CompileQuotes
 
         $labelAs = $this->quoteSettings['label_as'] ?? '';
         foreach ($shipments as $origin => $quote) {
-            if (isset($quote['severity']) || !isset($quote['q']) || isset($quote['q']['error'])) {
+            if (Functions::isNotSmallShipmentError($quote)) {
                 $inStoreLdData = $quote['q']['InstorPickupLocalDelivery'] ?? $quote['InstorPickupLocalDelivery'] ?? [];
                 if (!$this->isMultiShipment && !blank($inStoreLdData)) {
                     return $this->inStoreLocalDeliveryQuotes([], $inStoreLdData, $allOrigins);

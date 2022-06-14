@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Log;
 class Functions
 {
     protected static $daysAfterExpiry = 4;
+    private static $ltlErrorMessage = 'Line Item Marked as LTL.';
+    private static $smallErrorMessage = 'Line Item Marked as Small.';
 
     public static function hasInsureCarrier($code)
     {
@@ -169,5 +171,15 @@ class Functions
         $output = array_map("unserialize",
             array_unique(array_map("serialize", $src)));
         return $output;
+    }
+
+    public static function isNotLtlShipmentError($quote): bool 
+    {
+        return isset($quote['severity']) && isset($quote['Message']) && $quote['Message'] != self::$ltlErrorMessage;
+    }
+
+    public static function isNotSmallShipmentError($quote): bool 
+    {
+        return isset($quote['severity']) && isset($quote['Message']) && $quote['Message'] != self::$smallErrorMessage;
     }
 }
