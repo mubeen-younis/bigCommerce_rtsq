@@ -2285,7 +2285,12 @@ class CompileQuotes
         }
 
         foreach ($shipments as $origin => $quote) {
-            if (isset($quote['severity']) || !isset($quote['q'])) {
+            if (Functions::isNotSmallShipmentError($quote)) {
+                $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? [];
+                if (!$this->isMultiShipment && !blank($inStoreLdData)) {
+                    return $this->inStoreLocalDeliveryQuotes([], $inStoreLdData, $allOrigins);
+                }
+
                 return [];
             }
 
@@ -2346,7 +2351,6 @@ class CompileQuotes
                     }
                 }
             }
-
             $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
 
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
@@ -2384,7 +2388,7 @@ class CompileQuotes
                 'checkoutQuotes' => $allQuotes,
                 'multiShipmentQuotes' => $multiShipmentQuotes,
             ];
-        
+
             return $resp;
         }
         
