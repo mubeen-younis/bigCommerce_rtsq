@@ -127,7 +127,7 @@ class QuotesResults
             if(isset($ship['tnt']['faultstring'])){
                 continue;
             }
-            if (!isset($ship['q'])) {
+            if (!isset($ship['q']) || (isset($ship['q']) && empty($ship['q']))) {
                 continue;
             }
             if (!isset($ship['severity'] /*&& isset()*/)) {
@@ -145,8 +145,13 @@ class QuotesResults
         $count = 0;
         foreach ($shipments as $origin => $quote) {
 
-            if (isset($quote['severity'])) {
-                continue;
+            if (isset($quote['severity']) || !isset($ship['q']) || (isset($ship['q']) && empty($ship['q']))) {
+                $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? [];
+                if (!$this->isMultiShipment && !blank($inStoreLdData)) {
+                    return $this->CompileQuotes->inStoreLocalDeliveryQuotes([], $inStoreLdData, $allOrigins);
+                }
+
+                return [];
             }
             if ($count == 0) { //To be checked only once
                 // $this->getAutoResidentialTitle('');

@@ -148,7 +148,7 @@ class GenerateRequestData
 
 
     public function getEnitOrigin($origin)
-    {
+    {   
         $wweLtlArr1['originAddress'] = $origin;
 
         if (count($wweLtlArr1['originAddress']) > 1) {

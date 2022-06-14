@@ -51,14 +51,14 @@ class QuotesResults
 
     public function formateQuoteBeforeCompile($shipments, $connSettings): array
     {
-        $formattedShipments = [];
+        $formattedShipments = $shipments ?? [];
         if ($this->isSuppressedRatesShipment($shipments)) {
             return $shipments;
         }
 
         foreach ($shipments as $shipment => $quotes) {
             if (!isset($quotes['q']) || isset($quotes['q']['error'])) {
-                return [];
+                continue;
             }
 
             $quotesArr = $quotes['q'];

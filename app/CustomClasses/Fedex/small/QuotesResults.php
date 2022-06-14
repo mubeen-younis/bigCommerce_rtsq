@@ -143,11 +143,7 @@ class QuotesResults
         $this->quoteSettings = $connectionSettings['fedex-small']['quote_settings'] ?? [];
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
         $allConfigServices['services'] = $allConfigServices = [];
-        foreach($shipments as $shipment){
-            if(empty($shipment)){
-                return [];
-            }
-        }
+
         if (isset($this->quoteSettings['carrier_services'])) {
             foreach ($this->quoteSettings['carrier_services'] as $key => $serviceName) {
                 if ($serviceName) {
@@ -213,8 +209,13 @@ class QuotesResults
         $shipmentCount = 0;
         $count = 0;
         foreach ($shipments as $origin => $quote) {
-            if (isset($quote['severity'])) {
-                continue;
+            if (isset($quote['severity']) || empty($quote) || !isset($quote['q'])) {
+                $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? [];
+                if (!$this->isMultiShipment && !blank($inStoreLdData)) {
+                    return $this->CompileQuotes->inStoreLocalDeliveryQuotes([], $inStoreLdData, $allOrigins);
+                }
+
+                return [];
             }
             if ($count == 0) { //To be checked only once
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
