@@ -347,7 +347,7 @@ class GenerateRequestData
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
             'serverName' => "https://" . $this->storeData['store']['name'],
             'carrierMode' => 'pro',
-            'quotestType' => 'ltl', 
+            'quotestType' => 'ltl',
             'version' => '1.0.0',
             'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
             'api' => $this->getApiInfoArrFQLtl($connSettings, $destination),
@@ -1058,7 +1058,7 @@ class GenerateRequestData
          * **/
         $residential = 'N';
         $alwaysResi = false;
-        
+
         if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
@@ -1085,19 +1085,20 @@ class GenerateRequestData
         if ($residential == 'Y' || $alwaysResi) {
             array_push($accessorial, 'RESDEL');
         }
-
+        $weightThreshold= $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $apiArray = [
             'name' => $connSettings['creds']['username'] ?? '',
             'password' => $connSettings['creds']['password'] ?? '',
 
             'HazardousMaterialContactName' => 'test',
             'HazardousMaterialContactPhone' => '4545464875',
-            'residentialDelivery' => $alwaysResi ? 'Y' : $residential, 
+            'residentialDelivery' => $alwaysResi ? 'Y' : $residential,
+            'thresholdWeightLimit'=>$weightThreshold,
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
             'accessorial' => $accessorial,
         ];
-        
+
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
 
