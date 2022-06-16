@@ -113,7 +113,6 @@ class GenerateRequestData
                 case "xpo-ltl":
                     $wweLtlArr = $this->xpoLtlEnitArr($con1, $destination, $enitOrigin);
                     $enitOrigin = XPOCompileQuotes::originAssociatedAccNum($enitOrigin, $wweLtlArr);
-                    dd(12,$enitOrigin);
                     $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['xpoLogistics'] = $wweLtlArr;
                     break;
