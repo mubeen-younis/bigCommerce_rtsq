@@ -2,6 +2,7 @@
 
 namespace App\CustomClasses;
 
+use App\CustomClasses\XPO\ltl\XPOCompileQuotes;
 use App\Helpers\Helpers;
 use App\Http\Controllers\BoxSizeController;
 use Illuminate\Support\Facades\DB;
@@ -111,6 +112,8 @@ class GenerateRequestData
                     break;
                 case "xpo-ltl":
                     $wweLtlArr = $this->xpoLtlEnitArr($con1, $destination, $enitOrigin);
+                    $enitOrigin = XPOCompileQuotes::originAssociatedAccNum($enitOrigin, $wweLtlArr);
+                    dd(12,$enitOrigin);
                     $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['xpoLogistics'] = $wweLtlArr;
                     break;
@@ -962,7 +965,7 @@ class GenerateRequestData
             $accessorial['DLG'] = 'DLG';
         }
 
-        $weightThreshold= $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
+        $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $apiArray = [
             'UserName' => $connSettings['creds']['username'] ?? '',
             'Password' => $connSettings['creds']['password'] ?? '',
@@ -971,7 +974,7 @@ class GenerateRequestData
             'thirdPartyAccountNumber' => $connSettings['creds']['bill_to_account_number'] ?? '',
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
-            'thresholdWeightLimit'=>$weightThreshold,
+            'thresholdWeightLimit' => $weightThreshold,
             'accessorial' => $accessorial
         ];
 
