@@ -24,7 +24,6 @@ class ConnectionSettings
             /*
              * Use License key and Server name if you want Authenication for eniture Subcription.
              */
-            // 'licence_key' => 'TDVB9ONC-M7QJRPRQ-5EDIH32D-DE73Y57I',
             'sever_name' => $storeName ?? '', // $_SERVER['SERVER_NAME'];
 
             /*
@@ -41,14 +40,6 @@ class ConnectionSettings
             // when freightquote.com is selected from the dropdown
             'name' => $data->username ?? '',
             'password' => $data->password ?? '',
-
-            // when CHR PrepaidFreight Quotes is selected from the dropdown
-//    'b2bApiVersion' => '2.0',
-//    'client_id' => '0oa6btwvdsXYlfNy3357',
-//    'client_secret' => 'aLZrUajjP-_FX6X7tHmDZqzSBtQ93esruZ0jG5Vj',
-//    'customer_code' => 'C48618',
-
-
             'platform' => 'bigcommerce',
             'version' => '2.0',
         ];
@@ -56,7 +47,7 @@ class ConnectionSettings
 
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($this->testConnectionUrl, $queryString, [], 'POST');
-        Log::info('FreightQuote Test COn Response ' . $output['response']);
+        Log::info('FreightQuote Test Con Response ' . $output['response']);
         $output = json_decode($output['response'], true);
         if (isset($output['severity']) && $output['severity'] == "ERROR") {
             $response = [
