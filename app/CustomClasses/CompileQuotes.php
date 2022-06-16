@@ -875,12 +875,7 @@ class CompileQuotes
         foreach ($shipments as $origin => $quote) {
 
             if (Functions::isNotSmallShipmentError($quote)) {
-                $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? [];
-                if (!$this->isMultiShipment && !blank($inStoreLdData)) {
-                    return $this->inStoreLocalDeliveryQuotes([], $inStoreLdData, $allOrigins);
-                }
-               
-                return [];
+                return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
             if ($count == 0) { //To be checked only once
@@ -1062,13 +1057,8 @@ class CompileQuotes
         }
         foreach ($shipments as $origin => $quote) {
 
-            if (isset($quote['severity'])) {
-                $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? [];
-                if (!$this->isMultiShipment && !blank($inStoreLdData)) {
-                    return $this->inStoreLocalDeliveryQuotes([], $inStoreLdData, $allOrigins);
-                }
-
-               return [];
+            if (Functions::isNotSmallShipmentError($quote)) {
+                return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
             if ($count == 0) { //To be checked only once
@@ -1291,13 +1281,8 @@ class CompileQuotes
         }
         foreach ($shipments as $origin => $quote) {
 
-            if (isset($quote['severity'])) {
-                $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? [];
-                if (!$this->isMultiShipment && !blank($inStoreLdData)) {
-                    return $this->inStoreLocalDeliveryQuotes([], $inStoreLdData, $allOrigins);
-                }
-
-                return [];
+            if (Functions::isNotSmallShipmentError($quote)) {
+                return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
             if ($count == 0) { //To be checked only once
@@ -1441,12 +1426,7 @@ class CompileQuotes
         $freightPriorityLableAs = $this->quoteSettings['fedex_freight_priority_label'] ?? '';
         foreach ($shipments as $origin => $quote) {
             if (Functions::isNotSmallShipmentError($quote)) {
-                $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? [];
-                if (!$this->isMultiShipment && !blank($inStoreLdData)) {
-                    return $this->inStoreLocalDeliveryQuotes([], $inStoreLdData, $allOrigins);
-                }
-
-               return [];
+                return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
             if ($count == 0) { //To be checked only once
@@ -1574,13 +1554,8 @@ class CompileQuotes
         $lableAs = $this->quoteSettings['label_as'] ?? '';
         foreach ($shipments as $origin => $quote) {
 
-            if (isset($quote['severity'])) {
-                $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? [];
-                if (!$this->isMultiShipment && !blank($inStoreLdData)) {
-                    return $this->inStoreLocalDeliveryQuotes([], $inStoreLdData, $allOrigins);
-                }
-
-                return [];
+            if (Functions::isNotSmallShipmentError($quote)) {
+                return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
             if ($count == 0) { //To be checked only once
@@ -1714,13 +1689,8 @@ class CompileQuotes
         $preAccess = 'rnlltl';
         $HAT = [];
         foreach ($shipments as $origin => $quote) {
-            if (isset($quote['severity'])) {
-                $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? [];
-                if (!$this->isMultiShipment && !blank($inStoreLdData)) {
-                    return $this->inStoreLocalDeliveryQuotes([], $inStoreLdData, $allOrigins);
-                }
-
-                return [];
+            if (Functions::isNotSmallShipmentError($quote)) {
+                return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
             if ($count == 0) { //To be checked only once
                 $isRad = $quote['autoResidentialsStatus'] ?? '';
@@ -1882,12 +1852,7 @@ class CompileQuotes
         foreach ($shipments as $origin => $quote) {
 
             if (Functions::isNotLtlShipmentError($quote)) {
-                $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? [];
-                if (!$this->isMultiShipment && !blank($inStoreLdData)) {
-                    return $this->inStoreLocalDeliveryQuotes([], $inStoreLdData, $allOrigins);
-                }
-                
-               return [];
+                return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
             if ($count == 0) { //To be checked only once
                 // $this->getAutoResidentialTitle('');
@@ -2025,12 +1990,7 @@ class CompileQuotes
         foreach ($shipments as $origin => $quote) {
 
             if (Functions::isNotSmallShipmentError($quote)) {
-                $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? [];
-                if (!$this->isMultiShipment && !blank($inStoreLdData)) {
-                    return $this->inStoreLocalDeliveryQuotes([], $inStoreLdData, $allOrigins);
-                }
-
-                return [];
+                return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
             if ($count == 0) { //To be checked only once
@@ -2180,12 +2140,7 @@ class CompileQuotes
         $labelAs = $this->quoteSettings['label_as'] ?? '';
         foreach ($shipments as $origin => $quote) {
             if (Functions::isNotSmallShipmentError($quote)) {
-                $inStoreLdData = $quote['q']['InstorPickupLocalDelivery'] ?? $quote['InstorPickupLocalDelivery'] ?? [];
-                if (!$this->isMultiShipment && !blank($inStoreLdData)) {
-                    return $this->inStoreLocalDeliveryQuotes([], $inStoreLdData, $allOrigins);
-                }
-
-                return [];
+                return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
             if ($count == 0) {
@@ -2296,6 +2251,16 @@ class CompileQuotes
 
         $resp = $allQuotes;
         return $resp;
+    }
+
+    private function getInsPicAndLocDelQuotes($quote, $allOrigins): array 
+    {
+        $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? $quote['q']['InstorPickupLocalDelivery'] ?? [];
+        if (!$this->isMultiShipment && !blank($inStoreLdData)) {
+            return $this->inStoreLocalDeliveryQuotes([], $inStoreLdData, $allOrigins);
+        }
+        
+        return [];
     }
 
     /**

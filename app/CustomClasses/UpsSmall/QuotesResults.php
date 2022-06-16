@@ -6,6 +6,7 @@ namespace App\CustomClasses\UpsSmall;
 
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
+use App\CustomClasses\Functions;
 
 class QuotesResults
 {
@@ -110,13 +111,13 @@ class QuotesResults
 
         $shipments = $this->formateQuoteBeforeCompile($shipments);
         // if any shipment contains error in case of multishipments
-        if (is_countable($shipments) && count($shipments) > 1) {
-            foreach ($shipments as $ship) {
-                if (!isset($ship['q']) || (isset($ship['q']) && empty($ship['q']))) {
-                    return [];
-                }
-            }
-        }
+        // if (is_countable($shipments) && count($shipments) > 1) {
+        //     foreach ($shipments as $ship) {
+        //         if (!isset($ship['q']) || (isset($ship['q']) && empty($ship['q']))) {
+        //             return [];
+        //         }
+        //     }
+        // }
         //print_r($shipments); exit;
         $this->quoteSettings = [];
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
@@ -145,13 +146,8 @@ class QuotesResults
         $count = 0;
         foreach ($shipments as $origin => $quote) {
 
-            if (isset($quote['severity']) || !isset($ship['q']) || (isset($ship['q']) && empty($ship['q']))) {
-                $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? [];
-                if (!$this->isMultiShipment && !blank($inStoreLdData)) {
-                    return $this->CompileQuotes->inStoreLocalDeliveryQuotes([], $inStoreLdData, $allOrigins);
-                }
-
-                return [];
+            if ((isset($quote['severity']) || !isset($ship['q']) || (isset($ship['q']) && empty($ship['q']))) && Functions::isNotLtlShipmentError($quote)) {
+                return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);                
             }
             if ($count == 0) { //To be checked only once
                 // $this->getAutoResidentialTitle('');

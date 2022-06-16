@@ -6,6 +6,7 @@ namespace App\CustomClasses\Fedex\small;
 
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
+use App\CustomClasses\Functions;
 use Illuminate\Support\Str;
 
 class QuotesResults
@@ -209,13 +210,8 @@ class QuotesResults
         $shipmentCount = 0;
         $count = 0;
         foreach ($shipments as $origin => $quote) {
-            if (isset($quote['severity']) || empty($quote) || !isset($quote['q'])) {
-                $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? [];
-                if (!$this->isMultiShipment && !blank($inStoreLdData)) {
-                    return $this->CompileQuotes->inStoreLocalDeliveryQuotes([], $inStoreLdData, $allOrigins);
-                }
-
-                return [];
+            if ((isset($quote['severity']) || empty($quote) || !isset($quote['q'])) && Functions::isNotLtlShipmentError($quote)) {
+                return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
             if ($count == 0) { //To be checked only once
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;

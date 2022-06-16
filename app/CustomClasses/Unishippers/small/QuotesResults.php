@@ -4,6 +4,7 @@ namespace App\CustomClasses\Unishippers\small;
 
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
+use App\CustomClasses\Functions;
 
 class QuotesResults
 {
@@ -38,13 +39,8 @@ class QuotesResults
         $count = 0;
 
         foreach ($shipments as $origin => $quote) {
-            if (isset($quote['severity'])) {
-                $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? [];
-                if (!$this->isMultiShipment && !blank($inStoreLdData)) {
-                    return $this->CompileQuotes->inStoreLocalDeliveryQuotes([], $inStoreLdData, $allOrigins);
-                }
-
-                return [];
+            if (Functions::isNotLtlShipmentError($quote)) {
+                return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
             if ($count == 0) {
