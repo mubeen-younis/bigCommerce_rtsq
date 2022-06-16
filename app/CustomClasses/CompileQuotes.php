@@ -873,7 +873,6 @@ class CompileQuotes
             $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
         foreach ($shipments as $origin => $quote) {
-
             if (Functions::isNotSmallShipmentError($quote)) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -1850,7 +1849,6 @@ class CompileQuotes
         $shipmentCount = 0;
         $count = 0;
         foreach ($shipments as $origin => $quote) {
-
             if (Functions::isNotLtlShipmentError($quote)) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -1914,7 +1912,6 @@ class CompileQuotes
             }
             $shipmentCount++;
         }
-        //  dd($originQuotes,'dds',$this->isMultiShipment);
         // $multiShipmentQuotes
         // Check for mukti shipment finding lowest price in each shipment and adding them for multi shipment
         if ($this->isMultiShipment) {
@@ -2128,7 +2125,7 @@ class CompileQuotes
 
         $numberOfShipments = 0;
         foreach ($shipments as $ship) {
-            if (!isset($ship['severity']) || isset($ship['q']) || !isset($ship['q']['error'])) {
+            if (!isset($ship['severity']) || (isset($ship['q']) && !isset($ship['q']['error']))) {
                 $numberOfShipments++;
             }
         }
@@ -2253,7 +2250,7 @@ class CompileQuotes
         return $resp;
     }
 
-    private function getInsPicAndLocDelQuotes($quote, $allOrigins): array 
+    public function getInsPicAndLocDelQuotes($quote, $allOrigins): array 
     {
         $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? $quote['q']['InstorPickupLocalDelivery'] ?? [];
         if (!$this->isMultiShipment && !blank($inStoreLdData)) {

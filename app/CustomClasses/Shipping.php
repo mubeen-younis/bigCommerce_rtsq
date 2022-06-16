@@ -135,7 +135,6 @@ class Shipping
         }
         // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
-        // dd(138, $requestArr);
         if (empty($requestArr)) {
             return false;
         }
@@ -143,7 +142,6 @@ class Shipping
         $url = Constant::QUOTES_URL;
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
-        // dd(145, $quotes);
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
         /*
       * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
@@ -223,7 +221,6 @@ class Shipping
             }
             /*Removed Code of removing parcel and ltl*/
         }
-
         /*Adding shipping group rates response in quotes
         */
         if (!blank($this->shippingGroupResponse)) {
