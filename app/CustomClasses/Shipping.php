@@ -135,6 +135,7 @@ class Shipping
         }
         // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
+        dd(138, $requestArr);
         if (empty($requestArr)) {
             return false;
         }
@@ -142,6 +143,7 @@ class Shipping
         $url = Constant::QUOTES_URL;
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
+        dd(145, $quotes);
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
         /*
       * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
@@ -179,8 +181,8 @@ class Shipping
             $finalCodesTemp[$key] = explode('+', $finalCode)[0];
         }
         /*TODO :Need to Add LTL Carriers here as well*/
-        $isFreightTitleExist = array_search('Freight', $finalTitlesTemp);
-        $isShippingTitleExist = array_search('Shipping', $finalTitlesTemp);
+        $isFreightTitleExist = array_search(Functions::$ltlMultiTitle, $finalTitlesTemp);
+        $isShippingTitleExist = array_search(Functions::$smallMultiTitle, $finalTitlesTemp);
         $isAVGCodeExist = gettype(array_search('AVG', $finalCodesTemp)) == 'integer';
         $isUpsLtlCodeExist = gettype(array_search('upsltl', $finalCodesTemp)) == 'integer';
         $isFedexLtlCodeExist = gettype(array_search('fedexltl', $finalCodesTemp)) == 'integer';
@@ -192,11 +194,11 @@ class Shipping
 
         if ((gettype($isFreightTitleExist) == 'integer') && (gettype($isShippingTitleExist) == 'integer')) {
             foreach ($finalQuotes as $key => $_quote) {
-                if ($_quote['title'] == 'Freight' || $_quote['title'] == 'Shipping') {
+                if ($_quote['title'] == Functions::$ltlMultiTitle || $_quote['title'] == Functions::$smallMultiTitle) {
                     $finalCost += $_quote['rate'];
                     $freightCode = ($_quote['code'] != 'Multi') ? $_quote['code'] : $freightCode;
                 }
-                if ($_quote['title'] != 'Freight' && $_quote['title'] != 'Shipping') {
+                if ($_quote['title'] != Functions::$ltlMultiTitle && $_quote['title'] != Functions::$smallMultiTitle) {
                     $_finalQuotes[$key]['code'] = $_quote['code'];
                     $_finalQuotes[$key]['rate'] = $_quote['rate'];
                     $_finalQuotes[$key]['title'] = $_quote['title'];
@@ -206,7 +208,7 @@ class Shipping
 
         if (!empty($_finalQuotes)) {
             $_finalQuotes[$key]['code'] = $freightCode;
-            $_finalQuotes[$key]['title'] = 'Freight';
+            $_finalQuotes[$key]['title'] = Functions::$ltlMultiTitle;
             $_finalQuotes[$key]['rate'] = $finalCost;
             $_finalQuotes = array_values($_finalQuotes);
             $finalQuotes = $_finalQuotes;
@@ -716,7 +718,7 @@ class Shipping
             $resp['messages'] = [];// need to change
 
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'eniture_quotes', 'display_name' => $this->limitTitle($quotes[0])]];
-
+            
             foreach ($quotes as $key => $quote) {
                 $resp['carrier_quotes'][0]['quotes'][$key] = [
                     'code' => $quote['code'],
@@ -742,6 +744,13 @@ class Shipping
     function limitTitle($quote)
     {
         $res = $quote['title'];
+        if (strpos($res, Functions::$ltlPrefix) !== false) {
+            $res = str_replace(Functions::$ltlPrefix, '', $res);
+        }
+        if (strpos($res, Functions::$smallPrefix) !== false) {
+            $res = str_replace(Functions::$smallPrefix, '', $res);
+        }
+
         if (strlen($quote['title']) > 100) {
             $res = explode("(", $quote['title'])[0];
         } else if ($quote['title'] == "") {
