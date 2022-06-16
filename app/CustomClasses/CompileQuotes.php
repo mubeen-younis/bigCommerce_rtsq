@@ -974,7 +974,7 @@ class CompileQuotes
             foreach ($allQuotes as $key => $quote) {
                 $title = explode('(', $quote['title'])[0];
                 $title = explode('w/', $title);
-                $title[0] = 'Freight';
+                $title[0] = Functions::$ltlMultiTitle;
                 $allQuotes[$key]['title'] = implode(' w/', $title);
             }
         }
@@ -1803,7 +1803,7 @@ class CompileQuotes
             } else {
                 $allQuotes = $this->forceChangeTitle($allQuotes);
                 $resp = [
-                    'checkoutQuotes' => $this->arrangeHATFreight($allQuotes, $HAT, 'Freight'),
+                    'checkoutQuotes' => $this->arrangeHATFreight($allQuotes, $HAT, Functions::$ltlMultiTitle),
                     'multiShipmentQuotes' => $multiShipmentQuotes
                 ];
             }
@@ -1929,7 +1929,7 @@ class CompileQuotes
                 $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
                 $originQuotesMulti[0]['code'] = $this->isResi || $this->alwaysResi ? 'Multi+R' : 'Multi';
                 $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
-                $originQuotesMulti[0]['title'] = $this->isResi ? 'Shipping' . Constant::RESI_LABEL : 'Shipping';
+                $originQuotesMulti[0]['title'] = $this->isResi ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
             }
             $resp = [
                 'checkoutQuotes' => $originQuotesMulti,
@@ -2493,7 +2493,7 @@ class CompileQuotes
                 $quotesArr[] = [
                     'code' => $code,
                     'rate' => $rate,
-                    'title' => $this->getTitle('Freight', $isLiftGate, true)
+                    'title' => $this->getTitle(Functions::$ltlMultiTitle, $isLiftGate, true)
                 ];
             } else {
                 $quotesArr[] = reset($value);
@@ -3183,7 +3183,7 @@ class CompileQuotes
         $simplePrice = $this->getAveragePrice($sliced, $options);
         $prefix = $this->isGTZCerasis ? 'AVG' : 'AVGwweltl';
         $prefix = isset($this->isFQ) && $this->isFQ ? 'AVGfqltl' : $prefix;
-        $serviceName = $this->customLabel('Freight');
+        $serviceName = $this->customLabel(Functions::$ltlMultiTitle);
         $averageRateService[0]['simple'] = [
             'title' => $this->getTitle($serviceName, false),//$serviceName,
             'code' => $prefix . $this->getAccessorialCode(),

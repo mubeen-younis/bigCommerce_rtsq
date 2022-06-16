@@ -11,6 +11,10 @@ class Functions
     public static $defaultThresholdLimit = 150;
     private static $ltlErrorMessage = 'Line Item Marked as LTL.';
     private static $smallErrorMessage = 'Line Item Marked as Small.';
+    public static $ltlPrefix = '-ltl';
+    public static $smallPrefix = '-small';
+    public static $ltlMultiTitle = '-ltlFreight';
+    public static $smallMultiTitle = '-smallShipping';
 
     public static function hasInsureCarrier($code)
     {
