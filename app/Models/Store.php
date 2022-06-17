@@ -49,5 +49,10 @@ class Store extends Model
 
     }
 
+    public static function getActiveStores()
+    {
+        return optional(self::where('app_status', 1)->select('id','url','hash','access_token')->get())->toArray();
+    }
+
 
 }

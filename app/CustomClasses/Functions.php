@@ -9,6 +9,7 @@ class Functions
 {
     protected static $daysAfterExpiry = 4;
     public static $defaultThresholdLimit = 150;
+    public static $orderWebhookString = 'store/order/*';
 
     public static function hasInsureCarrier($code)
     {
@@ -170,6 +171,18 @@ class Functions
         $output = array_map("unserialize",
             array_unique(array_map("serialize", $src)));
         return $output;
+    }
+
+    public static function returnFormExceptionArray($exception)
+    {
+        return ['line' => $exception->getLine(),
+            'file' => $exception->getFile(),
+            'message' => $exception->getMessage()];
+    }
+
+    public static function log($message, $context = null, $type = 'info')
+    {
+        Log::$type($message, !blank($context) ? self::returnFormExceptionArray($context) : []);
     }
 
 }
