@@ -173,7 +173,7 @@ class LtlSmallCompileQuotes
         $isLG = count($ltlLG) > 0;
         $parcel = $quotesCarrierNew['parcel'][0] ?? [];
         //print_r($quotesCarrierNew['ltl']); exit;
-        // dd(176, $quotesCarrierNew, $parcel);
+        // dd(176, $quotesCarrierNew);
         foreach ($quotesCarrierNew['ltl'] as $ltlQuote) {
             foreach ($ltlQuote as $simpleLg => $ltlQuot) {
                 $ltlQuot = $ltlQuot[0] ?? $ltlQuot;

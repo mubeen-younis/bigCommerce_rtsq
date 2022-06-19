@@ -667,6 +667,7 @@ class CompileQuotes
             switch ($key) {
                 case "wweLTL":
                     $resp = $this->compileWweLtlQuotes($shipment, $connectionSettings, $allOrigins);
+                    // dd(670, 'wweltl', $resp);
                     $quotesTemp['wweLTL'] = $resp;
                     if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
                         //$quotesRes['wwe'] = $quotesRes['wwe'] ?? [];

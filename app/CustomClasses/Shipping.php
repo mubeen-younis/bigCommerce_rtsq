@@ -166,6 +166,7 @@ class Shipping
 
         $quotesFromWs = $quotes ?? [];
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination);
+        // dd(169, $finalQuotes);
 
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
@@ -192,19 +193,19 @@ class Shipping
         $freightCode = '';
         $finalCost = 0;
 
-        if ((gettype($isFreightTitleExist) == 'integer') && (gettype($isShippingTitleExist) == 'integer')) {
-            foreach ($finalQuotes as $key => $_quote) {
-                if ($_quote['title'] == Functions::$ltlMultiTitle || $_quote['title'] == Functions::$smallMultiTitle) {
-                    $finalCost += $_quote['rate'];
-                    $freightCode = ($_quote['code'] != 'Multi') ? $_quote['code'] : $freightCode;
-                }
-                if ($_quote['title'] != Functions::$ltlMultiTitle && $_quote['title'] != Functions::$smallMultiTitle) {
-                    $_finalQuotes[$key]['code'] = $_quote['code'];
-                    $_finalQuotes[$key]['rate'] = $_quote['rate'];
-                    $_finalQuotes[$key]['title'] = $_quote['title'];
-                }
-            }
-        }
+        // if ((gettype($isFreightTitleExist) == 'integer') && (gettype($isShippingTitleExist) == 'integer')) {
+        //     foreach ($finalQuotes as $key => $_quote) {
+        //         if ($_quote['title'] == Functions::$ltlMultiTitle || $_quote['title'] == Functions::$smallMultiTitle) {
+        //             $finalCost += $_quote['rate'];
+        //             $freightCode = ($_quote['code'] != 'Multi') ? $_quote['code'] : $freightCode;
+        //         }
+        //         if ($_quote['title'] != Functions::$ltlMultiTitle && $_quote['title'] != Functions::$smallMultiTitle) {
+        //             $_finalQuotes[$key]['code'] = $_quote['code'];
+        //             $_finalQuotes[$key]['rate'] = $_quote['rate'];
+        //             $_finalQuotes[$key]['title'] = $_quote['title'];
+        //         }
+        //     }
+        // }
 
         if (!empty($_finalQuotes)) {
             $_finalQuotes[$key]['code'] = $freightCode;
@@ -213,12 +214,14 @@ class Shipping
             $_finalQuotes = array_values($_finalQuotes);
             $finalQuotes = $_finalQuotes;
         } else {
+            // dd(217, $finalQuotes);
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
             //TODO : Need to Add LTL Carriers Here as well
             if ($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist)) {
                 $isShippingOrFreight = false;
             }
             if ($this->isRequestMultishipment && !$isShippingOrFreight) {
+                dd(224);
                 $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings, $residential, $quotesFromWs, $requestArr['requestArr']);
                 $finalQuotes = $finalQuotesMulti['checkoutQuotes'] ?? [];
                 $multiShipmentQuotes = $finalQuotesMulti['multiShipmentQuotes'] ?? [];
@@ -716,7 +719,8 @@ class Shipping
         if (!empty(array_filter($quotes))) {
             $resp['quote_id'] = (string)rand(1, 9);// need to change
             $resp['messages'] = [];// need to change
-
+            $quotes = $this->formatCheapestFinalQuotes($quotes);
+            dd(723, $quotes);
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'eniture_quotes', 'display_name' => $this->limitTitle($quotes[0])]];
             
             foreach ($quotes as $key => $quote) {
@@ -739,6 +743,59 @@ class Shipping
         return $resp;
     }
 
+    private function formatCheapestFinalQuotes($quotes): array
+    {
+        $freightQuotesArr = collect($quotes)->filter(function ($quote) {
+            return $quote['title'] == '-ltlFreight';
+        })->toArray() ?? [];
+        $shippingQuotesArr = collect($quotes)->filter(function ($quote) {
+                return $quote['title'] == '-smallShipping';
+        })->toArray() ?? [];
+
+        if (empty($freightQuotesArr) && empty($shippingQuotesArr)) {
+            return $quotes;
+        }
+
+        $freightCheapest = $this->getCheapestQuotesArr($freightQuotesArr) ?? [];
+        $shippingCheapest = $this->getCheapestQuotesArr($shippingQuotesArr) ?? [];
+
+        if (!empty($freightCheapest) && !empty($shippingCheapest)) {
+            $bothChpeastQuotesArr[] = $freightCheapest;
+            $bothChpeastQuotesArr[] = $shippingCheapest;
+            dd(765, $bothChpeastQuotesArr);
+            $finalCheapestQuotes[0] = $this->getCheapestQuotesArr($bothChpeastQuotesArr) ?? [];
+        }
+        else if (!empty($freightCheapest) && empty($shippingCheapest)) {
+            $finalCheapestQuotes[0] = $this->getCheapestQuotesArr($freightQuotesArr) ?? [];
+        }
+        else if (!empty($shippingCheapest) && empty($freightCheapest)) {
+            $finalCheapestQuotes[0] = $this->getCheapestQuotesArr($shippingCheapest) ?? [];
+        }
+
+        return $finalCheapestQuotes;
+    }
+
+    private function getCheapestQuotesArr($quotes):array
+    {
+        $cheapestQuote = [];
+        $quotes = $quotes ?? [];
+
+        if (isset($quotes) && count($quotes) == 1) {
+            return $quotes;
+        }
+
+        if (!empty($quotes)) {
+            $minRate = min(array_column($quotes, 'rate'));
+            foreach ($quotes as $q) {
+                if ($q['rate'] == $minRate) {
+                    $cheapestQuote[] = $q;
+                    break;
+                }
+            }
+        }
+
+        return $cheapestQuote;
+    }
 
     public
     function limitTitle($quote)
