@@ -12,7 +12,7 @@ use App\CustomClasses\RL\ltl\QuotesResults as rnlLtlQuotesResults;
 use App\CustomClasses\WWESMALL\WweSmallQuoteResults;
 use App\CustomClasses\Unishippers\small\QuotesResults as unishippersSmallQuotesResults;
 use App\CustomClasses\YrcLTL\QuotesResults as yrcLtlQuotesResults;
-use App\CustomClasses\AbfLTL\QuotesResults as abfLtlQuotesResults;
+use App\CustomClasses\AbfLtl\QuotesResults as abfLtlQuotesResults;
 use App\CustomClasses\Shipping;
 use App\Models\Locations;
 use Illuminate\Support\Facades\DB;
