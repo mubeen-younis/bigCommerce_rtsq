@@ -31,6 +31,7 @@ class Kernel extends ConsoleKernel
     {
         $schedule->command('expire:trials')->daily();
         $schedule->command('wsgraph:cron')->daily();
+        $schedule->command('orderWebhook:cron')->daily();
     }
 
     /**
