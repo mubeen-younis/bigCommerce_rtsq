@@ -63,7 +63,6 @@ class GenerateRequestData
      */
     public function generateEnitureArray($origin, $destination, $lineItems)
     {
-
         $this->destinationIsPOBox($destination);
         $carriersArr['carriers'] = [];
         $enitOrigin = $this->getEnitOrigin($origin);
@@ -130,6 +129,11 @@ class GenerateRequestData
                     $yrcLtlArr = $this->yrcLtlEnitArr($con1, $destination);
                     $yrcLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['yrc'] = $yrcLtlArr;
+                    break;
+                case 'abf-ltl':
+                    $abfLtlArr = $this->abfLtlEnitArr($con1, $destination);
+                    $abfLtlArr['originAddress'] = $enitOrigin;
+                    $carriersArr['carriers']['abf'] = $abfLtlArr;
                     break;
             }
         }
@@ -335,6 +339,19 @@ class GenerateRequestData
             'api' => $this->getApiInfoArrYrcLtl($connSettings, $destination),
         ];
     }
+    public function abfLtlEnitArr($connSettings, $destination)
+    {
+        return [
+            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            //'licenseKey' => 'V4ILPNNU-1EO5VA9K-3OWYO3BC-N418NYRC',
+            'serverName' => "https://" . $this->storeData['store']['name'],
+            'carrierMode' => 'pro',
+            'quotestType' => 'ltl',
+            'version' => '1.0',
+            'returnQuotesOnExceedWeight' => 1,
+            'api' => $this->getApiInfoArrAbfLtl($connSettings, $destination),
+        ];
+    }
 
     function calculatePrice($lineItems)
     {
@@ -482,7 +499,8 @@ class GenerateRequestData
                     || isset($carriers['cerasis'])
                     || isset($carriers['globalTranz'])
                     || isset($carriers['xpoLogistics'])
-                    || isset($carriers['yrc']);
+                    || isset($carriers['yrc'])
+                    || isset($carriers['abf']);;
                 if ($isLtl) {
                     $itemsArr = $olditemsArr + $itemsArr;
                 }
@@ -1287,6 +1305,53 @@ class GenerateRequestData
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
             'accessorial' => $accessorial,
+        ];
+
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
+    }
+    public function getApiInfoArrAbfLtl($connSettings, $destination)
+    {
+        $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
+            (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+
+        $residential = 'N';
+        $alwaysResi = false;
+        /*
+            * Check if rad hit not consumed and residential is enables
+        * **/
+    
+        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+            if ($this->radHitConsumed == 0) {
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+            } else {
+                $residential = $this->residential;
+            }
+            if ($liftGate != 'Y') {
+                $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
+            }
+        } else {
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+        }
+
+        $this->resiCarrier['abfLtl'] = $residential;
+        $this->resiCarrier['alwaysResi']['abfLtl'] = $alwaysResi;
+
+        $accessorial = [];
+        if($alwaysResi || $residential == 'Y'){
+            $accessorial['Acc_RDEL'] = 'Y';
+        }
+        if ($liftGate == 'Y') {
+            $accessorial['Acc_GRD_DEL'] = 'Y';
+        }
+
+        $apiArray = [
+           
+            'id' => $connSettings['creds']['business_id'],
+            'senderConsignee' => 'ShipAff',
+            'accessorial' => $accessorial,
+
         ];
 
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
