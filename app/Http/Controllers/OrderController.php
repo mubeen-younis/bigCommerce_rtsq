@@ -6,6 +6,7 @@ use App\Constants\Constant;
 use App\CurlRequest;
 use App\CustomClasses\Functions;
 use App\Models\BoxSize;
+use App\Models\Locations;
 use App\Models\Orders;
 use App\Models\RequestData;
 use App\Models\RequestTempData;
@@ -78,6 +79,7 @@ class OrderController extends Controller
                 ]
             );
         } catch (\Exception $exception) {
+            dd(12, $exception);
             return response()->json(['error' => true,
                 'data' => [$exception->getMessage()],
                 'message' => 'No Order Widget Found',
@@ -170,6 +172,7 @@ class OrderController extends Controller
         /*
         * Stored Response from WS */
         $lineItem = json_decode($data['lineitems'])->lineItemData;
+        $originalItemsReq = json_decode(json_encode($lineItem->items));
         $responseFromWS = json_decode($data['quotes']);
         $shippingGroupResp = !blank($data['shipping_group_resp']) ? json_decode($data['shipping_group_resp']) : [];
 
@@ -178,7 +181,11 @@ class OrderController extends Controller
         $lineItem->items = $this->formateItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
 
         $lineItem->origin = $this->formateOrigins($requestToWS->requestArr->carriers);
+        $isMultiShipment = false;
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
+        if (!blank($multiShipmentresponse)) {
+            $isMultiShipment = true;
+        }
         $autoResidentialsStatus = 'n';
         $residentialsPickup = 'n';
         $liftGateStatus = 'n';
@@ -204,7 +211,7 @@ class OrderController extends Controller
                     $residentialsPickup = $liftResidentialStatus['resiPickup'] ?? 'n';
 
                     $totalBoxes = 1;
-                    if (isset($ws->binPackagingData) && !empty($ws->binPackagingData) && ($isSmallrate || $isInspOrLocal)) {
+                    if (isset($ws->binPackagingData) && !empty($ws->binPackagingData) && ($isSmallrate/* || $isInspOrLocal*/)) {
                         if ($isGround) {
                             $sbsData = $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->bins_packed ?? [];
                         } else if ($isAir) {
@@ -288,10 +295,18 @@ class OrderController extends Controller
             if (blank($item)) {
                 continue;
             }
+            $zip = $origin->locationId != '' ? $origin->locationId : $origin->senderZip;
             $city = $origin->senderCity ? $origin->senderCity . ',' : '';
             $state = $origin->senderState ?? '';
-            $zip = $origin->locationId != '' ? $origin->locationId : $origin->senderZip;
             $senderZip = $origin->senderZip ?? '';
+            if (!$isMultiShipment && $isInspOrLocal) {
+                $origDetails = $this->getOriginForInsAndLocal($zip);
+                if (!blank($origDetails)) {
+                    $city = $origDetails['city'] . ',';
+                    $state = $origDetails['state'];
+                    $senderZip = $origDetails['zip_code'];
+                }
+            }
             $orderWidget[$zip]['locationtype'] = $item->dropship_enabled == 'N' ? 'Warehouse' : 'Dropship';
             $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
@@ -353,6 +368,14 @@ class OrderController extends Controller
                 }
             }
       
+
+            /*If instore and not multi shipment we are showing only instore and local delivery original items*/
+            if (!$isMultiShipment && $isInspOrLocal) {
+                $orderWidget[$zip]['items'] = [];
+                foreach ($originalItemsReq as $originalItem) {
+                    $orderWidget[$zip]['items'][] = $originalItem->originalPiecesOfLineItem . ' X ' . $originalItem->lineItemName;;
+                }
+            }
 
 
             /*
@@ -429,7 +452,7 @@ class OrderController extends Controller
                 $itemsForm[] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
             }
             foreach ($orderWidget as $key => $data) {
-                $items = data_get($data, 'items');
+                $items = data_get($data, 'items') ?? [];
                 if (count($orderWidget) > 1) {
                     if ($data['locationtype'] == "Warehouse") {
                         $items = array_merge($items, $itemsForm);
@@ -448,6 +471,12 @@ class OrderController extends Controller
             'sbs' => $sbs
         ];
         return $resp;
+    }
+
+
+    public function getOriginForInsAndLocal($locationId)
+    {
+        return Locations::getlocationDetail($locationId);
     }
 
     public function getSbsItemDetail($sbsItemKey, $items)
@@ -767,7 +796,8 @@ class OrderController extends Controller
             $postData = json_decode($postData, true);
             $storeHash = explode('/', $postData['producer']);
             $storeHash = $storeHash[1];
-            $orderId = $postData['data']['id'];
+            Log::info('Post Data From BigCommerce ' . json_encode($postData));
+            $orderId = $postData['data']['id'] ?? $postData['data']['order_id'];
             // Update,delete,create from  webhook
             $scope = $postData['scope'];
             $store = Store::where('hash', $storeHash)->first();
@@ -782,10 +812,12 @@ class OrderController extends Controller
             $this->accessToken = $store->access_token;
             $this->storeHash = $storeHash;
             $this->moveQuotesTempToReq($toRequest);
+            return response("",200);
             //$saveOrderId = $this->saveUpdateOrderByID($toRequest);
             //$this->setOrderMeta($toRequest);
         } catch (\Exception $exception) {
-            Log::info('Exception On Moving Quotes ' . json_encode($exception));
+            Log::info('Exception On Moving Quotes ' . json_encode($exception->getTraceAsString()));
+            return response("",200);
         }
     }
 
@@ -897,13 +929,16 @@ class OrderController extends Controller
         $headers[] = 'Accept: application/json';
         $endpoint = 'https://api.bigcommerce.com/stores/' . $toRequest['store_hash'] . '/v2/orders/' . $toRequest['order_id'];
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
+        Log::info('First API Response ' . $response['response']);
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
             $cartId = json_decode($response['response'])->cart_id;
             $endpoint = json_decode($response['response'])->shipping_addresses->url;
             $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
+            Log::info('Second API Response ' . $response['response']);
             if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
                 $endpoint = json_decode($response['response'])[0]->shipping_quotes->url;
                 $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
+                Log::info('THird API Response ' . $response['response']);
                 if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
                     $response = json_decode($response['response']);
                     $rateId = optional($response)->rate_id ?? null;

@@ -8,6 +8,13 @@ use Illuminate\Support\Facades\Log;
 class Functions
 {
     protected static $daysAfterExpiry = 4;
+    public static $defaultThresholdLimit = 150;
+    private static $ltlErrorMessage = 'Line Item Marked as LTL.';
+    private static $smallErrorMessage = 'Line Item Marked as Small.';
+    public static $ltlPrefix = '-ltl';
+    public static $smallPrefix = '-small';
+    public static $ltlMultiTitle = '-ltlFreight';
+    public static $smallMultiTitle = '-smallShipping';
 
     public static function hasInsureCarrier($code)
     {
@@ -151,10 +158,28 @@ class Functions
         return null;
     }
 
+    public static function carrierSlugForFdo($carrierSlug)
+    {
+        $arr = ['WWE_PL' => 'small-package',
+            'WWE_LTL' => 'ltl-quotes',
+            'GTZ' => 'gtz-ltl',
+            'UNI_PL' => 'unishippers-small'
+        ];
+        if (isset($arr[$carrierSlug])) {
+            return $arr[$carrierSlug];
+        }
+        return null;
+    }
+
     public static function checkMultiUnique($src)
     {
         $output = array_map("unserialize",
             array_unique(array_map("serialize", $src)));
         return $output;
+    }
+
+    public static function isNotSmallShipmentError($quote): bool 
+    {
+        return isset($quote['severity']) && isset($quote['Message']) && $quote['Message'] != self::$smallErrorMessage;
     }
 }

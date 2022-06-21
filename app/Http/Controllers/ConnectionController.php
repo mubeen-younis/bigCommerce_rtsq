@@ -2,25 +2,41 @@
 
 namespace App\Http\Controllers;
 
-use App\CustomClasses\UpsLTL\UpsLtlConnectionSettings;
-use App\CustomClasses\WweLTL\WweLtlConnectionSettings;
-use App\CustomClasses\WWESMALL\SmallConnectionSettings;
-use App\CustomClasses\UpsSmall\ConnectionSettings;
+use App\CurlRequest;
 use App\CustomClasses\Fedex\ltl\ConnectionSettings as FedexLtlConnectionSettings;
 use App\CustomClasses\Fedex\small\ConnectionSettings as FedexSmallConnectionSettings;
+use App\CustomClasses\Functions;
 use App\CustomClasses\GTZ\ltl\ConnectionSettings as GTZLtlConnectionSettings;
-use App\CustomClasses\XPO\ltl\ConnectionSettings as XPOLtlConnectionSettings;
 use App\CustomClasses\RL\ltl\ConnectionSettings as RNLLtlConnectionSettings;
+use App\CustomClasses\UpsLTL\UpsLtlConnectionSettings;
+use App\CustomClasses\UpsSmall\ConnectionSettings;
+use App\CustomClasses\WweLTL\WweLtlConnectionSettings;
+use App\CustomClasses\WWESMALL\SmallConnectionSettings;
+use App\CustomClasses\XPO\ltl\ConnectionSettings as XPOLtlConnectionSettings;
 use App\CustomClasses\Unishippers\small\ConnectionSettings as UnishippersSmallConnectionSettings;
+
 use App\CustomClasses\EstesLTL\ConnectionSettings as EstesLTLConnectionSettings;
 
+use App\CustomClasses\FreightQuote\Ltl\ConnectionSettings as FreightQuoteConSett;
+use App\CustomClasses\YrcLTL\ConnectionSettings as YrcLtlConnectionSettings;
+use App\Endpoints\Endpoints;
 use App\Models\Connection;
+use App\Models\Coupon;
+use App\Models\CouponCarrier;
+use App\Models\Store;
+use App\Models\Subscription\CarrierCount;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class ConnectionController extends Controller
 {
+    /**
+     * @var FreightQuoteConSett
+     */
+    private $freightQuoteLtlTestCon;
+
     /**
      * Display a listing of the resource.
      *
@@ -39,6 +55,8 @@ class ConnectionController extends Controller
         $this->rnlLtlTestCon = new RNLLtlConnectionSettings();
         $this->unishippersSmallTestCon = new UnishippersSmallConnectionSettings();
         $this->estesLTLConL = new EstesLTLConnectionSettings();
+        $this->freightQuoteLtlTestCon = new FreightQuoteConSett();
+        $this->yrcLtlTestCon = new YrcLtlConnectionSettings();
     }
 
     public function index(Request $request)
@@ -128,6 +146,12 @@ class ConnectionController extends Controller
                 case 'estes-ltl':
                     $response = $this->estesLTLConL->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
+                case 'freightquote-ltl':
+                    $response = $this->freightQuoteLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'yrc-ltl':
+                    $response = $this->yrcLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
                 default:
                     return response()->json([
                         "error" => true, "data" => [],
@@ -135,12 +159,59 @@ class ConnectionController extends Controller
                     ]);
             }
         }
+
+        $message = 'Connection settings has been saved successfully';
+        $carriersArr = ['ltl-quotes', 'small-package', 'gtz-ltl', 'unishippers-small'];
+        if (!blank($request['promo_code']) &&
+            in_array($checkCarrierType->slug, $carriersArr) &&
+            ((isset($request['is_enabled']) && $request['is_enabled'] == false) || !isset($request['is_enabled']))
+        ) {
+            $fdoCouponResponse = $this->getFDOCouponCarrierInfo($request, $checkCarrierType->slug);
+            if (isset($fdoCouponResponse['status']) && $fdoCouponResponse['status'] == true) {
+                $message = 'Connection settings has been saved and the Promo Code is applied.';
+            } else {
+                $message = 'Connection settings has been saved but the Promo Code is not applied.';
+            }
+        }
         $con = Connection::firstOrNew(['installed_carrier_id' => $request->carrierId]);
         $con->value = json_encode($request->all());
         $con->installed_carrier_id = $request->carrierId;
         $con->save();
 
-        return response()->json(["error" => false, 'message' => "Connection settings has been saved.", "data" => $con]);
+        if (in_array($checkCarrierType->slug, $carriersArr) && isset($this->coupon_code_id)) {
+            $carrierCode = Functions::fdoSLugForCarriers($checkCarrierType->slug);
+            $con->fdoCouponCarrierInfo = CouponCarrier::where('coupon_code_id', $this->coupon_code_id)->where('carrier_name', $checkCarrierType->slug)->where('carrier_code', $carrierCode)->first();
+        }
+
+        return response()->json(["error" => false, 'message' => $message, "data" => $con]);
+    }
+
+    public function getFDOCouponCarrierInfo(Request $request, $carrierSlug)
+    {
+        $storeId = $request->store_id;
+        $storeDetails = Store::where('id', $storeId)->first();
+        $promoDetail = Coupon::getFDOCoupon($storeId);
+        if ((blank($promoDetail))) {
+            return ["status" => false];
+        }
+
+        $id = $promoDetail ? $promoDetail->id : '';
+        $this->coupon_code_id = $id;
+        $coupon = $request['promo_code'] ?? $promoDetail->code ?? '';
+        $shop = $promoDetail->shop ?? Store::getStoreUrlFromStoreId($storeId);
+        $carrierNameFdo = Functions::fdoSLugForCarriers($carrierSlug);
+        $queryParams = http_build_query(['coupon' => $coupon, 'shop' => $shop, 'access_token' => $storeDetails->access_token, 'store_hash' => $storeDetails->hash, 'carriers' => $carrierNameFdo]);
+        $endPoint = Endpoints::applyPromoCodeFdoEndpoint() . $queryParams;
+        $curlResponse = (new CurlRequest())->enSingleCurlRequest($endPoint, [], [], 'GET');
+        $response = json_decode($curlResponse['response'], true);
+        Log::info('Fdo Coupon Response of Carrier ' . json_encode($response) . "Endpoint " . json_encode($endPoint));
+
+        if (isset($response['promo'])) {
+            Store::where('id', $storeId)->update(['freightdesk_company_id' => $response['fdo_company_id']]);
+            CouponCarrier::addOrUpdateCarrierInfo($carrierSlug, $id, $carrierNameFdo, $response);
+        }
+
+        return $response;
     }
 
     public function testConnection($data)
