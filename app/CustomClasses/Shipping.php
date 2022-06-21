@@ -179,23 +179,24 @@ class Shipping
             $finalCodesTemp[$key] = explode('+', $finalCode)[0];
         }
         /*TODO :Need to Add LTL Carriers here as well*/
-        $isFreightTitleExist = array_search('Freight', $finalTitlesTemp);
-        $isShippingTitleExist = array_search('Shipping', $finalTitlesTemp);
+        $isFreightTitleExist = array_search(Functions::$ltlMultiTitle, $finalTitlesTemp);
+        $isShippingTitleExist = array_search(Functions::$smallMultiTitle, $finalTitlesTemp);
         $isAVGCodeExist = gettype(array_search('AVG', $finalCodesTemp)) == 'integer';
         $isUpsLtlCodeExist = gettype(array_search('upsltl', $finalCodesTemp)) == 'integer';
         $isFedexLtlCodeExist = gettype(array_search('fedexltl', $finalCodesTemp)) == 'integer';
         $isxpoLtlCodeExist = gettype(array_search('xpoltl', $finalCodesTemp)) == 'integer';
+        $isFreightQuoteLtlCodeExist = gettype(array_search('fqltl', $finalCodesTemp)) == 'integer';
         $isYrcLtlCodeExist = gettype(array_search('yrcltl', $finalCodesTemp)) == 'integer';
         $freightCode = '';
         $finalCost = 0;
 
         if ((gettype($isFreightTitleExist) == 'integer') && (gettype($isShippingTitleExist) == 'integer')) {
             foreach ($finalQuotes as $key => $_quote) {
-                if ($_quote['title'] == 'Freight' || $_quote['title'] == 'Shipping') {
+                if ($_quote['title'] == Functions::$ltlMultiTitle || $_quote['title'] == Functions::$smallMultiTitle) {
                     $finalCost += $_quote['rate'];
                     $freightCode = ($_quote['code'] != 'Multi') ? $_quote['code'] : $freightCode;
                 }
-                if ($_quote['title'] != 'Freight' && $_quote['title'] != 'Shipping') {
+                if ($_quote['title'] != Functions::$ltlMultiTitle && $_quote['title'] != Functions::$smallMultiTitle) {
                     $_finalQuotes[$key]['code'] = $_quote['code'];
                     $_finalQuotes[$key]['rate'] = $_quote['rate'];
                     $_finalQuotes[$key]['title'] = $_quote['title'];
@@ -205,13 +206,14 @@ class Shipping
 
         if (!empty($_finalQuotes)) {
             $_finalQuotes[$key]['code'] = $freightCode;
-            $_finalQuotes[$key]['title'] = 'Freight';
+            $_finalQuotes[$key]['title'] = Functions::$ltlMultiTitle;
             $_finalQuotes[$key]['rate'] = $finalCost;
             $_finalQuotes = array_values($_finalQuotes);
             $finalQuotes = $_finalQuotes;
         } else {
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
-            if ($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist)) {
+            //TODO : Need to Add LTL Carriers Here as well
+            if ($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist)) {
                 $isShippingOrFreight = false;
             }
             if ($this->isRequestMultishipment && !$isShippingOrFreight) {
@@ -714,7 +716,7 @@ class Shipping
             $resp['messages'] = [];// need to change
 
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'eniture_quotes', 'display_name' => $this->limitTitle($quotes[0])]];
-
+            
             foreach ($quotes as $key => $quote) {
                 $resp['carrier_quotes'][0]['quotes'][$key] = [
                     'code' => $quote['code'],
@@ -740,6 +742,13 @@ class Shipping
     function limitTitle($quote)
     {
         $res = $quote['title'];
+        if (strpos($res, Functions::$ltlPrefix) !== false) {
+            $res = str_replace(Functions::$ltlPrefix, '', $res);
+        }
+        if (strpos($res, Functions::$smallPrefix) !== false) {
+            $res = str_replace(Functions::$smallPrefix, '', $res);
+        }
+
         if (strlen($quote['title']) > 100) {
             $res = explode("(", $quote['title'])[0];
         } else if ($quote['title'] == "") {

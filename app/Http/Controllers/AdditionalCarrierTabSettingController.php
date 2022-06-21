@@ -25,7 +25,7 @@ class AdditionalCarrierTabSettingController extends Controller
             ->join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
             ->where('installed_carriers.id', $installed_carrier)->first();
 
-        if($carrier->slug == 'ltl-quotes'){
+        if($carrier->slug == 'ltl-quotes' || $carrier->slug == 'freightquote-ltl'){
             $services = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
                 ->where('installed_carriers.id', $installed_carrier)
                 ->orderBy('speed_freight_carrierName')->get();
@@ -45,7 +45,7 @@ class AdditionalCarrierTabSettingController extends Controller
                     ->whereNull('shopify_freights.store_id')
                     ->orderBy('speed_freight_carrierName')->get();
             }
-        }
+        }        
 
         return response()->json(['error' => false, 'data' => $services]);
     }
