@@ -770,6 +770,15 @@ class GenerateRequestData
         $this->resiCarrier['estesltl'] = $residential;
         $this->resiCarrier['alwaysResi']['estesLtl'] = $alwaysResi;
 
+        $accessorial = [];
+        if ($alwaysResi || $residential == 'Y') {
+            array_push($accessorial, 'HD');
+        }
+        if ($liftGate == 'Y') {
+            array_push($accessorial, 'LGATE');
+        }
+        $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
+
         $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
 
         $insurance = [
@@ -784,16 +793,17 @@ class GenerateRequestData
                 'value' => $insuranceCategory[1] ?? ''
             ];
         }
+
         $apiArray = [
             'UserName' => $connSettings['creds']['username'],
             'Password' => $connSettings['creds']['password'],
             'CUSTNMBR' => $connSettings['creds']['customer_number'],
             'Role' => 'S',
             'PaymentType' => 'P',
-            'accessorial' => array(
-                'HD',
-                'LGATE'
-            ),
+            'thresholdWeightLimit' => $weightThreshold,
+            'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
+            'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
+            'accessorial' => $accessorial,
         ];
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
