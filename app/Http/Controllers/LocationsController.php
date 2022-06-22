@@ -67,8 +67,11 @@ class LocationsController extends Controller
             'state' => 'required',
             'zip_code' => 'required',
             'country' => 'required',
-            'location_type' => 'required',
+            'location_type' => 'required'
         ];
+        if (isset($request->xpo_account_number)) {
+            $rules['xpo_account_number'] = 'max:49';
+        }
 
         $validator = Validator::make($request->all(), $rules);
 
@@ -76,7 +79,7 @@ class LocationsController extends Controller
             return response()->json(
                 ['error' => true,
                     'data' => $validator->errors()->all(),
-                    'message' => 'Validation Errors',
+                    'message' => $validator->errors()->first(),
                 ], 200);
         }
 
@@ -204,6 +207,8 @@ class LocationsController extends Controller
             $location->state = $request->state;
             $location->country = $request->country;
             $location->default_location_id = $request->default_location_id ?? '';
+            $location->xpo_account_number = $request->xpo_account_number ?? '';
+
 
             $additionals = [
                 'instore_pickup' => $request->enable_instore ?? '',
@@ -303,7 +308,7 @@ class LocationsController extends Controller
                 if ($request->location_type == "Drop ship") {
                     $this->deleteDropshippedProduct($request->location_id);
                 }
-                Locations::where('default_location_id', $request->location_id)->update(['default_location_id'=>'default']);
+                Locations::where('default_location_id', $request->location_id)->update(['default_location_id' => 'default']);
                 Locations::where('id', $request->location_id)->delete();
                 return response()->json(['error' => false,
                     'data' => [],

@@ -9,12 +9,14 @@ class Functions
 {
     protected static $daysAfterExpiry = 4;
     public static $defaultThresholdLimit = 150;
+    public static $orderWebhookString = 'store/order/*';
     private static $ltlErrorMessage = 'Line Item Marked as LTL.';
     private static $smallErrorMessage = 'Line Item Marked as Small.';
     public static $ltlPrefix = '-ltl';
     public static $smallPrefix = '-small';
     public static $ltlMultiTitle = '-ltlFreight';
     public static $smallMultiTitle = '-smallShipping';
+
 
     public static function hasInsureCarrier($code)
     {
@@ -177,9 +179,22 @@ class Functions
             array_unique(array_map("serialize", $src)));
         return $output;
     }
+    
+    public static function returnFormExceptionArray($exception)
+    {
+        return ['line' => $exception->getLine(),
+            'file' => $exception->getFile(),
+            'message' => $exception->getMessage()];
+    }
 
-    public static function isNotSmallShipmentError($quote): bool 
+    public static function log($message, $context = null, $type = 'info')
+    {
+        Log::$type($message, !blank($context) ? self::returnFormExceptionArray($context) : []);
+    }
+
+    public static function isNotSmallShipmentError($quote): bool
     {
         return isset($quote['severity']) && isset($quote['Message']) && $quote['Message'] != self::$smallErrorMessage;
     }
+
 }
