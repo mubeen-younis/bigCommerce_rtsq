@@ -982,8 +982,8 @@ class CompileQuotes
         $lableAs = $this->quoteSettings['label_as'] ?? 'Freight';
         $key = 1;
         foreach ($shipments as $origin => $quote) {
-            if (isset($quote['severity'])) {
-                continue;
+            if (isset($quote['q']['errorMessages']) && $quote['q']['success'] == 'false') {
+             return [];
             }
             if ($count == 0) { //To be checked only once
                
@@ -1073,7 +1073,6 @@ class CompileQuotes
             ];
             return $resp;
         }
-
         return $allQuotes;
     }
 

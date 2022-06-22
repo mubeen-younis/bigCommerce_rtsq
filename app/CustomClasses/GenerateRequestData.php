@@ -194,12 +194,11 @@ class GenerateRequestData
             'serverName' => "https://" . $this->storeData['store']['name'],
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
-            'version' => '1.0.0',
-            // 'returnQuotesOnExceedWeight' => $connSettings['quote_settings']['weightExeeds'],
+            'version' => '1.0',
             'returnQuotesOnExceedWeight' => 1,
             'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
             'api' => $this->getApiInfoArrOdflLtl($connSettings, $destination),
-            'getDistance' => 0,
+
         ];
     }
     
@@ -483,7 +482,8 @@ class GenerateRequestData
                     || isset($carriers['fedexLTL'])
                     || isset($carriers['cerasis'])
                     || isset($carriers['globalTranz'])
-                    || isset($carriers['xpoLogistics']);
+                    || isset($carriers['xpoLogistics'])
+                    || isset($carriers['odfl4me']);
                 if ($isLtl) {
                     $itemsArr = $olditemsArr + $itemsArr;
                 }
@@ -729,26 +729,33 @@ class GenerateRequestData
 
         $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
 
-        $insurance = [
-            'code' => '',
-            'value' => ''
-        ];
-        if (isset($connSettings['quote_settings']['insurance_category'])) {
-            $insuranceCategory = explode('-', $connSettings['quote_settings']['insurance_category']);
-            $insurance = [
-                'code' => $insuranceCategory[0] ?? '',
-                'value' => $insuranceCategory[1] ?? ''
-            ];
+        // $insurance = [
+        //     'code' => '',
+        //     'value' => ''
+        // ];
+      
+        // if (isset($connSettings['quote_settings']['insurance_category'])) {
+        //     $insuranceCategory = explode('-', $connSettings['quote_settings']['insurance_category']);
+        //     $insurance = [
+        //         'code' => $insuranceCategory[0] ?? '',
+        //         'value' => $insuranceCategory[1] ?? ''
+        //     ];
+        // }
+        $accessorial = [];
+
+        if ($residential === 'Y' || $alwaysResi) {
+            $accessorial[] = 'RDC';
+        }
+        if ($liftGate === 'Y') {
+            $accessorial[] = 'HYD';
         }
         $apiArray = [
             'odflUserName' => $connSettings['creds']['username'],
             'odflPassword' => $connSettings['creds']['password'],
             'odflCustomerAccount' => $connSettings['creds']['customer_number'],
             'senderZip' => $connSettings['creds']['billing_postal_Code'],
-            'accessorial' => array(
-                'RDC', // residential delivery
-                'HYD' // liftgate delivery
-            ),
+            'accessorial' => $accessorial,
+           
         ];
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
 

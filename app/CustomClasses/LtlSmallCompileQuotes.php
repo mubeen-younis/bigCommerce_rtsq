@@ -103,6 +103,16 @@ class LtlSmallCompileQuotes{
                         $quotesCarrier['ltl']['xpo']['simple'][] = $quote;
                     }
                 }
+                else if(strpos($quote['code'], 'odflltl') !== false){
+                    $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
+                    $quote['isResi'] = $residential['odflltl'] == 'Y';
+                    $quote['alwaysLG'] = isset($connectionSettings['odfl-ltl']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['xpo-ltl']['quote_settings']['alwaysLiftGateDelivery'];
+                    if (strpos($quote['code'], '+LG') !== false) {
+                        $quotesCarrier['ltl']['odfl']['LG'][] = $quote;
+                    } else {
+                        $quotesCarrier['ltl']['odfl']['simple'][] = $quote;
+                    }
+                }
                 else if(strpos($quote['code'], 'rnlltl') !== false){
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
                     $quote['isResi'] = isset($residential['rnlLtl']) && $residential['rnlLtl'] == 'Y';
@@ -274,7 +284,7 @@ class LtlSmallCompileQuotes{
 
     private function requestContainSmallLlt($carriers, $quotes){
         $smallCarriers = ['wweSmall','upsSmall', 'fedexSmall', 'unishippersSmall'];
-        $ltlCarriers = ['wweLTL','upsLTL', 'fedexLTL', 'globalTranz', 'cerasis', 'xpoLogistics', 'rnl'];
+        $ltlCarriers = ['wweLTL','upsLTL', 'fedexLTL', 'globalTranz', 'cerasis', 'xpoLogistics', 'rnl', 'odfl4me'];
         $ltl = $small = false;
         foreach ($smallCarriers as $carName){
             if(isset($carriers[$carName]) && !$small){
