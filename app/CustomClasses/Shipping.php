@@ -190,20 +190,6 @@ class Shipping
         $freightCode = '';
         $finalCost = 0;
 
-        // if ((gettype($isFreightTitleExist) == 'integer') && (gettype($isShippingTitleExist) == 'integer')) {
-        //     foreach ($finalQuotes as $key => $_quote) {
-        //         if ($_quote['title'] == Functions::$ltlMultiTitle || $_quote['title'] == Functions::$smallMultiTitle) {
-        //             $finalCost += $_quote['rate'];
-        //             $freightCode = ($_quote['code'] != 'Multi') ? $_quote['code'] : $freightCode;
-        //         }
-        //         if ($_quote['title'] != Functions::$ltlMultiTitle && $_quote['title'] != Functions::$smallMultiTitle) {
-        //             $_finalQuotes[$key]['code'] = $_quote['code'];
-        //             $_finalQuotes[$key]['rate'] = $_quote['rate'];
-        //             $_finalQuotes[$key]['title'] = $_quote['title'];
-        //         }
-        //     }
-        // }
-
         if (!empty($_finalQuotes)) {
             $_finalQuotes[$key]['code'] = $freightCode;
             $_finalQuotes[$key]['title'] = Functions::$ltlMultiTitle;
@@ -213,7 +199,7 @@ class Shipping
         } else {
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
             //TODO : Need to Add LTL Carriers Here as well
-            if (!($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer') && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist)) {
+            if (!$isShippingOrFreight && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist)) {
                 $isShippingOrFreight = false;
             }
             if ($this->isRequestMultishipment && !$isShippingOrFreight) {
