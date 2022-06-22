@@ -110,15 +110,6 @@ class QuotesResults
     {
 
         $shipments = $this->formateQuoteBeforeCompile($shipments);
-        // if any shipment contains error in case of multishipments
-        // if (is_countable($shipments) && count($shipments) > 1) {
-        //     foreach ($shipments as $ship) {
-        //         if (!isset($ship['q']) || (isset($ship['q']) && empty($ship['q']))) {
-        //             return [];
-        //         }
-        //     }
-        // }
-        //print_r($shipments); exit;
         $this->quoteSettings = [];
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
         $this->quoteSettings = $connectionSettings['ups-small']['quote_settings'] ?? '';

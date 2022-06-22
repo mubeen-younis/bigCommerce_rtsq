@@ -154,7 +154,7 @@ class LtlSmallCompileQuotes
                 }
             }
         }
-        if (!$isParcel || !$isltl) {
+        if (!$isParcel && !$isltl) {
             return ['checkoutQuotes' => $quotes];
         }
         $isLG = count($ltlLG) > 0;
