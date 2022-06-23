@@ -956,6 +956,11 @@ class CompileQuotes
     }
     public function compileOdflLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
+        foreach ($shipments as $origin => $quote) {
+            if (isset($quote['q']['errorMessages']) && $quote['q']['success'] == 'false' ) {
+            return [];
+            }
+        }
         if ($this->residential['odflLtl'] == 'Y') {
             $this->isResi = true;
             $this->residentialDlvry = 1;
@@ -982,8 +987,8 @@ class CompileQuotes
         $lableAs = $this->quoteSettings['label_as'] ?? 'Freight';
         $key = 1;
         foreach ($shipments as $origin => $quote) {
-            if (isset($quote['q']['errorMessages']) && $quote['q']['success'] == 'false') {
-             return [];
+            if (isset($quote['severity'])) {
+                return [] ;
             }
             if ($count == 0) { //To be checked only once
                
@@ -1073,6 +1078,7 @@ class CompileQuotes
             ];
             return $resp;
         }
+
         return $allQuotes;
     }
 

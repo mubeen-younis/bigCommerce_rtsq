@@ -141,7 +141,9 @@ class Shipping
        // $url="https://eniture-qa.com/ws/v3.0/index.php";
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
-      //  dd($quotes);
+        if ($quotes == null) {
+            return [];
+        }
         /*
       * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
       */
@@ -163,13 +165,10 @@ class Shipping
 
         $quotesFromWs = $quotes ?? [];
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination);
-       //dd($finalQuotes);
+
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];
-        }
-        if(empty($finalQuotes)){
-            return [];
         }
         $_finalQuotes = $finalTitlesTemp = $finalCodesTemp = [];
         $finalTitles = array_column($finalQuotes, 'title');
