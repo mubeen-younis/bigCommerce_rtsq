@@ -55,7 +55,7 @@ class ConnectionSettings
         }if ($output['severity'] === 'SUCCESS') {
             $response = [
                     'error' => false,
-                    'message' => $output['Message'],
+                    'message' => 'Test connection successful.',
                     'data' => [],
                     ];
         }        return $response;
