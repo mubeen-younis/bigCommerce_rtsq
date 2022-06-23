@@ -1065,6 +1065,12 @@ class CompileQuotes
                     $hazShipmentArr[$origin] = $quote['hazardousStatus'] == 'y' ? 'Y' : 'N';
                 }
                 foreach ($quote['q'] as $key => $data) {
+                    $isStandardService = isset($data['ratserviceLevel']) && isset($data['ratserviceLevel']['rattext']) && $data['ratserviceLevel']['rattext'] == 'LTL Standard Transit';
+
+                    if (!$isStandardService) {
+                        continue;
+                    }
+
                     if (isset($data['ratquoteNumber'])) {
                         if (isset($data['rataccessorialInfo'])) {
                             foreach ($data['rataccessorialInfo'] as $rateEstes) {
