@@ -13,7 +13,8 @@ class Store extends Model
         'token',
         'app_status',
         'is_trial_completed',
-        'freightdesk_company_id'
+        'freightdesk_company_id',
+        'av_company_id'
     ];
 
     public function installedCarriers()
@@ -29,6 +30,28 @@ class Store extends Model
     public static function getStoreDetailsFromStoreId($storeId): array
     {
         return optional(self::where('id', $storeId)->first())->toArray() ?? [];
+    }
+
+    public static function getAccessToken($storeHash)
+    {
+        return optional(self::where('hash', $storeHash)->first())->access_token ?? null;
+
+    }
+
+    public static function updateWeightUnit($storeHash, $unit)
+    {
+        self::where('hash', $storeHash)->update(['weight_unit' => $unit]);
+    }
+
+    public static function getStoreWeightUnit($storeId)
+    {
+        return optional(self::where('id', $storeId)->first())->weight_unit ?? 'lbs';
+
+    }
+
+    public static function getActiveStores()
+    {
+        return optional(self::where('app_status', 1)->select('id','url','hash','access_token')->get())->toArray();
     }
 
 
