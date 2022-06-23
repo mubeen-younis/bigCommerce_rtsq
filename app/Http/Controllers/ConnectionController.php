@@ -14,6 +14,8 @@ use App\CustomClasses\WweLTL\WweLtlConnectionSettings;
 use App\CustomClasses\WWESMALL\SmallConnectionSettings;
 use App\CustomClasses\XPO\ltl\ConnectionSettings as XPOLtlConnectionSettings;
 use App\CustomClasses\Unishippers\small\ConnectionSettings as UnishippersSmallConnectionSettings;
+use App\CustomClasses\FreightQuote\Ltl\ConnectionSettings as FreightQuoteConSett;
+use App\CustomClasses\YrcLTL\ConnectionSettings as YrcLtlConnectionSettings;
 use App\CustomClasses\SaiaLTL\ConnectionSettings as SaiaLTLConnectionSettings;
 use App\Endpoints\Endpoints;
 use App\Models\Connection;
@@ -28,6 +30,11 @@ use Illuminate\Support\Facades\Log;
 
 class ConnectionController extends Controller
 {
+    /**
+     * @var FreightQuoteConSett
+     */
+    private $freightQuoteLtlTestCon;
+
     /**
      * Display a listing of the resource.
      *
@@ -45,6 +52,8 @@ class ConnectionController extends Controller
         $this->xpoLtlTestCon = new XPOLtlConnectionSettings();
         $this->rnlLtlTestCon = new RNLLtlConnectionSettings();
         $this->unishippersSmallTestCon = new UnishippersSmallConnectionSettings();
+        $this->freightQuoteLtlTestCon = new FreightQuoteConSett();
+        $this->yrcLtlTestCon = new YrcLtlConnectionSettings();
         $this->saiaLtlTestCon = new SaiaLTLConnectionSettings();
     }
 
@@ -131,6 +140,12 @@ class ConnectionController extends Controller
                     return response()->json($response);
                 case 'saia-ltl':
                     $response = $this->saiaLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'freightquote-ltl':
+                    $response = $this->freightQuoteLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'yrc-ltl':
+                    $response = $this->yrcLtlTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
                 default:
                     return response()->json(["error" => true, "data" => [],

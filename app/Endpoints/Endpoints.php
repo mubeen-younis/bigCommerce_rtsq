@@ -188,4 +188,13 @@ class Endpoints
         return "https://validate-addresses.com/change_promo_code_status?";
 
     }
+
+    public static function orderWebhookEndpoint()
+    {
+
+        if (env('APP_ENV') == 'staging') {
+            return "https://bc.eniture-qa.com/api/order/webhooks";
+        }
+        return "https://bc.eniture.com/api/order/webhooks";
+    }
 }

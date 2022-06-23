@@ -97,7 +97,6 @@ class Shipping
         $carriersArray = $resp['carriersArr'];
 
         $this->multiOrigins = $this->checkIsMultiShipment($carriersArray['carriers']);
-
         /*Check for MUlti shipment and product marked as instore or local delivery*/
         if ($this->multiOrigins && $this->showOnlyLocAndInstoreQuote) {
             return [];
@@ -126,7 +125,7 @@ class Shipping
                 if ($this->isSmall($key)) {
                     $carriersArray['carriers'][$key]['api']['includeDeclaredValue'] = 1;
                 } else {
-                    if($key == 'wweLTL'){
+                    if ($key == 'wweLTL') {
                         $carriersArray['carriers'][$key]['api']['insureShipment'] = 1;
                     }
                 }
@@ -137,6 +136,7 @@ class Shipping
         if (empty($requestArr)) {
             return false;
         }
+
         $url = Constant::QUOTES_URL;
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
@@ -162,6 +162,7 @@ class Shipping
 
         $quotesFromWs = $quotes ?? [];
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination);
+
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];
@@ -176,23 +177,25 @@ class Shipping
             $finalCodesTemp[$key] = explode('+', $finalCode)[0];
         }
         /*TODO :Need to Add LTL Carriers here as well*/
-        $isFreightTitleExist = array_search('Freight', $finalTitlesTemp);
-        $isShippingTitleExist = array_search('Shipping', $finalTitlesTemp);
+        $isFreightTitleExist = array_search(Functions::$ltlMultiTitle, $finalTitlesTemp);
+        $isShippingTitleExist = array_search(Functions::$smallMultiTitle, $finalTitlesTemp);
         $isAVGCodeExist = gettype(array_search('AVG', $finalCodesTemp)) == 'integer';
         $isUpsLtlCodeExist = gettype(array_search('upsltl', $finalCodesTemp)) == 'integer';
         $isFedexLtlCodeExist = gettype(array_search('fedexltl', $finalCodesTemp)) == 'integer';
         $isxpoLtlCodeExist = gettype(array_search('xpoltl', $finalCodesTemp)) == 'integer';
+        $isFreightQuoteLtlCodeExist = gettype(array_search('fqltl', $finalCodesTemp)) == 'integer';
+        $isYrcLtlCodeExist = gettype(array_search('yrcltl', $finalCodesTemp)) == 'integer';
         $isSaiaLtlCodeExist = gettype(array_search('xpoltl', $finalCodesTemp)) == 'integer';
         $freightCode = '';
         $finalCost = 0;
 
         if ((gettype($isFreightTitleExist) == 'integer') && (gettype($isShippingTitleExist) == 'integer')) {
             foreach ($finalQuotes as $key => $_quote) {
-                if ($_quote['title'] == 'Freight' || $_quote['title'] == 'Shipping') {
+                if ($_quote['title'] == Functions::$ltlMultiTitle || $_quote['title'] == Functions::$smallMultiTitle) {
                     $finalCost += $_quote['rate'];
                     $freightCode = ($_quote['code'] != 'Multi') ? $_quote['code'] : $freightCode;
                 }
-                if ($_quote['title'] != 'Freight' && $_quote['title'] != 'Shipping') {
+                if ($_quote['title'] != Functions::$ltlMultiTitle && $_quote['title'] != Functions::$smallMultiTitle) {
                     $_finalQuotes[$key]['code'] = $_quote['code'];
                     $_finalQuotes[$key]['rate'] = $_quote['rate'];
                     $_finalQuotes[$key]['title'] = $_quote['title'];
@@ -202,14 +205,14 @@ class Shipping
 
         if (!empty($_finalQuotes)) {
             $_finalQuotes[$key]['code'] = $freightCode;
-            $_finalQuotes[$key]['title'] = 'Freight';
+            $_finalQuotes[$key]['title'] = Functions::$ltlMultiTitle;
             $_finalQuotes[$key]['rate'] = $finalCost;
             $_finalQuotes = array_values($_finalQuotes);
             $finalQuotes = $_finalQuotes;
         } else {
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
             //TODO : Need to Add LTL Carriers Here as well
-            if ($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isSaiaLtlCodeExist)) {
+            if ($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist || $isSaiaLtlCodeExist)) {
                 $isShippingOrFreight = false;
             }
             if ($this->isRequestMultishipment && !$isShippingOrFreight) {
@@ -250,44 +253,32 @@ class Shipping
     public function showOnlyLocAndInstoreQuote($items): bool
     {
         foreach ($items as $item) {
-            if (isset($item['quote_as_instore']) && $item['quote_as_instore']) {
-                $this->instoreQuotes = true;
-            }
             if (isset($item['quote_as_local']) && $item['quote_as_local']) {
-                $this->locDelQuotes = true;
+                return true;
             }
         }
-        return $this->instoreQuotes || $this->locDelQuotes;
+        return false;
     }
+
 
     public function enableSuppressRatesInOrigins($origins)
     {
         //  Need to set some status for WS to suppress quotes and ignore destination origin
         $found = false;
         foreach ($origins as $key => $origin) {
-            if ($this->locDelQuotes) {
-                if (isset($origin['InstorPickupLocalDelivery']['localDelivery']['postalCodeMatch'])) {
-                    $origins[$key]['InstorPickupLocalDelivery']['suppress'] = 1;
-                    // $origins[$key]['InstorPickupLocalDelivery']['localDelivery']['postalCodeMatch'] = 1;
-                    $found = true;
-                }
-            } else {
-                unset($origins[$key]['InstorPickupLocalDelivery']['localDelivery']);
+            if (isset($origin['InstorPickupLocalDelivery']['localDelivery']['postalCodeMatch'])) {
+                $origins[$key]['InstorPickupLocalDelivery']['suppress'] = 1;
+                $found = true;
             }
 
-            if ($this->instoreQuotes) {
-                if (isset($origin['InstorPickupLocalDelivery']['inStorePickup']['postalCodeMatch'])) {
-                    $origins[$key]['InstorPickupLocalDelivery']['suppress'] = 1;
-                    // $origins[$key]['InstorPickupLocalDelivery']['inStorePickup']['postalCodeMatch'] = 1;
-                    $found = true;
-                }
-            } else {
-                unset($origins[$key]['InstorPickupLocalDelivery']['inStorePickup']);
+            if (isset($origin['InstorPickupLocalDelivery']['inStorePickup']['postalCodeMatch'])) {
+                $origins[$key]['InstorPickupLocalDelivery']['suppress'] = 1;
+                $found = true;
             }
+
         }
         if (!$found) {
-            // TODO  will return empty array if the customer dont enabled instore or local delivery and product quotes as instore or local
-            $this->showOnlyLocAndInstoreQuote = false;
+            return [];
         }
         return $origins;
     }
@@ -724,7 +715,7 @@ class Shipping
             $resp['messages'] = [];// need to change
 
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'eniture_quotes', 'display_name' => $this->limitTitle($quotes[0])]];
-
+            
             foreach ($quotes as $key => $quote) {
                 $resp['carrier_quotes'][0]['quotes'][$key] = [
                     'code' => $quote['code'],
@@ -750,6 +741,13 @@ class Shipping
     function limitTitle($quote)
     {
         $res = $quote['title'];
+        if (strpos($res, Functions::$ltlPrefix) !== false) {
+            $res = str_replace(Functions::$ltlPrefix, '', $res);
+        }
+        if (strpos($res, Functions::$smallPrefix) !== false) {
+            $res = str_replace(Functions::$smallPrefix, '', $res);
+        }
+
         if (strlen($quote['title']) > 100) {
             $res = explode("(", $quote['title'])[0];
         } else if ($quote['title'] == "") {
