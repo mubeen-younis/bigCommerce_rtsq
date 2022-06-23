@@ -14,6 +14,8 @@ use App\CustomClasses\WweLTL\WweLtlConnectionSettings;
 use App\CustomClasses\WWESMALL\SmallConnectionSettings;
 use App\CustomClasses\XPO\ltl\ConnectionSettings as XPOLtlConnectionSettings;
 use App\CustomClasses\Unishippers\small\ConnectionSettings as UnishippersSmallConnectionSettings;
+use App\CustomClasses\FreightQuote\Ltl\ConnectionSettings as FreightQuoteConSett;
+use App\CustomClasses\YrcLTL\ConnectionSettings as YrcLtlConnectionSettings;
 use App\Endpoints\Endpoints;
 use App\CustomClasses\OdflLTL\ConnectionSettings as OdflLTLConnectionSettings;
 
@@ -29,6 +31,11 @@ use Illuminate\Support\Facades\Log;
 
 class ConnectionController extends Controller
 {
+    /**
+     * @var FreightQuoteConSett
+     */
+    private $freightQuoteLtlTestCon;
+
     /**
      * Display a listing of the resource.
      *
@@ -47,6 +54,8 @@ class ConnectionController extends Controller
         $this->rnlLtlTestCon = new RNLLtlConnectionSettings();
         $this->unishippersSmallTestCon = new UnishippersSmallConnectionSettings();
         $this->odflLTLConL = new OdflLTLConnectionSettings();
+        $this->freightQuoteLtlTestCon = new FreightQuoteConSett();
+        $this->yrcLtlTestCon = new YrcLtlConnectionSettings();
     }
 
     public function index(Request $request)
@@ -132,6 +141,12 @@ class ConnectionController extends Controller
                     return response()->json($response);
                 case 'odfl-ltl':
                     $response = $this->odflLTLConL->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'freightquote-ltl':
+                    $response = $this->freightQuoteLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'yrc-ltl':
+                    $response = $this->yrcLtlTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
                 default:
                     return response()->json(["error" => true, "data" => [],

@@ -4,6 +4,7 @@ namespace App\CustomClasses\Unishippers\small;
 
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
+use App\CustomClasses\Functions;
 
 class QuotesResults
 {
@@ -20,11 +21,12 @@ class QuotesResults
         $this->quoteSettings = $connectionSettings['unishippers-small']['quote_settings'] ?? '';
 
         $numberOfShipments = 0;
-        foreach ($shipments as $ship) {
-            if (!isset($ship['severity'])) {
+        foreach ($shipments as $key => $ship) {
+            if (!isset($ship['severity']) && !in_array($key, ['ground', 'air'])) {
                 $numberOfShipments++;
             }
         }
+
         if (!$isMultiShipment) {
             $isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
@@ -113,7 +115,7 @@ class QuotesResults
                 $multiShipmentPrice += str_replace(',', '', $minRateFromNetChargeArr);
                 $multishipmentCheckoutQuotes[0]['code'] = 'Multiuniship' . $access;
                 $multishipmentCheckoutQuotes[0]['rate'] = number_format($multiShipmentPrice, 2);
-                $multishipmentCheckoutQuotes[0]['title'] = $residential ? 'Shipping' . Constant::RESI_LABEL : 'Shipping';
+                $multishipmentCheckoutQuotes[0]['title'] = $residential ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
             }
 
             foreach ($multiShipmentQuotes as $shipmentKey => $shipment) {
