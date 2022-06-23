@@ -14,6 +14,21 @@ class BigCommerceFunctions
         return self::getRequestArray($endPoint, [], 'GET', $storeHash);
     }
 
+    public static function getWebhooksOfStore($storeHash)
+    {
+        $endPoint = "https://api.bigcommerce.com/stores/" . $storeHash . "/" . self::$version . "/hooks";
+        return self::getRequestArray($endPoint, [], 'GET', $storeHash);
+
+    }
+
+    public static function getUpdateWebhookDetail($storeHash, $id)
+    {
+        $endPoint = "https://api.bigcommerce.com/stores/" . $storeHash . "/" . self::$version . "/hooks/" . $id;
+        return self::getRequestArray($endPoint, json_encode(['is_active' => true]), 'PUT', $storeHash);
+
+    }
+
+
     public static function getRequestArray($endPoint, $request, $method, $storeHash): array
     {
         return ['endpoint' => $endPoint,
@@ -30,4 +45,5 @@ class BigCommerceFunctions
             'Accept: application/json',
             'X-Auth-Token: ' . $accessToken];
     }
+
 }
