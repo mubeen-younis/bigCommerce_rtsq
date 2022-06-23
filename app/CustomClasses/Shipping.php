@@ -156,9 +156,6 @@ class Shipping
         }
 
         $url = Constant::QUOTES_URL;
-        if (isset($requestArr['requestArr']['carriers']['estes'])) {
-            $url="https://eniture-qa.com/ws/v3.0/index.php";
-        }
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
 
