@@ -111,7 +111,7 @@ class LtlSmallCompileQuotes
                     }
                 } else if (strpos($quote['code'], 'odflltl') !== false) {
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
-                    $quote['isResi'] = $residential['odflltl'] == 'Y';
+                    $quote['isResi'] = $residential['odflLtl'] == 'Y';
                     $quote['alwaysLG'] = isset($connectionSettings['odfl-ltl']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['odfl-ltl']['quote_settings']['alwaysLiftGateDelivery'];
                     if (strpos($quote['code'], '+LG') !== false) {
                         $quotesCarrier['ltl']['odfl']['LG'][] = $quote;

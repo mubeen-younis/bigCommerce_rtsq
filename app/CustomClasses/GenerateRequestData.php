@@ -775,18 +775,6 @@ class GenerateRequestData
 
         $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
 
-        // $insurance = [
-        //     'code' => '',
-        //     'value' => ''
-        // ];
-      
-        // if (isset($connSettings['quote_settings']['insurance_category'])) {
-        //     $insuranceCategory = explode('-', $connSettings['quote_settings']['insurance_category']);
-        //     $insurance = [
-        //         'code' => $insuranceCategory[0] ?? '',
-        //         'value' => $insuranceCategory[1] ?? ''
-        //     ];
-        // }
         $accessorial = [];
 
         if ($residential === 'Y' || $alwaysResi) {
@@ -795,14 +783,19 @@ class GenerateRequestData
         if ($liftGate === 'Y') {
             $accessorial[] = 'HYD';
         }
+
+        $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
+       
         $apiArray = [
             'odflUserName' => $connSettings['creds']['username'],
             'odflPassword' => $connSettings['creds']['password'],
             'odflCustomerAccount' => $connSettings['creds']['customer_number'],
             'senderZip' => $connSettings['creds']['billing_postal_Code'],
+            'thresholdWeightLimit' => $weightThreshold,
             'accessorial' => $accessorial,
            
         ];
+        
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
 
     }
