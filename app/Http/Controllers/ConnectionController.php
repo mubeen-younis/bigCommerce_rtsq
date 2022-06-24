@@ -14,6 +14,7 @@ use App\CustomClasses\WweLTL\WweLtlConnectionSettings;
 use App\CustomClasses\WWESMALL\SmallConnectionSettings;
 use App\CustomClasses\XPO\ltl\ConnectionSettings as XPOLtlConnectionSettings;
 use App\CustomClasses\Unishippers\small\ConnectionSettings as UnishippersSmallConnectionSettings;
+use App\CustomClasses\FreightQuote\Ltl\ConnectionSettings as FreightQuoteConSett;
 use App\CustomClasses\YrcLTL\ConnectionSettings as YrcLtlConnectionSettings;
 use App\CustomClasses\AbfLtl\ConnectionSettings as AbfLtlConnectionSettings;
 use App\Endpoints\Endpoints;
@@ -29,6 +30,11 @@ use Illuminate\Support\Facades\Log;
 
 class ConnectionController extends Controller
 {
+    /**
+     * @var FreightQuoteConSett
+     */
+    private $freightQuoteLtlTestCon;
+
     /**
      * Display a listing of the resource.
      *
@@ -46,6 +52,7 @@ class ConnectionController extends Controller
         $this->xpoLtlTestCon = new XPOLtlConnectionSettings();
         $this->rnlLtlTestCon = new RNLLtlConnectionSettings();
         $this->unishippersSmallTestCon = new UnishippersSmallConnectionSettings();
+        $this->freightQuoteLtlTestCon = new FreightQuoteConSett();
         $this->yrcLtlTestCon = new YrcLtlConnectionSettings();
         $this->AbfLtlTestCon = new AbfLtlConnectionSettings();
     }
@@ -131,6 +138,9 @@ class ConnectionController extends Controller
                 case 'unishippers-small':
                     $response = $this->unishippersSmallTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
+                case 'freightquote-ltl':
+                    $response = $this->freightQuoteLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
                 case 'yrc-ltl':
                     $response = $this->yrcLtlTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
@@ -146,7 +156,7 @@ class ConnectionController extends Controller
         $carriersArr = ['ltl-quotes', 'small-package', 'gtz-ltl', 'unishippers-small'];
         if (!blank($request['promo_code']) &&
             in_array($checkCarrierType->slug, $carriersArr) &&
-            ((isset($request['is_enabled']) && $re1quest['is_enabled'] == false) || !isset($request['is_enabled']))
+            ((isset($request['is_enabled']) && $request['is_enabled'] == false) || !isset($request['is_enabled']))
         ) {
             $fdoCouponResponse = $this->getFDOCouponCarrierInfo($request, $checkCarrierType->slug);
             if (isset($fdoCouponResponse['status']) && $fdoCouponResponse['status'] == true) {
