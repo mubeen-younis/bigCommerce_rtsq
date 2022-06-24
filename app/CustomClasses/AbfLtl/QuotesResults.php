@@ -1,6 +1,6 @@
 <?php
 
-namespace App\CustomClasses\AbfLTL;
+namespace App\CustomClasses\AbfLtl;
 
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
@@ -57,7 +57,7 @@ class QuotesResults
         }
         foreach ($shipments as $shipment => $quotes) {
             if (!isset($quotes['q']) || isset($quotes['q']['NUMERRORS'] ) && $quotes['q']['NUMERRORS'] == 1) {
-                return [];
+                continue;
             }
             $quotesArr = $quotes['q'];
             $lgStatus = $quotes['liftGateStatus'] ?? '';
