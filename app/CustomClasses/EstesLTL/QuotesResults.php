@@ -15,11 +15,6 @@ class QuotesResults
         $this->CompileQuotes = new CompileQuotes();
     }
 
-
-    public function GTZcompileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $isMultiShipment){
-        //print_r($shipments); exit;
-    }
-
     public function formateQuoteBeforeCompile($shipments, $quoteSettings){
         //print_r($shipments); exit;
         foreach ($shipments as $shipment => $quotes){

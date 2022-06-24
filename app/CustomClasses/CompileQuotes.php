@@ -1014,36 +1014,34 @@ class CompileQuotes
 
     public function compileEstesltlQuotes($shipments, $connectionSettings, $allOrigins)
     {
-
-        if ($this->residential['estesltl'] == 'Y') {
-            $this->isResi = true;
-            $this->residentialDlvry = 1;
-        } else {
-            $this->isResi = false;
-            $this->residentialDlvry = 0;
-        }
-        $this->alwaysResi = $this->residential['alwaysResi']['estesltl'] ?? false;
+        $this->isResi = $this->residential['estesLtl'] == 'Y';
+        $this->residentialDlvry = $this->residential['estesLtl'] == 'Y' ? 1 : 0;
+        $this->alwaysResi = $this->residential['alwaysResi']['estesLtl'] ?? false;
         $this->quoteSettings = $connectionSettings['estes-ltl']['quote_settings'] ?? [];
         $labelAs = $this->quoteSettings['label_as'] ?? '';
         $labelAs = empty($labelAs) ? "Freight" : $labelAs;
-        $allConfigServices = $connectionSettings['estes-ltl']['carrier_services'] ?? [];
         $this->quoteSettingsData();
+
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
         $lgQuotes = false;
+
         $numberOfShipments = 0;
         foreach ($shipments as $ship) {
             if (!isset($ship['severity'])) {
                 $numberOfShipments++;
             }
         }
+
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
+
         foreach ($shipments as $origin => $quote) {
             if (isset($quote['severity'])) {
                 continue;
             }
+
             if ($count == 0) {
                 //To be checked only once
                 $isRad = $quote['autoResidentialsStatus'] ?? '';
@@ -1084,7 +1082,6 @@ class CompileQuotes
                             }
                         }
                         $access = $this->getAccessorialCode() . $resiPickup;
-
                         $price = $this->calculateEstesPrice($data);
 
                         /*
@@ -1092,7 +1089,7 @@ class CompileQuotes
                        * Adding Functionality of Delivery Estimate Options
                        * */
                         $date = $data['ratdelivery']['ratdate'] ?? null;
-                        $days = $data['ratdelivery']['rattime'] ?? null;
+                        $days = $data['ratdelivery']['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
                         $title = $this->getTitle($labelAs, false, false, $data['ratdelivery']['totalTransitTimeInDays'], [], $dateAndDays);
                         $arraySorting['simple'][$key] = $price;

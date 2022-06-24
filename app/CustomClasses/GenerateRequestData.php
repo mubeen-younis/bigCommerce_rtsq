@@ -769,7 +769,7 @@ class GenerateRequestData
             $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
         }
 
-        $this->resiCarrier['estesltl'] = $residential;
+        $this->resiCarrier['estesLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['estesLtl'] = $alwaysResi;
 
         $accessorial = [];
