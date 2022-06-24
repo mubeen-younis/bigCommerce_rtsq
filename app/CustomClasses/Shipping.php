@@ -146,10 +146,7 @@ class Shipping
         }
 
         // Genearting final request Array
-
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
-
-
         if (empty($requestArr)) {
             return false;
         }
@@ -157,28 +154,17 @@ class Shipping
         $url = Constant::QUOTES_URL;
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
-
-
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
         /*
       * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
       */
-
-        $this->isRequestMultishipment = $ltlSmallCompileQuotes->checkIsRequestMiltiShipment(
-            $requestArr['requestArr'],
-            $quotes
-        );
-
+        $this->isRequestMultishipment = $ltlSmallCompileQuotes->checkIsRequestMiltiShipment($requestArr['requestArr'],$quotes);
 
         $boxbins = $requestArr['boxBins'] ?? [];
-
-
         if (isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])) {
-
             Log::info('BinData ' . json_encode($requestArr['binReponse']));
             $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes);
         }
-
         //;
         //print_r($requestArr['binReponse']);
         //print_r($requestArr['requestArr']); print_r($quotes); exit;
@@ -190,7 +176,6 @@ class Shipping
         Log::info('after addBinResponseToQuotes ' . json_encode($quotes));
 
         $quotesFromWs = $quotes ?? [];
-
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination);
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
@@ -245,7 +230,6 @@ class Shipping
                 $isShippingOrFreight = false;
             }
 
-
             if ($this->isRequestMultishipment && !$isShippingOrFreight) {
                 $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings, $residential, $quotesFromWs, $requestArr['requestArr']);
                 $finalQuotes = $finalQuotesMulti['checkoutQuotes'] ?? [];
@@ -263,15 +247,9 @@ class Shipping
             $finalQuotes = $this->addShipGroupRatesInQuotes($finalQuotes);
         }
 
-
-        /////  me comments ends
-
         $finalQuotes = $this->addRateId($finalQuotes);
-
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
-
-
-        $test = $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
+        $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
         return $resp;
     }
 
