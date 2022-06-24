@@ -251,7 +251,7 @@ class WweLTLShipmentPackage
 
     public function instorePickupLdData($shortOrigin, $receiverZipCode)
     {
-        
+
         $additionalData = isset($shortOrigin['additionals']) ? \GuzzleHttp\json_decode($shortOrigin['additionals'], true) : null;
         $array = [];
         if (isset($additionalData['instore_pickup']) && $additionalData['instore_pickup'] == true) {

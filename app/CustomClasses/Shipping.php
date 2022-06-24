@@ -76,7 +76,6 @@ class Shipping
         $itemsWithShippingGroup = collect($request['lineItemData']['items'])->where('shipping_group', '!=', null)->all();
 
 
-
         $originsWithoutShippingGroup = $this->getOriginsAccShipGroup($itemsWithoutShippingGroup, $origins);
 
         // Items that is associated with Shipping Group
@@ -160,7 +159,6 @@ class Shipping
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
 
 
-
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
         /*
       * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
@@ -170,8 +168,6 @@ class Shipping
             $requestArr['requestArr'],
             $quotes
         );
-
-
 
 
         $boxbins = $requestArr['boxBins'] ?? [];
@@ -218,6 +214,7 @@ class Shipping
         $isxpoLtlCodeExist = gettype(array_search('xpoltl', $finalCodesTemp)) == 'integer';
         $isFreightQuoteLtlCodeExist = gettype(array_search('fqltl', $finalCodesTemp)) == 'integer';
         $isYrcLtlCodeExist = gettype(array_search('yrcltl', $finalCodesTemp)) == 'integer';
+        $isEstesLtlCodeExist = gettype(array_search('estesltl', $finalCodesTemp)) == 'integer';
         $freightCode = '';
         $finalCost = 0;
 
@@ -244,32 +241,27 @@ class Shipping
         } else {
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
             //TODO : Need to Add LTL Carriers Here as well
-            if ($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist)) {
+            if ($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist || $isEstesLtlCodeExist)) {
                 $isShippingOrFreight = false;
             }
 
-            //////me comment
 
-
-
-
-            // if ($this->isRequestMultishipment && !$isShippingOrFreight) {
-            //     $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings, $residential, $quotesFromWs, $requestArr['requestArr']);
-            //     $finalQuotes = $finalQuotesMulti['checkoutQuotes'] ?? [];
-            //     $multiShipmentQuotes = $finalQuotesMulti['multiShipmentQuotes'] ?? [];
-            // }
+            if ($this->isRequestMultishipment && !$isShippingOrFreight) {
+                $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings, $residential, $quotesFromWs, $requestArr['requestArr']);
+                $finalQuotes = $finalQuotesMulti['checkoutQuotes'] ?? [];
+                $multiShipmentQuotes = $finalQuotesMulti['multiShipmentQuotes'] ?? [];
+            }
             /*Removed Code of removing parcel and ltl*/
         }
 
         /*Adding shipping group rates response in quotes
         */
-        // if (!blank($this->shippingGroupResponse)) {
-        //     $items = data_get($request, 'lineItemData.items');
-        //     $items = $items + $itemsWithShippingGroup;
-        //     $request['lineItemData']['items'] = $items;
-        //     $finalQuotes = $this->addShipGroupRatesInQuotes($finalQuotes);
-        // }
-
+        if (!blank($this->shippingGroupResponse)) {
+            $items = data_get($request, 'lineItemData.items');
+            $items = $items + $itemsWithShippingGroup;
+            $request['lineItemData']['items'] = $items;
+            $finalQuotes = $this->addShipGroupRatesInQuotes($finalQuotes);
+        }
 
 
         /////  me comments ends
