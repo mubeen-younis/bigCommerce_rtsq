@@ -981,7 +981,7 @@ class CompileQuotes
     {
         foreach ($shipments as $origin => $quote) {
             if (isset($quote['q']['errorMessages']) && $quote['q']['success'] == 'false' ) {
-            return [];
+           continue;
             }
         }
         if ($this->residential['odflLtl'] == 'Y') {
@@ -1011,7 +1011,7 @@ class CompileQuotes
         $key = 1;
         foreach ($shipments as $origin => $quote) {
             if (isset($quote['severity'])) {
-                return [] ;
+               continue ;
             }
             if ($count == 0) { //To be checked only once
                

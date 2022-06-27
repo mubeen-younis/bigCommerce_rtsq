@@ -237,7 +237,7 @@ class LtlSmallCompileQuotes
         $parcel = $quotesDetail['parcel'][0] ?? [];
         $multiShipments = [];
         $count = 0;
-        foreach ($quotesDetail['ltl'] as $key => $quotes) {
+        foreach ($quotesDetail['ltl'] as $key => $quotes) {     
             if (isset($quotes['simple'][0])) {
                 $multiShipments[$count]['simple'][$indexes['ltl'][0]] = $quotes['simple'][0];
                 $multiShipments[$count]['simple'][$indexes['small'][0]] = $parcel;
@@ -261,7 +261,7 @@ class LtlSmallCompileQuotes
     private function indexesOfQuotes($quotes)
     {
         $small = $ltl = [];
-        $ltlQuotes = $quotes['wweLTL'] ?? $quotes['upsLTL'] ?? $quotes['fedexLTL'] ?? $quotes['globalTranz'] ?? $quotes['cerasis'] ?? $quotes['xpoLogistics'] ?? $quotes['rnl'] ?? $quotes['yrc'] ?? $quotes['freightQuote']?? [];
+        $ltlQuotes = $quotes['wweLTL'] ?? $quotes['upsLTL'] ?? $quotes['fedexLTL'] ?? $quotes['globalTranz'] ?? $quotes['cerasis'] ?? $quotes['xpoLogistics'] ?? $quotes['rnl'] ?? $quotes['yrc'] ?? $quotes['freightQuote'] ?? $quotes['odfl4me'] ?? [];
         foreach ($ltlQuotes as $key => $quote) {
             $ltl[] = $key;
         }
