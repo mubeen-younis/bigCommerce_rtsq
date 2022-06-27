@@ -16,6 +16,7 @@ use App\CustomClasses\XPO\ltl\ConnectionSettings as XPOLtlConnectionSettings;
 use App\CustomClasses\Unishippers\small\ConnectionSettings as UnishippersSmallConnectionSettings;
 use App\CustomClasses\FreightQuote\Ltl\ConnectionSettings as FreightQuoteConSett;
 use App\CustomClasses\YrcLTL\ConnectionSettings as YrcLtlConnectionSettings;
+use App\CustomClasses\SouthEasternLtl\ConnectionSettings as SouthEasternLtlConnectionSettings;
 use App\Endpoints\Endpoints;
 use App\Models\Connection;
 use App\Models\Coupon;
@@ -53,6 +54,7 @@ class ConnectionController extends Controller
         $this->unishippersSmallTestCon = new UnishippersSmallConnectionSettings();
         $this->freightQuoteLtlTestCon = new FreightQuoteConSett();
         $this->yrcLtlTestCon = new YrcLtlConnectionSettings();
+        $this->southEasternLtlTestCon = new SouthEasternLtlConnectionSettings();
     }
 
     public function index(Request $request)
@@ -141,6 +143,9 @@ class ConnectionController extends Controller
                     return response()->json($response);
                 case 'yrc-ltl':
                     $response = $this->yrcLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'southeastern-ltl':
+                    $response = $this->southEasternLtlTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
                 default:
                     return response()->json(["error" => true, "data" => [],
