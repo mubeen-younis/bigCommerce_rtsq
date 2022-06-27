@@ -16,7 +16,7 @@ class Functions
     public static $smallPrefix = '-small';
     public static $ltlMultiTitle = '-ltlFreight';
     public static $smallMultiTitle = '-smallShipping';
-
+    
 
     public static function hasInsureCarrier($code)
     {
@@ -197,4 +197,9 @@ class Functions
         return isset($quote['severity']) && isset($quote['Message']) && $quote['Message'] != self::$smallErrorMessage;
     }
 
+
+    public static function isNotLtlShipmentError($quote): bool 
+    {
+        return isset($quote['severity']) && isset($quote['Message']) && $quote['Message'] != self::$ltlErrorMessage;
+    }
 }

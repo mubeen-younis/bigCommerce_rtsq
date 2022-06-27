@@ -225,7 +225,6 @@ class Shipping
             }
             /*Removed Code of removing parcel and ltl*/
         }
-
         /*Adding shipping group rates response in quotes
         */
         if (!blank($this->shippingGroupResponse)) {

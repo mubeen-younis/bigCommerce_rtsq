@@ -883,9 +883,8 @@ class CompileQuotes
             $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
         foreach ($shipments as $origin => $quote) {
-
-            if (isset($quote['severity'])) {
-                continue;
+            if (Functions::isNotSmallShipmentError($quote)) {
+                return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
             if ($count == 0) { //To be checked only once
@@ -1067,8 +1066,8 @@ class CompileQuotes
         }
         foreach ($shipments as $origin => $quote) {
 
-            if (isset($quote['severity'])) {
-                continue;
+            if (Functions::isNotSmallShipmentError($quote)) {
+                return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
             if ($count == 0) { //To be checked only once
@@ -1291,8 +1290,8 @@ class CompileQuotes
         }
         foreach ($shipments as $origin => $quote) {
 
-            if (isset($quote['severity'])) {
-                continue;
+            if (Functions::isNotSmallShipmentError($quote)) {
+                return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
             if ($count == 0) { //To be checked only once
@@ -1435,9 +1434,8 @@ class CompileQuotes
         $freightEconomyLableAs = $this->quoteSettings['fedex_freight_economy_label'] ?? '';
         $freightPriorityLableAs = $this->quoteSettings['fedex_freight_priority_label'] ?? '';
         foreach ($shipments as $origin => $quote) {
-
-            if (isset($quote['severity'])) {
-                continue;
+            if (Functions::isNotSmallShipmentError($quote)) {
+                return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
             if ($count == 0) { //To be checked only once
@@ -1565,8 +1563,8 @@ class CompileQuotes
         $lableAs = $this->quoteSettings['label_as'] ?? '';
         foreach ($shipments as $origin => $quote) {
 
-            if (isset($quote['severity'])) {
-                continue;
+            if (Functions::isNotSmallShipmentError($quote)) {
+                return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
             if ($count == 0) { //To be checked only once
@@ -1700,8 +1698,8 @@ class CompileQuotes
         $preAccess = 'rnlltl';
         $HAT = [];
         foreach ($shipments as $origin => $quote) {
-            if (isset($quote['severity'])) {
-                continue;
+            if (Functions::isNotSmallShipmentError($quote)) {
+                return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
             if ($count == 0) { //To be checked only once
                 $isRad = $quote['autoResidentialsStatus'] ?? '';
@@ -1861,9 +1859,8 @@ class CompileQuotes
         $shipmentCount = 0;
         $count = 0;
         foreach ($shipments as $origin => $quote) {
-
-            if (isset($quote['severity'])) {
-                continue;
+            if (Functions::isNotLtlShipmentError($quote)) {
+                return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
             if ($count == 0) { //To be checked only once
                 // $this->getAutoResidentialTitle('');
@@ -1925,7 +1922,6 @@ class CompileQuotes
             }
             $shipmentCount++;
         }
-        //  dd($originQuotes,'dds',$this->isMultiShipment);
         // $multiShipmentQuotes
         // Check for mukti shipment finding lowest price in each shipment and adding them for multi shipment
         if ($this->isMultiShipment) {
@@ -1999,8 +1995,8 @@ class CompileQuotes
         $key = 1;
         foreach ($shipments as $origin => $quote) {
 
-            if (isset($quote['severity'])) {
-                continue;
+            if (Functions::isNotSmallShipmentError($quote)) {
+                return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
             if ($count == 0) { //To be checked only once
@@ -2269,7 +2265,7 @@ class CompileQuotes
 
         $numberOfShipments = 0;
         foreach ($shipments as $ship) {
-            if (!isset($ship['severity'])) {
+            if (!isset($ship['severity']) || (isset($ship['q']) && !isset($ship['q']['error']))) {
                 $numberOfShipments++;
             }
         }
@@ -2280,8 +2276,8 @@ class CompileQuotes
 
         $labelAs = $this->quoteSettings['label_as'] ?? '';
         foreach ($shipments as $origin => $quote) {
-            if (isset($quote['severity'])) {
-                continue;
+            if (Functions::isNotSmallShipmentError($quote)) {
+                return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
             if ($count == 0) {
@@ -2531,6 +2527,16 @@ class CompileQuotes
 
         $resp = $allQuotes;
         return $resp;
+    }
+
+    public function getInsPicAndLocDelQuotes($quote, $allOrigins): array 
+    {
+        $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? $quote['q']['InstorPickupLocalDelivery'] ?? [];
+        if (!$this->isMultiShipment && !blank($inStoreLdData)) {
+            return $this->inStoreLocalDeliveryQuotes([], $inStoreLdData, $allOrigins);
+        }
+        
+        return [];
     }
 
     /**

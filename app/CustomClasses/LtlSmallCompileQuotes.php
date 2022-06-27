@@ -185,7 +185,6 @@ class LtlSmallCompileQuotes
         }
         $isLG = count($ltlLG) > 0;
         $parcel = $quotesCarrierNew['parcel'][0] ?? [];
-        //print_r($quotesCarrierNew['ltl']); exit;
         foreach ($quotesCarrierNew['ltl'] as $ltlQuote) {
             foreach ($ltlQuote as $simpleLg => $ltlQuot) {
                 $ltlQuot = $ltlQuot[0] ?? $ltlQuot;
@@ -219,7 +218,7 @@ class LtlSmallCompileQuotes
                     ];
                 }
             }
-        }
+        }        
         $indexes = $this->indexesOfQuotes($quotesFromWs);
         $multiShipmentQuotes = $this->createOrderWidget($quotesCarrierNew, $indexes);
         if (!empty($ownArrangement)) {
