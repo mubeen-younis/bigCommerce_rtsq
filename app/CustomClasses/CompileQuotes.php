@@ -668,6 +668,7 @@ class CompileQuotes
             switch ($key) {
                 case "wweLTL":
                     $resp = $this->compileWweLtlQuotes($shipment, $connectionSettings, $allOrigins);
+                    // dd(670, 'wweltl', $resp);
                     $quotesTemp['wweLTL'] = $resp;
                     if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
                         //$quotesRes['wwe'] = $quotesRes['wwe'] ?? [];
@@ -2139,8 +2140,8 @@ class CompileQuotes
         /* Quotes compilation */
         foreach ($shipments as $origin => $quote) {
             $isError = isset($quote['severity']) || isset($quote['q']['soapBody']['soapFault']);
-            if ($isError) {
-                continue;
+            if ($isError && Functions::isNotSmallShipmentError($quote)) {
+                return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
             if ($count == 0) { 

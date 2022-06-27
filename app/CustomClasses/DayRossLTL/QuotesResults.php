@@ -66,7 +66,7 @@ class QuotesResults
     {
         $numberOfShipments = 0;
         foreach ($shipments as $ship) {
-            if (!isset($ship['severity'])) {
+            if (!isset($ship['severity']) || !isset($quote['q']['soapBody']['soapFault'])) {
                 $numberOfShipments++;
             }
         }
