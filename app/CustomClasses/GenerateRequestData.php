@@ -138,6 +138,11 @@ class GenerateRequestData
                     $yrcLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['yrc'] = $yrcLtlArr;
                     break;
+                case 'southeastern-ltl':
+                    $yrcLtlArr = $this->SouthEasternEnitArr($con1, $destination);
+                    $yrcLtlArr['originAddress'] = $enitOrigin;
+                    $carriersArr['carriers']['southeastern'] = $yrcLtlArr;
+                    break;
             }
         }
         return ['carriersArr' => $carriersArr, 'residential' => $this->resiCarrier];
@@ -343,6 +348,19 @@ class GenerateRequestData
             'api' => $this->getApiInfoArrYrcLtl($connSettings, $destination),
         ];
     }
+    public function SouthEasternEnitArr($connSettings, $destination)
+    {
+        return [
+            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'serverName' => "https://" . $this->storeData['store']['name'],
+            'carrierMode' => 'pro',
+            'quotestType' => 'ltl', // ltl / small
+            'version' => '1.0.0',
+            'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
+            'returnQuotesOnExceedWeight' => '1',
+            'api' => $this->getApiInfoArrSouthEastern($connSettings, $destination),
+        ];
+    }
 
     public function freightQuoteLtlEnitArr($connSettings, $destination)
     {
@@ -505,7 +523,8 @@ class GenerateRequestData
                     || isset($carriers['globalTranz'])
                     || isset($carriers['xpoLogistics'])
                     || isset($carriers['freightQuote'])
-                    || isset($carriers['yrc']);
+                    || isset($carriers['yrc'])
+                    || isset($carriers['southeastern']);
                 if ($isLtl) {
                     $itemsArr = $olditemsArr + $itemsArr;
                 }
@@ -1368,6 +1387,64 @@ class GenerateRequestData
             'thresholdWeightLimit' => $weightThreshold,
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
+            'accessorial' => $accessorial,
+        ];
+
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
+    }
+
+    public function getApiInfoArrSouthEastern($connSettings, $destination)
+    {
+        $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
+            (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+
+        $residential = 'N';
+        $alwaysResi = false;
+        /*
+            * Check if rad hit not consumed and residential is enables
+        * **/
+        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+            if ($this->radHitConsumed == 0) {
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+            } else {
+                $residential = $this->residential;
+            }
+            if ($liftGate != 'Y') {
+                $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
+            }
+        } else {
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+        }
+
+        $this->resiCarrier['SouthEastern'] = $residential;
+        $this->resiCarrier['alwaysResi']['SouthEastern'] = $alwaysResi;
+
+        $accessorial = [];
+        if ($alwaysResi || $residential == 'Y') {
+            $accessorial[] = 'chkPR';
+        }
+        if ($liftGate == 'Y') {
+            $accessorial[] = 'chkLGD';
+        }
+        $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
+        $apiArray = [
+
+            'username' => $connSettings['creds']['username'],
+            'password' => $connSettings['creds']['password'],
+            'customerAccount' => $connSettings['creds']['customer_account_number'],
+            'customerName' => $connSettings['creds']['customer_name'],
+            'customerStreet' => $connSettings['creds']['customer_street_address'],
+            'customerCity' => $connSettings['creds']['customer_city'],
+            'customerState' => $connSettings['creds']['customer_state'],
+            'customerZip' => $connSettings['creds']['customer_zip_code'],
+            
+            'terms' => 'P',
+            'thresholdWeightLimit' => $weightThreshold,
+            'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
+            'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
+            'insureShipment' => '1',
             'accessorial' => $accessorial,
         ];
 
