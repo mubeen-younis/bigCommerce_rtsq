@@ -998,7 +998,7 @@ class GenerateRequestData
             'residentialDelivery' => $alwaysResi ? 'Y' : $residential, // Y/N
             'prefferedCurrency' => 'USD',
             'percentDiscount' => $discount, //quote settings
-            //                'holdAtTerminal' => '1',
+
             'shipmentDate' => date('m/d/Y'),
             'transactionId' => time(),
             'thresholdWeightLimit' => $weightThreshold,
