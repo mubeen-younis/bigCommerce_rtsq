@@ -58,7 +58,7 @@ class OrderController extends Controller
     {
         try {
             $order = $this->getBCOrderByID($request);
-            
+
             if (empty($order)) {
                 return response()->json(['error' => true,
                     'data' => [],
@@ -137,6 +137,7 @@ class OrderController extends Controller
         $rateId = $order['rate_id'] ?? null;
         $cartId = $order['cart_id'] ?? null;
         $data = optional(RequestData::where('rate_id', $rateId)
+                ->where('cart_id', $cartId)
                 ->where('store_id', $request['store_id'])
                 ->first())->toArray() ?? null;
         if (blank($data) && !blank($order['full_rate_id'])) {
@@ -149,7 +150,7 @@ class OrderController extends Controller
         if (blank($data)) {
             return [];
         }
-        
+
         $carrierHasInsurance = $this->hasInsureCarrier($rateId);
         $index = explode('idx+', $rateId);
         if (is_string($index[0]) && $index[0] == "shippingGroup") {
@@ -197,7 +198,7 @@ class OrderController extends Controller
 
         /*
         * Shipment Packaging */
-       
+
         $sbsItems = [];
         foreach ($responseFromWS as $carrrierName => $WsResp) {
             foreach ($WsResp as $zip => $ws) {
@@ -280,7 +281,7 @@ class OrderController extends Controller
 
         /*
         * Shipment Origins */
-        
+
         $origins = $lineItem->origin;
         $items = $lineItem->items;
         $count = 0;
@@ -367,7 +368,7 @@ class OrderController extends Controller
                     $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
                 }
             }
-      
+
 
             /*If instore and not multi shipment we are showing only instore and local delivery original items*/
             if (!$isMultiShipment && $isInspOrLocal) {
@@ -380,7 +381,7 @@ class OrderController extends Controller
 
             /*
             * Item Accessorials */
-            
+
             $addedHazmat = false;
             if (isset($orderWidget[$zip]['accessories'])) {
                 $addedHazmat = in_array('Hazardous Material', $orderWidget[$zip]['accessories']);
@@ -620,7 +621,7 @@ class OrderController extends Controller
                 $countEndPoint = "https://api.bigcommerce.com/stores/" . $request['store_hash'] . "/v2/orders/count?status_id=" . $status;
             }
             $response = $this->curlRequest->enSingleCurlRequest($countEndPoint, [], $headers, 'GET', false);
-        
+
             $total = (int)ceil(json_decode($response['response'])->count);
 
             if ($status !== '') {
