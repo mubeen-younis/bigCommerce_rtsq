@@ -1006,12 +1006,6 @@ class GenerateRequestData
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
             'role' => 'SHIPPER',
 
-            //                'modifyShipmentDateTime' => '0',
-            //                'OrderCutoffTime' => '16:00',
-            //                'shipmentOffsetDays' => '4',
-            //              //  'storeDateTime' => '2019-06-11 16:02:23',
-            //                'storeDateTime' => date('Y-m-d H:i:s'),
-
             'paymentType' => 'PREPAID',
             'collectTermsType' => 'STANDARD',
             'Version' => array(

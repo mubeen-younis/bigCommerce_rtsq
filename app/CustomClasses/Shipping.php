@@ -81,8 +81,6 @@ class Shipping
         // Items that is associated with Shipping Group
         $originsWithShippingGroup = $this->getOriginsAccShipGroup($itemsWithShippingGroup, $origins);
 
-
-        ///// skip  start
         if (!blank($itemsWithShippingGroup)) {
             $this->setShippingGroupsResponse($itemsWithShippingGroup);
         }
@@ -91,19 +89,15 @@ class Shipping
             $this->orderWidgetSave($request, [], [], $finalResp['finalQuotes'], $finalResp['formattedResp'], $cartInfo, [], []);
             return $finalResp['formattedResp'];
         }
-        //// skip ends
 
         $request['lineItemData']['items'] = $itemsWithoutShippingGroup;
         $request['lineItemData']['origin'] = $originsWithoutShippingGroup;
         $package = $request['lineItemData'];
         // Disabling instore pickup if there is multi shipment case
-
         $originAddress = $this->checkInstorePickup($package['origin']);
 
         // Generating carrier creds and origin array
         $destination = $request['lineItemData']['destination'] ?? [];
-
-        /////start here
         $resp = $generateReqData->generateEnitureArray($originAddress, $destination, $package['items']);
         $residential = $resp['residential'];
         $carriersArray = $resp['carriersArr'];

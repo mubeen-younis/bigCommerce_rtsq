@@ -20,24 +20,7 @@ class QuotesResults
         foreach ($shipments as $shipment => $quotes){
             if(isset($quotes['q']) || isset($quotes['quotesWithInsideDel']) || isset($quotes['holdAtTerminalResponse']) || isset($quotes['InstorPickupLocalDelivery'])) {
                 unset($shipments[$shipment]);
-                /*if(isset($quotes['q']['ServiceLevels']['ServiceLevel'])) {
-                    if(!isset($quotes['q']['ServiceLevels']['ServiceLevel'][0])){
-                        $services = $quotes['q']['ServiceLevels']['ServiceLevel'];
-                        unset($quotes['q']['ServiceLevels']['ServiceLevel']);
-                        $quotes['q']['ServiceLevels']['ServiceLevel'][0] = $services;
-                    }
-
-                    foreach ($quotes['q']['ServiceLevels']['ServiceLevel'] as $key => $quote) {
-                        $key = isset($shipments[$shipment]['q']) ? count($shipments[$shipment]['q']) :0;
-                        $shipments[$shipment]['q'][$key] = $quote;
-                        $shipments[$shipment]['q'][$key]['serviceType'] = $quote['Code'] ?? '';
-                        $shipments[$shipment]['q'][$key]['serviceDesc'] = $quote['Title'] ?? '';
-                        $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = (float) str_replace('$', '',$quote['NetCharge']);
-                        $shipments[$shipment]['q'][$key]['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
-                        $shipments[$shipment]['q'][$key]['transitTime'] = $quote['totalTransitTimeInDays'] ?? '';
-                        $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $this->liftGateFees($quotes);
-                    }
-                }*/
+                
                 if(isset($quotes['quotesWithInsideDel']['ServiceLevels']['ServiceLevel'])){
                     if(!isset($quotes['quotesWithInsideDel']['ServiceLevels']['ServiceLevel'][0])){
                         $services = $quotes['quotesWithInsideDel']['ServiceLevels']['ServiceLevel'];
