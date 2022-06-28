@@ -3,14 +3,15 @@
 namespace App\CustomClasses\RL\ltl;
 
 use App\Constants\Constant;
+use App\CustomClasses\CarriersConnectionSettings;
 use App\CustomClasses\CurlRequest;
 use Illuminate\Support\Facades\DB;
 
-class ConnectionSettings
+class ConnectionSettings extends CarriersConnectionSettings
 {
-    private $testConnectionUrl = Constant::BASEURL.'/ws/index.php';
     public function __construct()
     {
+        parent::__construct();
         $this->curlRequest = new CurlRequest();
     }
 

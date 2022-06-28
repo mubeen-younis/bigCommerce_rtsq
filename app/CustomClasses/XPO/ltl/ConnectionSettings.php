@@ -3,14 +3,15 @@
 namespace App\CustomClasses\XPO\ltl;
 
 use App\Constants\Constant;
+use App\CustomClasses\CarriersConnectionSettings;
 use App\CustomClasses\CurlRequest;
 use Illuminate\Support\Facades\DB;
 
-class ConnectionSettings
+class ConnectionSettings extends CarriersConnectionSettings
 {
-    private $testConnectionUrl = Constant::BASEURL.'/ws/index.php';
     public function __construct()
     {
+        parent::__construct();
         $this->curlRequest = new CurlRequest();
     }
 
@@ -22,7 +23,7 @@ class ConnectionSettings
         ];
         $url = $this->testConnectionUrl;
 
-        $params  = [
+        $params = [
             'platform' => 'bigcommerce',
             'carrier_mode' => 'test',
             'accessLevel' => 'pro', // pro , test
@@ -35,10 +36,10 @@ class ConnectionSettings
             'CUSTNMBR' => $data['delivery_account_number'] ?? '',
             'physicalZipCode' => $data['delivery_postal_code'] ?? '',
             'thirdPartyAccountNumber' => $data['bill_to_account_number'] ?? '',
-            'requestType' => isset($data['access_level']) && $data['access_level'] == 'pro' ? 'thirdParty':'shipper'
+            'requestType' => isset($data['access_level']) && $data['access_level'] == 'pro' ? 'thirdParty' : 'shipper'
         ];
         $isPro = false;
-        if(isset($data['access_level']) && $data['access_level'] == 'pro' && isset($data['api_key']) && $data['api_key'] != '' ){
+        if (isset($data['access_level']) && $data['access_level'] == 'pro' && isset($data['api_key']) && $data['api_key'] != '') {
             $Test = [
                 'basicAccessToken' => $data['api_key'] ?? '',
                 'xpoApiVersion' => '1.0',
@@ -55,7 +56,7 @@ class ConnectionSettings
                 'error' => true,
                 'message' => 'Invalid authentication info',
             ];
-        }else {
+        } else {
             if ($isPro) {
                 if (isset($output['severity']) && $output['severity'] === 'ERROR') {
                     $response = [
