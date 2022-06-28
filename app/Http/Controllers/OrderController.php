@@ -805,7 +805,7 @@ class OrderController extends Controller
             //allow only create/update orders actions
             $onlyScopes = ['store/order/created', 'store/order/updated'];
             if (empty($store) || !in_array($scope, $onlyScopes)) {
-                return response("",200);
+                return [];
             }
             $toRequest['store_id'] = $store->id;
             $toRequest['store_hash'] = $storeHash;
