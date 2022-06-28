@@ -55,56 +55,32 @@ class QuotesResults
         if ($this->isSuppressedRatesShipment($shipments)) {
             return $shipments;
         }
-
         foreach ($shipments as $shipment => $quotes) {
-            if (!isset($quotes['q']) || isset($quotes['q']['error'])) {
+            if (!isset($quotes['q']) || isset($quotes['severity']) && $quotes['severity'] == 'ERROR') {
                 continue;
             }
-
             $quotesArr = $quotes['q'];
             $lgStatus = $quotes['liftGateStatus'] ?? '';
             $radStatus = $quotes['residentialStatus'] ?? '';
             $lgFee = 0;
 
-            if ($connSettings['yrc_rates'] == 1) {
-                $quotesDataIndex = $quotesArr['pageRoot'];
-                $rateQuote = $quotesDataIndex['bodyMain']['rateQuote'];
+            if(isset($quotes['q']) && isset($quotes['q']['error']) && $quotes['q']['error'] == []){
 
-                $formattedShipments[$shipment]['q'] = $this->formatShipments($quotesArr, $rateQuote['delivery']['requestedServiceType']['value'], $quotesDataIndex['pageHead']['pageTitle'], $rateQuote['lineItem'], $lgStatus, $radStatus, $rateQuote['ratedCharges']['totalCharges']);
-
-                if (isset($quotes['quotesWithoutLiftGate']) && isset($lgStatus) && $lgStatus != 'n') {
-                    $chargesWithoutLG = $quotes['quotesWithoutLiftGate']['pageRoot']['bodyMain']['rateQuote']['ratedCharges']['totalCharges'] ?? 0;
-                    $totalCharges = $quotesDataIndex['bodyMain']['rateQuote']['ratedCharges']['totalCharges'];
-                    $lgFee = number_format(($totalCharges - $chargesWithoutLG) / 100, 2);
-
-                    $formattedShipments[$shipment]['q']['surcharges']['liftgateFee'] = $lgFee;
-                }
-            } else {
-                $items = $quotesArr['LineItem'] ?? [];
                 $lineItems = [];
-                $isLG = false;
-
-                foreach ($items as $key => $value) {
-                    if ($value['@attributes']['Type'] == 'Commodity') {
-                        $lineItems[] = $value;
-                        $lineItems[$key]['hazardous'] = $value['Hazardous'] ?? '';
-                    }
-
-                    if (isset($value['Description']) && $value['Description'] == 'LIFTGATE SERVICE DESTINATION' && isset($value['Code']) && $value['Code'] == 'LFTD') {
-                        $lgFee = number_format($value['Charges'] / 100, 2) ?? 0;
-                        $isLG = true;
-                    }
-                }
-
                 $formattedShipments[$shipment]['q'] = $this->formatShipments($quotesArr,
-                    $quotesArr['Delivery']['RequestedServiceType'], 'YRC', $lineItems, $lgStatus, $radStatus, $quotesArr['RatedCharges']['TotalCharges']);
+                'Standard', 'SouthEastern', $lineItems, $lgStatus, $radStatus, $quotesArr['rateQuote']);
 
-                if (isset($lgStatus) && $lgStatus != 'n' && $isLG) {
-                    $formattedShipments[$shipment]['q']['surcharges']['liftgateFee'] = $lgFee;
-                }
+                if (isset($lgStatus) && $lgStatus != 'n') {
+                
+                    $formattedShipments[$shipment]['q']['surcharges']['liftgateFee'] = 134 ?? 0;        
+                }  
+
+            }else{
+
+                $formattedShipments = [];
+                
             }
 
-            $formattedShipments[$shipment]['q']['InstorPickupLocalDelivery'] = $quotes['InstorPickupLocalDelivery'] ?? [];
         }
 
         return $formattedShipments;
@@ -120,7 +96,8 @@ class QuotesResults
             'residentialStatus' => $radStatus,
             'deliveryDate' => $quotesArr['deliveryDate'] ?? '',
             'totalTransitTimeInDays' => $quotesArr['totalTransitTimeInDays'] ?? 0,
-            'totalNetCharge' => array('Amount' => number_format($charges / 100, 2) ?? 0),
+            'totalNetCharge' => array('Amount' => $charges ?? 0),
+
         );
     }
 
