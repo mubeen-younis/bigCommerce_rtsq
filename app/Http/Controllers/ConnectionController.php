@@ -14,6 +14,8 @@ use App\CustomClasses\WweLTL\WweLtlConnectionSettings;
 use App\CustomClasses\WWESMALL\SmallConnectionSettings;
 use App\CustomClasses\XPO\ltl\ConnectionSettings as XPOLtlConnectionSettings;
 use App\CustomClasses\Unishippers\small\ConnectionSettings as UnishippersSmallConnectionSettings;
+
+use App\CustomClasses\EstesLTL\ConnectionSettings as EstesLTLConnectionSettings;
 use App\CustomClasses\FreightQuote\Ltl\ConnectionSettings as FreightQuoteConSett;
 use App\CustomClasses\YrcLTL\ConnectionSettings as YrcLtlConnectionSettings;
 use App\Endpoints\Endpoints;
@@ -54,6 +56,7 @@ class ConnectionController extends Controller
         $this->rnlLtlTestCon = new RNLLtlConnectionSettings();
         $this->unishippersSmallTestCon = new UnishippersSmallConnectionSettings();
         $this->odflLTLConL = new OdflLTLConnectionSettings();
+        $this->estesLTLConL = new EstesLTLConnectionSettings();
         $this->freightQuoteLtlTestCon = new FreightQuoteConSett();
         $this->yrcLtlTestCon = new YrcLtlConnectionSettings();
     }
@@ -103,11 +106,14 @@ class ConnectionController extends Controller
             ->first();
 
         if ($checkCarrierType === null) {
-            return response()->json(["error" => true, "data" => [],
-                'message' => 'Carrier Not Found']);
+            return response()->json([
+                "error" => true, "data" => [],
+                'message' => 'Carrier Not Found'
+            ]);
         }
 
         if (!empty($request->testType)) {
+
             switch ($checkCarrierType->slug) {
                 case "ltl-quotes":
                     $response = $this->wweLtlTestCon->testLtlConnection($request, $checkCarrierType->name);
@@ -142,6 +148,9 @@ class ConnectionController extends Controller
                 case 'odfl-ltl':
                     $response = $this->odflLTLConL->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
+                case 'estes-ltl':
+                    $response = $this->estesLTLConL->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
                 case 'freightquote-ltl':
                     $response = $this->freightQuoteLtlTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
@@ -149,10 +158,13 @@ class ConnectionController extends Controller
                     $response = $this->yrcLtlTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
                 default:
-                    return response()->json(["error" => true, "data" => [],
-                        'message' => 'No carrier Matches']);
+                    return response()->json([
+                        "error" => true, "data" => [],
+                        'message' => 'No carrier Matches'
+                    ]);
             }
         }
+
         $message = 'Connection settings has been saved successfully';
         $carriersArr = ['ltl-quotes', 'small-package', 'gtz-ltl', 'unishippers-small'];
         if (!blank($request['promo_code']) &&
@@ -166,7 +178,6 @@ class ConnectionController extends Controller
                 $message = 'Connection settings has been saved but the Promo Code is not applied.';
             }
         }
-
         $con = Connection::firstOrNew(['installed_carrier_id' => $request->carrierId]);
         $con->value = json_encode($request->all());
         $con->installed_carrier_id = $request->carrierId;

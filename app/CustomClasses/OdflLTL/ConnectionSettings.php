@@ -37,14 +37,15 @@ class ConnectionSettings
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
         $output = json_decode($output['response'], true);
-        return $output;
+
         if(isset($output['soapenvBody']['ns2getLTLRateEstimateResponse']['return']['errorMessages']))
          { 
             $response = [
                 'error' => true,
-                'message' =>"Invalid authentication info",
+                'message' =>"Invalid credentials.",
             ];
         }
+       
         if(isset($output['soapenvBody']['ns2getLTLRateEstimateResponse']['return']['destinationCities']))
         { 
            $response = [
@@ -52,7 +53,7 @@ class ConnectionSettings
                'message' => "Test connection successful.",
            ];
        }
-       return $response;
 
+       return $response;
     }
 }

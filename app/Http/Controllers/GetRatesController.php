@@ -64,10 +64,7 @@ class GetRatesController extends Controller
         $cartInfo['store_id'] = $storeData['installed_carriers'][0]['store_id'] ?? 0;
 // Getting installed carriers there quote settings and services
 
-       $test= $this->getCarrierSettings($storeData['installed_carriers']);
-      
-
-
+       $this->getCarrierSettings($storeData['installed_carriers']);     
 
         $formatReq = $this->formatRequest($request->all(), $storeData);
         if (
@@ -149,7 +146,6 @@ class GetRatesController extends Controller
                  ship_own_package0YUJHZQA\  578em with diff product rules*/
                 if (!empty($variantKeys) && array_key_exists($key, $variantKeys)) {
                     $key = $key . $productKey;
-                     
                 }
                 $variantKeys[$key] = $key;
 
@@ -167,7 +163,6 @@ class GetRatesController extends Controller
                     $wareHouseShipmentExist = true;
                 }
                 $details['origin'][$key] = $originAddress;
-            
                 $details['items'][$key] = [
                     'id' => $product_settings['id'] ?? '',
                     'product_id' => $product['product_id'] ?? '',
@@ -205,7 +200,6 @@ class GetRatesController extends Controller
                         (blank($details['items'][$key]['lineItemWidth']) || $details['items'][$key]['lineItemWidth'] <= 0) ||
                         (blank($details['items'][$key]['lineItemHeight']) || $details['items'][$key]['lineItemHeight'] <= 0)
                     ) {
-                    
                         $details['items'][$key]['exclude_packaging'] = 1;
                         $details['items'][$key]['shipBinAlone'] = 1;
                     }
@@ -365,7 +359,7 @@ class GetRatesController extends Controller
                 ])
                 ->exists();
             $enabledAddonSbs = false;
-            if ($installedAddonSbs) 
+            if ($installedAddonSbs)
         {
                 $addonSbs = PackageSubscription::leftJoin('packages as p', 'package_subscriptions.package_id', '=', 'p.id')
                     ->where('store_id', $store->id)
@@ -429,6 +423,7 @@ class GetRatesController extends Controller
                     ->where('connection_settings.installed_carrier_id', $installedCarrier->id)->first();
                 if ($connectionSettings !== null) {
                 
+
 
                     $this->connectionSettings[$connectionSettings->slug]['creds'] = json_decode($connectionSettings->value, true);
 
