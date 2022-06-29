@@ -1,7 +1,7 @@
 <?php
 
 
-namespace App\CustomClasses\RL\ltl;
+namespace App\CustomClasses\RL\EstesLTL;
 
 
 use App\Constants\Constant;
