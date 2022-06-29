@@ -232,4 +232,6 @@ Route::get('/get_plans', [\App\Http\Controllers\PlansController::class, 'getPlan
 
 Route::get('/test_bin', [App\CustomClasses\Bin3D\Bin3D::class, 'getBinResponse']);
 
+// app logs
+Route::get('/api_logs', [App\Http\Controllers\LogToDbController::class, 'index']);
 
