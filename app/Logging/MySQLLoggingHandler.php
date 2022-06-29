@@ -31,8 +31,8 @@ class MySQLLoggingHandler extends AbstractProcessingHandler
             'record_datetime' => $record['datetime']->format('Y-m-d H:i:s'),
             'extra' => json_encode($record['extra']),
             'formatted' => $record['formatted'],
-            'remote_addr' => $_SERVER['REMOTE_ADDR'],
-            'user_agent' => $_SERVER['HTTP_USER_AGENT'],
+            'remote_addr' => $_SERVER['REMOTE_ADDR'] ?? "no",
+            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? "null",
             'created_at' => date("Y-m-d H:i:s"),
         );
         DB::table($this->table)->insert($data);
