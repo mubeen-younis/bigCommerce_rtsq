@@ -18,7 +18,7 @@ return [
     */
 
     //'default' => env('LOG_CHANNEL', 'stack'),
-    'default' => 'daily',
+    'default' => 'stack',
 
 
     /*
@@ -39,13 +39,20 @@ return [
     'channels' => [
         'stack' => [
             'driver' => 'stack',
-            'channels' => ['single'],
+            'channels' => ['app_logs'/*,'daily'*/],
             'ignore_exceptions' => false,
         ],
 
         'single' => [
             'driver' => 'single',
             'path' => storage_path('logs/laravel.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+        ],
+        // Log to MySQL
+        'app_logs' => [
+            'driver' => 'custom',
+            'handler' => App\Logging\MySQLLoggingHandler::class,
+            'via' => App\Logging\MySQLCustomLogger::class,
             'level' => env('LOG_LEVEL', 'debug'),
         ],
 
