@@ -6,6 +6,7 @@ use App\Constants\Constant;
 use App\Models\Carrier;
 use App\Models\Connection;
 use App\Models\InstalledCarrier;
+use App\Models\AdditionalCarrierTabSetting;
 use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -152,6 +153,17 @@ class CarrierController extends Controller
             $installCarrier->installed_at = now();
             $installCarrier->plan_updated_at = now();
             $installCarrier->save();
+
+            if($carrier->slug == "ltl-quotes"){
+                
+                $install_carrier=InstalledCarrier::find($installCarrier->id);
+                $services=["PYLE","AACT","ABFS","AMAP","APXT","ATMR","AVRT","BEAV","BCKT","BTVP","CXRE","CPCD","CGOJ","CAZF","CENF","CTII","CLNI","DTST","DYLT","DAFG","DDPP","DPHE","DHRN","DUBL","EXLA","FLAN","FTSC","FWDN","FCSY","GLDF","HMES","LKVL","LAXV","MIDW","NMTF","NEBT","NEMF","NPME","NOPK","OAKH","ODFL","PMLI","PITD","PNII","RLCA","RJWI","RDFS","ROSI","RXIC","SAIA","SHIF","SEFL","SMTL","STDF","SVSE","UPGF","RETL","WARD","WEBE","WTVA","CNWY","RDWY"];
+                $settings = AdditionalCarrierTabSetting::firstOrNew(['installed_carrier_id' => $install_carrier->id, 'store_id' => $request->store_id]);
+                $settings->installed_carrier_id = $install_carrier->id;
+                $settings->store_id = $request->store_id;
+                $settings->value = json_encode($services);
+                $settings->save();
+            }
 
             return response()->json(['error' => false,
                 'data' => InstalledCarrier::find($installCarrier->id),
