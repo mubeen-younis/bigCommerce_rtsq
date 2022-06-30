@@ -7,6 +7,7 @@ use App\Models\Carrier;
 use App\Models\Connection;
 use App\Models\InstalledCarrier;
 use App\Models\AdditionalCarrierTabSetting;
+use App\Models\CarrierServices;
 use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -153,20 +154,36 @@ class CarrierController extends Controller
             $installCarrier->installed_at = now();
             $installCarrier->plan_updated_at = now();
             $installCarrier->save();
+            $install_carrier=InstalledCarrier::find($installCarrier->id);
 
-            if($carrier->slug == "ltl-quotes"){
-                
-                $install_carrier=InstalledCarrier::find($installCarrier->id);
-                $services=["PYLE","AACT","ABFS","AMAP","APXT","ATMR","AVRT","BEAV","BCKT","BTVP","CXRE","CPCD","CGOJ","CAZF","CENF","CTII","CLNI","DTST","DYLT","DAFG","DDPP","DPHE","DHRN","DUBL","EXLA","FLAN","FTSC","FWDN","FCSY","GLDF","HMES","LKVL","LAXV","MIDW","NMTF","NEBT","NEMF","NPME","NOPK","OAKH","ODFL","PMLI","PITD","PNII","RLCA","RJWI","RDFS","ROSI","RXIC","SAIA","SHIF","SEFL","SMTL","STDF","SVSE","UPGF","RETL","WARD","WEBE","WTVA","CNWY","RDWY"];
-                $settings = AdditionalCarrierTabSetting::firstOrNew(['installed_carrier_id' => $install_carrier->id, 'store_id' => $request->store_id]);
-                $settings->installed_carrier_id = $install_carrier->id;
-                $settings->store_id = $request->store_id;
-                $settings->value = json_encode($services);
-                $settings->save();
+            if($carrier->slug == "ltl-quotes" || $carrier->slug == "freightquote-ltl" ){
+
+                $services = CarrierServices::where("app_id" , $carrier->id)->pluck("speed_freight_carrierSCAC")->all();
+                $checked = $this->CheckedAllServices($installCarrier->id, $services,$request);
+
+            }else if($carrier->slug == "gtz-ltl"){
+
+                $GTZ = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
+                ->where('installed_carriers.id', $install_carrier->id)
+                ->whereNull('shopify_freights.store_id')
+                ->orderBy('speed_freight_carrierName')->pluck("speed_freight_carrierSCAC")->all();
+
+                $CRS = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
+                ->where('installed_carriers.id', $install_carrier->id)
+                ->where('shopify_freights.store_id', $store_id)
+                ->orderBy('speed_freight_carrierSCAC')->pluck("speed_freight_carrierName")->all();
+
+                $services = array(
+                "GTZ" => $GTZ,
+                "CRS" => $CRS,
+                );
+
+                $checked = $this->CheckedAllServices($installCarrier->id, $services,$request);
             }
 
             return response()->json(['error' => false,
                 'data' => InstalledCarrier::find($installCarrier->id),
+                'services' => $checked ?? null,
                 'message' => 'Carrier Installed Successfully',
             ], 200);
         }
@@ -175,6 +192,18 @@ class CarrierController extends Controller
             'data' => [],
             'message' => "Carrier is not available at the moment",
         ], 200);
+    }
+    
+    public function CheckedAllServices($installCarrier, $services,$request)
+    {
+        $install_carrier=InstalledCarrier::find($installCarrier);
+        $settings = AdditionalCarrierTabSetting::firstOrNew(['installed_carrier_id' => $install_carrier->id, 'store_id' => $request->store_id]);
+        $settings->installed_carrier_id = $install_carrier->id;
+        $settings->store_id = $request->store_id;
+        $settings->value = json_encode($services);
+        $settings->save();
+        return ("All Carrier Services Set to Checked");
+
     }
 
     public function getInstalledCarriers(Request $request)
