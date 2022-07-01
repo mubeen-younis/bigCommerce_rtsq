@@ -186,7 +186,6 @@ class LtlSmallCompileQuotes
         $isLG = count($ltlLG) > 0;
         $parcel = $quotesCarrierNew['parcel'][0] ?? [];
         //print_r($quotesCarrierNew['ltl']); exit;
-        // dd(176, $quotesCarrierNew);
         foreach ($quotesCarrierNew['ltl'] as $ltlQuote) {
             foreach ($ltlQuote as $simpleLg => $ltlQuot) {
                 $ltlQuot = $ltlQuot[0] ?? $ltlQuot;
@@ -195,7 +194,7 @@ class LtlSmallCompileQuotes
                     $rtitle = ($parcel['isResi'] ?? $ltlQuot['isResi']) ? Constant::RESI_LABEL : '';
                     $newQuotes[] = [
                         'code' => 'multi' . $rCode,
-                        'rate' => $parcel['rate'] ?? 0 + $ltlQuot['rate'],
+                        'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
                         'title' => 'Freight' . $rtitle
                     ];
                 } else if ($simpleLg === 'LG') {
@@ -206,7 +205,7 @@ class LtlSmallCompileQuotes
                     }
                     $newQuotes[] = [
                         'code' => 'multi' . $rCode . '+LG',
-                        'rate' => $parcel['rate'] ?? 0 + $ltlQuot['rate'],
+                        'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
                         'title' => 'Freight' . $rtitle
                     ];
                 } else {
@@ -215,7 +214,7 @@ class LtlSmallCompileQuotes
                     $title = implode('|', $title);
                     $newQuotes[] = [
                         'code' => 'multi' . '+HAT',
-                        'rate' => $parcel['rate'] ?? 0 + $ltlQuot['rate'],
+                        'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
                         'title' => 'Freight |' . $title
                     ];
                 }

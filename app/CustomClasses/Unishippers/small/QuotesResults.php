@@ -37,9 +37,8 @@ class QuotesResults
         $originQuotes = $multiShipmentQuotes = $multiShipmentQuote = [];
         $shipmentCount = 0;
         $count = 0;
-
         foreach ($shipments as $origin => $quote) {
-            if (Functions::isNotLtlShipmentError($quote)) {
+            if (isset($quote['severity'])) {
                 return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 

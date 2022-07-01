@@ -137,7 +137,7 @@ class QuotesResults
         $count = 0;
         foreach ($shipments as $origin => $quote) {
 
-            if ((isset($quote['severity']) || !isset($ship['q']) || (isset($ship['q']) && empty($ship['q']))) && Functions::isNotLtlShipmentError($quote)) {
+            if ((isset($quote['severity']) || !isset($ship['q']) || (isset($ship['q']) && empty($ship['q'])))) {
                 return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);                
             }
             if ($count == 0) { //To be checked only once

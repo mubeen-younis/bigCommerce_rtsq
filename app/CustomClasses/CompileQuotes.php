@@ -664,6 +664,8 @@ class CompileQuotes
         }
         $quotesRes = [];
         $quotesTemp = [];
+        $quotes = $this->filterShipmentsWithError($quotes);
+        
         foreach ($quotes as $key => $shipment) {
             switch ($key) {
                 case "wweLTL":
@@ -782,6 +784,22 @@ class CompileQuotes
 
     }
 
+    private function filterShipmentsWithError($quotes): array
+    {
+        $errorMsgs = [Functions::$ltlErrorMessage, Functions::$smallErrorMessage];
+        $newQuotes = $quotes ?? [];
+     
+        foreach ($newQuotes as $carrier => $shipments) {
+            foreach ($shipments as $locId => $quote) {
+                if (isset($quote['severity']) && $quote['severity'] == 'ERROR' && isset($quote['Message']) && in_array($quote['Message'], $errorMsgs)) {
+                    unset($newQuotes[$carrier][$locId]);
+                }
+            }
+        } 
+        
+        return $newQuotes;
+    }
+
     private function handleMultiCarrResp($quotes)
     {
         $newQuotes = [];
@@ -884,7 +902,7 @@ class CompileQuotes
             $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
         foreach ($shipments as $origin => $quote) {
-            if (Functions::isNotSmallShipmentError($quote)) {
+            if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
@@ -1067,7 +1085,7 @@ class CompileQuotes
         }
         foreach ($shipments as $origin => $quote) {
 
-            if (Functions::isNotSmallShipmentError($quote)) {
+            if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
@@ -1291,7 +1309,7 @@ class CompileQuotes
         }
         foreach ($shipments as $origin => $quote) {
 
-            if (Functions::isNotSmallShipmentError($quote)) {
+            if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
@@ -1435,7 +1453,7 @@ class CompileQuotes
         $freightEconomyLableAs = $this->quoteSettings['fedex_freight_economy_label'] ?? '';
         $freightPriorityLableAs = $this->quoteSettings['fedex_freight_priority_label'] ?? '';
         foreach ($shipments as $origin => $quote) {
-            if (Functions::isNotSmallShipmentError($quote)) {
+            if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
@@ -1564,7 +1582,7 @@ class CompileQuotes
         $lableAs = $this->quoteSettings['label_as'] ?? '';
         foreach ($shipments as $origin => $quote) {
 
-            if (Functions::isNotSmallShipmentError($quote)) {
+            if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
@@ -1699,7 +1717,7 @@ class CompileQuotes
         $preAccess = 'rnlltl';
         $HAT = [];
         foreach ($shipments as $origin => $quote) {
-            if (Functions::isNotSmallShipmentError($quote)) {
+            if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
             if ($count == 0) { //To be checked only once
@@ -1860,7 +1878,7 @@ class CompileQuotes
         $shipmentCount = 0;
         $count = 0;
         foreach ($shipments as $origin => $quote) {
-            if (Functions::isNotLtlShipmentError($quote)) {
+            if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
             if ($count == 0) { //To be checked only once
@@ -1996,7 +2014,7 @@ class CompileQuotes
         $key = 1;
         foreach ($shipments as $origin => $quote) {
 
-            if (Functions::isNotSmallShipmentError($quote)) {
+            if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
@@ -2140,7 +2158,7 @@ class CompileQuotes
         /* Quotes compilation */
         foreach ($shipments as $origin => $quote) {
             $isError = isset($quote['severity']) || isset($quote['q']['soapBody']['soapFault']);
-            if ($isError && Functions::isNotSmallShipmentError($quote)) {
+            if ($isError) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
@@ -2277,7 +2295,7 @@ class CompileQuotes
 
         $labelAs = $this->quoteSettings['label_as'] ?? '';
         foreach ($shipments as $origin => $quote) {
-            if (Functions::isNotSmallShipmentError($quote)) {
+            if (isset($quote['severity']) || (isset($quote['q']) && isset($quote['q']['error']))) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
@@ -2300,7 +2318,7 @@ class CompileQuotes
             $arraySorting = [];
 
             if (isset($quote['q']) && !$yrcLtl->isSuppressedRatesShipment($shipments)) {
-                $items = $quote['q']['lineItems'];
+                $items = $quote['q']['lineItems'] ?? [];
                 foreach ($items as $key => $item) {
                     if ($item['hazardous'] == 'Y') {
                         $hazShipmentArr[$origin] = 'Y';
@@ -2419,7 +2437,7 @@ class CompileQuotes
         }
 
         foreach ($shipments as $origin => $quote) {
-            if (Functions::isNotSmallShipmentError($quote)) {
+            if (isset($quote['severity'])) {
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? [];
                 if (!$this->isMultiShipment && !blank($inStoreLdData)) {
                     return $this->inStoreLocalDeliveryQuotes([], $inStoreLdData, $allOrigins);
