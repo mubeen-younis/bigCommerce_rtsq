@@ -935,7 +935,7 @@ class CompileQuotes
                 }
             }
 
-            $compiledQuotes = $originQuotes;
+            $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
                 if (count($compiledQuotes) > 1) {
                     foreach ($compiledQuotes as $k => $service) {
