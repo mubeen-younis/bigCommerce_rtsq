@@ -2132,15 +2132,8 @@ class CompileQuotes
     private function compileDayRossLtlQuotes($shipments, $connectionSettings, $allOrigins, $hazmatAllItems, $residential)
     {   
         $dayRossLtl = new dayRossLtlQuotesResults();
-        
-        if ($residential['dayrossLtl'] == 'Y') {
-            $this->isResi = true;
-            $this->residentialDlvry = 1;
-        } else {
-            $this->isResi = false;
-            $this->residentialDlvry = 0;
-        }
-
+        $this->isResi = $residential['dayrossLtl'] == 'Y';
+        $this->residentialDlvry = $residential['dayrossLtl'] == 'Y' ? 1 : 0;
         $this->alwaysResi = $this->residential['alwaysResi']['dayrossLtl'] ?? false;
         $this->quoteSettings = $connectionSettings['dayross-ltl']['quote_settings'] ?? [];
         $shipments = $dayRossLtl->formateQuoteBeforeCompile($shipments, $this->quoteSettings);
@@ -2196,19 +2189,19 @@ class CompileQuotes
                         $dateAndDays = $dayRossLtl->getShipmentDateAndDays($data);
                         $title = $this->getTitle($data['serviceDesc'], false, false, $days, [], $dateAndDays);
 
-                        $arraySorting['simple'][$origin] = $price;
-                        $originQuotes[$origin]['simple']['code'] = 'dayrossltl' . $access;
-                        $originQuotes[$origin]['simple']['rate'] = $price;
-                        $originQuotes[$origin]['simple']['title'] = $title;
+                        $arraySorting['simple'][$key] = $price;
+                        $originQuotes[$key]['simple']['code'] = 'dayrossltl' . $access;
+                        $originQuotes[$key]['simple']['rate'] = $price;
+                        $originQuotes[$key]['simple']['title'] = $title;
 
                         if ($lgQuotes) {
                             $lgAccess = $this->getAccessorialCode(true);
                             $lgPrice = $this->calculatePrice($data, true);
                             $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $days, [], $dateAndDays);
-                            $arraySorting['liftgate'][$origin] = $lgPrice;
-                            $originQuotes[$origin]['liftgate']['code'] = 'dayrossltl' . $lgAccess;
-                            $originQuotes[$origin]['liftgate']['rate'] = $lgPrice;
-                            $originQuotes[$origin]['liftgate']['title'] = $lgTitle;
+                            $arraySorting['liftgate'][$key] = $lgPrice;
+                            $originQuotes[$key]['liftgate']['code'] = 'dayrossltl' . $lgAccess;
+                            $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
+                            $originQuotes[$key]['liftgate']['title'] = $lgTitle;
                         }
                     }
                 }
