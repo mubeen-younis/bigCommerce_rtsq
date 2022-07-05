@@ -1,6 +1,6 @@
 <?php
 
-namespace App\CustomClasses\Fedex\small;
+namespace App\CustomClasses\DayRossLTL;
 
 use App\CustomClasses\CarriersConnectionSettings;
 use App\CustomClasses\CurlRequest;
@@ -19,37 +19,35 @@ class ConnectionSettings extends CarriersConnectionSettings
             'error' => true,
             'message' => 'Something went wrong!',
         ];
+
         $url = $this->testConnectionUrl;
-        $params = Array(
+        $params = [
+            // -------------Carrier type and Status------------- //
+            'licence_key' => 'TDVB9ONC-M7QJRPRQ-5EDIH32D-DE73Y57I',
+            'sever_name' => 'wc.eniture-dev.com',
+            'carrierName' => 'dayross',
+            'carrier_mode' => 'test', // use test / pro
             'dont_auth' => '1',
             // -------------Carrier Credentials------------- //
-            'fedex_user_id' => $data->api_access_key ?? '',
-            'fedex_password' => $data->password ?? '',
-            'fedex_account_number' => $data->account_number ?? '',
-            'fedex_meter_number' => $data->meter_number ?? '',
-            'licence_key' =>  '',
-            'platform' => 'bigcommerce',
-            'server_name' => $storeName, // $_SERVER['SERVER_NAME'];
-        );
+            'emailAddress' => $data['email'],
+            'password' => $data['password'],
+            'billToAccountNumber' => $data['billing_account_number'],
+            'senderCountryCode' => $data['sender_country_code'], // CA or US
+        ];
+
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
-        if (isset($output['status']) && $output['status'] == false) {
-            $response = [
-                'error' => true,
-                'message' => $output['response'],
-            ];
-        }
+
         $output = json_decode($output['response'], true);
-        if (isset($output['error']) && isset($output['Message'])) {
+        if (isset($output['q']['soapBody']['soapFault'])) {
             $response = [
                 'error' => true,
-                'message' => $output['Message'],
+                'message' => 'Invalid credentials',
             ];
-        } elseif (isset($output['success'])) {
+        } elseif (isset($output['q']['soapBody']['CreateUSQuoteResponse']) || isset($output['q']['soapBody']['GetRate2Response'])) {
             $response = [
                 'error' => false,
                 'message' => 'Test connection successful.',
-                'data' => [],
             ];
         }
 
