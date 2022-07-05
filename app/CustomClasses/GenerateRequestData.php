@@ -564,7 +564,8 @@ class GenerateRequestData
                     || isset($carriers['xpoLogistics'])
                     || isset($carriers['dayross'])
                     || isset($carriers['freightQuote'])
-                    || isset($carriers['yrc']);
+                    || isset($carriers['yrc'])
+                    || isset($carriers['tql']);
                 if ($isLtl) {
                     $itemsArr = $olditemsArr + $itemsArr;
                 }
