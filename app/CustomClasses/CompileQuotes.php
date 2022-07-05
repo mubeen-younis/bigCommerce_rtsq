@@ -1009,9 +1009,9 @@ class CompileQuotes
     }
     public function compileOdflLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
-        $this->isResi = $this->residential['odflLtL'] == 'Y';
-        $this->residentialDlvry = $this->residential['odflLtL'] == 'Y' ? 1 : 0;
-        $this->alwaysResi = $this->residential['alwaysResi']['odflLtL'] ?? false;
+        $this->isResi = $this->residential['odflLtl'] == 'Y';
+        $this->residentialDlvry = $this->residential['odflLtl'] == 'Y' ? 1 : 0;
+        $this->alwaysResi = $this->residential['alwaysResi']['odflLtl'] ?? false;
         $this->quoteSettings = $connectionSettings['odfl-ltl']['quote_settings'] ?? [];
         $this->quoteSettingsData();
 
