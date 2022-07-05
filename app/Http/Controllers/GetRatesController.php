@@ -63,7 +63,8 @@ class GetRatesController extends Controller
         $cartInfo['cartId'] = $request->base_options['request_context']['reference_values'][0]['value'] ?? 0;
         $cartInfo['store_id'] = $storeData['installed_carriers'][0]['store_id'] ?? 0;
 // Getting installed carriers there quote settings and services
-        $this->getCarrierSettings($storeData['installed_carriers']);
+
+       $this->getCarrierSettings($storeData['installed_carriers']);     
 
         $formatReq = $this->formatRequest($request->all(), $storeData);
         if (
@@ -138,10 +139,13 @@ class GetRatesController extends Controller
                 $ltlCheck = $product_settings['freight_enabled'] ?? false;
                 $shipBinAlone = (isset($product_settings['ship_multiple_package']) && $product_settings['ship_multiple_package'])
                 || (isset($product_settings['ship_own_package']) && $product_settings['ship_own_package']) ? 1 : 0;
+
                 $key = $product['variant_id'] ?? $product['product_id'];
-                /*Added this block of code for catering an item with diff product rules*/
+                /*Added this block of code for catering an it 56yuk  g5 E
+                 ship_own_package0YUJHZQA\  578em with diff product rules*/
                 if (!empty($variantKeys) && array_key_exists($key, $variantKeys)) {
                     $key = $key . $productKey;
+
                 }
                 $variantKeys[$key] = $key;
 
@@ -158,9 +162,7 @@ class GetRatesController extends Controller
                     $originAddress = 'warehouse';
                     $wareHouseShipmentExist = true;
                 }
-
                 $details['origin'][$key] = $originAddress;
-
 
                 $details['items'][$key] = [
                     'id' => $product_settings['id'] ?? '',
@@ -193,13 +195,13 @@ class GetRatesController extends Controller
                     'quote_as_local' => $product_settings['quote_as_local'] ?? false
                 ];
 
-
                 if (!$details['items'][$key]['shipMultiplePackage']) {
                     if (
                         (blank($details['items'][$key]['lineItemLength']) || $details['items'][$key]['lineItemLength'] <= 0) ||
                         (blank($details['items'][$key]['lineItemWidth']) || $details['items'][$key]['lineItemWidth'] <= 0) ||
                         (blank($details['items'][$key]['lineItemHeight']) || $details['items'][$key]['lineItemHeight'] <= 0)
                     ) {
+
                         $details['items'][$key]['exclude_packaging'] = 1;
                         $details['items'][$key]['shipBinAlone'] = 1;
                     }
@@ -207,8 +209,6 @@ class GetRatesController extends Controller
 
             }
         }
-
-
         if ($wareHouseShipmentExist) {
             $originAddress = $this->shipmentPkg->getNearestWarehouse($details, $details['destination']['zip'], $storeData, $this->connectionSettings);
             if (blank($originAddress)) {
@@ -218,11 +218,14 @@ class GetRatesController extends Controller
             $originAddress = $this->getAddressForQuotes($originAddress);
             foreach ($details['origin'] as $key => $origin) {
                 if ($origin == "warehouse") {
-                    $details['origin'][$key] = $originAddress;
+                   $details['origin'][$key] = $originAddress;
+
+
                 }
             }
         }
-        return ['lineItemData' => $details];
+
+       return ['lineItemData' => $details];
     }
 
 
@@ -358,7 +361,8 @@ class GetRatesController extends Controller
                 ])
                 ->exists();
             $enabledAddonSbs = false;
-            if ($installedAddonSbs) {
+            if ($installedAddonSbs)
+        {
                 $addonSbs = PackageSubscription::leftJoin('packages as p', 'package_subscriptions.package_id', '=', 'p.id')
                     ->where('store_id', $store->id)
                     ->where('addon_type', 'SBS')
@@ -420,6 +424,7 @@ class GetRatesController extends Controller
                         'connection_settings.value')
                     ->where('connection_settings.installed_carrier_id', $installedCarrier->id)->first();
                 if ($connectionSettings !== null) {
+
 
                     $this->connectionSettings[$connectionSettings->slug]['creds'] = json_decode($connectionSettings->value, true);
 

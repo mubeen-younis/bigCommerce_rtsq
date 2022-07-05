@@ -58,6 +58,7 @@ class OrderController extends Controller
     {
         try {
             $order = $this->getBCOrderByID($request);
+
             if (empty($order)) {
                 return response()->json(['error' => true,
                     'data' => [],
@@ -149,6 +150,7 @@ class OrderController extends Controller
         if (blank($data)) {
             return [];
         }
+
         $carrierHasInsurance = $this->hasInsureCarrier($rateId);
         $index = explode('idx+', $rateId);
         if (is_string($index[0]) && $index[0] == "shippingGroup") {
@@ -196,6 +198,7 @@ class OrderController extends Controller
 
         /*
         * Shipment Packaging */
+
         $sbsItems = [];
         foreach ($responseFromWS as $carrrierName => $WsResp) {
             foreach ($WsResp as $zip => $ws) {
@@ -278,6 +281,7 @@ class OrderController extends Controller
 
         /*
         * Shipment Origins */
+
         $origins = $lineItem->origin;
         $items = $lineItem->items;
         $count = 0;
@@ -343,7 +347,7 @@ class OrderController extends Controller
             $orderWidget[$zip]['shipping_method'] = $sName . $sMethod;
             $orderWidget[$zip]['shipping_rate'] = '$' . number_format((float)$sRate, 2,);
             // TODO : Need to change originalPiecesOfLineItem -> itemQuantity
-            if ($item->shipMultiplePackage) {
+            if (isset($item->shipMultiplePackage) && $item->shipMultiplePackage) {
                 if ((!in_array($item->lineItemName, $insertedNames))) {
                     $insertedNames[] = $item->lineItemName;
                     $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
@@ -359,11 +363,12 @@ class OrderController extends Controller
                     }
                 }
             } else {
-                if ((!in_array($item->id, $insertedIds))) {
+                if (isset($item->id) && (!in_array($item->id, $insertedIds))) {
                     $insertedIds[] = $item->id;
                     $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
                 }
             }
+
 
             /*If instore and not multi shipment we are showing only instore and local delivery original items*/
             if (!$isMultiShipment && $isInspOrLocal) {
@@ -376,6 +381,7 @@ class OrderController extends Controller
 
             /*
             * Item Accessorials */
+
             $addedHazmat = false;
             if (isset($orderWidget[$zip]['accessories'])) {
                 $addedHazmat = in_array('Hazardous Material', $orderWidget[$zip]['accessories']);
@@ -615,6 +621,7 @@ class OrderController extends Controller
                 $countEndPoint = "https://api.bigcommerce.com/stores/" . $request['store_hash'] . "/v2/orders/count?status_id=" . $status;
             }
             $response = $this->curlRequest->enSingleCurlRequest($countEndPoint, [], $headers, 'GET', false);
+
             $total = (int)ceil(json_decode($response['response'])->count);
 
             if ($status !== '') {
@@ -798,7 +805,7 @@ class OrderController extends Controller
             //allow only create/update orders actions
             $onlyScopes = ['store/order/created', 'store/order/updated'];
             if (empty($store) || !in_array($scope, $onlyScopes)) {
-                return response("",200);
+                return [];
             }
             $toRequest['store_id'] = $store->id;
             $toRequest['store_hash'] = $storeHash;
@@ -806,12 +813,10 @@ class OrderController extends Controller
             $this->accessToken = $store->access_token;
             $this->storeHash = $storeHash;
             $this->moveQuotesTempToReq($toRequest);
-            return response("",200);
             //$saveOrderId = $this->saveUpdateOrderByID($toRequest);
             //$this->setOrderMeta($toRequest);
         } catch (\Exception $exception) {
             Log::info('Exception On Moving Quotes ' . json_encode($exception->getTraceAsString()));
-            return response("",200);
         }
     }
 
