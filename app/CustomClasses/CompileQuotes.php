@@ -1062,10 +1062,10 @@ class CompileQuotes
                 $data = $quote['q'];
                 $access = $this->getAccessorialCode();
                 $price =  $this->calculateOdflPrice($data);    
-                $date = $data['deliveryTimestamp'] ?? null;
+                $date = $data['deliveryDate'] ?? null;
                 $days = $data['totalTransitTimeInDays'] ?? null;
-                $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $data];
-                $title = $this->getTitle($lableAs, false, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
+                $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
+                $title = $this->getTitle($lableAs, false, false, $days, [], $dateAndDays);
 
                 $arraySorting['simple'][$origin] = $price;
                 $originQuotes[$origin]['simple']['code'] = 'odflltl' . $access;
