@@ -2693,7 +2693,12 @@ class CompileQuotes
         $this->residentialDlvry = $residential['echoLtl'] == 'Y' ? 1 : 0;
         $this->alwaysResi = $this->residential['alwaysResi']['echoLtl'] ?? false;
         $this->quoteSettings = $connectionSettings['echo-ltl']['quote_settings'] ?? [];
+        $carrierServices = $connectionSettings['echo-ltl']['carrier_services'] ?? [];
         $this->quoteSettingsData(); 
+
+        if (empty($carrierServices)) {
+            return [];
+        }
         
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
@@ -2734,8 +2739,8 @@ class CompileQuotes
 
                 foreach ($quote['q'] as $key => $data) {
                     $srvcType = $data['CarrierSCAC'] ?? '';
-
-                    if (isset($srvcType) && !empty($srvcType)) {
+                    
+                    if (!empty($srvcType) && in_array($srvcType, $carrierServices)) {
                         $access = $this->getAccessorialCode();
                         $data['totalNetCharge']['Amount'] = $data['TotalCharge'] ?? 0;
                         $data['surcharges']['liftgateFee'] = $echoLtl->getLGFee($data['Accessorials'] ?? []) ?? 0;
