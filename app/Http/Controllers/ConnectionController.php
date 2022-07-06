@@ -18,6 +18,7 @@ use App\CustomClasses\YrcLTL\ConnectionSettings as YrcLtlConnectionSettings;
 use App\CustomClasses\FreightQuote\Ltl\ConnectionSettings as FreightQuoteConSett;
 use App\CustomClasses\EstesLTL\ConnectionSettings as EstesLTLConnectionSettings;
 use App\CustomClasses\DayRossLTL\ConnectionSettings as DayRossLtlConnectionSettings;
+use App\CustomClasses\EchoLogisticsLtl\ConnectionSettings as EchoLogisticsLtlConnectionSettings;
 use App\Endpoints\Endpoints;
 use App\Models\Connection;
 use App\Models\Coupon;
@@ -57,6 +58,7 @@ class ConnectionController extends Controller
         $this->freightQuoteLtlTestCon = new FreightQuoteConSett();
         $this->estesLTLConL = new EstesLTLConnectionSettings();
         $this->dayRossLtlTestCon = new DayRossLtlConnectionSettings();
+        $this->echoLogisticsLtlTestCon = new EchoLogisticsLtlConnectionSettings();
     }
 
     public function index(Request $request)
@@ -154,6 +156,9 @@ class ConnectionController extends Controller
                     return response()->json($response);
                 case 'yrc-ltl':
                     $response = $this->yrcLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'echo-ltl':
+                    $response = $this->echoLogisticsLtlTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
                 default:
                     return response()->json([
