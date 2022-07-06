@@ -1060,6 +1060,9 @@ class CompileQuotes
                             if($value['description'] == "Lift Gate"){
                             $data['surcharges']['liftgateFee'] = $value['amount'] ?? 0;
                             }
+                            if($value['description'] == "Residential"){
+                                $data['surcharges']['residentialFee'] = $value['amount'] ?? 0;
+                                }
                             if (isset($value['description'])) {
                                 $hazShipmentArr[$origin] = $value['description'] == "Hazardous Materials" ? 'Y' : 'N';
                             }

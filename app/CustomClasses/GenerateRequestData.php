@@ -1519,7 +1519,7 @@ class GenerateRequestData
             'subscriptionKey' => $connSettings['creds']['subscriptionKey'],
 
             // -------------API INFO------------- //
-            'residentialDelivery' => $residential,
+            'residentialDelivery' => $alwaysResi ? 'Y' : $residential,
             'thresholdWeightLimit' => $weightThreshold,
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
