@@ -147,6 +147,11 @@ class GenerateRequestData
                     $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['dayross'] = $wweLtlArr;
                     break;
+                case 'echo-ltl':
+                    $echoLtlArr = $this->echoLtlEnitArr($con1, $destination);
+                    $echoLtlArr['originAddress'] = $enitOrigin;
+                    $carriersArr['carriers']['echoLogistics'] = $echoLtlArr;
+                    break;
             }
         }
        return  ['carriersArr' => $carriersArr, 'residential' => $this->resiCarrier];
@@ -393,6 +398,19 @@ class GenerateRequestData
             'returnQuotesOnExceedWeight' => 1,
             'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
             'api' => $this->getApiInfoArrRossdayLtl($connSettings, $destination),
+        ];
+    }
+
+    private function echoLtlEnitArr($connSettings, $destination)
+    {
+        return [
+            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'serverName' => "https://" . $this->storeData['store']['name'],
+            'carrierMode' => 'pro',
+            'quotestType' => 'ltl',
+            'version' => '1.0',
+            'returnQuotesOnExceedWeight' => 1,
+            'api' => $this->getApiInfoArrEchoLtl($connSettings, $destination),
         ];
     }
 
@@ -1510,6 +1528,59 @@ class GenerateRequestData
                 /* Accessorial array */
                 'accessorial' => $accessorial
             ];
+
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
+    }
+
+    private function getApiInfoArrEchoLtl($connSettings, $destination)
+    {
+        $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
+            (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+        /*
+         * Check if rad hit not consumed and residential is enables
+         * **/
+        $residential = 'N';
+        $alwaysResi = false;
+
+        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+            if ($this->radHitConsumed == 0) {
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+
+            } else {
+                $residential = $this->residential;
+            }
+            if ($liftGate != 'Y') {
+                $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
+            }
+        } else {
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+        }
+
+        $this->resiCarrier['echoLtl'] = $residential;
+        $this->resiCarrier['alwaysResi']['echoLtl'] = $alwaysResi;
+       
+        $accessorial = [];
+        if ($alwaysResi || $residential != 'N') {
+            array_push($accessorial, 'RESIDENTIALDELIVERY');
+        }
+        if ($liftGate == 'Y') {
+            array_push($accessorial, 'LIFTGATEREQUIRED');
+        }
+
+        $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
+
+        $apiArray = [
+            'apiKey' => $connSettings['creds']['api_key'],
+            'accountNumber' => $connSettings['creds']['account_number'],
+
+            'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
+            'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
+            'thresholdWeightLimit' => $weightThreshold,
+
+            'accessorial' => $accessorial,
+        ];
 
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }

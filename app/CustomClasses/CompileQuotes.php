@@ -13,6 +13,7 @@ use App\CustomClasses\WWESMALL\WweSmallQuoteResults;
 use App\CustomClasses\Unishippers\small\QuotesResults as unishippersSmallQuotesResults;
 use App\CustomClasses\DayRossLTL\QuotesResults as dayRossLtlQuotesResults;
 use App\CustomClasses\YrcLTL\QuotesResults as yrcLtlQuotesResults;
+use App\CustomClasses\EchoLogisticsLtl\QuotesResults as echoLogisticsLtlQuotesResults;
 use App\CustomClasses\Shipping;
 use App\Models\Locations;
 use Illuminate\Support\Facades\DB;
@@ -774,6 +775,13 @@ class CompileQuotes
                 case "dayross":
                     $resp = $this->compileDayRossLtlQuotes($shipment, $connectionSettings, $allOrigins, $hazmatAllItems, $residential);
                     $quotesTemp['dayross'] = $resp;
+                    if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
+                        $quotesRes = array_merge($quotesRes, $resp);
+                    }
+                    break;
+                case 'echoLogistics':
+                    $resp = $this->compileEchoLogisticsLtlQuotes($shipment, $connectionSettings, $allOrigins, $hazmatAllItems, $residential);
+                    $quotesTemp['echoLogistics'] = $resp;
                     if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
                         $quotesRes = array_merge($quotesRes, $resp);
                     }
@@ -2677,6 +2685,129 @@ class CompileQuotes
 
         $resp = $allQuotes;
         return $resp;
+    }
+
+    private function compileEchoLogisticsLtlQuotes($shipments, $connectionSettings, $allOrigins, $hazmatAllItems, $residential)
+    {
+        $this->isResi = $residential['echoLtl'] == 'Y';
+        $this->residentialDlvry = $residential['echoLtl'] == 'Y' ? 1 : 0;
+        $this->alwaysResi = $this->residential['alwaysResi']['echoLtl'] ?? false;
+        $this->quoteSettings = $connectionSettings['echo-ltl']['quote_settings'] ?? [];
+        $this->quoteSettingsData(); 
+        
+        $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
+        $count = 0;
+        $lgQuotes = false;
+        
+        $labelAs = $this->quoteSettings['label_as'] ?? '';
+        $echoLtl = new echoLogisticsLtlQuotesResults();
+        if (!$this->isMultiShipment) {
+            $this->isMultiShipment = $echoLtl->isMultiShipment($shipments);
+        }        
+
+        /* Quotes compilation */
+        foreach ($shipments as $origin => $quote) {
+            if (isset($quote['severity'])) {
+                return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
+            }
+
+            if ($count == 0) { 
+                $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
+                
+                $lgQuotes = $echoLtl->isLGQuotes($this->quoteSettings);
+                if (!$lgQuotes) {
+                    $lgQuotes = $echoLtl->isRADEnabled($this->quoteSettings, $this->isResi);
+                }
+            }
+
+            $originQuotes = $arraySorting = [];
+
+            if (isset($quote['q'])) {
+                $items = $quote['q']['lineItems'] ?? [];
+                foreach ($items as $key => $item) {
+                    if($item['hazardous'] == 'Y'){
+                        $hazShipmentArr[$origin] = 'Y';
+                        break;
+                    }
+                        $hazShipmentArr[$origin] = 'N';
+                }
+
+                foreach ($quote['q'] as $key => $data) {
+                    $srvcType = $data['CarrierSCAC'] ?? '';
+
+                    if (isset($srvcType) && !empty($srvcType)) {
+                        $access = $this->getAccessorialCode();
+                        $data['totalNetCharge']['Amount'] = $data['TotalCharge'] ?? 0;
+                        $data['surcharges']['liftgateFee'] = $echoLtl->getLGFee($data['Accessorials'] ?? []) ?? 0;
+                        $price = $this->calculatePrice($data);
+                        $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : $data['CarrierName'];
+
+                        $days = $data['totalTransitTimeInDays'] ?? null;
+                        $dateAndDays = $echoLtl->getShipmentDateAndDays($data);
+                        $title = $this->getTitle($data['CarrierName'], false, false, $days, [], $dateAndDays);
+
+                        $arraySorting['simple'][$key] = $price;
+                        $originQuotes[$key]['simple']['code'] = 'echoltl' . $access . $srvcType;
+                        $originQuotes[$key]['simple']['rate'] = $price;
+                        $originQuotes[$key]['simple']['title'] = $title;
+
+                        if ($lgQuotes) {
+                            $lgAccess = $this->getAccessorialCode(true);
+                            $lgPrice = $this->calculatePrice($data, true);
+                            $lgTitle = $this->getTitle($data['CarrierName'], true, false, $days, [], $dateAndDays);
+                            $arraySorting['liftgate'][$key] = $lgPrice;
+                            $originQuotes[$key]['liftgate']['code'] = 'echoltl' . $lgAccess . $srvcType;
+                            $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
+                            $originQuotes[$key]['liftgate']['title'] = $lgTitle;
+                        }
+                    }
+                }
+            }
+
+            $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);    
+            if ($compiledQuotes !== null && !empty($compiledQuotes)) {
+                if (count($compiledQuotes) > 1) {
+                    foreach ($compiledQuotes as $k => $service) {
+                        $allQuotes['simple'][] = $service['simple'];
+                        $multiShipmentQuotes['simple'][$origin] = $service['simple'];
+                        $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
+                        $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
+                    }
+                } else {
+                    $service = reset($compiledQuotes);
+                    $allQuotes['simple'][] = $service['simple'] ?? '';
+                    $multiShipmentQuotes['simple'][$origin] = $service['simple'] ?? '';
+                    $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
+                    $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
+                }
+            }
+
+            if ($this->isMultiShipment) {
+                $odwArr[$origin]['quotes'] = $compiledQuotes;
+            }
+
+            $count++;
+        }
+
+        $allQuotes = $this->getFinalQuotesArray($allQuotes);
+
+        /* Quotes for instore delivery */
+        if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
+            $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
+        }
+
+        /* Multishipment quotes with LGD  */
+        if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1)) {
+            $allQuotes = $this->forceChangeTitle($allQuotes);
+            $resp = [
+                'checkoutQuotes' => $allQuotes,
+                'multiShipmentQuotes' => $multiShipmentQuotes,
+            ];
+
+            return $resp;
+        }
+
+        return $allQuotes;
     }
 
     public function getInsPicAndLocDelQuotes($quote, $allOrigins): array 
