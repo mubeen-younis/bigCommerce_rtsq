@@ -1052,13 +1052,18 @@ class CompileQuotes
             $originQuotes = [];
             $arraySorting = [];
             if (isset($quote['q'])) {
-                if (isset($quote['hazardousStatus'])) {
-                    $hazShipmentArr[$origin] = $quote['hazardousStatus'] == 'y' ? 'Y' : 'N';
-                }
                 foreach ($quote['q'] as $key => $data) {
                     if (isset($data['scac']) && in_array($data['scac'], $allConfigServices)) {
                         $access = $this->getAccessorialCode() . $resiPickup;
-                        $data['totalNetCharge']['Amount'] = $data['customerRate'];
+                        $data['totalNetCharge']['Amount'] = $data['customerRate'] ?? 0;
+                        foreach ($data['priceCharges'] as $index => $value){
+                            if($value['description'] == "Lift Gate"){
+                            $data['surcharges']['liftgateFee'] = $value['amount'] ?? 0;
+                            }
+                            if (isset($value['description'])) {
+                                $hazShipmentArr[$origin] = $value['description'] == "Hazardous Materials" ? 'Y' : 'N';
+                            }
+                        }
                         $price = $this->calculatePrice($data);
                         /*
                        * Date 01-07-22
