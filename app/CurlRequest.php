@@ -3,6 +3,9 @@
 namespace App;
 
 
+use App\CustomClasses\Functions;
+use Illuminate\Support\Facades\Log;
+
 /**
  * Class CurlRequest
  * @package App
@@ -51,7 +54,9 @@ class CurlRequest
             $this->curlResponse['info'] = $info;
             return $this->curlResponse;
         }catch (\Exception $exception){
-            dd($exception->getMessage());
+            Log::info('Curl Exception '.json_encode($exception->getMessage()));
+            $this->curlResponse['status'] = false;
+            $this->curlResponse['response'] = [];
         }
     }
 

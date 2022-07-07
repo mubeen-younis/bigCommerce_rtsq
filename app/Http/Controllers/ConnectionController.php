@@ -14,8 +14,10 @@ use App\CustomClasses\WweLTL\WweLtlConnectionSettings;
 use App\CustomClasses\WWESMALL\SmallConnectionSettings;
 use App\CustomClasses\XPO\ltl\ConnectionSettings as XPOLtlConnectionSettings;
 use App\CustomClasses\Unishippers\small\ConnectionSettings as UnishippersSmallConnectionSettings;
-use App\CustomClasses\FreightQuote\Ltl\ConnectionSettings as FreightQuoteConSett;
 use App\CustomClasses\YrcLTL\ConnectionSettings as YrcLtlConnectionSettings;
+use App\CustomClasses\FreightQuote\Ltl\ConnectionSettings as FreightQuoteConSett;
+use App\CustomClasses\EstesLTL\ConnectionSettings as EstesLTLConnectionSettings;
+use App\CustomClasses\DayRossLTL\ConnectionSettings as DayRossLtlConnectionSettings;
 use App\CustomClasses\SaiaLTL\ConnectionSettings as SaiaLTLConnectionSettings;
 use App\Endpoints\Endpoints;
 use App\Models\Connection;
@@ -52,8 +54,10 @@ class ConnectionController extends Controller
         $this->xpoLtlTestCon = new XPOLtlConnectionSettings();
         $this->rnlLtlTestCon = new RNLLtlConnectionSettings();
         $this->unishippersSmallTestCon = new UnishippersSmallConnectionSettings();
-        $this->freightQuoteLtlTestCon = new FreightQuoteConSett();
         $this->yrcLtlTestCon = new YrcLtlConnectionSettings();
+        $this->freightQuoteLtlTestCon = new FreightQuoteConSett();
+        $this->estesLTLConL = new EstesLTLConnectionSettings();
+        $this->dayRossLtlTestCon = new DayRossLtlConnectionSettings();
         $this->saiaLtlTestCon = new SaiaLTLConnectionSettings();
     }
 
@@ -102,11 +106,14 @@ class ConnectionController extends Controller
             ->first();
 
         if ($checkCarrierType === null) {
-            return response()->json(["error" => true, "data" => [],
-                'message' => 'Carrier Not Found']);
+            return response()->json([
+                "error" => true, "data" => [],
+                'message' => 'Carrier Not Found'
+            ]);
         }
 
         if (!empty($request->testType)) {
+
             switch ($checkCarrierType->slug) {
                 case "ltl-quotes":
                     $response = $this->wweLtlTestCon->testLtlConnection($request, $checkCarrierType->name);
@@ -138,8 +145,11 @@ class ConnectionController extends Controller
                 case 'unishippers-small':
                     $response = $this->unishippersSmallTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
-                case 'saia-ltl':
-                    $response = $this->saiaLtlTestCon->testConnection($request, $checkCarrierType->name);
+                case 'dayross-ltl':
+                    $response = $this->dayRossLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'estes-ltl':
+                    $response = $this->estesLTLConL->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
                 case 'freightquote-ltl':
                     $response = $this->freightQuoteLtlTestCon->testConnection($request, $checkCarrierType->name);
@@ -147,11 +157,17 @@ class ConnectionController extends Controller
                 case 'yrc-ltl':
                     $response = $this->yrcLtlTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
+                case 'saia-ltl':
+                    $response = $this->saiaLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
                 default:
-                    return response()->json(["error" => true, "data" => [],
-                        'message' => 'No carrier Matches']);
+                    return response()->json([
+                        "error" => true, "data" => [],
+                        'message' => 'No carrier Matches'
+                    ]);
             }
         }
+
         $message = 'Connection settings has been saved successfully';
         $carriersArr = ['ltl-quotes', 'small-package', 'gtz-ltl', 'unishippers-small'];
         if (!blank($request['promo_code']) &&
@@ -165,7 +181,6 @@ class ConnectionController extends Controller
                 $message = 'Connection settings has been saved but the Promo Code is not applied.';
             }
         }
-
         $con = Connection::firstOrNew(['installed_carrier_id' => $request->carrierId]);
         $con->value = json_encode($request->all());
         $con->installed_carrier_id = $request->carrierId;
