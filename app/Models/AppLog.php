@@ -5,19 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
-use Laravel\Scout\Searchable;
 
 class AppLog extends Model
 {
-    use HasFactory, Searchable;
+    use HasFactory;
 
     public $timestamps = false;
 
-
-    public static function getLogs($search, $limit = 20)
-    {
-        return AppLog::search($search)->paginate($limit);
-    }
 
     public static function getLogsDB($searchTerm, $limit = 20)
     {
