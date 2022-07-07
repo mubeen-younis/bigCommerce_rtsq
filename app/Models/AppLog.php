@@ -30,4 +30,3 @@ class AppLog extends Model
         return Arr::only($this->toArray(), ['message', 'context']);
     }
 }
-
