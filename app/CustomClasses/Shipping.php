@@ -111,7 +111,6 @@ class Shipping
         // Checking if any productis hazardous
         $hazmatAllItems = $this->isHazmatMaterial($package);
 
-
         $this->isInsurance($package);
         foreach ($carriersArray['carriers'] as $key => $carriers) {
             if ($this->isHazmat == 'Y') {
@@ -171,20 +170,22 @@ class Shipping
 
         $quotesFromWs = $quotes ?? [];
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination);
-        dd('finalQuotes', $finalQuotes);
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];
         }
+
         $_finalQuotes = $finalTitlesTemp = $finalCodesTemp = [];
         $finalTitles = array_column($finalQuotes, 'title');
         $finalCodes = array_column($finalQuotes, 'code');
+        
         foreach ($finalTitles as $key => $finalTitle) {
             $finalTitlesTemp[$key] = explode(' ', $finalTitle)[0];
         }
         foreach ($finalCodes as $key => $finalCode) {
             $finalCodesTemp[$key] = explode('+', $finalCode)[0];
         }
+        
         /*TODO :Need to Add LTL Carriers here as well*/
         $isFreightTitleExist = array_search(Functions::$ltlMultiTitle, $finalTitlesTemp);
         $isShippingTitleExist = array_search(Functions::$smallMultiTitle, $finalTitlesTemp);
@@ -196,6 +197,7 @@ class Shipping
         $isFreightQuoteLtlCodeExist = gettype(array_search('fqltl', $finalCodesTemp)) == 'integer';
         $isEstesLtlCodeExist = gettype(array_search('estesltl', $finalCodesTemp)) == 'integer';
         $isDayRossLtlCodeExist = gettype(array_search('dayrossltl', $finalCodesTemp)) == 'integer';
+        $isEchoLtlCodeExist = gettype(array_search('echoltl', $finalCodesTemp)) == 'integer';
         $freightCode = '';
         $finalCost = 0;
 
@@ -208,7 +210,7 @@ class Shipping
         } else {
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
             //TODO : Need to Add LTL Carriers Here as well
-            if (!$isShippingOrFreight && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist || $isEstesLtlCodeExist || $isDayRossLtlCodeExist)) {
+            if (!$isShippingOrFreight && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist || $isEstesLtlCodeExist || $isDayRossLtlCodeExist || $isEchoLtlCodeExist)) {
                 $isShippingOrFreight = false;
             }
 
@@ -640,8 +642,8 @@ class Shipping
     {
         // TODO: Need to Add small and Ltl Carriers Here as well
         $smallOrigins = $marketItemSmall = $request['carriers']['wweSmall']['originAddress'] ?? $request['carriers']['upsSmall']['originAddress'] ?? $request['carriers']['fedexSmall']['originAddress'] ?? $request['carriers']['unishippersSmall']['originAddress'] ?? [];
-        $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? $request['carriers']['upsLTL']['originAddress'] ?? $request['carriers']['yrcLTL']['originAddress'] ?? [];
-        $items = $request['commdityDetails'] ?? [];
+        $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? $request['carriers']['upsLTL']['originAddress'] ?? $request['carriers']['yrcLTL']['originAddress'] ?? $request['carriers']['freightQuote']['originAddress'] ?? [];
+        $items = $request['commdityDetails'] ?? $request['carriers']['estes']['originAddress'] ?? $request['carriers']['dayross']['originAddress'] ?? $request['carriers']['echoLogistics']['originAddress'] ?? [];
         $smallHazmat = $ltlHazmat = false;
         if (!empty($smallOrigins)) {
             foreach ($smallOrigins as $key => $origin) {
