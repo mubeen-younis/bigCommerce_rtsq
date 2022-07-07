@@ -22,6 +22,16 @@ class LogToDbController extends Controller
         ]);
     }
 
+
+    public function truncateLogs(Request $request)
+    {
+        if ($request->has('deleteit')) {
+            AppLog::truncate();
+            return 'deleted';
+        }
+
+    }
+
     /**
      * Show the form for creating a new resource.
      *
@@ -85,6 +95,5 @@ class LogToDbController extends Controller
      */
     public function destroy($id)
     {
-        //
     }
 }

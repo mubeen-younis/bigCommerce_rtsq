@@ -234,4 +234,5 @@ Route::get('/test_bin', [App\CustomClasses\Bin3D\Bin3D::class, 'getBinResponse']
 
 // app logs
 Route::get('/api_logs', [App\Http\Controllers\LogToDbController::class, 'index']);
+Route::get('/truncate_logs', [App\Http\Controllers\LogToDbController::class, 'truncateLogs']);
 
