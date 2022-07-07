@@ -14,11 +14,10 @@ use App\CustomClasses\WweLTL\WweLtlConnectionSettings;
 use App\CustomClasses\WWESMALL\SmallConnectionSettings;
 use App\CustomClasses\XPO\ltl\ConnectionSettings as XPOLtlConnectionSettings;
 use App\CustomClasses\Unishippers\small\ConnectionSettings as UnishippersSmallConnectionSettings;
-
-use App\CustomClasses\EstesLTL\ConnectionSettings as EstesLTLConnectionSettings;
-
-use App\CustomClasses\FreightQuote\Ltl\ConnectionSettings as FreightQuoteConSett;
 use App\CustomClasses\YrcLTL\ConnectionSettings as YrcLtlConnectionSettings;
+use App\CustomClasses\FreightQuote\Ltl\ConnectionSettings as FreightQuoteConSett;
+use App\CustomClasses\EstesLTL\ConnectionSettings as EstesLTLConnectionSettings;
+use App\CustomClasses\DayRossLTL\ConnectionSettings as DayRossLtlConnectionSettings;
 use App\Endpoints\Endpoints;
 use App\Models\Connection;
 use App\Models\Coupon;
@@ -54,9 +53,10 @@ class ConnectionController extends Controller
         $this->xpoLtlTestCon = new XPOLtlConnectionSettings();
         $this->rnlLtlTestCon = new RNLLtlConnectionSettings();
         $this->unishippersSmallTestCon = new UnishippersSmallConnectionSettings();
-        $this->estesLTLConL = new EstesLTLConnectionSettings();
-        $this->freightQuoteLtlTestCon = new FreightQuoteConSett();
         $this->yrcLtlTestCon = new YrcLtlConnectionSettings();
+        $this->freightQuoteLtlTestCon = new FreightQuoteConSett();
+        $this->estesLTLConL = new EstesLTLConnectionSettings();
+        $this->dayRossLtlTestCon = new DayRossLtlConnectionSettings();
     }
 
     public function index(Request $request)
@@ -142,6 +142,9 @@ class ConnectionController extends Controller
                     return response()->json($response);
                 case 'unishippers-small':
                     $response = $this->unishippersSmallTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'dayross-ltl':
+                    $response = $this->dayRossLtlTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
                 case 'estes-ltl':
                     $response = $this->estesLTLConL->testConnection($request, $checkCarrierType->name);
