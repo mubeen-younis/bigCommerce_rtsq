@@ -1017,6 +1017,8 @@ class CompileQuotes
         $this->alwaysResi = $this->residential['alwaysResi']['tqlLtl'] ?? false;
         $this->quoteSettings = $connectionSettings['tql-ltl']['quote_settings'] ?? [];
         $allConfigServices = $connectionSettings['tql-ltl']['carrier_services'] ?? [];
+        $isStandardChecked = $connectionSettings['tql-ltl']['quote_settings']['standard_check'] ?? false;
+        $isGuaranteedChecked = $connectionSettings['tql-ltl']['quote_settings']['guaranteed_check'] ?? false;
         $this->quoteSettingsData();
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
@@ -1077,22 +1079,74 @@ class CompileQuotes
                         $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
                         $title = $this->getTitle($data['carrier'], false, false, $data['totalCalenderDaysInTransit'], [], $dateAndDays);
                         $arraySorting['simple'][$key] = $price;
-                        $originQuotes[$key]['simple']['code'] = 'tqlltl' . $data['scac'] . $access;
-                        $originQuotes[$key]['simple']['rate'] = $price;
-                        $originQuotes[$key]['simple']['title'] = $title;
-                        if ($lgQuotes) {
-                            $lgAccess = 'tqlltl' . $this->getAccessorialCode(true) . $resiPickup;
-                            $lgPrice = $this->calculatePrice($data, true);
-                            $lgTitle = $this->getTitle($data['carrier'], true, false, $data['totalCalenderDaysInTransit'], [], $dateAndDays);
-                            $arraySorting['liftgate'][$key] = $lgPrice;
-                            $originQuotes[$key]['liftgate']['code'] = $data['scac'] . $lgAccess;
-                            $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
-                            $originQuotes[$key]['liftgate']['title'] = $lgTitle;
+                        $method = $this->quoteSettings['method'];
+
+                        if($isStandardChecked && !$isGuaranteedChecked && ($method == 4 || $method == 5 || $method == 6)){
+                           dd("1");
+                            $originQuotes[$key]['simple']['code'] = 'tqlltl' . $data['scac'] . $access;
+                            $originQuotes[$key]['simple']['rate'] = $price;
+                            $originQuotes[$key]['simple']['title'] = $title;
+                           if ($lgQuotes) {
+                                $lgAccess = 'tqlltl' . $this->getAccessorialCode(true) . $resiPickup;
+                                $lgPrice = $this->calculatePrice($data, true);
+                                $lgTitle = $this->getTitle($data['carrier'], true, false, $data['totalCalenderDaysInTransit'], [], $dateAndDays);
+                                $arraySorting['liftgate'][$key] = $lgPrice;
+                                $originQuotes[$key]['liftgate']['code'] = $data['scac'] . $lgAccess;
+                                $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
+                                $originQuotes[$key]['liftgate']['title'] = $lgTitle;
+                            }
+                        } 
+                        elseif($isGuaranteedChecked && !$isStandardChecked && ($method == 4 || $method == 5 || $method == 6)){
+                            dd("2");
+                            $originQuotes[$key]['simple']['code'] = 'tqlltl' . $data['scac'] . $access;
+                            $originQuotes[$key]['simple']['rate'] = $price;
+                            $originQuotes[$key]['simple']['title'] = $title;
+                           if ($lgQuotes) {
+                                $lgAccess = 'tqlltl' . $this->getAccessorialCode(true) . $resiPickup;
+                                $lgPrice = $this->calculatePrice($data, true);
+                                $lgTitle = $this->getTitle($data['carrier'], true, false, $data['totalCalenderDaysInTransit'], [], $dateAndDays);
+                                $arraySorting['liftgate'][$key] = $lgPrice;
+                                $originQuotes[$key]['liftgate']['code'] = $data['scac'] . $lgAccess;
+                                $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
+                                $originQuotes[$key]['liftgate']['title'] = $lgTitle;
+                            }
+                        } 
+                        elseif($isStandardChecked && $isGuaranteedChecked && ($method == 4 || $method == 5 || $method == 6)){
+                            dd("3");
+                            $originQuotes[$key]['simple']['code'] = 'tqlltl' . $data['scac'] . $access;
+                            $originQuotes[$key]['simple']['rate'] = $price;
+                            $originQuotes[$key]['simple']['title'] = $title;
+                           if ($lgQuotes) {
+                                $lgAccess = 'tqlltl' . $this->getAccessorialCode(true) . $resiPickup;
+                                $lgPrice = $this->calculatePrice($data, true);
+                                $lgTitle = $this->getTitle($data['carrier'], true, false, $data['totalCalenderDaysInTransit'], [], $dateAndDays);
+                                $arraySorting['liftgate'][$key] = $lgPrice;
+                                $originQuotes[$key]['liftgate']['code'] = $data['scac'] . $lgAccess;
+                                $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
+                                $originQuotes[$key]['liftgate']['title'] = $lgTitle;
+                            }
+                        }
+                        elseif(!$isStandardChecked && !$isGuaranteedChecked && ($method == 1 || $method == 2 || $method == 3)){
+                            dd("4");
+                            $originQuotes[$key]['simple']['code'] = 'tqlltl' . $data['scac'] . $access;
+                            $originQuotes[$key]['simple']['rate'] = $price;
+                            $originQuotes[$key]['simple']['title'] = $title;
+                           if ($lgQuotes) {
+                                $lgAccess = 'tqlltl' . $this->getAccessorialCode(true) . $resiPickup;
+                                $lgPrice = $this->calculatePrice($data, true);
+                                $lgTitle = $this->getTitle($data['carrier'], true, false, $data['totalCalenderDaysInTransit'], [], $dateAndDays);
+                                $arraySorting['liftgate'][$key] = $lgPrice;
+                                $originQuotes[$key]['liftgate']['code'] = $data['scac'] . $lgAccess;
+                                $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
+                                $originQuotes[$key]['liftgate']['title'] = $lgTitle;
+                            }
                         }
                     }
                 }
             }
-            $compiledQuotes =  $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
+            //dd(1099,$originQuotes);
+            $compiledQuotes =  $this->getCompiledQuotesTQL($originQuotes, $arraySorting, $lgQuotes);
+            dd(1096,$compiledQuotes);
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
                 if (count($compiledQuotes) > 1) {
                     foreach ($compiledQuotes as $k => $service) {
@@ -3604,6 +3658,33 @@ class CompileQuotes
         return $resp;
     }
 
+    public function getCompiledQuotesTQL($services, $arraySorting, $lgQuotes)
+    {
+
+        if (empty($arraySorting) || empty($services)) {
+            return [];
+        }
+        asort($arraySorting['simple']);
+       // dd(3615, $arraySorting, $services);
+        $this->quoteSettings['method'] = $this->quoteSettings['method'] ?? 1;
+        if ($this->quoteSettings['method'] == 2 && $this->isMultiShipment == false) { //Cheapest method
+            $options = (int)$this->quoteSettings['number_of_options'] ?? 1;
+        } elseif ($this->quoteSettings['method'] == 5 && $this->isMultiShipment == false) { //Cheapest method
+            $options = (int)$this->quoteSettings['number_of_options'] ?? 1;
+        } elseif ($this->quoteSettings['method'] == 3) { //Average rate
+            $options = (int)$this->quoteSettings['number_of_options'];
+        } else {
+            $options = 1;
+        }
+        $sliced = array_slice($arraySorting['simple'], 0, $options, true);
+       // dd($arraySorting['simple']);
+        if ($this->quoteSettings['method'] == 3) {
+            return $this->averageRattingMethod($arraySorting, $options, $lgQuotes);
+        }
+
+        $resp = array_intersect_key($services, $sliced);
+        return $resp;
+    }
 
     /**
      * @param $ratesArray
