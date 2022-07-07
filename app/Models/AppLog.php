@@ -11,10 +11,18 @@ class AppLog extends Model
 {
     use HasFactory, Searchable;
 
+    public $timestamps = false;
+
 
     public static function getLogs($search, $limit = 20)
     {
         return AppLog::search($search)->paginate($limit);
+    }
+
+    public static function getLogsDB($searchTerm, $limit = 20)
+    {
+        return AppLog::where('message', 'LIKE', "%{$searchTerm}%")
+            ->orWhere('context', 'LIKE', "%{$searchTerm}%")->paginate($limit);
     }
 
     public function toSearchableArray()
