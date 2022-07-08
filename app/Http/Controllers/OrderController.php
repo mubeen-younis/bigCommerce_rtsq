@@ -812,10 +812,10 @@ class OrderController extends Controller
             $this->accessToken = $store->access_token;
             $this->storeHash = $storeHash;
             $this->moveQuotesTempToReq($toRequest);
-            //$saveOrderId = $this->saveUpdateOrderByID($toRequest);
-            //$this->setOrderMeta($toRequest);
+            return response()->json(true, 200);
         } catch (\Exception $exception) {
             Log::info('Exception On Moving Quotes ' . json_encode($exception->getTraceAsString()));
+            return response()->json(true, 200);
         }
     }
 
