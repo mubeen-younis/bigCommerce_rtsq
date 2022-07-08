@@ -726,12 +726,40 @@ class Shipping
     private function formatCheapestFinalQuotes($quotes): array
     {
         $finalCheapestQuotes = $quotes ?? [];
+        $index = [];
         if (empty($finalCheapestQuotes)) {
             return $finalCheapestQuotes;
         }
 
         $freightTitle = Functions::$ltlMultiTitle;
         $shippingTitle = Functions::$smallMultiTitle;
+
+        if (!empty($finalCheapestQuotes)) {
+            foreach($finalCheapestQuotes as $key => $data){  
+                if(strpos($data['title'], $freightTitle) === false && strpos($data['title'], $shippingTitle) === false){   
+                    $var = '(';
+                    if(strpos($data['title'], 'w') !== false){
+                        $var = "w";
+                    }
+                    $res = explode($var, $data['title'])[0] ?? " ";
+               
+
+                    $value = $this->cheep($res,$finalCheapestQuotes);
+                
+                    foreach($value as $key){
+                        $keyToDelete = array_search($key, $finalCheapestQuotes);
+                        unset($finalCheapestQuotes[$keyToDelete]);
+                    }
+                    if(!empty($value)){
+                     $cheapest[] = $this->getCheapestQuotesArr($value) ?? [];
+                     $index = array_merge($finalCheapestQuotes,$cheapest);     
+                    }
+                }
+            }
+            if(!empty($index)){
+                return $index;
+            }
+        }
 
         $freightQuotesArr = collect($finalCheapestQuotes)->filter(function ($quote) use ($freightTitle) {
             return strpos($quote['title'], $freightTitle) !== false;
@@ -740,18 +768,19 @@ class Shipping
             return strpos($quote['title'], $shippingTitle) !== false;
         })->toArray() ?? [];
 
+        $freightCheapest = $this->getCheapestQuotesArr($freightQuotesArr) ?? [];
+        $shippingCheapest = $this->getCheapestQuotesArr($shippingQuotesArr) ?? [];
+
         if (empty($freightQuotesArr) && empty($shippingQuotesArr)) {
             return $finalCheapestQuotes;
         }
         else if (empty($freightQuotesArr) && !empty($shippingQuotesArr)) {
-            return $shippingQuotesArr;
+            return $shippingCheapest;
         }
         else if (!empty($freightQuotesArr) && empty($shippingQuotesArr)) {
-            return $freightQuotesArr;
+            return $freightCheapest;
         }
 
-        $freightCheapest = $this->getCheapestQuotesArr($freightQuotesArr) ?? [];
-        $shippingCheapest = $this->getCheapestQuotesArr($shippingQuotesArr) ?? [];
 
         if (!empty($freightCheapest) && !empty($shippingCheapest)) {
             $finalCheapestQuotes = $bothChpeastQuotesArr = [];
@@ -764,11 +793,20 @@ class Shipping
         return $finalCheapestQuotes;
     }
 
+    private function cheep($res,$finalCheapestQuotes){
+        $SingleQuotesArr = collect($finalCheapestQuotes)->filter(function ($quote) use ($res) {
+            return strpos($quote['title'], $res) !== false;
+        })->toArray() ?? [];
+        return $SingleQuotesArr;
+    }
+
     private function getCheapestQuotesArr($quotes):array
     {
         $cheapestQuote = [];
         $quotes = $quotes ?? [];
-
+        if(count($quotes) == 1){
+            return $quotes;
+        }
         if (isset($quotes) && !empty($quotes)) {
             $minRate = min(array_column($quotes, 'rate'));
             foreach ($quotes as $q) {
