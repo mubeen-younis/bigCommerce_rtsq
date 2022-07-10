@@ -12,6 +12,7 @@ class Endpoints
         return "https://api.bigcommerce.com/stores/";
     }
 
+
     public static function testConnectionEndpoint()
     {
         if (env('APP_ENV') == 'staging') {

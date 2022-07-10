@@ -5,6 +5,7 @@ namespace App\Providers;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 
@@ -58,6 +59,12 @@ class RouteServiceProvider extends ServiceProvider
     {
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by(optional($request->user())->id ?: $request->ip());
+        });
+        RateLimiter::for('webhooks', function (Request $request) {
+            return Limit::perMinute(1000)->by(optional($request)->producer ?: ($request->ip() ?? null))->response(function () use ($request) {
+                Log::info('Rate limit exceeded for webhooks ' . json_encode($request->all()));
+                return response('Rate limit exceeded for webhooks ', 429);
+            });
         });
     }
 }
