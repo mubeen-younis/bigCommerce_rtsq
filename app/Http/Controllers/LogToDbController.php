@@ -15,7 +15,10 @@ class LogToDbController extends Controller
     public function index(Request $request)
     {
         $search = $request->search ?? "";
-        $logs = AppLog::getLogsDB($search);
+        $pageSize = $request->page_size ?? 50;
+        $sortOrder = $request->sort_order ?? 'desc';
+        $sortOrder = $sortOrder == 'ascend' ? 'asc' : 'desc';
+        $logs = AppLog::getLogsDB($search, $pageSize, $sortOrder);
         return response()->json([
             'error' => false,
             'data' => $logs,
