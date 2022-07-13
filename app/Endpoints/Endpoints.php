@@ -4,10 +4,44 @@ namespace App\Endpoints;
 
 class Endpoints
 {
+    public static $qaUrl = "https://eniture-dev3.com/";
+    public static $prodUrl = "https://eniture.com/";
 
     public static function getBCComEndpoint()
     {
         return "https://api.bigcommerce.com/stores/";
+    }
+
+    public static function testConnectionEndpoint()
+    {
+        if (env('APP_ENV') == 'staging') {
+            return self::$qaUrl . "ws/index.php";
+        }
+        return self::$prodUrl . "ws/index.php";
+    }
+
+    public static function wweSmallTestEndpoint()
+    {
+        if (env('APP_ENV') == 'staging') {
+            return self::$qaUrl . "ws/carriers/wwe-small/speedshipTest.php";
+        }
+        return self::$prodUrl . "ws/carriers/wwe-small/speedshipTest.php";
+    }
+
+    public static function wweLtlTestEndpoint()
+    {
+        if (env('APP_ENV') == 'staging') {
+            return self::$qaUrl . "ws/carriers/wwe-freight/speedfreightTest.php";
+        }
+        return self::$prodUrl . "ws/carriers/wwe-freight/speedfreightTest.php";
+    }
+
+    public static function upsSmallTestEndpoint()
+    {
+        if (env('APP_ENV') == 'staging') {
+            return self::$qaUrl . "ws/s/ups/auth.php";
+        }
+        return self::$prodUrl . "ws/s/ups/auth.php";
     }
 
     public static function getFDOCouponEndpoint()
