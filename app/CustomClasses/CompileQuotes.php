@@ -135,12 +135,7 @@ class CompileQuotes
             $location = Locations::where('id', $warehouseId)->first();
             return $location;
             return json_decode($location->additionals, true);
-            /*     $whFactory = $this->warehouseFactory->create();
-        $dsCollection = $whFactory->getCollection()
-        ->addFilter('location', ['eq' => $location])
-        ->addFilter('warehouse_id', ['eq' => $warehouseId]);
-        return $this->purifyCollectionData($dsCollection);*/
-        } catch (\Throwable$e) {
+        } catch (\Throwable $e) {
             return [];
         }
     }
@@ -179,7 +174,7 @@ class CompileQuotes
     {
         try {
             $response = $this->connection->delete("$this->WHTableName", $data);
-        } catch (\Throwable$e) {
+        } catch (\Throwable $e) {
             $response = 0;
         }
         return $response;
@@ -278,12 +273,6 @@ class CompileQuotes
      */
     public function inStoreLocalDeliveryQuotes($quotesArray, $inStoreLd, $allOrigins)
     {
-        /*if (empty($quotesArray)) {
-        return [];
-        }
-        if (count($allOrigins) > 1) {
-        return $quotesArray;
-        }*/
         $count = 0;
         foreach ($allOrigins as $array) {
             if ($count == 1) {
@@ -312,7 +301,6 @@ class CompileQuotes
                 $quotesArray = [];
             }
 
-            /* dd(2,$inStoreLd);*/
             if (isset($inStoreLd['inStorePickup']['status']) && $inStoreLd['inStorePickup']['status'] == 1) {
                 $title = $warehouseData['inStoreTitle'] ?? '';
 
@@ -344,7 +332,7 @@ class CompileQuotes
         return $quotesArray;
     }
 
-    public function getShortStreetAddress($address)
+    function getShortStreetAddress($address)
     {
         if (!$address) {
             return '';
@@ -568,7 +556,7 @@ class CompileQuotes
             $this->curl->post($url, $fieldString);
             $output = $this->curl->getBody();
             $result = json_decode($output, $isAssocArray);
-        } catch (\Throwable$e) {
+        } catch (\Throwable $e) {
             $result = [];
         }
         return $result;
@@ -588,7 +576,7 @@ class CompileQuotes
     {
         // Todo: check RAD is enabled or not
         $isRadEnabled = $this->isRADEnabledandActive();
-        // dd($isRadEnabled, $resi);
+
         if (!empty($isRadEnabled) && $isRadEnabled['is_enabled'] && $isRadEnabled['is_suspend'] !== 1) {
             $isRadSuspend = $isRadEnabled['is_suspend'] == 0 ? 'no' : ''; //$this->getConfigData("resaddressdetection/suspend/value");
             if ($this->residentialDlvry == "1") {
@@ -608,7 +596,7 @@ class CompileQuotes
     public function isRADEnabledandActive()
     {
         $quoteSettings = $this->quoteSettings;
-        $installed_addon = (array) DB::table('installed_carriers')->where('installed_carriers.id', $quoteSettings['carrierId'])
+        $installed_addon = (array)DB::table('installed_carriers')->where('installed_carriers.id', $quoteSettings['carrierId'])
             ->Join('installed_addons', 'installed_addons.store_id', '=', 'installed_carriers.store_id')->Join('stores', 'stores.id', '=', 'installed_carriers.store_id')->select('installed_addons.is_enabled', 'installed_addons.is_suspend', 'installed_addons.store_id', 'stores.name')->first();
         if (empty($installed_addon)) {
             return [];
@@ -815,34 +803,14 @@ class CompileQuotes
         $quotes = array_filter($quotes);
         $ownArrangement = [];
         $shipping = new Shipping();
-        /* $hasLtlQuotes = false;
-        foreach ($quotes as $car => $quote) {
-        if ($shipping->isLtlCarrier($car)) {
-        $hasLtlQuotes = true;
-        break;
-        }
-        }*/
+        
         if ($this->isMultiShipment) {
             $newQuotes['checkoutQuotes'] = $newQuotes['multiShipmentQuotes'] = [];
             foreach ($quotes as $car => $quote) {
                 if (isset($quote['checkoutQuotes'])) {
                     foreach ($quote['checkoutQuotes'] as $key => $quot) {
-                        /*$position = !empty($newQuotes) ? array_search($quot['title'], array_column($newQuotes['checkoutQuotes'], 'title')) : false;*/
+        
                         if ($quot['code'] !== 'own_arrangement') {
-                            /**
-                             * following code taking the cheapest rate for same title but now we have to show quotes
-                             * on checkout page with duplicate titles(display name)
-                             */
-                            /*if ($position !== false) {
-                            if ($quot['rate'] < $newQuotes['checkoutQuotes'][$position]['rate']) {
-                            $newQuotes['checkoutQuotes'][$position] = $quot;
-                            $newQuotes['multiShipmentQuotes'][$position] = $quote['multiShipmentQuotes'];
-                            }
-                            } else {
-                            array_push($newQuotes['checkoutQuotes'], $quot);
-                            array_push($newQuotes['multiShipmentQuotes'], $quote['multiShipmentQuotes']);
-                            }*/
-
                             array_push($newQuotes['checkoutQuotes'], $quot);
                             array_push($newQuotes['multiShipmentQuotes'], $quote['multiShipmentQuotes']);
                         } else {
@@ -858,27 +826,9 @@ class CompileQuotes
             }
         } else {
             foreach ($quotes as $car => $quote) {
-                /*$allow = false;
-                if($hasLtlQuotes){
-                if(!$shipping->isSmallCarrier($car)){
-                $allow = true;
-                }
-                }else{
-                $allow = true;
-                }*/
-                //if ($allow) {
                 foreach ($quote as $key => $quot) {
-                    /*$position = array_search($quot['title'], array_column($newQuotes, 'title'));
-                    if ($position !== false) {
-                    if ($quot['rate'] < $newQuotes[$position]['rate']) {
-                    $newQuotes[$position] = $quot;
-                    }
-                    } else {
-                    $newQuotes[] = $quot;
-                    }*/
                     $newQuotes[] = $quot;
                 }
-                //}
             }
         }
 
@@ -1420,33 +1370,6 @@ class CompileQuotes
                             $originQuotes[$key]['liftgate']['title'] = $title;
                             $originQuotes[$key]['liftgate']['titleQuickest'] = $titleQuickest;
                         }
-                        /*if ($notify) {
-                    $access = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi,false, true);
-                    $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings,  false, true);
-                    $title = $this->getGTitle($data['serviceDesc'], false, true, false, false, $data['totalTransitTimeInDays'], $this->quoteSettings);
-                    $arraySorting['notify'][$key] = $price;
-                    $originQuotes[$key]['notify']['code'] = $data['serviceType'] . $access;
-                    $originQuotes[$key]['notify']['rate'] = $price;
-                    $originQuotes[$key]['notify']['title'] = $title;
-                    }
-                    if($laccess){
-                    $access = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi,false, false, true);
-                    $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings, false, false, true);
-                    $title = $this->getGTitle($data['serviceDesc'], false, false, true, true, $data['totalTransitTimeInDays'], $this->quoteSettings);
-                    $arraySorting['lacsess'][$key] = $price;
-                    $originQuotes[$key]['lacsess']['code'] = $data['serviceType'] . $access;
-                    $originQuotes[$key]['lacsess']['rate'] = $price;
-                    $originQuotes[$key]['lacsess']['title'] = $title;
-                    }
-                    if($lgQuotes && $notify){
-                    $access = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi,true, true, false);
-                    $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings, true, true, false);
-                    $title = $this->getGTitle($data['serviceDesc'], true, true, false, true, $data['totalTransitTimeInDays'], $this->quoteSettings);
-                    $arraySorting['notify_liftgate'][$key] = $price;
-                    $originQuotes[$key]['notify_liftgate']['code'] = $data['serviceType'] . $access;
-                    $originQuotes[$key]['notify_liftgate']['rate'] = $price;
-                    $originQuotes[$key]['notify_liftgate']['title'] = $title;
-                    }*/
                     }
                 }
             }
@@ -2147,7 +2070,6 @@ class CompileQuotes
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
             if ($count == 0) { //To be checked only once
-                // $this->getAutoResidentialTitle('');
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
                 unset($quote['InstorPickupLocalDelivery']);
             }
@@ -3530,7 +3452,7 @@ class CompileQuotes
                 unset($quotes[$key]['liftgate']['titleQuickest']);
             }
         }
-        //print_r($quotes); exit;
+
         return $quotes;
     }
 
