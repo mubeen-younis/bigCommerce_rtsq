@@ -749,10 +749,16 @@ class Shipping
                     foreach($value as $key){
                         $keyToDelete = array_search($key, $finalCheapestQuotes);
                         unset($finalCheapestQuotes[$keyToDelete]);
+                        if(count($value) == 1){
+                            $value1 = $key;
+                        }
                     }
-                    if(!empty($value)){
+                    if(!empty($value) && count($value) > 1){
                      $cheapest[] = $this->getCheapestQuotesArr($value) ?? [];
                      $index = array_merge($finalCheapestQuotes,$cheapest);     
+                    }elseif(count($value) === 1){
+                        $cheapest[] = $value1 ?? [];
+                        $index = array_merge($finalCheapestQuotes,$cheapest);
                     }
                 }
             }
@@ -804,9 +810,6 @@ class Shipping
     {
         $cheapestQuote = [];
         $quotes = $quotes ?? [];
-        if(count($quotes) == 1){
-            return $quotes;
-        }
         if (isset($quotes) && !empty($quotes)) {
             $minRate = min(array_column($quotes, 'rate'));
             foreach ($quotes as $q) {
