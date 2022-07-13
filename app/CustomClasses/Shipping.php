@@ -734,37 +734,10 @@ class Shipping
         $freightTitle = Functions::$ltlMultiTitle;
         $shippingTitle = Functions::$smallMultiTitle;
 
-        if (!empty($finalCheapestQuotes)) {
-            foreach($finalCheapestQuotes as $key => $data){  
-                if(strpos($data['title'], $freightTitle) === false && strpos($data['title'], $shippingTitle) === false){   
-                    $var = '(';
-                    if(strpos($data['title'], 'w') !== false){
-                        $var = "w";
-                    }
-                    $res = explode($var, $data['title'])[0] ?? " ";
-               
+        $singleShipmentRes = $this->filterSingleShipmentSameTitleQuotes($finalCheapestQuotes, $freightTitle, $shippingTitle);
 
-                    $value = $this->cheep($res,$finalCheapestQuotes);
-                
-                    foreach($value as $key){
-                        $keyToDelete = array_search($key, $finalCheapestQuotes);
-                        unset($finalCheapestQuotes[$keyToDelete]);
-                        if(count($value) == 1){
-                            $value1 = $key;
-                        }
-                    }
-                    if(!empty($value) && count($value) > 1){
-                     $cheapest[] = $this->getCheapestQuotesArr($value) ?? [];
-                     $index = array_merge($finalCheapestQuotes,$cheapest);     
-                    }elseif(count($value) === 1){
-                        $cheapest[] = $value1 ?? [];
-                        $index = array_merge($finalCheapestQuotes,$cheapest);
-                    }
-                }
-            }
-            if(!empty($index)){
-                return $index;
-            }
+        if(!empty($singleShipmentRes)){
+            return $singleShipmentRes;
         }
 
         $freightQuotesArr = collect($finalCheapestQuotes)->filter(function ($quote) use ($freightTitle) {
@@ -799,9 +772,58 @@ class Shipping
         return $finalCheapestQuotes;
     }
 
-    private function cheep($res,$finalCheapestQuotes){
+    private function filterSingleShipmentSameTitleQuotes($finalCheapestQuotes, $freightTitle, $shippingTitle)
+    {
+        $index = [];
+
+        if (!empty($finalCheapestQuotes)) {
+            foreach($finalCheapestQuotes as $key => $data){  
+                if(strpos($data['title'], $freightTitle) === false && strpos($data['title'], $shippingTitle) === false){   
+                    $res = $this->getTitleDelimeter($data);
+                    $value = $this->getSameTitleQuotes($res,$finalCheapestQuotes);
+
+                    foreach($value as $key){
+                        $keyToDelete = array_search($key, $finalCheapestQuotes);
+                        unset($finalCheapestQuotes[$keyToDelete]);
+                        if(count($value) == 1){
+                            $value1 = $key;
+                        }
+                    }
+
+                    if(!empty($value) && count($value) > 1){
+                     $cheapest[] = $this->getCheapestQuotesArr($value) ?? [];
+                     $index = array_merge($finalCheapestQuotes,$cheapest);     
+                    }elseif(count($value) === 1){
+                        $cheapest[] = $value1 ?? [];
+                        $index = array_merge($finalCheapestQuotes,$cheapest);
+                    }
+                }
+            }
+            if(!empty($index)){
+                return $index;
+            }
+        }
+
+    }
+
+    public function getTitleDelimeter($data)
+    {
+        $var = '(';
+
+        if(strpos($data['title'], 'w') !== false){
+            $var = "w";
+        }
+
+        $res = explode($var, $data['title'])[0] ?? " ";
+        return trim($res);
+    }
+
+    private function getSameTitleQuotes($res,$finalCheapestQuotes)
+    {
         $SingleQuotesArr = collect($finalCheapestQuotes)->filter(function ($quote) use ($res) {
-            return strpos($quote['title'], $res) !== false;
+            $resTitle = $this->getTitleDelimeter($quote);
+            
+            return $resTitle == $res;
         })->toArray() ?? [];
         return $SingleQuotesArr;
     }
