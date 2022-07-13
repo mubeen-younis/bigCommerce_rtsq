@@ -655,7 +655,7 @@ class CompileQuotes
      * @info: This function will compile all quotes according to the origin.
      * After getting from quotes almost all type of compilation happened in this function
      */
-    public function newGetQuotesResults($quotes, $connectionSettings, $allOrigins, $isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL = false, $destination)
+    public function newGetQuotesResults($quotes, $connectionSettings, $allOrigins, $isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination)
     {
         $this->residential = $residential;
         if ($quotes == null) {
@@ -750,16 +750,16 @@ class CompileQuotes
                         $quotesRes = array_merge($quotesRes, $resp);
                     }
                     break;
-                case 'freightQuote':
-                    $resp = $this->compileFreightQuoteLtlQuotes($shipment, $connectionSettings, $allOrigins);
-                    $quotesTemp['freightQuote'] = $resp;
+                case 'yrc':
+                    $resp = $this->compileYRCLtlQuotes($shipment, $connectionSettings, $allOrigins, $residential);
+                    $quotesTemp['yrc'] = $resp;
                     if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
                         $quotesRes = array_merge($quotesRes, $resp);
                     }
                     break;
-                case 'yrc':
-                    $resp = $this->compileYRCLtlQuotes($shipment, $connectionSettings, $allOrigins, $residential);
-                    $quotesTemp['yrc'] = $resp;
+                case 'freightQuote':
+                    $resp = $this->compileFreightQuoteLtlQuotes($shipment, $connectionSettings, $allOrigins);
+                    $quotesTemp['freightQuote'] = $resp;
                     if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
                         $quotesRes = array_merge($quotesRes, $resp);
                     }
@@ -969,7 +969,7 @@ class CompileQuotes
                 }
             }
 
-            $compiledQuotes = $originQuotes;
+            $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
                 if (count($compiledQuotes) > 1) {
                     foreach ($compiledQuotes as $k => $service) {

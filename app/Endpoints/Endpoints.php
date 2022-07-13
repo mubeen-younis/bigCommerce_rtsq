@@ -4,7 +4,6 @@ namespace App\Endpoints;
 
 class Endpoints
 {
-    // public static $qaUrl = "https://eniture-qa.com/";
     public static $qaUrl = "https://eniture-dev3.com/";
     public static $prodUrl = "https://eniture.com/";
 

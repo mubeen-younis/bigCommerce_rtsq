@@ -439,8 +439,6 @@ class GenerateRequestData
     public function generateRequestArray($request, $carriersArray, $itemsArr, $cartInfo)
     {
         $carriers = $carriersArray['carriers'];
-        Log::info('Carriers ' . json_encode($carriers));
-
         $receiverAddress = $this->getReceiverData($request);
 
         $autoResidential = $liftGateWithAuto = '0';

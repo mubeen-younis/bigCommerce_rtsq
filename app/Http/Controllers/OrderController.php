@@ -793,11 +793,10 @@ class OrderController extends Controller
     {
         try {
             $postData = file_get_contents("php://input");
-            Log::info('Orderdata: ' . $postData);
             $postData = json_decode($postData, true);
             $storeHash = explode('/', $postData['producer']);
             $storeHash = $storeHash[1];
-            Log::info('Post Data From BigCommerce ' . json_encode($postData));
+            Log::info('Order Webhook Data From BigCommerce ' . json_encode($postData));
             $orderId = $postData['data']['id'] ?? $postData['data']['order_id'];
             // Update,delete,create from  webhook
             $scope = $postData['scope'];
@@ -813,10 +812,10 @@ class OrderController extends Controller
             $this->accessToken = $store->access_token;
             $this->storeHash = $storeHash;
             $this->moveQuotesTempToReq($toRequest);
-            //$saveOrderId = $this->saveUpdateOrderByID($toRequest);
-            //$this->setOrderMeta($toRequest);
+            return response()->json(true, 200);
         } catch (\Exception $exception) {
             Log::info('Exception On Moving Quotes ' . json_encode($exception->getTraceAsString()));
+            return response()->json(true, 200);
         }
     }
 
@@ -928,16 +927,13 @@ class OrderController extends Controller
         $headers[] = 'Accept: application/json';
         $endpoint = 'https://api.bigcommerce.com/stores/' . $toRequest['store_hash'] . '/v2/orders/' . $toRequest['order_id'];
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
-        Log::info('First API Response ' . $response['response']);
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
             $cartId = json_decode($response['response'])->cart_id;
             $endpoint = json_decode($response['response'])->shipping_addresses->url;
             $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
-            Log::info('Second API Response ' . $response['response']);
             if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
                 $endpoint = json_decode($response['response'])[0]->shipping_quotes->url;
                 $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
-                Log::info('THird API Response ' . $response['response']);
                 if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
                     $response = json_decode($response['response']);
                     $rateId = optional($response)->rate_id ?? null;
@@ -953,7 +949,7 @@ class OrderController extends Controller
                     if (blank($reqData)) {
                         $reqData = optional(RequestTempData::where('rate_id', $fullRateId)->where('cart_id', $cartId)->first())->toArray();
                     }
-                    Log::info('Orderdata $reqData: ' . json_encode($reqData) . ' RateID: ' . $rateId . ' CartId: ' . $cartId);
+                    Log::info('Order Data DB: ' . json_encode($reqData) . ' RateID: ' . $rateId . ' CartId: ' . $cartId);
                     if (!blank($reqData)) {
                         unset($reqData['id']);
                         RequestData::insert($reqData);
