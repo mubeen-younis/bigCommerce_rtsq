@@ -828,7 +828,7 @@ class Shipping
             $output = curl_exec($ch);
             curl_close($ch);
             Log::info('$output ' . $output);
-           $result=json_decode($output, true);
+           return json_decode($output, true);
         } catch (\Throwable $e) {
             $result = [];
         }
