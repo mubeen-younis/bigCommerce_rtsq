@@ -3,22 +3,21 @@
 namespace App\CustomClasses;
 
 use App\Constants\Constant;
-use App\CustomClasses\UpsSmall\QuotesResults as upsSmallQuotesResults;
+use App\CustomClasses\DayRossLTL\QuotesResults as dayRossLtlQuotesResults;
 use App\CustomClasses\Fedex\ltl\QuotesResults as fedexLtlQuotesResults;
 use App\CustomClasses\Fedex\small\QuotesResults as fedexSmallQuotesResults;
-use App\CustomClasses\XPO\ltl\QuotesResults as xpoLtlQuotesResults;
 use App\CustomClasses\GTZ\ltl\QuotesResults as globalTranzQuotesResults;
 use App\CustomClasses\RL\ltl\QuotesResults as rnlLtlQuotesResults;
-use App\CustomClasses\WWESMALL\WweSmallQuoteResults;
-use App\CustomClasses\Unishippers\small\QuotesResults as unishippersSmallQuotesResults;
-use App\CustomClasses\DayRossLTL\QuotesResults as dayRossLtlQuotesResults;
-use App\CustomClasses\YrcLTL\QuotesResults as yrcLtlQuotesResults;
 use App\CustomClasses\Shipping;
-use App\Models\Locations;
-use Illuminate\Support\Facades\DB;
+use App\CustomClasses\Unishippers\small\QuotesResults as unishippersSmallQuotesResults;
+use App\CustomClasses\UpsSmall\QuotesResults as upsSmallQuotesResults;
+use App\CustomClasses\WWESMALL\WweSmallQuoteResults;
+use App\CustomClasses\XPO\ltl\QuotesResults as xpoLtlQuotesResults;
+use App\CustomClasses\YrcLTL\QuotesResults as yrcLtlQuotesResults;
 use App\Http\Controllers\RADController;
+use App\Models\Locations;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class CompileQuotes
 {
@@ -137,11 +136,11 @@ class CompileQuotes
             return $location;
             return json_decode($location->additionals, true);
             /*     $whFactory = $this->warehouseFactory->create();
-                 $dsCollection = $whFactory->getCollection()
-                     ->addFilter('location', ['eq' => $location])
-                     ->addFilter('warehouse_id', ['eq' => $warehouseId]);
-                 return $this->purifyCollectionData($dsCollection);*/
-        } catch (\Throwable $e) {
+        $dsCollection = $whFactory->getCollection()
+        ->addFilter('location', ['eq' => $location])
+        ->addFilter('warehouse_id', ['eq' => $warehouseId]);
+        return $this->purifyCollectionData($dsCollection);*/
+        } catch (\Throwable$e) {
             return [];
         }
     }
@@ -180,7 +179,7 @@ class CompileQuotes
     {
         try {
             $response = $this->connection->delete("$this->WHTableName", $data);
-        } catch (\Throwable $e) {
+        } catch (\Throwable$e) {
             $response = 0;
         }
         return $response;
@@ -280,11 +279,11 @@ class CompileQuotes
     public function inStoreLocalDeliveryQuotes($quotesArray, $inStoreLd, $allOrigins)
     {
         /*if (empty($quotesArray)) {
-            return [];
+        return [];
         }
-            if (count($allOrigins) > 1) {
-                return $quotesArray;
-            }*/
+        if (count($allOrigins) > 1) {
+        return $quotesArray;
+        }*/
         $count = 0;
         foreach ($allOrigins as $array) {
             if ($count == 1) {
@@ -312,7 +311,6 @@ class CompileQuotes
             if (isset($inStoreLd['suppress']) && $inStoreLd['suppress'] == 1) {
                 $quotesArray = [];
             }
-
 
             /* dd(2,$inStoreLd);*/
             if (isset($inStoreLd['inStorePickup']['status']) && $inStoreLd['inStorePickup']['status'] == 1) {
@@ -346,7 +344,7 @@ class CompileQuotes
         return $quotesArray;
     }
 
-    function getShortStreetAddress($address)
+    public function getShortStreetAddress($address)
     {
         if (!$address) {
             return '';
@@ -570,7 +568,7 @@ class CompileQuotes
             $this->curl->post($url, $fieldString);
             $output = $this->curl->getBody();
             $result = json_decode($output, $isAssocArray);
-        } catch (\Throwable $e) {
+        } catch (\Throwable$e) {
             $result = [];
         }
         return $result;
@@ -610,7 +608,7 @@ class CompileQuotes
     public function isRADEnabledandActive()
     {
         $quoteSettings = $this->quoteSettings;
-        $installed_addon = (array)DB::table('installed_carriers')->where('installed_carriers.id', $quoteSettings['carrierId'])
+        $installed_addon = (array) DB::table('installed_carriers')->where('installed_carriers.id', $quoteSettings['carrierId'])
             ->Join('installed_addons', 'installed_addons.store_id', '=', 'installed_carriers.store_id')->Join('stores', 'stores.id', '=', 'installed_carriers.store_id')->select('installed_addons.is_enabled', 'installed_addons.is_suspend', 'installed_addons.store_id', 'stores.name')->first();
         if (empty($installed_addon)) {
             return [];
@@ -664,7 +662,7 @@ class CompileQuotes
         $quotesRes = [];
         $quotesTemp = [];
         $quotes = $this->filterShipmentsWithError($quotes);
-        
+
         foreach ($quotes as $key => $shipment) {
             switch ($key) {
                 case "wweLTL":
@@ -784,7 +782,7 @@ class CompileQuotes
                     if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
                         $quotesRes = array_merge($quotesRes, $resp);
                     }
-                    break;    
+                    break;
             }
         }
 
@@ -799,15 +797,15 @@ class CompileQuotes
     {
         $errorMsgs = [Functions::$ltlErrorMessage, Functions::$smallErrorMessage];
         $newQuotes = $quotes ?? [];
-     
+
         foreach ($newQuotes as $carrier => $shipments) {
             foreach ($shipments as $locId => $quote) {
                 if (isset($quote['severity']) && $quote['severity'] == 'ERROR' && isset($quote['Message']) && in_array($quote['Message'], $errorMsgs)) {
                     unset($newQuotes[$carrier][$locId]);
                 }
             }
-        } 
-        
+        }
+
         return $newQuotes;
     }
 
@@ -818,12 +816,12 @@ class CompileQuotes
         $ownArrangement = [];
         $shipping = new Shipping();
         /* $hasLtlQuotes = false;
-         foreach ($quotes as $car => $quote) {
-             if ($shipping->isLtlCarrier($car)) {
-                 $hasLtlQuotes = true;
-                 break;
-             }
-         }*/
+        foreach ($quotes as $car => $quote) {
+        if ($shipping->isLtlCarrier($car)) {
+        $hasLtlQuotes = true;
+        break;
+        }
+        }*/
         if ($this->isMultiShipment) {
             $newQuotes['checkoutQuotes'] = $newQuotes['multiShipmentQuotes'] = [];
             foreach ($quotes as $car => $quote) {
@@ -836,13 +834,13 @@ class CompileQuotes
                              * on checkout page with duplicate titles(display name)
                              */
                             /*if ($position !== false) {
-                               if ($quot['rate'] < $newQuotes['checkoutQuotes'][$position]['rate']) {
-                                   $newQuotes['checkoutQuotes'][$position] = $quot;
-                                   $newQuotes['multiShipmentQuotes'][$position] = $quote['multiShipmentQuotes'];
-                                }
+                            if ($quot['rate'] < $newQuotes['checkoutQuotes'][$position]['rate']) {
+                            $newQuotes['checkoutQuotes'][$position] = $quot;
+                            $newQuotes['multiShipmentQuotes'][$position] = $quote['multiShipmentQuotes'];
+                            }
                             } else {
-                                array_push($newQuotes['checkoutQuotes'], $quot);
-                                array_push($newQuotes['multiShipmentQuotes'], $quote['multiShipmentQuotes']);
+                            array_push($newQuotes['checkoutQuotes'], $quot);
+                            array_push($newQuotes['multiShipmentQuotes'], $quote['multiShipmentQuotes']);
                             }*/
 
                             array_push($newQuotes['checkoutQuotes'], $quot);
@@ -862,21 +860,21 @@ class CompileQuotes
             foreach ($quotes as $car => $quote) {
                 /*$allow = false;
                 if($hasLtlQuotes){
-                    if(!$shipping->isSmallCarrier($car)){
-                        $allow = true;
-                    }
+                if(!$shipping->isSmallCarrier($car)){
+                $allow = true;
+                }
                 }else{
-                    $allow = true;
+                $allow = true;
                 }*/
                 //if ($allow) {
                 foreach ($quote as $key => $quot) {
                     /*$position = array_search($quot['title'], array_column($newQuotes, 'title'));
                     if ($position !== false) {
-                        if ($quot['rate'] < $newQuotes[$position]['rate']) {
-                            $newQuotes[$position] = $quot;
-                        }
+                    if ($quot['rate'] < $newQuotes[$position]['rate']) {
+                    $newQuotes[$position] = $quot;
+                    }
                     } else {
-                        $newQuotes[] = $quot;
+                    $newQuotes[] = $quot;
                     }*/
                     $newQuotes[] = $quot;
                 }
@@ -928,7 +926,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
                 if (!$lgQuotes) {
                     $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
-                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                        (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
                 }
                 $resiPickup = isset($this->quoteSettings['residentialPickup']) && $this->quoteSettings['residentialPickup'] ? '+pu' : '';
             }
@@ -940,14 +938,14 @@ class CompileQuotes
                 }
 
                 foreach ($quote['q'] as $key => $data) {
-                
+
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) && isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y') {
                         $access = $this->getAccessorialCode() . $resiPickup;
                         $price = $this->calculatePrice($data);
                         /*
-                       * Date 01-07-22
-                       * Adding Functionality of Delivery Estimate Options
-                       * */
+                         * Date 01-07-22
+                         * Adding Functionality of Delivery Estimate Options
+                         * */
                         $date = $data['deliveryTimestamp'] ?? null;
                         $days = $data['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
@@ -1001,7 +999,7 @@ class CompileQuotes
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $this->arrangeOwnFreight($allQuotes),
-                'multiShipmentQuotes' => $multiShipmentQuotes
+                'multiShipmentQuotes' => $multiShipmentQuotes,
             ];
             return $resp;
         }
@@ -1025,20 +1023,20 @@ class CompileQuotes
                 $numberOfShipments++;
             }
         }
-    
+
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
-    
+
         $lableAs = $this->quoteSettings['label_as'] ?? 'Freight';
         $key = 1;
-    
+
         foreach ($shipments as $origin => $quote) {
             if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
-            if ($count == 0) { 
+            if ($count == 0) {
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
                 unset($quote['InstorPickupLocalDelivery']);
 
@@ -1053,7 +1051,7 @@ class CompileQuotes
 
             $originQuotes = [];
             $arraySorting = [];
-            
+
             if (isset($quote['q'])) {
                 if (isset($quote['hazardousStatus'])) {
                     $hazShipmentArr[$origin] = $quote['hazardousStatus'] == 'y' ? 'Y' : 'N';
@@ -1061,7 +1059,7 @@ class CompileQuotes
 
                 $data = $quote['q'];
                 $access = $this->getAccessorialCode();
-                $price =  $this->calculateOdflPrice($data);    
+                $price = $this->calculateOdflPrice($data);
                 $date = $data['deliveryDate'] ?? null;
                 $days = $data['totalTransitTimeInDays'] ?? null;
                 $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
@@ -1071,22 +1069,22 @@ class CompileQuotes
                 $originQuotes[$origin]['simple']['code'] = 'odflltl' . $access;
                 $originQuotes[$origin]['simple']['rate'] = $price;
                 $originQuotes[$origin]['simple']['title'] = $title;
-                
+
                 if ($lgQuotes) {
                     $lgAccess = $this->getAccessorialCode(true);
-                    $lgPrice = $this->calculateOdflPrice($data, $lgOption=1);
+                    $lgPrice = $this->calculateOdflPrice($data, $lgOption = 1);
                     $lgTitle = $this->getTitle($lableAs, true, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
                     $arraySorting['liftgate'][$origin] = $lgPrice;
                     $originQuotes[$origin]['liftgate']['code'] = 'odflltl' . $lgAccess;
                     $originQuotes[$origin]['liftgate']['rate'] = $lgPrice;
                     $originQuotes[$origin]['liftgate']['title'] = $lgTitle;
                 }
-                
+
                 $key++;
             }
 
             $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
-            
+
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
                 if (count($compiledQuotes) > 1) {
                     foreach ($compiledQuotes as $k => $service) {
@@ -1120,7 +1118,7 @@ class CompileQuotes
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $this->arrangeOwnFreight($allQuotes),
-                'multiShipmentQuotes' => $multiShipmentQuotes
+                'multiShipmentQuotes' => $multiShipmentQuotes,
             ];
 
             return $resp;
@@ -1203,7 +1201,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
                 if (!$lgQuotes) {
                     $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
-                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                        (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
                 }
                 $resiPickup = isset($this->quoteSettings['residentialPickup']) && $this->quoteSettings['residentialPickup'] ? '+pu' : '';
             }
@@ -1236,9 +1234,9 @@ class CompileQuotes
                         $price = $this->calculateEstesPrice($data);
 
                         /*
-                       * Date 01-07-22
-                       * Adding Functionality of Delivery Estimate Options
-                       * */
+                         * Date 01-07-22
+                         * Adding Functionality of Delivery Estimate Options
+                         * */
                         $date = $data['ratdelivery']['ratdate'] ?? null;
                         $days = $data['ratdelivery']['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
@@ -1293,7 +1291,7 @@ class CompileQuotes
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $this->arrangeOwnFreight($allQuotes),
-                'multiShipmentQuotes' => $multiShipmentQuotes
+                'multiShipmentQuotes' => $multiShipmentQuotes,
             ];
             return $resp;
         }
@@ -1373,7 +1371,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
                 if (!$lgQuotes) {
                     $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
-                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                        (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
                 }
 
                 $notify = (isset($this->quoteSettings['always_quote_notify']) && $this->quoteSettings['always_quote_notify']) ||
@@ -1423,32 +1421,32 @@ class CompileQuotes
                             $originQuotes[$key]['liftgate']['titleQuickest'] = $titleQuickest;
                         }
                         /*if ($notify) {
-                            $access = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi,false, true);
-                            $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings,  false, true);
-                            $title = $this->getGTitle($data['serviceDesc'], false, true, false, false, $data['totalTransitTimeInDays'], $this->quoteSettings);
-                            $arraySorting['notify'][$key] = $price;
-                            $originQuotes[$key]['notify']['code'] = $data['serviceType'] . $access;
-                            $originQuotes[$key]['notify']['rate'] = $price;
-                            $originQuotes[$key]['notify']['title'] = $title;
-                        }
-                        if($laccess){
-                            $access = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi,false, false, true);
-                            $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings, false, false, true);
-                            $title = $this->getGTitle($data['serviceDesc'], false, false, true, true, $data['totalTransitTimeInDays'], $this->quoteSettings);
-                            $arraySorting['lacsess'][$key] = $price;
-                            $originQuotes[$key]['lacsess']['code'] = $data['serviceType'] . $access;
-                            $originQuotes[$key]['lacsess']['rate'] = $price;
-                            $originQuotes[$key]['lacsess']['title'] = $title;
-                        }
-                        if($lgQuotes && $notify){
-                            $access = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi,true, true, false);
-                            $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings, true, true, false);
-                            $title = $this->getGTitle($data['serviceDesc'], true, true, false, true, $data['totalTransitTimeInDays'], $this->quoteSettings);
-                            $arraySorting['notify_liftgate'][$key] = $price;
-                            $originQuotes[$key]['notify_liftgate']['code'] = $data['serviceType'] . $access;
-                            $originQuotes[$key]['notify_liftgate']['rate'] = $price;
-                            $originQuotes[$key]['notify_liftgate']['title'] = $title;
-                        }*/
+                    $access = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi,false, true);
+                    $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings,  false, true);
+                    $title = $this->getGTitle($data['serviceDesc'], false, true, false, false, $data['totalTransitTimeInDays'], $this->quoteSettings);
+                    $arraySorting['notify'][$key] = $price;
+                    $originQuotes[$key]['notify']['code'] = $data['serviceType'] . $access;
+                    $originQuotes[$key]['notify']['rate'] = $price;
+                    $originQuotes[$key]['notify']['title'] = $title;
+                    }
+                    if($laccess){
+                    $access = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi,false, false, true);
+                    $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings, false, false, true);
+                    $title = $this->getGTitle($data['serviceDesc'], false, false, true, true, $data['totalTransitTimeInDays'], $this->quoteSettings);
+                    $arraySorting['lacsess'][$key] = $price;
+                    $originQuotes[$key]['lacsess']['code'] = $data['serviceType'] . $access;
+                    $originQuotes[$key]['lacsess']['rate'] = $price;
+                    $originQuotes[$key]['lacsess']['title'] = $title;
+                    }
+                    if($lgQuotes && $notify){
+                    $access = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi,true, true, false);
+                    $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings, true, true, false);
+                    $title = $this->getGTitle($data['serviceDesc'], true, true, false, true, $data['totalTransitTimeInDays'], $this->quoteSettings);
+                    $arraySorting['notify_liftgate'][$key] = $price;
+                    $originQuotes[$key]['notify_liftgate']['code'] = $data['serviceType'] . $access;
+                    $originQuotes[$key]['notify_liftgate']['rate'] = $price;
+                    $originQuotes[$key]['notify_liftgate']['title'] = $title;
+                    }*/
                     }
                 }
             }
@@ -1493,7 +1491,7 @@ class CompileQuotes
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $allQuotes,
-                'multiShipmentQuotes' => $multiShipmentQuotes
+                'multiShipmentQuotes' => $multiShipmentQuotes,
             ];
             return $resp;
         }
@@ -1509,15 +1507,15 @@ class CompileQuotes
 
         $this->quoteSettings['method'] = $this->quoteSettings['method'] ?? 1;
         if ($this->quoteSettings['method'] == 2 && $this->isMultiShipment == false) { //Cheapest method
-            $options = (int)$this->quoteSettings['number_of_options'] ?? 1;
+            $options = (int) $this->quoteSettings['number_of_options'] ?? 1;
         } elseif ($this->quoteSettings['method'] == 3) { //Average rate
-            $options = (int)$this->quoteSettings['number_of_options'];
+            $options = (int) $this->quoteSettings['number_of_options'];
         } else {
             $options = 1;
         }
         $sliced = $lgQuotes ?
-            array_slice($arraySorting['liftgate'], 0, $options, true) :
-            array_slice($arraySorting['simple'], 0, $options, true);
+        array_slice($arraySorting['liftgate'], 0, $options, true) :
+        array_slice($arraySorting['simple'], 0, $options, true);
         if ($this->quoteSettings['method'] == 3) {
             return $this->averageRattingMethod($arraySorting, $options, $lgQuotes);
         }
@@ -1525,7 +1523,6 @@ class CompileQuotes
         $resp = array_intersect_key($services, $sliced);
         return $resp;
     }
-
 
     public function compileCerasisLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
@@ -1597,7 +1594,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
                 if (!$lgQuotes) {
                     $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
-                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                        (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
                 }
                 if ($isShippingFinalMile) {
                     $lgQuotes = $this->alwaysResi = $this->isResi = $isResi = false;
@@ -1618,9 +1615,9 @@ class CompileQuotes
                         $access = $preCode . $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
                         /*
-                          * Date 01-07-22
-                          * Adding Functionality of Delivery Estimate Options
-                          * */
+                         * Date 01-07-22
+                         * Adding Functionality of Delivery Estimate Options
+                         * */
                         $date = $data['deliveryDate'] ?? null;
                         $days = $data['totalTransitTimeInDays'] ?? null;
                         if ($isShippingFinalMile) {
@@ -1680,14 +1677,13 @@ class CompileQuotes
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $allQuotes,
-                'multiShipmentQuotes' => $multiShipmentQuotes
+                'multiShipmentQuotes' => $multiShipmentQuotes,
             ];
             return $resp;
         }
 
         return $allQuotes;
     }
-
 
     public function compileFedexLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
@@ -1720,7 +1716,7 @@ class CompileQuotes
             }
         }
         if (!$this->isMultiShipment) {
-            $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;;
+            $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
         $lableAs = $this->quoteSettings['label_as'] ?? '';
         $freightEconomyLableAs = $this->quoteSettings['fedex_freight_economy_label'] ?? '';
@@ -1739,7 +1735,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
                 if (!$lgQuotes) {
                     $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
-                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                        (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
                 }
             }
             $originQuotes = [];
@@ -1816,7 +1812,7 @@ class CompileQuotes
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $this->arrangeOwnFreight($allQuotes),
-                'multiShipmentQuotes' => $multiShipmentQuotes
+                'multiShipmentQuotes' => $multiShipmentQuotes,
             ];
             return $resp;
         }
@@ -1848,7 +1844,7 @@ class CompileQuotes
             }
         }
         if (!$this->isMultiShipment) {
-            $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;;
+            $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
         $lableAs = $this->quoteSettings['label_as'] ?? '';
         foreach ($shipments as $origin => $quote) {
@@ -1866,7 +1862,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
                 if (!$lgQuotes) {
                     $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
-                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                        (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
                 }
             }
             $originQuotes = [];
@@ -1880,9 +1876,9 @@ class CompileQuotes
                     $access = $this->getAccessorialCode();
                     $price = $this->calculatePrice($data);
                     /*
-                                       * Date 01-07-22
-                                       * Adding Functionality of Delivery Estimate Options
-                                       * */
+                     * Date 01-07-22
+                     * Adding Functionality of Delivery Estimate Options
+                     * */
                     $date = $data['deliveryDate'] ?? null;
                     $days = $data['totalTransitTimeInDays'] ?? null;
                     $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
@@ -1934,14 +1930,14 @@ class CompileQuotes
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $this->arrangeOwnFreight($allQuotes),
-                'multiShipmentQuotes' => $multiShipmentQuotes
+                'multiShipmentQuotes' => $multiShipmentQuotes,
             ];
             return $resp;
         }
         return $this->arrangeOwnFreight($allQuotes);
     }
 
-    function compileRNLLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL)
+    public function compileRNLLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL)
     {
         if ($freeRNL) {
             return $this->arrangeFreeRNL([]);
@@ -1957,7 +1953,7 @@ class CompileQuotes
         $this->alwaysResi = $this->residential['alwaysResi']['rnlLtl'] ?? false;
         $this->quoteSettings = $connectionSettings['rl-ltl']['quote_settings'] ?? [];
         $shipments = $rnlLtl->formateQuoteBeforeCompile($shipments, $this->quoteSettings);
-        //print_r($shipments); exit;
+
         $allConfigServices = [];
         if (isset($this->quoteSettings['standard_service']) && $this->quoteSettings['standard_service']) {
             array_push($allConfigServices, 'STD');
@@ -1982,7 +1978,7 @@ class CompileQuotes
             }
         }
         if (!$this->isMultiShipment) {
-            $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;;
+            $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
         $lableAs = $this->quoteSettings['label_as'] ?? '';
         $preAccess = 'rnlltl';
@@ -2000,7 +1996,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
                 if (!$lgQuotes) {
                     $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
-                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                        (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
                 }
                 $ID = (isset($this->quoteSettings['offer_inside_delivery']) && $this->quoteSettings['offer_inside_delivery']);
             }
@@ -2043,14 +2039,14 @@ class CompileQuotes
                         $originQuotes[$key]['liftgate']['title'] = $lgTitle;
                     }
                     /*if ($ID && !$isHat) {
-                        $access = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi,false, true);
-                        $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings,  false, true);
-                        $title = $this->getGTitle($data['serviceDesc'], false, true, false, false, $data['totalTransitTimeInDays'], $this->quoteSettings);
-                        $arraySorting['notify'][$key] = $price;
-                        $originQuotes[$key]['notify']['code'] = $data['serviceType'] . $access;
-                        $originQuotes[$key]['notify']['rate'] = $price;
-                        $originQuotes[$key]['notify']['title'] = $title;
-                    }*/
+                $access = $preCode.$this->GTZLtlQuotesResults->getAccessorialCode($isResi,false, true);
+                $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings,  false, true);
+                $title = $this->getGTitle($data['serviceDesc'], false, true, false, false, $data['totalTransitTimeInDays'], $this->quoteSettings);
+                $arraySorting['notify'][$key] = $price;
+                $originQuotes[$key]['notify']['code'] = $data['serviceType'] . $access;
+                $originQuotes[$key]['notify']['rate'] = $price;
+                $originQuotes[$key]['notify']['title'] = $title;
+                }*/
                 }
             }
 
@@ -2092,13 +2088,13 @@ class CompileQuotes
                 $lableAs = 'Freight |' . implode('|', $hatLabel);
                 $resp = [
                     'checkoutQuotes' => $this->arrangeHATFreight($allQuotes, $HAT, $lableAs),
-                    'multiShipmentQuotes' => $this->arrangeHATMulti($multiShipmentQuotes, $HAT)
+                    'multiShipmentQuotes' => $this->arrangeHATMulti($multiShipmentQuotes, $HAT),
                 ];
             } else {
                 $allQuotes = $this->forceChangeTitle($allQuotes);
                 $resp = [
                     'checkoutQuotes' => $this->arrangeHATFreight($allQuotes, $HAT, Functions::$ltlMultiTitle),
-                    'multiShipmentQuotes' => $multiShipmentQuotes
+                    'multiShipmentQuotes' => $multiShipmentQuotes,
                 ];
             }
             return $resp;
@@ -2201,7 +2197,7 @@ class CompileQuotes
                     $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
                     $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $dateAndDays, $data['serviceType'], $this->quoteSettings, $this->isResi);
 
-                    $price = (float)str_replace(',', '', $price);
+                    $price = (float) str_replace(',', '', $price);
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12wwe' . $data['serviceType'] . $access;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
@@ -2253,7 +2249,6 @@ class CompileQuotes
         return [];
     }
 
-
     private function compileUpsLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
         if ($this->residential['upsLtl'] == 'Y') {
@@ -2295,7 +2290,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
                 if (!$lgQuotes) {
                     $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
-                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                        (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
                 }
             }
             $originQuotes = [];
@@ -2309,9 +2304,9 @@ class CompileQuotes
                 $access = $this->getAccessorialCode();
                 $price = $this->calculatePrice($data, false, false, true);
                 /*
-                     * Date 01-07-22
-                     * Adding Functionality of Delivery Estimate Options
-                     * */
+                 * Date 01-07-22
+                 * Adding Functionality of Delivery Estimate Options
+                 * */
 
                 $date = $data['deliveryTimestamp'] ?? null;
                 $days = $data['totalTransitTimeInDays'] ?? null;
@@ -2367,14 +2362,13 @@ class CompileQuotes
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $this->arrangeOwnFreight($allQuotes),
-                'multiShipmentQuotes' => $multiShipmentQuotes
+                'multiShipmentQuotes' => $multiShipmentQuotes,
             ];
             return $resp;
         }
 
         return $allQuotes;
     }
-
 
     private function compileUnishippersSmallQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
@@ -2398,22 +2392,22 @@ class CompileQuotes
     }
 
     private function compileDayRossLtlQuotes($shipments, $connectionSettings, $allOrigins, $hazmatAllItems, $residential)
-    {   
+    {
         $dayRossLtl = new dayRossLtlQuotesResults();
         $this->isResi = $residential['dayrossLtl'] == 'Y';
         $this->residentialDlvry = $residential['dayrossLtl'] == 'Y' ? 1 : 0;
         $this->alwaysResi = $this->residential['alwaysResi']['dayrossLtl'] ?? false;
         $this->quoteSettings = $connectionSettings['dayross-ltl']['quote_settings'] ?? [];
         $shipments = $dayRossLtl->formateQuoteBeforeCompile($shipments, $this->quoteSettings);
-        $this->quoteSettingsData(); 
+        $this->quoteSettingsData();
 
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
         $lgQuotes = false;
-        
+
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = $dayRossLtl->isMultiShipment($shipments);
-        }        
+        }
         $labelAs = $this->quoteSettings['label_as'] ?? '';
 
         /* Quotes compilation */
@@ -2423,10 +2417,10 @@ class CompileQuotes
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
-            if ($count == 0) { 
+            if ($count == 0) {
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
                 unset($quote['InstorPickupLocalDelivery']);
-                
+
                 $lgQuotes = $dayRossLtl->isLGQuotes($this->quoteSettings);
                 if (!$lgQuotes) {
                     $lgQuotes = $dayRossLtl->isRADEnabled($this->quoteSettings, $this->isResi);
@@ -2438,11 +2432,11 @@ class CompileQuotes
             if (isset($quote['q'])) {
                 $items = $quote['q']['lineItems'] ?? [];
                 foreach ($items as $key => $item) {
-                    if($item['hazardous'] == 'Y'){
+                    if ($item['hazardous'] == 'Y') {
                         $hazShipmentArr[$origin] = 'Y';
                         break;
                     }
-                        $hazShipmentArr[$origin] = 'N';
+                    $hazShipmentArr[$origin] = 'N';
                 }
 
                 $quotesArr[] = $quote['q'];
@@ -2475,7 +2469,7 @@ class CompileQuotes
                 }
             }
 
-            $compiledQuotes = $originQuotes;    
+            $compiledQuotes = $originQuotes;
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
                 if (count($compiledQuotes) > 1) {
                     foreach ($compiledQuotes as $k => $service) {
@@ -2571,7 +2565,7 @@ class CompileQuotes
 
                 if (!$lgQuotes) {
                     $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
-                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                        (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
                 }
             }
 
@@ -2664,7 +2658,6 @@ class CompileQuotes
         return $resp;
     }
 
-
     private function compileFreightQuoteLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
         $this->isFQ = true;
@@ -2715,7 +2708,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
                 if (!$lgQuotes) {
                     $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
-                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                        (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
                 }
                 $resiPickup = isset($this->quoteSettings['residentialPickup']) && $this->quoteSettings['residentialPickup'] ? '+pu' : '';
             }
@@ -2733,14 +2726,14 @@ class CompileQuotes
                         $access = $this->getAccessorialCode() . $resiPickup;
                         $charges = array(
                             'totalNetCharge' => array(
-                                'Amount' => $data['totalNetCharge']
+                                'Amount' => $data['totalNetCharge'],
                             ),
                             'surcharges' => $data['surcharges'],
                         );
                         $price = $this->calculatePrice($charges);
                         /*
-                       * Adding Functionality of Delivery Estimate Options
-                       * */
+                         * Adding Functionality of Delivery Estimate Options
+                         * */
                         $date = $data['deliveryTimestamp'] ?? null;
                         $days = $data['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
@@ -2808,13 +2801,13 @@ class CompileQuotes
         return $resp;
     }
 
-    public function getInsPicAndLocDelQuotes($quote, $allOrigins): array 
+    public function getInsPicAndLocDelQuotes($quote, $allOrigins): array
     {
         $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? $quote['q']['InstorPickupLocalDelivery'] ?? [];
         if (!$this->isMultiShipment && !blank($inStoreLdData)) {
             return $this->inStoreLocalDeliveryQuotes([], $inStoreLdData, $allOrigins);
         }
-        
+
         return [];
     }
 
@@ -2831,10 +2824,9 @@ class CompileQuotes
             $this->quoteSettings = $quoteSettings;
         }
         if (isset($this->quoteSettings['handling_free_markup'])) {
-            $handlingFeeMarkup = (float)$this->quoteSettings['handling_free_markup'] ?? 0;
+            $handlingFeeMarkup = (float) $this->quoteSettings['handling_free_markup'] ?? 0;
             $symbolicHandlingFee = strpos($this->quoteSettings['handling_free_markup'], '%') ? '%' : '';
         }
-
 
         if (strlen($handlingFeeMarkup) > 0) {
             if ($symbolicHandlingFee === '%') {
@@ -2899,7 +2891,6 @@ class CompileQuotes
         return $this->organizeQuotesArray($quotes);
     }
 
-
     public function organizeQuotesArray($quotes)
     {
         $quotesArr = [];
@@ -2915,7 +2906,7 @@ class CompileQuotes
                 $quotesArr[] = [
                     'code' => $code,
                     'rate' => $rate,
-                    'title' => $this->getTitle(Functions::$ltlMultiTitle, $isLiftGate, true)
+                    'title' => $this->getTitle(Functions::$ltlMultiTitle, $isLiftGate, true),
                 ];
             } else {
                 $quotesArr[] = reset($value);
@@ -2996,7 +2987,7 @@ class CompileQuotes
     {
         $lgCost = $lgOption ? 0 : $this->getLiftGateCost($data, $getCost, $isUpsLtl);
         $basePrice = str_replace(',', '', $data['totalNetCharge']['Amount']);
-        $basePrice = (float)$basePrice;
+        $basePrice = (float) $basePrice;
         $basePrice = $basePrice - $lgCost;
         $basePrice = $this->calculateHandlingFee($basePrice);
         return $basePrice;
@@ -3004,17 +2995,16 @@ class CompileQuotes
     public function calculateOdflPrice($data, $lgOption = false, $getCost = false)
     {
         $lgCost = $lgOption ? 0 : $this->getLiftGateCost($data, $getCost);
-        $basePrice = (float)$data['rateEstimate']['netFreightCharge'];
+        $basePrice = (float) $data['rateEstimate']['netFreightCharge'];
         $basePrice = $basePrice - $lgCost;
         $basePrice = $this->calculateHandlingFee($basePrice);
         return $basePrice;
     }
-   
 
     public function calculateEstesPrice($data, $lgOption = false, $getCost = false, $isUpsLtl = false)
     {
         $lgCost = $lgOption ? 0 : $this->getLiftGateCost($data, $getCost, $isUpsLtl);
-        $basePrice = (float)$data['ratpricing']['rattotalPrice'];
+        $basePrice = (float) $data['ratpricing']['rattotalPrice'];
         $basePrice = $basePrice - $lgCost;
         $basePrice = $this->calculateHandlingFee($basePrice);
         return $basePrice;
@@ -3025,11 +3015,11 @@ class CompileQuotes
      * @param bool $getCost
      * @return float
      */
-    public function getLiftGateCost($quotes, $getCost = false, $isUpsLtl = false,$isOdflLtl = false)
+    public function getLiftGateCost($quotes, $getCost = false, $isUpsLtl = false, $isOdflLtl = false)
     {
         $lgCost = 0;
         if (!(($this->isResi && isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']) ||
-                (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery'] == '1')) || $getCost) {
+            (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery'] == '1')) || $getCost) {
             if (isset($quotes['surcharges']) && isset($quotes['surcharges']['liftgateFee'])) {
                 $lgCost = $quotes['surcharges']['liftgateFee'];
             }
@@ -3113,7 +3103,6 @@ class CompileQuotes
         return $resp;
     }
 
-
     public function getDeliveryEstimates($dateAndDays): string
     {
         $date = $dateAndDays['deliveryDate'] ?? null;
@@ -3136,7 +3125,6 @@ class CompileQuotes
         return $deliveryEstimates;
     }
 
-
     /**
      * Title for GTZ
      */
@@ -3147,8 +3135,8 @@ class CompileQuotes
             $this->quoteSettings = $quoteSetting;
         }
         /*
-        * Check if quickest enabled -> set lable_as manaully
-        */
+         * Check if quickest enabled -> set lable_as manaully
+         */
         $quoteSetting = $this->quoteSettings ?? [];
         if ($quckest) {
             $this->quoteSettings['method'] = 1;
@@ -3255,7 +3243,7 @@ class CompileQuotes
                             'rate' => $this->calculatePrice($data, false, true),
                             'title' => $this->labelAs . ' ' . $resi,
                             'resi' => $resiArr,
-                            'hazShipment' => $hazShipment
+                            'hazShipment' => $hazShipment,
                         ];
 
                         $counter++;
@@ -3317,7 +3305,7 @@ class CompileQuotes
             $allowed = [
                 'code' => $code, // or carrier name
                 'title' => $title . $appendLabel,
-                'rate' => $grandTotal
+                'rate' => $grandTotal,
             ];
         }
 
@@ -3328,11 +3316,11 @@ class CompileQuotes
     {
         if (isset($this->ownArangement) && $this->ownArangement == 1) {
             $title = (isset($this->ownArangementText) && trim($this->ownArangementText) != '') ? $this->ownArangementText :
-                "I'll Arrange My Own Freight";
+            "I'll Arrange My Own Freight";
             $finalArr[] = [
                 'code' => 'OWAR', // or carrier name
                 'title' => $title,
-                'rate' => 0
+                'rate' => 0,
             ];
         }
 
@@ -3412,7 +3400,6 @@ class CompileQuotes
         return $data;
     }
 
-
     /**
      * Get Plan detail
      * @return array
@@ -3446,7 +3433,7 @@ class CompileQuotes
                 'planName' => $planName,
                 'expireDays' => $expireDays,
                 'expiryDate' => $expiryDate,
-                'storeType' => $storeType
+                'storeType' => $storeType,
             ];
             $this->coreSession->setPlanDetail($planData);
         }
@@ -3485,7 +3472,7 @@ class CompileQuotes
         $defaultError = 'Something went wrong. Please try again!';
         return [
             'error' => ($type == true) ? 1 : 0,
-            'msg' => ($msg != null) ? $msg : $defaultError
+            'msg' => ($msg != null) ? $msg : $defaultError,
         ];
     }
 
@@ -3555,9 +3542,9 @@ class CompileQuotes
         asort($arraySorting['simple']);
         $this->quoteSettings['method'] = $this->quoteSettings['method'] ?? 1;
         if ($this->quoteSettings['method'] == 2 && $this->isMultiShipment == false) { //Cheapest method
-            $options = (int)$this->quoteSettings['number_of_options'] ?? 1;
+            $options = (int) $this->quoteSettings['number_of_options'] ?? 1;
         } elseif ($this->quoteSettings['method'] == 3) { //Average rate
-            $options = (int)$this->quoteSettings['number_of_options'];
+            $options = (int) $this->quoteSettings['number_of_options'];
         } else {
             $options = 1;
         }
@@ -3594,9 +3581,9 @@ class CompileQuotes
         asort($arraySorting['simple']);
         $this->quoteSettings['method'] = $this->quoteSettings['method'] ?? 1;
         if ($this->quoteSettings['method'] == 2 && $this->isMultiShipment == false) { //Cheapest method
-            $options = (int)$this->quoteSettings['number_of_options'] ?? 1;
+            $options = (int) $this->quoteSettings['number_of_options'] ?? 1;
         } elseif ($this->quoteSettings['method'] == 3) { //Average rate
-            $options = (int)$this->quoteSettings['number_of_options'];
+            $options = (int) $this->quoteSettings['number_of_options'];
         } else {
             $options = 1;
         }
@@ -3608,7 +3595,6 @@ class CompileQuotes
         $resp = array_intersect_key($services, $sliced);
         return $resp;
     }
-
 
     /**
      * @param $ratesArray
@@ -3651,7 +3637,7 @@ class CompileQuotes
     public function customLabel($serviceName, $quoteSettings = [])
     {
         /*if ($this->isMultiShipment) {
-            return 'Freight';
+        return 'Freight';
         }*/
         if (!empty($quoteSettings)) {
             $this->quoteSettings = $quoteSettings;
@@ -3672,12 +3658,12 @@ class CompileQuotes
         $ownArrangement[] = [
             'code' => 'own_arrangement',
             'title' => (isset($this->quoteSettings['own_arrangement_text']) && !empty($this->quoteSettings['own_arrangement_text'])) ? $this->quoteSettings['own_arrangement_text'] : "I'll Arrange My Own Freight",
-            'rate' => 0
+            'rate' => 0,
         ];
         return array_merge($finalQuotes, $ownArrangement);
     }
 
-    function arrangeHATFreight($finalQuotes, $HAT, $lableAs = '')
+    public function arrangeHATFreight($finalQuotes, $HAT, $lableAs = '')
     {
         if (empty($HAT)) {
             return $finalQuotes;
@@ -3689,12 +3675,12 @@ class CompileQuotes
         $hatQuotes[] = [
             'code' => $HAT[0]['serviceType'],
             'title' => $lableAs,
-            'rate' => $amount
+            'rate' => $amount,
         ];
         return array_merge($finalQuotes, $hatQuotes);
     }
 
-    function arrangeHATMulti($mulishipment, $HAT)
+    public function arrangeHATMulti($mulishipment, $HAT)
     {
         $quotes = $mulishipment['simple'] ?? $mulishipment['liftgate'] ?? [];
         $count = 0;
@@ -3702,19 +3688,19 @@ class CompileQuotes
             $newQuote = [
                 'code' => $HAT[$count]['serviceType'] ?? '',
                 'rate' => $HAT[$count]['totalNetCharge']['Amount'] ?? '',
-                'title' => $HAT[$count]['serviceDesc'] ?? ''
+                'title' => $HAT[$count]['serviceDesc'] ?? '',
             ];
             $mulishipment['hat'][$shipmentId] = $newQuote;
         }
         return $mulishipment;
     }
 
-    function arrangeFreeRNL($finalQuotes)
+    public function arrangeFreeRNL($finalQuotes)
     {
         $hatQuotes[] = [
             'code' => 'freernlltl',
             'title' => 'Free',
-            'rate' => 0
+            'rate' => 0,
         ];
         return array_merge($finalQuotes, $hatQuotes);
     }
@@ -3727,7 +3713,7 @@ class CompileQuotes
         $restriction = [];
         $currentPlan = $this->planInfo()['planNumber'];
         $standard = [
-            'enableCuttOff'
+            'enableCuttOff',
         ];
         $advance = [];
         switch ($currentPlan) {
@@ -3737,7 +3723,7 @@ class CompileQuotes
 
             default:
                 $restriction = [
-                    'standard' => $standard
+                    'standard' => $standard,
                 ];
                 break;
         }

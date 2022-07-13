@@ -22,7 +22,7 @@ class ConnectionSettings
         ];
         $url = $this->testConnectionUrl;
         $params  = [
-            'license_key' => $data['license_key'] ?? '',
+            'license_key' => '',
             'carrierName' => 'odfl4me',
             'carrier_mode' => 'test',
             'dont_auth' => '1',

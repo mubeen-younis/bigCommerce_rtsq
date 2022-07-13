@@ -22,8 +22,8 @@ class ConnectionSettings
         ];
         $url = $this->testConnectionUrl;
         $params  = [
-            'license_key' => 'QHZGO4SF-TW4R8NUC-A41WVCDR-5WXFESTS',
-            'server_name' => 'wooplugins.eniture-dev.com',
+            'license_key' => '',
+            'server_name' => $storeName ?? '',
             'carrierName' => 'odfl',
             'carrier_mode' => 'test',
             'dont_auth' => '1',
