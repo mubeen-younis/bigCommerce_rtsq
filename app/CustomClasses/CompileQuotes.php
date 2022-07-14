@@ -964,7 +964,7 @@ class CompileQuotes
         }
         return $this->arrangeOwnFreight($allQuotes);
     }
-
+// For ODFL LTL Quotes
     public function compileOdflLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
         $this->isResi = $this->residential['odflLtl'] == 'Y';
