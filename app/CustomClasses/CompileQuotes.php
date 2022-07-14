@@ -803,13 +803,13 @@ class CompileQuotes
         $quotes = array_filter($quotes);
         $ownArrangement = [];
         $shipping = new Shipping();
-        
+
         if ($this->isMultiShipment) {
             $newQuotes['checkoutQuotes'] = $newQuotes['multiShipmentQuotes'] = [];
             foreach ($quotes as $car => $quote) {
                 if (isset($quote['checkoutQuotes'])) {
                     foreach ($quote['checkoutQuotes'] as $key => $quot) {
-        
+
                         if ($quot['code'] !== 'own_arrangement') {
                             array_push($newQuotes['checkoutQuotes'], $quot);
                             array_push($newQuotes['multiShipmentQuotes'], $quote['multiShipmentQuotes']);
@@ -1120,6 +1120,8 @@ class CompileQuotes
         $labelAs = $this->quoteSettings['label_as'] ?? '';
         $labelAs = empty($labelAs) ? "Freight" : $labelAs;
         $this->quoteSettingsData();
+
+
 
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
