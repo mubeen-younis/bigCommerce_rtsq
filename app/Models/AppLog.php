@@ -13,10 +13,12 @@ class AppLog extends Model
     public $timestamps = false;
 
 
-    public static function getLogsDB($searchTerm, $limit = 20)
+    public static function getLogsDB($searchTerm, $limit = 50, $sortOrder = 'desc')
     {
-        return AppLog::where('message', 'LIKE', "%{$searchTerm}%")
-            ->orWhere('context', 'LIKE', "%{$searchTerm}%")->paginate($limit);
+        $appLogs = AppLog::where('formatted', 'LIKE', "%{$searchTerm}%")
+            ->orderBy('created_at', $sortOrder)
+            ->paginate($limit);
+        return $appLogs->appends(['search' => $searchTerm, 'page_size' => $limit, 'sort_order' => $sortOrder]);
     }
 
     public function toSearchableArray()

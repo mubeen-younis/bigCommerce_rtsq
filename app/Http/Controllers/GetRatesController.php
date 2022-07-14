@@ -78,6 +78,7 @@ class GetRatesController extends Controller
         }
 
         $quotes = $this->shipping->collectRates($formatReq, $storeData, $this->connectionSettings, $cartInfo);
+        
         return $quotes;
 
 
@@ -145,7 +146,6 @@ class GetRatesController extends Controller
                  ship_own_package0YUJHZQA\  578em with diff product rules*/
                 if (!empty($variantKeys) && array_key_exists($key, $variantKeys)) {
                     $key = $key . $productKey;
-
                 }
                 $variantKeys[$key] = $key;
 
@@ -163,7 +163,6 @@ class GetRatesController extends Controller
                     $wareHouseShipmentExist = true;
                 }
                 $details['origin'][$key] = $originAddress;
-
                 $details['items'][$key] = [
                     'id' => $product_settings['id'] ?? '',
                     'product_id' => $product['product_id'] ?? '',
@@ -201,7 +200,6 @@ class GetRatesController extends Controller
                         (blank($details['items'][$key]['lineItemWidth']) || $details['items'][$key]['lineItemWidth'] <= 0) ||
                         (blank($details['items'][$key]['lineItemHeight']) || $details['items'][$key]['lineItemHeight'] <= 0)
                     ) {
-
                         $details['items'][$key]['exclude_packaging'] = 1;
                         $details['items'][$key]['shipBinAlone'] = 1;
                     }
@@ -423,6 +421,7 @@ class GetRatesController extends Controller
                         'connection_settings.value')
                     ->where('connection_settings.installed_carrier_id', $installedCarrier->id)->first();
                 if ($connectionSettings !== null) {
+                
 
 
                     $this->connectionSettings[$connectionSettings->slug]['creds'] = json_decode($connectionSettings->value, true);

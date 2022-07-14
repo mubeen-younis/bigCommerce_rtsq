@@ -191,6 +191,7 @@ class Shipping
         $isFreightQuoteLtlCodeExist = gettype(array_search('fqltl', $finalCodesTemp)) == 'integer';
         $isEstesLtlCodeExist = gettype(array_search('estesltl', $finalCodesTemp)) == 'integer';
         $isDayRossLtlCodeExist = gettype(array_search('dayrossltl', $finalCodesTemp)) == 'integer';
+        $isOdflLtlCodeExist = gettype(array_search('odflltl', $finalCodesTemp)) == 'integer';
         $isSaiaLtlCodeExist = gettype(array_search('xpoltl', $finalCodesTemp)) == 'integer';
         $freightCode = '';
         $finalCost = 0;
@@ -204,7 +205,7 @@ class Shipping
         } else {
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
             //TODO : Need to Add LTL Carriers Here as well
-            if (!$isShippingOrFreight && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist || $isEstesLtlCodeExist || $isDayRossLtlCodeExist || $isSaiaLtlCodeExist)) {
+            if (!$isShippingOrFreight && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist || $isEstesLtlCodeExist || $isDayRossLtlCodeExist || $isOdflLtlCodeExist || $isSaiaLtlCodeExist)) {
                 $isShippingOrFreight = false;
             }
 
@@ -564,6 +565,7 @@ class Shipping
     public
     function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null)
     {
+        
         //print_r($resp); print_r($multiShipmentQuotes); exit;
         foreach ($finalQuotes as $finalQuote) {
             $RequestTempData = new RequestTempData();
@@ -636,7 +638,7 @@ class Shipping
     {
         // TODO: Need to Add small and Ltl Carriers Here as well
         $smallOrigins = $marketItemSmall = $request['carriers']['wweSmall']['originAddress'] ?? $request['carriers']['upsSmall']['originAddress'] ?? $request['carriers']['fedexSmall']['originAddress'] ?? $request['carriers']['unishippersSmall']['originAddress'] ?? [];
-        $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? $request['carriers']['upsLTL']['originAddress'] ?? $request['carriers']['yrcLTL']['originAddress'] ?? [];
+        $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? $request['carriers']['upsLTL']['originAddress'] ?? $request['carriers']['yrcLTL']['originAddress'] ?? $request['carriers']['odfl4me']['originAddress'] ?? [];
         $items = $request['commdityDetails'] ?? [];
         $smallHazmat = $ltlHazmat = false;
         if (!empty($smallOrigins)) {
@@ -825,7 +827,7 @@ class Shipping
             $output = curl_exec($ch);
             curl_close($ch);
             Log::info('$output ' . $output);
-            return json_decode($output, true);
+           return json_decode($output, true);
         } catch (\Throwable $e) {
             $result = [];
         }

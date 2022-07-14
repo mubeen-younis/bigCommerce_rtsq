@@ -1,6 +1,6 @@
 <?php
 
-namespace App\CustomClasses\EstesLTL;
+namespace App\CustomClasses\OdflLTL;
 
 use App\Constants\Constant;
 use App\CustomClasses\CurlRequest;
@@ -24,7 +24,7 @@ class ConnectionSettings
         $params  = [
             'license_key' => '',
             'server_name' => $storeName ?? '',
-            'carrierName' => 'estes',
+            'carrierName' => 'odfl',
             'carrier_mode' => 'test',
             'dont_auth' => '1',
             'version' => '2.0',
@@ -55,7 +55,7 @@ class ConnectionSettings
         }if ($output['severity'] === 'SUCCESS') {
             $response = [
                     'error' => false,
-                    'message' => 'Test connection successful.',
+                    'message' => $output['Message'],
                     'data' => [],
                     ];
         }        return $response;
