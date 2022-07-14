@@ -49,7 +49,6 @@ class QuotesResults
     public function formatCharges($charges): int
     {
         $amount = $charges ?? 0;
-        // $amount = number_format($amount, 2, '.', '');
         $amount = str_replace(',', '', $amount);
         $amount = (float) $amount;
 
