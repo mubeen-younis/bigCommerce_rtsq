@@ -91,7 +91,7 @@ class QuotesResults
 
     public function getShipmentDateAndDays($data): array
     {
-        $date = $data['deliveryDate'] ?? null;
+        $date = $data['deliveryTimestamp'] ?? null;
         $days = $data['totalTransitTimeInDays'] ?? null;
         $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
 
