@@ -20,6 +20,7 @@ use App\CustomClasses\FreightQuote\Ltl\ConnectionSettings as FreightQuoteConSett
 use App\CustomClasses\EstesLTL\ConnectionSettings as EstesLTLConnectionSettings;
 use App\CustomClasses\DayRossLTL\ConnectionSettings as DayRossLtlConnectionSettings;
 use App\CustomClasses\OdflLTL\ConnectionSettings as OdflLTLConnectionSettings;
+use App\CustomClasses\SaiaLTL\ConnectionSettings as SaiaLTLConnectionSettings;
 use App\Endpoints\Endpoints;
 
 use App\Models\Connection;
@@ -61,6 +62,7 @@ class ConnectionController extends Controller
         $this->estesLTLConL = new EstesLTLConnectionSettings();
         $this->dayRossLtlTestCon = new DayRossLtlConnectionSettings();
         $this->odflLTLConL = new OdflLTLConnectionSettings();
+        $this->saiaLtlTestCon = new SaiaLTLConnectionSettings();
     }
 
     public function index(Request $request)
@@ -161,6 +163,9 @@ class ConnectionController extends Controller
                     return response()->json($response);
                 case 'odfl-ltl':
                     $response = $this->odflLTLConL->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'saia-ltl':
+                    $response = $this->saiaLtlTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
                 default:
                     return response()->json([
