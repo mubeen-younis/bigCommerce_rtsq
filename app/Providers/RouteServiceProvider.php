@@ -66,5 +66,11 @@ class RouteServiceProvider extends ServiceProvider
                 return response('Rate limit exceeded for webhooks ', 429);
             });
         });
+        RateLimiter::for('webhooks', function (Request $request) {
+            return Limit::perMinute(1000)->by(optional($request)->producer ?: ($request->ip() ?? null))->response(function () use ($request) {
+                Log::info('Rate limit exceeded for webhooks ' . json_encode($request->all()));
+                return response('Rate limit exceeded for webhooks ', 429);
+            });
+        });
     }
 }
