@@ -30,7 +30,7 @@ class ConnectionSettings extends CarriersConnectionSettings
             // Inbound, Outbound, ThirdParty
             'originPostalCode' => $data->original_postal_code,
 
-            'licence_key' => 'TDVB9ONC-M7QJRPRQ-5EDIH32D-DE73Y57I',
+            'licence_key' => '',
             'serverName' => $storeName,
 
             'carrierName' => 'saia',
