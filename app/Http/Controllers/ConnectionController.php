@@ -21,6 +21,7 @@ use App\CustomClasses\EstesLTL\ConnectionSettings as EstesLTLConnectionSettings;
 use App\CustomClasses\DayRossLTL\ConnectionSettings as DayRossLtlConnectionSettings;
 use App\CustomClasses\OdflLTL\ConnectionSettings as OdflLTLConnectionSettings;
 use App\CustomClasses\SaiaLTL\ConnectionSettings as SaiaLTLConnectionSettings;
+use App\CustomClasses\DayLightLtl\ConnectionSettings as DayLightLtlConnectionSettings;
 use App\Endpoints\Endpoints;
 
 use App\Models\Connection;
@@ -63,6 +64,7 @@ class ConnectionController extends Controller
         $this->dayRossLtlTestCon = new DayRossLtlConnectionSettings();
         $this->odflLTLConL = new OdflLTLConnectionSettings();
         $this->saiaLtlTestCon = new SaiaLTLConnectionSettings();
+        $this->dayLightLtlTestCon = new DayLightLtlConnectionSettings();
     }
 
     public function index(Request $request)
@@ -166,6 +168,9 @@ class ConnectionController extends Controller
                     return response()->json($response);
                 case 'saia-ltl':
                     $response = $this->saiaLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'daylight-ltl':
+                    $response = $this->dayLightLtlTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
                 default:
                     return response()->json([
