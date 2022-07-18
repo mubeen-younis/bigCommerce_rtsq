@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use App\CustomClasses\Bin3D\Bin3D;
 use App\CustomClasses\SmartyStreet\SmartyStreet;
 use Illuminate\Support\Facades\Log;
+use App\CustomClasses\DayLightLtl\QuotesResults as dayLightQuotesResults;
 
 /**
  * class that generated request data
@@ -156,6 +157,11 @@ class GenerateRequestData
                     $saiaLtlArr = $this->saiaLtlEnitArr($con1, $destination);
                     $saiaLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['saia'] = $saiaLtlArr;
+                    break;
+                case 'daylight-ltl':
+                    $dayLightLtlArr = $this->dayLightLtlEnityArr($con1, $destination);
+                    $dayLightLtlArr['originAddress'] = $enitOrigin;
+                    $carriersArr['carriers']['daylight'] = $dayLightLtlArr;
                     break;
             }
         }
@@ -436,6 +442,20 @@ class GenerateRequestData
         ];
     }
 
+    private function dayLightLtlEnityArr($connSettings, $destination): array
+    {
+        return [
+            'licenseKey' => '',
+            'serverName' => "https://" . $this->storeData['store']['name'],
+            'carrierMode' => 'pro',
+            'quotestType' => 'ltl',
+            'version' => '1.0',
+            'returnQuotesOnExceedWeight' => 1,
+            'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
+            'api' => $this->getApiInfoArrDayLightLtl($connSettings, $destination),
+        ];
+    }
+
     function calculatePrice($lineItems)
     {
         $price = 0;
@@ -585,7 +605,8 @@ class GenerateRequestData
                     || isset($carriers['freightQuote'])
                     || isset($carriers['estes'])
                     || isset($carriers['dayross'])
-                    || isset($carriers['odfl4me']);
+                    || isset($carriers['odfl4me'])
+                    || isset($carriers['daylight']);
                 if ($isLtl) {
                     $itemsArr = $olditemsArr + $itemsArr;
                 }
@@ -1665,6 +1686,52 @@ class GenerateRequestData
         ];
 
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
+    }
+
+    private function getApiInfoArrDayLightLtl($connSettings, $destination): array
+    {
+        $resp = $this->getRADStatus($connSettings, $destination);
+        $this->resiCarrier['dayLightLtl'] = $resp['residential'];
+        $this->resiCarrier['alwaysResi']['dayLightLtl'] = $resp['alwaysResi'];
+        $dayLightQuotes = new dayLightQuotesResults();
+        $apiArray = $dayLightQuotes->getApiArr($connSettings, $resp);
+
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
+    }
+
+    private function getRADStatus($connSettings, $destination): array
+    {
+        $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
+        (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+        /*
+            * Check if rad hit not consumed and residential is enables
+            * **/
+        $residential = 'N';
+        $alwaysResi = false;
+
+        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+            if ($this->radHitConsumed == 0) {
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+            } else {
+                $residential = $this->residential;
+            }
+         
+            if ($liftGate != 'Y') {
+                $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
+            }
+        } else {
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+        }
+
+        $resp = [
+            'residential' => $residential,
+            'alwaysResi' => $alwaysResi,
+            'liftGate' => $liftGate
+        ];
+
+        return $resp;
     }
 
     public function setIsSMartPost($connectionSettings)
