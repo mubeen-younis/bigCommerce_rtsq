@@ -1194,6 +1194,15 @@ class CompileQuotes
                     break;
                 }
             }
+            if($cheapestQuote['serviceLevel'] === 'Standard' && isset($this->quoteSettings['standard'])){
+
+                $cheapestQuote['carrier'] =  $this->quoteSettings['standard'] ?? 'Freight';
+                
+            }elseif($cheapestQuote['serviceLevel'] == 'Guaranteed 5 PM' || $cheapestQuote['serviceLevel'] == 'Guaranteed 12 PM' && isset($this->quoteSettings['guaranteed'])){
+                
+                $cheapestQuote['carrier'] = $this->quoteSettings['guaranteed'] ?? 'Freight';
+    
+            }
         }
 
         return $cheapestQuote;
@@ -3707,7 +3716,7 @@ class CompileQuotes
     {
         $sliced = array_slice($ratesArray['simple'], 0, $options, true);
         $simplePrice = $this->getAveragePrice($sliced, $options);
-        $prefix = $this->isGTZCerasis ? 'AVG' : 'AVGwweltl';
+        $prefix = $this->isGTZCerasis ? 'AVG' : 'AVGtqlltl';
         $prefix = isset($this->isFQ) && $this->isFQ ? 'AVGfqltl' : $prefix;
         $serviceName = $this->customLabel(Functions::$ltlMultiTitle);
         $averageRateService[0]['simple'] = [
@@ -3733,10 +3742,22 @@ class CompileQuotes
         if(empty($ratesArray)){
             return [];
         }
+        foreach($ratesArray as $key => $data){
+            if($data['serviceLevel'] === 'Standard'){
+
+                $ratesArray[$key]['carrier'] =  $this->quoteSettings['standard'] ?? 'Freight';
+                
+            }elseif($data['serviceLevel'] == 'Guaranteed 5 PM' || $data['serviceLevel'] == 'Guaranteed 12 PM'){
+                
+                $ratesArray[$key]['carrier'] = $this->quoteSettings['guaranteed'] ?? 'Freight';
+    
+            }
+        }
+       
         $simplePrice = $this->getAveragePriceTQL($ratesArray, $options);
         $prefix = $this->isGTZCerasis ? 'AVG' : 'AVGtqlltl';
         $prefix = isset($this->isFQ) && $this->isFQ ? 'AVGfqltl' : $prefix;
-        $serviceName = $this->customLabel(Functions::$ltlMultiTitle);
+        $serviceName = $ratesArray[$key]['carrier'] ?? 'Freight';
         $averageRateService[0]['simple'] = [
             'title' => $this->getTitle($serviceName, false), //$serviceName,
             'code' => $prefix . $this->getAccessorialCode(),
