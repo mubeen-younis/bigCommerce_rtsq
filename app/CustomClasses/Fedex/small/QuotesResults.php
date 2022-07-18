@@ -145,7 +145,6 @@ class QuotesResults
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
         $allConfigServices['services'] = $allConfigServices = [];
 
-
         if (isset($this->quoteSettings['carrier_services'])) {
             foreach ($this->quoteSettings['carrier_services'] as $key => $serviceName) {
                 if ($serviceName) {
@@ -211,8 +210,8 @@ class QuotesResults
         $shipmentCount = 0;
         $count = 0;
         foreach ($shipments as $origin => $quote) {
-            if (isset($quote['severity'])) {
-                continue;
+            if ((isset($quote['severity']) || empty($quote) || !isset($quote['q']))) {
+                return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
             if ($count == 0) { //To be checked only once
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
@@ -402,7 +401,7 @@ class QuotesResults
     public
     function formateQuoteBeforeCompile($shipments)
     {
-        //print_r($shipments); exit;
+        
         foreach ($shipments as $shipment => $serviceTypes) {
             $inStoreLocal = [];
             foreach ($serviceTypes as $serviceName => $quotes) {

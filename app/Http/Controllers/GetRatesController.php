@@ -63,6 +63,7 @@ class GetRatesController extends Controller
         $cartInfo['cartId'] = $request->base_options['request_context']['reference_values'][0]['value'] ?? 0;
         $cartInfo['store_id'] = $storeData['installed_carriers'][0]['store_id'] ?? 0;
 // Getting installed carriers there quote settings and services
+
         $this->getCarrierSettings($storeData['installed_carriers']);
 
         $formatReq = $this->formatRequest($request->all(), $storeData);
@@ -77,6 +78,7 @@ class GetRatesController extends Controller
         }
 
         $quotes = $this->shipping->collectRates($formatReq, $storeData, $this->connectionSettings, $cartInfo);
+        
         return $quotes;
 
 
@@ -132,14 +134,16 @@ class GetRatesController extends Controller
         $wareHouseShipmentExist = false;
         if (count($data['base_options']['items'])) {
             foreach ($data['base_options']['items'] as $productKey => $product) {
-                $product_settings = $this->getProductSetting($product['product_id'], $product['variant_id'],$storeId);
+                $product_settings = $this->getProductSetting($product['product_id'], $product['variant_id'], $storeId);
                 $product_price = $this->getProductPrice($product['product_id'], $product['variant_id']);
                 $weight = (isset($product['weight']['value']) && isset($product['weight']['units'])) ? $this->convertWeight($product['weight']['value'], strtolower($product['weight']['units'])) : 0;
                 $ltlCheck = $product_settings['freight_enabled'] ?? false;
                 $shipBinAlone = (isset($product_settings['ship_multiple_package']) && $product_settings['ship_multiple_package'])
                 || (isset($product_settings['ship_own_package']) && $product_settings['ship_own_package']) ? 1 : 0;
+
                 $key = $product['variant_id'] ?? $product['product_id'];
-                /*Added this block of code for catering an item with diff product rules*/
+                /*Added this block of code for catering an it 56yuk  g5 E
+                 ship_own_package0YUJHZQA\  578em with diff product rules*/
                 if (!empty($variantKeys) && array_key_exists($key, $variantKeys)) {
                     $key = $key . $productKey;
                 }
@@ -158,10 +162,7 @@ class GetRatesController extends Controller
                     $originAddress = 'warehouse';
                     $wareHouseShipmentExist = true;
                 }
-
                 $details['origin'][$key] = $originAddress;
-
-
                 $details['items'][$key] = [
                     'id' => $product_settings['id'] ?? '',
                     'product_id' => $product['product_id'] ?? '',
@@ -193,7 +194,6 @@ class GetRatesController extends Controller
                     'quote_as_local' => $product_settings['quote_as_local'] ?? false
                 ];
 
-
                 if (!$details['items'][$key]['shipMultiplePackage']) {
                     if (
                         (blank($details['items'][$key]['lineItemLength']) || $details['items'][$key]['lineItemLength'] <= 0) ||
@@ -207,8 +207,6 @@ class GetRatesController extends Controller
 
             }
         }
-
-
         if ($wareHouseShipmentExist) {
             $originAddress = $this->shipmentPkg->getNearestWarehouse($details, $details['destination']['zip'], $storeData, $this->connectionSettings);
             if (blank($originAddress)) {
@@ -219,9 +217,12 @@ class GetRatesController extends Controller
             foreach ($details['origin'] as $key => $origin) {
                 if ($origin == "warehouse") {
                     $details['origin'][$key] = $originAddress;
+
+
                 }
             }
         }
+
         return ['lineItemData' => $details];
     }
 
@@ -297,11 +298,11 @@ class GetRatesController extends Controller
         return $lineItemClass;
     }
 
-    public function getProductSetting($productId, $variantId,$storeId)
+    public function getProductSetting($productId, $variantId, $storeId)
     {
         $settings = [];
         $productSetting = ProductSetting::select('settings', 'id', 'dropship_enabled', 'dropship_location', 'shipping_group', 'ship_multiple_package')
-            ->where(['source_product_id' => $productId, 'variant_id' => $variantId,'store_id'=>$storeId])
+            ->where(['source_product_id' => $productId, 'variant_id' => $variantId, 'store_id' => $storeId])
             ->first();
         if (!empty($productSetting)) {
             $productSetting->toArray();
@@ -420,6 +421,8 @@ class GetRatesController extends Controller
                         'connection_settings.value')
                     ->where('connection_settings.installed_carrier_id', $installedCarrier->id)->first();
                 if ($connectionSettings !== null) {
+                
+
 
                     $this->connectionSettings[$connectionSettings->slug]['creds'] = json_decode($connectionSettings->value, true);
 

@@ -9,6 +9,7 @@
     "license": "MIT",
     "require": {
         "php": "^7.3|^8.0",
+        "algolia/scout-extended": "2.0",
         "fideloper/proxy": "^4.4",
         "guzzlehttp/guzzle": "^7.3",
         "laravel/framework": "^8.12",

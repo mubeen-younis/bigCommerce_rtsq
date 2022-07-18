@@ -105,7 +105,7 @@ class QuotesResults
 
     public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $isMultiShipment)
     {
-        //print_r($shipments); exit;
+
         $shipments = $this->formateQuoteBeforeCompile($shipments);
         $this->quoteSettings = $connectionSettings['fedex-ltl']['quote_settings'] ?? [];
         $allConfigServices = [];
@@ -242,10 +242,9 @@ class QuotesResults
         return $resp;
     }
 
-    public function formateQuoteBeforeCompile($shipments)
-    {
-        foreach ($shipments as $shipment => $quotes) {
-            if (!isset($quotes['q'])) {
+    public function formateQuoteBeforeCompile($shipments){
+        foreach ($shipments as $shipment => $quotes){
+            if(!isset($quotes['q']) || isset($quotes['q']['severity'])){
                 continue;
             }
             foreach ($quotes['q'] as $key => $quote) {

@@ -37,10 +37,9 @@ class QuotesResults
         $originQuotes = $multiShipmentQuotes = $multiShipmentQuote = [];
         $shipmentCount = 0;
         $count = 0;
-
         foreach ($shipments as $origin => $quote) {
             if (isset($quote['severity'])) {
-                continue;
+                return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
             if ($count == 0) {
@@ -90,7 +89,7 @@ class QuotesResults
 
                     // Get service title
                     $title = $this->getServiceTitle($data, $srvcType, $this->quoteSettings, $residential);
-                    $price = (float)str_replace(',', '', $price);
+                    $price = (float) str_replace(',', '', $price);
 
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12uniship' . $srvcType . $access;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
@@ -149,7 +148,6 @@ class QuotesResults
         $returnResp['resp'] = isset($resp) && !empty($resp) ? $resp : [];
 
         return $returnResp;
-
 
     }
 
@@ -290,7 +288,7 @@ class QuotesResults
 
     public function addHandlingMarkupOfHazmat($amount)
     {
-        $amount = (float)str_replace(',', '', $amount);
+        $amount = (float) str_replace(',', '', $amount);
         $markupValue = $this->quoteSettings['handling_fee_markup'] ?? 0;
 
         if (strpbrk($markupValue, '%') !== false) {

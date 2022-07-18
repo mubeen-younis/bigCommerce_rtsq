@@ -2,13 +2,14 @@
 
 namespace App\CustomClasses\Fedex\ltl;
 
+use App\CustomClasses\CarriersConnectionSettings;
 use App\CustomClasses\CurlRequest;
 
-class ConnectionSettings
+class ConnectionSettings extends CarriersConnectionSettings
 {
-    private $testConnectionUrl = 'https://eniture.com/ws/index.php';
     public function __construct()
     {
+        parent::__construct();
         $this->curlRequest = new CurlRequest();
     }
 
@@ -18,6 +19,7 @@ class ConnectionSettings
             'error' => true,
             'message' => 'Something went wrong!',
         ];
+
         $url = $this->testConnectionUrl;
         $params = array(
             'dont_auth' => '1',
@@ -60,7 +62,7 @@ class ConnectionSettings
                 'message' => 'Test connection successful.',
                 'data' => [],
             ];
-        } else{
+        } else {
             $response = [
                 'error' => true,
                 'message' => 'Invalid authentication info',
