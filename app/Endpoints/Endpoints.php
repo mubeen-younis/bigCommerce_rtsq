@@ -4,7 +4,8 @@ namespace App\Endpoints;
 
 class Endpoints
 {
-    public static $qaUrl = "https://eniture-dev3.com/";
+    //public static $qaUrl = "https://eniture-dev3.com/";
+    public static $qaUrl = 'https://ws001.eniture-qa.com/';
     public static $prodUrl = "https://eniture.com/";
 
     public static function getBCComEndpoint()
@@ -18,6 +19,13 @@ class Endpoints
             return self::$qaUrl . "ws/index.php";
         }
         return self::$prodUrl . "ws/index.php";
+    }
+    public static function PurolatorTtestEndpoint()
+    {
+        if (env('APP_ENV') == 'staging') {
+            return self::$qaUrl . "index.php";
+        }
+        return self::$prodUrl . "index.php";
     }
 
     public static function wweSmallTestEndpoint()
