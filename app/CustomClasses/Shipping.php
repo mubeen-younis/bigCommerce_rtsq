@@ -114,19 +114,17 @@ class Shipping
 
         $this->isInsurance($package);
         foreach ($carriersArray['carriers'] as $key => $carriers) {
-            if ($this->isHazmat == 'Y') {
-                if ($key == 'wweLTL') {
-                    $carriersArray['carriers'][$key]['api']['lineItemHazmatInfo'] = [
-                        [
-                            'isHazmatLineItem' => 'Y',
-                            'lineItemHazmatUNNumberHeader' => 'UN #',
-                            'lineItemHazmatUNNumber' => '1139',
-                            'lineItemHazmatClass' => '1.1',
-                            'lineItemHazmatEmContactPhone' => '4043308699',
-                            'lineItemHazmatPackagingGroup' => 'I',
-                        ],
-                    ];
-                }
+            if ($this->isHazmat == 'Y' && $key == 'wweLTL') {
+                $carriersArray['carriers'][$key]['api']['lineItemHazmatInfo'] = [
+                    [
+                        'isHazmatLineItem' => 'Y',
+                        'lineItemHazmatUNNumberHeader' => 'UN #',
+                        'lineItemHazmatUNNumber' => '1139',
+                        'lineItemHazmatClass' => '1.1',
+                        'lineItemHazmatEmContactPhone' => '4043308699',
+                        'lineItemHazmatPackagingGroup' => 'I',
+                    ],
+                ];
             }
             if ($this->isInsurance === 'Y' && $key == 'wweLTL') {
                 if ($this->isSmall($key)) {
@@ -195,6 +193,7 @@ class Shipping
         $isEstesLtlCodeExist = gettype(array_search('estesltl', $finalCodesTemp)) == 'integer';
         $isDayRossLtlCodeExist = gettype(array_search('dayrossltl', $finalCodesTemp)) == 'integer';
         $isOdflLtlCodeExist = gettype(array_search('odflltl', $finalCodesTemp)) == 'integer';
+        $isSaiaLtlCodeExist = gettype(array_search('saialtl', $finalCodesTemp)) == 'integer';
         $isAbfLtlCodeExist = gettype(array_search('abfltl', $finalCodesTemp)) == 'integer';
         $freightCode = '';
         $finalCost = 0;
@@ -208,7 +207,7 @@ class Shipping
         } else {
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
             //TODO : Need to Add LTL Carriers Here as well
-            if (!$isShippingOrFreight && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist || $isEstesLtlCodeExist || $isDayRossLtlCodeExist || $isOdflLtlCodeExist || $isAbfLtlCodeExist)) {
+            if (!$isShippingOrFreight && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist || $isEstesLtlCodeExist || $isDayRossLtlCodeExist || $isOdflLtlCodeExist || $isSaiaLtlCodeExist || $isAbfLtlCodeExist)) {
                 $isShippingOrFreight = false;
             }
 
