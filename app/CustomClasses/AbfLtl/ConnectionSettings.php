@@ -2,14 +2,14 @@
 
 namespace App\CustomClasses\AbfLtl;
 
+use App\CustomClasses\CarriersConnectionSettings;
 use App\CustomClasses\CurlRequest;
 
-class ConnectionSettings
+class ConnectionSettings extends CarriersConnectionSettings
 {
-    private $testConnectionUrl = 'https://eniture.com/ws/index.php';
-
     public function __construct()
     {
+        parent::__construct();
         $this->curlRequest = new CurlRequest();
     }
 
@@ -23,7 +23,7 @@ class ConnectionSettings
 
         $params = array(
             'dont_auth' => '1',
-            'licence_key' => 'TDVB9ONC-M7QJRPRQ-5EDIH32D-DE73Y57I',
+            'licence_key' => '',
             // -------------Carrier Credentials------------- //
             'id' => $data->business_id,
             'apiVersion' => '1.0',

@@ -402,8 +402,7 @@ class GenerateRequestData
     public function abfLtlEnitArr($connSettings, $destination)
     {
         return [
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
-            //'licenseKey' => 'V4ILPNNU-1EO5VA9K-3OWYO3BC-N418NYRC',
+            'licenseKey' => '',
             'serverName' => "https://" . $this->storeData['store']['name'],
             'carrierMode' => 'pro',
             'quotestType' => 'ltl',
