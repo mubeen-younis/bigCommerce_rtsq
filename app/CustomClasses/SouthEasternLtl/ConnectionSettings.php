@@ -2,14 +2,14 @@
 
 namespace App\CustomClasses\SouthEasternLtl;
 
+use App\CustomClasses\CarriersConnectionSettings;
 use App\CustomClasses\CurlRequest;
 
-class ConnectionSettings
+class ConnectionSettings extends CarriersConnectionSettings
 {
-    private $testConnectionUrl = 'https://eniture.com/ws/index.php';
-
     public function __construct()
     {
+        parent::__construct();
         $this->curlRequest = new CurlRequest();
     }
 
@@ -19,11 +19,11 @@ class ConnectionSettings
             'error' => true,
             'message' => 'Something went wrong!',
         ];
-        $url = $this->testConnectionUrl;
 
+        $url = $this->testConnectionUrl;
         $params = array(
             'sever_name' => $storeName,
-            'licence_key' => 'TDVB9ONC-M7QJRPRQ-5EDIH32D-DE73Y57I',
+            'licence_key' => '',
             'dont_auth' => '1',
 
             'carrierName' => 'southeastern',
@@ -34,14 +34,20 @@ class ConnectionSettings
             // -------------Carrier Credentials------------- //
             'username' => $data->username,
             'password' => $data->password,
-            'customerAccount' => $data->customer_account_number,
             'customerName' => $data->customer_name,
             'customerStreet' => $data->customer_street_address,
             'customerCity' => $data->customer_city,
             'customerState' => $data->customer_state,
             'customerZip' => $data->customer_zip_code,
-            'Option' => 'S',
         );
+
+        if (isset($data->third_party_account_number) && !empty($data->third_party_account_number && $data->access_level === 'third_party_account_number')) {
+            $params['Option'] = 'T';
+            $params['customerAccount'] = $data->third_party_account_number;
+        } else {
+            $params['Option'] = 'S';
+            $params['customerAccount'] = $data->customer_account_number;
+        }
 
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');

@@ -402,7 +402,7 @@ class GenerateRequestData
     public function SouthEasternEnitArr($connSettings, $destination)
     {
         return [
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'licenseKey' => '',
             'serverName' => "https://" . $this->storeData['store']['name'],
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
@@ -1733,6 +1733,7 @@ class GenerateRequestData
             'customerCity' => $connSettings['creds']['customer_city'],
             'customerState' => $connSettings['creds']['customer_state'],
             'customerZip' => $connSettings['creds']['customer_zip_code'],
+            'thirdPartyAccount' => $connSettings['creds']['third_party_account_number'] ?? '',
             
             'terms' => 'P',
             'thresholdWeightLimit' => $weightThreshold,
