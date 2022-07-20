@@ -42,12 +42,12 @@ class SmallConnectionSettings
             'senderCity' => $data->senderCity ?? '',
             'senderState' => $data->senderState ?? '',
             'senderZip' => $data->senderZip ?? '',
-            'senderCountryCode' => $data->senderCountryCode ?? '',
+            'senderCountryCode' => 'CA',
             'dont_auth' => 1
         ];
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
-        return $params;
+        
         if (isset($output['status']) && $output['status'] == false) {
             $response = [
                 'error' => true,
@@ -55,12 +55,12 @@ class SmallConnectionSettings
             ];
         }
         $output = json_decode($output['response'], true);
-        if (isset($output['error']) && isset($output['error_desc'])) {
+        if (isset($output['severity']) && $output['severity'] == 'ERROR') {
             $response = [
                 'error' => true,
-                'message' => $output['error_desc'],
+                'message' => $output['Message'],
             ];
-        } elseif (isset($output['success'])) {
+        } elseif (isset($output['severity']) && $output['severity'] == 'SUCCESS') {
             $response = [
                 'error' => false,
                 'message' => 'Test connection successful.',
