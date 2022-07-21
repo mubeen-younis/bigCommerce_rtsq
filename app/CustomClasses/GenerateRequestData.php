@@ -157,6 +157,11 @@ class GenerateRequestData
                     $saiaLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['saia'] = $saiaLtlArr;
                     break;
+                case "purolator-small":
+                    $purolatorSmallArr = $this->purolatorSmallEnitArr($con1, $destination);
+                    $purolatorSmallArr['originAddress'] = $enitOrigin;
+                    $carriersArr['carriers']['purolator'] = $purolatorSmallArr;
+                    break;
             }
         }
        return  ['carriersArr' => $carriersArr, 'residential' => $this->resiCarrier];
@@ -258,6 +263,18 @@ class GenerateRequestData
             'version' => '2.0.4',
             'api' => $this->getApiInfoArrWweSmall($connSettings, $destination),
             'getDistance' => 0,
+        ];
+    }
+
+    public function purolatorSmallEnitArr($connSettings, $destination)
+    {
+        return [
+            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'serverName' => "https://" . $this->storeData['store']['name'],
+            'carrierMode' => 'pro',
+            'quotestType' => 'small', // ltl / small
+            'version' => '1.0',
+            'api' => $this->getApiInfoArrpurolatorSmall($connSettings, $destination),
         ];
     }
 
@@ -471,14 +488,15 @@ class GenerateRequestData
         //
 
         if (isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs']) {
-            $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? [];
+            $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? $carriers['purolator']['originAddress'] ?? [];
             $this->itemsArr = $itemsArr;
             $this->carriers = $carriers;
 
             $hasSmall = isset($carriers['wweSmall'])
                 || isset($carriers['upsSmall'])
                 || isset($carriers['fedexSmall'])
-                || isset($carriers['unishippersSmall']);
+                || isset($carriers['unishippersSmall'])
+                || isset($carriers['purolator']);
             if ($hasSmall) {
                 $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
                 if (empty($multiplePackaging)) {
@@ -491,7 +509,7 @@ class GenerateRequestData
                 $olditemsArr = $itemsArr;
                 $carriersoriginAddress = $carriers['wweSmall']['originAddress']
                     ?? $carriers['upsSmall']['originAddress']
-                    ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? [];
+                    ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? $carriers['purolator']['originAddress'] ?? [];
 
                 if (isset($carriers['fedexSmall'])) {
                     $this->checkServiceEnabled();
@@ -529,6 +547,14 @@ class GenerateRequestData
 
                             foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
                                 $carriers['unishippersSmall']['originAddress'][$key] = $origin;
+                            }
+                        }
+
+                        if (isset($carriers['purolator'])) {
+                            unset($carriers['purolator']['originAddress']);
+
+                            foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
+                                $carriers['purolator']['originAddress'][$key] = $origin;
                             }
                         }
                         ///////////////////////////////////////////
@@ -570,6 +596,9 @@ class GenerateRequestData
                     }
                     if (isset($carriers['unishippersSmall'])) {
                         $carriers['unishippersSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
+                    }
+                    if (isset($carriers['purolator'])) {
+                        $carriers['purolator']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                     }
                 }
 
@@ -1338,6 +1367,38 @@ class GenerateRequestData
             'residentials_delivery' => ($alwaysResi ? 'Y' : $residential == 'Y') ? 'yes' : 'no',
             'prefferedCurrency' => 'USD',
             'includeDeclaredValue' => "1",
+        ];
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
+    }
+
+    public function getApiInfoArrpurolatorSmall($connSettings, $destination)
+    {
+        $residential = 'N';
+        $alwaysResi = false;
+        $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
+        if ($this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])) {
+            if ($this->radHitConsumed == 0) {
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+            } else {
+                $residential = $this->residential;
+            }
+        } else {
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+        }
+
+        $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
+        $this->resiCarrier['purolatorSmall'] = $residential;
+        $this->resiCarrier['alwaysResi']['purolatorSmall'] = $alwaysResi;
+        $apiArray = [
+            'productionKey' => $connSettings['creds']['productionKey'],
+            'productionPass' => $connSettings['creds']['productionPass'],
+            'billingAccount' => $connSettings['creds']['billingAccount'],
+            'registeredAccount' => $connSettings['creds']['registeredAccount'],
+            'accessLevel' => 'pro',
+            'quoteType' => 'Domestic',
+            'serviceID' => 'PurolatorGround',
         ];
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
