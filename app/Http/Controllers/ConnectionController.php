@@ -21,6 +21,7 @@ use App\CustomClasses\EstesLTL\ConnectionSettings as EstesLTLConnectionSettings;
 use App\CustomClasses\DayRossLTL\ConnectionSettings as DayRossLtlConnectionSettings;
 use App\CustomClasses\OdflLTL\ConnectionSettings as OdflLTLConnectionSettings;
 use App\CustomClasses\SaiaLTL\ConnectionSettings as SaiaLTLConnectionSettings;
+use App\CustomClasses\AbfLtl\ConnectionSettings as AbfLtlConnectionSettings;
 use App\CustomClasses\SouthEasternLtl\ConnectionSettings as SouthEasternLtlConnectionSettings;
 use App\Endpoints\Endpoints;
 
@@ -64,6 +65,7 @@ class ConnectionController extends Controller
         $this->dayRossLtlTestCon = new DayRossLtlConnectionSettings();
         $this->odflLTLConL = new OdflLTLConnectionSettings();
         $this->saiaLtlTestCon = new SaiaLTLConnectionSettings();
+        $this->AbfLtlTestCon = new AbfLtlConnectionSettings();
         $this->southEasternLtlTestCon = new SouthEasternLtlConnectionSettings();
     }
 
@@ -168,6 +170,9 @@ class ConnectionController extends Controller
                     return response()->json($response);
                 case 'saia-ltl':
                     $response = $this->saiaLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'abf-ltl':
+                    $response = $this->AbfLtlTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
                 case 'southeastern-ltl':
                     $response = $this->southEasternLtlTestCon->testConnection($request, $checkCarrierType->name);
