@@ -228,19 +228,19 @@ class OrderController extends Controller
                         /* Usps carrier packaging according to boxes types */     
                         $customBoxes = $ws->binPackagingData->response->customboxes->bins_packed ?? [];
                         if (!blank($customBoxes)) {
-                            $orderWidgetData = $this->formatUspsPackaging($customBoxes, $zip, $lineItem);
+                            $orderWidgetData[] = $this->formatUspsPackaging($customBoxes, $zip, $lineItem);
                         }
                         $upmbBoxes = $ws->binPackagingData->response->upmb->bins_packed ?? [];
                         if (!blank($upmbBoxes)) {
-                            $orderWidgetData = $this->formatUspsPackaging($upmbBoxes, $zip, $lineItem);
+                            $orderWidgetData[] = $this->formatUspsPackaging($upmbBoxes, $zip, $lineItem);
                         }
                         $umebBoxes = $ws->binPackagingData->response->umeb->bins_packed ?? [];
                         if (!blank($umebBoxes)) {
-                            $orderWidgetData = $this->formatUspsPackaging($umebBoxes, $zip, $lineItem);
+                            $orderWidgetData[] = $this->formatUspsPackaging($umebBoxes, $zip, $lineItem);
                         }
                         $uflatBoxes = $ws->binPackagingData->response->uflat->bins_packed ?? [];
                         if (!blank($uflatBoxes)) {
-                            $orderWidgetData = $this->formatUspsPackaging($uflatBoxes, $zip, $lineItem);
+                            $orderWidgetData[] = $this->formatUspsPackaging($uflatBoxes, $zip, $lineItem);
                         }
                                        
                         //print_r($ws->binPackagingData->response); exit;

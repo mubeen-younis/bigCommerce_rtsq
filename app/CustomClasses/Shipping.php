@@ -161,8 +161,6 @@ class Shipping
                 $quotes = $this->addBinResponseToQuotes($apiArray['binResponseArr'], $quotes);
             }
         }
-    
-        $this->isRequestMultishipment = $ltlSmallCompileQuotes->checkIsRequestMiltiShipment($requestArr['requestArr'],$quotes);
 
         $boxbins = $requestArr['boxBins'] ?? [];
         if (isset($uspsBoxBins) && !empty($uspsBoxBins)) {
