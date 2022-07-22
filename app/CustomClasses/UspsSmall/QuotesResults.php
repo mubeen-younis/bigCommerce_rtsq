@@ -38,7 +38,7 @@ class QuotesResults
 
         foreach ($shipments as $origin => $quote) {
             if (isset($quote['severity'])) {
-                continue;
+                return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);;
             }
 
             if ($count == 0) {
@@ -160,7 +160,7 @@ class QuotesResults
                 $shipments[$shipment]['q'][$quote]['totalNetCharge']['Amount'] = $netCharges;
             }
         }
-        // dd(163, $shipments);
+
         return $shipments;
     }
 

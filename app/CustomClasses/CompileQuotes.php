@@ -3165,9 +3165,10 @@ class CompileQuotes
         $this->isResi = $residential['uspsSmall'] == 'Y' ? true : false; 
         $this->residentialDlvry = $residential['uspsSmall'] == 'Y' ? 1 : 0; 
         $this->alwaysResi = $this->residential['alwaysResi']['uspsSmall'] ?? false;
+        $isResiAdd = $this->isResi || $this->alwaysResi; 
 
         $access = $this->getAccessorialCodeSmall();
-        $res = $uspsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment);
+        $res = $uspsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $isResiAdd, $access, $this->isMultiShipment);
 
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = $res['isMultiShipment'] ?? false;
