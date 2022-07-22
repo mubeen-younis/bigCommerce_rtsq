@@ -6,6 +6,7 @@ namespace App\CustomClasses\Fedex\small;
 
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
+use App\CustomClasses\Functions;
 use Illuminate\Support\Str;
 
 class QuotesResults
@@ -144,7 +145,6 @@ class QuotesResults
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
         $allConfigServices['services'] = $allConfigServices = [];
 
-
         if (isset($this->quoteSettings['carrier_services'])) {
             foreach ($this->quoteSettings['carrier_services'] as $key => $serviceName) {
                 if ($serviceName) {
@@ -210,8 +210,8 @@ class QuotesResults
         $shipmentCount = 0;
         $count = 0;
         foreach ($shipments as $origin => $quote) {
-            if (isset($quote['severity'])) {
-                continue;
+            if ((isset($quote['severity']) || empty($quote) || !isset($quote['q']))) {
+                return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
             if ($count == 0) { //To be checked only once
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
@@ -309,7 +309,7 @@ class QuotesResults
                     $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
                     $originQuotesMulti[0]['code'] = 'Multifedexsmall' . $access2;
                     $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
-                    $originQuotesMulti[0]['title'] = $residential ? 'Shipping ' . Constant::RESI_LABEL : 'Shipping';
+                    $originQuotesMulti[0]['title'] = $residential ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
                 }
             }
             $resp = [
@@ -401,7 +401,7 @@ class QuotesResults
     public
     function formateQuoteBeforeCompile($shipments)
     {
-        //print_r($shipments); exit;
+        
         foreach ($shipments as $shipment => $serviceTypes) {
             $inStoreLocal = [];
             foreach ($serviceTypes as $serviceName => $quotes) {

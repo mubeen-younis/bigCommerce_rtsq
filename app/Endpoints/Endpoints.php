@@ -4,7 +4,7 @@ namespace App\Endpoints;
 
 class Endpoints
 {
-    public static $qaUrl = "https://eniture-qa.com/";
+    public static $qaUrl = "https://eniture-dev3.com/";
     public static $prodUrl = "https://eniture.com/";
 
     public static function getBCComEndpoint()
@@ -187,5 +187,14 @@ class Endpoints
         }
         return "https://validate-addresses.com/change_promo_code_status?";
 
+    }
+
+    public static function orderWebhookEndpoint()
+    {
+
+        if (env('APP_ENV') == 'staging') {
+            return "https://bc.eniture-qa.com/api/order/webhooks";
+        }
+        return "https://bc.eniture.com/api/order/webhooks";
     }
 }

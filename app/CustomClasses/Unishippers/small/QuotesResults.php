@@ -4,6 +4,7 @@ namespace App\CustomClasses\Unishippers\small;
 
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
+use App\CustomClasses\Functions;
 
 class QuotesResults
 {
@@ -36,10 +37,9 @@ class QuotesResults
         $originQuotes = $multiShipmentQuotes = $multiShipmentQuote = [];
         $shipmentCount = 0;
         $count = 0;
-
         foreach ($shipments as $origin => $quote) {
             if (isset($quote['severity'])) {
-                continue;
+                return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
             if ($count == 0) {
@@ -89,7 +89,7 @@ class QuotesResults
 
                     // Get service title
                     $title = $this->getServiceTitle($data, $srvcType, $this->quoteSettings, $residential);
-                    $price = (float)str_replace(',', '', $price);
+                    $price = (float) str_replace(',', '', $price);
 
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12uniship' . $srvcType . $access;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
@@ -114,7 +114,7 @@ class QuotesResults
                 $multiShipmentPrice += str_replace(',', '', $minRateFromNetChargeArr);
                 $multishipmentCheckoutQuotes[0]['code'] = 'Multiuniship' . $access;
                 $multishipmentCheckoutQuotes[0]['rate'] = number_format($multiShipmentPrice, 2);
-                $multishipmentCheckoutQuotes[0]['title'] = $residential ? 'Shipping' . Constant::RESI_LABEL : 'Shipping';
+                $multishipmentCheckoutQuotes[0]['title'] = $residential ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
             }
 
             foreach ($multiShipmentQuotes as $shipmentKey => $shipment) {
@@ -148,7 +148,6 @@ class QuotesResults
         $returnResp['resp'] = isset($resp) && !empty($resp) ? $resp : [];
 
         return $returnResp;
-
 
     }
 
@@ -289,7 +288,7 @@ class QuotesResults
 
     public function addHandlingMarkupOfHazmat($amount)
     {
-        $amount = (float)str_replace(',', '', $amount);
+        $amount = (float) str_replace(',', '', $amount);
         $markupValue = $this->quoteSettings['handling_fee_markup'] ?? 0;
 
         if (strpbrk($markupValue, '%') !== false) {

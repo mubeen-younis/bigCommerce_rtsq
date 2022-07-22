@@ -14,9 +14,18 @@ use App\CustomClasses\WweLTL\WweLtlConnectionSettings;
 use App\CustomClasses\WWESMALL\SmallConnectionSettings;
 use App\CustomClasses\XPO\ltl\ConnectionSettings as XPOLtlConnectionSettings;
 use App\CustomClasses\Unishippers\small\ConnectionSettings as UnishippersSmallConnectionSettings;
+
 use App\CustomClasses\YrcLTL\ConnectionSettings as YrcLtlConnectionSettings;
+use App\CustomClasses\FreightQuote\Ltl\ConnectionSettings as FreightQuoteConSett;
+use App\CustomClasses\EstesLTL\ConnectionSettings as EstesLTLConnectionSettings;
+use App\CustomClasses\DayRossLTL\ConnectionSettings as DayRossLtlConnectionSettings;
+use App\CustomClasses\OdflLTL\ConnectionSettings as OdflLTLConnectionSettings;
+use App\CustomClasses\SaiaLTL\ConnectionSettings as SaiaLTLConnectionSettings;
+use App\CustomClasses\AbfLtl\ConnectionSettings as AbfLtlConnectionSettings;
 use App\CustomClasses\UspsSmall\ConnectionSettings as UspsSmallConnectionSettings;
+use App\CustomClasses\SouthEasternLtl\ConnectionSettings as SouthEasternLtlConnectionSettings;
 use App\Endpoints\Endpoints;
+
 use App\Models\Connection;
 use App\Models\Coupon;
 use App\Models\CouponCarrier;
@@ -29,6 +38,11 @@ use Illuminate\Support\Facades\Log;
 
 class ConnectionController extends Controller
 {
+    /**
+     * @var FreightQuoteConSett
+     */
+    private $freightQuoteLtlTestCon;
+
     /**
      * Display a listing of the resource.
      *
@@ -47,6 +61,13 @@ class ConnectionController extends Controller
         $this->rnlLtlTestCon = new RNLLtlConnectionSettings();
         $this->unishippersSmallTestCon = new UnishippersSmallConnectionSettings();
         $this->yrcLtlTestCon = new YrcLtlConnectionSettings();
+        $this->freightQuoteLtlTestCon = new FreightQuoteConSett();
+        $this->estesLTLConL = new EstesLTLConnectionSettings();
+        $this->dayRossLtlTestCon = new DayRossLtlConnectionSettings();
+        $this->odflLTLConL = new OdflLTLConnectionSettings();
+        $this->saiaLtlTestCon = new SaiaLTLConnectionSettings();
+        $this->AbfLtlTestCon = new AbfLtlConnectionSettings();
+        $this->southEasternLtlTestCon = new SouthEasternLtlConnectionSettings();
         $this->uspsSmallTestCon = new UspsSmallConnectionSettings();
     }
 
@@ -95,11 +116,14 @@ class ConnectionController extends Controller
             ->first();
 
         if ($checkCarrierType === null) {
-            return response()->json(["error" => true, "data" => [],
-                'message' => 'Carrier Not Found']);
+            return response()->json([
+                "error" => true, "data" => [],
+                'message' => 'Carrier Not Found'
+            ]);
         }
 
         if (!empty($request->testType)) {
+
             switch ($checkCarrierType->slug) {
                 case "ltl-quotes":
                     $response = $this->wweLtlTestCon->testLtlConnection($request, $checkCarrierType->name);
@@ -134,19 +158,43 @@ class ConnectionController extends Controller
                 case 'yrc-ltl':
                     $response = $this->yrcLtlTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
+                case 'freightquote-ltl':
+                    $response = $this->freightQuoteLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'estes-ltl':
+                    $response = $this->estesLTLConL->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'dayross-ltl':
+                    $response = $this->dayRossLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'odfl-ltl':
+                    $response = $this->odflLTLConL->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'saia-ltl':
+                    $response = $this->saiaLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'abf-ltl':
+                    $response = $this->AbfLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'southeastern-ltl':
+                    $response = $this->southEasternLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
                 case 'usps-small':
                     $response = $this->uspsSmallTestCon->testConnection($request, $checkCarrierType->name);
-                    return response()->json($response);
+                    return response()->json();
                 default:
-                    return response()->json(["error" => true, "data" => [],
-                        'message' => 'No carrier Matches']);
+                    return response()->json([
+                        "error" => true, "data" => [],
+                        'message' => 'No carrier Matches'
+                    ]);
             }
         }
+
         $message = 'Connection settings has been saved successfully';
         $carriersArr = ['ltl-quotes', 'small-package', 'gtz-ltl', 'unishippers-small'];
         if (!blank($request['promo_code']) &&
             in_array($checkCarrierType->slug, $carriersArr) &&
-            ((isset($request['is_enabled']) && $re1quest['is_enabled'] == false) || !isset($request['is_enabled']))
+            ((isset($request['is_enabled']) && $request['is_enabled'] == false) || !isset($request['is_enabled']))
         ) {
             $fdoCouponResponse = $this->getFDOCouponCarrierInfo($request, $checkCarrierType->slug);
             if (isset($fdoCouponResponse['status']) && $fdoCouponResponse['status'] == true) {
@@ -155,7 +203,6 @@ class ConnectionController extends Controller
                 $message = 'Connection settings has been saved but the Promo Code is not applied.';
             }
         }
-
         $con = Connection::firstOrNew(['installed_carrier_id' => $request->carrierId]);
         $con->value = json_encode($request->all());
         $con->installed_carrier_id = $request->carrierId;

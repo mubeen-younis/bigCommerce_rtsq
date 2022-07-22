@@ -6,6 +6,7 @@ namespace App\CustomClasses\UpsSmall;
 
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
+use App\CustomClasses\Functions;
 
 class QuotesResults
 {
@@ -109,14 +110,16 @@ class QuotesResults
     {
 
         $shipments = $this->formateQuoteBeforeCompile($shipments);
-        //print_r($shipments); exit;
         $this->quoteSettings = [];
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
         $this->quoteSettings = $connectionSettings['ups-small']['quote_settings'] ?? '';
 
         $numberOfShipments = 0;
         foreach ($shipments as $ship) {
-            if (!isset($ship['q'])) {
+            if(isset($ship['tnt']['faultstring'])){
+                continue;
+            }
+            if (!isset($ship['q']) || (isset($ship['q']) && empty($ship['q']))) {
                 continue;
             }
             if (!isset($ship['severity'] /*&& isset()*/)) {
@@ -134,8 +137,8 @@ class QuotesResults
         $count = 0;
         foreach ($shipments as $origin => $quote) {
 
-            if (isset($quote['severity'])) {
-                continue;
+            if ((isset($quote['severity']) || !isset($ship['q']) || (isset($ship['q']) && empty($ship['q'])))) {
+                return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);                
             }
             if ($count == 0) { //To be checked only once
                 // $this->getAutoResidentialTitle('');
@@ -212,7 +215,7 @@ class QuotesResults
                 $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
                 $originQuotesMulti[0]['code'] = 'Multiups' . $access;
                 $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
-                $originQuotesMulti[0]['title'] = $residential ? 'Shipping' . Constant::RESI_LABEL : 'Shipping';
+                $originQuotesMulti[0]['title'] = $residential ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
             }
             foreach ($multiShipmentQuotes as $shipmentKey => $shipment) {
                 $keys = array_column($shipment, 'rate');
