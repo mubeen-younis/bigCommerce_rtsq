@@ -20,12 +20,10 @@ class QuotesResults
     {
         $amount = $data['totalNetCharge']['Amount'];
 
-        //dd($quoteSettings['rate_source']);
-        if (isset($quoteSettings['rate_source']) && $quoteSettings['rate_source'] === 1) {
-            $boxFee = $data['boxFees']['Amount'] ?? 0;
-            $amount = $data['NegotiatedRates']['Amount'] > 0 ? $data['NegotiatedRates']['Amount'] + $boxFee : $amount;
-        }
-        $markupIndex = strtolower(str_replace(' ', '_', $serviceDesc) . '_markup');
+        $serviceDesc = preg_replace("([A-Z])", " $0", $serviceDesc);
+        $trim = ltrim($serviceDesc);
+        $markupIndex = strtolower(str_replace(':', ' ', $trim) . '_markup');
+        $markupIndex = strtolower(str_replace(' ', '_', $markupIndex));
         $markupValue = $quoteSettings['carrier_services'][$markupIndex] ?? '';
         if (empty($markupValue) || !is_numeric(str_replace('%', '', $markupValue))) {
             return $amount;
@@ -107,9 +105,8 @@ class QuotesResults
 
 
     public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment)
-    {//dd($connectionSettings);
-        $shipments = $this->formateQuoteBeforeCompile($shipments);
-       // dd(112,$smalLtlHazmat);
+    {
+        $shipments = $this->formateQuoteBeforeCompile($shipments,$connectionSettings);
         $this->quoteSettings = [];
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
         $this->quoteSettings = $connectionSettings['purolator-small']['quote_settings'] ?? '';
@@ -154,24 +151,9 @@ class QuotesResults
                     if (isset($data['severity'])) {
                         continue;
                     }
-                    //  CHeck FOr Ups ground transit days
-                    if ($data['serviceType'] == "03") {
-                        if (isset($this->quoteSettings['number_of_transit_days']) && $this->quoteSettings['number_of_transit_days'] != null && isset($this->quoteSettings['ground_metric']) && $this->quoteSettings['ground_metric'] != null) {
-                            $islimited = $this->checkGroundTransit($data, $this->quoteSettings);
-                            if ($islimited) {
-                                continue;
-                            }
-                        }
-                    }
-                    //  CHecks FOr Only quote ground service if hazardous
-                    if ($isHazmat && isset($this->quoteSettings['ground_service_for_hazardous_material']) && $this->quoteSettings['ground_service_for_hazardous_material']) {
-                        if ($data['serviceType'] != "03") {
-                            continue;
-                        }
-                    }
 
                     // Adding Markup in services if enabled
-                    $price = $this->getServiceRate($data, $data['serviceDesc'], $this->quoteSettings);
+                    $price = $this->getServiceRate($data, $data['serviceType'], $this->quoteSettings);
                     $quoteSettings = $this->quoteSettings;
 
                     $price = $this->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup'] ?? 0);
@@ -186,7 +168,7 @@ class QuotesResults
                         }
                     }
 
-                    $title = $this->getServiceTitle($data['serviceDesc'], $data, $data['serviceType'], $this->quoteSettings, $residential);
+                    $title = $this->getServiceTitle($data['serviceType'], $data, $data['serviceType'], $this->quoteSettings, $residential);
                     $price = (float)str_replace(',', '', $price);
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12' . $data['serviceType'] . $access;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
@@ -198,12 +180,6 @@ class QuotesResults
             }
             $shipmentCount++;
         }
-        //dd($multiShipmentQuotes);
-        //dd($originQuotes);
-
-        //$multiShipmentQuotes = $this->sortByOrder($multiShipmentQuotes, 'rate');
-        //print_r($originQuotes);  exit;
-        // Check for mukti shipment finding lowest price in each shipment and adding them for multi shipment
 
         if ($isMultiShipment) {
             $originQuotesMulti = [];
@@ -213,7 +189,7 @@ class QuotesResults
                 $minValueFromNetChargeArr = min(array_column($netChargeArray, 'rate'));
 
                 $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
-                $originQuotesMulti[0]['code'] = 'Multiups' . $access;
+                $originQuotesMulti[0]['code'] = 'Multipurolator' . $access;
                 $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
                 $originQuotesMulti[0]['title'] = $residential ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
             }
@@ -226,7 +202,7 @@ class QuotesResults
                 'checkoutQuotes' => $originQuotesMulti,
                 'multiShipmentQuotes' => $multiShipmentQuote,
             ];
-            //print_r($resp); exit;
+
             $returnResp['resp'] = $resp;
             return $returnResp;
         }
@@ -262,46 +238,26 @@ class QuotesResults
     }
 
 
-    private function formateQuoteBeforeCompile($shipments)
+    private function formateQuoteBeforeCompile($shipments,$connectionSettings)
     {
-        $servicesDesc = [];
-        foreach ($shipments as $key => $quote) {
-            $data = $quote['q'];
-            foreach($data as $value){
-                if (isset($value['serviceType'])) {
-                    $servicesDesc[] = $value['serviceType'];
-                } 
-            }
-        }
-       // dd($servicesDesc);
-        foreach ($shipments as $shipment => $quotes) {
-            $temp = [];
-            if (!isset($quotes['q'])) {
-                continue;
-            }
-            foreach ($quotes['q'] as $key => $quote) {
-                if (!isset($quote['severity']) && isset($servicesDesc[$key])) {
-                   // dd($quotes);
-                    if (!in_array($quote['totalNetCharge']['Amount'], $temp)) {
-                        $temp[] = $quote['totalNetCharge']['Amount'] ?? 0;
-                        $servicesDescKey = $servicesDesc[$key] ?? '';
-                        $shipments[$shipment]['q'][$key]['serviceDesc'] = $servicesDescKey;
-                        $shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] = $shipments[$shipment]['q'][$key]['totalTransitTimeInDays'];
-                        if ($shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] === '') {
-                            if (isset($quotes['tnt']['TransitResponse']['ServiceSummary'])) {
-
-                                $shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] = $this->calenderDays($servicesDescKey, $quotes['tnt']['TransitResponse']['ServiceSummary']);
-                            }
-                        }
-                    } else {
-                        unset($shipments[$shipment]['q'][$key]);
+        $checkedshipment = [];
+        $carrier_services = $connectionSettings['purolator-small']['quote_settings']['carrier_services'];
+       
+        foreach ($shipments as $shipkey => $quote) {
+            foreach ($quote['q'] as $key => $value) {
+                foreach($carrier_services as $service => $checked){
+                   $serviceLetter =str_replace('_',' ',$service);
+                   $capitalServiceLetter = ucwords($serviceLetter); 
+                   $serviceType =str_replace('  ',':',$capitalServiceLetter);
+                   $serviceType =str_replace(' ','',$serviceType);
+                   if($serviceType == $value['serviceType'] && $service == $checked){
+                           $checkedshipment[$shipkey]['q'][] = $value;        
                     }
-                } else {
-                    unset($shipments[$shipment]['q'][$key]);
                 }
-            }
+            } 
         }
-        return $shipments;
+
+        return $checkedshipment;
     }
 
     public function calenderDays($fDesc, $tnts)

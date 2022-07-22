@@ -399,7 +399,8 @@ class Shipping
             'wweSmall',
             'upsSmall',
             'fedexSmall',
-            'unishippersSmall'
+            'unishippersSmall',
+            'purolator'
         ];
         return in_array($carrierName, $smallCarriers);
     }
@@ -422,7 +423,7 @@ class Shipping
     private
     function addBoxFeeToQuotes(array $quotes, array $boxFee, $fedexBoxesFee = []): array
     {
-        $parcelCarName = ['wweSmall', 'upsSmall', 'fedexSmall', 'unishippersSmall'];
+        $parcelCarName = ['wweSmall', 'upsSmall', 'fedexSmall', 'unishippersSmall', 'purolator'];
         if (isset($quotes) && !empty($quotes)) {
             foreach ($quotes as $carName => $quot) {
                 if (in_array($carName, $parcelCarName)) {
@@ -637,7 +638,7 @@ class Shipping
     function checkIndividualHazmat($request)
     {
         // TODO: Need to Add small and Ltl Carriers Here as well
-        $smallOrigins = $marketItemSmall = $request['carriers']['wweSmall']['originAddress'] ?? $request['carriers']['upsSmall']['originAddress'] ?? $request['carriers']['fedexSmall']['originAddress'] ?? $request['carriers']['unishippersSmall']['originAddress'] ?? [];
+        $smallOrigins = $marketItemSmall = $request['carriers']['wweSmall']['originAddress'] ?? $request['carriers']['upsSmall']['originAddress'] ?? $request['carriers']['fedexSmall']['originAddress'] ?? $request['carriers']['unishippersSmall']['originAddress'] ?? $request['carriers']['purolator']['originAddress'] ?? [];
         $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? $request['carriers']['upsLTL']['originAddress'] ?? $request['carriers']['yrcLTL']['originAddress'] ?? $request['carriers']['odfl4me']['originAddress'] ?? [];
         $items = $request['commdityDetails'] ?? [];
         $smallHazmat = $ltlHazmat = false;

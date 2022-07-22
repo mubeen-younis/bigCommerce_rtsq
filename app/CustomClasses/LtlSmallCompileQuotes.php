@@ -29,7 +29,11 @@ class LtlSmallCompileQuotes
                         $alwaysResi = (isset($requestArr['carriers']['upsSmall']['api']['ups_small_pkg_resid_delivery']) && $requestArr['carriers']['upsSmall']['api']['ups_small_pkg_resid_delivery'] == 'yes');
                         $quote['alwaysResi'] = $alwaysResi;
                         $quote['isResi'] = $residential['upsSmall'] == 'Y';
-                    } else if (strpos($quote['code'], 'parcel_12fd') !== false) {
+                    }else if (strpos($quote['code'], 'parcel_12purolator') !== false) {
+                        $alwaysResi = (isset($requestArr['carriers']['purolator']['api']['purolator_pkg_resid_delivery']) && $requestArr['carriers']['purolator']['api']['purolator_pkg_resid_delivery'] == 'yes');
+                        $quote['alwaysResi'] = $alwaysResi;
+                        $quote['isResi'] = $residential['purolator'] == 'Y';
+                    }else if (strpos($quote['code'], 'parcel_12fd') !== false) {
                         $alwaysResi = (isset($requestArr['carriers']['fedexSmall']['api']['residentials_delivery']) && $requestArr['carriers']['fedexSmall']['api']['residentials_delivery'] == 'yes');
                         $quote['alwaysResi'] = $alwaysResi;
                         $quote['isResi'] = $residential['fedexSmall'] == 'Y';
@@ -303,7 +307,7 @@ class LtlSmallCompileQuotes
             $ltl[] = $key;
         }
 
-        $smallQuotes = $quotes['wweSmall'] ?? $quotes['upsSmall'] ?? $quotes['fedexSmall'] ?? $quotes['unishippersSmall'] ?? [];
+        $smallQuotes = $quotes['wweSmall'] ?? $quotes['upsSmall'] ?? $quotes['fedexSmall'] ?? $quotes['unishippersSmall'] ?? $quotes['purolator'] ?? [];
         foreach ($smallQuotes as $key => $quote) {
             $small[] = $key;
         }
@@ -339,7 +343,7 @@ class LtlSmallCompileQuotes
 
     private function requestContainSmallLlt($carriers, $quotes)
     {
-        $smallCarriers = ['wweSmall', 'upsSmall', 'fedexSmall', 'unishippersSmall'];
+        $smallCarriers = ['wweSmall', 'upsSmall', 'fedexSmall', 'unishippersSmall', 'purolator'];
         $ltlCarriers = ['wweLTL', 'upsLTL', 'fedexLTL', 'globalTranz', 'cerasis', 'xpoLogistics', 'rnl', 'yrc', 'freightQuote', 'estes', 'dayross', 'odfl4me', 'saia'];
         $ltl = $small = false;
         foreach ($smallCarriers as $carName) {
