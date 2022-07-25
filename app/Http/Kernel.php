@@ -2,7 +2,9 @@
 
 namespace App\Http;
 
+use App\Http\Middleware\EnsureStoreisActive;
 use App\Http\Middleware\EnsureTokenIsValid;
+use App\Http\Middleware\EnsureWebhookIsValid;
 use App\Http\Middleware\FDOValidity;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
 
@@ -66,5 +68,6 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'isvalidtoken' => EnsureTokenIsValid::class,
         'isvalidfdo' => FDOValidity::class,
+        'iswebhookvalid'=>EnsureStoreisActive::class,
     ];
 }
