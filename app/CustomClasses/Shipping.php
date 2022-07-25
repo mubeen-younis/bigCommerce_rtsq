@@ -772,12 +772,19 @@ class Shipping
     private function formatCheapestFinalQuotes($quotes): array
     {
         $finalCheapestQuotes = $quotes ?? [];
+        $index = [];
         if (empty($finalCheapestQuotes)) {
             return $finalCheapestQuotes;
         }
 
         $freightTitle = Functions::$ltlMultiTitle;
         $shippingTitle = Functions::$smallMultiTitle;
+
+        $singleShipmentRes = $this->filterSingleShipmentSameTitleQuotes($finalCheapestQuotes, $freightTitle, $shippingTitle);
+
+        if(!empty($singleShipmentRes)){
+            return $singleShipmentRes;
+        }
 
         $freightQuotesArr = collect($finalCheapestQuotes)->filter(function ($quote) use ($freightTitle) {
             return strpos($quote['title'], $freightTitle) !== false;
@@ -786,18 +793,19 @@ class Shipping
             return strpos($quote['title'], $shippingTitle) !== false;
         })->toArray() ?? [];
 
+        $freightCheapest = $this->getCheapestQuotesArr($freightQuotesArr) ?? [];
+        $shippingCheapest = $this->getCheapestQuotesArr($shippingQuotesArr) ?? [];
+
         if (empty($freightQuotesArr) && empty($shippingQuotesArr)) {
             return $finalCheapestQuotes;
         }
         else if (empty($freightQuotesArr) && !empty($shippingQuotesArr)) {
-            return $shippingQuotesArr;
+            return $shippingCheapest;
         }
         else if (!empty($freightQuotesArr) && empty($shippingQuotesArr)) {
-            return $freightQuotesArr;
+            return $freightCheapest;
         }
 
-        $freightCheapest = $this->getCheapestQuotesArr($freightQuotesArr) ?? [];
-        $shippingCheapest = $this->getCheapestQuotesArr($shippingQuotesArr) ?? [];
 
         if (!empty($freightCheapest) && !empty($shippingCheapest)) {
             $finalCheapestQuotes = $bothChpeastQuotesArr = [];
@@ -810,11 +818,66 @@ class Shipping
         return $finalCheapestQuotes;
     }
 
+    private function filterSingleShipmentSameTitleQuotes($finalCheapestQuotes, $freightTitle, $shippingTitle)
+    {
+        $index = [];
+
+        if (!empty($finalCheapestQuotes)) {
+            foreach($finalCheapestQuotes as $key => $data){  
+                if(strpos($data['title'], $freightTitle) === false && strpos($data['title'], $shippingTitle) === false){   
+                    $res = $this->getTitleDelimeter($data);
+                    $value = $this->getSameTitleQuotes($res,$finalCheapestQuotes);
+
+                    foreach($value as $key){
+                        $keyToDelete = array_search($key, $finalCheapestQuotes);
+                        unset($finalCheapestQuotes[$keyToDelete]);
+                        if(count($value) == 1){
+                            $value1 = $key;
+                        }
+                    }
+
+                    if(!empty($value) && count($value) > 1){
+                     $cheapest[] = $this->getCheapestQuotesArr($value) ?? [];
+                     $index = array_merge($finalCheapestQuotes,$cheapest);     
+                    }elseif(count($value) === 1){
+                        $cheapest[] = $value1 ?? [];
+                        $index = array_merge($finalCheapestQuotes,$cheapest);
+                    }
+                }
+            }
+            if(!empty($index)){
+                return $index;
+            }
+        }
+
+    }
+
+    public function getTitleDelimeter($data)
+    {
+        $var = '(';
+
+        if(strpos($data['title'], 'w') !== false){
+            $var = "w";
+        }
+
+        $res = explode($var, $data['title'])[0] ?? " ";
+        return trim($res);
+    }
+
+    private function getSameTitleQuotes($res,$finalCheapestQuotes)
+    {
+        $SingleQuotesArr = collect($finalCheapestQuotes)->filter(function ($quote) use ($res) {
+            $resTitle = $this->getTitleDelimeter($quote);
+            
+            return $resTitle == $res;
+        })->toArray() ?? [];
+        return $SingleQuotesArr;
+    }
+
     private function getCheapestQuotesArr($quotes):array
     {
         $cheapestQuote = [];
         $quotes = $quotes ?? [];
-
         if (isset($quotes) && !empty($quotes)) {
             $minRate = min(array_column($quotes, 'rate'));
             foreach ($quotes as $q) {

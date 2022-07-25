@@ -2044,6 +2044,23 @@ class GenerateRequestData
 
     public function getStoreBoxes($storeId, $itemsArr, $origins, $cartInfo, $isMultishipment)
     {
+        /* if ltl and small products are from same origin in single-shipment then avoid small product packaging */
+        if (!$isMultishipment) {
+            $resp = [];
+            $orgLocIds = array_column($origins, 'locationId') ?? [];
+            $ltlItems = array_filter($itemsArr, fn($item) => $item['freightClass'] === 'ltl') ?? [];
+            $smallItems = array_filter($itemsArr, fn($item) => $item['freightClass'] === '') ?? [];
+
+            if (count($itemsArr) > 1 && count(array_unique($orgLocIds)) == 1 && !empty($ltlItems) && !empty($smallItems)) {
+                $resp['items'] = $itemsArr;
+                $resp['originAddress'] = $origins;
+                $resp['binResponse'] = [];
+                $resp['boxBins'] = [];
+                
+                return $resp;
+            }
+        }
+
         $items = $itemsAlone = [];
         foreach ($origins as $key => $origin) {
             $isNotLtl = !(isset($itemsArr[$key]['freightClass']) && $itemsArr[$key]['freightClass'] === 'ltl');
