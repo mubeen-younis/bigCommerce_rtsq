@@ -23,6 +23,7 @@ use App\CustomClasses\OdflLTL\ConnectionSettings as OdflLTLConnectionSettings;
 use App\CustomClasses\SaiaLTL\ConnectionSettings as SaiaLTLConnectionSettings;
 use App\CustomClasses\AbfLtl\ConnectionSettings as AbfLtlConnectionSettings;
 use App\CustomClasses\SouthEasternLtl\ConnectionSettings as SouthEasternLtlConnectionSettings;
+use App\CustomClasses\FreightQuote\ChrLtl\ConnectionSettings as FreightQuoteChrConnectionSettings;
 use App\Endpoints\Endpoints;
 
 use App\Models\Connection;
@@ -67,6 +68,7 @@ class ConnectionController extends Controller
         $this->saiaLtlTestCon = new SaiaLTLConnectionSettings();
         $this->AbfLtlTestCon = new AbfLtlConnectionSettings();
         $this->southEasternLtlTestCon = new SouthEasternLtlConnectionSettings();
+        $this->freightQuoteChrLtlTestCon = new FreightQuoteChrConnectionSettings();
     }
 
     public function index(Request $request)
@@ -176,6 +178,9 @@ class ConnectionController extends Controller
                     return response()->json($response);
                 case 'southeastern-ltl':
                     $response = $this->southEasternLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'freightquote-chr-ltl':
+                    $response = $this->freightQuoteChrLtlTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
                 default:
                     return response()->json([
