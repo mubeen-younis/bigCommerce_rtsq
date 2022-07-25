@@ -136,8 +136,6 @@ class OrderController extends Controller
     {
         $rateId = $order['rate_id'] ?? null;
         $cartId = $order['cart_id'] ?? null;
-        $rateId = 'parcel_12fdxtiio+asidx+151646214824';
-        $cartId = 'c6692117-4bcd-4f7a-a352-d923fc9516dc';
         $data = optional(RequestData::where('rate_id', $rateId)
                 ->where('cart_id', $cartId)
                 ->where('store_id', $request['store_id'])
