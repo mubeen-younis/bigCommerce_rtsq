@@ -40,7 +40,9 @@ class QuotesResults
     public function addHazmatAmountsInServices($amount, $serviceCode, $quoteSettings)
     {
         // Adding hazmat fee to Ground Service
-        if ($serviceCode == "03") {
+        $serviceDesc = preg_replace("([A-Z])", " $0", $serviceCode);
+        $trim = ltrim($serviceDesc);
+        if (strpos($trim, 'Ground') !== false) {
             if (isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
                 $amount = $amount + $quoteSettings['ground_hazardous_material_fee'];
             }
@@ -50,7 +52,8 @@ class QuotesResults
                 $amount = $amount + $quoteSettings['air_hazardous_material_fee'];
             }
         }
-        // $amount = $this->addHandlingMarkupOfHazmat($amount, $quoteSettings['handling_fee_markup']);
+        $amount = $this->addHandlingMarkupOfHazmat($amount, $quoteSettings['handling_fee_markup']);
+
         return number_format($amount, 2);
 
     }
@@ -91,12 +94,12 @@ class QuotesResults
         // Check limited to carrier transit days
         if ($quoteSettings['ground_metric'] == 1) {
             //  2>3
-            if (isset($quote['transitTimeInDays']) && isset($quoteSettings['number_of_transit_days']) && $quote['transitTimeInDays'] > $quoteSettings['number_of_transit_days']) {
+            if (isset($quote['TransitTimeInDays']) && isset($quoteSettings['number_of_transit_days']) && $quote['TransitTimeInDays'] > $quoteSettings['number_of_transit_days']) {
                 return true;
             }
             // Check by calendar days
         } else {
-            if (isset($quote['calenderDaysInTransit']) && isset($quoteSettings['number_of_transit_days']) && $quote['calenderDaysInTransit'] > $quoteSettings['number_of_transit_days']) {
+            if (isset($quote['CalenderDaysInTransit']) && isset($quoteSettings['number_of_transit_days']) && $quote['CalenderDaysInTransit'] > $quoteSettings['number_of_transit_days']) {
                 return true;
             }
         }
@@ -149,6 +152,17 @@ class QuotesResults
                 foreach ($quote['q'] as $key => $data) {
                     // Check if service type is checked to show
                     if (isset($data['severity'])) {
+                        continue;
+                    }
+
+                    $srvcType = $data['serviceType'];
+                     //  Check for Purolator ground transit days
+                    $skipService = $this->checkGroundTransit($data, $this->quoteSettings);
+                    if ($skipService) {
+                        continue;
+                    }
+                    //  Checks for only quote ground service if hazardous
+                    if ($this->onylQuoteGroundServices($isHazmat, $srvcType)) {
                         continue;
                     }
 
@@ -237,6 +251,19 @@ class QuotesResults
         return $resp;
     }
 
+    private function onylQuoteGroundServices($isHazmat, $srvcType)
+    {
+        $grdServicesArr = ['PurolatorGround9AM', 'PurolatorGround10:30AM', 'PurolatorGround'];
+        $grdSrvcForHazMat = $this->quoteSettings['ground_service_for_hazardous_material'] ?? false;
+
+        if ($isHazmat && isset($grdSrvcForHazMat) && $grdSrvcForHazMat) {
+            if (!in_array($srvcType, $grdServicesArr)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     private function formateQuoteBeforeCompile($shipments,$connectionSettings)
     {
@@ -244,6 +271,11 @@ class QuotesResults
         $carrier_services = $connectionSettings['purolator-small']['quote_settings']['carrier_services'];
        
         foreach ($shipments as $shipkey => $quote) {
+            
+            if (isset($quote['severity'])) {
+                continue;
+            }
+            
             foreach ($quote['q'] as $key => $value) {
                 foreach($carrier_services as $service => $checked){
                    $serviceLetter =str_replace('_',' ',$service);
@@ -257,7 +289,38 @@ class QuotesResults
             } 
         }
 
-        return $checkedshipment;
+        $servicesDesc = [];
+        $shipments = $checkedshipment;
+
+        foreach ($shipments as $shipment => $quotes) {
+            $temp = [];
+            if (!isset($quotes['q'])) {
+                continue;
+            }
+            $servicesDesc = $quotes['q'];
+
+            foreach ($quotes['q'] as $key => $quote) {
+                if (!isset($quote['severity']) && isset($servicesDesc[$key])) {
+                    if (!in_array($quote['totalNetCharge']['Amount'], $temp)) {
+                        $temp[] = $quote['totalNetCharge']['Amount'] ?? 0;
+                        $servicesDescKey = $servicesDesc[$key] ?? '';
+                        $shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] = $shipments[$shipment]['q'][$key]['TransitTimeInDays'];
+                        if ($shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] === '') {
+                            if (isset($quotes['tnt']['TransitResponse']['ServiceSummary'])) {
+
+                                $shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] = $this->calenderDays($servicesDescKey, $quotes['tnt']['TransitResponse']['ServiceSummary']);
+                            }
+                        }
+                    } else {
+                        unset($shipments[$shipment]['q'][$key]);
+                    }
+                } else {
+                    unset($shipments[$shipment]['q'][$key]);
+                }
+            }
+        }
+
+        return $shipments;
     }
 
     public function calenderDays($fDesc, $tnts)
