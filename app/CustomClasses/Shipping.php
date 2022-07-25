@@ -138,8 +138,7 @@ class Shipping
         }
 
         // Genearting final request Array
-        $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
-        
+        $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);        
         if (empty($requestArr)) {
             return false;
         }
@@ -147,6 +146,7 @@ class Shipping
         $url = Constant::QUOTES_URL;
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
+        dd('quotes', $quotes);
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
         /*
       * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
@@ -641,7 +641,7 @@ class Shipping
     {
         // TODO: Need to Add small and Ltl Carriers Here as well
         $smallOrigins = $marketItemSmall = $request['carriers']['wweSmall']['originAddress'] ?? $request['carriers']['upsSmall']['originAddress'] ?? $request['carriers']['fedexSmall']['originAddress'] ?? $request['carriers']['unishippersSmall']['originAddress'] ?? [];
-        $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? $request['carriers']['upsLTL']['originAddress'] ?? $request['carriers']['yrcLTL']['originAddress'] ?? $request['carriers']['odfl4me']['originAddress'] ?? $request['carriers']['abf']['originAddress'] ?? $request['carriers']['southeastern']['originAddress'] ?? [];
+        $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? $request['carriers']['upsLTL']['originAddress'] ?? $request['carriers']['yrcLTL']['originAddress'] ?? $request['carriers']['odfl4me']['originAddress'] ?? $request['carriers']['abf']['originAddress'] ?? $request['carriers']['southeastern']['originAddress'] ?? $request['carriers']['freightQuote']['originAddress'] ?? [];
         $items = $request['commdityDetails'] ?? [];
         $smallHazmat = $ltlHazmat = false;
         if (!empty($smallOrigins)) {
