@@ -772,7 +772,6 @@ class Shipping
     private function formatCheapestFinalQuotes($quotes): array
     {
         $finalCheapestQuotes = $quotes ?? [];
-        $index = [];
         if (empty($finalCheapestQuotes)) {
             return $finalCheapestQuotes;
         }
@@ -800,12 +799,13 @@ class Shipping
             return $finalCheapestQuotes;
         }
         else if (empty($freightQuotesArr) && !empty($shippingQuotesArr)) {
-            return $shippingCheapest;
+            $finalCheapestQuotes[0] = $shippingCheapest;
+            return $finalCheapestQuotes;
         }
         else if (!empty($freightQuotesArr) && empty($shippingQuotesArr)) {
-            return $freightCheapest;
+            $finalCheapestQuotes[0] = $freightCheapest;
+            return $finalCheapestQuotes;
         }
-
 
         if (!empty($freightCheapest) && !empty($shippingCheapest)) {
             $finalCheapestQuotes = $bothChpeastQuotesArr = [];
