@@ -3,6 +3,7 @@
 namespace App\CustomClasses\UspsSmall;
 
 use App\Constants\Constant;
+use App\CustomClasses\Functions;
 use App\CustomClasses\CompileQuotes;
 
 class QuotesResults
@@ -110,7 +111,7 @@ class QuotesResults
                 $multiShipmentPrice += str_replace(',', '', $minRateFromNetChargeArr);
                 $multishipmentCheckoutQuotes[0]['code'] = 'Multiusps' . $access;
                 $multishipmentCheckoutQuotes[0]['rate'] = number_format($multiShipmentPrice, 2);
-                $multishipmentCheckoutQuotes[0]['title'] = $residential ? 'Shipping' . Constant::RESI_LABEL : 'Shipping';
+                $multishipmentCheckoutQuotes[0]['title'] = $residential ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
             }
 
             foreach ($multiShipmentQuotes as $shipmentKey => $shipment) {

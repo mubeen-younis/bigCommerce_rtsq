@@ -779,12 +779,6 @@ class Shipping
         $freightTitle = Functions::$ltlMultiTitle;
         $shippingTitle = Functions::$smallMultiTitle;
 
-        $singleShipmentRes = $this->filterSingleShipmentSameTitleQuotes($finalCheapestQuotes, $freightTitle, $shippingTitle);
-
-        if(!empty($singleShipmentRes)){
-            return $singleShipmentRes;
-        }
-
         $freightQuotesArr = collect($finalCheapestQuotes)->filter(function ($quote) use ($freightTitle) {
             return strpos($quote['title'], $freightTitle) !== false;
         })->toArray() ?? [];
@@ -792,20 +786,19 @@ class Shipping
             return strpos($quote['title'], $shippingTitle) !== false;
         })->toArray() ?? [];
 
-        $freightCheapest = $this->getCheapestQuotesArr($freightQuotesArr) ?? [];
-        $shippingCheapest = $this->getCheapestQuotesArr($shippingQuotesArr) ?? [];
 
         if (empty($freightQuotesArr) && empty($shippingQuotesArr)) {
             return $finalCheapestQuotes;
         }
         else if (empty($freightQuotesArr) && !empty($shippingQuotesArr)) {
-            $finalCheapestQuotes[0] = $shippingCheapest;
-            return $finalCheapestQuotes;
+            return $shippingQuotesArr;
         }
         else if (!empty($freightQuotesArr) && empty($shippingQuotesArr)) {
-            $finalCheapestQuotes[0] = $freightCheapest;
-            return $finalCheapestQuotes;
+            return $freightQuotesArr;
         }
+
+        $freightCheapest = $this->getCheapestQuotesArr($freightQuotesArr) ?? [];
+        $shippingCheapest = $this->getCheapestQuotesArr($shippingQuotesArr) ?? [];
 
         if (!empty($freightCheapest) && !empty($shippingCheapest)) {
             $finalCheapestQuotes = $bothChpeastQuotesArr = [];
