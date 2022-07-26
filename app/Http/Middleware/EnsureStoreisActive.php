@@ -29,6 +29,6 @@ class EnsureStoreisActive
             return $next($request);
         }
         Log::info('Deactivated Store ' . json_encode($postData));
-        return null;
+        return response()->json(null,401);
     }
 }
