@@ -101,4 +101,45 @@ class QuotesResults
         return $access;
     }
 
+    public function isMultiShipment($shipments): bool
+    {
+        $numberOfShipments = 0;
+        foreach ($shipments as $ship) {
+            if (!isset($ship['severity'])) {
+                $numberOfShipments++;
+            }
+        }
+
+        $isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
+        return $isMultiShipment;
+    }
+
+    public function isLGQuotes($quoteSettings, $isResi): bool
+    {
+        $isLG = (isset($quoteSettings['alwaysLiftGateDelivery']) && $quoteSettings['alwaysLiftGateDelivery']) ||
+            (isset($quoteSettings['offerLiftGateDelivery']) && $quoteSettings['offerLiftGateDelivery']);
+
+        if (!$isLG) {
+            $isLG = $this->isRADEnabled($quoteSettings, $isResi);
+        }
+
+        return $isLG;
+    }
+
+    public function isRADEnabled($quoteSettings, $isResi): bool
+    {
+        $isRAD = ((isset($quoteSettings['autoDetectedResidentialAddresses']) && $quoteSettings['autoDetectedResidentialAddresses']) &&
+            (isset($quoteSettings['autoDetectedResidentialAddressesLfg']) && $quoteSettings['autoDetectedResidentialAddressesLfg'])) && $isResi;
+
+        return $isRAD;
+    }
+
+    public function getShipmentDateAndDays($data): array
+    {
+        $date = $data['deliveryTimestamp'] ?? null;
+        $days = $data['totalTransitTimeInDays'] ?? $data['transitDays'] ?? null;
+        $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
+
+        return $dateAndDays;
+    }
 }

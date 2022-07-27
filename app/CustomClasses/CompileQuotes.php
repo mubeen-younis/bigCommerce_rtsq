@@ -17,6 +17,7 @@ use App\CustomClasses\DayRossLTL\QuotesResults as dayRossLtlQuotesResults;
 use App\CustomClasses\SaiaLTL\QuotesResults as saiaLtlQuotesResults;
 use App\CustomClasses\AbfLtl\QuotesResults as abfLtlQuotesResults;
 use App\CustomClasses\SouthEasternLtl\QuotesResults as SouthEasternQuotesResults;
+use App\CustomClasses\FreightQuote\ChrLtl\QuotesResults as FQChrQuotesResults;
 use App\Http\Controllers\RADController;
 use App\Models\Locations;
 use Carbon\Carbon;
@@ -3159,6 +3160,8 @@ class CompileQuotes
 
     private function compileFreightQuoteChrLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
+        $fqChrQuotes = new FQChrQuotesResults();
+
         $this->isFQChr = true;
         $this->isResi = $this->residential['freightQuoteChrLtl'] == 'Y' ? true : false;
         $this->residentialDlvry = $this->residential['freightQuoteChrLtl'] == 'Y' ? 1 : 0;
@@ -3166,19 +3169,13 @@ class CompileQuotes
         $this->quoteSettings = $connectionSettings['freightquote-chr-ltl']['quote_settings'] ?? [];
         $allConfigServices = $connectionSettings['freightquote-chr-ltl']['carrier_services'] ?? [];
         $this->quoteSettingsData();
+
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
         $lgQuotes = false;
 
-        $numberOfShipments = 0;
-        foreach ($shipments as $ship) {
-            if (!isset($ship['severity'])) {
-                $numberOfShipments++;
-            }
-        }
-
         if (!$this->isMultiShipment) {
-            $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
+            $this->isMultiShipment = $fqChrQuotes->isMultiShipment($shipments);
         }
 
         foreach ($shipments as $origin => $quote) {
@@ -3187,17 +3184,8 @@ class CompileQuotes
             }
 
             if ($count == 0) {
-                $isRad = $quote['autoResidentialsStatus'] ?? '';
-                $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
-                unset($quote['InstorPickupLocalDelivery']);
-                $lgQuotes =
-                    (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery']) ||
-                    (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
-                if (!$lgQuotes) {
-                    $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
-                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
-                }
-                $resiPickup = isset($this->quoteSettings['residentialPickup']) && $this->quoteSettings['residentialPickup'] ? '+pu' : '';
+                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
+                $lgQuotes = $fqChrQuotes->isLGQuotes($this->quoteSettings, $this->isResi);
             }
 
             $originQuotes = [];
@@ -3210,31 +3198,28 @@ class CompileQuotes
 
                 foreach ($quote['q'] as $key => $data) {
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices)) {
-                        $access = $this->getAccessorialCode() . $resiPickup;
+                        $access = $this->getAccessorialCode();
                         $charges = array(
                             'totalNetCharge' => array(
                                 'Amount' => $data['totalNetCharge'],
                             ),
                             'surcharges' => $data['surcharges'],
                         );
-                        $price = $this->calculatePrice($charges);
-                        /*
-                         * Adding Functionality of Delivery Estimate Options
-                         * */
-                        $date = $data['deliveryTimestamp'] ?? null;
-                        $days = $data['totalTransitTimeInDays'] ?? null;
-                        $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
 
+                        $price = $this->calculatePrice($charges);
+                        $dateAndDays = $fqChrQuotes->getShipmentDateAndDays($data);
                         $title = $this->getTitle($data['serviceDesc'], false, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
+                        
                         $arraySorting['simple'][$key] = $price;
-                        $originQuotes[$key]['simple']['code'] = 'fqltl' . $data['serviceType'] . $access;
+                        $originQuotes[$key]['simple']['code'] = 'fqchrltl' . $data['serviceType'] . $access;
                         $originQuotes[$key]['simple']['rate'] = $price;
                         $originQuotes[$key]['simple']['title'] = $title;
 
                         if ($lgQuotes) {
-                            $lgAccess = 'fqltl' . $this->getAccessorialCode(true) . $resiPickup;
+                            $lgAccess = 'fqchrltl' . $this->getAccessorialCode(true);
                             $lgPrice = $this->calculatePrice($charges, true);
                             $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
+                         
                             $arraySorting['liftgate'][$key] = $lgPrice;
                             $originQuotes[$key]['liftgate']['code'] = $data['serviceType'] . $lgAccess;
                             $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
