@@ -270,17 +270,13 @@ class PackagingRequest
     {
         $items = [];
         foreach ($itemsDetail as $item) {
-            /*Not ELigible For One Rate*/
-            if ($item['shipBinAlone'] == 0 && $item['shipMultiplePackage'] == 0) {
-                // return [];
-                continue;
-            }
             /*
-             * If item ship as == 0
-             * Means ON product settings customer havent selected item
-             * as ship own package or ship as multi pacakage*/
-            $shipOwnOrMultiPackage = isset($item['shipBinAlone']) && $item['shipBinAlone'] == 1 || isset($item['shipMultiplePackage']) && $item['shipMultiplePackage'] == 1 ?? false;
-            if ($shipOwnOrMultiPackage) {
+             * If item ship as == alone or multi-package, then we will not consider it for 3d bin calculation
+             * Means on product settings customer have selected item
+             * as ship own package or ship as multi pacakage
+             * */
+            $shipOwnOrMultiPackage = (isset($item['shipBinAlone']) && $item['shipBinAlone'] == 1) || (isset($item['shipMultiplePackage']) && $item['shipMultiplePackage'] == 1);
+            if (!$shipOwnOrMultiPackage) {
                 $productSettingsId = $item['id'];
                 $items[$productSettingsId] = $this->getItemDetailForPackaging($item);
             }
