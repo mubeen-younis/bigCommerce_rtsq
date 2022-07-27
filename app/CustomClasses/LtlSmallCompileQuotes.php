@@ -182,7 +182,7 @@ class LtlSmallCompileQuotes
                     $rtitle = ($parcel['isResi'] ?? $ltlQuot['isResi']) ? Constant::RESI_LABEL : '';
                     $newQuotes[] = [
                         'code' => 'multi' . $rCode,
-                        'rate' => $parcel['rate'] ?? 0 + $ltlQuot['rate'],
+                        'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
                         'title' => 'Freight' . $rtitle
                     ];
                 } else if ($simpleLg === 'LG') {
@@ -193,7 +193,7 @@ class LtlSmallCompileQuotes
                     }
                     $newQuotes[] = [
                         'code' => 'multi' . $rCode . '+LG',
-                        'rate' => $parcel['rate'] ?? 0 + $ltlQuot['rate'],
+                        'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
                         'title' => 'Freight' . $rtitle
                     ];
                 } else {
@@ -202,7 +202,7 @@ class LtlSmallCompileQuotes
                     $title = implode('|', $title);
                     $newQuotes[] = [
                         'code' => 'multi' . '+HAT',
-                        'rate' => $parcel['rate'] ?? 0 + $ltlQuot['rate'],
+                        'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
                         'title' => 'Freight |' . $title
                     ];
                 }

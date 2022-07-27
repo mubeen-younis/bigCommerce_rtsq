@@ -734,7 +734,9 @@ class Shipping
         $freightTitle = Functions::$ltlMultiTitle;
         $shippingTitle = Functions::$smallMultiTitle;
 
-        $singleShipmentRes = $this->filterSingleShipmentSameTitleQuotes($finalCheapestQuotes, $freightTitle, $shippingTitle);
+        if(!$this->multiOrigins){
+            $singleShipmentRes = $this->filterSingleShipmentSameTitleQuotes($finalCheapestQuotes, $freightTitle, $shippingTitle);
+        }
 
         if(!empty($singleShipmentRes)){
             return $singleShipmentRes;
