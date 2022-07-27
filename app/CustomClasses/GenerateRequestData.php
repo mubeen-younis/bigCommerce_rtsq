@@ -170,7 +170,7 @@ class GenerateRequestData
                 case 'freightquote-chr-ltl':
                     $fqLtlArr = $this->freightQuoteChrLtlEnitArr($con1, $destination);
                     $fqLtlArr['originAddress'] = $enitOrigin;
-                    $carriersArr['carriers']['freightQuote'] = $fqLtlArr;
+                    $carriersArr['carriers']['chr'] = $fqLtlArr;
                     break;
             }
         }
@@ -644,7 +644,8 @@ class GenerateRequestData
                     || isset($carriers['odfl4me'])
                     || isset($carriers['saia'])
                     || isset($carriers['abf'])
-                    || isset($carriers['southeastern']);
+                    || isset($carriers['southeastern'])
+                    || isset($carriers['chr']);
                 if ($isLtl) {
                     $itemsArr = $olditemsArr + $itemsArr;
                 }
