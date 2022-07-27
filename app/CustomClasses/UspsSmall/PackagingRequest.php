@@ -4,6 +4,7 @@ namespace App\CustomClasses\UspsSmall;
 
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
+use App\Endpoints\Endpoints;
 use App\Models\BoxSize;
 
 class PackagingRequest
@@ -436,7 +437,7 @@ class PackagingRequest
                 "stack_height" => 2,
                 "order_id" => "unknown",
             ),
-            "image_complete" => Constant::UNPACKED_BOX_URL,
+            "image_complete" => Endpoints::getUnpackedBoxUrl(),
             "images_generation_time" => 0.00252,
             "packing_time" => 0.00327,
             "items" => array(
@@ -447,8 +448,8 @@ class PackagingRequest
                     "d" => $itemDetail['length'] ?? '',
                     "wg" => $itemDetail['weight'] ?? '',
                     "q" => $itemDetail['q'] ?? 1,
-                    "image_separated" => Constant::UNPACKED_BOX_URL,
-                    "image_sbs" => Constant::UNPACKED_BOX_URL,
+                    "image_separated" => Endpoints::getUnpackedBoxUrl(),
+                    "image_sbs" => Endpoints::getUnpackedBoxUrl(),
                     "coordinates" => array(
                         "x1" => 0,
                         "y1" => 0,
