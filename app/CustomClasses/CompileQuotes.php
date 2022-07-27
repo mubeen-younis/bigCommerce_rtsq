@@ -3211,7 +3211,7 @@ class CompileQuotes
                         $title = $this->getTitle($data['serviceDesc'], false, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
                         
                         $arraySorting['simple'][$key] = $price;
-                        $originQuotes[$key]['simple']['code'] = 'fqchrltl' . $data['serviceType'] . $access;
+                        $originQuotes[$key]['simple']['code'] = 'fqchrltl' . $access;
                         $originQuotes[$key]['simple']['rate'] = $price;
                         $originQuotes[$key]['simple']['title'] = $title;
 
@@ -3221,7 +3221,7 @@ class CompileQuotes
                             $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
                          
                             $arraySorting['liftgate'][$key] = $lgPrice;
-                            $originQuotes[$key]['liftgate']['code'] = $data['serviceType'] . $lgAccess;
+                            $originQuotes[$key]['liftgate']['code'] = $lgAccess;
                             $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
                             $originQuotes[$key]['liftgate']['title'] = $lgTitle;
                         }

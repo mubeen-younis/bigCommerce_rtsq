@@ -155,6 +155,18 @@ class LtlSmallCompileQuotes
                         $quotesCarrier['ltl']['fq']['simple'][] = $quote;
                     }
                 }
+                else if(strpos($quote['code'], 'fqchrltl') !== false){
+                    $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
+                    $quote['isResi'] = isset($residential['freightQuoteChrLtl']) && $residential['freightQuoteChrLtl'] == 'Y';
+                    $quote['alwaysLG'] = isset($connectionSettings['freightquote-chr-ltl']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['freightquote-chr-ltl']['quote_settings']['alwaysLiftGateDelivery'];
+                    if (strpos($quote['code'], '+LG') !== false) {
+                        $quotesCarrier['ltl']['fqchr']['LG'][] = $quote;
+                    } else if(strpos($quote['code'], '+HAT') !== false){
+                        $quotesCarrier['ltl']['fqchr']['HAT'][] = $quote;
+                    } else {
+                        $quotesCarrier['ltl']['fqchr']['simple'][] = $quote;
+                    }
+                }
                 else if(strpos($quote['code'], 'estesltl') !== false){
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
                     $quote['isResi'] = isset($residential['estesLtl']) && $residential['estesLtl'] == 'Y';

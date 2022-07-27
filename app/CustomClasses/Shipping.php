@@ -146,7 +146,6 @@ class Shipping
         $url = Constant::QUOTES_URL;
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
-        // dd('quotes', $quotes);
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
         /*
       * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
@@ -168,7 +167,7 @@ class Shipping
 
         $quotesFromWs = $quotes ?? [];
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination);
-        dd('finalQuotes', $finalQuotes);
+
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];
@@ -197,6 +196,7 @@ class Shipping
         $isSaiaLtlCodeExist = gettype(array_search('saialtl', $finalCodesTemp)) == 'integer';
         $isAbfLtlCodeExist = gettype(array_search('abfltl', $finalCodesTemp)) == 'integer';
         $isSouthEasternLtlCodeExist = gettype(array_search('southeastltl', $finalCodesTemp)) == 'integer';
+        $isFreightQuoteChrLtlCodeExist = gettype(array_search('fqchrltl', $finalCodesTemp)) == 'integer';
         $freightCode = '';
         $finalCost = 0;
 
@@ -209,7 +209,7 @@ class Shipping
         } else {
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
             //TODO : Need to Add LTL Carriers Here as well
-            if (!$isShippingOrFreight && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist || $isEstesLtlCodeExist || $isDayRossLtlCodeExist || $isOdflLtlCodeExist || $isSaiaLtlCodeExist || $isAbfLtlCodeExist || $isSouthEasternLtlCodeExist)) {
+            if (!$isShippingOrFreight && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist || $isEstesLtlCodeExist || $isDayRossLtlCodeExist || $isOdflLtlCodeExist || $isSaiaLtlCodeExist || $isAbfLtlCodeExist || $isSouthEasternLtlCodeExist || $isFreightQuoteChrLtlCodeExist)) {
                 $isShippingOrFreight = false;
             }
 
