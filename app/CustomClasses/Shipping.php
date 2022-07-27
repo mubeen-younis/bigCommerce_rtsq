@@ -741,14 +741,14 @@ class Shipping
         }
 
         $freightQuotesArr = collect($finalCheapestQuotes)->filter(function ($quote) use ($freightTitle) {
-            return strpos($quote['title'], $freightTitle) !== false;
+            return strpos($quote['title'], $freightTitle) !== false || strpos($quote['title'], 'Freight') !== false;
         })->toArray() ?? [];
         $shippingQuotesArr = collect($finalCheapestQuotes)->filter(function ($quote) use ($shippingTitle) {
             return strpos($quote['title'], $shippingTitle) !== false;
         })->toArray() ?? [];
 
-        $freightCheapest = $this->getCheapestQuotesArr($freightQuotesArr) ?? [];
-        $shippingCheapest = $this->getCheapestQuotesArr($shippingQuotesArr) ?? [];
+        $freightCheapest[] = $this->getCheapestQuotesArr($freightQuotesArr) ?? [];
+        $shippingCheapest[] = $this->getCheapestQuotesArr($shippingQuotesArr) ?? [];
 
         if (empty($freightQuotesArr) && empty($shippingQuotesArr)) {
             return $finalCheapestQuotes;
@@ -763,9 +763,7 @@ class Shipping
 
         if (!empty($freightCheapest) && !empty($shippingCheapest)) {
             $finalCheapestQuotes = $bothChpeastQuotesArr = [];
-            array_push($bothChpeastQuotesArr, $freightCheapest);
-            array_push($bothChpeastQuotesArr, $shippingCheapest);
-
+            $bothChpeastQuotesArr =array_merge($freightCheapest,$shippingCheapest);
             $finalCheapestQuotes[0] = $this->getCheapestQuotesArr($bothChpeastQuotesArr) ?? [];
         }
 
