@@ -1299,7 +1299,7 @@ class CompileQuotes
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = $res['isMultiShipment'] ?? false;
         }
-        return $res['resp'];
+        return $res['resp'] ?? [];
     }
 
     public function compileGlobalTranzLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
