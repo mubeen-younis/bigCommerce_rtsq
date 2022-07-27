@@ -223,7 +223,7 @@ class OrderController extends Controller
                             $sbsData = $ws->binPackagingData->response->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->oneRate->bins_packed ?? [];
                         }
 
-                        /* Usps carrier packaging according to boxes types */     
+                        /* Usps carrier packaging according to boxes types */
                         $customBoxes = $ws->binPackagingData->response->customboxes->bins_packed ?? [];
                         if (!blank($customBoxes)) {
                             $orderWidgetData[] = $this->formatUspsPackaging($customBoxes, $zip, $lineItem);
@@ -240,7 +240,7 @@ class OrderController extends Controller
                         if (!blank($uflatBoxes)) {
                             $orderWidgetData[] = $this->formatUspsPackaging($uflatBoxes, $zip, $lineItem);
                         }
-                                       
+
                         //print_r($ws->binPackagingData->response); exit;
                         $itemCount = 0;
                         foreach ($sbsData as $key => $binPacked) {
@@ -373,7 +373,6 @@ class OrderController extends Controller
                 }
                 /*Added Else if BLock for Catering BUg of MUltiple Products IN ONe BOX*/
             } elseif (isset($sbsItems[$zip]) && !empty($sbsItems[$zip])) {
-                dd(340, $sbsItems, $zip);
                 foreach ($sbsItems[$zip] as $sbsVariantKey => $sbsItem) {
                     $itemDetail = $this->getSbsItemDetail($sbsVariantKey, $items);
                     if (!blank($itemDetail) && (!in_array($itemDetail->lineItemName, $insertedNames)) && (!in_array($itemDetail->id, $insertedIds))) {
