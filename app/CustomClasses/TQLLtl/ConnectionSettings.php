@@ -22,7 +22,7 @@ class ConnectionSettings extends CarriersConnectionSettings
         $url = $this->testConnectionUrl;
         $params = array(
             'dont_auth' => '1',
-            'licence_key' => 'TDVB9ONC-M7QJRPRQ-5EDIH32D-DE73Y57I',
+            'licence_key' => '',
             'sever_name' => $storeName,
             // -------------Carrier Credentials------------- //
             'apiVersion' => '1.0',
