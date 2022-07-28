@@ -8,6 +8,8 @@ use App\Http\Controllers\BoxSizeController;
 use Illuminate\Support\Facades\DB;
 use App\CustomClasses\Bin3D\Bin3D;
 use App\CustomClasses\SmartyStreet\SmartyStreet;
+use App\CustomClasses\UspsSmall\QuotesResults as UspsSmallQuotesResults;
+use App\CustomClasses\UspsSmall\PackagingRequest as UspsSmallPackagingRequest;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -166,6 +168,11 @@ class GenerateRequestData
                     $yrcLtlArr = $this->SouthEasternEnitArr($con1, $destination);
                     $yrcLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['southeastern'] = $yrcLtlArr;
+                    break;
+                case 'usps-small':
+                    $uspsSmallArr = $this->uspsSmallEnitArr($con1, $destination, $enitOrigin, $lineItems);
+                    $uspsSmallArr['originAddress'] = $enitOrigin;
+                    $carriersArr['carriers']['usps'] = $uspsSmallArr;
                     break;
                 case 'tql-ltl':
                     $tqlLtlArr = $this->tqlLtlEnitArr($con1, $destination);
@@ -492,6 +499,19 @@ class GenerateRequestData
         ];
     }
 
+     private function uspsSmallEnitArr($connSettings, $destination, $enitOrigin, $lineItems)
+    {
+        return [
+            'licenseKey' => '',
+            'serverName' => "https://" . $this->storeData['store']['name'],
+            'carrierMode' => 'pro',
+            'quotestType' => 'small',
+            'version' => '1.0',
+            'returnQuotesOnExceedWeight' => 1,
+            'api' => $this->getApiInfoArrUspsSmall($connSettings, $destination, $enitOrigin, $lineItems),
+        ];
+    }
+
     function calculatePrice($lineItems)
     {
         $price = 0;
@@ -527,14 +547,15 @@ class GenerateRequestData
         //
 
         if (isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs']) {
-            $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? [];
+            $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? $carriers['usps']['originAddress'] ?? [];
             $this->itemsArr = $itemsArr;
             $this->carriers = $carriers;
 
             $hasSmall = isset($carriers['wweSmall'])
-                || isset($carriers['upsSmall'])
-                || isset($carriers['fedexSmall'])
-                || isset($carriers['unishippersSmall']);
+            || isset($carriers['upsSmall'])
+            || isset($carriers['fedexSmall'])
+            || isset($carriers['unishippersSmall'])
+            || isset($carriers['usps']);
             if ($hasSmall) {
                 $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
                 if (empty($multiplePackaging)) {
@@ -545,9 +566,7 @@ class GenerateRequestData
                 $carriers = $multiplePackaging['carriers'];
 
                 $olditemsArr = $itemsArr;
-                $carriersoriginAddress = $carriers['wweSmall']['originAddress']
-                    ?? $carriers['upsSmall']['originAddress']
-                    ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? [];
+                $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? $carriers['usps']['originAddress'] ?? [];
 
                 if (isset($carriers['fedexSmall'])) {
                     $this->checkServiceEnabled();
@@ -560,10 +579,10 @@ class GenerateRequestData
                             $carriers['fedexSmall']['originAddress'][$key] = $origin;
                         }
                         /*
-                       * Added Condition if in case of combination of ups small and fedex small
-                       * Only Fedex SMall rates was returning
-                       * We need to cater all small carriers here as well
-                       * */
+                         * Added Condition if in case of combination of ups small and fedex small
+                         * Only Fedex SMall rates was returning
+                         * We need to cater all small carriers here as well
+                         * */
                         if (isset($carriers['upsSmall'])) {
                             unset($carriers['upsSmall']['originAddress']);
 
@@ -585,6 +604,14 @@ class GenerateRequestData
 
                             foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
                                 $carriers['unishippersSmall']['originAddress'][$key] = $origin;
+                            }
+                        }
+
+                        if (isset($carriers['usps'])) {
+                            unset($carriers['usps']['originAddress']);
+
+                            foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
+                                $carriers['usps']['originAddress'][$key] = $origin;
                             }
                         }
                         ///////////////////////////////////////////
@@ -618,6 +645,11 @@ class GenerateRequestData
                 } else {
                     $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
                     $itemsArr = $sbsResponse['items'] ?? $itemsArr;
+                    if (isset($carriers) && count($carriers) == 1 && isset($carriers['usps'])) {
+                        $sbsResponse['binResponse'] = [];
+                        $sbsResponse['boxBins'] = [];
+                    }
+
                     if (isset($carriers['wweSmall'])) {
                         $carriers['wweSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                     }
@@ -627,8 +659,10 @@ class GenerateRequestData
                     if (isset($carriers['unishippersSmall'])) {
                         $carriers['unishippersSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                     }
+                    if (isset($carriers['usps'])) {
+                        $carriers['usps']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
+                    }
                 }
-
                 $binReponse = $sbsResponse['binResponse'] ?? [];
                 $boxBins = $sbsResponse['boxBins'] ?? [];
                 $isLtl = isset($carriers['wweLTL'])
@@ -1886,6 +1920,82 @@ class GenerateRequestData
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
 
+    private function getApiInfoArrUspsSmall($connSettings, $destination, $enitOrigin, $lineItems)
+    {
+        $uspsSmallQuotesResutls = new UspsSmallQuotesResults();
+        $uspsSmallPkgReq = new UspsSmallPackagingRequest();
+
+        $storeId = $this->storeData['store']['id'] ?? null;
+        $radResp = $this->verifyRADStatus($connSettings, $destination);
+        $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
+        $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
+
+        $apiArray = [
+            'rateTier' => $connSettings['quote_settings']['rate_tier'] ?? 'retail',
+            'includeDeclaredValue' => '1',
+            'activeServices' => $uspsSmallQuotesResutls->getUspsActiveServices($carrierServices),
+            'residential_delivery' => $radResp['alwaysResi'] == 'Y' ? 'yes' : 'no',
+            'sbsPackaging' => $sbsEnabled ? '1' : '0',
+        ];
+
+        if ($sbsEnabled) {
+            $binReqArr = $binRespArr = $smallOrigins = $owdArr = [];
+
+            foreach ($lineItems as $origin => $item) {
+                $isLtl = (isset($item['freight_enabled']) && $item['freight_enabled'] == 'Y') || (isset($item['freightClass']) && $item['freightClass'] == 'ltl');
+                $isMultiPackage = isset($item['shipMultiplePackage']) && $item['shipMultiplePackage'] ?? false;
+                if ($isLtl || $isMultiPackage) {
+                    continue;
+                }
+
+                $itemLocId = $enitOrigin[$origin]['locationId'] ?? '';
+                $smallOrigins[$itemLocId] = $enitOrigin[$origin];
+
+                $binReqArr[$itemLocId] = $uspsSmallPkgReq->getGroupedUSPSBoxes($storeId);
+                $binRespArr = $uspsSmallPkgReq->setAndGetBinsResponse($storeId, $connSettings, $enitOrigin, $lineItems, $itemLocId);
+                $apiArray['binResponse'][$itemLocId] = $binRespArr['packedBoxes'];
+                $owdArr = $binRespArr['owdBoxes']; 
+            }
+
+            $apiArray['binsReqArr'] = $binReqArr ?? [];
+            $apiArray['binResponseArr'] = $owdArr ?? [];
+            $apiArray['boxBins'] = $uspsSmallPkgReq->getGroupedUSPSBoxes($storeId) ?? [];
+        }
+
+        $apiArray = array_merge($apiArray, $this->getCutOffDetails($connSettings));
+        return $apiArray;
+    }
+
+    private function verifyRADStatus($connSettings, $destination): array
+    {
+        $storeId = $this->storeData['store']['id'] ?? null;
+        $residential = 'N';
+        $alwaysResi = false;
+        $resp = [];
+
+        if ($this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])) {
+            if ($this->radHitConsumed == 0) {
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($storeId, $destination);
+                $this->residential = $residential;
+
+            } else {
+                $residential = $this->residential;
+            }
+        } else {
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+        }
+
+        $this->resiCarrier['uspsSmall'] = $residential;
+        $this->resiCarrier['alwaysResi']['uspsSmall'] = $alwaysResi;
+
+        $resp = [
+            'residential' => $residential,
+            'alwaysResi' => $alwaysResi,
+        ];
+        return $resp;
+    }
+
     public function setIsSMartPost($connectionSettings)
     {
         if (
@@ -2005,6 +2115,23 @@ class GenerateRequestData
 
     public function getStoreBoxes($storeId, $itemsArr, $origins, $cartInfo, $isMultishipment)
     {
+        /* if ltl and small products are from same origin in single-shipment then avoid small product packaging */
+        if (!$isMultishipment) {
+            $resp = [];
+            $orgLocIds = array_column($origins, 'locationId') ?? [];
+            $ltlItems = array_filter($itemsArr, fn($item) => $item['freightClass'] === 'ltl') ?? [];
+            $smallItems = array_filter($itemsArr, fn($item) => $item['freightClass'] === '') ?? [];
+
+            if (count($itemsArr) > 1 && count(array_unique($orgLocIds)) == 1 && !empty($ltlItems) && !empty($smallItems)) {
+                $resp['items'] = $itemsArr;
+                $resp['originAddress'] = $origins;
+                $resp['binResponse'] = [];
+                $resp['boxBins'] = [];
+                
+                return $resp;
+            }
+        }
+
         $items = $itemsAlone = [];
         foreach ($origins as $key => $origin) {
             $isNotLtl = !(isset($itemsArr[$key]['freightClass']) && $itemsArr[$key]['freightClass'] === 'ltl');

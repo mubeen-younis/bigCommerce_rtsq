@@ -23,6 +23,7 @@ use App\CustomClasses\DayRossLTL\ConnectionSettings as DayRossLtlConnectionSetti
 use App\CustomClasses\OdflLTL\ConnectionSettings as OdflLTLConnectionSettings;
 use App\CustomClasses\SaiaLTL\ConnectionSettings as SaiaLTLConnectionSettings;
 use App\CustomClasses\AbfLtl\ConnectionSettings as AbfLtlConnectionSettings;
+use App\CustomClasses\UspsSmall\ConnectionSettings as UspsSmallConnectionSettings;
 use App\CustomClasses\SouthEasternLtl\ConnectionSettings as SouthEasternLtlConnectionSettings;
 use App\Endpoints\Endpoints;
 
@@ -69,6 +70,7 @@ class ConnectionController extends Controller
         $this->saiaLtlTestCon = new SaiaLTLConnectionSettings();
         $this->AbfLtlTestCon = new AbfLtlConnectionSettings();
         $this->southEasternLtlTestCon = new SouthEasternLtlConnectionSettings();
+        $this->uspsSmallTestCon = new UspsSmallConnectionSettings();
     }
 
     public function index(Request $request)
@@ -179,6 +181,9 @@ class ConnectionController extends Controller
                 case 'southeastern-ltl':
                     $response = $this->southEasternLtlTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
+                case 'usps-small':
+                    $response = $this->uspsSmallTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json();
                 case 'tql-ltl':
                     $response = $this->tqlLtlTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);

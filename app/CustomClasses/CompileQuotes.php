@@ -17,6 +17,8 @@ use App\CustomClasses\DayRossLTL\QuotesResults as dayRossLtlQuotesResults;
 use App\CustomClasses\SaiaLTL\QuotesResults as saiaLtlQuotesResults;
 use App\CustomClasses\AbfLtl\QuotesResults as abfLtlQuotesResults;
 use App\CustomClasses\SouthEasternLtl\QuotesResults as SouthEasternQuotesResults;
+use App\CustomClasses\UspsSmall\QuotesResults as uspsSmallQuotesResults;
+
 use App\Http\Controllers\RADController;
 use App\Models\Locations;
 use Carbon\Carbon;
@@ -654,7 +656,6 @@ class CompileQuotes
         $quotesRes = [];
         $quotesTemp = [];
         $quotes = $this->filterShipmentsWithError($quotes);
-
         foreach ($quotes as $key => $shipment) {
             switch ($key) {
                 case "wweLTL":
@@ -796,13 +797,20 @@ class CompileQuotes
                         $quotesRes = array_merge($quotesRes, $resp);
                     }
                     break;
+                case 'usps':
+                    $resp = $this->compileUspsSmallQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential);
+                    $quotesTemp['usps'] = $resp;
+                    if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
+                        $quotesRes = array_merge($quotesRes, $resp);
+                    }
+                    break;
                 case "tql":
                     $resp = $this->compileTqlLtlQuotes($shipment, $connectionSettings, $allOrigins);
                     $quotesTemp['tql'] = $resp;
                     if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
-                    $quotesRes = array_merge($quotesRes, $resp);
+                        $quotesRes = array_merge($quotesRes, $resp);
+                    }
                     break;
-                }
             }
         }
 
@@ -1341,10 +1349,10 @@ class CompileQuotes
 
         $res = $this->upsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment);
         if (!$this->isMultiShipment) {
-            $this->isMultiShipment = $res['isMultiShipment'];
+            $this->isMultiShipment = $res['isMultiShipment'] ?? false;
         }
 
-        return $res['resp'];
+        return $res['resp'] ?? [];
     }
 
     public function compileEstesltlQuotes($shipments, $connectionSettings, $allOrigins)
@@ -1502,7 +1510,7 @@ class CompileQuotes
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = $res['isMultiShipment'] ?? false;
         }
-        return $res['resp'];
+        return $res['resp'] ?? [];
     }
 
     public function compileGlobalTranzLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
@@ -2850,7 +2858,7 @@ class CompileQuotes
         }
 
         foreach ($shipments as $origin => $quote) {
-            if (isset($quote['severity'])) {
+            if (isset($quote['q']['severity']) || isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
@@ -3360,6 +3368,23 @@ class CompileQuotes
 
         $resp = $allQuotes;
         return $resp;
+    }
+
+     private function compileUspsSmallQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
+    {
+        $uspsSmallQuotesResults = new uspsSmallQuotesResults();
+        $this->isResi = $residential['uspsSmall'] == 'Y' ? true : false; 
+        $this->residentialDlvry = $residential['uspsSmall'] == 'Y' ? 1 : 0; 
+        $this->alwaysResi = $this->residential['alwaysResi']['uspsSmall'] ?? false;
+
+        $access = $this->getAccessorialCodeSmall();
+        $res = $uspsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment);
+
+        if (!$this->isMultiShipment) {
+            $this->isMultiShipment = $res['isMultiShipment'] ?? false;
+        }
+
+        return $res['resp'] ?? [];
     }
          
     public function getInsPicAndLocDelQuotes($quote, $allOrigins): array

@@ -198,4 +198,9 @@ class Endpoints
         }
         return "https://bc.eniture.com/api/order/webhooks";
     }
+
+    public static function getUnpackedBoxUrl()
+    {
+        return "http://eu.api.3dbinpacking.com/images/29283f1d530b350d166b6ddc31fa2bfa/20171206/86407cf14c6c451d191d2e0b555eb9f5/1512573750-1033-8129432.png";
+    }
 }
