@@ -656,7 +656,6 @@ class CompileQuotes
         $quotesRes = [];
         $quotesTemp = [];
         $quotes = $this->filterShipmentsWithError($quotes);
-
         foreach ($quotes as $key => $shipment) {
             switch ($key) {
                 case "wweLTL":
@@ -1140,10 +1139,10 @@ class CompileQuotes
 
         $res = $this->upsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment);
         if (!$this->isMultiShipment) {
-            $this->isMultiShipment = $res['isMultiShipment'];
+            $this->isMultiShipment = $res['isMultiShipment'] ?? false;
         }
 
-        return $res['resp'];
+        return $res['resp'] ?? [];
     }
 
     public function compileEstesltlQuotes($shipments, $connectionSettings, $allOrigins)

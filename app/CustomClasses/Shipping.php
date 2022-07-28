@@ -158,7 +158,7 @@ class Shipping
             $uspsBoxBins = $apiArray['boxBins'] ?? [];
 
              if (isset($apiArray['binResponseArr']) && !empty($apiArray['binResponseArr'])) {
-                $quotes = $this->addBinResponseToQuotes($apiArray['binResponseArr'], $quotes);
+                $quotes = $this->addBinResponseToQuotes($apiArray['binResponseArr'], $quotes, true);
             }
         }
 
@@ -167,7 +167,7 @@ class Shipping
             $boxbins = array_merge($boxbins, $uspsBoxBins);
         }
         if (isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])) {
-            $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes);
+            $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes, false);
         }
 
         $freeRNL = false;
@@ -377,14 +377,14 @@ class Shipping
     }
 
     private
-    function addBinResponseToQuotes($binReponse, $quotes)
+    function addBinResponseToQuotes($binReponse, $quotes, $uspsRes = false)
     {
         $boxFee = [];
         $fedexBoxesFee = [];
         $uspsBoxesFee = [];
         foreach ($quotes as $carrierName => $quote) {
             if ($this->isSmallCarrier($carrierName)) {
-                if ($carrierName == 'fedexSmall') {
+                if ($carrierName == 'fedexSmall' && !$uspsRes) {
                     foreach ($binReponse as $serviceType => $response) {
                         foreach ($response as $locationId => $bin) {
                             $quotes[$carrierName][$locationId]['binPackagingData']['response'][$serviceType] = $bin;
@@ -393,7 +393,7 @@ class Shipping
                             $fedexBoxesFee[$locationId][$serviceType] = $fee;
                         }
                     }
-                } else if ($carrierName == 'usps') {
+                } else if ($carrierName == 'usps' && $uspsRes) {
                     foreach ($binReponse as $locationId => $boxTypes) {
                         if (isset($boxTypes) && !empty($boxTypes)) {
                             foreach ($boxTypes as $type => $value) {
@@ -407,7 +407,7 @@ class Shipping
                             }
                         }
                     }
-                } else {
+                } else if($carrierName !== 'fedexSmall' && $carrierName !== 'usps' && $uspsRes === null) {
                     foreach ($binReponse as $locationId => $bin) {
                         $quotes[$carrierName][$locationId]['binPackagingData']['response'] = $bin;
                         $boxFee[$locationId] = $this->getCumulativeBoxFee($bin);
@@ -418,6 +418,7 @@ class Shipping
         if (!empty($boxFee)) {
             $quotes = $this->addBoxFeeToQuotes($quotes, $boxFee, $fedexBoxesFee);
         }
+
         return $quotes;
     }
 

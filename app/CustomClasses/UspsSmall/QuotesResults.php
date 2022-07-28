@@ -21,7 +21,7 @@ class QuotesResults
 
         $numberOfShipments = 0;
         foreach ($shipments as $key => $ship) {
-            if (!isset($ship['severity'])) {
+            if (!isset($ship['severity']) && !in_array($key, ['air', 'ground', 'oneRate'])) {
                 $numberOfShipments++;
             }
         }
