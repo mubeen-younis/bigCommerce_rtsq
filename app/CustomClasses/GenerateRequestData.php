@@ -652,6 +652,7 @@ class GenerateRequestData
                     || isset($carriers['cerasis'])
                     || isset($carriers['globalTranz'])
                     || isset($carriers['xpoLogistics'])
+                    || isset($carriers['rnl'])
                     || isset($carriers['yrc'])
                     || isset($carriers['freightQuote'])
                     || isset($carriers['estes'])
