@@ -16,7 +16,7 @@ use App\CustomClasses\XPO\ltl\ConnectionSettings as XPOLtlConnectionSettings;
 use App\CustomClasses\Unishippers\small\ConnectionSettings as UnishippersSmallConnectionSettings;
 
 use App\CustomClasses\YrcLTL\ConnectionSettings as YrcLtlConnectionSettings;
-use App\CustomClasses\TQLLTL\ConnectionSettings as TQLLtlConnectionSettings;
+use App\CustomClasses\TQLLtl\ConnectionSettings as TQLLtlConnectionSettings;
 use App\CustomClasses\FreightQuote\Ltl\ConnectionSettings as FreightQuoteConSett;
 use App\CustomClasses\EstesLTL\ConnectionSettings as EstesLTLConnectionSettings;
 use App\CustomClasses\DayRossLTL\ConnectionSettings as DayRossLtlConnectionSettings;
