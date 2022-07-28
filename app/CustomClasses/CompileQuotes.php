@@ -1130,7 +1130,7 @@ class CompileQuotes
         $this->alwaysResi = $this->residential['alwaysResi']['tqlLtl'] ?? false;
         $this->quoteSettings = $connectionSettings['tql-ltl']['quote_settings'] ?? [];
         $allConfigServices = $connectionSettings['tql-ltl']['carrier_services'] ?? [];
-        $ratingMethod = $this->quoteSettings['method'];
+        $ratingMethod = $this->quoteSettings['method'] ?? 1;
         $isStandardChecked = $connectionSettings['tql-ltl']['quote_settings']['standard_check'] ?? false;
         $isGuaranteedChecked = $connectionSettings['tql-ltl']['quote_settings']['guaranteed_check'] ?? false;
         $this->quoteSettingsData();
