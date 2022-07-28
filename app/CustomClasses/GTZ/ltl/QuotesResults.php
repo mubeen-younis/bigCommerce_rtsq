@@ -17,7 +17,7 @@ class QuotesResults
 
 
     public function GTZcompileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $isMultiShipment){
-        //print_r($shipments); exit;
+        
     }
 
     public function formateQuoteBeforeCompile($shipments){
@@ -102,7 +102,7 @@ class QuotesResults
             }
 
         }
-        //print_r($shipments); exit;
+        
         foreach ($shipments as $shipment => $quotes){
             if(!isset($quotes['q'])){
                 continue;

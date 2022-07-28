@@ -114,19 +114,17 @@ class Shipping
 
         $this->isInsurance($package);
         foreach ($carriersArray['carriers'] as $key => $carriers) {
-            if ($this->isHazmat == 'Y') {
-                if ($key == 'wweLTL') {
-                    $carriersArray['carriers'][$key]['api']['lineItemHazmatInfo'] = [
-                        [
-                            'isHazmatLineItem' => 'Y',
-                            'lineItemHazmatUNNumberHeader' => 'UN #',
-                            'lineItemHazmatUNNumber' => '1139',
-                            'lineItemHazmatClass' => '1.1',
-                            'lineItemHazmatEmContactPhone' => '4043308699',
-                            'lineItemHazmatPackagingGroup' => 'I',
-                        ],
-                    ];
-                }
+            if ($this->isHazmat == 'Y' && $key == 'wweLTL') {
+                $carriersArray['carriers'][$key]['api']['lineItemHazmatInfo'] = [
+                    [
+                        'isHazmatLineItem' => 'Y',
+                        'lineItemHazmatUNNumberHeader' => 'UN #',
+                        'lineItemHazmatUNNumber' => '1139',
+                        'lineItemHazmatClass' => '1.1',
+                        'lineItemHazmatEmContactPhone' => '4043308699',
+                        'lineItemHazmatPackagingGroup' => 'I',
+                    ],
+                ];
             }
             if ($this->isInsurance === 'Y' && $key == 'wweLTL') {
                 if ($this->isSmall($key)) {
@@ -141,6 +139,7 @@ class Shipping
 
         // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
+        
         if (empty($requestArr)) {
             return false;
         }
@@ -156,7 +155,6 @@ class Shipping
 
         $boxbins = $requestArr['boxBins'] ?? [];
         if (isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])) {
-            Log::info('BinData ' . json_encode($requestArr['binReponse']));
             $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes);
         }
         //;
@@ -167,7 +165,6 @@ class Shipping
             unset($requestArr['requestArr']['carriers']['rnl']['freeShipment']);
             $freeRNL = true;
         }
-        Log::info('after addBinResponseToQuotes ' . json_encode($quotes));
 
         $quotesFromWs = $quotes ?? [];
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination);
@@ -195,6 +192,10 @@ class Shipping
         $isFreightQuoteLtlCodeExist = gettype(array_search('fqltl', $finalCodesTemp)) == 'integer';
         $isEstesLtlCodeExist = gettype(array_search('estesltl', $finalCodesTemp)) == 'integer';
         $isDayRossLtlCodeExist = gettype(array_search('dayrossltl', $finalCodesTemp)) == 'integer';
+        $isOdflLtlCodeExist = gettype(array_search('odflltl', $finalCodesTemp)) == 'integer';
+        $isSaiaLtlCodeExist = gettype(array_search('saialtl', $finalCodesTemp)) == 'integer';
+        $isAbfLtlCodeExist = gettype(array_search('abfltl', $finalCodesTemp)) == 'integer';
+        $isSouthEasternLtlCodeExist = gettype(array_search('southeastltl', $finalCodesTemp)) == 'integer';
         $freightCode = '';
         $finalCost = 0;
 
@@ -207,7 +208,7 @@ class Shipping
         } else {
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
             //TODO : Need to Add LTL Carriers Here as well
-            if (!$isShippingOrFreight && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist || $isEstesLtlCodeExist || $isDayRossLtlCodeExist)) {
+            if (!$isShippingOrFreight && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist || $isEstesLtlCodeExist || $isDayRossLtlCodeExist || $isOdflLtlCodeExist || $isSaiaLtlCodeExist || $isAbfLtlCodeExist || $isSouthEasternLtlCodeExist)) {
                 $isShippingOrFreight = false;
             }
 
@@ -567,6 +568,7 @@ class Shipping
     public
     function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null)
     {
+        
         //print_r($resp); print_r($multiShipmentQuotes); exit;
         foreach ($finalQuotes as $finalQuote) {
             $RequestTempData = new RequestTempData();
@@ -639,7 +641,7 @@ class Shipping
     {
         // TODO: Need to Add small and Ltl Carriers Here as well
         $smallOrigins = $marketItemSmall = $request['carriers']['wweSmall']['originAddress'] ?? $request['carriers']['upsSmall']['originAddress'] ?? $request['carriers']['fedexSmall']['originAddress'] ?? $request['carriers']['unishippersSmall']['originAddress'] ?? [];
-        $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? $request['carriers']['upsLTL']['originAddress'] ?? $request['carriers']['yrcLTL']['originAddress'] ?? $request['carriers']['tql']['originAddress'] ?? [];
+        $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? $request['carriers']['upsLTL']['originAddress'] ?? $request['carriers']['yrcLTL']['originAddress'] ?? $request['carriers']['odfl4me']['originAddress'] ?? $request['carriers']['abf']['originAddress'] ?? $request['carriers']['southeastern']['originAddress'] ?? $request['carriers']['tql']['originAddress'] ?? [];
         $items = $request['commdityDetails'] ?? [];
         $smallHazmat = $ltlHazmat = false;
         if (!empty($smallOrigins)) {
@@ -722,7 +724,7 @@ class Shipping
             $resp = [];
         }
 
-        Log::info('$resp ' . json_encode($resp));
+        Log::info('Last response for quotes ' . json_encode($resp));
         return $resp;
     }
 
@@ -828,7 +830,7 @@ class Shipping
             $output = curl_exec($ch);
             curl_close($ch);
             Log::info('$output ' . $output);
-            return json_decode($output, true);
+           return json_decode($output, true);
         } catch (\Throwable $e) {
             $result = [];
         }

@@ -14,12 +14,18 @@ use App\CustomClasses\WweLTL\WweLtlConnectionSettings;
 use App\CustomClasses\WWESMALL\SmallConnectionSettings;
 use App\CustomClasses\XPO\ltl\ConnectionSettings as XPOLtlConnectionSettings;
 use App\CustomClasses\Unishippers\small\ConnectionSettings as UnishippersSmallConnectionSettings;
+
 use App\CustomClasses\YrcLTL\ConnectionSettings as YrcLtlConnectionSettings;
 use App\CustomClasses\TQLLTL\ConnectionSettings as TQLLtlConnectionSettings;
 use App\CustomClasses\FreightQuote\Ltl\ConnectionSettings as FreightQuoteConSett;
 use App\CustomClasses\EstesLTL\ConnectionSettings as EstesLTLConnectionSettings;
 use App\CustomClasses\DayRossLTL\ConnectionSettings as DayRossLtlConnectionSettings;
+use App\CustomClasses\OdflLTL\ConnectionSettings as OdflLTLConnectionSettings;
+use App\CustomClasses\SaiaLTL\ConnectionSettings as SaiaLTLConnectionSettings;
+use App\CustomClasses\AbfLtl\ConnectionSettings as AbfLtlConnectionSettings;
+use App\CustomClasses\SouthEasternLtl\ConnectionSettings as SouthEasternLtlConnectionSettings;
 use App\Endpoints\Endpoints;
+
 use App\Models\Connection;
 use App\Models\Coupon;
 use App\Models\CouponCarrier;
@@ -59,6 +65,10 @@ class ConnectionController extends Controller
         $this->freightQuoteLtlTestCon = new FreightQuoteConSett();
         $this->estesLTLConL = new EstesLTLConnectionSettings();
         $this->dayRossLtlTestCon = new DayRossLtlConnectionSettings();
+        $this->odflLTLConL = new OdflLTLConnectionSettings();
+        $this->saiaLtlTestCon = new SaiaLTLConnectionSettings();
+        $this->AbfLtlTestCon = new AbfLtlConnectionSettings();
+        $this->southEasternLtlTestCon = new SouthEasternLtlConnectionSettings();
     }
 
     public function index(Request $request)
@@ -145,17 +155,29 @@ class ConnectionController extends Controller
                 case 'unishippers-small':
                     $response = $this->unishippersSmallTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
-                case 'dayross-ltl':
-                    $response = $this->dayRossLtlTestCon->testConnection($request, $checkCarrierType->name);
-                    return response()->json($response);
-                case 'estes-ltl':
-                    $response = $this->estesLTLConL->testConnection($request, $checkCarrierType->name);
+                case 'yrc-ltl':
+                    $response = $this->yrcLtlTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
                 case 'freightquote-ltl':
                     $response = $this->freightQuoteLtlTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
-                case 'yrc-ltl':
-                    $response = $this->yrcLtlTestCon->testConnection($request, $checkCarrierType->name);
+                case 'estes-ltl':
+                    $response = $this->estesLTLConL->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'dayross-ltl':
+                    $response = $this->dayRossLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'odfl-ltl':
+                    $response = $this->odflLTLConL->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'saia-ltl':
+                    $response = $this->saiaLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'abf-ltl':
+                    $response = $this->AbfLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'southeastern-ltl':
+                    $response = $this->southEasternLtlTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
                 case 'tql-ltl':
                     $response = $this->tqlLtlTestCon->testConnection($request, $checkCarrierType->name);

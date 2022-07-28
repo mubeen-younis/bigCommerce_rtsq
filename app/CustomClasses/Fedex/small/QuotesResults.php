@@ -401,7 +401,7 @@ class QuotesResults
     public
     function formateQuoteBeforeCompile($shipments)
     {
-        //print_r($shipments); exit;
+        
         foreach ($shipments as $shipment => $serviceTypes) {
             $inStoreLocal = [];
             foreach ($serviceTypes as $serviceName => $quotes) {

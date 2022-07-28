@@ -105,7 +105,7 @@ class QuotesResults
 
     public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $isMultiShipment)
     {
-        //print_r($shipments); exit;
+
         $shipments = $this->formateQuoteBeforeCompile($shipments);
         $this->quoteSettings = $connectionSettings['fedex-ltl']['quote_settings'] ?? [];
         $allConfigServices = [];

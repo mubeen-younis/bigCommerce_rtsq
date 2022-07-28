@@ -1,7 +1,7 @@
 <?php
 
 
-namespace App\CustomClasses\RL\ltl;
+namespace App\CustomClasses\RL\EstesLTL;
 
 
 use App\Constants\Constant;
@@ -16,11 +16,11 @@ class QuotesResults
     }
 
     public function formateQuoteBeforeCompile($shipments, $quoteSettings){
-        //print_r($shipments); exit;
+        
         foreach ($shipments as $shipment => $quotes){
             if(isset($quotes['q']) || isset($quotes['quotesWithInsideDel']) || isset($quotes['holdAtTerminalResponse']) || isset($quotes['InstorPickupLocalDelivery'])) {
                 unset($shipments[$shipment]);
-                
+
                 if(isset($quotes['quotesWithInsideDel']['ServiceLevels']['ServiceLevel'])){
                     if(!isset($quotes['quotesWithInsideDel']['ServiceLevels']['ServiceLevel'][0])){
                         $services = $quotes['quotesWithInsideDel']['ServiceLevels']['ServiceLevel'];
@@ -79,7 +79,7 @@ class QuotesResults
                 }
             }
         }
-        //print_r($shipments); exit;
+        
         return $shipments;
     }
 
