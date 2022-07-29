@@ -29,6 +29,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BoxSizeController;
 use App\Http\Controllers\FDOController;
 
+use App\Http\Controllers\DBSC\ShippingClassController;
+use App\Http\Controllers\DBSC\ShippingProfileController;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -241,3 +244,13 @@ Route::get('/test_bin', [App\CustomClasses\Bin3D\Bin3D::class, 'getBinResponse']
 Route::get('/api_logs', [App\Http\Controllers\LogToDbController::class, 'index']);
 Route::get('/truncate_logs', [App\Http\Controllers\LogToDbController::class, 'truncateLogs']);
 
+// DBSC carrier
+// Shipping class Route
+Route::post('/add_shipping_class',[ShippingClassController::class,'store']);
+Route::get('/get_shipping_class',[ShippingClassController::class,'show']);
+
+// Shipping Profile Route
+Route::post('/add_dbsc_profile',[ShippingProfileController::class,'store']);
+Route::get('/edit_dbsc_profile',[ShippingProfileController::class,'edit']);
+Route::post('/update_dbsc_profile',[ShippingProfileController::class,'update']);
+Route::post('/delete_dbsc_profile',[ShippingProfileController::class,'destroy']);
