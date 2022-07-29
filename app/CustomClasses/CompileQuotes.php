@@ -1155,6 +1155,8 @@ class CompileQuotes
         $labelAs = empty($labelAs) ? "Freight" : $labelAs;
         $this->quoteSettingsData();
 
+
+
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
         $lgQuotes = false;
