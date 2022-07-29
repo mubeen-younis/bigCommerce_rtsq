@@ -307,9 +307,8 @@ class OrderController extends Controller
         $addedInsurance = $addHazmat = false;
         $isMulti = false;
         $insertedIds = $insertedNames = [];
-        //print_r($items); exit;
         $code = '';
-        // dd(285, $sbsItems);
+        
         foreach ($origins as $key => $origin) {
             $item = optional($items)->$key;
             if (blank($item)) {
