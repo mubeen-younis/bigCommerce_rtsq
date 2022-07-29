@@ -22,10 +22,10 @@ class ConnectionSettings extends CarriersConnectionSettings
         $url = $this->testConnectionUrl;
         $params = array(
             'dont_auth' => '1',
-            'licence_key' => 'TDVB9ONC-M7QJRPRQ-5EDIH32D-DE73Y57I',
+            'licence_key' => '',
             'serverName' => $storeName,
             'carrierName' => 'usps',
-            'carrier_mode' => 'test', // use test / pro
+            'carrier_mode' => 'test',
             'apiVersion' => '1.0',
             'platform' => 'bigcommerce',
         );
