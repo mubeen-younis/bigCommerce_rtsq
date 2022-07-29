@@ -43,7 +43,7 @@ use App\Http\Controllers\FDOController;
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
-Route::middleware(['throttle:webhooks', \App\Http\Middleware\EnsureStoreisActive::class])->group(function () {
+Route::middleware([ \App\Http\Middleware\EnsureStoreisActive::class])->group(function () {
     Route::post('webhooks', [MainController::class, 'addAndUpdateProductFromWebHook']);
     Route::post('order/webhooks', [OrderController::class, 'orderFromWebhook']);
     Route::post('sku/webhooks', [ProductSettingController::class, 'skuFromWebhook']);
