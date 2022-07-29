@@ -241,7 +241,6 @@ class OrderController extends Controller
                             $orderWidgetData[] = $this->formatUspsPackaging($uflatBoxes, $zip, $lineItem);
                         }
 
-                        //print_r($ws->binPackagingData->response); exit;
                         $itemCount = 0;
                         foreach ($sbsData as $key => $binPacked) {
                             $type = optional($binPacked->bin_data)->type ?? '';
@@ -308,7 +307,7 @@ class OrderController extends Controller
         $isMulti = false;
         $insertedIds = $insertedNames = [];
         $code = '';
-        
+
         foreach ($origins as $key => $origin) {
             $item = optional($items)->$key;
             if (blank($item)) {
@@ -330,7 +329,7 @@ class OrderController extends Controller
             $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
             $sRate = $order['shipping_rate'];
-            //print_r($multiShipmentresponse); exit;
+
             if ($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement) {
                 if ($isHAT) {
                     $sRate = $multiShipmentresponse->$index->hat->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
@@ -484,7 +483,6 @@ class OrderController extends Controller
         }
 
         $sbs = '';
-        //print_r($orderWidget); exit;
         $resp = [
             'widget' => $this->objectToArray($orderWidget),
             'sbs' => $sbs
@@ -964,7 +962,6 @@ class OrderController extends Controller
             echo "<pre>";
             print_r($products);
             exit;
-            //dd($prds);
         }
         return $prds;
     }
