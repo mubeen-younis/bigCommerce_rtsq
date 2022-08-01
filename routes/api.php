@@ -33,6 +33,7 @@ use App\Http\Controllers\DBSC\ShippingClassController;
 use App\Http\Controllers\DBSC\ShippingProfileController;
 use App\Http\Controllers\DBSC\ShippingOriginController;
 use App\Http\Controllers\DBSC\ShippingZoneController;
+use App\Http\Controllers\DBSC\ShippingRatesController;
 
 /*
 |--------------------------------------------------------------------------
@@ -268,3 +269,9 @@ Route::post('/add_dbsc_zone',[ShippingZoneController::class,'store']);
 Route::get('/edit_dbsc_zone',[ShippingZoneController::class,'edit']);
 Route::post('/update_dbsc_zone',[ShippingZoneController::class,'update']);
 Route::post('/delete_dbsc_zone',[ShippingZoneController::class,'destroy']);
+
+// Shipping Origin Rates
+Route::post('/add_dbsc_rates',[ShippingRatesController::class,'store']);
+Route::get('/edit_dbsc_rates',[ShippingRatesController::class,'edit']);
+Route::post('/update_dbsc_rates',[ShippingRatesController::class,'update']);
+Route::post('/delete_dbsc_rates',[ShippingRatesController::class,'destroy']);
