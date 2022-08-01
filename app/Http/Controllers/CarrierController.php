@@ -181,6 +181,20 @@ class CarrierController extends Controller
                 $checked = $this->CheckedAllServices($installCarrier->id, $services,$request);
             }
 
+            $uspsSmall = 'usps-small';
+            if ($carrier->slug === $uspsSmall) {
+                $con = Connection::firstOrNew(['installed_carrier_id' => $installCarrier->id]);
+
+                $request['carrier_id'] = $installCarrier->id;
+                $request['carrierId'] = $installCarrier->id;
+                $request['testType'] = false;
+                $request['installed_carrier_id'] = $installCarrier->id;
+                $con->value = json_encode($request->all());
+                $con->installed_carrier_id = $installCarrier->id;
+
+                $con->save();
+            }
+
             return response()->json(['error' => false,
                 'data' => InstalledCarrier::find($installCarrier->id),
                 'services' => $checked ?? null,
