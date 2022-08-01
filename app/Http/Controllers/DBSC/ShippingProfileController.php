@@ -36,12 +36,12 @@ class ShippingProfileController extends Controller
      */
     public function store(Request $request)
     {
-        $nickname = DbscShippingProfile::where('nickname', '=', $request->nickname)->exists();
+        $nickname = DbscShippingProfile::where('p_nickname', '=', $request->nickname)->exists();
         if ($nickname) {
             return response()->json(['error' => true, 'message' => 'Shipping Profile already exits']);
         }
         $shipProfile = new DbscShippingProfile();
-        $shipProfile->nickname = $request->nickname;
+        $shipProfile->p_nickname = $request->nickname;
         $shipProfile->shpping_class = $request->shpping_class;
         $shipProfile->save();
         
@@ -54,9 +54,23 @@ class ShippingProfileController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show()
     {
-        //
+        //$shipProfile = DbscShippingProfile::all();
+        $shipProfile = DbscShippingProfile::join('dbsc_shipping_origin', 'dbsc_profiles.id', '=', 'dbsc_shipping_origin.profiles_id')
+            ->join('dbsc_shipping_zone','dbsc_shipping_origin.id', '=', 'dbsc_shipping_zone.dbsc_origin_id')
+            ->join('dbsc_shipping_rates','dbsc_shipping_zone.id', '=', 'dbsc_shipping_rates.dbsc_zone_id')
+            ->get();
+        if ($shipProfile === null) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'No Profile Found',
+            ], 404);
+        }
+        return response()->json(['error' => false,
+            'data' => $shipProfile,
+            'message' => 'Profile Info',
+        ], 200);
     }
 
     /**
@@ -105,7 +119,7 @@ class ShippingProfileController extends Controller
         $shipProfile = DbscShippingProfile::where('id', $request->id)->exists();
         if ($shipProfile) {
             $shipProfile = DbscShippingProfile::find($request->id);
-            $shipProfile->nickname = $request->nickname;
+            $shipProfile->p_nickname = $request->nickname;
             $shipProfile->shpping_class = $request->shpping_class;
             $shipProfile->update();
             return response()->json(['error' => false,
