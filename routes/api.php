@@ -255,6 +255,7 @@ Route::get('/get_shipping_class',[ShippingClassController::class,'show']);
 // Shipping Profile Route
 Route::post('/add_dbsc_profile',[ShippingProfileController::class,'store']);
 Route::get('/edit_dbsc_profile',[ShippingProfileController::class,'edit']);
+Route::get('/get_dbsc_profiles',[ShippingProfileController::class,'show']);
 Route::post('/update_dbsc_profile',[ShippingProfileController::class,'update']);
 Route::post('/delete_dbsc_profile',[ShippingProfileController::class,'destroy']);
 

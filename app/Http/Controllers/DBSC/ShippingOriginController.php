@@ -37,7 +37,7 @@ class ShippingOriginController extends Controller
     public function store(Request $request)
     {
         $shipOrigin = new DbscShippingOrigin();
-        $shipOrigin->nickname = $request->nickname;
+        $shipOrigin->ori_nickname = $request->nickname;
         $shipOrigin->street_address = $request->street_address;
         $shipOrigin->city = $request->city;
         $shipOrigin->state_or_province = $request->state_or_province;
@@ -107,7 +107,7 @@ class ShippingOriginController extends Controller
         $shipOrigin = DbscShippingOrigin::where('id', $request->id)->exists();
         if ($shipOrigin) {
             $shipOrigin = DbscShippingOrigin::find($request->id);
-            $shipOrigin->nickname = $request->nickname;
+            $shipOrigin->ori_nickname = $request->nickname;
             $shipOrigin->street_address = $request->street_address;
             $shipOrigin->city = $request->city;
             $shipOrigin->state_or_province = $request->state_or_province;

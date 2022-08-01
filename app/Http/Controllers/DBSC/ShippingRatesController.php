@@ -35,7 +35,27 @@ class ShippingRatesController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $shipRates = new DbscShippingRates();
+        $shipRates->display_as = $request->display_as;
+        $shipRates->distance_display_preferences = $request->distance_display_preferences;
+        $shipRates->description = $request->description;
+        $shipRates->rate = $request->rate;
+        $shipRates->distance_unit = $request->distance_unit;
+        $shipRates->distance_measured_by = $request->distance_measured_by;
+        $shipRates->minimum_distance = $request->minimum_distance;
+        $shipRates->maximum_distance = $request->maximum_distance;
+        $shipRates->calculate_operation = $request->calculate_operation;
+        $shipRates->minimum_length = $request->minimum_length;
+        $shipRates->maximum_length = $request->maximum_length;
+        $shipRates->distance_adjustment = $request->distance_adjustment;
+        $shipRates->rate_adjustment = $request->rate_adjustment;
+        $shipRates->minimum_shipping_quote = $request->minimum_shipping_quote;
+        $shipRates->maximum_shipping_quote = $request->maximum_shipping_quote;
+        $shipRates->rating_method = $request->rating_method;
+        $shipRates->dbsc_zone_id = $request->dbsc_zone_id;
+        $shipRates->save();
+        
+        return response()->json(['error' => false, 'message' => 'Shipping Rates Added Successfully ']);
     }
 
     /**
@@ -55,9 +75,26 @@ class ShippingRatesController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function edit($id)
+    public function edit(Request $request)
     {
-        //
+        if (empty($request->id)) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'No Rates Id',
+            ], 404);
+        }
+        $shipRates = DbscShippingRates::where('id', $request->id)
+            ->first();
+        if ($shipRates === null) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'No Rates Found Against This Id',
+            ], 404);
+        }
+        return response()->json(['error' => false,
+            'data' => $shipRates,
+            'message' => 'Rates Info',
+        ], 200);
     }
 
     /**
@@ -67,9 +104,45 @@ class ShippingRatesController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(Request $request)
     {
-        //
+        if (empty($request->id)) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'Rates Id Not Exists',
+            ], 404);
+        }
+        $shipRates = DbscShippingRates::where('id', $request->id)->exists();
+        if ($shipRates) {
+            $shipRates = DbscShippingRates::find($request->id);
+            $shipRates->display_as = $request->display_as;
+            $shipRates->distance_display_preferences = $request->distance_display_preferences;
+            $shipRates->description = $request->description;
+            $shipRates->rate = $request->rate;
+            $shipRates->distance_unit = $request->distance_unit;
+            $shipRates->distance_measured_by = $request->distance_measured_by;
+            $shipRates->minimum_distance = $request->minimum_distance;
+            $shipRates->maximum_distance = $request->maximum_distance;
+            $shipRates->calculate_operation = $request->calculate_operation;
+            $shipRates->minimum_length = $request->minimum_length;
+            $shipRates->maximum_length = $request->maximum_length;
+            $shipRates->distance_adjustment = $request->distance_adjustment;
+            $shipRates->rate_adjustment = $request->rate_adjustment;
+            $shipRates->minimum_shipping_quote = $request->minimum_shipping_quote;
+            $shipRates->maximum_shipping_quote = $request->maximum_shipping_quote;
+            $shipRates->rating_method = $request->rating_method;
+            $shipRates->dbsc_zone_id = $request->dbsc_zone_id;
+            $shipRates->update();
+            return response()->json(['error' => false,
+                'data' => [],
+                'message' => 'Rates Updated Successfully',
+            ], 200);
+        } else {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'No Rates exists against this Id',
+            ], 404);
+        }
     }
 
     /**
@@ -78,8 +151,23 @@ class ShippingRatesController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(Request $request)
     {
-        //
+        if (empty($request->id)) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'No Rates Id',
+            ], 404);
+        }
+
+        $shipRates = DbscShippingRates::find($request->id);
+        if($shipRates){
+            $shipRates->delete();
+            return response()->json(['error' => false,
+            'message' => "Rates deleted successfully",
+            'data' => $request->id]);
+        }
+        return response()->json(['error' => true,
+            'message' => "Rates not found"]);
     }
 }
