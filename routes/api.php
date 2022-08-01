@@ -31,6 +31,7 @@ use App\Http\Controllers\FDOController;
 
 use App\Http\Controllers\DBSC\ShippingClassController;
 use App\Http\Controllers\DBSC\ShippingProfileController;
+use App\Http\Controllers\DBSC\ShippingOriginController;
 
 /*
 |--------------------------------------------------------------------------
@@ -254,3 +255,11 @@ Route::post('/add_dbsc_profile',[ShippingProfileController::class,'store']);
 Route::get('/edit_dbsc_profile',[ShippingProfileController::class,'edit']);
 Route::post('/update_dbsc_profile',[ShippingProfileController::class,'update']);
 Route::post('/delete_dbsc_profile',[ShippingProfileController::class,'destroy']);
+
+// Shipping Origin Route
+Route::post('/add_dbsc_origin',[ShippingOriginController::class,'store']);
+Route::get('/edit_dbsc_origin',[ShippingOriginController::class,'edit']);
+Route::post('/update_dbsc_origin',[ShippingOriginController::class,'update']);
+Route::post('/delete_dbsc_origin',[ShippingOriginController::class,'destroy']);
+
+// Shipping Origin Zone
