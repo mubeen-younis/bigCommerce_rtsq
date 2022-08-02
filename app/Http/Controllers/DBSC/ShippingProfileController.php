@@ -45,7 +45,7 @@ class ShippingProfileController extends Controller
         $shipProfile->shpping_class = json_encode($request->shpping_class);
         $shipProfile->save();
         
-        return response()->json(['error' => false, 'message' => 'Shipping Profile created Successfully ']);
+        return response()->json(['error' => false, 'message' => 'Shipping Profile created Successfully', 'data' => $shipProfile]);
     }
 
     /**
@@ -123,7 +123,7 @@ class ShippingProfileController extends Controller
             $shipProfile->shpping_class = $request->shpping_class;
             $shipProfile->update();
             return response()->json(['error' => false,
-                'data' => [],
+                'data' => $shipProfile,
                 'message' => 'Profile Updated Successfully',
             ], 200);
         } else {

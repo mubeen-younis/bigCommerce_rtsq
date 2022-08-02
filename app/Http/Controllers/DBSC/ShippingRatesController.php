@@ -55,7 +55,7 @@ class ShippingRatesController extends Controller
         $shipRates->dbsc_zone_id = $request->dbsc_zone_id;
         $shipRates->save();
         
-        return response()->json(['error' => false, 'message' => 'Shipping Rates Added Successfully ']);
+        return response()->json(['error' => false, 'message' => 'Shipping Rates Added Successfully', 'data' => $shipRates]);
     }
 
     /**
@@ -134,7 +134,7 @@ class ShippingRatesController extends Controller
             $shipRates->dbsc_zone_id = $request->dbsc_zone_id;
             $shipRates->update();
             return response()->json(['error' => false,
-                'data' => [],
+                'data' => $shipRates,
                 'message' => 'Rates Updated Successfully',
             ], 200);
         } else {

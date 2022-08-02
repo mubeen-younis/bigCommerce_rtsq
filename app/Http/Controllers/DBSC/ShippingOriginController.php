@@ -47,7 +47,7 @@ class ShippingOriginController extends Controller
         $shipOrigin->from_shipping_origin = $request->from_shipping_origin;
         $shipOrigin->save();
         
-        return response()->json(['error' => false, 'message' => 'Shipping Origin created Successfully ']);
+        return response()->json(['error' => false, 'message' => 'Shipping Origin created Successfully', 'data' => $shipOrigin]);
     }
 
     /**
@@ -117,7 +117,7 @@ class ShippingOriginController extends Controller
             $shipOrigin->from_shipping_origin = $request->from_shipping_origin;
             $shipOrigin->update();
             return response()->json(['error' => false,
-                'data' => [],
+                'data' => $shipOrigin,
                 'message' => 'Origin Updated Successfully',
             ], 200);
         } else {

@@ -48,7 +48,7 @@ class ShippingZoneController extends Controller
         $shipZone->dbsc_origin_id = $request->dbsc_origin_id;
         $shipZone->save();
         
-        return response()->json(['error' => false, 'message' => 'Shipping Zone created Successfully ']);
+        return response()->json(['error' => false, 'message' => 'Shipping Zone created Successfully', 'data' => $shipZone]);
     }
 
     /**
@@ -114,7 +114,7 @@ class ShippingZoneController extends Controller
             $shipZone->postcode = $request->postcode;
             $shipZone->update();
             return response()->json(['error' => false,
-                'data' => [],
+                'data' => $shipZone,
                 'message' => 'Zone Updated Successfully',
             ], 200);
         } else {
