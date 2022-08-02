@@ -42,7 +42,7 @@ class ShippingProfileController extends Controller
         }
         $shipProfile = new DbscShippingProfile();
         $shipProfile->p_nickname = $request->nickname;
-        $shipProfile->shpping_class = $request->shpping_class;
+        $shipProfile->shpping_class = json_encode($request->shpping_class);
         $shipProfile->save();
         
         return response()->json(['error' => false, 'message' => 'Shipping Profile created Successfully ']);
