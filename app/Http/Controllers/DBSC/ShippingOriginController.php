@@ -56,9 +56,19 @@ class ShippingOriginController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show()
     {
-        //
+        $shipOrigin = DbscShippingOrigin::all();   
+        if ($shipOrigin === null) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'No Origin Found',
+            ], 404);
+        }
+        return response()->json(['error' => false,
+            'data' => $shipOrigin,
+            'message' => 'Origin Info',
+        ], 200);
     }
 
     /**

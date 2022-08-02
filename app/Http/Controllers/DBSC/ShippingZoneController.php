@@ -57,9 +57,19 @@ class ShippingZoneController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show()
     {
-        //
+        $shipZone = DbscShippingZone::all();   
+        if ($shipZone === null) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'No Zone Found',
+            ], 404);
+        }
+        return response()->json(['error' => false,
+            'data' => $shipZone,
+            'message' => 'Zone Info',
+        ], 200);
     }
 
     /**

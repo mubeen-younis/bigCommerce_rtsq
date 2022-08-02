@@ -64,9 +64,19 @@ class ShippingRatesController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show()
     {
-        //
+        $shipRates = DbscShippingRates::all();   
+        if ($shipRates === null) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'No Rates Found',
+            ], 404);
+        }
+        return response()->json(['error' => false,
+            'data' => $shipRates,
+            'message' => 'Rates Info',
+        ], 200);
     }
 
     /**

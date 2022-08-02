@@ -57,11 +57,7 @@ class ShippingProfileController extends Controller
      */
     public function show()
     {
-        //$shipProfile = DbscShippingProfile::all();
-        $shipProfile = DbscShippingProfile::join('dbsc_shipping_origin', 'dbsc_profiles.id', '=', 'dbsc_shipping_origin.profiles_id')
-            ->join('dbsc_shipping_zone','dbsc_shipping_origin.id', '=', 'dbsc_shipping_zone.dbsc_origin_id')
-            ->join('dbsc_shipping_rates','dbsc_shipping_zone.id', '=', 'dbsc_shipping_rates.dbsc_zone_id')
-            ->get();
+        $shipProfile = DbscShippingProfile::all();   
         if ($shipProfile === null) {
             return response()->json(['error' => true,
                 'data' => [],
