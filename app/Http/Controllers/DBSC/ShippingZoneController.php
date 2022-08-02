@@ -45,7 +45,7 @@ class ShippingZoneController extends Controller
         $shipZone->define_by_zone = $request->define_by_zone;
         $shipZone->selected_region = $request->selected_region;
         $shipZone->postcode = $request->postcode;
-        $shipZone->dbsc_origin_id = $request->dbsc_origin_id;
+        $shipZone->profile_id = $request->profile_id;
         $shipZone->save();
         
         return response()->json(['error' => false, 'message' => 'Shipping Zone created Successfully', 'data' => $shipZone]);

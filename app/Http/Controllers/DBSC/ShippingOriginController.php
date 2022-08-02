@@ -43,6 +43,7 @@ class ShippingOriginController extends Controller
         $shipOrigin->state_or_province = $request->state_or_province;
         $shipOrigin->postal_code = $request->postal_code;
         $shipOrigin->country = $request->country;
+        $shipOrigin->profile_id = $request->profile_id;
         $shipOrigin->availability_in_other_plugins = $request->availability_in_other_plugins;
         $shipOrigin->from_shipping_origin = $request->from_shipping_origin;
         $shipOrigin->save();
