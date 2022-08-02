@@ -80,17 +80,17 @@ class LtlSmallCompileQuotes
                         $quotesCarrier['ltl']['gtz']['simple'][] = $quote;
                     }
 
-                } else if (strpos($quote['code'], 'yrcltl') !== false) {
+                } else if (strpos($quote['code'], 'tqlltl') !== false) {
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
-                    $quote['isResi'] = isset($residential['yrcLtl']) && $residential['yrcLtl'] == 'Y';
-                    $quote['alwaysLG'] = isset($connectionSettings['yrc-ltl']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['yrc-ltl']['quote_settings']['alwaysLiftGateDelivery'];
+                    $quote['isResi'] = isset($residential['tqlLtl']) && $residential['tqlLtl'] == 'Y';
+                    $quote['alwaysLG'] = isset($connectionSettings['tql-ltl']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['tql-ltl']['quote_settings']['alwaysLiftGateDelivery'];
 
                     if (strpos($quote['code'], '+LG') !== false) {
-                        $quotesCarrier['ltl']['yrc']['LG'][] = $quote;
+                        $quotesCarrier['ltl']['tql']['LG'][] = $quote;
                     } else if (strpos($quote['code'], '+HAT') !== false) {
-                        $quotesCarrier['ltl']['yrc']['HAT'][] = $quote;
+                        $quotesCarrier['ltl']['tql']['HAT'][] = $quote;
                     } else {
-                        $quotesCarrier['ltl']['yrc']['simple'][] = $quote;
+                        $quotesCarrier['ltl']['tql']['simple'][] = $quote;
                     }
                 }  else if (strpos($quote['code'], 'cltl') !== false) {
                     $quote['alwaysResi'] = false;

@@ -207,6 +207,7 @@ class Shipping
         $isSaiaLtlCodeExist = gettype(array_search('saialtl', $finalCodesTemp)) == 'integer';
         $isAbfLtlCodeExist = gettype(array_search('abfltl', $finalCodesTemp)) == 'integer';
         $isSouthEasternLtlCodeExist = gettype(array_search('southeastltl', $finalCodesTemp)) == 'integer';
+        $isTqlLtlCodeExist = gettype(array_search('tqlltl', $finalCodesTemp)) == 'integer';
         $freightCode = '';
         $finalCost = 0;
 
@@ -219,7 +220,7 @@ class Shipping
         } else {
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
             //TODO : Need to Add LTL Carriers Here as well
-            if (!$isShippingOrFreight && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist || $isEstesLtlCodeExist || $isDayRossLtlCodeExist || $isOdflLtlCodeExist || $isSaiaLtlCodeExist || $isAbfLtlCodeExist || $isSouthEasternLtlCodeExist)) {
+            if (!$isShippingOrFreight && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist || $isEstesLtlCodeExist || $isDayRossLtlCodeExist || $isOdflLtlCodeExist || $isSaiaLtlCodeExist || $isAbfLtlCodeExist || $isSouthEasternLtlCodeExist || $isTqlLtlCodeExist)) {
                 $isShippingOrFreight = false;
             }
 

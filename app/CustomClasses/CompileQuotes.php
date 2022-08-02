@@ -1236,7 +1236,7 @@ class CompileQuotes
                                 $arraySorting['simple'][$key] = $price ?? [];
                                 $method = $this->quoteSettings['method'];
             
-                                $originQuotes[$key]['simple']['code'] = 'tqlltl' . $data['scac'] . $access;
+                                $originQuotes[$key]['simple']['code'] = 'tqlltl' . $access;
                                 $originQuotes[$key]['simple']['rate'] = $price;
                                 $originQuotes[$key]['simple']['title'] = $title;
                                 if ($lgQuotes) {
@@ -1244,7 +1244,7 @@ class CompileQuotes
                                     $lgPrice = $this->calculatePrice($data, true);
                                     $lgTitle = $this->getTitle($data['carrier'], true, false, $data['totalCalenderDaysInTransit'], [], $dateAndDays);
                                     $arraySorting['liftgate'][$key] = $lgPrice ?? [];
-                                    $originQuotes[$key]['liftgate']['code'] = $data['scac'] . $lgAccess;
+                                    $originQuotes[$key]['liftgate']['code'] = $lgAccess;
                                     $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
                                     $originQuotes[$key]['liftgate']['title'] = $lgTitle;
                                 }
