@@ -34,6 +34,9 @@ And much more…
 - Use the settings for order cut-off time, fulfillment days offset, and shipment days to adjust the shipping provider's estimated delivery date. For merchants shipping perishable items, use the Ground service transit time restriction settings to dynamically control when Ground service can be offered during checkout.
 
 ### Distance Base Shipping Calculator
+Using a shipping calculator to present shipping rates to your online shoppers is an excellent alternative when shipping costs aren’t available from your transportation providers in real-time. This provider retrieves the distance between your shipping origins and your customer and applies a rate per unit of distance (mile or kilometer) to calculate the shipping rate estimate. Online merchants who use the following modes of transportation to ship or price online orders will find this feature indispensable:
+
+
 
 [Key Points](#)
  - 03-08-2022 - There will be no meter to charge on distance check geocode API for DBSC in BigCommerce.
