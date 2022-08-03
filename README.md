@@ -40,4 +40,4 @@ Using a shipping calculator to present shipping rates to your online shoppers is
 
 [Key Points](#)
 
- - 03-08-2022 - There will be no meter to charge on distance check geocode API for DBSC in BigCommerce.
+ - 03-08-2022 : There will be no meter to charge on distance check geocode API for DBSC in BigCommerce.
