@@ -420,10 +420,10 @@ class GenerateRequestData
     public function tqlLtlEnitArr($connSettings, $destination)
     {
         return [
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'licenseKey' => '',
             'serverName' => "https://" . $this->storeData['store']['name'],
             'carrierMode' => 'pro',
-            'quotestType' => 'ltl', // ltl / small
+            'quotestType' => 'ltl', 
             'version' => '1.0.0',
             'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
             'returnQuotesOnExceedWeight' => '1',
