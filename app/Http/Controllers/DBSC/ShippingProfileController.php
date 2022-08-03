@@ -42,7 +42,7 @@ class ShippingProfileController extends Controller
         }
         $shipProfile = new DbscShippingProfile();
         $shipProfile->p_nickname = $request->nickname;
-        $shipProfile->shipping_classes = $request->shipping_classes;
+        $shipProfile->shipping_classes = json_encode($request->shipping_classes);
         $shipProfile->store_id = $request->store_id;
         $shipProfile->save();
         
