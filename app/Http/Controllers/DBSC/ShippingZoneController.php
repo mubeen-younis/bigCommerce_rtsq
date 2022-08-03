@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\DBSC;
 
+use App\CurlRequest;
+use App\CustomClasses\BigCommerceFunctions;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\DBSC\DbscShippingZone;
@@ -28,10 +30,25 @@ class ShippingZoneController extends Controller
         //
     }
 
+
+    /**
+     * Gets Zones of store from BigCommerce
+     * @return void
+     */
+    public function getZonesOfStore(Request $request)
+    {
+        $storeHash = $request->store_hash;
+        $storeDetails = BigCommerceFunctions::getZonesOfStore($storeHash);
+        $storeDetails = (new CurlRequest())->enSingleCurlRequest($storeDetails['endpoint'],
+            $storeDetails['request'], $storeDetails['headers'], $storeDetails['method'], false);
+        $response = json_decode($storeDetails['response'], true);
+        dd(123, $response);
+    }
+
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
@@ -47,19 +64,19 @@ class ShippingZoneController extends Controller
         $shipZone->postcode = $request->postcode;
         $shipZone->profile_id = $request->profile_id;
         $shipZone->save();
-        
+
         return response()->json(['error' => false, 'message' => 'Shipping Zone created Successfully', 'data' => $shipZone]);
     }
 
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\Response
      */
     public function show()
     {
-        $shipZone = DbscShippingZone::all();   
+        $shipZone = DbscShippingZone::all();
         if ($shipZone === null) {
             return response()->json(['error' => true,
                 'data' => [],
@@ -75,7 +92,7 @@ class ShippingZoneController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\Response
      */
     public function edit(Request $request)
@@ -103,8 +120,8 @@ class ShippingZoneController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request)
@@ -138,7 +155,7 @@ class ShippingZoneController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\Response
      */
     public function destroy(Request $request)
@@ -151,11 +168,11 @@ class ShippingZoneController extends Controller
         }
 
         $shipZone = DbscShippingZone::find($request->id);
-        if($shipZone){
+        if ($shipZone) {
             $shipZone->delete();
             return response()->json(['error' => false,
-            'message' => "Zone deleted successfully",
-            'data' => $request->id]);
+                'message' => "Zone deleted successfully",
+                'data' => $request->id]);
         }
         return response()->json(['error' => true,
             'message' => "Zone not found"]);

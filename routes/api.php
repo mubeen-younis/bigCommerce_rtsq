@@ -224,6 +224,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/delete_dbsc_origin',[ShippingOriginController::class,'destroy']);
 
     // Shipping Origin Zone
+    Route::get('/get_zones_bc',[ShippingZoneController::class,'getZonesOfStore']);
     Route::post('/add_dbsc_zone',[ShippingZoneController::class,'store']);
     Route::get('/edit_dbsc_zone',[ShippingZoneController::class,'edit']);
     Route::get('/get_dbsc_zones',[ShippingZoneController::class,'show']);

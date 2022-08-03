@@ -7,24 +7,32 @@ use App\Models\Store;
 class BigCommerceFunctions
 {
     public static $version = "v2";
+    public static $initalUrl = "https://api.bigcommerce.com/stores/";
 
     public static function getStoreSettings($storeHash): array
     {
-        $endPoint = "https://api.bigcommerce.com/stores/" . $storeHash . "/" . self::$version . "/store";
+        $endPoint = self::$initalUrl . $storeHash . "/" . self::$version . "/store";
         return self::getRequestArray($endPoint, [], 'GET', $storeHash);
     }
 
     public static function getWebhooksOfStore($storeHash)
     {
-        $endPoint = "https://api.bigcommerce.com/stores/" . $storeHash . "/" . self::$version . "/hooks";
+        $endPoint = self::$initalUrl . $storeHash . "/" . self::$version . "/hooks";
         return self::getRequestArray($endPoint, [], 'GET', $storeHash);
 
     }
 
     public static function getUpdateWebhookDetail($storeHash, $id)
     {
-        $endPoint = "https://api.bigcommerce.com/stores/" . $storeHash . "/" . self::$version . "/hooks/" . $id;
+        $endPoint = self::$initalUrl . $storeHash . "/" . self::$version . "/hooks/" . $id;
         return self::getRequestArray($endPoint, json_encode(['is_active' => true]), 'PUT', $storeHash);
+
+    }
+
+    public static function getZonesOfStore($storeHash)
+    {
+        $endPoint = self::$initalUrl . $storeHash . "/" . self::$version . "/shipping/zones";
+        return self::getRequestArray($endPoint, [], 'GET', $storeHash);
 
     }
 
