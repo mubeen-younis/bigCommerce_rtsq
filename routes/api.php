@@ -31,6 +31,9 @@ use App\Http\Controllers\FDOController;
 
 use App\Http\Controllers\DBSC\ShippingClassController;
 use App\Http\Controllers\DBSC\ShippingProfileController;
+use App\Http\Controllers\DBSC\ShippingOriginController;
+use App\Http\Controllers\DBSC\ShippingZoneController;
+use App\Http\Controllers\DBSC\ShippingRatesController;
 
 /*
 |--------------------------------------------------------------------------
@@ -201,6 +204,39 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/updatemultiplepackages', [BoxSizeController::class, 'updateMultiplePackagingBox']);
     Route::post('/deletemultiplepackages', [BoxSizeController::class, 'deleteMultiplePackagingBox']);
 
+    // DBSC carrier
+    // Shipping class Route
+    Route::post('/add_shipping_class',[ShippingClassController::class,'store']);
+    Route::get('/get_shipping_classes',[ShippingClassController::class,'show']);
+
+    // Shipping Profile     Route
+    Route::post('/add_dbsc_profile',[ShippingProfileController::class,'store']);
+    Route::get('/edit_dbsc_profile',[ShippingProfileController::class,'edit']);
+    Route::get('/get_dbsc_profiles',[ShippingProfileController::class,'show']);
+    Route::post('/update_dbsc_profile',[ShippingProfileController::class,'update']);
+    Route::post('/delete_dbsc_profile',[ShippingProfileController::class,'destroy']);
+
+    // Shipping Origin  Route
+    Route::post('/add_dbsc_origin',[ShippingOriginController::class,'store']);
+    Route::get('/edit_dbsc_origin',[ShippingOriginController::class,'edit']);
+    Route::get('/get_dbsc_origins',[ShippingOriginController::class,'show']);
+    Route::post('/update_dbsc_origin',[ShippingOriginController::class,'update']);
+    Route::post('/delete_dbsc_origin',[ShippingOriginController::class,'destroy']);
+
+    // Shipping Origin Zone
+    Route::post('/add_dbsc_zone',[ShippingZoneController::class,'store']);
+    Route::get('/edit_dbsc_zone',[ShippingZoneController::class,'edit']);
+    Route::get('/get_dbsc_zones',[ShippingZoneController::class,'show']);
+    Route::post('/update_dbsc_zone',[ShippingZoneController::class,'update']);
+    Route::post('/delete_dbsc_zone',[ShippingZoneController::class,'destroy']);
+
+    // Shipping Origin Rates
+    Route::post('/add_dbsc_rates',[ShippingRatesController::class,'store']);
+    Route::get('/edit_dbsc_rates',[ShippingRatesController::class,'edit']);
+    Route::get('/get_dbsc_rates',[ShippingRatesController::class,'show']);
+    Route::post('/update_dbsc_rates',[ShippingRatesController::class,'update']);
+    Route::post('/delete_dbsc_rates',[ShippingRatesController::class,'destroy']);
+
 });
 //Webhook
 Route::post('/bc-subscription-update', [SubscriptionController::class, 'paymentByStripeWebHook']);
@@ -244,13 +280,4 @@ Route::get('/test_bin', [App\CustomClasses\Bin3D\Bin3D::class, 'getBinResponse']
 Route::get('/api_logs', [App\Http\Controllers\LogToDbController::class, 'index']);
 Route::get('/truncate_logs', [App\Http\Controllers\LogToDbController::class, 'truncateLogs']);
 
-// DBSC carrier
-// Shipping class Route
-Route::post('/add_shipping_class',[ShippingClassController::class,'store']);
-Route::get('/get_shipping_class',[ShippingClassController::class,'show']);
 
-// Shipping Profile Route
-Route::post('/add_dbsc_profile',[ShippingProfileController::class,'store']);
-Route::get('/edit_dbsc_profile',[ShippingProfileController::class,'edit']);
-Route::post('/update_dbsc_profile',[ShippingProfileController::class,'update']);
-Route::post('/delete_dbsc_profile',[ShippingProfileController::class,'destroy']);

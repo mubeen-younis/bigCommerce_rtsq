@@ -46,7 +46,7 @@ class ShippingClassController extends Controller
         $shipClass->description = $request->description;
         $shipClass->save();
         
-        return response()->json(['error' => false, 'message' => 'Shipping class added Successfully ']);
+        return response()->json(['error' => false, 'message' => 'Shipping class added Successfully', 'data' => $shipClass]);
     }
 
     /**

@@ -4,9 +4,9 @@ namespace App\Http\Controllers\DBSC;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\DBSC\DbscShippingProfile;
+use App\Models\DBSC\DbscShippingOrigin;
 
-class ShippingProfileController extends Controller
+class ShippingOriginController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -36,17 +36,19 @@ class ShippingProfileController extends Controller
      */
     public function store(Request $request)
     {
-        $nickname = DbscShippingProfile::where('p_nickname', '=', $request->nickname)->exists();
-        if ($nickname) {
-            return response()->json(['error' => true, 'message' => 'Shipping Profile already exits']);
-        }
-        $shipProfile = new DbscShippingProfile();
-        $shipProfile->p_nickname = $request->nickname;
-        $shipProfile->shipping_classes = $request->shipping_classes;
-        $shipProfile->store_id = $request->store_id;
-        $shipProfile->save();
+        $shipOrigin = new DbscShippingOrigin();
+        $shipOrigin->ori_nickname = $request->nickname;
+        $shipOrigin->street_address = $request->street_address;
+        $shipOrigin->city = $request->city;
+        $shipOrigin->state_or_province = $request->state_or_province;
+        $shipOrigin->postal_code = $request->postal_code;
+        $shipOrigin->country = $request->country;
+        $shipOrigin->profile_id = $request->profile_id;
+        $shipOrigin->availability_in_other_plugins = $request->availability_in_other_plugins;
+        $shipOrigin->from_shipping_origin = $request->from_shipping_origin;
+        $shipOrigin->save();
         
-        return response()->json(['error' => false, 'message' => 'Shipping Profile created Successfully', 'data' => $shipProfile]);
+        return response()->json(['error' => false, 'message' => 'Shipping Origin created Successfully', 'data' => $shipOrigin]);
     }
 
     /**
@@ -57,16 +59,16 @@ class ShippingProfileController extends Controller
      */
     public function show()
     {
-        $shipProfile = DbscShippingProfile::all();   
-        if ($shipProfile === null) {
+        $shipOrigin = DbscShippingOrigin::all();   
+        if ($shipOrigin === null) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'No Profile Found',
+                'message' => 'No Origin Found',
             ], 404);
         }
         return response()->json(['error' => false,
-            'data' => $shipProfile,
-            'message' => 'Profile Info',
+            'data' => $shipOrigin,
+            'message' => 'Origin Info',
         ], 200);
     }
 
@@ -81,20 +83,20 @@ class ShippingProfileController extends Controller
         if (empty($request->id)) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'No Profile Id',
+                'message' => 'No Origin Id',
             ], 404);
         }
-        $shipProfile = DbscShippingProfile::where('id', $request->id)
+        $shipOrigin = DbscShippingOrigin::where('id', $request->id)
             ->first();
-        if ($shipProfile === null) {
+        if ($shipOrigin === null) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'No Profile Found Against This Id',
+                'message' => 'No Origin Found Against This Id',
             ], 404);
         }
         return response()->json(['error' => false,
-            'data' => $shipProfile,
-            'message' => 'Profile Info',
+            'data' => $shipOrigin,
+            'message' => 'Origin Info',
         ], 200);
     }
 
@@ -110,23 +112,29 @@ class ShippingProfileController extends Controller
         if (empty($request->id)) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'Profile Id Not Exists',
+                'message' => 'No Origin Id',
             ], 404);
         }
-        $shipProfile = DbscShippingProfile::where('id', $request->id)->exists();
-        if ($shipProfile) {
-            $shipProfile = DbscShippingProfile::find($request->id);
-            $shipProfile->p_nickname = $request->nickname;
-            $shipProfile->shpping_class = $request->shpping_class;
-            $shipProfile->update();
+        $shipOrigin = DbscShippingOrigin::where('id', $request->id)->exists();
+        if ($shipOrigin) {
+            $shipOrigin = DbscShippingOrigin::find($request->id);
+            $shipOrigin->ori_nickname = $request->nickname;
+            $shipOrigin->street_address = $request->street_address;
+            $shipOrigin->city = $request->city;
+            $shipOrigin->state_or_province = $request->state_or_province;
+            $shipOrigin->postal_code = $request->postal_code;
+            $shipOrigin->country = $request->country;
+            $shipOrigin->availability_in_other_plugins = $request->availability_in_other_plugins;
+            $shipOrigin->from_shipping_origin = $request->from_shipping_origin;
+            $shipOrigin->update();
             return response()->json(['error' => false,
-                'data' => $shipProfile,
-                'message' => 'Profile Updated Successfully',
+                'data' => $shipOrigin,
+                'message' => 'Origin Updated Successfully',
             ], 200);
         } else {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'No Profile exists against this Id',
+                'message' => 'No Origin exists against this Id',
             ], 404);
         }
     }
@@ -142,18 +150,18 @@ class ShippingProfileController extends Controller
         if (empty($request->id)) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'No Profile Id',
+                'message' => 'No Origin Id',
             ], 404);
         }
-
-        $shipProfile = DbscShippingProfile::find($request->id);
-        if($shipProfile){
-            $shipProfile->delete();
+        $shipOrigin = DbscShippingOrigin::find($request->id);
+        
+        if($shipOrigin){
+            $shipOrigin->delete();
             return response()->json(['error' => false,
-            'message' => "Profile deleted successfully",
+            'message' => "Origin deleted successfully",
             'data' => $request->id]);
         }
         return response()->json(['error' => true,
-            'message' => "Profile not found"]);
+            'message' => "Origin not found"]);
     }
 }

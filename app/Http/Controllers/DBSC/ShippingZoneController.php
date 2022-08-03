@@ -4,9 +4,9 @@ namespace App\Http\Controllers\DBSC;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\DBSC\DbscShippingProfile;
+use App\Models\DBSC\DbscShippingZone;
 
-class ShippingProfileController extends Controller
+class ShippingZoneController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -36,17 +36,19 @@ class ShippingProfileController extends Controller
      */
     public function store(Request $request)
     {
-        $nickname = DbscShippingProfile::where('p_nickname', '=', $request->nickname)->exists();
-        if ($nickname) {
-            return response()->json(['error' => true, 'message' => 'Shipping Profile already exits']);
+        $selected_region = DbscShippingZone::where('selected_region', '=', $request->selected_region)->exists();
+        if ($selected_region) {
+            return response()->json(['error' => true, 'message' => 'Shipping Zone already exits']);
         }
-        $shipProfile = new DbscShippingProfile();
-        $shipProfile->p_nickname = $request->nickname;
-        $shipProfile->shipping_classes = $request->shipping_classes;
-        $shipProfile->store_id = $request->store_id;
-        $shipProfile->save();
+        $shipZone = new DbscShippingZone();
+        $shipZone->zone_name = $request->zone_name;
+        $shipZone->define_by_zone = $request->define_by_zone;
+        $shipZone->selected_region = $request->selected_region;
+        $shipZone->postcode = $request->postcode;
+        $shipZone->profile_id = $request->profile_id;
+        $shipZone->save();
         
-        return response()->json(['error' => false, 'message' => 'Shipping Profile created Successfully', 'data' => $shipProfile]);
+        return response()->json(['error' => false, 'message' => 'Shipping Zone created Successfully', 'data' => $shipZone]);
     }
 
     /**
@@ -57,16 +59,16 @@ class ShippingProfileController extends Controller
      */
     public function show()
     {
-        $shipProfile = DbscShippingProfile::all();   
-        if ($shipProfile === null) {
+        $shipZone = DbscShippingZone::all();   
+        if ($shipZone === null) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'No Profile Found',
+                'message' => 'No Zone Found',
             ], 404);
         }
         return response()->json(['error' => false,
-            'data' => $shipProfile,
-            'message' => 'Profile Info',
+            'data' => $shipZone,
+            'message' => 'Zone Info',
         ], 200);
     }
 
@@ -81,20 +83,20 @@ class ShippingProfileController extends Controller
         if (empty($request->id)) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'No Profile Id',
+                'message' => 'No Zone Id',
             ], 404);
         }
-        $shipProfile = DbscShippingProfile::where('id', $request->id)
+        $shipZone = DbscShippingZone::where('id', $request->id)
             ->first();
-        if ($shipProfile === null) {
+        if ($shipZone === null) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'No Profile Found Against This Id',
+                'message' => 'No Zone Found Against This Id',
             ], 404);
         }
         return response()->json(['error' => false,
-            'data' => $shipProfile,
-            'message' => 'Profile Info',
+            'data' => $shipZone,
+            'message' => 'Zone Info',
         ], 200);
     }
 
@@ -110,23 +112,25 @@ class ShippingProfileController extends Controller
         if (empty($request->id)) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'Profile Id Not Exists',
+                'message' => 'Zone Id Not Exists',
             ], 404);
         }
-        $shipProfile = DbscShippingProfile::where('id', $request->id)->exists();
-        if ($shipProfile) {
-            $shipProfile = DbscShippingProfile::find($request->id);
-            $shipProfile->p_nickname = $request->nickname;
-            $shipProfile->shpping_class = $request->shpping_class;
-            $shipProfile->update();
+        $shipZone = DbscShippingZone::where('id', $request->id)->exists();
+        if ($shipZone) {
+            $shipZone = DbscShippingZone::find($request->id);
+            $shipZone->zone_name = $request->zone_name;
+            $shipZone->define_by_zone = $request->define_by_zone;
+            $shipZone->selected_region = $request->selected_region;
+            $shipZone->postcode = $request->postcode;
+            $shipZone->update();
             return response()->json(['error' => false,
-                'data' => $shipProfile,
-                'message' => 'Profile Updated Successfully',
+                'data' => $shipZone,
+                'message' => 'Zone Updated Successfully',
             ], 200);
         } else {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'No Profile exists against this Id',
+                'message' => 'No Zone exists against this Id',
             ], 404);
         }
     }
@@ -142,18 +146,18 @@ class ShippingProfileController extends Controller
         if (empty($request->id)) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'No Profile Id',
+                'message' => 'No Zone Id',
             ], 404);
         }
 
-        $shipProfile = DbscShippingProfile::find($request->id);
-        if($shipProfile){
-            $shipProfile->delete();
+        $shipZone = DbscShippingZone::find($request->id);
+        if($shipZone){
+            $shipZone->delete();
             return response()->json(['error' => false,
-            'message' => "Profile deleted successfully",
+            'message' => "Zone deleted successfully",
             'data' => $request->id]);
         }
         return response()->json(['error' => true,
-            'message' => "Profile not found"]);
+            'message' => "Zone not found"]);
     }
 }
