@@ -11,19 +11,15 @@ class LtlSmallCompileQuotes
 {
     public function compileQuotes($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr)
     {
-        //print_r($connectionSettings); exit;
         $quoteSettings = $connectionSettings['ltl-quotes']['quote_settings'] ?? [];
         $lgQuotesAlways =
             (isset($quoteSettings['alwaysLiftGateDelivery']) && $quoteSettings['alwaysLiftGateDelivery']);
 
         $parcel = $ltl = $ltlLG = $upsLtlLG = $upsLtl = $ownArrangement = [];
         $quotesCarrier = [];
-        //print_r($quotes); exit;
+
         foreach ($quotes as $quote) {
             if (!empty($quote) && $quote['code'] !== 'own_arrangement' && $quote['code'] !== 'freernlltl') {
-                /*if(strpos($quote['code'], 'parcel_12ups') !== false){
-                    $quotesCarrier['parcel']['simple'][] = $quote;
-                }else */
                 if (strpos($quote['code'], 'parcel_12') !== false) {
                     if (strpos($quote['code'], 'parcel_12ups') !== false) {
                         $alwaysResi = (isset($requestArr['carriers']['upsSmall']['api']['ups_small_pkg_resid_delivery']) && $requestArr['carriers']['upsSmall']['api']['ups_small_pkg_resid_delivery'] == 'yes');
@@ -250,7 +246,6 @@ class LtlSmallCompileQuotes
         }
         $isLG = count($ltlLG) > 0;
         $parcel = $quotesCarrierNew['parcel'][0] ?? [];
-        //print_r($quotesCarrierNew['ltl']); exit;
         
         if(isset($quotesCarrierNew) && empty($quotesCarrierNew['ltl'])){
             return [];
@@ -307,7 +302,6 @@ class LtlSmallCompileQuotes
 
     private function createOrderWidget($quotesDetail, $indexes)
     {
-        //print_r($quotesDetail); exit;
         $parcel = $quotesDetail['parcel'][0] ?? [];
         $multiShipments = [];
         $count = 0;
