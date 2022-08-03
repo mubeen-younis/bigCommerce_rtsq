@@ -1,61 +1,39 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
+## About Real-Time Shipping Quotes
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Supported LTL freight providers: CH Robinson, Day & Ross, Estes Express, Fedex Freight, FreightQuote, GlobalTranz, Old Dominion Freight Lines (ODFL), R+L Carriers, TForce, Worldwide Express, XPO Logistics, YRC Freight.
 
-## About Laravel
+Supported parcel providers: Fedex, Unishippers, UPS, Worldwide Express.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Retrieve your negotiated shipping rates real-time and offer them during checkout so that your cost for shipping is captured on orders.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- Connect to LTL freight and parcel providers so that both types of shipping can be offered to online shoppers as appropriate.
+- Check our website for a list of supported shipping providers.
+Expand your product catalog to include items that are too large for the parcel delivery network and must ship LTL freight while still allowing for 24/7 checkout.
+- No more "call for a freight quote"!
+Define multiple warehouses and/or drop ship locations so the correct origin is used to retrieve shipping quotes, which reduces Cart abandonment by keeping shipping estimates low and accurate.
+- Automatically detect the ship-to address type so that residential delivery fees are dynamically included in shipping quotes to residential addresses without over charging for shipments to commercial addresses.
+- Options for lift gate delivery service (an LTL freight service) provide flexibility on how lift gate delivery will be presented to online shoppers.
+- Get hyper-accurate parcel quotes by using the app's Standard Box Sizes packaging algorithm, even when the parcel carrier will bill you based on the dimensional weight of the shipment.
+And much more…
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
-## Learning Laravel
+### App Features
+- Enable 24/7 checkout for orders that will ship LTL freight
+- Connect your LTL freight providers and parcel providers and enable 24/7 checkout on any order regardless of how the order will ship. No more "Call for a quote"!
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- Multiple stocking locations
+- Define multiple warehouses and/or drop ship locations so the correct origin is used to retrieve shipping quotes, which reduces Cart abandonment by keeping shipping estimates low and accurate.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 1500 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- Residential Address Detection
+- Automatically detect the ship-to address type so that residential delivery fees are dynamically included in shipping quotes to residential addresses without over charging your customers shipping to commercial addresses.
 
-## Laravel Sponsors
+- Dimensionally accurate quotes for parcel services
+- Get hyper-accurate parcel quotes by using the app's Standard Box Sizes packaging algorithm, even when the parcel carrier will bill you based on the dimensional weight of the shipment. The packaging solution is shared with you in a step-by-step graphical illustration so you can ship the order exactly how it was quoted.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+- Provide accurate shipment delivery estimates
+- Use the settings for order cut-off time, fulfillment days offset, and shipment days to adjust the shipping provider's estimated delivery date. For merchants shipping perishable items, use the Ground service transit time restriction settings to dynamically control when Ground service can be offered during checkout.
 
-### Premium Partners
+### Distance Base Shipping Calculator
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[OP.GG](https://op.gg)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+[Key Points](#)
+ - 03-08-2022 - There will be no meter to charge on distance check geocode API for DBSC in BigCommerce.
