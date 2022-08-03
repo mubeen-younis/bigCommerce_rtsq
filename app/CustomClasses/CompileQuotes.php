@@ -789,7 +789,7 @@ class CompileQuotes
                     if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
                         $quotesRes = array_merge($quotesRes, $resp);
                     }
-                    break; 
+                    break;
                 case 'southeastern':
                     $resp = $this->compileSouthEasternQuotes($shipment, $connectionSettings, $allOrigins, $residential);
                     $quotesTemp['southeastern'] = $resp;
@@ -995,6 +995,7 @@ class CompileQuotes
         }
         return $this->arrangeOwnFreight($allQuotes);
     }
+
 // For ODFL LTL Quotes
     public function compileOdflLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
@@ -1150,7 +1151,7 @@ class CompileQuotes
             if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
-       
+
             if ($count == 0) { //To be checked only once
                 $isRad = $quote['autoResidentialsStatus'] ?? '';
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
@@ -1168,93 +1169,93 @@ class CompileQuotes
             $originQuotes = [];
             $arraySorting = [];
 
-                $standardQuotes = collect($quote['q'])->filter(function($q){
-                    return isset($q["serviceLevel"]) && $q["serviceLevel"] == 'Standard';
-                    })->toArray() ?? [];
+            $standardQuotes = collect($quote['q'])->filter(function ($q) {
+                return isset($q["serviceLevel"]) && $q["serviceLevel"] == 'Standard';
+            })->toArray() ?? [];
 
-                $guaranteedQuotes = collect($quote['q'])->filter(function($q){
-                    return isset($q["serviceLevel"]) && ($q["serviceLevel"] == 'Guaranteed 5 PM' || $q["serviceLevel"] == 'Guaranteed 12 PM');
-                    })->toArray() ?? [];
+            $guaranteedQuotes = collect($quote['q'])->filter(function ($q) {
+                return isset($q["serviceLevel"]) && ($q["serviceLevel"] == 'Guaranteed 5 PM' || $q["serviceLevel"] == 'Guaranteed 12 PM');
+            })->toArray() ?? [];
 
-                    if($isStandardChecked && !$isGuaranteedChecked){
-                        $quote['q'] = $standardQuotes;
-                    }elseif(!$isStandardChecked && $isGuaranteedChecked){
-                        $quote['q'] = $guaranteedQuotes;
-                    }elseif($isStandardChecked && $isGuaranteedChecked){
-                        if($ratingMethod == 1 || $ratingMethod == 2 || $ratingMethod == 3){
-                            $quote['q'] = $quote['q'];
-                        }elseif($ratingMethod == 4){
-                            $quotes['q'] = $standardQuotes;
-                            $standard[] = $this->getCheapestQuotesArr($quotes);
-                            $quotes['q'] = $guaranteedQuotes;
-                            $guaranteed[] = $this->getCheapestQuotesArr($quotes);
-                            $bothService = array_merge($standard,$guaranteed);
-                            $quote['q'] = $bothService;
+            if ($isStandardChecked && !$isGuaranteedChecked) {
+                $quote['q'] = $standardQuotes;
+            } elseif (!$isStandardChecked && $isGuaranteedChecked) {
+                $quote['q'] = $guaranteedQuotes;
+            } elseif ($isStandardChecked && $isGuaranteedChecked) {
+                if ($ratingMethod == 1 || $ratingMethod == 2 || $ratingMethod == 3) {
+                    $quote['q'] = $quote['q'];
+                } elseif ($ratingMethod == 4) {
+                    $quotes['q'] = $standardQuotes;
+                    $standard[] = $this->getCheapestQuotesArr($quotes);
+                    $quotes['q'] = $guaranteedQuotes;
+                    $guaranteed[] = $this->getCheapestQuotesArr($quotes);
+                    $bothService = array_merge($standard, $guaranteed);
+                    $quote['q'] = $bothService;
 
-                        }elseif($ratingMethod == 5){
-                            $options = (int)$this->quoteSettings['number_of_options'];
-                            $standardSort = collect($standardQuotes)->sortBy('customerRate')->toArray();
-                            $standardSliced = array_slice($standardSort, 0, $options, true);
-                            $guaranteedSort = collect($guaranteedQuotes)->sortBy('customerRate')->toArray();
-                            $guaranteedSliced = array_slice($guaranteedSort, 0, $options, true);
-                            $bothService = array_merge($standardSliced,$guaranteedSliced);
-                            $quote['q'] = $bothService;
+                } elseif ($ratingMethod == 5) {
+                    $options = (int)$this->quoteSettings['number_of_options'];
+                    $standardSort = collect($standardQuotes)->sortBy('customerRate')->toArray();
+                    $standardSliced = array_slice($standardSort, 0, $options, true);
+                    $guaranteedSort = collect($guaranteedQuotes)->sortBy('customerRate')->toArray();
+                    $guaranteedSliced = array_slice($guaranteedSort, 0, $options, true);
+                    $bothService = array_merge($standardSliced, $guaranteedSliced);
+                    $quote['q'] = $bothService;
 
-                        }elseif($ratingMethod == 6){
-                            $options = (int)$this->quoteSettings['number_of_options'];
-                            $standardSort = collect($standardQuotes)->sortBy('customerRate')->toArray();
-                            $standardPrice = $this->averageRattingMethodTQL($standardSort, $options, $lgQuotes);
-                            $guaranteedSort = collect($guaranteedQuotes)->sortBy('customerRate')->toArray();
-                            $guaranteedPrice = $this->averageRattingMethodTQL($guaranteedSort, $options, $lgQuotes);
-                            $quote['q'] = $originQuotes = array_merge($standardPrice,$guaranteedPrice);
-                        }
-                    }
+                } elseif ($ratingMethod == 6) {
+                    $options = (int)$this->quoteSettings['number_of_options'];
+                    $standardSort = collect($standardQuotes)->sortBy('customerRate')->toArray();
+                    $standardPrice = $this->averageRattingMethodTQL($standardSort, $options, $lgQuotes);
+                    $guaranteedSort = collect($guaranteedQuotes)->sortBy('customerRate')->toArray();
+                    $guaranteedPrice = $this->averageRattingMethodTQL($guaranteedSort, $options, $lgQuotes);
+                    $quote['q'] = $originQuotes = array_merge($standardPrice, $guaranteedPrice);
+                }
+            }
 
 
-                    if (isset($quote['q'])) {
-                        foreach ($quote['q'] as $key => $data) {
-                            if (isset($data['scac']) && in_array($data['scac'], $allConfigServices)) {  
-                                $access = $this->getAccessorialCode() . $resiPickup;
-                                $data['totalNetCharge']['Amount'] = $data['customerRate'] ?? 0;
-                                foreach ($data['priceCharges'] as $index => $value){
-                                    if($value['description'] == "Lift Gate"){
-                                        $data['surcharges']['liftgateFee'] = $value['amount'] ?? 0;
-                                    }
-                                    if($value['description'] == "Residential"){
-                                        $data['surcharges']['residentialFee'] = $value['amount'] ?? 0;
-                                    }
-                                    if (isset($value['description'])) {
-                                        $hazShipmentArr[$origin] = $value['description'] == "Hazardous Materials" ? 'Y' : 'N';
-                                    }
-                                }
-                                $price = $this->calculatePrice($data);
-
-                                $date = $data['deliveryTimestamp'] ?? null;
-                                $days = $data['totalCalenderDaysInTransit'] ?? null;
-                                $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
-                                $title = $this->getTitle($data['carrier'], false, false, $data['totalCalenderDaysInTransit'], [], $dateAndDays);
-                                $arraySorting['simple'][$key] = $price ?? [];
-                                $method = $this->quoteSettings['method'];
-            
-                                $originQuotes[$key]['simple']['code'] = 'tqlltl' . $access;
-                                $originQuotes[$key]['simple']['rate'] = $price;
-                                $originQuotes[$key]['simple']['title'] = $title;
-                                if ($lgQuotes) {
-                                    $lgAccess = 'tqlltl' . $this->getAccessorialCode(true) . $resiPickup;
-                                    $lgPrice = $this->calculatePrice($data, true);
-                                    $lgTitle = $this->getTitle($data['carrier'], true, false, $data['totalCalenderDaysInTransit'], [], $dateAndDays);
-                                    $arraySorting['liftgate'][$key] = $lgPrice ?? [];
-                                    $originQuotes[$key]['liftgate']['code'] = $lgAccess;
-                                    $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
-                                    $originQuotes[$key]['liftgate']['title'] = $lgTitle;
-                                }
+            if (isset($quote['q'])) {
+                foreach ($quote['q'] as $key => $data) {
+                    if (isset($data['scac']) && in_array($data['scac'], $allConfigServices)) {
+                        $access = $this->getAccessorialCode() . $resiPickup;
+                        $data['totalNetCharge']['Amount'] = $data['customerRate'] ?? 0;
+                        foreach ($data['priceCharges'] as $index => $value) {
+                            if ($value['description'] == "Lift Gate") {
+                                $data['surcharges']['liftgateFee'] = $value['amount'] ?? 0;
                             }
-                           
+                            if ($value['description'] == "Residential") {
+                                $data['surcharges']['residentialFee'] = $value['amount'] ?? 0;
+                            }
+                            if (isset($value['description'])) {
+                                $hazShipmentArr[$origin] = $value['description'] == "Hazardous Materials" ? 'Y' : 'N';
+                            }
+                        }
+                        $price = $this->calculatePrice($data);
+
+                        $date = $data['deliveryTimestamp'] ?? null;
+                        $days = $data['totalCalenderDaysInTransit'] ?? null;
+                        $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
+                        $title = $this->getTitle($data['carrier'], false, false, $data['totalCalenderDaysInTransit'], [], $dateAndDays);
+                        $arraySorting['simple'][$key] = $price ?? [];
+                        $method = $this->quoteSettings['method'];
+
+                        $originQuotes[$key]['simple']['code'] = 'tqlltl' . $access;
+                        $originQuotes[$key]['simple']['rate'] = $price;
+                        $originQuotes[$key]['simple']['title'] = $title;
+                        if ($lgQuotes) {
+                            $lgAccess = 'tqlltl' . $this->getAccessorialCode(true) . $resiPickup;
+                            $lgPrice = $this->calculatePrice($data, true);
+                            $lgTitle = $this->getTitle($data['carrier'], true, false, $data['totalCalenderDaysInTransit'], [], $dateAndDays);
+                            $arraySorting['liftgate'][$key] = $lgPrice ?? [];
+                            $originQuotes[$key]['liftgate']['code'] = $lgAccess;
+                            $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
+                            $originQuotes[$key]['liftgate']['title'] = $lgTitle;
                         }
                     }
-            if($ratingMethod == 1 || $ratingMethod == 2 || $ratingMethod == 3){
-                $compiledQuotes =  $this->getCompiledQuotesTQL($originQuotes, $arraySorting, $lgQuotes);
-            }else{
+
+                }
+            }
+            if ($ratingMethod == 1 || $ratingMethod == 2 || $ratingMethod == 3) {
+                $compiledQuotes = $this->getCompiledQuotesTQL($originQuotes, $arraySorting, $lgQuotes);
+            } else {
                 $compiledQuotes = $originQuotes;
             }
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
@@ -1295,7 +1296,7 @@ class CompileQuotes
         return $this->arrangeOwnFreight($allQuotes);
     }
 
-    private function getCheapestQuotesArr($quotes):array
+    private function getCheapestQuotesArr($quotes): array
     {
         $cheapestQuote = [];
         $quotes = $quotes['q'] ?? [];
@@ -1307,20 +1308,20 @@ class CompileQuotes
                     break;
                 }
             }
-            if($cheapestQuote['serviceLevel'] === 'Standard' && isset($this->quoteSettings['standard'])){
+            if ($cheapestQuote['serviceLevel'] === 'Standard' && isset($this->quoteSettings['standard'])) {
 
-                $cheapestQuote['carrier'] =  $this->quoteSettings['standard'] ?? 'Freight';
-                
-            }elseif($cheapestQuote['serviceLevel'] == 'Guaranteed 5 PM' || $cheapestQuote['serviceLevel'] == 'Guaranteed 12 PM' && isset($this->quoteSettings['guaranteed'])){
-                
+                $cheapestQuote['carrier'] = $this->quoteSettings['standard'] ?? 'Freight';
+
+            } elseif ($cheapestQuote['serviceLevel'] == 'Guaranteed 5 PM' || $cheapestQuote['serviceLevel'] == 'Guaranteed 12 PM' && isset($this->quoteSettings['guaranteed'])) {
+
                 $cheapestQuote['carrier'] = $this->quoteSettings['guaranteed'] ?? 'Freight';
-    
+
             }
         }
 
         return $cheapestQuote;
     }
- 
+
     public function forceChangeTitle($allQuotes)
     {
         if (!empty($allQuotes)) {
@@ -1364,7 +1365,6 @@ class CompileQuotes
         $labelAs = $this->quoteSettings['label_as'] ?? '';
         $labelAs = empty($labelAs) ? "Freight" : $labelAs;
         $this->quoteSettingsData();
-
 
 
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
@@ -2972,17 +2972,17 @@ class CompileQuotes
         $this->residentialDlvry = $residential['saiaLtl'] == 'Y' ? 1 : 0;
         $this->alwaysResi = $this->residential['alwaysResi']['saiaLtl'] ?? false;
         $this->quoteSettings = $connectionSettings['saia-ltl']['quote_settings'] ?? [];
-        $this->quoteSettingsData(); 
-        
+        $this->quoteSettingsData();
+
         $shipments = $saiaLtl->formatQuotesBeforeCompilation($shipments);
         $allQuotes = $odwArr = $multiShipmentQuotes = [];
         $count = 0;
         $lgQuotes = false;
-        
+
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = $saiaLtl->isMultiShipment($shipments);
-        }        
-        $labelAs = $this->quoteSettings['label_as']  ?? '';
+        }
+        $labelAs = $this->quoteSettings['label_as'] ?? '';
         $labelAs = !blank($labelAs) ? $labelAs : 'Freight';
 
         /* Quotes compilation */
@@ -2992,7 +2992,7 @@ class CompileQuotes
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
-            if ($count == 0) { 
+            if ($count == 0) {
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
                 unset($quote['InstorPickupLocalDelivery']);
                 $lgQuotes = $saiaLtl->isLGQuotes($this->quoteSettings, $this->isResi);
@@ -3005,11 +3005,11 @@ class CompileQuotes
 
                 foreach ($quotesArr as $key => $data) {
                     $srvcType = $data['serviceType'] ?? '';
-                    
+
                     if (isset($srvcType)) {
                         $access = $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
-                        $this->quoteSettings['label_as'] = $labelAs ;
+                        $this->quoteSettings['label_as'] = $labelAs;
 
                         $days = $data['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = $saiaLtl->getShipmentDateAndDays($data);
@@ -3033,7 +3033,7 @@ class CompileQuotes
                 }
             }
 
-            $compiledQuotes = $originQuotes;    
+            $compiledQuotes = $originQuotes;
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
                 if (count($compiledQuotes) > 1) {
                     foreach ($compiledQuotes as $k => $service) {
@@ -3228,7 +3228,7 @@ class CompileQuotes
         return $resp;
     }
 
-     private function compileSouthEasternQuotes($shipments, $connectionSettings, $allOrigins, $residential)
+    private function compileSouthEasternQuotes($shipments, $connectionSettings, $allOrigins, $residential)
     {
         $SouthEastern = new SouthEasternQuotesResults();
 
@@ -3370,11 +3370,11 @@ class CompileQuotes
         return $resp;
     }
 
-     private function compileUspsSmallQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
+    private function compileUspsSmallQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
         $uspsSmallQuotesResults = new uspsSmallQuotesResults();
-        $this->isResi = $residential['uspsSmall'] == 'Y' ? true : false; 
-        $this->residentialDlvry = $residential['uspsSmall'] == 'Y' ? 1 : 0; 
+        $this->isResi = $residential['uspsSmall'] == 'Y' ? true : false;
+        $this->residentialDlvry = $residential['uspsSmall'] == 'Y' ? 1 : 0;
         $this->alwaysResi = $this->residential['alwaysResi']['uspsSmall'] ?? false;
 
         $access = $this->getAccessorialCodeSmall();
@@ -3386,7 +3386,7 @@ class CompileQuotes
 
         return $res['resp'] ?? [];
     }
-         
+
     public function getInsPicAndLocDelQuotes($quote, $allOrigins): array
     {
         $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? $quote['q']['InstorPickupLocalDelivery'] ?? [];
@@ -4197,9 +4197,9 @@ class CompileQuotes
         } else {
             $options = 1;
         }
-       
+
         $sliced = array_slice($arraySorting['simple'], 0, $options, true);
-       
+
         if ($this->quoteSettings['method'] == 3) {
             return $this->averageRattingMethod($arraySorting, $options, $lgQuotes);
         }
@@ -4220,7 +4220,7 @@ class CompileQuotes
         $simplePrice = $this->getAveragePrice($sliced, $options);
         $prefix = $this->isGTZCerasis ? 'AVG' : 'AVGtqlltl';
         $prefix = isset($this->isFQ) && $this->isFQ ? 'AVGfqltl' : $prefix;
-        $serviceName = $this->customLabel(Functions::$ltlMultiTitle);
+        $serviceName = $this->customLabel(Functions::$simpleLTLTitle);
         $averageRateService[0]['simple'] = [
             'title' => $this->getTitle($serviceName, false), //$serviceName,
             'code' => $prefix . $this->getAccessorialCode(),
@@ -4241,21 +4241,21 @@ class CompileQuotes
 
     public function averageRattingMethodTQL($ratesArray, $options, $lgQuotes)
     {
-        if(empty($ratesArray)){
+        if (empty($ratesArray)) {
             return [];
         }
-        foreach($ratesArray as $key => $data){
-            if($data['serviceLevel'] === 'Standard'){
+        foreach ($ratesArray as $key => $data) {
+            if ($data['serviceLevel'] === 'Standard') {
 
-                $ratesArray[$key]['carrier'] =  $this->quoteSettings['standard'] ?? 'Freight';
-                
-            }elseif($data['serviceLevel'] == 'Guaranteed 5 PM' || $data['serviceLevel'] == 'Guaranteed 12 PM'){
-                
+                $ratesArray[$key]['carrier'] = $this->quoteSettings['standard'] ?? 'Freight';
+
+            } elseif ($data['serviceLevel'] == 'Guaranteed 5 PM' || $data['serviceLevel'] == 'Guaranteed 12 PM') {
+
                 $ratesArray[$key]['carrier'] = $this->quoteSettings['guaranteed'] ?? 'Freight';
-    
+
             }
         }
-       
+
         $simplePrice = $this->getAveragePriceTQL($ratesArray, $options);
         $prefix = $this->isGTZCerasis ? 'AVG' : 'AVGtqlltl';
         $prefix = isset($this->isFQ) && $this->isFQ ? 'AVGfqltl' : $prefix;
@@ -4274,7 +4274,7 @@ class CompileQuotes
                 'rate' => $lfgPrice,
             ];
         }
-        
+
         return $averageRateService;
     }
 
@@ -4282,14 +4282,14 @@ class CompileQuotes
     {
         $sum = 0;
         $standardSliced = array_slice($arraySorting, 0, $options, true);
-        foreach($standardSliced as $key => $value){
+        foreach ($standardSliced as $key => $value) {
             $sum += $value['customerRate'];
         }
-        if(!empty($standardSliced)){
+        if (!empty($standardSliced)) {
             $numOfIndexes = count($standardSliced);
             $divider = ($numOfIndexes == $options) ? $options : $numOfIndexes;
             return $sum / $divider;
-        }else {
+        } else {
             return [];
         }
     }
