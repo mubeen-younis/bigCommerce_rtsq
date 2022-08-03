@@ -3188,6 +3188,7 @@ class CompileQuotes
 
     private function compileEchoLogisticsLtlQuotes($shipments, $connectionSettings, $allOrigins, $hazmatAllItems, $residential)
     {
+        $this->EchoLogistics = true;
         $this->isResi = $residential['echoLtl'] == 'Y';
         $this->residentialDlvry = $residential['echoLtl'] == 'Y' ? 1 : 0;
         $this->alwaysResi = $this->residential['alwaysResi']['echoLtl'] ?? false;
@@ -3244,8 +3245,6 @@ class CompileQuotes
                         $data['totalNetCharge']['Amount'] = $data['TotalCharge'] ?? 0;
                         $data['surcharges']['liftgateFee'] = $echoLtl->getLGFee($data['Accessorials'] ?? []) ?? 0;
                         $price = $this->calculatePrice($data);
-                        $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : $data['CarrierName'];
-
                         $days = $data['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = $echoLtl->getShipmentDateAndDays($data);
                         $title = $this->getTitle($data['CarrierName'], false, false, $days, [], $dateAndDays);
@@ -4122,7 +4121,8 @@ class CompileQuotes
         $simplePrice = $this->getAveragePrice($sliced, $options);
         $prefix = $this->isGTZCerasis ? 'AVG' : 'AVGwweltl';
         $prefix = isset($this->isFQ) && $this->isFQ ? 'AVGfqltl' : $prefix;
-        $serviceName = $this->customLabel(Functions::$ltlMultiTitle);
+        $prefix = isset($this->EchoLogistics) && $this->EchoLogistics ? 'AVGecholtl' : $prefix;
+        $serviceName = $this->customLabel($this->isMultiShipment ? Functions::$ltlMultiTitle : "Freight");
         $averageRateService[0]['simple'] = [
             'title' => $this->getTitle($serviceName, false), //$serviceName,
             'code' => $prefix . $this->getAccessorialCode(),
