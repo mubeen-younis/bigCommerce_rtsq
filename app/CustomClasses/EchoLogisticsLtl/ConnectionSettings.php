@@ -23,7 +23,7 @@ class ConnectionSettings extends CarriersConnectionSettings
         $url = $this->testConnectionUrl;
         $params = [
             // -------------Carrier type and Status------------- //
-            'licence_key' => 'TDVB9ONC-M7QJRPRQ-5EDIH32D-DE73Y57I',
+            'licence_key' => '',
             'sever_name' => $storeName ?? '',
             'carrierName' => 'echoLogistics',
             'carrier_mode' => 'test', // use test / pro
