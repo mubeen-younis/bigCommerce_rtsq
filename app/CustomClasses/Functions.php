@@ -15,6 +15,7 @@ class Functions
     public static $ltlPrefix = '-ltl';
     public static $smallPrefix = '-small';
     public static $ltlMultiTitle = '-ltlFreight';
+    public static $simpleLTLTitle = 'Freight';
     public static $smallMultiTitle = '-smallShipping';
 
 

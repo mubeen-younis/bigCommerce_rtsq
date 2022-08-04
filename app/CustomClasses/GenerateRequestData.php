@@ -174,6 +174,11 @@ class GenerateRequestData
                     $uspsSmallArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['usps'] = $uspsSmallArr;
                     break;
+                case 'tql-ltl':
+                    $tqlLtlArr = $this->tqlLtlEnitArr($con1, $destination);
+                    $tqlLtlArr['originAddress'] = $enitOrigin;
+                    $carriersArr['carriers']['tql'] = $tqlLtlArr;
+                    break;
                 case 'echo-ltl':
                     $echoLtlArr = $this->echoLtlEnitArr($con1, $destination);
                     $echoLtlArr['originAddress'] = $enitOrigin;
@@ -414,6 +419,20 @@ class GenerateRequestData
             'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
             'returnQuotesOnExceedWeight' => '1',
             'api' => $this->getApiInfoArrYrcLtl($connSettings, $destination),
+        ];
+    }
+
+    public function tqlLtlEnitArr($connSettings, $destination)
+    {
+        return [
+            'licenseKey' => '',
+            'serverName' => "https://" . $this->storeData['store']['name'],
+            'carrierMode' => 'pro',
+            'quotestType' => 'ltl', 
+            'version' => '1.0.0',
+            'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
+            'returnQuotesOnExceedWeight' => '1',
+            'api' => $this->getApiInfoArrTqlLtl($connSettings, $destination),
         ];
     }
 
@@ -679,6 +698,7 @@ class GenerateRequestData
                     || isset($carriers['saia'])
                     || isset($carriers['abf'])
                     || isset($carriers['southeastern'])
+                    || isset($carriers['tql'])
                     || isset($carriers['echoLogistics']);
                 if ($isLtl) {
                     $itemsArr = $olditemsArr + $itemsArr;
@@ -1693,6 +1713,56 @@ class GenerateRequestData
             'thresholdWeightLimit' => $weightThreshold,
             'accessorial' => $accessorial,
 
+        ];
+
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
+    }
+
+    public function getApiInfoArrTqlLtl($connSettings, $destination)
+    {
+        $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
+            (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+
+        $residential = 'N';
+        $alwaysResi = false;
+        /*
+            * Check if rad hit not consumed and residential is enables
+        * **/
+        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+            if ($this->radHitConsumed == 0) {
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+            } else {
+                $residential = $this->residential;
+            }
+            if ($liftGate != 'Y') {
+                $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
+            }
+        } else {
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+        }
+
+        $this->resiCarrier['tqlLtl'] = $residential;
+        $this->resiCarrier['alwaysResi']['tqlLtl'] = $alwaysResi;
+
+        $accessorial = [];
+        if ($liftGate == 'Y') {
+            $accessorial[] = 'LGDEL';
+        }
+        $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
+        $apiArray = [
+            'clientId' => $connSettings['creds']['clientId'],
+            'traxUsername' => $connSettings['creds']['traxUsername'],
+            'traxPassword' => $connSettings['creds']['traxPassword'],
+            'subscriptionKey' => $connSettings['creds']['subscriptionKey'],
+
+            // -------------API INFO------------- //
+            'residentialDelivery' => $alwaysResi ? 'Y' : $residential,
+            'thresholdWeightLimit' => $weightThreshold,
+            'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
+            'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
+            'accessorial' => $accessorial,
         ];
 
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));

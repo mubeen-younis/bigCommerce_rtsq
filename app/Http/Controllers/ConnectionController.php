@@ -16,6 +16,7 @@ use App\CustomClasses\XPO\ltl\ConnectionSettings as XPOLtlConnectionSettings;
 use App\CustomClasses\Unishippers\small\ConnectionSettings as UnishippersSmallConnectionSettings;
 
 use App\CustomClasses\YrcLTL\ConnectionSettings as YrcLtlConnectionSettings;
+use App\CustomClasses\TQLLtl\ConnectionSettings as TQLLtlConnectionSettings;
 use App\CustomClasses\FreightQuote\Ltl\ConnectionSettings as FreightQuoteConSett;
 use App\CustomClasses\EstesLTL\ConnectionSettings as EstesLTLConnectionSettings;
 use App\CustomClasses\DayRossLTL\ConnectionSettings as DayRossLtlConnectionSettings;
@@ -62,6 +63,7 @@ class ConnectionController extends Controller
         $this->rnlLtlTestCon = new RNLLtlConnectionSettings();
         $this->unishippersSmallTestCon = new UnishippersSmallConnectionSettings();
         $this->yrcLtlTestCon = new YrcLtlConnectionSettings();
+        $this->tqlLtlTestCon = new TQLLtlConnectionSettings();
         $this->freightQuoteLtlTestCon = new FreightQuoteConSett();
         $this->estesLTLConL = new EstesLTLConnectionSettings();
         $this->dayRossLtlTestCon = new DayRossLtlConnectionSettings();
@@ -184,6 +186,9 @@ class ConnectionController extends Controller
                 case 'usps-small':
                     $response = $this->uspsSmallTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json();
+                case 'tql-ltl':
+                    $response = $this->tqlLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
                 case 'echo-ltl':
                     $response = $this->echoLogisticsLtlTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
