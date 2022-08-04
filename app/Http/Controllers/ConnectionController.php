@@ -16,13 +16,16 @@ use App\CustomClasses\XPO\ltl\ConnectionSettings as XPOLtlConnectionSettings;
 use App\CustomClasses\Unishippers\small\ConnectionSettings as UnishippersSmallConnectionSettings;
 
 use App\CustomClasses\YrcLTL\ConnectionSettings as YrcLtlConnectionSettings;
+use App\CustomClasses\TQLLtl\ConnectionSettings as TQLLtlConnectionSettings;
 use App\CustomClasses\FreightQuote\Ltl\ConnectionSettings as FreightQuoteConSett;
 use App\CustomClasses\EstesLTL\ConnectionSettings as EstesLTLConnectionSettings;
 use App\CustomClasses\DayRossLTL\ConnectionSettings as DayRossLtlConnectionSettings;
 use App\CustomClasses\OdflLTL\ConnectionSettings as OdflLTLConnectionSettings;
 use App\CustomClasses\SaiaLTL\ConnectionSettings as SaiaLTLConnectionSettings;
 use App\CustomClasses\AbfLtl\ConnectionSettings as AbfLtlConnectionSettings;
+use App\CustomClasses\UspsSmall\ConnectionSettings as UspsSmallConnectionSettings;
 use App\CustomClasses\SouthEasternLtl\ConnectionSettings as SouthEasternLtlConnectionSettings;
+use App\CustomClasses\EchoLogisticsLtl\ConnectionSettings as EchoLogisticsLtlConnectionSettings;
 use App\Endpoints\Endpoints;
 
 use App\Models\Connection;
@@ -60,6 +63,7 @@ class ConnectionController extends Controller
         $this->rnlLtlTestCon = new RNLLtlConnectionSettings();
         $this->unishippersSmallTestCon = new UnishippersSmallConnectionSettings();
         $this->yrcLtlTestCon = new YrcLtlConnectionSettings();
+        $this->tqlLtlTestCon = new TQLLtlConnectionSettings();
         $this->freightQuoteLtlTestCon = new FreightQuoteConSett();
         $this->estesLTLConL = new EstesLTLConnectionSettings();
         $this->dayRossLtlTestCon = new DayRossLtlConnectionSettings();
@@ -67,6 +71,8 @@ class ConnectionController extends Controller
         $this->saiaLtlTestCon = new SaiaLTLConnectionSettings();
         $this->AbfLtlTestCon = new AbfLtlConnectionSettings();
         $this->southEasternLtlTestCon = new SouthEasternLtlConnectionSettings();
+        $this->uspsSmallTestCon = new UspsSmallConnectionSettings();
+        $this->echoLogisticsLtlTestCon = new EchoLogisticsLtlConnectionSettings();
     }
 
     public function index(Request $request)
@@ -176,6 +182,15 @@ class ConnectionController extends Controller
                     return response()->json($response);
                 case 'southeastern-ltl':
                     $response = $this->southEasternLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'usps-small':
+                    $response = $this->uspsSmallTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json();
+                case 'tql-ltl':
+                    $response = $this->tqlLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'echo-ltl':
+                    $response = $this->echoLogisticsLtlTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
                 default:
                     return response()->json([
