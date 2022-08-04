@@ -117,7 +117,7 @@ class ShippingProfileController extends Controller
         if ($shipProfile) {
             $shipProfile = DbscShippingProfile::find($request->id);
             $shipProfile->p_nickname = $request->nickname;
-            $shipProfile->shpping_class = $request->shpping_class;
+            $shipProfile->shipping_classes = json_encode($request->shipping_classes);
             $shipProfile->update();
             return response()->json(['error' => false,
                 'data' => $shipProfile,
