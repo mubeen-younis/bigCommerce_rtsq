@@ -42,7 +42,11 @@ class ShippingZoneController extends Controller
         $storeDetails = (new CurlRequest())->enSingleCurlRequest($storeDetails['endpoint'],
             $storeDetails['request'], $storeDetails['headers'], $storeDetails['method'], false);
         $response = json_decode($storeDetails['response'], true);
-        dd(123, $response);
+        return response()->json(['error' => false,
+            'data' => $response,
+            'message' => 'Zone Info',
+        ], 200);
+        
     }
 
     /**
