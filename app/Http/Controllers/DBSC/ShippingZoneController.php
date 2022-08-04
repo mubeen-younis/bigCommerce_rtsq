@@ -141,7 +141,7 @@ class ShippingZoneController extends Controller
             $shipZone = DbscShippingZone::find($request->id);
             $shipZone->zone_name = $request->zone_name;
             $shipZone->define_by_zone = $request->define_by_zone;
-            $shipZone->selected_region = $request->selected_region;
+            $shipZone->selected_region = json_encode($request->selected_region);
             $shipZone->postcode = $request->postcode;
             $shipZone->update();
             return response()->json(['error' => false,
