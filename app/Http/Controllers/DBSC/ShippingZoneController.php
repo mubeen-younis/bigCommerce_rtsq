@@ -57,15 +57,41 @@ class ShippingZoneController extends Controller
      */
     public function store(Request $request)
     {
-        $selected_region = DbscShippingZone::where('selected_region', '=', $request->selected_region)->exists();
-        if ($selected_region) {
-            return response()->json(['error' => true, 'message' => 'Shipping Zone already exits']);
+        $storeHash = $request->store_hash;
+        $regions = [];
+        $ids = $request->selected_region;
+        $shipZones = DbscShippingZone::where("profile_id", '=', $request->profile_id)->select('selected_region')->get();
+        $shipZones = json_decode($shipZones);
+        if(!empty($shipZones)){
+            foreach($shipZones as $key){
+                $sav_regions = json_decode($key->selected_region);
+                foreach($sav_regions as $region){
+                    foreach($ids as $req_region){
+                        if($region === $req_region){
+                            return response()->json(['error' => false, 'message' => 'Shipping Zone already exits']);
+                        }
+                    }
+                }
+            }
         }
+
+        foreach($ids as $req_region){
+
+            $storeDetails = BigCommerceFunctions::getZone($storeHash, $req_region);
+            $storeDetails = (new CurlRequest())->enSingleCurlRequest(   $storeDetails['endpoint'],
+            $storeDetails['request'], $storeDetails['headers'], $storeDetails['method'], false);
+            $selected = json_decode($storeDetails['response'], true);
+            $selected_regions["id"] = $selected['id'] ?? null;
+            $selected_regions["name"] = $selected['name'] ?? '';
+            $selected_regions["type"] = $selected['type'] ?? '';
+            $selected_regions["locations"] = $selected['loca    tions'] ?? '';
+            $regions[] = $selected_regions;   
+        }
+        
         $shipZone = new DbscShippingZone();
         $shipZone->zone_name = $request->zone_name;
-        $shipZone->define_by_zone = $request->define_by_zone;
-        $shipZone->selected_region = json_encode($request->selected_region);
-        $shipZone->postcode = $request->postcode;
+        $shipZone->define_by_zone = json_encode($regions);
+        $shipZone->selected_region = json_encode($ids);
         $shipZone->profile_id = $request->profile_id;
         $shipZone->save();
 
