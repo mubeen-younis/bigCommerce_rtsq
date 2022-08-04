@@ -24,7 +24,6 @@ class QuotesResults
 
             if (isset($shipments) && !empty($shipments)) {
                 foreach ($shipments as $key => $value) {
-                    dd($value);
                     $formattedShipments[$origin][$key]['serviceType'] = $value['CarrierSCAC'];
                     $formattedShipments[$origin][$key]['serviceDesc'] = $value['CarrierName'];
                     $formattedShipments[$origin][$key]['CarrierGuarantee'] = $value['CarrierGuarantee'];
@@ -47,7 +46,6 @@ class QuotesResults
             }
         }
 
-        dd($formattedShipments);
         return $formattedShipments;
     }
 
