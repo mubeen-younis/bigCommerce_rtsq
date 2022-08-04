@@ -9,4 +9,11 @@ class DbscShippingZone extends Model
 {
     use HasFactory;
     protected $table = 'dbsc_shipping_zone';
+    protected $fillable = [
+        'zone_name',
+        'selected_region',
+        'postcode',
+        'profile_id',
+    ];
+
 }
