@@ -9,4 +9,8 @@ class DbscShippingProfile extends Model
 {
     use HasFactory;
     protected $table = 'dbsc_profiles';
+    protected $fillable = [
+        'p_nickname',
+        'shipping_classes',
+    ];
 }

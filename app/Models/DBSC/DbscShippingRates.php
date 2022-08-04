@@ -9,4 +9,8 @@ class DbscShippingRates extends Model
 {
     use HasFactory;
     protected $table = 'dbsc_shipping_rates';
+    protected $fillable = [
+        'display_as',
+        'rate',
+    ];
 }
