@@ -16,7 +16,7 @@ class Endpoints
     public static function testConnectionEndpoint()
     {
         if (env('APP_ENV') == 'staging') {
-            return self::$qaUrl . "ws/index.php";
+            return self::$prodUrl . "ws/index.php";
         }
         return self::$prodUrl . "ws/index.php";
     }
