@@ -145,7 +145,6 @@ class ShippingRatesController extends Controller
             $shipRates->minimum_shipping_quote = $request->minimum_shipping_quote;
             $shipRates->maximum_shipping_quote = $request->maximum_shipping_quote;
             $shipRates->rating_method = $request->rating_method;
-            $shipRates->dbsc_zone_id = $request->dbsc_zone_id;
             $shipRates->update();
             return response()->json(['error' => false,
                 'data' => $shipRates,
