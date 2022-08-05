@@ -493,11 +493,11 @@ class ProductSettingController extends Controller
             //allow only create/update orders actions
             if ($scope == "store/sku/deleted") {
                 ProductSetting::where('source_product_id', $productId)->where('variant_id', $variant_id)->where('store_id', $store->id)->delete();
-                return true;
+                return response()->json(true);
             }
             $onlyScopes = ['store/sku/created', 'store/sku/updated'];
             if (empty($store) || !in_array($scope, $onlyScopes)) {
-                return true;
+                return response()->json(true);
             }
             /*
              * Handle first time sku created
@@ -512,6 +512,7 @@ class ProductSettingController extends Controller
             $toRequest['store_name'] = $storeHash;
             $toRequest['product_id'] = $productId;
             $this->getSingleProductFromApi($toRequest);
+            return response()->json(true);
         } catch (\Exception $exception) {
             //  Have to LOg Here
         }

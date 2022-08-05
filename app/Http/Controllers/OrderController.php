@@ -222,7 +222,25 @@ class OrderController extends Controller
                         } else {
                             $sbsData = $ws->binPackagingData->response->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->oneRate->bins_packed ?? [];
                         }
-                        //print_r($ws->binPackagingData->response); exit;
+
+                        /* Usps carrier packaging according to boxes types */
+                        $customBoxes = $ws->binPackagingData->response->customboxes->bins_packed ?? [];
+                        if (!blank($customBoxes)) {
+                            $orderWidgetData[] = $this->formatUspsPackaging($customBoxes, $zip, $lineItem);
+                        }
+                        $upmbBoxes = $ws->binPackagingData->response->upmb->bins_packed ?? [];
+                        if (!blank($upmbBoxes)) {
+                            $orderWidgetData[] = $this->formatUspsPackaging($upmbBoxes, $zip, $lineItem);
+                        }
+                        $umebBoxes = $ws->binPackagingData->response->umeb->bins_packed ?? [];
+                        if (!blank($umebBoxes)) {
+                            $orderWidgetData[] = $this->formatUspsPackaging($umebBoxes, $zip, $lineItem);
+                        }
+                        $uflatBoxes = $ws->binPackagingData->response->uflat->bins_packed ?? [];
+                        if (!blank($uflatBoxes)) {
+                            $orderWidgetData[] = $this->formatUspsPackaging($uflatBoxes, $zip, $lineItem);
+                        }
+
                         $itemCount = 0;
                         foreach ($sbsData as $key => $binPacked) {
                             $type = optional($binPacked->bin_data)->type ?? '';
@@ -288,7 +306,6 @@ class OrderController extends Controller
         $addedInsurance = $addHazmat = false;
         $isMulti = false;
         $insertedIds = $insertedNames = [];
-        //print_r($items); exit;
         $code = '';
 
         foreach ($origins as $key => $origin) {
@@ -312,7 +329,7 @@ class OrderController extends Controller
             $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
             $sRate = $order['shipping_rate'];
-            //print_r($multiShipmentresponse); exit;
+
             if ($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement) {
                 if ($isHAT) {
                     $sRate = $multiShipmentresponse->$index->hat->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
@@ -466,7 +483,6 @@ class OrderController extends Controller
         }
 
         $sbs = '';
-        //print_r($orderWidget); exit;
         $resp = [
             'widget' => $this->objectToArray($orderWidget),
             'sbs' => $sbs
@@ -669,6 +685,63 @@ class OrderController extends Controller
         return $resp;
     }
 
+    public function formatUspsPackaging($binPackagingData, $zip, $lineItem): array
+    {
+        $sbsData = $binPackagingData ?? [];
+        $itemCount = 0;
+        $orderWidget = [];
+
+        foreach ($sbsData as $key => $binPacked) {
+            $type = optional($binPacked->bin_data)->type ?? '';
+            $quantity = 1;
+            if ($type == 'item' || $type == 'weight_based') {
+                $type = $binPacked->bin_data->type;
+                $product_id = $binPacked->bin_data->id;
+                $quantity = $binPacked->bin_data->quantity ?? 1;
+                $itemCount++;
+            }
+            $count = 0;
+            $orderWidgetData['type'] = $type;
+            $orderWidgetData['image_complete'] = $binPacked->image_complete;
+            $orderWidgetData['quantity'] = $quantity;
+            /*For Weight Based Products*/
+            if ($type == 'weight_based') {
+                $orderWidgetData['d'] = '';
+                $orderWidgetData['w'] = '';
+                $orderWidgetData['h'] = '';
+                $orderWidgetData['weight'] = $binPacked->bin_data->weight ?? '';
+            } else {
+                $orderWidgetData['d'] = $binPacked->bin_data->d . ' x ';
+                $orderWidgetData['w'] = $binPacked->bin_data->w . ' x ';
+                $orderWidgetData['h'] = $binPacked->bin_data->h;
+            }
+
+            $orderWidgetData['nickname'] = $this->getBoxName($binPacked->bin_data->id, '', '', '');
+            foreach ($binPacked->items as $item) {
+                $productid = $item->id;
+                $sbsItems[$zip][$productid] = 1;
+
+                $orderWidgetData['items'][$count]['product_name'] = $lineItem->items->$productid->lineItemName ?? '';
+                $orderWidgetData['items'][$count]['w'] = $item->w;
+                $orderWidgetData['items'][$count]['h'] = $item->h;
+                $orderWidgetData['items'][$count]['d'] = $item->d;
+
+                $orderWidgetData['items'][$count]['image_separated'] = $item->image_separated;
+                $orderWidgetData['items'][$count]['image_sbs'] = $item->image_sbs;
+
+                $orderWidget[$zip]['sbs'][$key] = $orderWidgetData;
+                ++$count;
+            }
+
+            unset($orderWidgetData);
+            if ($count) {
+                $orderWidget[$zip]['sbs'][$key]['number_of_items'] = $count;
+            }
+        }
+
+        return $orderWidget;
+    }
+
     /**
      * Show the form for creating a new resource.
      *
@@ -804,7 +877,7 @@ class OrderController extends Controller
             //allow only create/update orders actions
             $onlyScopes = ['store/order/created', 'store/order/updated'];
             if (empty($store) || !in_array($scope, $onlyScopes)) {
-                return [];
+                return null;
             }
             $toRequest['store_id'] = $store->id;
             $toRequest['store_hash'] = $storeHash;
@@ -889,7 +962,6 @@ class OrderController extends Controller
             echo "<pre>";
             print_r($products);
             exit;
-            //dd($prds);
         }
         return $prds;
     }
