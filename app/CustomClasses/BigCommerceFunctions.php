@@ -36,6 +36,13 @@ class BigCommerceFunctions
 
     }
 
+    public static function getZone($storeHash, $id)
+    {
+        $endPoint = self::$initalUrl . $storeHash . "/" . self::$version . "/shipping/zones/" . $id;
+        return self::getRequestArray($endPoint, [], 'GET', $storeHash, $id);
+
+    }
+
 
     public static function getRequestArray($endPoint, $request, $method, $storeHash): array
     {

@@ -44,7 +44,9 @@ class ShippingRatesController extends Controller
         $shipRates->distance_measured_by = $request->distance_measured_by;
         $shipRates->minimum_distance = $request->minimum_distance;
         $shipRates->maximum_distance = $request->maximum_distance;
-        $shipRates->calculate_operation = $request->calculate_operation;
+        $shipRates->minimum_weight = $request->minimum_weight;
+        $shipRates->maximum_weight = $request->maximum_weight;
+        $shipRates->and_or = $request->and_or;
         $shipRates->minimum_length = $request->minimum_length;
         $shipRates->maximum_length = $request->maximum_length;
         $shipRates->distance_adjustment = $request->distance_adjustment;
@@ -133,7 +135,9 @@ class ShippingRatesController extends Controller
             $shipRates->distance_measured_by = $request->distance_measured_by;
             $shipRates->minimum_distance = $request->minimum_distance;
             $shipRates->maximum_distance = $request->maximum_distance;
-            $shipRates->calculate_operation = $request->calculate_operation;
+            $shipRates->minimum_weight = $request->minimum_weight;
+            $shipRates->maximum_weight = $request->maximum_weight;
+            $shipRates->and_or = $request->and_or;
             $shipRates->minimum_length = $request->minimum_length;
             $shipRates->maximum_length = $request->maximum_length;
             $shipRates->distance_adjustment = $request->distance_adjustment;
@@ -141,7 +145,6 @@ class ShippingRatesController extends Controller
             $shipRates->minimum_shipping_quote = $request->minimum_shipping_quote;
             $shipRates->maximum_shipping_quote = $request->maximum_shipping_quote;
             $shipRates->rating_method = $request->rating_method;
-            $shipRates->dbsc_zone_id = $request->dbsc_zone_id;
             $shipRates->update();
             return response()->json(['error' => false,
                 'data' => $shipRates,
