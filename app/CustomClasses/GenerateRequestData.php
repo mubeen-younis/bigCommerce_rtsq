@@ -2072,6 +2072,9 @@ class GenerateRequestData
 
     private function verifyRADStatus($connSettings, $destination): array
     {
+        $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
+            (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+
         $storeId = $this->storeData['store']['id'] ?? null;
         $residential = 'N';
         $alwaysResi = false;
@@ -2096,6 +2099,7 @@ class GenerateRequestData
         $resp = [
             'residential' => $residential,
             'alwaysResi' => $alwaysResi,
+            'liftGate' => $liftGate
         ];
         return $resp;
     }
