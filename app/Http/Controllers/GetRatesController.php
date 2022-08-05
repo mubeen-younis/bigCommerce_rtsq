@@ -31,11 +31,16 @@ class GetRatesController extends Controller
      * @var WweLTLShipmentPackage
      */
     private $shipmentPkg;
+    /**
+     * @var WweLTLShipmentPackage
+     */
+    private $isDbscInstalled;
 
     public function __construct()
     {
         $this->shipping = new Shipping();
         $this->shipmentPkg = new WweLTLShipmentPackage();
+        $this->isDbscInstalled = false;
     }
 
     /*
@@ -73,12 +78,12 @@ class GetRatesController extends Controller
             $formatReq['lineItemData']['destination']['country'] == null ||
             count($this->connectionSettings) == 0
         ) {
-
-            return [];
+            if (!$this->isDbscInstalled) {
+                return [];
+            }
         }
+        $quotes = $this->shipping->collectRates($formatReq, $storeData, $this->connectionSettings, $cartInfo, $this->isDbscInstalled);
 
-        $quotes = $this->shipping->collectRates($formatReq, $storeData, $this->connectionSettings, $cartInfo);
-        
         return $quotes;
 
 
@@ -190,6 +195,7 @@ class GetRatesController extends Controller
                     //'freightClass' => '',
                     'lineItemClass' => isset($product_settings['freight_class']) ? $this->getLineItemClass($product_settings['freight_class']) : '',
                     'shipping_group' => $product_settings['shipping_group'] ?? null,
+                    'shipping_class' => $product_settings['shipping_class'] ?? null,
                     'exclude_packaging' => 0,
                     'quote_as_local' => $product_settings['quote_as_local'] ?? false
                 ];
@@ -301,7 +307,7 @@ class GetRatesController extends Controller
     public function getProductSetting($productId, $variantId, $storeId)
     {
         $settings = [];
-        $productSetting = ProductSetting::select('settings', 'id', 'dropship_enabled', 'dropship_location', 'shipping_group', 'ship_multiple_package')
+        $productSetting = ProductSetting::select('settings', 'id', 'dropship_enabled', 'dropship_location', 'shipping_group', 'shipping_class', 'ship_multiple_package')
             ->where(['source_product_id' => $productId, 'variant_id' => $variantId, 'store_id' => $storeId])
             ->first();
         if (!empty($productSetting)) {
@@ -349,7 +355,10 @@ class GetRatesController extends Controller
          }*/
         $store = Store::where(['hash' => $storeHash, 'app_status' => 1])->first();
         if (!empty($store)) {
-            $installedCarriers = InstalledCarrier::where(['store_id' => $store->id, 'is_enabled' => 1])->get();
+            $installedCarriers = InstalledCarrier::join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
+                ->where(['store_id' => $store->id, 'is_enabled' => 1])
+                ->select('installed_carriers.*', 'carriers.slug')
+                ->get();
             $installedAddons = InstalledAddon::where(['store_id' => $store->id, 'is_enabled' => 1])->get();
             $installedAddonSbs = InstalledAddon::join('addons', 'addons.id', 'installed_addons.addon_id')
                 ->where(['installed_addons.store_id' => $store->id,
@@ -415,13 +424,17 @@ class GetRatesController extends Controller
     {
         if (!empty($installedCarriers)) {
             foreach ($installedCarriers as $installedCarrier) {
+                if ($installedCarrier->slug == Functions::$dbscSlug) {
+                    $this->isDbscInstalled = true;
+                    continue;
+                }
                 $connectionSettings = Connection::join('installed_carriers', 'installed_carriers.id', 'connection_settings.installed_carrier_id')
                     ->join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
                     ->select('carriers.slug', 'connection_settings.id', 'connection_settings.installed_carrier_id',
                         'connection_settings.value')
                     ->where('connection_settings.installed_carrier_id', $installedCarrier->id)->first();
+
                 if ($connectionSettings !== null) {
-                
 
 
                     $this->connectionSettings[$connectionSettings->slug]['creds'] = json_decode($connectionSettings->value, true);

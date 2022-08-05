@@ -4,6 +4,7 @@ namespace App\CustomClasses;
 
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
+use App\CustomClasses\DBSC\GetRatesDbsc;
 use App\Models\ShippingGroup;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
@@ -32,6 +33,8 @@ class Shipping
     private $instoreQuotes;
     private $locDelQuotes;
     private $multiOrigins;
+    private $dbscRates;
+    private $dbscOrdWid;
 
     public function __construct()
     {
@@ -42,6 +45,8 @@ class Shipping
         $this->instoreQuotes = false;
         $this->locDelQuotes = false;
         $this->multiOrigins = false;
+        $this->dbscRates = [];
+        $this->dbscOrdWid = [];
     }
 
 
@@ -52,11 +57,11 @@ class Shipping
      * @param $quoteSettings
      * @return array | bool
      */
-    public function collectRates($request, $storeData, $connectionSettings, $cartInfo)
+    public function collectRates($request, $storeData, $connectionSettings, $cartInfo, $isDbscInstalled = false)
     {
         $quoteSettings = $multiShipmentQuotes = [];
         $generateReqData = new GenerateRequestData();
-        //   init is a function to to call it explixitlitly rather constructor
+        //   init is a function to call it explixitlitly rather constructor
 
         $generateReqData->_init($quoteSettings, $connectionSettings, $storeData);
         $origins = $request['lineItemData']['origin'];
@@ -69,6 +74,23 @@ class Shipping
                 return [];
             }
         }
+
+        /*Added for DBSC Carrier
+        Will calculate DBSC rates
+        And also Order widget Details*/
+        try {
+            if ($isDbscInstalled) {
+                $getDbscDetails = (new GetRatesDbsc())->getDbscRates($request, $storeData);
+                dd(12, $getDbscDetails);
+                $this->dbscRates = $getDbscDetails['rates'] ?? [];
+                $this->dbscOrdWid = $getDbscDetails['ord_wid'] ?? [];
+
+            }
+        } catch (\Exception $exception) {
+            Functions::log('DBSC rates exception ', $exception);
+        }
+
+
         // Items that is not associated with Shipping Group and need to get rates from Ws
         $itemsWithoutShippingGroup = collect($request['lineItemData']['items'])->where('shipping_group', null)->all();
 
@@ -151,12 +173,12 @@ class Shipping
       */
         $this->isRequestMultishipment = $ltlSmallCompileQuotes->checkIsRequestMiltiShipment($requestArr['requestArr'], $quotes);
         /* Catering Usps carrier packaging response */
-        $uspsCarrierArr = $requestArr['requestArr']['carriers']['usps'] ?? [];         
+        $uspsCarrierArr = $requestArr['requestArr']['carriers']['usps'] ?? [];
         if (isset($uspsCarrierArr) && !empty($uspsCarrierArr)) {
-            $apiArray = $uspsCarrierArr['api'] ?? []; 
+            $apiArray = $uspsCarrierArr['api'] ?? [];
             $uspsBoxBins = $apiArray['boxBins'] ?? [];
 
-             if (isset($apiArray['binResponseArr']) && !empty($apiArray['binResponseArr'])) {
+            if (isset($apiArray['binResponseArr']) && !empty($apiArray['binResponseArr'])) {
                 $quotes = $this->addBinResponseToQuotes($apiArray['binResponseArr'], $quotes, true);
             }
         }
@@ -186,14 +208,14 @@ class Shipping
         $_finalQuotes = $finalTitlesTemp = $finalCodesTemp = [];
         $finalTitles = array_column($finalQuotes, 'title');
         $finalCodes = array_column($finalQuotes, 'code');
-        
+
         foreach ($finalTitles as $key => $finalTitle) {
             $finalTitlesTemp[$key] = explode(' ', $finalTitle)[0];
         }
         foreach ($finalCodes as $key => $finalCode) {
             $finalCodesTemp[$key] = explode('+', $finalCode)[0];
         }
-        
+
         /*TODO :Need to Add LTL Carriers here as well*/
         $isFreightTitleExist = array_search(Functions::$ltlMultiTitle, $finalTitlesTemp);
         $isShippingTitleExist = array_search(Functions::$smallMultiTitle, $finalTitlesTemp);
@@ -411,7 +433,7 @@ class Shipping
                             }
                         }
                     }
-                } else if($carrierName !== 'fedexSmall' && $carrierName !== 'usps' && $uspsRes === null) {
+                } else if ($carrierName !== 'fedexSmall' && $carrierName !== 'usps' && $uspsRes === null) {
                     foreach ($binReponse as $locationId => $bin) {
                         $quotes[$carrierName][$locationId]['binPackagingData']['response'] = $bin;
                         $boxFee[$locationId] = $this->getCumulativeBoxFee($bin);
@@ -430,8 +452,7 @@ class Shipping
     {
         if (isset($boxes[$type]) && !empty($boxes[$type]) && isset($boxes[$type]['bins_packed']) && !empty($boxes[$type]['bins_packed'])) {
             return $boxes[$type];
-        }
-        else if (isset($boxes['customBoxes']) && !empty($boxes['customBoxes']) && isset($boxes['customBoxes']['bins_packed']) && !empty($boxes['customBoxes']['bins_packed'])) {
+        } else if (isset($boxes['customBoxes']) && !empty($boxes['customBoxes']) && isset($boxes['customBoxes']['bins_packed']) && !empty($boxes['customBoxes']['bins_packed'])) {
             return $boxes['customBoxes'];
         }
 
@@ -585,7 +606,7 @@ class Shipping
     private function getCumulativeBoxFee($bins, $usps = false): float
     {
         if ($usps) {
-            $bins = (Object)$bins;
+            $bins = (object)$bins;
         }
         $boxFee = 0;
         if (!empty($bins->bins_packed)) {
@@ -614,7 +635,7 @@ class Shipping
     public
     function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null)
     {
-        
+
         //print_r($resp); print_r($multiShipmentQuotes); exit;
         foreach ($finalQuotes as $finalQuote) {
             $RequestTempData = new RequestTempData();
@@ -794,11 +815,9 @@ class Shipping
 
         if (empty($freightQuotesArr) && empty($shippingQuotesArr)) {
             return $finalCheapestQuotes;
-        }
-        else if (empty($freightQuotesArr) && !empty($shippingQuotesArr)) {
+        } else if (empty($freightQuotesArr) && !empty($shippingQuotesArr)) {
             return $shippingQuotesArr;
-        }
-        else if (!empty($freightQuotesArr) && empty($shippingQuotesArr)) {
+        } else if (!empty($freightQuotesArr) && empty($shippingQuotesArr)) {
             return $freightQuotesArr;
         }
 
@@ -821,29 +840,29 @@ class Shipping
         $index = [];
 
         if (!empty($finalCheapestQuotes)) {
-            foreach($finalCheapestQuotes as $key => $data){  
-                if(strpos($data['title'], $freightTitle) === false && strpos($data['title'], $shippingTitle) === false){   
+            foreach ($finalCheapestQuotes as $key => $data) {
+                if (strpos($data['title'], $freightTitle) === false && strpos($data['title'], $shippingTitle) === false) {
                     $res = $this->getTitleDelimeter($data);
-                    $value = $this->getSameTitleQuotes($res,$finalCheapestQuotes);
+                    $value = $this->getSameTitleQuotes($res, $finalCheapestQuotes);
 
-                    foreach($value as $key){
+                    foreach ($value as $key) {
                         $keyToDelete = array_search($key, $finalCheapestQuotes);
                         unset($finalCheapestQuotes[$keyToDelete]);
-                        if(count($value) == 1){
+                        if (count($value) == 1) {
                             $value1 = $key;
                         }
                     }
 
-                    if(!empty($value) && count($value) > 1){
-                     $cheapest[] = $this->getCheapestQuotesArr($value) ?? [];
-                     $index = array_merge($finalCheapestQuotes,$cheapest);     
-                    }elseif(count($value) === 1){
+                    if (!empty($value) && count($value) > 1) {
+                        $cheapest[] = $this->getCheapestQuotesArr($value) ?? [];
+                        $index = array_merge($finalCheapestQuotes, $cheapest);
+                    } elseif (count($value) === 1) {
                         $cheapest[] = $value1 ?? [];
-                        $index = array_merge($finalCheapestQuotes,$cheapest);
+                        $index = array_merge($finalCheapestQuotes, $cheapest);
                     }
                 }
             }
-            if(!empty($index)){
+            if (!empty($index)) {
                 return $index;
             }
         }
@@ -854,7 +873,7 @@ class Shipping
     {
         $var = '(';
 
-        if(strpos($data['title'], 'w') !== false){
+        if (strpos($data['title'], 'w') !== false) {
             $var = "w";
         }
 
@@ -862,17 +881,17 @@ class Shipping
         return trim($res);
     }
 
-    private function getSameTitleQuotes($res,$finalCheapestQuotes)
+    private function getSameTitleQuotes($res, $finalCheapestQuotes)
     {
         $SingleQuotesArr = collect($finalCheapestQuotes)->filter(function ($quote) use ($res) {
             $resTitle = $this->getTitleDelimeter($quote);
-            
+
             return $resTitle == $res;
         })->toArray() ?? [];
         return $SingleQuotesArr;
     }
 
-    private function getCheapestQuotesArr($quotes):array
+    private function getCheapestQuotesArr($quotes): array
     {
         $cheapestQuote = [];
         $quotes = $quotes ?? [];
@@ -932,7 +951,7 @@ class Shipping
             $output = curl_exec($ch);
             curl_close($ch);
             Log::info('$output ' . $output);
-           return json_decode($output, true);
+            return json_decode($output, true);
         } catch (\Throwable $e) {
             $result = [];
         }
