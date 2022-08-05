@@ -57,18 +57,36 @@ class ShippingZoneController extends Controller
      */
     public function store(Request $request)
     {
+        $regions = $this->AddUpdatezone($request);
+    
+        if(!$regions){
+            return response()->json(['error' => true, 'message' => 'Shipping Zone already exits', 'data' => []]);
+        }
+        $shipZone = new DbscShippingZone();
+        $shipZone->zone_name = $request->zone_name;
+        $shipZone->define_by_zone = json_encode($regions);
+        $shipZone->selected_region = json_encode($request->selected_region);
+        $shipZone->profile_id = $request->profile_id;
+        $shipZone->save();
+
+        return response()->json(['error' => false, 'message' => 'Shipping Zone created Successfully', 'data' => $shipZone]);
+    }
+
+    public function AddUpdatezone($request)
+    {
         $storeHash = $request->store_hash;
         $regions = [];
         $ids = $request->selected_region;
-        $shipZones = DbscShippingZone::where("profile_id", '=', $request->profile_id)->select('selected_region')->get();
+        $shipZones = DbscShippingZone::where("profile_id", '=', $request->profile_id)->whereKeyNot($request->id)->select('selected_region')->get();
         $shipZones = json_decode($shipZones);
+
         if(!empty($shipZones)){
             foreach($shipZones as $key){
                 $sav_regions = json_decode($key->selected_region);
                 foreach($sav_regions as $region){
                     foreach($ids as $req_region){
                         if($region === $req_region){
-                            return response()->json(['error' => false, 'message' => 'Shipping Zone already exits']);
+                            return false;
                         }
                     }
                 }
@@ -78,24 +96,17 @@ class ShippingZoneController extends Controller
         foreach($ids as $req_region){
 
             $storeDetails = BigCommerceFunctions::getZone($storeHash, $req_region);
-            $storeDetails = (new CurlRequest())->enSingleCurlRequest(   $storeDetails['endpoint'],
+            $storeDetails = (new CurlRequest())->enSingleCurlRequest($storeDetails['endpoint'],
             $storeDetails['request'], $storeDetails['headers'], $storeDetails['method'], false);
             $selected = json_decode($storeDetails['response'], true);
             $selected_regions["id"] = $selected['id'] ?? null;
             $selected_regions["name"] = $selected['name'] ?? '';
             $selected_regions["type"] = $selected['type'] ?? '';
-            $selected_regions["locations"] = $selected['loca    tions'] ?? '';
+            $selected_regions["locations"] = $selected['locations'] ?? '';
             $regions[] = $selected_regions;   
         }
         
-        $shipZone = new DbscShippingZone();
-        $shipZone->zone_name = $request->zone_name;
-        $shipZone->define_by_zone = json_encode($regions);
-        $shipZone->selected_region = json_encode($ids);
-        $shipZone->profile_id = $request->profile_id;
-        $shipZone->save();
-
-        return response()->json(['error' => false, 'message' => 'Shipping Zone created Successfully', 'data' => $shipZone]);
+        return $regions;
     }
 
     /**
@@ -156,17 +167,24 @@ class ShippingZoneController extends Controller
      */
     public function update(Request $request)
     {
-        if (empty($request->id)) {
+        if (empty($request->id) || empty($request->profile_id)) {
             return response()->json(['error' => true,
                 'data' => [],
-                'message' => 'Zone Id Not Exists',
+                'message' => 'Zone / Profile Id Not Exists',
             ], 404);
         }
+
+        $regions = $this->AddUpdatezone($request);
+    
+        if(!$regions){
+            return response()->json(['error' => true, 'message' => 'Shipping Zone already exits', 'data' => []]);
+        }
+
         $shipZone = DbscShippingZone::where('id', $request->id)->exists();
         if ($shipZone) {
             $shipZone = DbscShippingZone::find($request->id);
             $shipZone->zone_name = $request->zone_name;
-            $shipZone->define_by_zone = $request->define_by_zone;
+            $shipZone->define_by_zone = json_encode($regions);
             $shipZone->selected_region = json_encode($request->selected_region);
             $shipZone->update();
             return response()->json(['error' => false,
