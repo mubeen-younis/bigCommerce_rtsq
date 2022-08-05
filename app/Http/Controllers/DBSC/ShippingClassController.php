@@ -127,7 +127,7 @@ class ShippingClassController extends Controller
         $shipClass->delete();
         return response()->json(
             ['error' => false,
-            'message' => "Profile deleted successfully",
+            'message' => "Shipping Class deleted successfully",
             'data' => $request->id]
         );
     }
