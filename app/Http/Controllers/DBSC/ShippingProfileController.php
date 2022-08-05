@@ -5,6 +5,9 @@ namespace App\Http\Controllers\DBSC;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\DBSC\DbscShippingProfile;
+use App\Models\DBSC\DbscShippingOrigin;
+use App\Models\DBSC\DbscShippingRates;
+use App\Models\DBSC\DbscShippingZone;
 
 class ShippingProfileController extends Controller
 {
@@ -144,6 +147,23 @@ class ShippingProfileController extends Controller
                 'data' => [],
                 'message' => 'No Profile Id',
             ], 404);
+        }
+        $shipOrigin = DbscShippingOrigin::where('profile_id', '=' ,$request->id)->exists();
+        $shipZone = DbscShippingZone::where('profile_id', '=' ,$request->id)->exists();
+
+        if($shipOrigin){
+            $shipOrigin = DbscShippingOrigin::where('profile_id', '=' ,$request->id)->delete();
+        }
+
+        if($shipZone){
+            $ids = DbscShippingZone::where('profile_id', '=' ,$request->id)->select('id')->get();
+           foreach($ids as $id){
+                $shipRate = DbscShippingRates::where('dbsc_zone_id', '=' ,$id['id'])->exists();
+                if($shipRate){
+                    $shipRate = DbscShippingRates::where('dbsc_zone_id', '=' ,$id["id"])->delete();
+                }
+            }
+            $shipZone = DbscShippingZone::where('profile_id', '=' ,$request->id)->delete();
         }
 
         $shipProfile = DbscShippingProfile::find($request->id);
