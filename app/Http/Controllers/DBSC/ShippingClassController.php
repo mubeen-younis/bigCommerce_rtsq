@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\DBSC;
 
+use App\CustomClasses\Shipping;
 use App\Http\Controllers\Controller;
 use App\Models\DBSC\ShippingClass;
 use Illuminate\Http\Request;
@@ -82,7 +83,24 @@ class ShippingClassController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+        if (!isset($request->id) || empty($request->id)) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'Class Id not found',
+            ], 404);
+        }
+
+        $shipClass = ShippingClass::find($request->id);
+        if (!$shipClass) {
+            return response()->json(['error' => true, 'message' => 'Shipping class not found', 'data' => '']);
+        }
+
+        $shipClass->class_name = $request->class_name;
+        $shipClass->slug = $request->slug;
+        $shipClass->description = $request->description;
+        $shipClass->save();
+
+        return response()->json(['error' => false, 'message' => 'Shipping class updated successfully', 'data' => $shipClass]);
     }
 
     /**
@@ -91,8 +109,26 @@ class ShippingClassController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(Request $request)
     {
-        //
+        if (empty($request->id)) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'No class Id',
+            ], 404);
+        }
+
+        $shipClass = ShippingClass::find($request->id);
+        if (!$shipClass) {
+            return response()->json(['error' => true,
+            'message' => "Class not found"]);
+        }
+
+        $shipClass->delete();
+        return response()->json(
+            ['error' => false,
+            'message' => "Profile deleted successfully",
+            'data' => $request->id]
+        );
     }
 }
