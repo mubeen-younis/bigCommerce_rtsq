@@ -208,8 +208,8 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     // Shipping class Route
     Route::post('/add_shipping_class',[ShippingClassController::class,'store']);
     Route::get('/get_shipping_classes',[ShippingClassController::class,'show']);
-    Route::post('/update_dbsc_profile',[ShippingClassController::class,'update']);
-    Route::post('/delete_dbsc_profile',[ShippingClassController::class,'destroy']);
+    Route::post('/update_shipping_class',[ShippingClassController::class,'update']);
+    Route::post('/delete_shipping_class',[ShippingClassController::class,'destroy']);
 
     // Shipping Profile Route
     Route::post('/add_dbsc_profile',[ShippingProfileController::class,'store']);
