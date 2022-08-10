@@ -103,7 +103,7 @@ class ShippingProfileController extends Controller
         }
         return response()->json(['error' => false,
             'data' => $formattedData,
-            'message' => 'Profile Info',
+            'message' => 'Profiles Info',
         ], 200);
     }
 

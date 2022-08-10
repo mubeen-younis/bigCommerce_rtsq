@@ -10,7 +10,7 @@ class DbscShippingOrigin extends Model
     use HasFactory;
     protected $table = 'dbsc_shipping_origin';
     protected $fillable = [
-        'ori_nickname',
+        'nickname',
         'street_address',
         'city',
         'state_or_province',
