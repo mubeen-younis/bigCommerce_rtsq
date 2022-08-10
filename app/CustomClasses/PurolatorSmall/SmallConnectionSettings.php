@@ -9,7 +9,7 @@ use App\Models\Connection;
 
 class SmallConnectionSettings
 {
-    private $testConnectionUrl = 'https://eniture.com/ws/carriers/wwe-small/speedshipTest.php';
+    
 
     public function __construct()
     {
@@ -24,14 +24,13 @@ class SmallConnectionSettings
             'message' => 'Something went wrong!',
         ];
 
-        $url = $this->testConnectionUrl; //Constant::TEST_CONN_URL;
-     //   return $url;
+        $url = $this->testConnectionUrl; 
         $params = [
-            'license_key' => 'PFQWVM50-KYMQEZF8-FT6BALO4-7A44L2C0',
+            'license_key' => '',
             'server_name' => $storeName ?? '',
             
             'carrierName' => 'purolator',
-            'carrier_mode' => 'test', // use test / pro
+            'carrier_mode' => 'test', 
             'apiVersion' => '1.0',
             'platform' => 'bigcommerce',
 
@@ -46,6 +45,7 @@ class SmallConnectionSettings
             'dont_auth' => 1
         ];
         $queryString = http_build_query($params);
+        return $this->testConnectionUrl;
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
         
         if (isset($output['status']) && $output['status'] == false) {
