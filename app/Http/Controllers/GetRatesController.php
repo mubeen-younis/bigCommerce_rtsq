@@ -318,6 +318,7 @@ class GetRatesController extends Controller
             $settings['dropship_location'] = $productSetting['dropship_location'];
             $settings['ship_multiple_package'] = $productSetting['ship_multiple_package'];
             $settings['shipping_group'] = $productSetting['shipping_group'];
+            $settings['shipping_class'] = ($productSetting['shipping_class'] == 0 || $productSetting['shipping_class'] == null) ? null : $productSetting['shipping_class'];
         }
         return $settings;
     }

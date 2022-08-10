@@ -87,6 +87,7 @@ class Shipping
 
             }
         } catch (\Exception $exception) {
+            dd(123, $exception);
             Functions::log('DBSC rates exception ', $exception);
         }
 

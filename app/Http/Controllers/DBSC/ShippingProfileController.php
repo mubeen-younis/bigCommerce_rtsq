@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\DBSC;
 
 use App\Http\Controllers\Controller;
+use App\Models\DBSC\DbscOrigin;
 use Illuminate\Http\Request;
 use App\Models\DBSC\DbscShippingProfile;
 use App\Models\DBSC\DbscShippingOrigin;
@@ -34,7 +35,7 @@ class ShippingProfileController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
@@ -48,27 +49,87 @@ class ShippingProfileController extends Controller
         $shipProfile->shipping_classes = json_encode($request->shipping_classes);
         $shipProfile->store_id = $request->store_id;
         $shipProfile->save();
-        
+
         return response()->json(['error' => false, 'message' => 'Shipping Profile created Successfully', 'data' => $shipProfile]);
     }
 
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\Response
      */
-    public function show()
+    public function show(Request $request)
     {
-        $shipProfile = DbscShippingProfile::all();   
-        if ($shipProfile === null) {
+        $formattedData = [];
+        $storeId = $request['store_id'] ?? null;
+        $storeProfiles = optional(DbscShippingProfile::where('store_id', $storeId)->get())->toArray() ?? [];
+        $formattedData['store_profiles'] = $storeProfiles;
+
+
+        foreach ($storeProfiles as $shipProfile) {
+
+            $profileOrigins = optional(DbscOrigin::where('profile_id', $shipProfile['id'])->get())->toArray() ?? [];
+            if (blank($profileOrigins)) {
+                $formattedData['origins'][$shipProfile['id']] = [];
+                continue;
+            }
+            $formattedData['origins'][$shipProfile['id']] = $profileOrigins;
+
+
+            foreach ($profileOrigins as $profileOrigin) {
+
+                $shippingOrigins = optional(DbscShippingOrigin::where('origin_id', $profileOrigin['id'])->get())->toArray() ?? [];
+                $formattedData['origin'][$profileOrigin['id']] = $shippingOrigins;
+
+                $shippingZones = optional(DbscShippingZone::where('dbsc_origin_id', $profileOrigin['id'])->get())->toArray() ?? [];
+                $formattedData['zones'][$profileOrigin['id']] = $shippingZones;
+
+                foreach ($shippingZones as $shippingZone) {
+                    $shippingRates = optional(DbscShippingRates::where('dbsc_shipping_zone_id', $shippingZone['id'])->get())->toArray() ?? [];
+                    $formattedData['rates'][$shippingZone['id']] = $shippingRates;
+
+                }
+
+
+            }
+
+        }
+        if ($formattedData === null) {
             return response()->json(['error' => true,
                 'data' => [],
                 'message' => 'No Profile Found',
             ], 404);
         }
         return response()->json(['error' => false,
-            'data' => $shipProfile,
+            'data' => $formattedData,
+            'message' => 'Profile Info',
+        ], 200);
+    }
+
+
+    public function getProfileDetail(Request $request)
+    {
+        $profileId = $request['profile_id'] ?? null;
+        foreach ($storeProfiles as $shipProfile) {
+            $profileOrigins = optional(DbscOrigin::where('profile_id', $shipProfile['id'])->get())->toArray() ?? [];
+            if (blank($profileOrigins)) {
+                $formattedData[$shipProfile['id']] = null;
+                continue;
+            }
+
+            dd(23, $profileOrigins);
+
+        }
+
+        if ($formattedData === null) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'No Profile Found',
+            ], 404);
+        }
+        return response()->json(['error' => false,
+            'data' => $formattedData,
             'message' => 'Profile Info',
         ], 200);
     }
@@ -76,7 +137,7 @@ class ShippingProfileController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\Response
      */
     public function edit(Request $request)
@@ -104,8 +165,8 @@ class ShippingProfileController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request)
@@ -137,7 +198,7 @@ class ShippingProfileController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\Http\Response
      */
     public function destroy(Request $request)
@@ -148,30 +209,30 @@ class ShippingProfileController extends Controller
                 'message' => 'No Profile Id',
             ], 404);
         }
-        $shipOrigin = DbscShippingOrigin::where('profile_id', '=' ,$request->id)->exists();
-        $shipZone = DbscShippingZone::where('profile_id', '=' ,$request->id)->exists();
+        $shipOrigin = DbscShippingOrigin::where('profile_id', '=', $request->id)->exists();
+        $shipZone = DbscShippingZone::where('profile_id', '=', $request->id)->exists();
 
-        if($shipOrigin){
-            $shipOrigin = DbscShippingOrigin::where('profile_id', '=' ,$request->id)->delete();
+        if ($shipOrigin) {
+            $shipOrigin = DbscShippingOrigin::where('profile_id', '=', $request->id)->delete();
         }
 
-        if($shipZone){
-            $ids = DbscShippingZone::where('profile_id', '=' ,$request->id)->select('id')->get();
-           foreach($ids as $id){
-                $shipRate = DbscShippingRates::where('dbsc_zone_id', '=' ,$id['id'])->exists();
-                if($shipRate){
-                    $shipRate = DbscShippingRates::where('dbsc_zone_id', '=' ,$id["id"])->delete();
+        if ($shipZone) {
+            $ids = DbscShippingZone::where('profile_id', '=', $request->id)->select('id')->get();
+            foreach ($ids as $id) {
+                $shipRate = DbscShippingRates::where('dbsc_zone_id', '=', $id['id'])->exists();
+                if ($shipRate) {
+                    $shipRate = DbscShippingRates::where('dbsc_zone_id', '=', $id["id"])->delete();
                 }
             }
-            $shipZone = DbscShippingZone::where('profile_id', '=' ,$request->id)->delete();
+            $shipZone = DbscShippingZone::where('profile_id', '=', $request->id)->delete();
         }
 
         $shipProfile = DbscShippingProfile::find($request->id);
-        if($shipProfile){
+        if ($shipProfile) {
             $shipProfile->delete();
             return response()->json(['error' => false,
-            'message' => "Profile deleted successfully",
-            'data' => $request->id]);
+                'message' => "Profile deleted successfully",
+                'data' => $request->id]);
         }
         return response()->json(['error' => true,
             'message' => "Profile not found"]);
