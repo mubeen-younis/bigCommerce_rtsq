@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\DBSC\DbscShippingZone;
 use App\Models\DBSC\DbscShippingRates;
+use App\Models\DBSC\BcZones;
+use App\Models\DBSC\BcZonesDetail;
 class ShippingZoneController extends Controller
 {
     /**
@@ -42,11 +44,51 @@ class ShippingZoneController extends Controller
         $storeDetails = (new CurlRequest())->enSingleCurlRequest($storeDetails['endpoint'],
             $storeDetails['request'], $storeDetails['headers'], $storeDetails['method'], false);
         $response = json_decode($storeDetails['response'], true);
+        
+        $this->storeBcZones($response, $request);
+
         return response()->json(['error' => false,
             'data' => $response,
             'message' => 'Zone Info',
         ], 200);
         
+    }
+
+    /**
+     * Store Zones in db from BigCommerce
+     * @return void
+     */
+    public function storeBcZones($response, $request)
+    {
+        foreach($response as $key => $bczone){
+            
+            $bc_id_exist  = BcZones::where('bc_zone_id', '=', $bczone['id'])->exists();
+            
+            if($bc_id_exist){
+                continue;
+            }
+            else{
+                $BcZone = new BcZones();
+                $BcZone->bc_zone_id = $bczone['id'];
+                $BcZone->name = $bczone['name'];
+                $BcZone->type = $bczone['type'];
+                $BcZone->store_id = $request->store_id;
+                $BcZone->save();
+                $zone_id = BcZones::where('bc_zone_id', '=', $bczone['id'])->select('id')->first();
+                $BcZoneDetail = $bczone['locations'];
+
+                if(!empty($BcZoneDetail)){
+                    foreach($BcZoneDetail as $loc => $zoneDetail){
+                        $BcZoneDetails = new BcZonesDetail();
+                        $BcZoneDetails->country = $zoneDetail['country_iso2'] ?? '';
+                        $BcZoneDetails->state_or_province = $zoneDetail['state_iso2'] ?? '';
+                        $BcZoneDetails->zone_id = $zone_id['id'];
+                        $BcZoneDetails->save(); 
+                    }
+                }
+            }    
+        }
+
     }
 
     /**
