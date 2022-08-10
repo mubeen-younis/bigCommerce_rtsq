@@ -5,6 +5,8 @@ namespace App\Http\Controllers\DBSC;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\DBSC\DbscShippingOrigin;
+use App\Models\DBSC\DbscShippingRates;
+use App\Models\DBSC\DbscShippingZone;
 
 class ShippingOriginController extends Controller
 {
@@ -153,10 +155,30 @@ class ShippingOriginController extends Controller
                 'message' => 'No Origin Id',
             ], 404);
         }
+
+        $profile_id = DbscShippingOrigin::where('id' ,'=', $request->id)->select('profile_id')->first();
         $shipOrigin = DbscShippingOrigin::find($request->id);
-        
+
         if($shipOrigin){
             $shipOrigin->delete();
+            $totalShipOrigin = DbscShippingOrigin::all();
+            
+            if(count($totalShipOrigin) == 0){
+
+                $shipZone = DbscShippingZone::where('profile_id', '=' ,$profile_id['profile_id'])->exists();
+                if($shipZone){
+                    $ids = DbscShippingZone::where('profile_id', '=' ,$profile_id['profile_id'])->select('id')->get();
+                     foreach($ids as $id){
+                        $shipRate = DbscShippingRates::where('dbsc_zone_id', '=' ,$id['id'])->exists();
+                        if($shipRate){
+                            $shipRate = DbscShippingRates::where('dbsc_zone_id', '=' ,$id["id"])->delete();
+                        }
+                    }
+
+                    $shipZone = DbscShippingZone::where('profile_id', '=' ,$profile_id['profile_id'])->delete();
+                }
+            }
+            
             return response()->json(['error' => false,
             'message' => "Origin deleted successfully",
             'data' => $request->id]);

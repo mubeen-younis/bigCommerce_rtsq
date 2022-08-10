@@ -208,8 +208,10 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     // Shipping class Route
     Route::post('/add_shipping_class',[ShippingClassController::class,'store']);
     Route::get('/get_shipping_classes',[ShippingClassController::class,'show']);
+    Route::post('/update_shipping_class',[ShippingClassController::class,'update']);
+    Route::post('/delete_shipping_class',[ShippingClassController::class,'destroy']);
 
-    // Shipping Profile     Route
+    // Shipping Profile Route
     Route::post('/add_dbsc_profile',[ShippingProfileController::class,'store']);
     Route::get('/edit_dbsc_profile',[ShippingProfileController::class,'edit']);
     Route::get('/get_dbsc_profiles',[ShippingProfileController::class,'show']);
@@ -223,7 +225,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/update_dbsc_origin',[ShippingOriginController::class,'update']);
     Route::post('/delete_dbsc_origin',[ShippingOriginController::class,'destroy']);
 
-    // Shipping Origin Zone
+    // Shipping Zone Route
     Route::get('/get_zones_bc',[ShippingZoneController::class,'getZonesOfStore']);
     Route::post('/add_dbsc_zone',[ShippingZoneController::class,'store']);
     Route::get('/edit_dbsc_zone',[ShippingZoneController::class,'edit']);
@@ -231,7 +233,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/update_dbsc_zone',[ShippingZoneController::class,'update']);
     Route::post('/delete_dbsc_zone',[ShippingZoneController::class,'destroy']);
 
-    // Shipping Origin Rates
+    // Shipping Rates Route
     Route::post('/add_dbsc_rates',[ShippingRatesController::class,'store']);
     Route::get('/edit_dbsc_rates',[ShippingRatesController::class,'edit']);
     Route::get('/get_dbsc_rates',[ShippingRatesController::class,'show']);

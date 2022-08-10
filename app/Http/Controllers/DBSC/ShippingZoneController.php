@@ -7,7 +7,7 @@ use App\CustomClasses\BigCommerceFunctions;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\DBSC\DbscShippingZone;
-
+use App\Models\DBSC\DbscShippingRates;
 class ShippingZoneController extends Controller
 {
     /**
@@ -216,6 +216,7 @@ class ShippingZoneController extends Controller
 
         $shipZone = DbscShippingZone::find($request->id);
         if ($shipZone) {
+            $shipRate = DbscShippingRates::where('dbsc_zone_id', '=' ,$request->id)->delete();
             $shipZone->delete();
             return response()->json(['error' => false,
                 'message' => "Zone deleted successfully",
