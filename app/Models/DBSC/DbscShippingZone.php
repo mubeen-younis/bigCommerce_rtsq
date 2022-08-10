@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class DbscShippingZone extends Model
 {
     use HasFactory;
+
     protected $table = 'dbsc_shipping_zone';
     protected $fillable = [
         'zone_name',
@@ -15,5 +16,11 @@ class DbscShippingZone extends Model
         'postcode',
         'profile_id',
     ];
+
+
+    public static function getZoneIdFromDestination($destination)
+    {
+        return 5;
+    }
 
 }
