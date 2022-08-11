@@ -39,7 +39,7 @@ return [
     'channels' => [
         'stack' => [
             'driver' => 'stack',
-            'channels' => ['daily','app_logs'],
+            'channels' => ['daily', 'app_logs'],
             'ignore_exceptions' => false,
         ],
 
@@ -59,7 +59,7 @@ return [
         'daily' => [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),
-            'level' => 'critical',
+            'level' => 'error',
             'days' => 3,
         ],
 

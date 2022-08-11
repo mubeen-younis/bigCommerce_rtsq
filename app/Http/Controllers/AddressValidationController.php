@@ -164,7 +164,7 @@ class AddressValidationController extends Controller
         $curlResp = json_decode($curlResp['response'], true);
         Log::info('Curl Response from VA ' . json_encode($curlResp) . 'Request ' . json_encode($request));
         if (isset($curlResp['is_valid']) && $curlResp['is_valid'] == false) {
-            return ['error' => true, 'message' => 'Not a valid company Id'];
+            return ['error' => true, 'message' => !blank($curlResp['message']) ? $curlResp['message'] : 'Not a valid company ID'];
         }
         Log::info('Before second call ' . json_encode($curlResp));
         if (isset($curlResp['is_valid']) && $curlResp['is_valid'] == true) {
