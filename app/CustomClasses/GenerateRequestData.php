@@ -11,6 +11,7 @@ use App\CustomClasses\SmartyStreet\SmartyStreet;
 use App\CustomClasses\UspsSmall\QuotesResults as UspsSmallQuotesResults;
 use App\CustomClasses\UspsSmall\PackagingRequest as UspsSmallPackagingRequest;
 use Illuminate\Support\Facades\Log;
+use App\CustomClasses\DayLightLtl\QuotesResults as dayLightQuotesResults;
 
 /**
  * class that generated request data
@@ -184,6 +185,11 @@ class GenerateRequestData
                     $echoLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['echoLogistics'] = $echoLtlArr;
                     break;
+                case 'daylight-ltl':
+                    $dayLightLtlArr = $this->dayLightLtlEnityArr($con1, $destination);
+                    $dayLightLtlArr['originAddress'] = $enitOrigin;
+                    $carriersArr['carriers']['daylight'] = $dayLightLtlArr;
+                    break;
             }
         }
        return  ['carriersArr' => $carriersArr, 'residential' => $this->resiCarrier];
@@ -201,7 +207,7 @@ class GenerateRequestData
 
 
     public function getEnitOrigin($origin)
-    {   
+    {
         $wweLtlArr1['originAddress'] = $origin;
 
         if (count($wweLtlArr1['originAddress']) > 1) {
@@ -255,7 +261,7 @@ class GenerateRequestData
 
         ];
     }
-    
+
 
     function gtzLtlEnitArr($connSettings, $destination, $enitOrigin, $carName)
     {
@@ -428,7 +434,7 @@ class GenerateRequestData
             'licenseKey' => '',
             'serverName' => "https://" . $this->storeData['store']['name'],
             'carrierMode' => 'pro',
-            'quotestType' => 'ltl', 
+            'quotestType' => 'ltl',
             'version' => '1.0.0',
             'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
             'returnQuotesOnExceedWeight' => '1',
@@ -527,6 +533,21 @@ class GenerateRequestData
             'version' => '1.0',
             'returnQuotesOnExceedWeight' => 1,
             'api' => $this->getApiInfoArrEchoLtl($connSettings, $destination),
+        ];
+    }
+
+    private function dayLightLtlEnityArr($connSettings, $destination): array
+    {
+        return [
+            'licenseKey' => '',
+            'platform' => 'bigcommerce',
+            'serverName' => "https://" . $this->storeData['store']['name'],
+            'carrierMode' => 'pro',
+            'quotestType' => 'ltl',
+            'version' => '1.0',
+            'returnQuotesOnExceedWeight' => 1,
+            'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
+            'api' => $this->getApiInfoArrDayLightLtl($connSettings, $destination),
         ];
     }
 
@@ -699,7 +720,8 @@ class GenerateRequestData
                     || isset($carriers['abf'])
                     || isset($carriers['southeastern'])
                     || isset($carriers['tql'])
-                    || isset($carriers['echoLogistics']);
+                    || isset($carriers['echoLogistics'])
+                    || isset($carriers['daylight']);
                 if ($isLtl) {
                     $itemsArr = $olditemsArr + $itemsArr;
                 }
@@ -1024,7 +1046,7 @@ class GenerateRequestData
         }
 
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
-       
+
         $apiArray = [
             'odflUserName' => $connSettings['creds']['username'],
             'odflPassword' => $connSettings['creds']['password'],
@@ -1032,13 +1054,13 @@ class GenerateRequestData
             'senderZip' => $connSettings['creds']['billing_postal_Code'],
             'thresholdWeightLimit' => $weightThreshold,
             'accessorial' => $accessorial,
-           
+
         ];
-        
+
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
 
     }
-    
+
 
     public function getApiInfoArrGTZLtl($connSettings, $destination, $carName)
     {
@@ -1678,7 +1700,7 @@ class GenerateRequestData
         /*
             * Check if rad hit not consumed and residential is enables
         * **/
-    
+
         if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
@@ -1707,7 +1729,7 @@ class GenerateRequestData
 
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $apiArray = [
-           
+
             'id' => $connSettings['creds']['business_id'],
             'senderConsignee' => 'ShipAff',
             'thresholdWeightLimit' => $weightThreshold,
@@ -1796,7 +1818,7 @@ class GenerateRequestData
 
         $this->resiCarrier['dayrossLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['dayrossLtl'] = $alwaysResi;
-       
+
         $accessorial = [];
         if ($alwaysResi || $residential != 'N') {
             $accessorial['PRESDL'] = 'Private Residence Delivery';
@@ -1807,7 +1829,7 @@ class GenerateRequestData
 
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
 
-        $apiArray = [   
+        $apiArray = [
                 'emailAddress' => $connSettings['creds']['email'],
                 'password' => $connSettings['creds']['password'],
                 'billToAccountNumber' => $connSettings['creds']['billing_account_number'],
@@ -1841,7 +1863,7 @@ class GenerateRequestData
             } else {
                 $residential = $this->residential;
             }
-         
+
             if ($liftGate != 'Y') {
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
@@ -1851,7 +1873,7 @@ class GenerateRequestData
 
         $this->resiCarrier['saiaLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['saiaLtl'] = $alwaysResi;
-        
+
         $accessorial = [];
         if ($alwaysResi || $residential != 'N') {
             array_push($accessorial, 'ResidentialDelivery');
@@ -1862,7 +1884,7 @@ class GenerateRequestData
 
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
 
-        $apiArray = [   
+        $apiArray = [
             'userID' => $connSettings['creds']['userID'] ?? '',
             'password' => $connSettings['creds']['password'] ?? '',
             'accountNumber' => $connSettings['creds']['account_number'] ?? '',
@@ -1927,7 +1949,7 @@ class GenerateRequestData
             'customerState' => $connSettings['creds']['customer_state'],
             'customerZip' => $connSettings['creds']['customer_zip_code'],
             'thirdPartyAccount' => $connSettings['creds']['third_party_account_number'] ?? '',
-            
+
             'terms' => 'P',
             'thresholdWeightLimit' => $weightThreshold,
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
@@ -1973,7 +1995,7 @@ class GenerateRequestData
                 $binReqArr[$itemLocId] = $uspsSmallPkgReq->getGroupedUSPSBoxes($storeId);
                 $binRespArr = $uspsSmallPkgReq->setAndGetBinsResponse($storeId, $connSettings, $enitOrigin, $lineItems, $itemLocId);
                 $apiArray['binResponse'][$itemLocId] = $binRespArr['packedBoxes'];
-                $owdArr = $binRespArr['owdBoxes']; 
+                $owdArr = $binRespArr['owdBoxes'];
             }
 
             $apiArray['binsReqArr'] = $binReqArr ?? [];
@@ -2013,7 +2035,7 @@ class GenerateRequestData
 
         $this->resiCarrier['echoLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['echoLtl'] = $alwaysResi;
-       
+
         $accessorial = [];
         if ($alwaysResi || $residential != 'N') {
             array_push($accessorial, 'RESIDENTIALDELIVERY');
@@ -2038,8 +2060,22 @@ class GenerateRequestData
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
 
+     private function getApiInfoArrDayLightLtl($connSettings, $destination): array
+    {
+        $resp = $this->verifyRADStatus($connSettings, $destination);
+        $this->resiCarrier['dayLightLtl'] = $resp['residential'];
+        $this->resiCarrier['alwaysResi']['dayLightLtl'] = $resp['alwaysResi'];
+        $dayLightQuotes = new dayLightQuotesResults();
+        $apiArray = $dayLightQuotes->getApiArr($connSettings, $resp);
+
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
+    }
+
     private function verifyRADStatus($connSettings, $destination): array
     {
+        $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
+            (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+
         $storeId = $this->storeData['store']['id'] ?? null;
         $residential = 'N';
         $alwaysResi = false;
@@ -2064,6 +2100,7 @@ class GenerateRequestData
         $resp = [
             'residential' => $residential,
             'alwaysResi' => $alwaysResi,
+            'liftGate' => $liftGate
         ];
         return $resp;
     }
@@ -2199,7 +2236,7 @@ class GenerateRequestData
                 $resp['originAddress'] = $origins;
                 $resp['binResponse'] = [];
                 $resp['boxBins'] = [];
-                
+
                 return $resp;
             }
         }
