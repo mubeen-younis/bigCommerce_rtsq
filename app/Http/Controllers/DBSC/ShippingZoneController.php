@@ -106,9 +106,10 @@ class ShippingZoneController extends Controller
         }
         $shipZone = new DbscShippingZone();
         $shipZone->zone_name = $request->zone_name;
-        $shipZone->define_by_zone = json_encode($regions);
         $shipZone->selected_region = json_encode($request->selected_region);
         $shipZone->profile_id = $request->profile_id;
+        $shipZone->dbsc_origin_id = $request->dbsc_origin_id;
+        $shipZone->store_id = $request->store_id;
         $shipZone->save();
 
         return response()->json(['error' => false, 'message' => 'Shipping Zone created Successfully', 'data' => $shipZone]);
@@ -226,7 +227,6 @@ class ShippingZoneController extends Controller
         if ($shipZone) {
             $shipZone = DbscShippingZone::find($request->id);
             $shipZone->zone_name = $request->zone_name;
-            $shipZone->define_by_zone = json_encode($regions);
             $shipZone->selected_region = json_encode($request->selected_region);
             $shipZone->update();
             return response()->json(['error' => false,
@@ -258,11 +258,16 @@ class ShippingZoneController extends Controller
 
         $shipZone = DbscShippingZone::find($request->id);
         if ($shipZone) {
-            $shipRate = DbscShippingRates::where('dbsc_zone_id', '=' ,$request->id)->delete();
+            $data['id'] = $shipZone->id;
+            $data['origin_id'] = $shipZone->dbsc_origin_id;
+            $shipRate = DbscShippingRates::where('dbsc_shipping_zone_id', '=' ,$request->id)->exists();
+            if($shipRate){
+                $shipRate = DbscShippingRates::where('dbsc_shipping_zone_id', '=', $request->id)->delete();
+            }
             $shipZone->delete();
             return response()->json(['error' => false,
                 'message' => "Zone deleted successfully",
-                'data' => $request->id]);
+                'data' => $data]);
         }
         return response()->json(['error' => true,
             'message' => "Zone not found"]);

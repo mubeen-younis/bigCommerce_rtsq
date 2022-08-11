@@ -54,7 +54,7 @@ class ShippingRatesController extends Controller
         $shipRates->minimum_shipping_quote = $request->minimum_shipping_quote;
         $shipRates->maximum_shipping_quote = $request->maximum_shipping_quote;
         $shipRates->rating_method = $request->rating_method;
-        $shipRates->dbsc_zone_id = $request->dbsc_zone_id;
+        $shipRates->dbsc_shipping_zone_id = $request->dbsc_zone_id;
         $shipRates->save();
         
         return response()->json(['error' => false, 'message' => 'Shipping Rates Added Successfully', 'data' => $shipRates]);
@@ -173,12 +173,15 @@ class ShippingRatesController extends Controller
             ], 404);
         }
 
-        $shipRates = DbscShippingRates::find($request->id);
-        if($shipRates){
-            $shipRates->delete();
+        $shipRate = DbscShippingRates::find($request->id);
+        if($shipRate){
+            $data['id'] = $shipRate->id;
+            $data['zone_id'] = $shipRate->dbsc_shipping_zone_id;
+            $shipRate->delete();
+            
             return response()->json(['error' => false,
             'message' => "Rates deleted successfully",
-            'data' => $request->id]);
+            'data' => $data]);
         }
         return response()->json(['error' => true,
             'message' => "Rates not found"]);

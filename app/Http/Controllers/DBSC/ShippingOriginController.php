@@ -39,9 +39,13 @@ class ShippingOriginController extends Controller
      */
     public function store(Request $request)
     {
-        $dbscOrigin = DbscOrigin::create([
-            'profile_id' => $request->profile_id,
-        ]);
+        if($request->from_shipping_origin == 2 || ($request->from_shipping_origin == 1 && !$request->origin_id)){
+            $dbscOrigin = DbscOrigin::create([
+                'profile_id' => $request->profile_id,
+            ]);
+        }else{
+            $dbscOrigin['id'] = $request->origin_id;
+        }
 
         $shipOrigin = new DbscShippingOrigin();
         $shipOrigin->nickname = $request->nickname;
@@ -164,6 +168,8 @@ class ShippingOriginController extends Controller
         $shipOrigin = DbscShippingOrigin::find($request->id);
 
         if($shipOrigin){
+            $data['id'] = $shipOrigin->id;
+            $data['origin_id'] = $shipOrigin->origin_id;
             $shipOrigin->delete();
             $totalShipOrigin = DbscShippingOrigin::all();
             
@@ -185,7 +191,7 @@ class ShippingOriginController extends Controller
             
             return response()->json(['error' => false,
             'message' => "Origin deleted successfully",
-            'data' => $request->id]);
+            'data' => $data]);
         }
         return response()->json(['error' => true,
             'message' => "Origin not found"]);
