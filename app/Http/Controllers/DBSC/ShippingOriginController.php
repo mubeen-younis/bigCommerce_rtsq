@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\DBSC\DbscShippingOrigin;
 use App\Models\DBSC\DbscShippingRates;
 use App\Models\DBSC\DbscShippingZone;
+use App\Models\DBSC\DbscOrigin;
 
 class ShippingOriginController extends Controller
 {
@@ -38,6 +39,10 @@ class ShippingOriginController extends Controller
      */
     public function store(Request $request)
     {
+        $dbscOrigin = DbscOrigin::create([
+            'profile_id' => $request->profile_id,
+        ]);
+
         $shipOrigin = new DbscShippingOrigin();
         $shipOrigin->nickname = $request->nickname;
         $shipOrigin->street_address = $request->street_address;
@@ -46,6 +51,7 @@ class ShippingOriginController extends Controller
         $shipOrigin->postal_code = $request->postal_code;
         $shipOrigin->country = $request->country;
         $shipOrigin->profile_id = $request->profile_id;
+        $shipOrigin->origin_id = $dbscOrigin['id'];
         $shipOrigin->availability_in_other_plugins = $request->availability_in_other_plugins;
         $shipOrigin->save();
         

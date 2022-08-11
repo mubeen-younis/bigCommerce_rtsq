@@ -10,4 +10,5 @@ class DbscOrigin extends Model
     use HasFactory;
 
     protected $table = 'dbsc_origins';
+    protected $fillable = ['profile_id',];
 }
