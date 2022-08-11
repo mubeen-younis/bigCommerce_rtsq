@@ -210,6 +210,7 @@ class ShippingProfileController extends Controller
             ], 404);
         }
         $shipOrigin = DbscShippingOrigin::where('profile_id', '=', $request->id)->exists();
+        $dbscOrigin = DbscOrigin::where('profile_id', '=', $request->id)->exists();
         $shipZone = DbscShippingZone::where('profile_id', '=', $request->id)->exists();
 
         if ($shipOrigin) {
@@ -219,12 +220,16 @@ class ShippingProfileController extends Controller
         if ($shipZone) {
             $ids = DbscShippingZone::where('profile_id', '=', $request->id)->select('id')->get();
             foreach ($ids as $id) {
-                $shipRate = DbscShippingRates::where('dbsc_zone_id', '=', $id['id'])->exists();
+                $shipRate = DbscShippingRates::where('dbsc_shipping_zone_id', '=', $id['id'])->exists();
                 if ($shipRate) {
-                    $shipRate = DbscShippingRates::where('dbsc_zone_id', '=', $id["id"])->delete();
+                    $shipRate = DbscShippingRates::where('dbsc_shipping_zone_id', '=', $id["id"])->delete();
                 }
             }
             $shipZone = DbscShippingZone::where('profile_id', '=', $request->id)->delete();
+        }
+
+        if ($dbscOrigin) {
+            $dbscOrigin = DbscOrigin::where('profile_id', '=', $request->id)->delete();
         }
 
         $shipProfile = DbscShippingProfile::find($request->id);
