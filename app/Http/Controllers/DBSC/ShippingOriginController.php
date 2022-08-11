@@ -39,7 +39,7 @@ class ShippingOriginController extends Controller
     public function store(Request $request)
     {
         $shipOrigin = new DbscShippingOrigin();
-        $shipOrigin->ori_nickname = $request->nickname;
+        $shipOrigin->nickname = $request->nickname;
         $shipOrigin->street_address = $request->street_address;
         $shipOrigin->city = $request->city;
         $shipOrigin->state_or_province = $request->state_or_province;
@@ -47,7 +47,6 @@ class ShippingOriginController extends Controller
         $shipOrigin->country = $request->country;
         $shipOrigin->profile_id = $request->profile_id;
         $shipOrigin->availability_in_other_plugins = $request->availability_in_other_plugins;
-        $shipOrigin->from_shipping_origin = $request->from_shipping_origin;
         $shipOrigin->save();
         
         return response()->json(['error' => false, 'message' => 'Shipping Origin created Successfully', 'data' => $shipOrigin]);
@@ -120,14 +119,13 @@ class ShippingOriginController extends Controller
         $shipOrigin = DbscShippingOrigin::where('id', $request->id)->exists();
         if ($shipOrigin) {
             $shipOrigin = DbscShippingOrigin::find($request->id);
-            $shipOrigin->ori_nickname = $request->nickname;
+            $shipOrigin->nickname = $request->nickname;
             $shipOrigin->street_address = $request->street_address;
             $shipOrigin->city = $request->city;
             $shipOrigin->state_or_province = $request->state_or_province;
             $shipOrigin->postal_code = $request->postal_code;
             $shipOrigin->country = $request->country;
             $shipOrigin->availability_in_other_plugins = $request->availability_in_other_plugins;
-            $shipOrigin->from_shipping_origin = $request->from_shipping_origin;
             $shipOrigin->update();
             return response()->json(['error' => false,
                 'data' => $shipOrigin,
