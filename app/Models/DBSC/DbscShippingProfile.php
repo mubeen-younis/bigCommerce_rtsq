@@ -50,13 +50,14 @@ class DbscShippingProfile extends Model
 
     protected static function getProfileRates($profileId, $zoneId, $storeId)
     {
-        return optional(DbscShippingRates::join('dbsc_shipping_zone', 'dbsc_shipping_zone.id', 'dbsc_shipping_rates.dbsc_zone_id')
+        return optional(DbscShippingRates::join('dbsc_shipping_zone', 'dbsc_shipping_rates.dbsc_shipping_zone_id', 'dbsc_shipping_zone.id')
             ->join('dbsc_profiles', 'dbsc_profiles.id', 'dbsc_shipping_zone.profile_id')
-            ->join('dbsc_shipping_origin', 'dbsc_shipping_origin.id', 'dbsc_shipping_zone.dbsc_shipping_origin_id')
-            ->select('dbsc_shipping_rates.*', 'dbsc_shipping_origin.*', 'dbsc_shipping_origin.id as dbsc_shipping_origin_id', 'dbsc_shipping_rates.id as rate_id')
-            ->where(['dbsc_profiles.id' => $profileId,
+            ->join('dbsc_origins', 'dbsc_origins.id', 'dbsc_shipping_zone.dbsc_origin_id')
+            ->select('*')
+            ->where([
+                'dbsc_profiles.id' => $profileId,
                 'dbsc_profiles.store_id' => $storeId,
-                'dbsc_shipping_rates.dbsc_zone_id' => $zoneId,
+                'dbsc_shipping_rates.dbsc_shipping_zone_id' => $zoneId,
             ])->get())->toArray() ?? [];
     }
 }

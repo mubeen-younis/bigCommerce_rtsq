@@ -2,90 +2,118 @@
 
 namespace App\CustomClasses\DBSC;
 
+use App\Constants\Constant;
+use App\Constants\Endpoints;
+use App\CustomClasses\Functions;
 use App\Models\DBSC\DistanceLookup;
+use Illuminate\Support\Facades\Log;
 
 class GetDistance
 {
+    private $distanceMatrixUrl = "https://maps.googleapis.com/maps/api/distancematrix/json?";
     private $googleDistanceApiKey = "AIzaSyAEpMbPnNPg2I2_X_65ulD9eHCH5KG7Exc";
     private $googleGeocodingApiKey = "AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w";
 
-    public function findDistance($type, $origin, $destination, $shop)
+
+    /**
+     * Gets Distance for Profile Rate
+     * @param $type
+     * @param $origin
+     * @param $destination
+     * @param $shop
+     * @return array|bool|string
+     */
+    public function findDistance($type, $origin, $destination, $shop): bool|array|string
     {
-        $distance = null;
         if ($type == 'Route') {
-            $distance = $this->findRouteDistance($origin, $destination, $shop);
+            $originArr[0] = $origin;
+            $distance = $this->findRouteDistances($originArr, $destination);
         } else {
             $distance = $this->getStraightLineDistance($origin, $destination, $shop);
         }
         return $distance;
     }
 
+    /**
+     * Gets the Nearest Address from destination
+     * @param $origins
+     * @param $destination
+     * @return mixed
+     */
+    public function getNearest($origins, $destination): mixed
+    {
+        return $this->findRouteDistances($origins, $destination);
+    }
 
     /**
-     * @param     $origin
-     * @param     $destination
-     * @param     $shop
+     * Find the distance between origins and destination address.
      *
-     * @return array
+     * 1. First we check the record in the database agains origin and destination combination.
+     * 2. If record found then we update the record by incrementing the lookup_count by 1. Then we return this
+     *    record to use as distance. We loop through all the origin with destination to find the recode from the
+     *    database if not found then we make an array of these combination and sends the request to Google API.
+     * 3. If API returns the response then we save these distance record to database for future use.
+     *
+     * @param      $origins
+     * @param      $destination
+     * @param bool $no_res
+     *
+     * @return array|bool|false|string
      */
-    public function findRouteDistance($origin, $destination, $shop)
+    public function findRouteDistances($origins, $destination): array|bool|string
     {
         // Contain the origins string as a url which will be passed to Google API to find the distance.
         $originUrl = '';
+
         // Combinations against we will get the distance from the API.
         $enabledCombinations = [];
+
         // Holds the distance got from database
         $distanceRows = [];
-        $origin['city'] = trim($origin['city']);
-        $origin['state'] = trim($origin['state']);
-        $origin['zip'] = str_replace(' ', '', trim($origin['zip'])); // remove the white-spaces in the zip.
-        $origin['country'] = trim($origin['country']);
 
-        $destinationObject = (object)$destination;
+        $destination = (object)$destination;
 
         // also remove the the whitespaces in the zip code i.e. make 'J0Z 2S0' = 'J0Z2S0
-        $destinationZip = str_replace(' ', '', trim($destinationObject->zip));
+        $destinationZip = str_replace(' ', '', trim($destination->zip));
         // Destination address
         $destinationUrl = urlencode(
-            trim($destinationObject->city) . ' ' .
-            trim($destinationObject->state) . ' ' .
-            trim($destinationObject->zip) . ' ' .
-            trim($destinationObject->country)
+            trim($destination->city) . ' ' .
+            trim($destination->state) . ' ' .
+            trim($destination->zip) . ' ' .
+            trim($destination->country)
         );
 
+        // if origin is array then execute following logic.
+        if (is_array($origins)) {
+            // loop through all the origins and get the distance from the database against origin and destination.
+            foreach ($origins as $origin) {
+                // Get the distance row from database
+                $distance = DistanceLookup::getDistanceData($origin['zip'], $destinationZip);
 
-        // Get the distance from the database against origin and destination.
-        // Get the distance row from database
-
-        $distance = DistanceLookup::getDistanceData($origin['zip'], $destinationZip);
-
-        //if found
-        if (!blank($distance)) {
-            $distanceRows[] = $distance;
-        } else {
-            // if not found then make origin url string
-            $originUrl .= urlencode("{$origin['city']}  {$origin['state']} {$origin['zip']}") . "|";
-            // Make combination
-            $enabledCombinations[] = ['origin_zip' => $origin['zip'], 'destination_zip' => $destinationZip];
-        }
-        $distanceObj = '';
-        if (!empty($originUrl)) {
-            // If origin url is set, then we right trim the '|' sign from the string.
-            // There can be multiple origins in url string.
-            // i.e. 'Chicago+IL+60701+US|Chicago+IL+60701+US|' to 'Chicago+IL+60701+US|Chicago+IL+60701+US'
-            $originUrl = rtrim($originUrl, '|');
-            // check for available lookups
-            $distanceObj = $this->getDistanceMatrixDataApi($originUrl, $destinationUrl, $this->googleDistanceApiKey);
-            dd(23, $distanceObj);
-            if ($distanceObj == 'error' || empty($distanceObj)) {
-                return ['error' => 'The lookups are not available.'];
+                if (!blank($distance)) {
+                    $distanceRows[] = $distance;
+                } else {
+                    // if not found then make origin url string
+                    $originUrl .= urlencode("{$origin['city']}  {$origin['state']} {$origin['zip']}|");
+                    // Make combination
+                    $enabledCombinations[] = ['origin_zip' => $origin['zip'], 'destination_zip' => $destinationZip];
+                }
             }
+            // If origin url is set, then we right trim the '|' sign from the string. There can be multiple origins in
+            // url string.
+            // i.e. 'Chicago+IL+60701+US|Chicago+IL+60701+US|' to 'Chicago+IL+60701+US|Chicago+IL+60701+US'
+            if ($originUrl != '') {
+                // remove '|' form right of the string
+                $originUrl = rtrim($originUrl, '|');
+            }
+
         }
 
-        $apiResponse = [];
+        $detail = '';
 
-        // Check only when origin url is set
-        if (!empty($originUrl)) {
+        /* API Call */
+        if ($originUrl != '') {
+            $distanceObj = (new self)->getDistanceFromGoogleApi($originUrl, $destinationUrl, $this->googleDistanceApiKey);
             if ($distanceObj == 'server_error') {
                 return ['error' => 'Server error'];
             } else {
@@ -97,37 +125,92 @@ class GetDistance
             }
         }
 
+
         // Declare an array for holding final array.
         $finalDistance = [];
+
         // Details contains the response from the Google API, So if that is set then we insert these records to database
         // for future use.
         // $enabledCombinations are the zips combs that are not exists in database.
-        if ($apiResponse && !empty($enabledCombinations)) {
+        if (isset($detail) && !empty($enabledCombinations)) {
             // insert distance data to database (distance_lookup)
-            $finalDistance = DistanceLookup::insertDistanceData($apiResponse, $enabledCombinations);
+            $finalDistance = DistanceLookup::insertDistanceData($detail, $enabledCombinations);
         }
-        // If we found data from the database then merge both the arrays.
+
+
+        // If their we found data from the database then merge both the arrays.
         if (!empty($distanceRows)) {
             $finalDistance = array_merge($finalDistance, $distanceRows);
         }
 
-        foreach ($finalDistance as $key => $distance) {
-            $miles = $distance['distance_mi'];
-            $metres = $distance['distance_m'];
-
-            $distanceArray['distance_km'] = $miles;
-            $distanceArray['distance_miles'] = $miles;
-            $distanceArray['distance_m'] = $metres;
-
+        if (!blank($finalDistance)) {
+            $distances = collect($finalDistance);
+            $minDistanceOrigin = $distances->where('distance_m', $distances->min('distance_m'))->first();
+            $nearestAddress = collect($origins)->where('zip', $minDistanceOrigin['origin_zip'])->first();
+            $nearestAddress['distance_m'] = !empty($minDistanceOrigin['distance_m']) ? Functions::removeString($minDistanceOrigin['distance_m']) : null;
+        } else {
+            $nearestAddress = collect($origins)->first();
+            $nearestAddress['distance_m'] = null;
         }
-        return array(
-            'origin' => $origin,
-            'distance_meter' => $distanceArray['distance_m'],
-            'distance_km' => $distanceArray['distance_km']
-        );
-
+        //return the final array of distance
+        return $nearestAddress;
     }
 
+
+    /**
+     * Gets Details of Distance From Google API
+     * @param $origin
+     * @param $destination
+     * @param $apiKey
+     * @return bool|string
+     */
+    public function getDistanceFromGoogleApi($origin, $destination, $apiKey)
+    {
+        $url = $this->distanceMatrixUrl;
+        $url .= "origins=" . $origin . "&";
+        $url .= "destinations=" . $destination . "&";
+        $url .= "key=" . $apiKey;
+//            error_log('$url:' . json_encode($url));
+        $headers = array(
+            "Content-type: text/xml;charset=\"utf-8\"",
+            "Accept: text/xml",
+            "Cache-Control: no-cache",
+            "Pragma: no-cache",
+        );
+        $ch = curl_init();
+        // set url
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 180);
+        // array of values
+        //return the transfer as a string
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        // $output contains the output string
+        $response = curl_exec($ch);
+        // close curl resource to free up system resources
+        $respInfo = curl_getinfo($ch);
+        curl_close($ch);
+
+        if ($respInfo['http_code'] == 200) {
+            return $response;
+        } else {
+            return 'server_error';
+        }
+    }
+
+    /**
+     * Check error in google API
+     * @param $apiResponse
+     * @return bool
+     */
+    public function googleAPIErrorExist($apiResponse)
+    {
+        return isset($apiResponse->error_message) || (isset($apiResponse->status) &&
+                $apiResponse->status == 'INVALID_REQUEST') || $apiResponse->origin_addresses[0] == '' ||
+            (isset($apiResponse->rows[0]->elements[0]->status) && $apiResponse->rows[0]->elements[0]->status != 'OK');
+    }
 
 
 }

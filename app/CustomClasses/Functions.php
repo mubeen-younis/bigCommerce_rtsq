@@ -204,4 +204,9 @@ class Functions
     {
         return isset($quote['severity']) && isset($quote['Message']) && $quote['Message'] != self::$ltlErrorMessage;
     }
+
+    public static function removeString($word)
+    {
+        return preg_replace("/[^0-9.]/", "", $word);
+    }
 }

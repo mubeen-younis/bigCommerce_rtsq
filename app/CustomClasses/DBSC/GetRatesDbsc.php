@@ -2,8 +2,10 @@
 
 namespace App\CustomClasses\DBSC;
 
+use App\Models\DBSC\DbscShippingOrigin;
 use App\Models\DBSC\DbscShippingProfile;
 use App\Models\DBSC\DbscShippingZone;
+use Illuminate\Support\Facades\Log;
 
 class GetRatesDbsc
 {
@@ -11,7 +13,6 @@ class GetRatesDbsc
     protected ?int $storeId = null;
     protected array $destination = [];
     protected array $items = [];
-    protected ?int $zoneId = null;
     protected array $groupedItemsProfile = [];
     protected array $genShipProfSettings = [];
     protected bool $isMultiShipment = false;
@@ -20,7 +21,7 @@ class GetRatesDbsc
 
 
     /**
-     * Calculates the rates
+     * Calculates the DBSC rates
      *
      * @return array|void
      */
@@ -29,8 +30,7 @@ class GetRatesDbsc
         $this->storeId = $storeData['store']['id'] ?? [];
         $this->destination = $request['lineItemData']['destination'] ?? [];
         $this->items = $request['lineItemData']['items'] ?? [];
-        $this->zoneId = DbscShippingZone::getZoneIdFromDestination($this->destination); // TODO: Static at the moment but will set dynamic later
-        if (blank($this->storeId) || blank($this->destination) || blank($this->items) || blank($this->zoneId)) {
+        if (blank($this->storeId) || blank($this->destination) || blank($this->items)) {
             return [];
         }
 
@@ -87,6 +87,12 @@ class GetRatesDbsc
         return $groupedItemsProfile;
     }
 
+
+    /**
+     * Checks general profile can take rate
+     * @param $shippingClass
+     * @return bool
+     */
     public function generalProfileCanTakeRate($shippingClass = null)
     {
         // If general profile settings are empty
@@ -147,7 +153,13 @@ class GetRatesDbsc
     {
         $rates = [];
         foreach ($this->groupedItemsProfile as $profileId => $items) {
-            $profileRates = DbscShippingProfile::getProfileRates($profileId, $this->zoneId, $this->storeId);
+            $zoneId = DbscShippingZone::getZoneIdFromDestinationAndProfile($this->destination, $profileId);
+            if (blank($zoneId)) {
+                Log::info('No zone found ' . $this->storeId);
+                return [];
+            }
+            $profileRates = DbscShippingProfile::getProfileRates($profileId, $zoneId, $this->storeId);
+
             if (blank($profileRates)) {
                 return [];
             }
@@ -172,64 +184,58 @@ class GetRatesDbsc
         [$itemsCount, $totalShipmentWeight] = $this->calculateTotalShipmentWeightAndItemsCount($items);
         // Getting Only one from origins json in profile rates
         // and will iterate through each origin
-        $origins = json_decode($profileRates[0]['origins'], true);
-        foreach ($origins as $origin) {
-            foreach ($profileRates as $rate) {
+        $origins = DbscShippingOrigin::getOriginsFromOriginId($profileRates[0]['dbsc_origin_id']);
+        $selectedOrigin = (new GetDistance())->getNearest($origins, $this->destination);
+        foreach ($profileRates as $rate) {
+            [
+                $minWeight,
+                $maxWeight,
+                $minQuote,
+                $maxQuote,
+                $ratingMethod,
+                $ratePerMileOrKm,
+                $distanceUnit,
+                $label,
+                $distanceMethod,
+                $description,
+                $distancePreference,
+                $andOR
+            ] = $this->setRateVariables($rate);
 
-                [
-                    $minWeight,
-                    $maxWeight,
-                    $minQuote,
-                    $maxQuote,
-                    $ratingMethod,
-                    $ratePerMileOrKm,
-                    $distanceUnit,
-                    $label,
-                    $distanceMethod,
-                    $description,
-                    $distancePreference,
-                    $andOR
-                ] = $this->setRateVariables($rate);
+            if ($this->isValidShippingWeight($totalShipmentWeight, $minWeight, $maxWeight)) {
 
-                if ($this->isValidShippingWeight($totalShipmentWeight, $minWeight, $maxWeight)) {
-
-                    // Firstly we will check the address type
-                    /*   if (!$this->checkAddressType($addressType, $unknownDefaultAddress)) {
-                           continue;
-                       }*/
-                    if (!($ratePerMileOrKm > 0)) {
-                        $distance['distance_meter'] = 0;
-                    } else {
-                        $distance = $this->findDistance($distanceMethod, $origin);
-                    }
-                    if (isset($distance['error'])) {
-                        continue;
-                    }
-
-                    $shippingRate = $ratePerMileOrKm * $this->convertDistance($distance['distance_meter'], $distanceUnit);
-                    $shippingRate = $this->calculateShippingByItem($shippingRate, $ratingMethod, $itemsCount);
-
-                    // $shippingRate = $this->addHandlingFee($shippingRate, $handlingFee);
-                    $shippingRate = $this->checkShippingQuote($shippingRate, $minQuote, $maxQuote);
-                    $sServiceArr[] = $rate = $this->createServiceArray($label, $description, $shippingRate);
-                    $this->setOrderWidgetDetails($rate, [
-                        'isCalculateShippingByItem' => $ratingMethod,
-                        'rate_per_mile_or_km' => $ratePerMileOrKm,
-                        'distance_method' => $distanceMethod,
-                        'distance_unit' => $distanceUnit,
-                    ]);
+                // Firstly we will check the address type
+                /*   if (!$this->checkAddressType($addressType, $unknownDefaultAddress)) {
+                       continue;
+                   }*/
+                if (!($ratePerMileOrKm > 0)) {
+                    $distance['distance_meter'] = 0;
+                } else {
+                    $distance = $this->findDistance($distanceMethod, $selectedOrigin);
                 }
-                dd(33);
+                if (isset($distance['error'])) {
+                    continue;
+                }
+
+                $shippingRate = $ratePerMileOrKm * $this->convertDistance($distance['distance_m'], $distanceUnit);
+                $shippingRate = $this->calculateShippingByItem($shippingRate, $ratingMethod, $itemsCount);
+
+                // $shippingRate = $this->addHandlingFee($shippingRate, $handlingFee);
+                $shippingRate = $this->checkShippingQuote($shippingRate, $minQuote, $maxQuote);
+                $sServiceArr[] = $rate = $this->createServiceArray($label, $description, $shippingRate);
+                $this->setOrderWidgetDetails($rate, [
+                    'rating_method' => $ratingMethod,
+                    'rate_per_mile_or_km' => $ratePerMileOrKm,
+                    'distance_method' => $distanceMethod,
+                    'distance_unit' => $distanceUnit,
+                ]);
             }
         }
-        // save the transactions
-        // update the plan count
-        // log the entry for the additional usage if utilized
         return $sServiceArr;
     }
 
     /**
-     * Calculate total shipment weight
+     * Calculate total shipment weight and items count
      *
      * @param $items
      * @return float
@@ -348,7 +354,13 @@ class GetRatesDbsc
     }
 
 
-    public function findDistance($distanceMethod, $origin)
+    /**
+     * Gets Distance
+     * @param $distanceMethod
+     * @param $origin
+     * @return array|string[]
+     */
+    public function findDistance($distanceMethod, $origin): array|string|bool
     {
         return (new GetDistance())->findDistance($distanceMethod, $origin, $this->destination, $this->storeId);
     }

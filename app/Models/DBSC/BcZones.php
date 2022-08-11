@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class BcZones extends Model
 {
     use HasFactory;
+
     protected $table = 'zones';
     protected $fillable = [
         'name',
@@ -15,4 +16,11 @@ class BcZones extends Model
         'bc_zone_id',
         'store_id ',
     ];
+
+    public static function getZonesDetail($zonesArr)
+    {
+        return optional(self::leftjoin('zones_details', 'zones.id', 'zones_details.zone_id')
+            ->whereIn('zones.id', $zonesArr)
+            ->get())->toArray() ?? [];
+    }
 }
