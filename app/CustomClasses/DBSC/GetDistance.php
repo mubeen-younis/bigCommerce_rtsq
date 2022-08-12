@@ -10,9 +10,9 @@ use Illuminate\Support\Facades\Log;
 
 class GetDistance
 {
-    private $distanceMatrixUrl = "https://maps.googleapis.com/maps/api/distancematrix/json?";
-    private $googleDistanceApiKey = "AIzaSyAEpMbPnNPg2I2_X_65ulD9eHCH5KG7Exc";
-    private $googleGeocodingApiKey = "AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w";
+    protected $distanceMatrixUrl = "https://maps.googleapis.com/maps/api/distancematrix/json?";
+    protected $googleDistanceApiKey = "AIzaSyAEpMbPnNPg2I2_X_65ulD9eHCH5KG7Exc";
+    protected $googleGeocodingApiKey = "AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w";
 
 
     /**
@@ -26,10 +26,16 @@ class GetDistance
     public function findDistance($type, $origin, $destination, $shop): bool|array|string
     {
         if ($type == 'Route') {
+            // IF the nearest warehouse has already fetched so the route distance is also the nearest
+            // So we can use that as well
+            if (isset($origin['distance_m']) && !blank($origin['distance_m'])) {
+                return $origin;
+            }
             $originArr[0] = $origin;
             $distance = $this->findRouteDistances($originArr, $destination);
+
         } else {
-            $distance = $this->getStraightLineDistance($origin, $destination, $shop);
+            $distance = (new GetStraightDistance())->getStraightLineDistance($origin, $destination);
         }
         return $distance;
     }
@@ -42,7 +48,14 @@ class GetDistance
      */
     public function getNearest($origins, $destination): mixed
     {
-        return $this->findRouteDistances($origins, $destination);
+        if (count($origins) <= 1) {
+            return $origins;
+        }
+        $nearest = $this->findRouteDistances($origins, $destination);
+        if (isset($nearest['error'])) {
+            return [];
+        }
+        return $nearest;
     }
 
     /**
@@ -109,8 +122,7 @@ class GetDistance
 
         }
 
-        $detail = '';
-
+        $apiResponse = '';
         /* API Call */
         if ($originUrl != '') {
             $distanceObj = (new self)->getDistanceFromGoogleApi($originUrl, $destinationUrl, $this->googleDistanceApiKey);
@@ -132,9 +144,9 @@ class GetDistance
         // Details contains the response from the Google API, So if that is set then we insert these records to database
         // for future use.
         // $enabledCombinations are the zips combs that are not exists in database.
-        if (isset($detail) && !empty($enabledCombinations)) {
+        if (isset($apiResponse) && !empty($enabledCombinations)) {
             // insert distance data to database (distance_lookup)
-            $finalDistance = DistanceLookup::insertDistanceData($detail, $enabledCombinations);
+            $finalDistance = DistanceLookup::insertDistanceData($apiResponse, $enabledCombinations);
         }
 
 
@@ -210,6 +222,12 @@ class GetDistance
         return isset($apiResponse->error_message) || (isset($apiResponse->status) &&
                 $apiResponse->status == 'INVALID_REQUEST') || $apiResponse->origin_addresses[0] == '' ||
             (isset($apiResponse->rows[0]->elements[0]->status) && $apiResponse->rows[0]->elements[0]->status != 'OK');
+    }
+
+
+    public function getStraightLineDistance($origin, $destination)
+    {
+        dd(334);
     }
 
 

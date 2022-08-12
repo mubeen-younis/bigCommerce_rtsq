@@ -186,6 +186,10 @@ class GetRatesDbsc
         // and will iterate through each origin
         $origins = DbscShippingOrigin::getOriginsFromOriginId($profileRates[0]['dbsc_origin_id']);
         $selectedOrigin = (new GetDistance())->getNearest($origins, $this->destination);
+        if (blank($selectedOrigin)) {
+            Log::info('Issue on fetching origin');
+            return [];
+        }
         foreach ($profileRates as $rate) {
             [
                 $minWeight,
