@@ -27,6 +27,7 @@ use App\CustomClasses\AbfLtl\ConnectionSettings as AbfLtlConnectionSettings;
 use App\CustomClasses\UspsSmall\ConnectionSettings as UspsSmallConnectionSettings;
 use App\CustomClasses\SouthEasternLtl\ConnectionSettings as SouthEasternLtlConnectionSettings;
 use App\CustomClasses\EchoLogisticsLtl\ConnectionSettings as EchoLogisticsLtlConnectionSettings;
+use App\CustomClasses\DayLightLtl\ConnectionSettings as DayLightLtlConnectionSettings;
 use App\Endpoints\Endpoints;
 
 use App\Models\Connection;
@@ -75,6 +76,7 @@ class ConnectionController extends Controller
         $this->southEasternLtlTestCon = new SouthEasternLtlConnectionSettings();
         $this->uspsSmallTestCon = new UspsSmallConnectionSettings();
         $this->echoLogisticsLtlTestCon = new EchoLogisticsLtlConnectionSettings();
+        $this->dayLightLtlTestCon = new DayLightLtlConnectionSettings();
     }
 
     public function index(Request $request)
@@ -196,6 +198,9 @@ class ConnectionController extends Controller
                     return response()->json($response);
                 case "purolator-small":
                     $response = $this->PurolatorSmallTestCon->testSmallConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'daylight-ltl':
+                    $response = $this->dayLightLtlTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
                 default:
                     return response()->json([
