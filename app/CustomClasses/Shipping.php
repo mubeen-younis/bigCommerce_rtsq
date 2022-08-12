@@ -242,6 +242,23 @@ class Shipping
         }
 
         $finalQuotes = $this->addRateId($finalQuotes);
+        foreach($finalQuotes as $key => $quote){
+            
+            if(empty($quote['rate']) || $quote['rate'] == '0.00'){
+                if(str_contains($quote['title'], 'w/')){
+                    $val = explode('w', $quote['title'])[0]; 
+                }elseif(str_contains($quote['title'], '(')){
+                    $val =  explode('(', $quote['title'])[0];
+                }elseif(str_contains($quote['title'], '-')){
+                    $val =  explode('(', $quote['title'])[0];
+                }elseif(str_contains($quote['title'], 'Freight')){
+                    $val =  explode('(', $quote['title'])[0];
+                }
+                $remove =str_replace($val, '',$quote['title']);
+                $quote['title'] = Functions::$freeShipping . $remove;
+                $finalQuotes[$key]['title'] = $quote['title'];
+            }
+        }
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
         $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
         return $resp;
