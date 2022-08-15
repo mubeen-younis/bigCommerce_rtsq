@@ -45,7 +45,6 @@ class SmallConnectionSettings
             'dont_auth' => 1
         ];
         $queryString = http_build_query($params);
-        return $this->testConnectionUrl;
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
         
         if (isset($output['status']) && $output['status'] == false) {
