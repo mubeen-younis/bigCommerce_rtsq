@@ -28,7 +28,7 @@ class LtlSmallCompileQuotes
                     }else if (strpos($quote['code'], 'parcel_12Purolator') !== false) {
                         $alwaysResi = (isset($requestArr['carriers']['purolator']['api']['purolator_pkg_resid_delivery']) && $requestArr['carriers']['purolator']['api']['purolator_pkg_resid_delivery'] == 'yes');
                         $quote['alwaysResi'] = $alwaysResi;
-                        $quote['isResi'] = $residential['purolator'] == 'Y';
+                        $quote['isResi'] = $residential['purolatorSmall'] == 'Y';
                     }else if (strpos($quote['code'], 'parcel_12fd') !== false) {
                         $alwaysResi = (isset($requestArr['carriers']['fedexSmall']['api']['residentials_delivery']) && $requestArr['carriers']['fedexSmall']['api']['residentials_delivery'] == 'yes');
                         $quote['alwaysResi'] = $alwaysResi;
