@@ -242,23 +242,6 @@ class Shipping
         }
 
         $finalQuotes = $this->addRateId($finalQuotes);
-        foreach($finalQuotes as $key => $quote){
-            
-            if(empty($quote['rate']) || $quote['rate'] == '0.00'){
-                if(str_contains($quote['title'], 'w/')){
-                    $val = explode('w', $quote['title'])[0]; 
-                }elseif(str_contains($quote['title'], '(')){
-                    $val =  explode('(', $quote['title'])[0];
-                }elseif(str_contains($quote['title'], '-')){
-                    $val =  explode('(', $quote['title'])[0];
-                }elseif(str_contains($quote['title'], 'Freight')){
-                    $val =  explode('(', $quote['title'])[0];
-                }
-                $remove =str_replace($val, '',$quote['title']);
-                $quote['title'] = Functions::$freeShipping . $remove;
-                $finalQuotes[$key]['title'] = $quote['title'];
-            }
-        }
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
         $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
         return $resp;
@@ -736,6 +719,7 @@ class Shipping
             $resp['quote_id'] = (string)rand(1, 9); // need to change
             $resp['messages'] = []; // need to change
 
+            $quotes = $this->freeShippingTitle($quotes);
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'eniture_quotes', 'display_name' => $this->limitTitle($quotes[0])]];
 
             foreach ($quotes as $key => $quote) {
@@ -757,6 +741,30 @@ class Shipping
         return $resp;
     }
 
+    public function freeShippingTitle($finalQuotes)
+    {
+        foreach($finalQuotes as $key => $quote){
+            
+            if(empty($quote['rate']) || $quote['rate'] == '0.00'){
+                if(str_contains($quote['title'], 'w/')){
+                    $label = explode('w', $quote['title'])[0]; 
+                }elseif(str_contains($quote['title'], '(')){
+                    $label =  explode('(', $quote['title'])[0];
+                }elseif(str_contains($quote['title'], '-')){
+                    $label =  explode('(', $quote['title'])[0];
+                }elseif(str_contains($quote['title'], 'Freight')){
+                    $label =  explode('(', $quote['title'])[0];
+                }elseif(!str_contains($quote['title'], 'w/') || !str_contains($quote['title'], '(')){
+                    $label =  $quote['title'];
+                }
+                $labelRemoved =str_replace($label, '',$quote['title']);
+                $quote['title'] = Functions::$freeShipping . $labelRemoved;
+                $finalQuotes[$key]['title'] = $quote['title'];
+            }
+        }
+
+        return $finalQuotes;
+    }
 
     public
     function limitTitle($quote)
