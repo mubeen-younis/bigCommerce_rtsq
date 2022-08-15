@@ -4,7 +4,6 @@ namespace App\Endpoints;
 
 class Endpoints
 {
-    // public static $qaUrl = "https://eniture-dev3.com/";
     public static $qaUrl = "https://ws001.eniture-qa.com/index.php";
     public static $prodUrl = "https://eniture.com/";
 
@@ -13,10 +12,10 @@ class Endpoints
         return "https://api.bigcommerce.com/stores/";
     }
 
+
     public static function testConnectionEndpoint()
     {
         if (env('APP_ENV') == 'staging') {
-            // return self::$qaUrl . "ws/index.php";
             return self::$qaUrl;
         }
         return self::$prodUrl . "ws/index.php";
@@ -198,5 +197,10 @@ class Endpoints
             return "https://bc.eniture-qa.com/api/order/webhooks";
         }
         return "https://bc.eniture.com/api/order/webhooks";
+    }
+
+    public static function getUnpackedBoxUrl()
+    {
+        return "http://eu.api.3dbinpacking.com/images/29283f1d530b350d166b6ddc31fa2bfa/20171206/86407cf14c6c451d191d2e0b555eb9f5/1512573750-1033-8129432.png";
     }
 }
