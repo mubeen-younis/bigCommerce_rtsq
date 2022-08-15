@@ -51,23 +51,9 @@ class GetStraightDistance extends GetDistance
         // But for that first we will need to get the geocode for the origin and destination
         $locations = array($origin, $destination);
         $finalGeoCodeData = $this->getGeoCodeData($locations);
-
-        foreach ($finalGeoCodeData as $key => $data) {
-            $longitude = $data['longitude'];
-            $latitude = $data['latitude'];
-            if ($origin['zip'] == $data['zip']) {
-                $origin['lat'] = $latitude;
-                $origin['lng'] = $longitude;
-            }
-            if ($destination['zip'] == $data['zip']) {
-                $destination['lat'] = $latitude;
-                $destination['lng'] = $longitude;
-            }
-        }
+        dd(33);
 
 
-        //Now we will get distance from Haversine formula
-        return $this->getDistanceInMetersThroughHaversine($origin, $destination);
 
     }
 
@@ -80,7 +66,6 @@ class GetStraightDistance extends GetDistance
         // Holds the geolocation got from database
         $geoCodeRows = [];
         foreach ($locations as $location) {
-            // $geoCode = $this->getGeoCodeDataDatabase($location['zip']);
             $geoCode = []; // TODO will get latitudes and logitudes from DB
 
             if (count($geoCode)) {
@@ -120,13 +105,8 @@ class GetStraightDistance extends GetDistance
             $geoCodeUrl = rtrim($geoCodeUrl, '|');
             $addressCount = count($enabledCombinations);
             $geocodeObj = $this->getGeoCodeDataApi($geoCodeUrl, $this->googleGeocodingApiKey, $addressCount);
-            dd(33, $geocodeObj);
-            $this->qaLogs('Geocode Object from API', $geocodeObj);
-            $this->debugPoint('<============== Response from google api from geo code: =====================>', $geocodeObj);
         }
-        if (isset($geocodeObj) && $geocodeObj == 'error') {
-            return ['error' => 'Lookup count is depleted.'];
-        }
+
 
         if ($geocodeObj != 'server_error') {
             $apiResponse = json_decode($geocodeObj);
@@ -147,6 +127,7 @@ class GetStraightDistance extends GetDistance
         // $enabledCombinations are the zips combs that are not exists in database.
         if ($apiResponse && !empty($enabledCombinations)) {
             $finalGeoCodeData = $this->verifyStoreGeoCodeApiResponse($enabledCombinations, $apiResponse);
+            dd(33);
         }
         // If there we found data from the database then merge both the arrays.
         if (!empty($geoCodeRows)) {
@@ -192,4 +173,12 @@ class GetStraightDistance extends GetDistance
             return 'server_error';
         }
     }
+
+
+    public function verifyStoreGeoCodeApiResponse($enabledCombinations, $apiResponse)
+    {
+
+    }
+
+
 }

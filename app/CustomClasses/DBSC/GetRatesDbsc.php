@@ -9,15 +9,33 @@ use Illuminate\Support\Facades\Log;
 
 class GetRatesDbsc
 {
+    /*
+     * @Author : Saif*/
 
-    protected ?int $storeId = null;
-    protected array $destination = [];
-    protected array $items = [];
-    protected array $groupedItemsProfile = [];
-    protected array $genShipProfSettings = [];
-    protected bool $isMultiShipment = false;
-    protected array $rates = [];
-    protected array $ordWidgetDetails = [];
+    /**
+     * Using php 8.0 constructor property promotion
+     *
+     * @param int|null $storeId
+     * @param array $destination
+     * @param array $items
+     * @param array $groupedItemsProfile
+     * @param array $genShipProfSettings
+     * @param bool $isMultiShipment
+     * @param array $rates
+     * @param array $ordWidgetDetails
+     */
+    public function __construct(public ?int  $storeId,
+                                public array $destination,
+                                public array $items,
+                                public array $groupedItemsProfile,
+                                public array $genShipProfSettings,
+                                public bool  $isMultiShipment,
+                                public array $rates,
+                                public array $ordWidgetDetails
+    )
+    {
+
+    }
 
 
     /**
@@ -114,35 +132,6 @@ class GetRatesDbsc
         }
         return false;
 
-
-        /*       if (blank($shippingClass)) {
-                   // If general profile settings are empty
-                   if (blank($this->genShipProfSettings)) {
-                       return false;
-                   }
-                   if ($this->genShipProfSettings['allow_all_classes']) {
-                       return true;
-                   }
-
-               } else {
-                   // If customer selected to have defined classes for general profile rather then all
-                   if (!blank($this->genShipProfSettings)) {
-
-                       if (!$this->genShipProfSettings['allow_all_classes']) {
-                           if (blank($this->genShipProfSettings['shipping_classes'])) {
-                               return false;
-                           }
-                           $shippingClasses = json_decode($this->genShipProfSettings['shipping_classes'], true) ?? [];
-                           if (in_array($shippingClass, $shippingClasses)) {
-                               return true;
-                           }
-                           return false;
-                       }
-                   }
-
-               }
-               return false;*/
-
     }
 
     /**
@@ -220,7 +209,6 @@ class GetRatesDbsc
                 if (isset($distance['error'])) {
                     continue;
                 }
-
                 $shippingRate = $ratePerMileOrKm * $this->convertDistance($distance['distance_m'], $distanceUnit);
                 $shippingRate = $this->calculateShippingByItem($shippingRate, $ratingMethod, $itemsCount);
 
