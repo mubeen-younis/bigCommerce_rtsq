@@ -170,7 +170,6 @@ class QuotesResults
                     $price = $this->getServiceRate($data, $data['serviceType'], $this->quoteSettings);
                     $quoteSettings = $this->quoteSettings;
 
-                    $price = $this->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup'] ?? 0);
                     // Checking hazmat and adding hazmat amounts in services
                     if ($isHazmat) {
                         if ($isMultiShipment) {
