@@ -102,6 +102,9 @@ class GetDistance
             foreach ($origins as $key => $origin) {
                 // Get the distance row from database
                 $origin['zip'] = $origin[$key]['zip'];
+                $origin['city'] = $origin[$key]['city'];
+                $origin['state'] = $origin[$key]['state'];
+
                 $distance = DistanceLookup::getDistanceData($origin['zip'], $destinationZip);
 
                 if (!blank($distance)) {
