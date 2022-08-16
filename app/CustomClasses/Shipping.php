@@ -78,9 +78,13 @@ class Shipping
         /*Added for DBSC Carrier
         Will calculate DBSC rates
         And also Order widget Details*/
+        $store_id = $storeData['store']['id'];
+        $destination = $request['lineItemData']['destination'];
+        $items = $request['lineItemData']['items'];
+        
         try {
             if ($isDbscInstalled) {
-                $getDbscDetails = (new GetRatesDbsc())->getDbscRates($request, $storeData);
+                $getDbscDetails = (new GetRatesDbsc($store_id, $destination, $items, [], [], false, [], []))->getDbscRates($request, $storeData);
                 dd(12, $getDbscDetails);
                 $this->dbscRates = $getDbscDetails['rates'] ?? [];
                 $this->dbscOrdWid = $getDbscDetails['ord_wid'] ?? [];
