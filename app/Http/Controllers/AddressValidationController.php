@@ -46,7 +46,7 @@ class AddressValidationController extends Controller
             return $congrats . "You have activated your Promo Code  " . $couponCodeHtml . " with Address Validation account " . $avCompanyIdHtml . ". Now you can enjoy free address validations for 1-year.";
         }
         if (!blank($avCompanyId) && $used == 0 && $IsAlrUser) {
-            return $note . "Get Address Validation free for one year by using promo code [" . $couponCode . "]. Click the button below to apply the promo code";
+            return $note . "Get Address Validation free for one year by using promo code " . $couponCodeHtml . ". Click the button below to apply the promo code";
 
         }
         if (!blank($avCompanyId) && $used == 0 && !$IsAlrUser) {
