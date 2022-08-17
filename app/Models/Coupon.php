@@ -76,7 +76,11 @@ class Coupon extends Model
         $curlResponse = (new CurlRequest())->enSingleCurlRequest($avEndpoint, [], [], 'GET');
         $couponResponse = json_decode($curlResponse['response'], true);
         if (isset($couponResponse['promo'])) {
-            return self::saveCoupon($couponResponse, $storeId, 'av');
+            $resp = self::saveCoupon($couponResponse, $storeId, 'av'); 
+            $resp['promo'] = $couponResponse['promo'] ?? null;
+            $resp['trial_user'] = $couponResponse['trial_user'] ?? false;
+
+            return $resp;
         }
         return [];
     }
@@ -102,6 +106,8 @@ class Coupon extends Model
         $coupon->code = $couponResponse['promo']['coupon'] ?? '';
         $coupon->shop = $couponResponse['promo']['store_url'] ?? '';
         $coupon->store_id = $storeId;
+        $coupon->valid_from = $couponResponse['promo']['start_date'] ?? '';
+        $coupon->valid_upto = $couponResponse['promo']['end_date'] ?? '';
         $coupon->save();
         return self::where('id', $coupon->id)->first();
     }

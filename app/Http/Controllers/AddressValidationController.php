@@ -19,9 +19,6 @@ class AddressValidationController extends Controller
         $storeId = $request['store_id'];
         $store = optional(Store::where('id', $storeId)->first())->toArray() ?? [];
         $coupon = Coupon::getAvCoupon($storeId);
-        if ($coupon === null) {
-            $coupon = $this->getCouponCodeAv($storeId);
-        }
         $store['coupon_code'] = $coupon->code ?? null;
         $store['is_already_user'] = $coupon->is_already_user ?? false;
         $store['used'] = $coupon->used ?? null;
@@ -59,6 +56,9 @@ class AddressValidationController extends Controller
             $clickHereLogin = "<a target='_blank' rel='noreferrer' href='" . $loginUrl . "'>here</a>";
             $msg = $msg . "Click " . $clickHereLogin . ' to log in.<br><strong>Please refresh the page after logging in. </strong>';
             return $msg;
+        }
+        if (blank($avCompanyId) && $used >=1 && $IsAlrUser) {
+            return $congrats . "You have activated your Promo Code  " . $couponCodeHtml .". Now you can enjoy free address validations for 1-year.";
         }
 
         if ($IsAlrUser) {
@@ -133,6 +133,7 @@ class AddressValidationController extends Controller
         $message = 'Address Validation ';
         $store = Store::where('id', $storeId)->first();
         $data = [];
+        $couponCodeResp = [];
 
         if (!blank($avCompanyId)) {
             $fdoConnectivityResp = $this->connectVA($store, $avCompanyId, $request);
@@ -141,16 +142,21 @@ class AddressValidationController extends Controller
             }
             $store->av_company_id = $avCompanyId;
             $message .= 'connected successfully';
+            $couponCodeResp = $this->getCouponCodeAv($storeId);
         } else {
             $this->disConnectVA($store);
             $store->av_company_id = null;
             $message .= 'disconnected successfully';
         }
+
         $store->save();
         $data = $this->getAvCompanyInfo($request, true);
+        if (!empty($couponCodeResp)) {
+            $data['promo'] = $couponCodeResp['promo'] ?? null;
+            $data['trial_user'] = $couponCodeResp['trial_user'] ?? false;
+        }
+
         return Helpers::sendJsonResponse(false, $message, $data);
-
-
     }
 
     public function connectVA($storeDetails, $avCompanyId, Request $avRequest)
