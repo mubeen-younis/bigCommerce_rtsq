@@ -99,11 +99,11 @@ class GetDistance
         // if origin is array then execute following logic.
         if (is_array($origins)) {
             // loop through all the origins and get the distance from the database against origin and destination.
-            foreach ($origins as $key => $origin) {
+            foreach ($origins as $key => $orig) {
                 // Get the distance row from database
-                $origin['zip'] = $origin[$key]['zip'];
-                $origin['city'] = $origin[$key]['city'];
-                $origin['state'] = $origin[$key]['state'];
+                $origin['zip'] = $orig[$key]['zip'];
+                $origin['city'] = $orig[$key]['city'];
+                $origin['state'] = $orig[$key]['state'];
 
                 $distance = DistanceLookup::getDistanceData($origin['zip'], $destinationZip);
 

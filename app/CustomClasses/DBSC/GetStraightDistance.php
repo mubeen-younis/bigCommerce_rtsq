@@ -10,10 +10,12 @@ class GetStraightDistance extends GetDistance
 
     public function getStraightLineDistance($origin, $destination)
     {
-        $origin['city'] = trim($origin['city']);
-        $origin['state'] = trim($origin['state']);
-        $origin['zip'] = str_replace(' ', '', trim($origin['zip'])); // remove the white-spaces in the zip.
-        $origin['country'] = trim($origin['country']);
+        foreach($origin as $key => $orig){
+            $origin['city'] = trim($orig['city']);
+            $origin['state'] = trim($orig['state']);
+            $origin['zip'] = str_replace(' ', '', trim($orig['zip'])); // remove the white-spaces in the zip.
+            $origin['country'] = trim($orig['country']);
+        }
 
         $destinationObj = (object)$destination;
         // also remove the whitespaces in the zip code i.e. make 'J0Z 2S0' = 'J0Z2S0
@@ -177,7 +179,44 @@ class GetStraightDistance extends GetDistance
 
     public function verifyStoreGeoCodeApiResponse($enabledCombinations, $apiResponse)
     {
+        foreach($enabledCombinations as $key => $combination)
+        {
+            if ($this->dataExistsInGeoCodeApiResponse($apiResponse, $combination)) {
+                $finalData[] = $this->insertOrUpdateGeoCodeData($apiResponse, $combination);
+            }
+        }
 
+    }
+
+    public function dataExistsInGeoCodeApiResponse($response, $combination)
+    {
+        $results = $response->results;
+        foreach ($results as $index => $result) {
+            // So here we are checking whether postal code type exists and also whether our value matches against that type.
+            if ($this->typeExistsInAddressComponents($result, 'zip', $combination['zip'])) {
+                $this->index = (int)$index;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function typeExistsInAddressComponents($result, $type, $combinationValue)
+    {
+        $address = $result->address_components;
+        foreach ($address as $value) {
+
+            if (
+                ($value->long_name == $combinationValue ||
+                    $value->short_name == $combinationValue)
+                && in_array($type, $value->types)
+            ) {
+                return true;
+            }
+
+        }
+        return false;
     }
 
 
