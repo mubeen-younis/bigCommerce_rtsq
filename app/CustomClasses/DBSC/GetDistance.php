@@ -99,11 +99,8 @@ class GetDistance
         // if origin is array then execute following logic.
         if (is_array($origins)) {
             // loop through all the origins and get the distance from the database against origin and destination.
-            foreach ($origins as $key => $orig) {
+            foreach ($origins as $key => $origin) {
                 // Get the distance row from database
-                $origin['zip'] = $orig[$key]['zip'];
-                $origin['city'] = $orig[$key]['city'];
-                $origin['state'] = $orig[$key]['state'];
 
                 $distance = DistanceLookup::getDistanceData($origin['zip'], $destinationZip);
 
@@ -224,7 +221,7 @@ class GetDistance
     public function googleAPIErrorExist($apiResponse)
     {
         return isset($apiResponse->error_message) || (isset($apiResponse->status) &&
-                $apiResponse->status == 'INVALID_REQUEST') || $apiResponse->origin_addresses[0] == '' ||
+                $apiResponse->status == 'INVALID_REQUEST') || $apiResponse->origin_addresses[0] == '' || $apiResponse->results[0] == '' ||
             (isset($apiResponse->rows[0]->elements[0]->status) && $apiResponse->rows[0]->elements[0]->status != 'OK');
     }
 

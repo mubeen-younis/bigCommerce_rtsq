@@ -202,7 +202,7 @@ class GetRatesDbsc
                        continue;
                    }*/
                 if (!($ratePerMileOrKm > 0)) {
-                    $distance['distance_meter'] = 0;
+                    $distance['distance_m'] = 0;
                 } else {
                     $distance = $this->findDistance($distanceMethod, $selectedOrigin);
                 }

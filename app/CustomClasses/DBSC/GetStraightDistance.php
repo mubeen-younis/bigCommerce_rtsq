@@ -3,19 +3,17 @@
 namespace App\CustomClasses\DBSC;
 
 use App\Models\DBSC\DistanceLookup;
-
+use App\Models\DBSC\AddressLookup;
 class GetStraightDistance extends GetDistance
 {
 
 
     public function getStraightLineDistance($origin, $destination)
     {
-        foreach($origin as $key => $orig){
-            $origin['city'] = trim($orig['city']);
-            $origin['state'] = trim($orig['state']);
-            $origin['zip'] = str_replace(' ', '', trim($orig['zip'])); // remove the white-spaces in the zip.
-            $origin['country'] = trim($orig['country']);
-        }
+            $origin['city'] = trim($origin['city']);
+            $origin['state'] = trim($origin['state']);
+            $origin['zip'] = str_replace(' ', '', trim($origin['zip'])); // remove the white-spaces in the zip.
+            $origin['country'] = trim($origin['country']);
 
         $destinationObj = (object)$destination;
         // also remove the whitespaces in the zip code i.e. make 'J0Z 2S0' = 'J0Z2S0
@@ -41,11 +39,20 @@ class GetStraightDistance extends GetDistance
         }
 
         return array(
-            'distance_meter' => $finalDistance,
+            'distance_m' => $finalDistance,
         );
 
     }
 
+    public function updateStraightLineDistanceDatabase($updateDistance, $distance)
+    {
+        $straightLineData = [
+            'distance_straight_line_m' => $updateDistance,
+            'lookup_count' => $distance['lookup_count'] + 1
+        ];
+
+        $result = DistanceLookup::where("id", $distance['id'])->update($straightLineData);
+    }
 
     public function calculateGeoCodeDistance($origin, $destination)
     {
@@ -53,9 +60,47 @@ class GetStraightDistance extends GetDistance
         // But for that first we will need to get the geocode for the origin and destination
         $locations = array($origin, $destination);
         $finalGeoCodeData = $this->getGeoCodeData($locations);
-        dd(33);
 
+        foreach ($finalGeoCodeData as $key => $data) {
+            $longitude = $data['longitude'];
+            $latitude = $data['latitude'];
+            if ($origin['zip'] == $data['postal_code']) {
+                $origin['lat'] = $latitude;
+                $origin['lng'] = $longitude;
+            }
+            if ($destination['zip'] == $data['postal_code']) {
+                $destination['lat'] = $latitude;
+                $destination['lng'] = $longitude;
+            }
+        }
 
+        return $this->getDistanceInMetersThroughHaversine($origin, $destination);
+    }
+
+    public function getDistanceInMetersThroughHaversine($senderLngLatArr, $receiverLngLatArr)
+    {
+        // convert from degrees to radians
+        $latFrom = deg2rad($senderLngLatArr['lat']);
+        $lonFrom = deg2rad($senderLngLatArr['lng']);
+        $latTo = deg2rad($receiverLngLatArr['lat']);
+        $lonTo = deg2rad($receiverLngLatArr['lng']);
+
+        $latDelta = $latTo - $latFrom;
+        $lonDelta = $lonTo - $lonFrom;
+
+        $angle = 2 * asin(
+                sqrt(
+                    pow(sin($latDelta / 2), 2) +
+                    cos($latFrom) *
+                    cos($latTo) *
+                    pow(sin($lonDelta / 2), 2)
+                )
+            );
+        $earthRadius = 6371000; // radius of earth in miles
+
+        $result = $angle * $earthRadius;
+
+        return round(($result), 2);
 
     }
 
@@ -68,9 +113,9 @@ class GetStraightDistance extends GetDistance
         // Holds the geolocation got from database
         $geoCodeRows = [];
         foreach ($locations as $location) {
-            $geoCode = []; // TODO will get latitudes and logitudes from DB
+            $geoCode = $this->getGeoCodeDataDatabase($location['zip']);
 
-            if (count($geoCode)) {
+            if (!empty($geoCode)) {
                 if (!empty($geoCode['longitude']) && !empty($geoCode['latitude'])) {
                     $geoCodeRows[] = $geoCode;
 
@@ -79,7 +124,7 @@ class GetStraightDistance extends GetDistance
                     $geoCodeUrl .= urlencode("{$location['city']}  {$location['state']} {$location['zip']}") . "|";
                     // Make combination
                     $enabledCombinations[] = [
-                        'update_id' => $geoCode['id'],
+                        //'update_id' => $geoCode['id'],
                         'lookup_count' => $geoCode['lookup_count'],
                         'zip' => $location['zip'],
                         'state' => $location['state'],
@@ -129,15 +174,32 @@ class GetStraightDistance extends GetDistance
         // $enabledCombinations are the zips combs that are not exists in database.
         if ($apiResponse && !empty($enabledCombinations)) {
             $finalGeoCodeData = $this->verifyStoreGeoCodeApiResponse($enabledCombinations, $apiResponse);
-            dd(33);
         }
         // If there we found data from the database then merge both the arrays.
         if (!empty($geoCodeRows)) {
             $finalGeoCodeData = array_merge($finalGeoCodeData, $geoCodeRows);
         }
 
-
         return $finalGeoCodeData;
+    }
+
+    public function getGeoCodeDataDatabase($zip_code)
+    {
+        // Where part of the query. We get the record from the database against following parameters.
+        $where = ['postal_code' => $zip_code];
+        // Get the distance row from the database
+        $geoCode = AddressLookup::where('postal_code', '=', $zip_code)->first();
+        // If found
+        if (!empty($geoCode)) {
+            if (!empty($geoCode['longitude']) && !empty($geoCode['latitude'])) {
+                // Increment the count for the lookup_count value and update.
+                $updateParams = ['lookup_count' => $geoCode['lookup_count'] + 1];
+                // update the last get id lookup count with an increment.
+                $updateLookupCount = AddressLookup::where("id", $geoCode['id'])->update($updateParams);
+            }
+        }
+
+        return $geoCode;
     }
 
     public function getGeoCodeDataApi($origin, $apiKey, $addressCount)
@@ -183,9 +245,25 @@ class GetStraightDistance extends GetDistance
         {
             if ($this->dataExistsInGeoCodeApiResponse($apiResponse, $combination)) {
                 $finalData[] = $this->insertOrUpdateGeoCodeData($apiResponse, $combination);
+            }else {
+                // send request to google api again
+                $geoCodeUrl = urlencode("{$combination['city']}  {$combination['province']} {$combination['postal_code']}  ");
+
+                $geocode_obj = $this->getGeoCodeDataApi($geoCodeUrl, $this->geoCodeApiKey, 1);
+
+                $secondApiResponse = '';
+                if ($geocode_obj != 'server_error') {
+                    $secondApiResponse = json_decode($geocode_obj);
+                } else {
+                    $this->googleApiError = true;
+                }
+                if ($this->dataExistsInGeoCodeApiResponse($secondApiResponse, $combination)) {
+                    $finalData[] = $this->insertOrUpdateGeoCodeData($secondApiResponse, $combination);
+                }
             }
         }
 
+        return $finalData;
     }
 
     public function dataExistsInGeoCodeApiResponse($response, $combination)
@@ -193,7 +271,7 @@ class GetStraightDistance extends GetDistance
         $results = $response->results;
         foreach ($results as $index => $result) {
             // So here we are checking whether postal code type exists and also whether our value matches against that type.
-            if ($this->typeExistsInAddressComponents($result, 'zip', $combination['zip'])) {
+            if ($this->typeExistsInAddressComponents($result, 'postal_code', $combination['zip'])) {
                 $this->index = (int)$index;
                 return true;
             }
@@ -219,5 +297,40 @@ class GetStraightDistance extends GetDistance
         return false;
     }
 
+    public function insertOrUpdateGeoCodeData($apiData, $combination)
+    {
+        /*
+         * This function is used for inserting fresh geocode combinations in the database
+         * */
+        $locationData = [];
+
+        $key = $this->index;
+        $location_valid = isset($apiData->results[$key]->geometry->location) && !empty($apiData->results[$key]->geometry->location);
+        $location = $apiData->results[$key]->geometry->location;
+
+        if ($location_valid) {
+
+            $combination_id_valid = isset($combination['update_id']) && !empty($combination['update_id']);
+
+            $locationData = [
+                'postal_code' => $combination['zip'],
+                'province' => $combination['state'],
+                'country' => $combination['country'],
+                'city' => $combination['city'],
+                'latitude' => $location->lat,
+                'longitude' => $location->lng,
+                'lookup_count' => isset($combination['lookup_count']) ? $combination['lookup_count']  : 0,
+            ];
+            if ($combination_id_valid) {
+                $result = AddressLookup::where("id", $combination['update_id'])->update($locationData);
+                
+            } else {
+                $result = AddressLookup::create($locationData);
+
+            }
+        }
+
+        return $locationData;
+    }
 
 }
