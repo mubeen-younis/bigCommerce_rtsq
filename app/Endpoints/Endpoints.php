@@ -17,16 +17,9 @@ class Endpoints
     public static function testConnectionEndpoint()
     {
         if (env('APP_ENV') == 'staging') {
-            return self::$qaUrl;
+            return self::$qaUrl . "index.php" ;
         }
         return self::$prodUrl . "ws/index.php";
-    }
-    public static function PurolatorTtestEndpoint()
-    {
-        if (env('APP_ENV') == 'staging') {
-            return self::$qaUrl . "index.php";
-        }
-        return self::$prodUrl . "index.php";
     }
 
     public static function wweSmallTestEndpoint()
