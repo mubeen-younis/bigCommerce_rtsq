@@ -9,12 +9,13 @@ class Functions
 {
     protected static $daysAfterExpiry = 4;
     public static $defaultThresholdLimit = 150;
-    public static $orderWebhookString = 'store/order/*';
-    private static $ltlErrorMessage = 'Line Item Marked as LTL.';
-    private static $smallErrorMessage = 'Line Item Marked as Small.';
+    public static $orderWebhookString = ['store/order/*', 'store/order/created'];
+    public static $ltlErrorMessage = 'Line Item Marked as LTL.';
+    public static $smallErrorMessage = 'Line Item Marked as Small.';
     public static $ltlPrefix = '-ltl';
     public static $smallPrefix = '-small';
     public static $ltlMultiTitle = '-ltlFreight';
+    public static $simpleLTLTitle = 'Freight';
     public static $smallMultiTitle = '-smallShipping';
     public static $freeShipping = 'Free Shipping ';
 
@@ -32,7 +33,7 @@ class Functions
 
     public static function getCarrierNameOrCode($code, $getWsCode = 0): ?string
     {
-        $carrierCodes = ['wweltl', 'rnlltl', 'xpoltl', 'fedexltl', 'gtzltl', 'cltl', 'upsltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd','parcel_12uniship'];
+        $carrierCodes = ['wweltl', 'rnlltl', 'xpoltl', 'fedexltl', 'gtzltl', 'cltl', 'upsltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship'];
         foreach ($carrierCodes as $carrierCode) {
             if (strpos($code, $carrierCode) !== false) {
                 if ($getWsCode == 0) {
@@ -97,7 +98,7 @@ class Functions
 
     public static function isSmallCarrier($code)
     {
-        $carriers = ['parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship'];
+        $carriers = ['parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship', 'parcel_12usps'];
         foreach ($carriers as $carrier) {
             if (strpos($code, $carrier) !== false) {
                 return true;
@@ -180,7 +181,7 @@ class Functions
             array_unique(array_map("serialize", $src)));
         return $output;
     }
-    
+
     public static function returnFormExceptionArray($exception)
     {
         return ['line' => $exception->getLine(),
@@ -198,4 +199,9 @@ class Functions
         return isset($quote['severity']) && isset($quote['Message']) && $quote['Message'] != self::$smallErrorMessage;
     }
 
+
+    public static function isNotLtlShipmentError($quote): bool
+    {
+        return isset($quote['severity']) && isset($quote['Message']) && $quote['Message'] != self::$ltlErrorMessage;
+    }
 }

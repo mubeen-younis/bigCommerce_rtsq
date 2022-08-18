@@ -1,14 +1,15 @@
 <?php
 
-namespace App\CustomClasses\UpsLtl;
+namespace App\CustomClasses\UpsLTL;
 
+use App\CustomClasses\CarriersConnectionSettings;
 use App\CustomClasses\CurlRequest;
 
-class UpsLtlConnectionSettings
+class UpsLtlConnectionSettings extends CarriersConnectionSettings
 {
-    private $testConnectionUrl = 'https://eniture.com/ws/index.php';
     public function __construct()
     {
+        parent::__construct();
         $this->curlRequest = new CurlRequest();
     }
 

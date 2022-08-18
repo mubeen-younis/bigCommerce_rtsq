@@ -4,14 +4,18 @@
 namespace App\CustomClasses\WweLTL;
 
 use App\CustomClasses\CurlRequest;
+use App\Endpoints\Endpoints;
 use App\Models\Connection;
 use Illuminate\Support\Facades\Log;
 use App\Constants\Constant;
+
 class WweLtlConnectionSettings
 {
-    private $testConnectionUrl = 'https://eniture.com/ws/carriers/wwe-freight/speedfreightTest.php';
+    private $testConnectionUrl;
+
     public function __construct()
     {
+        $this->testConnectionUrl = Endpoints::wweLtlTestEndpoint();
 
         $this->curlRequest = new CurlRequest();
     }
@@ -30,7 +34,7 @@ class WweLtlConnectionSettings
             'speed_freight_password' => $data->password,
             'authentication_key' => $data->authentication_key,
             'world_wide_express_account_number' => $data->account_number,
-            'plugin_domain_name' =>  $storeName ?? '',
+            'plugin_domain_name' => $storeName ?? '',
             'plugin_licence_key' => $data->license_key ?? '',
             'dont_auth' => 1
         ];

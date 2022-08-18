@@ -156,7 +156,7 @@ class CarrierController extends Controller
             $installCarrier->save();
             $install_carrier=InstalledCarrier::find($installCarrier->id);
 
-            if($carrier->slug == "ltl-quotes" || $carrier->slug == "freightquote-ltl" || $carrier->slug == "freightquote-chr-ltl"){
+            if($carrier->slug == "ltl-quotes" || $carrier->slug == "freightquote-ltl" || $carrier->slug == "tql-ltl" || $carrier->slug == "echo-ltl"){
 
                 $services = CarrierServices::where("app_id" , $carrier->id)->pluck("speed_freight_carrierSCAC")->all();
                 $checked = $this->CheckedAllServices($installCarrier->id, $services,$request);
@@ -179,6 +179,20 @@ class CarrierController extends Controller
                 );
 
                 $checked = $this->CheckedAllServices($installCarrier->id, $services,$request);
+            }
+
+            $uspsSmall = 'usps-small';
+            if ($carrier->slug === $uspsSmall) {
+                $con = Connection::firstOrNew(['installed_carrier_id' => $installCarrier->id]);
+
+                $request['carrier_id'] = $installCarrier->id;
+                $request['carrierId'] = $installCarrier->id;
+                $request['testType'] = false;
+                $request['installed_carrier_id'] = $installCarrier->id;
+                $con->value = json_encode($request->all());
+                $con->installed_carrier_id = $installCarrier->id;
+
+                $con->save();
             }
 
             return response()->json(['error' => false,

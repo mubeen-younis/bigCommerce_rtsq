@@ -110,14 +110,16 @@ class QuotesResults
     {
 
         $shipments = $this->formateQuoteBeforeCompile($shipments);
-        //print_r($shipments); exit;
         $this->quoteSettings = [];
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
         $this->quoteSettings = $connectionSettings['ups-small']['quote_settings'] ?? '';
 
         $numberOfShipments = 0;
         foreach ($shipments as $ship) {
-            if (!isset($ship['q'])) {
+            if(isset($ship['tnt']['faultstring'])){
+                continue;
+            }
+            if (!isset($ship['q']) || (isset($ship['q']) && empty($ship['q']))) {
                 continue;
             }
             if (!isset($ship['severity'] /*&& isset()*/)) {
@@ -135,8 +137,8 @@ class QuotesResults
         $count = 0;
         foreach ($shipments as $origin => $quote) {
 
-            if (isset($quote['severity'])) {
-                continue;
+            if ((isset($quote['severity']) || !isset($ship['q']) || (isset($ship['q']) && empty($ship['q'])))) {
+                return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);                
             }
             if ($count == 0) { //To be checked only once
                 // $this->getAutoResidentialTitle('');
