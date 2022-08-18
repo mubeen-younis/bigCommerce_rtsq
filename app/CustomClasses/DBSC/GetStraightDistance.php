@@ -32,9 +32,6 @@ class GetStraightDistance extends GetDistance
             }
         } else {
             $finalDistance = $this->calculateGeoCodeDistance($origin, $destination);
-            $this->log('$finalDistance', $finalDistance);
-            $this->qaLogs('Distance after Haversine Formula', $finalDistance);
-
             $this->insertStraightLineDistanceDatabase($origin['zip'], $destinationZip, $finalDistance);
         }
 
@@ -331,6 +328,19 @@ class GetStraightDistance extends GetDistance
         }
 
         return $locationData;
+    }
+
+    public function insertStraightLineDistanceDatabase($origin_zip, $destination_zip, $final_distance)
+    {
+        $straightLineData = [
+            'origin_zip' => $origin_zip,
+            'destination_zip' => $destination_zip,
+            'distance_straight_line_m' => $final_distance,
+            'lookup_count' => 1
+        ];
+
+        $result = DistanceLookup::create($straightLineData);
+
     }
 
 }
