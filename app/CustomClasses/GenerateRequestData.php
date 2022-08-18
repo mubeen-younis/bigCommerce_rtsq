@@ -450,7 +450,7 @@ class GenerateRequestData
     public function freightQuoteLtlEnitArr($connSettings, $destination)
     {
         return [
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'licenseKey' => '',
             'serverName' => "https://" . $this->storeData['store']['name'],
             'carrierMode' => 'pro',
             'quotestType' => 'ltl',
@@ -1443,7 +1443,7 @@ class GenerateRequestData
 
         $weightThreshold= $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $apiArray = [
-            'username' => $connSettings['creds']['username'] ?? '',
+            'name' => $connSettings['creds']['username'] ?? '',
             'password' => $connSettings['creds']['password'] ?? '',
 
             'HazardousMaterialContactName' => 'test',
@@ -2132,8 +2132,6 @@ class GenerateRequestData
         $weightThreshold= $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $apiArray = [
             'b2bApiVersion' => '2.0',
-            'client_id' => '0oa6btwvdsXYlfNy3357',
-            'client_secret' => 'aLZrUajjP-_FX6X7tHmDZqzSBtQ93esruZ0jG5Vj',
             'customer_code' => $connSettings['creds']['customer_code'] ?? '',
 
             'HazardousMaterialContactName' => 'test',
