@@ -171,6 +171,7 @@ class GetRatesDbsc
     {
         $sServiceArr = [];
         [$itemsCount, $totalShipmentWeight] = $this->calculateTotalShipmentWeightAndItemsCount($items);
+        [$itemsCount, $totalShipmentLength] = $this->calculateTotalShipmentLengthAndItemsCount($items);
         // Getting Only one from origins json in profile rates
         // and will iterate through each origin
         $origins = DbscShippingOrigin::getOriginsFromOriginId($profileRates[0]['dbsc_origin_id']);
@@ -183,6 +184,8 @@ class GetRatesDbsc
             [
                 $minWeight,
                 $maxWeight,
+                $minLength,
+                $maxLength,
                 $minQuote,
                 $maxQuote,
                 $ratingMethod,
@@ -194,8 +197,10 @@ class GetRatesDbsc
                 $distancePreference,
                 $andOR
             ] = $this->setRateVariables($rate);
+                $isValidLength = $this->isValidShippingLength($totalShipmentLength, $minLength, $maxLength);
+                $isValidWeight   = $this->isValidShippingWeight($totalShipmentWeight, $minWeight, $maxWeight);
 
-            if ($this->isValidShippingWeight($totalShipmentWeight, $minWeight, $maxWeight)) {
+            if ($andOR == "And" && ($isValidWeight && $isValidLength) || $andOR == "Or" && ($isValidWeight || $isValidLength)){
 
                 // Firstly we will check the address type
                 /*   if (!$this->checkAddressType($addressType, $unknownDefaultAddress)) {
@@ -243,6 +248,16 @@ class GetRatesDbsc
         return [$itemsCount, round($totalShipmentWeight, 2)];
     }
 
+    public function calculateTotalShipmentLengthAndItemsCount($items): array
+    {
+        $totalShipmentLength = 0;
+        $itemsCount = 0;
+        foreach ($items as $item) {
+            $itemsCount += $item['piecesOfLineItem'];
+            $totalShipmentLength += $item['lineItemLength'] * $item['piecesOfLineItem'];
+        }
+        return [$itemsCount, round($totalShipmentLength, 2)];
+    }
 
     /**
      * Set rate variables
@@ -255,6 +270,9 @@ class GetRatesDbsc
         $rateSettings = (object)$rateSettings;
         $minWeight = (isset($rateSettings->minimum_weight) && !empty($rateSettings->minimum_weight)) ? round($rateSettings->minimum_weight, 2) : 0;
         $maxWeight = (isset($rateSettings->maximum_weight) && !empty($rateSettings->maximum_weight)) ? round($rateSettings->maximum_weight, 2) : 0;
+        
+        $minLength = (isset($rateSettings->minimum_length) && !empty($rateSettings->minimum_length)) ? round($rateSettings->minimum_length, 2) : 0;
+        $maxLength = (isset($rateSettings->maximum_length) && !empty($rateSettings->maximum_length)) ? round($rateSettings->maximum_length, 2) : 0;
         ////////////////////
 
         $minQuote = (isset($rateSettings->minimum_shipping_quote) && !empty($rateSettings->minimum_shipping_quote)) ? $rateSettings->minimum_shipping_quote : 0;
@@ -278,6 +296,8 @@ class GetRatesDbsc
         return [
             $minWeight,
             $maxWeight,
+            $minLength,
+            $maxLength,
             $minQuote,
             $maxQuote,
             $ratingMethod,
@@ -305,6 +325,10 @@ class GetRatesDbsc
         return (($totalShipmentWeight >= $minWeight) && (($maxWeight == 0) || ($totalShipmentWeight <= $maxWeight)));
     }
 
+    public function isValidShippingLength($totalShipmentLength, $minLength, $maxLength)
+    {
+        return (($totalShipmentLength >= $minLength) && (($maxLength == 0) || ($totalShipmentLength <= $maxLength)));
+    }
 
     /**
      * CheckIfAddressType Matches with Smarty Address

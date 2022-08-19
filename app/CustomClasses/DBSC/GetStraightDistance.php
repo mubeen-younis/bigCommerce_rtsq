@@ -10,11 +10,12 @@ class GetStraightDistance extends GetDistance
 
     public function getStraightLineDistance($origin, $destination)
     {
-            $origin['city'] = trim($origin['city']);
-            $origin['state'] = trim($origin['state']);
-            $origin['zip'] = str_replace(' ', '', trim($origin['zip'])); // remove the white-spaces in the zip.
-            $origin['country'] = trim($origin['country']);
-
+        foreach($origin as $key =>$orig){
+            $origin['city'] = trim($orig['city']);
+            $origin['state'] = trim($orig['state']);
+            $origin['zip'] = str_replace(' ', '', trim($orig['zip'])); // remove the white-spaces in the zip.
+            $origin['country'] = trim($orig['country']);
+        }
         $destinationObj = (object)$destination;
         // also remove the whitespaces in the zip code i.e. make 'J0Z 2S0' = 'J0Z2S0
         $destinationZip = str_replace(' ', '', trim($destinationObj->zip));
