@@ -3,17 +3,18 @@
 
 namespace App\CustomClasses\PurolatorSmall;
 
+use App\CustomClasses\CarriersConnectionSettings;
 use App\CustomClasses\CurlRequest;
 use App\Endpoints\Endpoints;
 use App\Models\Connection;
 
-class SmallConnectionSettings
+class SmallConnectionSettings extends CarriersConnectionSettings
 {
     
 
     public function __construct()
     {
-        $this->testConnectionUrl = Endpoints::PurolatorTtestEndpoint();
+        parent::__construct();
         $this->curlRequest = new CurlRequest();
     }
 
