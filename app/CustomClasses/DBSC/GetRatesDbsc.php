@@ -214,12 +214,20 @@ class GetRatesDbsc
                 if (isset($distance['error'])) {
                     continue;
                 }
-                $shippingRate = $ratePerMileOrKm * $this->convertDistance($distance['distance_m'], $distanceUnit);
+                $convertedDistance = ($this->convertDistance($distance['distance_m'], $distanceUnit));
+                $shippingRate = $ratePerMileOrKm * $convertedDistance;
                 $shippingRate = $this->calculateShippingByItem($shippingRate, $ratingMethod, $itemsCount);
 
+                if ($distancePreference == "3"){
+                    $label = $label . ' ' . $description;
+                }else if ($distancePreference == "2"){
+                    $label = $label . ' ' . $convertedDistance .' '. $distanceUnit;
+                }else {
+                    $label = $label . '';
+                }
                 // $shippingRate = $this->addHandlingFee($shippingRate, $handlingFee);
                 $shippingRate = $this->checkShippingQuote($shippingRate, $minQuote, $maxQuote);
-                $sServiceArr[] = $rate = $this->createServiceArray($label, $description, $shippingRate);
+                $sServiceArr[] = $rate = $this->createServiceArray($label, $shippingRate);
                 $this->setOrderWidgetDetails($rate, [
                     'rating_method' => $ratingMethod,
                     'rate_per_mile_or_km' => $ratePerMileOrKm,
@@ -446,10 +454,10 @@ class GetRatesDbsc
      * @param $shippingRate
      * @return array
      */
-    public function createServiceArray($label, $description, $shippingRate)
+    public function createServiceArray($label, $shippingRate)
     {
         return array(
-            'title' => $label . $description,
+            'title' => $label,
             'code' => 'dbsc' . rand(1, 100),
             'total_price' => round($shippingRate, 2),
         );
