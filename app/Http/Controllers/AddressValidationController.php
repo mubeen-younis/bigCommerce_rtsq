@@ -133,7 +133,6 @@ class AddressValidationController extends Controller
         $message = 'Address Validation ';
         $store = Store::where('id', $storeId)->first();
         $data = [];
-        $couponCodeResp = [];
 
         if (!blank($avCompanyId)) {
             $fdoConnectivityResp = $this->connectVA($store, $avCompanyId, $request);
@@ -142,7 +141,6 @@ class AddressValidationController extends Controller
             }
             $store->av_company_id = $avCompanyId;
             $message .= 'connected successfully';
-            $couponCodeResp = $this->getCouponCodeAv($storeId);
         } else {
             $this->disConnectVA($store);
             $store->av_company_id = null;
@@ -151,10 +149,6 @@ class AddressValidationController extends Controller
 
         $store->save();
         $data = $this->getAvCompanyInfo($request, true);
-        if (!empty($couponCodeResp)) {
-            $data['promo'] = $couponCodeResp['promo'] ?? null;
-            $data['trial_user'] = $couponCodeResp['trial_user'] ?? false;
-        }
 
         return Helpers::sendJsonResponse(false, $message, $data);
     }
