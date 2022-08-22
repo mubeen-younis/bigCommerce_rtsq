@@ -32,7 +32,7 @@ class Endpoints
     public static function wweSmallTestEndpoint()
     {
         if (env('APP_ENV') == 'staging') {
-            return self::$qaUrl . "ws/carriers/wwe-small/speedshipTest.php";
+            return self::$qaUrl . "carriers/wwe-small/speedshipTest.php";
         }
         return self::$prodUrl . "ws/carriers/wwe-small/speedshipTest.php";
     }
@@ -40,7 +40,7 @@ class Endpoints
     public static function wweLtlTestEndpoint()
     {
         if (env('APP_ENV') == 'staging') {
-            return self::$qaUrl . "ws/carriers/wwe-freight/speedfreightTest.php";
+            return self::$qaUrl . "carriers/wwe-freight/speedfreightTest.php";
         }
         return self::$prodUrl . "ws/carriers/wwe-freight/speedfreightTest.php";
     }
