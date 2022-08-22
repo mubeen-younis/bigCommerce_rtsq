@@ -195,7 +195,8 @@ class GetRatesDbsc
                 $distanceMethod,
                 $description,
                 $distancePreference,
-                $andOR
+                $andOR,
+                $distanceAdjustVal
             ] = $this->setRateVariables($rate);
                 $isValidLength = $this->isValidShippingLength($totalShipmentLength, $minLength, $maxLength);
                 $isValidWeight   = $this->isValidShippingWeight($totalShipmentWeight, $minWeight, $maxWeight);
@@ -215,13 +216,17 @@ class GetRatesDbsc
                     continue;
                 }
                 $convertedDistance = ($this->convertDistance($distance['distance_m'], $distanceUnit));
-                $shippingRate = $ratePerMileOrKm * $convertedDistance;
-                $shippingRate = $this->calculateShippingByItem($shippingRate, $ratingMethod, $itemsCount);
-
+                // added distance adjustment value after convert distance into Mile/Kilometer
+                $distanceAdjustment = $convertedDistance + (float)$distanceAdjustVal;
+                $shippingRate = $ratePerMileOrKm * $distanceAdjustment;
+                $shippingRate = $this->calculateShippingByItem($shippingRate, $ratingMethod, $itemsCount, $ratePerMileOrKm);
+                // added rate adjustment value into calculated rates
+                $shippingRate = $this->rateAdjustment($shippingRate, $rate, $ratingMethod);
+                // Display Preferences
                 if ($distancePreference == "3"){
-                    $label = $label . ' ' . $description;
+                    $label = $label . ' (' . $description . ')';
                 }else if ($distancePreference == "2"){
-                    $label = $label . ' ' . $convertedDistance .' '. $distanceUnit;
+                    $label = $label . ' (' . $distanceAdjustment .' '. $distanceUnit . ')';
                 }else {
                     $label = $label . '';
                 }
@@ -237,6 +242,32 @@ class GetRatesDbsc
             }
         }
         return $sServiceArr;
+    }
+
+    public function rateAdjustment($shippingRate, $rate, $ratingMethod)
+    {
+        $rateAdjustfee = 0;
+        $symbolicRateAdjustFee = '';
+        if($ratingMethod == 3){
+            return $shippingRate;
+        }
+        
+        if (isset($rate['rate_adjustment'])) {
+            $rateAdjustfee = (float)$rate['rate_adjustment'] ?? 0;
+            $symbolicRateAdjustFee = strpos($rate['rate_adjustment'], '%') ? '%' : '';
+        }
+
+        if (strlen($rateAdjustfee) > 0) {
+            if ($symbolicRateAdjustFee === '%') {
+                $percentVal = $rateAdjustfee / 100 * $shippingRate;
+                $grandTotal = $percentVal + $shippingRate;
+            } else {
+                $grandTotal = $rateAdjustfee + $shippingRate;
+            }
+        } else {
+            $grandTotal = $shippingRate;
+        }
+        return $grandTotal;
     }
 
     /**
@@ -298,7 +329,7 @@ class GetRatesDbsc
         $distanceMethod = $rateSettings->distance_measured_by ?? 'Route';
         // For what to display on checkout
         $distancePreference = isset($rateSettings->distance_display_preferences) && !empty($rateSettings->distance_display_preferences) ? $rateSettings->distance_display_preferences : "1";
-
+        $distanceAdjustVal = isset($rateSettings->distance_adjustment) && !empty($rateSettings->distance_adjustment) ? $rateSettings->distance_adjustment : "";
 
         $andOr = (isset($rateSettings->and_or) && !empty($rateSettings->and_or)) ? $rateSettings->and_or : 'and';
         return [
@@ -315,7 +346,8 @@ class GetRatesDbsc
             $distanceMethod,
             $description,
             $distancePreference,
-            $andOr
+            $andOr,
+            $distanceAdjustVal
         ];
     }
 
@@ -417,13 +449,12 @@ class GetRatesDbsc
      * @param $isCalculateShippingByItem
      * @return float|int|mixed
      */
-    public function calculateShippingByItem($shippingRate, $isCalculateShippingByItem, $itemsCount)
+    public function calculateShippingByItem($shippingRate, $isCalculateShippingByItem, $itemsCount, $ratePerMileOrKm)
     {
         if ($isCalculateShippingByItem == 2) {
             $shippingRate = $shippingRate * $itemsCount;
         } elseif ($isCalculateShippingByItem == 3) {
-            // TODO: Need to ask
-            $shippingRate = $shippingRate * $itemsCount;
+            $shippingRate = $ratePerMileOrKm;
         }
         return $shippingRate;
     }
