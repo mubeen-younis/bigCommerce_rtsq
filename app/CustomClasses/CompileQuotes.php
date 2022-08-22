@@ -10,6 +10,7 @@ use App\CustomClasses\RL\ltl\QuotesResults as rnlLtlQuotesResults;
 use App\CustomClasses\WWESMALL\WweSmallQuoteResults;
 use App\CustomClasses\Shipping;
 use App\CustomClasses\UpsSmall\QuotesResults as upsSmallQuotesResults;
+use  App\CustomClasses\PurolatorSmall\QuotesResults as purolatorSmallQuotesResults;
 use App\CustomClasses\XPO\ltl\QuotesResults as xpoLtlQuotesResults;
 use App\CustomClasses\Unishippers\small\QuotesResults as unishippersSmallQuotesResults;
 use App\CustomClasses\YrcLTL\QuotesResults as yrcLtlQuotesResults;
@@ -787,6 +788,13 @@ class CompileQuotes
                         $quotesRes = array_merge($quotesRes, $resp);
                     }
                     break;
+                case "purolator":
+                    $resp = $this->compilePurolatorSmallQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential);
+                    $quotesTemp['purolator'] = $resp;
+                    if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
+                        $quotesRes = array_merge($quotesRes, $resp);
+                    }
+                    break;
                 case 'abf':
                     $resp = $this->compileABFLtlQuotes($shipment, $connectionSettings, $allOrigins, $residential);
                     $quotesTemp['abf'] = $resp;
@@ -1379,6 +1387,26 @@ class CompileQuotes
         }
 
         return $res['resp'] ?? [];
+    }
+    public function compilePurolatorSmallQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
+    {
+        $this->purolatorSmallQuotesResults = new purolatorSmallQuotesResults();
+        if ($residential['purolatorSmall'] == 'Y') {
+            $this->isResi = true;
+            $this->residentialDlvry = 1;
+        } else {
+            $this->isResi = false;
+            $this->residentialDlvry = 0;
+        }
+        $this->alwaysResi = $this->residential['alwaysResi']['purolatorSmall'] ?? false;
+        $access = $this->getAccessorialCodeSmall();
+
+        $res = $this->purolatorSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment);
+        if (!$this->isMultiShipment) {
+            $this->isMultiShipment = $res['isMultiShipment'];
+        }
+
+        return $res['resp'];
     }
 
     public function compileEstesltlQuotes($shipments, $connectionSettings, $allOrigins)

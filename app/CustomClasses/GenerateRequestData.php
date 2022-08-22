@@ -54,7 +54,8 @@ class GenerateRequestData
         $quoteSettings,
         $connectionSettings,
         $storeData
-    ) {
+    )
+    {
         $this->storeData = $storeData;
         $this->quoteSettings = $quoteSettings;
         $this->connectionSettings = $connectionSettings;
@@ -185,6 +186,11 @@ class GenerateRequestData
                     $echoLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['echoLogistics'] = $echoLtlArr;
                     break;
+                case "purolator-small":
+                    $purolatorSmallArr = $this->purolatorSmallEnitArr($con1, $destination);
+                    $purolatorSmallArr['originAddress'] = $enitOrigin;
+                    $carriersArr['carriers']['purolator'] = $purolatorSmallArr;
+                    break;
                 case 'daylight-ltl':
                     $dayLightLtlArr = $this->dayLightLtlEnityArr($con1, $destination);
                     $dayLightLtlArr['originAddress'] = $enitOrigin;
@@ -197,7 +203,7 @@ class GenerateRequestData
                     break;
             }
         }
-       return  ['carriersArr' => $carriersArr, 'residential' => $this->resiCarrier];
+        return ['carriersArr' => $carriersArr, 'residential' => $this->resiCarrier];
     }
 
     function destinationIsPOBox($destination)
@@ -296,6 +302,18 @@ class GenerateRequestData
             'version' => '2.0.4',
             'api' => $this->getApiInfoArrWweSmall($connSettings, $destination),
             'getDistance' => 0,
+        ];
+    }
+
+    public function purolatorSmallEnitArr($connSettings, $destination)
+    {
+        return [
+            'licenseKey' => '',
+            'serverName' => "https://" . $this->storeData['store']['name'],
+            'carrierMode' => 'pro',
+            'quotestType' => 'small', // ltl / small
+            'version' => '1.0',
+            'api' => $this->getApiInfoArrpurolatorSmall($connSettings, $destination),
         ];
     }
 
@@ -403,6 +421,7 @@ class GenerateRequestData
             'getDistance' => 0,
         ];
     }
+
     public function estesltlEnitArr($connSettings, $destination)
     {
         return [
@@ -413,12 +432,13 @@ class GenerateRequestData
             'version' => '1.0.0',
             'returnQuotesOnExceedWeight' => 1,
             'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
-             'api' => $this->getApiInfoEsterLtl($connSettings, $destination),
+            'api' => $this->getApiInfoEsterLtl($connSettings, $destination),
 
         ];
 
 
     }
+
     public function yrcLtlEnitArr($connSettings, $destination)
     {
         return [
@@ -515,7 +535,7 @@ class GenerateRequestData
         ];
     }
 
-     private function uspsSmallEnitArr($connSettings, $destination, $enitOrigin, $lineItems)
+    private function uspsSmallEnitArr($connSettings, $destination, $enitOrigin, $lineItems)
     {
         return [
             'licenseKey' => '',
@@ -580,7 +600,6 @@ class GenerateRequestData
     }
 
 
-
     /**
      * function for generate request array
      * @param $request
@@ -605,15 +624,16 @@ class GenerateRequestData
         //
 
         if (isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs']) {
-            $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? $carriers['usps']['originAddress'] ?? [];
+            $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? $carriers['usps']['originAddress'] ?? $carriers['purolator']['originAddress'] ?? [];
             $this->itemsArr = $itemsArr;
             $this->carriers = $carriers;
 
             $hasSmall = isset($carriers['wweSmall'])
-            || isset($carriers['upsSmall'])
-            || isset($carriers['fedexSmall'])
-            || isset($carriers['unishippersSmall'])
-            || isset($carriers['usps']);
+                || isset($carriers['upsSmall'])
+                || isset($carriers['fedexSmall'])
+                || isset($carriers['unishippersSmall'])
+                || isset($carriers['purolator'])
+                || isset($carriers['usps']);
             if ($hasSmall) {
                 $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
                 if (empty($multiplePackaging)) {
@@ -624,7 +644,7 @@ class GenerateRequestData
                 $carriers = $multiplePackaging['carriers'];
 
                 $olditemsArr = $itemsArr;
-                $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? $carriers['usps']['originAddress'] ?? [];
+                $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? $carriers['usps']['originAddress'] ?? $carriers['purolator']['originAddress'] ?? [];
 
                 if (isset($carriers['fedexSmall'])) {
                     $this->checkServiceEnabled();
@@ -662,6 +682,14 @@ class GenerateRequestData
 
                             foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
                                 $carriers['unishippersSmall']['originAddress'][$key] = $origin;
+                            }
+                        }
+
+                        if (isset($carriers['purolator'])) {
+                            unset($carriers['purolator']['originAddress']);
+
+                            foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
+                                $carriers['purolator']['originAddress'][$key] = $origin;
                             }
                         }
 
@@ -717,6 +745,10 @@ class GenerateRequestData
                     if (isset($carriers['unishippersSmall'])) {
                         $carriers['unishippersSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                     }
+                    if (isset($carriers['purolator'])) {
+                        $carriers['purolator']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
+                    }
+
                     if (isset($carriers['usps'])) {
                         $carriers['usps']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                     }
@@ -958,6 +990,7 @@ class GenerateRequestData
         ];
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
+
     public function getApiInfoEsterLtl($connSettings, $destination)
     {
 
@@ -1407,7 +1440,7 @@ class GenerateRequestData
     function getApiInfoArrFQLtl($connSettings, $destination)
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
-        (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+            (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
         /*
          * Check if rad hit not consumed and residential is enables
          * **/
@@ -1440,8 +1473,7 @@ class GenerateRequestData
         if ($residential == 'Y' || $alwaysResi) {
             array_push($accessorial, 'RESDEL');
         }
-
-        $weightThreshold= $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
+        $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $apiArray = [
             'name' => $connSettings['creds']['username'] ?? '',
             'password' => $connSettings['creds']['password'] ?? '',
@@ -1449,7 +1481,7 @@ class GenerateRequestData
             'HazardousMaterialContactName' => 'test',
             'HazardousMaterialContactPhone' => '4545464875',
             'residentialDelivery' => $alwaysResi ? 'Y' : $residential,
-            'thresholdWeightLimit'=>$weightThreshold,
+            'thresholdWeightLimit' => $weightThreshold,
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
             'accessorial' => $accessorial,
@@ -1495,6 +1527,38 @@ class GenerateRequestData
             'residentials_delivery' => ($alwaysResi ? 'Y' : $residential == 'Y') ? 'yes' : 'no',
             'prefferedCurrency' => 'USD',
             'includeDeclaredValue' => "1",
+        ];
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
+    }
+
+    public function getApiInfoArrpurolatorSmall($connSettings, $destination)
+    {
+        $residential = 'N';
+        $alwaysResi = false;
+        $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
+        if ($this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])) {
+            if ($this->radHitConsumed == 0) {
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+            } else {
+                $residential = $this->residential;
+            }
+        } else {
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+        }
+
+        $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
+        $this->resiCarrier['purolatorSmall'] = $residential;
+        $this->resiCarrier['alwaysResi']['purolatorSmall'] = $alwaysResi;
+        $apiArray = [
+            'productionKey' => $connSettings['creds']['productionKey'],
+            'productionPass' => $connSettings['creds']['productionPass'],
+            'billingAccount' => $connSettings['creds']['billingAccount'],
+            'registeredAccount' => $connSettings['creds']['registeredAccount'],
+            'accessLevel' => 'pro',
+            'quoteType' => 'Domestic',
+            'serviceID' => 'PurolatorGround',
         ];
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
@@ -1711,6 +1775,7 @@ class GenerateRequestData
 
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
+
     public function getApiInfoArrAbfLtl($connSettings, $destination)
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
@@ -1741,7 +1806,7 @@ class GenerateRequestData
         $this->resiCarrier['alwaysResi']['abfLtl'] = $alwaysResi;
 
         $accessorial = [];
-        if($alwaysResi || $residential == 'Y'){
+        if ($alwaysResi || $residential == 'Y') {
             $accessorial['Acc_RDEL'] = 'Y';
         }
         if ($liftGate == 'Y') {
@@ -1851,17 +1916,17 @@ class GenerateRequestData
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
 
         $apiArray = [
-                'emailAddress' => $connSettings['creds']['email'],
-                'password' => $connSettings['creds']['password'],
-                'billToAccountNumber' => $connSettings['creds']['billing_account_number'],
+            'emailAddress' => $connSettings['creds']['email'],
+            'password' => $connSettings['creds']['password'],
+            'billToAccountNumber' => $connSettings['creds']['billing_account_number'],
 
-                'prefferedCurrency' => 'USD',
-                'thresholdWeightLimit' => $weightThreshold,
-                'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
-                'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
-                /* Accessorial array */
-                'accessorial' => $accessorial
-            ];
+            'prefferedCurrency' => 'USD',
+            'thresholdWeightLimit' => $weightThreshold,
+            'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
+            'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
+            /* Accessorial array */
+            'accessorial' => $accessorial
+        ];
 
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
@@ -1869,7 +1934,7 @@ class GenerateRequestData
     private function getApiInfoArrSaiaLtl($connSettings, $destination)
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
-        (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+            (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
         /*
             * Check if rad hit not consumed and residential is enables
             * **/
