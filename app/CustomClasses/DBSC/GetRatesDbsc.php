@@ -6,6 +6,7 @@ use App\Models\DBSC\DbscShippingOrigin;
 use App\Models\DBSC\DbscShippingProfile;
 use App\Models\DBSC\DbscShippingZone;
 use Illuminate\Support\Facades\Log;
+use App\CustomClasses\SmartyStreet\SmartyStreet;
 
 class GetRatesDbsc
 {
@@ -196,7 +197,9 @@ class GetRatesDbsc
                 $description,
                 $distancePreference,
                 $andOR,
-                $distanceAdjustVal
+                $distanceAdjustVal,
+                $addressType,
+                $unknownDefaultAddress
             ] = $this->setRateVariables($rate);
                 $isValidLength = $this->isValidShippingLength($totalShipmentLength, $minLength, $maxLength);
                 $isValidWeight   = $this->isValidShippingWeight($totalShipmentWeight, $minWeight, $maxWeight);
@@ -204,9 +207,9 @@ class GetRatesDbsc
             if ($andOR == "And" && ($isValidWeight && $isValidLength) || $andOR == "Or" && ($isValidWeight || $isValidLength)){
 
                 // Firstly we will check the address type
-                /*   if (!$this->checkAddressType($addressType, $unknownDefaultAddress)) {
-                       continue;
-                   }*/
+                if (!$this->checkAddressType($addressType, $unknownDefaultAddress)) {
+                   continue;
+                }
                 if (!($ratePerMileOrKm > 0)) {
                     $distance['distance_m'] = 0;
                 } else {
@@ -331,6 +334,9 @@ class GetRatesDbsc
         $distancePreference = isset($rateSettings->distance_display_preferences) && !empty($rateSettings->distance_display_preferences) ? $rateSettings->distance_display_preferences : "1";
         $distanceAdjustVal = isset($rateSettings->distance_adjustment) && !empty($rateSettings->distance_adjustment) ? $rateSettings->distance_adjustment : "";
 
+        $addressType = isset($rateSettings->address_type) && !empty($rateSettings->address_type) ? $rateSettings->address_type : "";
+        $unknownDefaultAddress = isset($rateSettings->default_unknown_address_type) && !empty($rateSettings->default_unknown_address_type) ? $rateSettings->default_unknown_address_type : "";
+
         $andOr = (isset($rateSettings->and_or) && !empty($rateSettings->and_or)) ? $rateSettings->and_or : 'and';
         return [
             $minWeight,
@@ -347,7 +353,9 @@ class GetRatesDbsc
             $description,
             $distancePreference,
             $andOr,
-            $distanceAdjustVal
+            $distanceAdjustVal,
+            $addressType,
+            $unknownDefaultAddress
         ];
     }
 
@@ -378,30 +386,33 @@ class GetRatesDbsc
      */
     public function checkAddressType($addressType, $unknownDefaultAddress)
     {
-        if ($addressType == 'commercial_residential') {
+        $smarty = new SmartyStreet();
+            // addressType => 1:residential_commercial, 2:commercial, 3:residential
+            // unknownDefaultAddress => 1:commercial, 2:residential
+        if ($addressType == 1) {
             // no need to check smarty because address is commercial or residential both
             return true;
-        } elseif ($addressType == 'residential') {
+        } elseif ($addressType == 3) {
             // first we will check if smarty address is really residential
             // if detected is residential we return true
-            $type = $this->getSmartyAddress();
+            $type = $smarty->getSmartyAddress($this->destination);
             if ($type == 'r') {
                 return true;
             } elseif ($type == 'n') {
                 // Now if type is n than customer will tell what will smarty will return and if it is residential default than
                 // we will return true;
-                if ($unknownDefaultAddress == 'residential') {
+                if ($unknownDefaultAddress == 2) {
                     return true;
                 }
             }
         } else {
-            $type = $this->getSmartyAddress();
+            $type = $smarty->getSmartyAddress($this->destination);
             if ($type == 'c') {
                 return true;
             } elseif ($type == 'n') {
                 // Now if type is n than customer will tell what will smarty will return and if it is residential default than
                 // we will return true;
-                if ($unknownDefaultAddress == 'commercial') {
+                if ($unknownDefaultAddress == 1) {
                     return true;
                 }
             }

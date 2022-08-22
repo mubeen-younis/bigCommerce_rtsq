@@ -39,6 +39,8 @@ class ShippingRatesController extends Controller
         $shipRates->display_as = $request->display_as;
         $shipRates->distance_display_preferences = $request->distance_display_preferences;
         $shipRates->description = $request->description;
+        $shipRates->address_type = $request->address_type;
+        $shipRates->default_unknown_address_type = $request->default_unknown_address_type;
         $shipRates->rate = $request->rate;
         $shipRates->distance_unit = $request->distance_unit;
         $shipRates->distance_measured_by = $request->distance_measured_by;
@@ -130,6 +132,8 @@ class ShippingRatesController extends Controller
             $shipRates->display_as = $request->display_as;
             $shipRates->distance_display_preferences = $request->distance_display_preferences;
             $shipRates->description = $request->description;
+            $shipRates->address_type = $request->address_type;
+            $shipRates->default_unknown_address_type = $request->default_unknown_address_type;
             $shipRates->rate = $request->rate;
             $shipRates->distance_unit = $request->distance_unit;
             $shipRates->distance_measured_by = $request->distance_measured_by;

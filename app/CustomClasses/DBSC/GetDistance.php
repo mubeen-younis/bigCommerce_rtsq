@@ -108,9 +108,9 @@ class GetDistance
                     $distanceRows[] = $distance;
                 } else {
                     // if not found then make origin url string
-                    $originUrl .= urlencode("{$origin['city']}  {$origin['state']} {$origin['zip']}|");
+                    $originUrl .= urlencode("{$origin[$key]['city']}  {$origin[$key]['state']} {$origin[$key]['zip']}|");
                     // Make combination
-                    $enabledCombinations[] = ['origin_zip' => $origin['zip'], 'destination_zip' => $destinationZip];
+                    $enabledCombinations[] = ['origin_zip' => $origin[$key]['zip'], 'destination_zip' => $destinationZip];
                 }
             }
             // If origin url is set, then we right trim the '|' sign from the string. There can be multiple origins in
