@@ -28,6 +28,7 @@ use App\CustomClasses\UspsSmall\ConnectionSettings as UspsSmallConnectionSetting
 use App\CustomClasses\SouthEasternLtl\ConnectionSettings as SouthEasternLtlConnectionSettings;
 use App\CustomClasses\EchoLogisticsLtl\ConnectionSettings as EchoLogisticsLtlConnectionSettings;
 use App\CustomClasses\DayLightLtl\ConnectionSettings as DayLightLtlConnectionSettings;
+use App\CustomClasses\FreightQuote\ChrLtl\ConnectionSettings as FreightQuoteChrConnectionSettings;
 use App\Endpoints\Endpoints;
 
 use App\Models\Connection;
@@ -77,6 +78,7 @@ class ConnectionController extends Controller
         $this->uspsSmallTestCon = new UspsSmallConnectionSettings();
         $this->echoLogisticsLtlTestCon = new EchoLogisticsLtlConnectionSettings();
         $this->dayLightLtlTestCon = new DayLightLtlConnectionSettings();
+        $this->freightQuoteChrLtlTestCon = new FreightQuoteChrConnectionSettings();
     }
 
     public function index(Request $request)
@@ -201,6 +203,9 @@ class ConnectionController extends Controller
                     return response()->json($response);
                 case 'daylight-ltl':
                     $response = $this->dayLightLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    return response()->json($response);
+                case 'freightquote-chr-ltl':
+                    $response = $this->freightQuoteChrLtlTestCon->testConnection($request, $checkCarrierType->name);
                     return response()->json($response);
                 default:
                     return response()->json([

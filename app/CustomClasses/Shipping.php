@@ -178,6 +178,7 @@ class Shipping
 
         $quotesFromWs = $quotes ?? [];
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination);
+
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];
@@ -212,6 +213,7 @@ class Shipping
         $isTqlLtlCodeExist = gettype(array_search('tqlltl', $finalCodesTemp)) == 'integer';
         $isEchoLtlCodeExist = gettype(array_search('echoltl', $finalCodesTemp)) == 'integer';
         $isDayLightLtlCodeExist = gettype(array_search('daylightltl', $finalCodesTemp)) == 'integer';
+        $isFreightQuoteChrLtlCodeExist = gettype(array_search('fqchrltl', $finalCodesTemp)) == 'integer';
         $freightCode = '';
         $finalCost = 0;
 
@@ -224,7 +226,7 @@ class Shipping
         } else {
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
             //TODO : Need to Add LTL Carriers Here as well
-            if (!$isShippingOrFreight && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist || $isEstesLtlCodeExist || $isDayRossLtlCodeExist || $isOdflLtlCodeExist || $isSaiaLtlCodeExist || $isAbfLtlCodeExist || $isSouthEasternLtlCodeExist || $isTqlLtlCodeExist || $isEchoLtlCodeExist || $isDayLightLtlCodeExist)) {
+            if (!$isShippingOrFreight && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist || $isEstesLtlCodeExist || $isDayRossLtlCodeExist || $isOdflLtlCodeExist || $isSaiaLtlCodeExist || $isAbfLtlCodeExist || $isSouthEasternLtlCodeExist || $isTqlLtlCodeExist || $isEchoLtlCodeExist || $isDayLightLtlCodeExist || $isFreightQuoteChrLtlCodeExist)) {
                 $isShippingOrFreight = false;
             }
 
@@ -689,7 +691,7 @@ class Shipping
         // TODO: Need to Add small and Ltl Carriers Here as well
 
         $smallOrigins = $marketItemSmall = $request['carriers']['wweSmall']['originAddress'] ?? $request['carriers']['upsSmall']['originAddress'] ?? $request['carriers']['fedexSmall']['originAddress'] ?? $request['carriers']['unishippersSmall']['originAddress'] ?? $request['carriers']['usps']['originAddress'] ?? $request['carriers']['purolator']['originAddress'] ?? [];
-        $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? $request['carriers']['upsLTL']['originAddress'] ?? $request['carriers']['yrcLTL']['originAddress'] ?? $request['carriers']['odfl4me']['originAddress'] ?? $request['carriers']['abf']['originAddress'] ?? $request['carriers']['southeastern']['originAddress'] ?? $request['carriers']['tql']['originAddress'] ?? $request['carriers']['echoLogistics']['originAddress'] ?? $request['carriers']['daylight']['originAddress'] ?? [];
+        $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? $request['carriers']['upsLTL']['originAddress'] ?? $request['carriers']['yrcLTL']['originAddress'] ?? $request['carriers']['odfl4me']['originAddress'] ?? $request['carriers']['abf']['originAddress'] ?? $request['carriers']['southeastern']['originAddress'] ?? $request['carriers']['tql']['originAddress'] ?? $request['carriers']['echoLogistics']['originAddress'] ?? $request['carriers']['daylight']['originAddress'] ?? $request['carriers']['chr']['originAddress'] ?? [];
         $items = $request['commdityDetails'] ?? [];
         $smallHazmat = $ltlHazmat = false;
         if (!empty($smallOrigins)) {
