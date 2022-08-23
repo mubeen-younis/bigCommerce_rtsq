@@ -27,8 +27,6 @@ class ConnectionSettings extends CarriersConnectionSettings
             'dont_auth' => '1',
             // -------------Carrier Credentials------------- //
             'b2bApiVersion' => '2.0',
-            'client_id' => '0oa6btwvdsXYlfNy3357',
-            'client_secret' => 'aLZrUajjP-_FX6X7tHmDZqzSBtQ93esruZ0jG5Vj',
             'customer_code' => $data->customer_code,
         ];
 
@@ -40,7 +38,7 @@ class ConnectionSettings extends CarriersConnectionSettings
         if (isset($output['severity']) && $output['severity'] == "ERROR") {
             $response = [
                 'error' => true,
-                'message' => 'Invalid authentication info',
+                'message' => 'Invalid credentials.',
             ];
         } else {
             $response = [
