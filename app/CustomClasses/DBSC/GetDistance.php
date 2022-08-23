@@ -31,8 +31,7 @@ class GetDistance
             if (isset($origin['distance_m']) && !blank($origin['distance_m'])) {
                 return $origin;
             }
-            $originArr[0] = $origin;
-            $distance = $this->findRouteDistances($originArr, $destination);
+            $distance = $this->findRouteDistances($origin, $destination);
 
         } else {
             $distance = (new GetStraightDistance())->getStraightLineDistance($origin, $destination);

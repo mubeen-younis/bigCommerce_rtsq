@@ -4,6 +4,7 @@ namespace App\Models\DBSC;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\DBSC\ShippingClass;
 
 class DbscShippingProfile extends Model
 {
@@ -31,6 +32,7 @@ class DbscShippingProfile extends Model
     protected static function getProfileIdOfShippingClass($shippingClass, $storeId)
     {
         $profiles = optional(self::where(['store_id' => $storeId, 'is_general_profile' => 0])->select('id', 'shipping_classes')->get())->toArray() ?? [];
+        $shippingClass = ShippingClass::where(['id' => $shippingClass])->select('class_name')->first() ?? [];
         if (blank($profiles)) {
             return null;
         }
@@ -39,7 +41,7 @@ class DbscShippingProfile extends Model
             if (blank($shippingClasses)) {
                 continue;
             }
-            if (in_array($shippingClass, $shippingClasses)) {
+            if (in_array($shippingClass['class_name'], $shippingClasses)) {
                 return $profile['id'];
             }
         }
