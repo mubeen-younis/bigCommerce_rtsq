@@ -60,6 +60,9 @@ class GetStraightDistance extends GetDistance
         $finalGeoCodeData = $this->getGeoCodeData($locations);
 
         foreach ($finalGeoCodeData as $key => $data) {
+            if (isset($finalGeoCodeData['error'])) {
+                return ['error' => 'Google API Error'];
+            };
             $longitude = $data['longitude'];
             $latitude = $data['latitude'];
             if ($origin['zip'] == $data['postal_code']) {

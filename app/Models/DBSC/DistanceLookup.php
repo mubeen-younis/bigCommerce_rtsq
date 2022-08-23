@@ -9,6 +9,9 @@ class DistanceLookup extends Model
     use HasFactory;
 
     protected $table = "distance_lookup";
+    protected $fillable = [
+        'origin_zip'
+    ];
 
     public static function getDistanceData($originZip, $destinationZip)
     {

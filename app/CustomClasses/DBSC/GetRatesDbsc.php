@@ -215,7 +215,7 @@ class GetRatesDbsc
                 } else {
                     $distance = $this->findDistance($distanceMethod, $selectedOrigin);
                 }
-                if (isset($distance['error'])) {
+                if (isset($distance['error']) || isset($distance['distance_m']['error'])) {
                     continue;
                 }
                 $convertedDistance = ($this->convertDistance($distance['distance_m'], $distanceUnit));
