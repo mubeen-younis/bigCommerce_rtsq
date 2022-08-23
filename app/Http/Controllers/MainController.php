@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Constants\Constant;
+
 use App\Models\AccessTokens;
 use App\Models\HubSpot;
 use App\Models\ProductSetting;
@@ -17,8 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Bigcommerce\Api\Client as Bigcommerce;
 use Illuminate\Support\Facades\Redirect;
-use App\Http\Controllers\HubSpotController;
-use App\Http\Controllers\SaleGraphController;
+
 
 class MainController extends BaseController
 {
@@ -59,6 +59,7 @@ class MainController extends BaseController
 
     public function addTestStore(Request $request)
     {
+
         $storeHash = $request->store_hash ?? null;
         if (blank($storeHash)) {
             return "Store hash is required";
@@ -117,7 +118,7 @@ class MainController extends BaseController
 
             $statusCode = $result->getStatusCode();
             $data = json_decode($result->getBody(), true);
-            Log::info('BIgCOmmerce INstallation Request Data' . json_encode($data));
+            Log::info('BigCommerce Installation Request Data' . json_encode($data));
             if ($statusCode == 200) {
                 $storeHash = explode('/', $data['context']);
                 $storeHash = $storeHash[1] ?? $data['context'];
@@ -153,10 +154,6 @@ class MainController extends BaseController
                     return redirect('https://login.bigcommerce.com/app/' . $this->getAppClientId() . '/install/succeeded');
                 }
             }
-
-            //return redirect('/');
-            // Redirect::to($this->baseURL . '/?store=' . $data['access_token']);
-
             return Redirect::to(Constant::FRONTEND_URL . '/?store=' . $toAppendHash);
         } catch (RequestException $e) {
             $statusCode = $e->getResponse()->getStatusCode();
@@ -285,12 +282,22 @@ class MainController extends BaseController
         return false;
     }
 
+    /*   public function registerWebHook($request)
+       {
+           $webHooks = new WebHooksController();
+           $webHooks->registerWebHook($request);
+           $webHooks->registerOrderWebHook($request);
+           $webHooks->registerSkuWebHook($request);
+       }*/
+
+
+    /**
+     * @param $request
+     * @return void
+     */
     public function registerWebHook($request)
     {
-        $webHooks = new WebHooksController();
-        $webHooks->registerWebHook($request);
-        $webHooks->registerOrderWebHook($request);
-        $webHooks->registerSkuWebHook($request);
+        (new WebHooksController())->registerAllBcWebhooks($request);
     }
 
     public function error(Request $request)

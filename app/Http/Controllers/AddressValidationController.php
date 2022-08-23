@@ -164,7 +164,7 @@ class AddressValidationController extends Controller
         $curlResp = json_decode($curlResp['response'], true);
         Log::info('Curl Response from VA ' . json_encode($curlResp) . 'Request ' . json_encode($request));
         if (isset($curlResp['is_valid']) && $curlResp['is_valid'] == false) {
-            return ['error' => true, 'message' => 'Not a valid company Id'];
+            return ['error' => true, 'message' => (isset($curlResp['message']) && !blank($curlResp['message']) ? $curlResp['message'] : 'Not a valid company ID')];
         }
         Log::info('Before second call ' . json_encode($curlResp));
         if (isset($curlResp['is_valid']) && $curlResp['is_valid'] == true) {
@@ -173,6 +173,7 @@ class AddressValidationController extends Controller
             $endpoint = Endpoints::avCredsEndpoint();
             $curlResp = (new CurlRequest())->enSingleCurlRequest($endpoint, $request, [], 'POST');
             $curlResp = json_decode($curlResp['response'], true);
+            Log::info('Response from AV after Connect ' . json_encode($curlResp));
             if (isset($curlResp['error']) && $curlResp['error'] == false) {
                 $msg = 'Successfully connected to Validate Addresses';
                 return ['error' => false, 'message' => $msg];
@@ -209,11 +210,11 @@ class AddressValidationController extends Controller
             Helpers::sendJsonResponse(true, 'Store Url and Company Id is required');
         }
         if ($status) {
-            Store::where(['url' => $storeUrl, 'av_company_id' => $companyId])->update(['av_company_id' => $companyId]);
+            Store::where(['url' => $storeUrl])->update(['av_company_id' => $companyId]);
             Helpers::sendJsonResponse(false, 'Connection Activated');
 
         } else {
-            Store::where(['url' => $storeUrl, 'av_company_id' => $companyId])->update(['av_company_id' => null]);
+            Store::where(['url' => $storeUrl])->update(['av_company_id' => null]);
             Helpers::sendJsonResponse(false, 'Disconnected from BigCommerce');
 
         }

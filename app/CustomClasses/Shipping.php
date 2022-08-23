@@ -71,9 +71,13 @@ class Shipping
         }
         // Items that is not associated with Shipping Group and need to get rates from Ws
         $itemsWithoutShippingGroup = collect($request['lineItemData']['items'])->where('shipping_group', null)->all();
+
         // Items that is associated with Shipping Group
         $itemsWithShippingGroup = collect($request['lineItemData']['items'])->where('shipping_group', '!=', null)->all();
+
+
         $originsWithoutShippingGroup = $this->getOriginsAccShipGroup($itemsWithoutShippingGroup, $origins);
+
         // Items that is associated with Shipping Group
         $originsWithShippingGroup = $this->getOriginsAccShipGroup($itemsWithShippingGroup, $origins);
 
@@ -85,11 +89,13 @@ class Shipping
             $this->orderWidgetSave($request, [], [], $finalResp['finalQuotes'], $finalResp['formattedResp'], $cartInfo, [], []);
             return $finalResp['formattedResp'];
         }
+
         $request['lineItemData']['items'] = $itemsWithoutShippingGroup;
         $request['lineItemData']['origin'] = $originsWithoutShippingGroup;
         $package = $request['lineItemData'];
         // Disabling instore pickup if there is multi shipment case
         $originAddress = $this->checkInstorePickup($package['origin']);
+
         // Generating carrier creds and origin array
         $destination = $request['lineItemData']['destination'] ?? [];
         $resp = $generateReqData->generateEnitureArray($originAddress, $destination, $package['items']);
@@ -97,7 +103,6 @@ class Shipping
         $carriersArray = $resp['carriersArr'];
 
         $this->multiOrigins = $this->checkIsMultiShipment($carriersArray['carriers']);
-
         /*Check for MUlti shipment and product marked as instore or local delivery*/
         if ($this->multiOrigins && $this->showOnlyLocAndInstoreQuote) {
             return [];
@@ -107,10 +112,8 @@ class Shipping
         $hazmatAllItems = $this->isHazmatMaterial($package);
 
         $this->isInsurance($package);
-
-
         foreach ($carriersArray['carriers'] as $key => $carriers) {
-            if ($this->isHazmat == 'Y') {
+            if ($this->isHazmat == 'Y' && $key == 'wweLTL') {
                 $carriersArray['carriers'][$key]['api']['lineItemHazmatInfo'] = [
                     [
                         'isHazmatLineItem' => 'Y',
@@ -122,19 +125,23 @@ class Shipping
                     ],
                 ];
             }
-            if ($this->isInsurance === 'Y') {
+            if ($this->isInsurance === 'Y' && $key == 'wweLTL') {
                 if ($this->isSmall($key)) {
                     $carriersArray['carriers'][$key]['api']['includeDeclaredValue'] = 1;
                 } else {
-                    $carriersArray['carriers'][$key]['api']['insureShipment'] = 1;
+                    if ($key == 'wweLTL') {
+                        $carriersArray['carriers'][$key]['api']['insureShipment'] = 1;
+                    }
                 }
             }
         }
+
         // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
         if (empty($requestArr)) {
             return false;
         }
+
         $url = Constant::QUOTES_URL;
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
@@ -143,14 +150,25 @@ class Shipping
       * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
       */
         $this->isRequestMultishipment = $ltlSmallCompileQuotes->checkIsRequestMiltiShipment($requestArr['requestArr'], $quotes);
-        $boxbins = $requestArr['boxBins'] ?? [];
-        if (isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])) {
-            Log::info('BinData ' . json_encode($requestArr['binReponse']));
-            $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes);
+        /* Catering Usps carrier packaging response */
+        $uspsCarrierArr = $requestArr['requestArr']['carriers']['usps'] ?? [];
+        if (isset($uspsCarrierArr) && !empty($uspsCarrierArr)) {
+            $apiArray = $uspsCarrierArr['api'] ?? [];
+            $uspsBoxBins = $apiArray['boxBins'] ?? [];
+
+            if (isset($apiArray['binResponseArr']) && !empty($apiArray['binResponseArr'])) {
+                $quotes = $this->addBinResponseToQuotes($apiArray['binResponseArr'], $quotes, true);
+            }
         }
-        //;
-        //print_r($requestArr['binReponse']);
-        //print_r($requestArr['requestArr']); print_r($quotes); exit;
+
+        $boxbins = $requestArr['boxBins'] ?? [];
+        if (isset($uspsBoxBins) && !empty($uspsBoxBins)) {
+            $boxbins = array_merge($boxbins, $uspsBoxBins);
+        }
+        if (isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])) {
+            $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes, false);
+        }
+
         $freeRNL = false;
         if (isset($requestArr['requestArr']['carriers']['rnl']['freeShipment']) && $requestArr['requestArr']['carriers']['rnl']['freeShipment']) {
             unset($requestArr['requestArr']['carriers']['rnl']['freeShipment']);
@@ -160,55 +178,58 @@ class Shipping
 
         $quotesFromWs = $quotes ?? [];
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination);
+
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];
         }
+
         $_finalQuotes = $finalTitlesTemp = $finalCodesTemp = [];
         $finalTitles = array_column($finalQuotes, 'title');
         $finalCodes = array_column($finalQuotes, 'code');
+
         foreach ($finalTitles as $key => $finalTitle) {
             $finalTitlesTemp[$key] = explode(' ', $finalTitle)[0];
         }
         foreach ($finalCodes as $key => $finalCode) {
             $finalCodesTemp[$key] = explode('+', $finalCode)[0];
         }
+
         /*TODO :Need to Add LTL Carriers here as well*/
-        $isFreightTitleExist = array_search('Freight', $finalTitlesTemp);
-        $isShippingTitleExist = array_search('Shipping', $finalTitlesTemp);
+        $isFreightTitleExist = array_search(Functions::$ltlMultiTitle, $finalTitlesTemp);
+        $isShippingTitleExist = array_search(Functions::$smallMultiTitle, $finalTitlesTemp);
         $isAVGCodeExist = gettype(array_search('AVG', $finalCodesTemp)) == 'integer';
         $isUpsLtlCodeExist = gettype(array_search('upsltl', $finalCodesTemp)) == 'integer';
         $isFedexLtlCodeExist = gettype(array_search('fedexltl', $finalCodesTemp)) == 'integer';
         $isxpoLtlCodeExist = gettype(array_search('xpoltl', $finalCodesTemp)) == 'integer';
+        $isYrcLtlCodeExist = gettype(array_search('yrcltl', $finalCodesTemp)) == 'integer';
+        $isFreightQuoteLtlCodeExist = gettype(array_search('fqltl', $finalCodesTemp)) == 'integer';
+        $isEstesLtlCodeExist = gettype(array_search('estesltl', $finalCodesTemp)) == 'integer';
+        $isDayRossLtlCodeExist = gettype(array_search('dayrossltl', $finalCodesTemp)) == 'integer';
+        $isOdflLtlCodeExist = gettype(array_search('odflltl', $finalCodesTemp)) == 'integer';
+        $isSaiaLtlCodeExist = gettype(array_search('saialtl', $finalCodesTemp)) == 'integer';
+        $isAbfLtlCodeExist = gettype(array_search('abfltl', $finalCodesTemp)) == 'integer';
+        $isSouthEasternLtlCodeExist = gettype(array_search('southeastltl', $finalCodesTemp)) == 'integer';
+        $isTqlLtlCodeExist = gettype(array_search('tqlltl', $finalCodesTemp)) == 'integer';
+        $isEchoLtlCodeExist = gettype(array_search('echoltl', $finalCodesTemp)) == 'integer';
+        $isDayLightLtlCodeExist = gettype(array_search('daylightltl', $finalCodesTemp)) == 'integer';
+        $isFreightQuoteChrLtlCodeExist = gettype(array_search('fqchrltl', $finalCodesTemp)) == 'integer';
         $freightCode = '';
         $finalCost = 0;
 
-        if ((gettype($isFreightTitleExist) == 'integer') && (gettype($isShippingTitleExist) == 'integer')) {
-            foreach ($finalQuotes as $key => $_quote) {
-                if ($_quote['title'] == 'Freight' || $_quote['title'] == 'Shipping') {
-                    $finalCost += $_quote['rate'];
-                    $freightCode = ($_quote['code'] != 'Multi') ? $_quote['code'] : $freightCode;
-                }
-                if ($_quote['title'] != 'Freight' && $_quote['title'] != 'Shipping') {
-                    $_finalQuotes[$key]['code'] = $_quote['code'];
-                    $_finalQuotes[$key]['rate'] = $_quote['rate'];
-                    $_finalQuotes[$key]['title'] = $_quote['title'];
-                }
-            }
-        }
-
         if (!empty($_finalQuotes)) {
             $_finalQuotes[$key]['code'] = $freightCode;
-            $_finalQuotes[$key]['title'] = 'Freight';
+            $_finalQuotes[$key]['title'] = Functions::$ltlMultiTitle;
             $_finalQuotes[$key]['rate'] = $finalCost;
             $_finalQuotes = array_values($_finalQuotes);
             $finalQuotes = $_finalQuotes;
         } else {
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
             //TODO : Need to Add LTL Carriers Here as well
-            if ($isShippingOrFreight && gettype($isFreightTitleExist) == 'integer' && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist)) {
+            if (!$isShippingOrFreight && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist || $isEstesLtlCodeExist || $isDayRossLtlCodeExist || $isOdflLtlCodeExist || $isSaiaLtlCodeExist || $isAbfLtlCodeExist || $isSouthEasternLtlCodeExist || $isTqlLtlCodeExist || $isEchoLtlCodeExist || $isDayLightLtlCodeExist || $isFreightQuoteChrLtlCodeExist)) {
                 $isShippingOrFreight = false;
             }
+
             if ($this->isRequestMultishipment && !$isShippingOrFreight) {
                 $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings, $residential, $quotesFromWs, $requestArr['requestArr']);
                 $finalQuotes = $finalQuotesMulti['checkoutQuotes'] ?? [];
@@ -216,7 +237,6 @@ class Shipping
             }
             /*Removed Code of removing parcel and ltl*/
         }
-
         /*Adding shipping group rates response in quotes
         */
         if (!blank($this->shippingGroupResponse)) {
@@ -247,44 +267,32 @@ class Shipping
     public function showOnlyLocAndInstoreQuote($items): bool
     {
         foreach ($items as $item) {
-            if (isset($item['quote_as_instore']) && $item['quote_as_instore']) {
-                $this->instoreQuotes = true;
-            }
             if (isset($item['quote_as_local']) && $item['quote_as_local']) {
-                $this->locDelQuotes = true;
+                return true;
             }
         }
-        return $this->instoreQuotes || $this->locDelQuotes;
+        return false;
     }
+
 
     public function enableSuppressRatesInOrigins($origins)
     {
         //  Need to set some status for WS to suppress quotes and ignore destination origin
         $found = false;
         foreach ($origins as $key => $origin) {
-            if ($this->locDelQuotes) {
-                if (isset($origin['InstorPickupLocalDelivery']['localDelivery']['postalCodeMatch'])) {
-                    $origins[$key]['InstorPickupLocalDelivery']['suppress'] = 1;
-                    // $origins[$key]['InstorPickupLocalDelivery']['localDelivery']['postalCodeMatch'] = 1;
-                    $found = true;
-                }
-            } else {
-                unset($origins[$key]['InstorPickupLocalDelivery']['localDelivery']);
+            if (isset($origin['InstorPickupLocalDelivery']['localDelivery']['postalCodeMatch'])) {
+                $origins[$key]['InstorPickupLocalDelivery']['suppress'] = 1;
+                $found = true;
             }
 
-            if ($this->instoreQuotes) {
-                if (isset($origin['InstorPickupLocalDelivery']['inStorePickup']['postalCodeMatch'])) {
-                    $origins[$key]['InstorPickupLocalDelivery']['suppress'] = 1;
-                    // $origins[$key]['InstorPickupLocalDelivery']['inStorePickup']['postalCodeMatch'] = 1;
-                    $found = true;
-                }
-            } else {
-                unset($origins[$key]['InstorPickupLocalDelivery']['inStorePickup']);
+            if (isset($origin['InstorPickupLocalDelivery']['inStorePickup']['postalCodeMatch'])) {
+                $origins[$key]['InstorPickupLocalDelivery']['suppress'] = 1;
+                $found = true;
             }
+
         }
         if (!$found) {
-            // TODO  will return empty array if the customer dont enabled instore or local delivery and product quotes as instore or local
-            $this->showOnlyLocAndInstoreQuote = false;
+            return [];
         }
         return $origins;
     }
@@ -301,7 +309,6 @@ class Shipping
             }
         }
         return $formOrigins;
-
     }
 
 
@@ -377,13 +384,14 @@ class Shipping
     }
 
     private
-    function addBinResponseToQuotes($binReponse, $quotes)
+    function addBinResponseToQuotes($binReponse, $quotes, $uspsRes = false)
     {
         $boxFee = [];
         $fedexBoxesFee = [];
+        $uspsBoxesFee = [];
         foreach ($quotes as $carrierName => $quote) {
             if ($this->isSmallCarrier($carrierName)) {
-                if ($carrierName == 'fedexSmall') {
+                if ($carrierName == 'fedexSmall' && !$uspsRes) {
                     foreach ($binReponse as $serviceType => $response) {
                         foreach ($response as $locationId => $bin) {
                             $quotes[$carrierName][$locationId]['binPackagingData']['response'][$serviceType] = $bin;
@@ -392,7 +400,21 @@ class Shipping
                             $fedexBoxesFee[$locationId][$serviceType] = $fee;
                         }
                     }
-                } else {
+                } else if ($carrierName == 'usps' && $uspsRes) {
+                    foreach ($binReponse as $locationId => $boxTypes) {
+                        if (isset($boxTypes) && !empty($boxTypes)) {
+                            foreach ($boxTypes as $type => $value) {
+                                $quotes[$carrierName][$locationId]['binPackagingData']['response'][strtolower($type)] = $value;
+                                if ($type == 'UMEB' || $type == 'UPMB') {
+                                    $value = $this->getBinsByBoxType($type, $boxTypes);
+                                }
+                                $fee = $this->getCumulativeBoxFee($value, true);
+                                $boxFee[$locationId] = $fee;
+                                $uspsBoxesFee[$locationId][$type] = $fee;
+                            }
+                        }
+                    }
+                } else if ($carrierName !== 'fedexSmall' && $carrierName !== 'usps' && $uspsRes === null) {
                     foreach ($binReponse as $locationId => $bin) {
                         $quotes[$carrierName][$locationId]['binPackagingData']['response'] = $bin;
                         $boxFee[$locationId] = $this->getCumulativeBoxFee($bin);
@@ -403,7 +425,19 @@ class Shipping
         if (!empty($boxFee)) {
             $quotes = $this->addBoxFeeToQuotes($quotes, $boxFee, $fedexBoxesFee);
         }
+
         return $quotes;
+    }
+
+    private function getBinsByBoxType($type, $boxes)
+    {
+        if (isset($boxes[$type]) && !empty($boxes[$type]) && isset($boxes[$type]['bins_packed']) && !empty($boxes[$type]['bins_packed'])) {
+            return $boxes[$type];
+        } else if (isset($boxes['customBoxes']) && !empty($boxes['customBoxes']) && isset($boxes['customBoxes']['bins_packed']) && !empty($boxes['customBoxes']['bins_packed'])) {
+            return $boxes['customBoxes'];
+        }
+
+        return [];
     }
 
     public
@@ -413,7 +447,9 @@ class Shipping
             'wweSmall',
             'upsSmall',
             'fedexSmall',
-            'unishippersSmall'
+            'unishippersSmall',
+            'usps',
+            'purolator'
         ];
         return in_array($carrierName, $smallCarriers);
     }
@@ -428,6 +464,7 @@ class Shipping
             'globalTranz',
             'xpoLTL',
             'rnlLTL',
+            'yrcLTL'
         ];
         return in_array($carrierName, $ltlCarriers);
     }
@@ -435,7 +472,7 @@ class Shipping
     private
     function addBoxFeeToQuotes(array $quotes, array $boxFee, $fedexBoxesFee = []): array
     {
-        $parcelCarName = ['wweSmall', 'upsSmall', 'fedexSmall', 'unishippersSmall'];
+        $parcelCarName = ['wweSmall', 'upsSmall', 'fedexSmall', 'unishippersSmall', 'usps'];
         if (isset($quotes) && !empty($quotes)) {
             foreach ($quotes as $carName => $quot) {
                 if (in_array($carName, $parcelCarName)) {
@@ -512,11 +549,8 @@ class Shipping
                                         $quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['totalNetCharge']['Amount'] = $quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['totalNetCharge']['Amount'] + $fee;
                                         //$quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['boxFees']['Amount'] = $fee;
                                     }
-
                                 }
-
                             }
-
                         }
 
 
@@ -549,13 +583,13 @@ class Shipping
             $fee = $fedexBoxFee[$locId]['air'] ?? $commonBoxFee;
         }
         return $fee;
-
     }
 
-    private
-    function getCumulativeBoxFee($bins): float
+    private function getCumulativeBoxFee($bins, $usps = false): float
     {
-
+        if ($usps) {
+            $bins = (object)$bins;
+        }
         $boxFee = 0;
         if (!empty($bins->bins_packed)) {
             foreach ($bins->bins_packed as $pack) {
@@ -567,6 +601,7 @@ class Shipping
                 }
             }
         }
+
         return $boxFee;
     }
 
@@ -582,6 +617,7 @@ class Shipping
     public
     function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null)
     {
+
         //print_r($resp); print_r($multiShipmentQuotes); exit;
         foreach ($finalQuotes as $finalQuote) {
             $RequestTempData = new RequestTempData();
@@ -640,6 +676,7 @@ class Shipping
         foreach ($items['items'] as $key => $item) {
             if (isset($item['isHazmatLineItem']) && $item['isHazmatLineItem'] == 'Y') {
                 $this->isHazmat = 'Y';
+
                 $hazmatAllItems[$items['origin'][$key]['locationId']] = 'Y';
             } else {
                 $hazmatAllItems[$items['origin'][$key]['locationId']] = 'N';
@@ -652,8 +689,9 @@ class Shipping
     function checkIndividualHazmat($request)
     {
         // TODO: Need to Add small and Ltl Carriers Here as well
-        $smallOrigins = $marketItemSmall = $request['carriers']['wweSmall']['originAddress'] ?? $request['carriers']['upsSmall']['originAddress'] ?? $request['carriers']['fedexSmall']['originAddress'] ?? $request['carriers']['unishippersSmall']['originAddress'] ?? [];
-        $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? $request['carriers']['upsLTL']['originAddress'] ?? [];
+
+        $smallOrigins = $marketItemSmall = $request['carriers']['wweSmall']['originAddress'] ?? $request['carriers']['upsSmall']['originAddress'] ?? $request['carriers']['fedexSmall']['originAddress'] ?? $request['carriers']['unishippersSmall']['originAddress'] ?? $request['carriers']['usps']['originAddress'] ?? $request['carriers']['purolator']['originAddress'] ?? [];
+        $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? $request['carriers']['upsLTL']['originAddress'] ?? $request['carriers']['yrcLTL']['originAddress'] ?? $request['carriers']['odfl4me']['originAddress'] ?? $request['carriers']['abf']['originAddress'] ?? $request['carriers']['southeastern']['originAddress'] ?? $request['carriers']['tql']['originAddress'] ?? $request['carriers']['echoLogistics']['originAddress'] ?? $request['carriers']['daylight']['originAddress'] ?? $request['carriers']['chr']['originAddress'] ?? [];
         $items = $request['commdityDetails'] ?? [];
         $smallHazmat = $ltlHazmat = false;
         if (!empty($smallOrigins)) {
@@ -718,7 +756,7 @@ class Shipping
         if (!empty(array_filter($quotes))) {
             $resp['quote_id'] = (string)rand(1, 9);// need to change
             $resp['messages'] = [];// need to change
-
+            $quotes = $this->formatCheapestFinalQuotes($quotes);
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'eniture_quotes', 'display_name' => $this->limitTitle($quotes[0])]];
 
             foreach ($quotes as $key => $quote) {
@@ -732,20 +770,138 @@ class Shipping
 
                 ];
             }
-
         } else {
             $resp = [];
         }
 
-        Log::info('$resp ' . json_encode($resp));
+        Log::info('Last response for quotes ' . json_encode($resp));
         return $resp;
     }
 
+    private function formatCheapestFinalQuotes($quotes): array
+    {
+        $finalCheapestQuotes = $quotes ?? [];
+        if (empty($finalCheapestQuotes)) {
+            return $finalCheapestQuotes;
+        }
+
+        $freightTitle = Functions::$ltlMultiTitle;
+        $shippingTitle = Functions::$smallMultiTitle;
+
+        $freightQuotesArr = collect($finalCheapestQuotes)->filter(function ($quote) use ($freightTitle) {
+            return strpos($quote['title'], $freightTitle) !== false;
+        })->toArray() ?? [];
+        $shippingQuotesArr = collect($finalCheapestQuotes)->filter(function ($quote) use ($shippingTitle) {
+            return strpos($quote['title'], $shippingTitle) !== false;
+        })->toArray() ?? [];
+
+
+        if (empty($freightQuotesArr) && empty($shippingQuotesArr)) {
+            return $finalCheapestQuotes;
+        } else if (empty($freightQuotesArr) && !empty($shippingQuotesArr)) {
+            return $shippingQuotesArr;
+        } else if (!empty($freightQuotesArr) && empty($shippingQuotesArr)) {
+            return $freightQuotesArr;
+        }
+
+        $freightCheapest = $this->getCheapestQuotesArr($freightQuotesArr) ?? [];
+        $shippingCheapest = $this->getCheapestQuotesArr($shippingQuotesArr) ?? [];
+
+        if (!empty($freightCheapest) && !empty($shippingCheapest)) {
+            $finalCheapestQuotes = $bothChpeastQuotesArr = [];
+            array_push($bothChpeastQuotesArr, $freightCheapest);
+            array_push($bothChpeastQuotesArr, $shippingCheapest);
+
+            $finalCheapestQuotes[0] = $this->getCheapestQuotesArr($bothChpeastQuotesArr) ?? [];
+        }
+
+        return $finalCheapestQuotes;
+    }
+
+    private function filterSingleShipmentSameTitleQuotes($finalCheapestQuotes, $freightTitle, $shippingTitle)
+    {
+        $index = [];
+
+        if (!empty($finalCheapestQuotes)) {
+            foreach ($finalCheapestQuotes as $key => $data) {
+                if (strpos($data['title'], $freightTitle) === false && strpos($data['title'], $shippingTitle) === false) {
+                    $res = $this->getTitleDelimeter($data);
+                    $value = $this->getSameTitleQuotes($res, $finalCheapestQuotes);
+
+                    foreach ($value as $key) {
+                        $keyToDelete = array_search($key, $finalCheapestQuotes);
+                        unset($finalCheapestQuotes[$keyToDelete]);
+                        if (count($value) == 1) {
+                            $value1 = $key;
+                        }
+                    }
+
+                    if (!empty($value) && count($value) > 1) {
+                        $cheapest[] = $this->getCheapestQuotesArr($value) ?? [];
+                        $index = array_merge($finalCheapestQuotes, $cheapest);
+                    } elseif (count($value) === 1) {
+                        $cheapest[] = $value1 ?? [];
+                        $index = array_merge($finalCheapestQuotes, $cheapest);
+                    }
+                }
+            }
+            if (!empty($index)) {
+                return $index;
+            }
+        }
+
+    }
+
+    public function getTitleDelimeter($data)
+    {
+        $var = '(';
+
+        if (strpos($data['title'], 'w') !== false) {
+            $var = "w";
+        }
+
+        $res = explode($var, $data['title'])[0] ?? " ";
+        return trim($res);
+    }
+
+    private function getSameTitleQuotes($res, $finalCheapestQuotes)
+    {
+        $SingleQuotesArr = collect($finalCheapestQuotes)->filter(function ($quote) use ($res) {
+            $resTitle = $this->getTitleDelimeter($quote);
+
+            return $resTitle == $res;
+        })->toArray() ?? [];
+        return $SingleQuotesArr;
+    }
+
+    private function getCheapestQuotesArr($quotes): array
+    {
+        $cheapestQuote = [];
+        $quotes = $quotes ?? [];
+        if (isset($quotes) && !empty($quotes)) {
+            $minRate = min(array_column($quotes, 'rate'));
+            foreach ($quotes as $q) {
+                if ($q['rate'] == $minRate) {
+                    $cheapestQuote = $q;
+                    break;
+                }
+            }
+        }
+
+        return $cheapestQuote;
+    }
 
     public
     function limitTitle($quote)
     {
         $res = $quote['title'];
+        if (strpos($res, Functions::$ltlPrefix) !== false) {
+            $res = str_replace(Functions::$ltlPrefix, '', $res);
+        }
+        if (strpos($res, Functions::$smallPrefix) !== false) {
+            $res = str_replace(Functions::$smallPrefix, '', $res);
+        }
+
         if (strlen($quote['title']) > 100) {
             $res = explode("(", $quote['title'])[0];
         } else if ($quote['title'] == "") {

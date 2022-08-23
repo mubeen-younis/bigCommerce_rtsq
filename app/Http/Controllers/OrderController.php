@@ -6,6 +6,7 @@ use App\Constants\Constant;
 use App\CurlRequest;
 use App\CustomClasses\Functions;
 use App\Models\BoxSize;
+use App\Models\Locations;
 use App\Models\Orders;
 use App\Models\RequestData;
 use App\Models\RequestTempData;
@@ -57,6 +58,7 @@ class OrderController extends Controller
     {
         try {
             $order = $this->getBCOrderByID($request);
+
             if (empty($order)) {
                 return response()->json(['error' => true,
                     'data' => [],
@@ -77,6 +79,7 @@ class OrderController extends Controller
                 ]
             );
         } catch (\Exception $exception) {
+            dd(12, $exception);
             return response()->json(['error' => true,
                 'data' => [$exception->getMessage()],
                 'message' => 'No Order Widget Found',
@@ -147,6 +150,7 @@ class OrderController extends Controller
         if (blank($data)) {
             return [];
         }
+
         $carrierHasInsurance = $this->hasInsureCarrier($rateId);
         $index = explode('idx+', $rateId);
         if (is_string($index[0]) && $index[0] == "shippingGroup") {
@@ -161,6 +165,7 @@ class OrderController extends Controller
         $isHAT = strpos(strtolower($rateId), '+hat');
 
         $rateId = strtolower($rateId);
+        $isInspOrLocal = substr($rateId, 0, 4) == 'insp' || substr($rateId, 0, 6) == 'locdel';
         $isSmallrate = substr($rateId, 0, 9) == 'parcel_12' || substr($rateId, 0, 5) == 'multi' ? true : false;
         $isLG = strpos($rateId, '+lg');
         $isOwnArrangement = strpos($rateId, 'own_arrangement') === 0 || strpos($rateId, 'freernlltl') === 0 ? true : false;
@@ -168,14 +173,20 @@ class OrderController extends Controller
         /*
         * Stored Response from WS */
         $lineItem = json_decode($data['lineitems'])->lineItemData;
+        $originalItemsReq = json_decode(json_encode($lineItem->items));
         $responseFromWS = json_decode($data['quotes']);
         $shippingGroupResp = !blank($data['shipping_group_resp']) ? json_decode($data['shipping_group_resp']) : [];
 
         $requestToWS = json_decode($data['request']);
-        $lineItem->items = $this->newFormatItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
+        // TODO: Need to chenage implementation e.g new FormatItems
+        $lineItem->items = $this->formateItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
 
         $lineItem->origin = $this->formateOrigins($requestToWS->requestArr->carriers);
+        $isMultiShipment = false;
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
+        if (!blank($multiShipmentresponse)) {
+            $isMultiShipment = true;
+        }
         $autoResidentialsStatus = 'n';
         $residentialsPickup = 'n';
         $liftGateStatus = 'n';
@@ -187,6 +198,7 @@ class OrderController extends Controller
 
         /*
         * Shipment Packaging */
+
         $sbsItems = [];
         foreach ($responseFromWS as $carrrierName => $WsResp) {
             foreach ($WsResp as $zip => $ws) {
@@ -200,7 +212,7 @@ class OrderController extends Controller
                     $residentialsPickup = $liftResidentialStatus['resiPickup'] ?? 'n';
 
                     $totalBoxes = 1;
-                    if (isset($ws->binPackagingData) && !empty($ws->binPackagingData) && $isSmallrate) {
+                    if (isset($ws->binPackagingData) && !empty($ws->binPackagingData) && ($isSmallrate/* || $isInspOrLocal*/)) {
                         if ($isGround) {
                             $sbsData = $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->bins_packed ?? [];
                         } else if ($isAir) {
@@ -210,7 +222,25 @@ class OrderController extends Controller
                         } else {
                             $sbsData = $ws->binPackagingData->response->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->oneRate->bins_packed ?? [];
                         }
-                        //print_r($ws->binPackagingData->response); exit;
+
+                        /* Usps carrier packaging according to boxes types */
+                        $customBoxes = $ws->binPackagingData->response->customboxes->bins_packed ?? [];
+                        if (!blank($customBoxes)) {
+                            $orderWidgetData[] = $this->formatUspsPackaging($customBoxes, $zip, $lineItem);
+                        }
+                        $upmbBoxes = $ws->binPackagingData->response->upmb->bins_packed ?? [];
+                        if (!blank($upmbBoxes)) {
+                            $orderWidgetData[] = $this->formatUspsPackaging($upmbBoxes, $zip, $lineItem);
+                        }
+                        $umebBoxes = $ws->binPackagingData->response->umeb->bins_packed ?? [];
+                        if (!blank($umebBoxes)) {
+                            $orderWidgetData[] = $this->formatUspsPackaging($umebBoxes, $zip, $lineItem);
+                        }
+                        $uflatBoxes = $ws->binPackagingData->response->uflat->bins_packed ?? [];
+                        if (!blank($uflatBoxes)) {
+                            $orderWidgetData[] = $this->formatUspsPackaging($uflatBoxes, $zip, $lineItem);
+                        }
+
                         $itemCount = 0;
                         foreach ($sbsData as $key => $binPacked) {
                             $type = optional($binPacked->bin_data)->type ?? '';
@@ -269,13 +299,13 @@ class OrderController extends Controller
 
         /*
         * Shipment Origins */
+
         $origins = $lineItem->origin;
         $items = $lineItem->items;
         $count = 0;
         $addedInsurance = $addHazmat = false;
         $isMulti = false;
         $insertedIds = $insertedNames = [];
-        //print_r($items); exit;
         $code = '';
 
         foreach ($origins as $key => $origin) {
@@ -283,15 +313,23 @@ class OrderController extends Controller
             if (blank($item)) {
                 continue;
             }
+            $zip = $origin->locationId != '' ? $origin->locationId : $origin->senderZip;
             $city = $origin->senderCity ? $origin->senderCity . ',' : '';
             $state = $origin->senderState ?? '';
-            $zip = $origin->locationId != '' ? $origin->locationId : $origin->senderZip;
             $senderZip = $origin->senderZip ?? '';
+            if (!$isMultiShipment && $isInspOrLocal) {
+                $origDetails = $this->getOriginForInsAndLocal($zip);
+                if (!blank($origDetails)) {
+                    $city = $origDetails['city'] . ',';
+                    $state = $origDetails['state'];
+                    $senderZip = $origDetails['zip_code'];
+                }
+            }
             $orderWidget[$zip]['locationtype'] = $item->dropship_enabled == 'N' ? 'Warehouse' : 'Dropship';
             $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
             $sRate = $order['shipping_rate'];
-            //print_r($multiShipmentresponse); exit;
+
             if ($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement) {
                 if ($isHAT) {
                     $sRate = $multiShipmentresponse->$index->hat->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
@@ -325,11 +363,11 @@ class OrderController extends Controller
 
             $orderWidget[$zip]['shipping_method'] = $sName . $sMethod;
             $orderWidget[$zip]['shipping_rate'] = '$' . number_format((float)$sRate, 2,);
-
-            if ($item->shipMultiplePackage) {
+            // TODO : Need to change originalPiecesOfLineItem -> itemQuantity
+            if (isset($item->shipMultiplePackage) && $item->shipMultiplePackage) {
                 if ((!in_array($item->lineItemName, $insertedNames))) {
                     $insertedNames[] = $item->lineItemName;
-                    $orderWidget[$zip]['items'][] = $item->itemQuantity . ' X ' . $item->lineItemName;
+                    $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
                 }
                 /*Added Else if BLock for Catering BUg of MUltiple Products IN ONe BOX*/
             } elseif (isset($sbsItems[$zip]) && !empty($sbsItems[$zip])) {
@@ -338,19 +376,29 @@ class OrderController extends Controller
                     if (!blank($itemDetail) && (!in_array($itemDetail->lineItemName, $insertedNames)) && (!in_array($itemDetail->id, $insertedIds))) {
                         $insertedNames[] = $itemDetail->lineItemName;
                         $insertedIds[] = $itemDetail->id;
-                        $orderWidget[$zip]['items'][] = $itemDetail->itemQuantity . ' X ' . $itemDetail->lineItemName;
+                        $orderWidget[$zip]['items'][] = $itemDetail->originalPiecesOfLineItem . ' X ' . $itemDetail->lineItemName;
                     }
                 }
             } else {
-                if ((!in_array($item->id, $insertedIds))) {
+                if (isset($item->id) && (!in_array($item->id, $insertedIds))) {
                     $insertedIds[] = $item->id;
-                    $orderWidget[$zip]['items'][] = $item->itemQuantity . ' X ' . $item->lineItemName;
+                    $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
+                }
+            }
+
+
+            /*If instore and not multi shipment we are showing only instore and local delivery original items*/
+            if (!$isMultiShipment && $isInspOrLocal) {
+                $orderWidget[$zip]['items'] = [];
+                foreach ($originalItemsReq as $originalItem) {
+                    $orderWidget[$zip]['items'][] = $originalItem->originalPiecesOfLineItem . ' X ' . $originalItem->lineItemName;;
                 }
             }
 
 
             /*
             * Item Accessorials */
+
             $addedHazmat = false;
             if (isset($orderWidget[$zip]['accessories'])) {
                 $addedHazmat = in_array('Hazardous Material', $orderWidget[$zip]['accessories']);
@@ -422,7 +470,7 @@ class OrderController extends Controller
                 $itemsForm[] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
             }
             foreach ($orderWidget as $key => $data) {
-                $items = data_get($data, 'items');
+                $items = data_get($data, 'items') ?? [];
                 if (count($orderWidget) > 1) {
                     if ($data['locationtype'] == "Warehouse") {
                         $items = array_merge($items, $itemsForm);
@@ -435,12 +483,17 @@ class OrderController extends Controller
         }
 
         $sbs = '';
-        //print_r($orderWidget); exit;
         $resp = [
             'widget' => $this->objectToArray($orderWidget),
             'sbs' => $sbs
         ];
         return $resp;
+    }
+
+
+    public function getOriginForInsAndLocal($locationId)
+    {
+        return Locations::getlocationDetail($locationId);
     }
 
     public function getSbsItemDetail($sbsItemKey, $items)
@@ -584,6 +637,7 @@ class OrderController extends Controller
                 $countEndPoint = "https://api.bigcommerce.com/stores/" . $request['store_hash'] . "/v2/orders/count?status_id=" . $status;
             }
             $response = $this->curlRequest->enSingleCurlRequest($countEndPoint, [], $headers, 'GET', false);
+
             $total = (int)ceil(json_decode($response['response'])->count);
 
             if ($status !== '') {
@@ -629,6 +683,63 @@ class OrderController extends Controller
         ];
 
         return $resp;
+    }
+
+    public function formatUspsPackaging($binPackagingData, $zip, $lineItem): array
+    {
+        $sbsData = $binPackagingData ?? [];
+        $itemCount = 0;
+        $orderWidget = [];
+
+        foreach ($sbsData as $key => $binPacked) {
+            $type = optional($binPacked->bin_data)->type ?? '';
+            $quantity = 1;
+            if ($type == 'item' || $type == 'weight_based') {
+                $type = $binPacked->bin_data->type;
+                $product_id = $binPacked->bin_data->id;
+                $quantity = $binPacked->bin_data->quantity ?? 1;
+                $itemCount++;
+            }
+            $count = 0;
+            $orderWidgetData['type'] = $type;
+            $orderWidgetData['image_complete'] = $binPacked->image_complete;
+            $orderWidgetData['quantity'] = $quantity;
+            /*For Weight Based Products*/
+            if ($type == 'weight_based') {
+                $orderWidgetData['d'] = '';
+                $orderWidgetData['w'] = '';
+                $orderWidgetData['h'] = '';
+                $orderWidgetData['weight'] = $binPacked->bin_data->weight ?? '';
+            } else {
+                $orderWidgetData['d'] = $binPacked->bin_data->d . ' x ';
+                $orderWidgetData['w'] = $binPacked->bin_data->w . ' x ';
+                $orderWidgetData['h'] = $binPacked->bin_data->h;
+            }
+
+            $orderWidgetData['nickname'] = $this->getBoxName($binPacked->bin_data->id, '', '', '');
+            foreach ($binPacked->items as $item) {
+                $productid = $item->id;
+                $sbsItems[$zip][$productid] = 1;
+
+                $orderWidgetData['items'][$count]['product_name'] = $lineItem->items->$productid->lineItemName ?? '';
+                $orderWidgetData['items'][$count]['w'] = $item->w;
+                $orderWidgetData['items'][$count]['h'] = $item->h;
+                $orderWidgetData['items'][$count]['d'] = $item->d;
+
+                $orderWidgetData['items'][$count]['image_separated'] = $item->image_separated;
+                $orderWidgetData['items'][$count]['image_sbs'] = $item->image_sbs;
+
+                $orderWidget[$zip]['sbs'][$key] = $orderWidgetData;
+                ++$count;
+            }
+
+            unset($orderWidgetData);
+            if ($count) {
+                $orderWidget[$zip]['sbs'][$key]['number_of_items'] = $count;
+            }
+        }
+
+        return $orderWidget;
     }
 
     /**
@@ -755,11 +866,11 @@ class OrderController extends Controller
     {
         try {
             $postData = file_get_contents("php://input");
-            Log::info('Orderdata: ' . $postData);
             $postData = json_decode($postData, true);
             $storeHash = explode('/', $postData['producer']);
             $storeHash = $storeHash[1];
-            $orderId = $postData['data']['id'];
+            Log::info('Order Webhook Data From BigCommerce ' . json_encode($postData));
+            $orderId = $postData['data']['id'] ?? $postData['data']['order_id'];
             // Update,delete,create from  webhook
             $scope = $postData['scope'];
             $store = Store::where('hash', $storeHash)->first();
@@ -774,10 +885,10 @@ class OrderController extends Controller
             $this->accessToken = $store->access_token;
             $this->storeHash = $storeHash;
             $this->moveQuotesTempToReq($toRequest);
-            //$saveOrderId = $this->saveUpdateOrderByID($toRequest);
-            //$this->setOrderMeta($toRequest);
+            return response()->json(true, 200);
         } catch (\Exception $exception) {
-            Log::info('Exception On Moving Quotes ' . json_encode($exception));
+            Log::info('Exception On Moving Quotes ' . json_encode($exception->getTraceAsString()));
+            return response()->json(true, 200);
         }
     }
 
@@ -851,7 +962,6 @@ class OrderController extends Controller
             echo "<pre>";
             print_r($products);
             exit;
-            //dd($prds);
         }
         return $prds;
     }
@@ -911,7 +1021,7 @@ class OrderController extends Controller
                     if (blank($reqData)) {
                         $reqData = optional(RequestTempData::where('rate_id', $fullRateId)->where('cart_id', $cartId)->first())->toArray();
                     }
-                    Log::info('Orderdata $reqData: ' . json_encode($reqData) . ' RateID: ' . $rateId . ' CartId: ' . $cartId);
+                    Log::info('Order Data DB: ' . json_encode($reqData) . ' RateID: ' . $rateId . ' CartId: ' . $cartId);
                     if (!blank($reqData)) {
                         unset($reqData['id']);
                         RequestData::insert($reqData);

@@ -17,12 +17,14 @@ class QuotesResults
 
 
     public function GTZcompileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $isMultiShipment){
-        //print_r($shipments); exit;
+
     }
 
     public function formateQuoteBeforeCompile($shipments, $quoteSettings){
-        //print_r($shipments); exit;
         foreach ($shipments as $shipment => $quotes){
+            if(!isset($quotes['q'])){
+                continue;
+            }
             if(isset($quotes['q']) || isset($quotes['quotesWithInsideDel']) || isset($quotes['holdAtTerminalResponse']) || isset($quotes['InstorPickupLocalDelivery'])) {
                 unset($shipments[$shipment]);
                 /*if(isset($quotes['q']['ServiceLevels']['ServiceLevel'])) {
@@ -101,7 +103,7 @@ class QuotesResults
                 }
             }
         }
-        //print_r($shipments); exit;
+
         return $shipments;
     }
 

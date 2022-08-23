@@ -43,10 +43,13 @@ use App\Http\Controllers\FDOController;
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
-Route::post('webhooks', [MainController::class, 'addAndUpdateProductFromWebHook']);
-Route::post('order/webhooks', [OrderController::class, 'orderFromWebhook']);
-Route::post('sku/webhooks', [ProductSettingController::class, 'skuFromWebhook']);
+Route::middleware([ \App\Http\Middleware\EnsureStoreisActive::class])->group(function () {
+    Route::post('webhooks', [MainController::class, 'addAndUpdateProductFromWebHook']);
+    Route::post('order/webhooks', [OrderController::class, 'orderFromWebhook']);
+    Route::post('sku/webhooks', [ProductSettingController::class, 'skuFromWebhook']);
+});
 Route::get('/add_to_test_stores', [MainController::class, 'addTestStore']);
+
 
 // FDO ROUTES
 Route::middleware([\App\Http\Middleware\FDOValidity::class])->group(function () {
@@ -66,6 +69,8 @@ Route::post('connection_update_from_fdo', [\App\Http\Controllers\FDOController::
 // Ws Route For Adding Plan
 Route::post('/save_plan_detail', [CarrierPlanController::class, 'addPlanFromWs']);
 Route::middleware([EnsureTokenIsValid::class])->group(function () {
+    //======Webhook Manually
+    Route::get('/reg_webhooks_man', [\App\Http\Controllers\WebHooksController::class, 'registerStoreWebhooksManually']);
     //========Product Routes
     Route::get('/getProducts', [ProductSettingController::class, 'getAllProducts']);
     Route::get('/import_products', [ProductSettingController::class, 'importProducts']);
@@ -232,4 +237,7 @@ Route::get('/get_plans', [\App\Http\Controllers\PlansController::class, 'getPlan
 
 Route::get('/test_bin', [App\CustomClasses\Bin3D\Bin3D::class, 'getBinResponse']);
 
+// app logs
+Route::get('/api_logs', [App\Http\Controllers\LogToDbController::class, 'index']);
+Route::get('/truncate_logs', [App\Http\Controllers\LogToDbController::class, 'truncateLogs']);
 
