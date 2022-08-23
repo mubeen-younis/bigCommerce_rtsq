@@ -102,15 +102,15 @@ class GetDistance
             foreach ($origins as $key => $origin) {
                 // Get the distance row from database
 
-                $distance = DistanceLookup::getDistanceData($origin[$key]['zip'], $destinationZip);
+                $distance = DistanceLookup::getDistanceData($origin['zip'], $destinationZip);
 
                 if (!blank($distance)) {
                     $distanceRows[] = $distance;
                 } else {
                     // if not found then make origin url string
-                    $originUrl .= urlencode("{$origin[$key]['city']}  {$origin[$key]['state']} {$origin[$key]['zip']}|");
+                    $originUrl .= urlencode("{$origin['city']}  {$origin['state']} {$origin['zip']}|");
                     // Make combination
-                    $enabledCombinations[] = ['origin_zip' => $origin[$key]['zip'], 'destination_zip' => $destinationZip];
+                    $enabledCombinations[] = ['origin_zip' => $origin['zip'], 'destination_zip' => $destinationZip];
                 }
             }
             // If origin url is set, then we right trim the '|' sign from the string. There can be multiple origins in
