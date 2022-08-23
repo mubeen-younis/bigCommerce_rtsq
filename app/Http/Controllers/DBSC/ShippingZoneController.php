@@ -120,7 +120,7 @@ class ShippingZoneController extends Controller
         $storeHash = $request->store_hash;
         $regions = [];
         $ids = $request->selected_region;
-        $shipZones = DbscShippingZone::where("dbsc_origin_id", '=', $request->dbsc_origin_id)->whereKeyNot($request->id)->select('selected_region')->get();
+        $shipZones = DbscShippingZone::where("profile_id", '=', $request->profile_id)->whereKeyNot($request->id)->select('selected_region')->get();
         $shipZones = json_decode($shipZones);
 
         if(!empty($shipZones)){
