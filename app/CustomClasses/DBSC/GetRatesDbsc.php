@@ -6,6 +6,7 @@ use App\Models\DBSC\DbscShippingOrigin;
 use App\Models\DBSC\DbscShippingProfile;
 use App\Models\DBSC\DbscShippingZone;
 use Illuminate\Support\Facades\Log;
+use App\Models\DBSC\ShippingClass;
 use App\CustomClasses\SmartyStreet\SmartyStreet;
 
 class GetRatesDbsc
@@ -118,16 +119,17 @@ class GetRatesDbsc
         if (blank($this->genShipProfSettings)) {
             return false;
         }
-        if ($this->genShipProfSettings['allow_all_classes']) {
+        if ($this->genShipProfSettings['allow_all_classes'] == 1) {
             return true;
         }
+        $shippingClass = ShippingClass::where(['id' => $shippingClass])->select('class_name')->first() ?? [];
 
         if (!blank($shippingClass)) {
             if (blank($this->genShipProfSettings['shipping_classes'])) {
                 return false;
             }
             $shippingClasses = json_decode($this->genShipProfSettings['shipping_classes'], true) ?? [];
-            if (in_array($shippingClass, $shippingClasses)) {
+            if (in_array($shippingClass['class_name'], $shippingClasses)) {
                 return true;
             }
         }
