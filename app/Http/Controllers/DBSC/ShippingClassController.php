@@ -6,6 +6,7 @@ use App\CustomClasses\Shipping;
 use App\Http\Controllers\Controller;
 use App\Models\DBSC\ShippingClass;
 use Illuminate\Http\Request;
+use App\Models\ProductSetting;
 
 class ShippingClassController extends Controller
 {
@@ -119,6 +120,13 @@ class ShippingClassController extends Controller
         }
 
         $shipClass = ShippingClass::find($request->id);
+        $products = ProductSetting::where('shipping_class', '=', $shipClass->id)->get();
+        foreach($products as $key => $product){
+            $product['shipping_class'] = null;
+            $product['shipping_class_enabled'] = null;
+            $product->update();
+        }
+
         if (!$shipClass) {
             return response()->json(['error' => true,
             'message' => "Class not found"]);
