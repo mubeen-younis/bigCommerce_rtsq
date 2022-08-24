@@ -832,17 +832,17 @@ class Shipping
         $freightCheapest[] = $this->getCheapestQuotesArr($freightQuotesArr) ?? [];
         $shippingCheapest[] = $this->getCheapestQuotesArr($shippingQuotesArr) ?? [];
 
-        if (empty($freightQuotesArr) && empty($shippingQuotesArr)) {
+        if (empty($freightCheapest) && empty($shippingCheapest)) {
             return $finalCheapestQuotes;
-        } else if (empty($freightQuotesArr) && !empty($shippingQuotesArr)) {
-            return $shippingQuotesArr;
-        } else if (!empty($freightQuotesArr) && empty($shippingQuotesArr)) {
-            return $freightQuotesArr;
+        } else if (empty($freightCheapest) && !empty($shippingCheapest)) {
+            return $shippingCheapest;
+        } else if (!empty($freightCheapest) && empty($shippingCheapest)) {
+            return $freightCheapest;
         }
 
         if (!empty($freightCheapest) && !empty($shippingCheapest)) {
             $finalCheapestQuotes = $bothChpeastQuotesArr = [];
-            $bothChpeastQuotesArr =array_merge($freightCheapest,$shippingCheapest);
+            $bothChpeastQuotesArr = array_merge($freightCheapest, $shippingCheapest);
             $finalCheapestQuotes[0] = $this->getCheapestQuotesArr($bothChpeastQuotesArr) ?? [];
         }
 
