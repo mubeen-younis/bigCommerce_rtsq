@@ -9,12 +9,15 @@ class Functions
 {
     protected static $daysAfterExpiry = 4;
     public static $defaultThresholdLimit = 150;
-    private static $ltlErrorMessage = 'Line Item Marked as LTL.';
-    private static $smallErrorMessage = 'Line Item Marked as Small.';
+    public static $orderWebhookString = ['store/order/*', 'store/order/created'];
+    public static $ltlErrorMessage = 'Line Item Marked as LTL.';
+    public static $smallErrorMessage = 'Line Item Marked as Small.';
     public static $ltlPrefix = '-ltl';
     public static $smallPrefix = '-small';
     public static $ltlMultiTitle = '-ltlFreight';
+    public static $simpleLTLTitle = 'Freight';
     public static $smallMultiTitle = '-smallShipping';
+
 
     public static function hasInsureCarrier($code)
     {
@@ -29,7 +32,7 @@ class Functions
 
     public static function getCarrierNameOrCode($code, $getWsCode = 0): ?string
     {
-        $carrierCodes = ['wweltl', 'rnlltl', 'xpoltl', 'fedexltl', 'gtzltl', 'cltl', 'upsltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd'];
+        $carrierCodes = ['wweltl', 'rnlltl', 'xpoltl', 'fedexltl', 'gtzltl', 'cltl', 'upsltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship'];
         foreach ($carrierCodes as $carrierCode) {
             if (strpos($code, $carrierCode) !== false) {
                 if ($getWsCode == 0) {
@@ -54,7 +57,7 @@ class Functions
     {
         $carrierCodesWithName = ['wweltl' => 'Worldwide Express LTL', 'upsltl' => 'UPS LTL', 'rnlltl' => 'R&L Carriers', 'xpoltl' => 'XPO Logistics',
             'fedexltl' => 'FedEx LTL', 'gtzltl' => 'GlobalTranz LTL', 'cltl' => 'Cerasis Ltl',
-            'parcel_12wwe' => 'Worldwide Express Small', 'parcel_12ups' => 'UPS Small', 'parcel_12fd' => 'FedEx Small', 'parcel_12uniship' => 'Unishipper Small'];
+            'parcel_12wwe' => 'Worldwide Express Small', 'parcel_12ups' => 'UPS Small', 'parcel_12fd' => 'FedEx Small', 'parcel_12uniship' => 'Unishippers Small'];
         return $carrierCodesWithName[$carrierCode] ?? null;
 
 
@@ -94,7 +97,7 @@ class Functions
 
     public static function isSmallCarrier($code)
     {
-        $carriers = ['parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship'];
+        $carriers = ['parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship', 'parcel_12usps'];
         foreach ($carriers as $carrier) {
             if (strpos($code, $carrier) !== false) {
                 return true;
@@ -178,8 +181,26 @@ class Functions
         return $output;
     }
 
-    public static function isNotSmallShipmentError($quote): bool 
+    public static function returnFormExceptionArray($exception)
+    {
+        return ['line' => $exception->getLine(),
+            'file' => $exception->getFile(),
+            'message' => $exception->getMessage()];
+    }
+
+    public static function log($message, $context = null, $type = 'info')
+    {
+        Log::$type($message, !blank($context) ? self::returnFormExceptionArray($context) : []);
+    }
+
+    public static function isNotSmallShipmentError($quote): bool
     {
         return isset($quote['severity']) && isset($quote['Message']) && $quote['Message'] != self::$smallErrorMessage;
+    }
+
+
+    public static function isNotLtlShipmentError($quote): bool
+    {
+        return isset($quote['severity']) && isset($quote['Message']) && $quote['Message'] != self::$ltlErrorMessage;
     }
 }
