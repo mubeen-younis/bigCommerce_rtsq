@@ -754,9 +754,10 @@ class Shipping
         $quotes = array_values($quotes);
         $current = str_replace(' ', 'T', Carbon::now()) . "-00:00";
         if (!empty(array_filter($quotes))) {
-            $resp['quote_id'] = (string)rand(1, 9);// need to change
-            $resp['messages'] = [];// need to change
+            $resp['quote_id'] = (string)rand(1, 9); // need to change
+            $resp['messages'] = []; // need to change
             $quotes = $this->formatCheapestFinalQuotes($quotes);
+            $quotes = $this->freeShippingTitle($quotes);
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'eniture_quotes', 'display_name' => $this->limitTitle($quotes[0])]];
 
             foreach ($quotes as $key => $quote) {
@@ -778,6 +779,31 @@ class Shipping
         return $resp;
     }
 
+    public function freeShippingTitle($finalQuotes)
+    {
+        foreach($finalQuotes as $key => $quote){
+            
+            if(empty($quote['rate']) || $quote['rate'] == '0.00'){
+                if(str_contains($quote['title'], 'w/')){
+                    $label = explode('w', $quote['title'])[0]; 
+                }elseif(str_contains($quote['title'], '(')){
+                    $label =  explode('(', $quote['title'])[0];
+                }elseif(str_contains($quote['title'], '-')){
+                    $label =  explode('(', $quote['title'])[0];
+                }elseif(str_contains($quote['title'], 'Freight')){
+                    $label =  explode('(', $quote['title'])[0];
+                }elseif(!str_contains($quote['title'], 'w/') || !str_contains($quote['title'], '(')){
+                    $label =  $quote['title'];
+                }
+                $labelRemoved =str_replace($label, '',$quote['title']);
+                $quote['title'] = Functions::$freeShipping . $labelRemoved;
+                $finalQuotes[$key]['title'] = $quote['title'];
+            }
+        }
+
+        return $finalQuotes;
+    }
+    
     private function formatCheapestFinalQuotes($quotes): array
     {
         $finalCheapestQuotes = $quotes ?? [];

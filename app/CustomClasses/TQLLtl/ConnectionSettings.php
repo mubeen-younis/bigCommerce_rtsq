@@ -51,7 +51,7 @@ class ConnectionSettings extends CarriersConnectionSettings
         if (isset($output['severity']) && $output['severity'] == 'ERROR' && isset($output['Message']) || $output['Message'] == "Unknown response" ) {
             $response = [
                 'error' => true,
-                'message' => $output['Message'] ?? $output['error_desc'],
+                'message' => 'Invalid credentials.',
             ];
         } elseif ((isset($output['severity']) && $output['severity'] === 'SUCCESS')) {
             $response = [
