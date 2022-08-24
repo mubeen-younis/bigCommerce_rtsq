@@ -177,11 +177,13 @@ class ShippingProfileController extends Controller
                 'message' => 'Profile Id Not Exists',
             ], 404);
         }
-        $shipProfile = DbscShippingProfile::where('id', $request->id)->exists();
-        if ($shipProfile) {
-            $shipProfile = DbscShippingProfile::find($request->id);
+        $shipProfile = DbscShippingProfile::find($request->id);
+        if (!empty($shipProfile)) {
             $shipProfile->p_nickname = $request->nickname;
             $shipProfile->shipping_classes = json_encode($request->shipping_classes);
+            if($shipProfile['is_general_profile'] == 1){
+                $shipProfile->allow_all_classes = $request->allow_all_classes;
+            }
             $shipProfile->update();
             return response()->json(['error' => false,
                 'data' => $shipProfile,
