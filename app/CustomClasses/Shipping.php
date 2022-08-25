@@ -756,8 +756,8 @@ class Shipping
         if (!empty(array_filter($quotes))) {
             $resp['quote_id'] = (string)rand(1, 9); // need to change
             $resp['messages'] = []; // need to change
-            $quotes = $this->formatCheapestFinalQuotes($quotes);
             $quotes = $this->freeShippingTitle($quotes);
+            $quotes = $this->formatCheapestFinalQuotes($quotes);
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'eniture_quotes', 'display_name' => $this->limitTitle($quotes[0])]];
 
             foreach ($quotes as $key => $quote) {
@@ -813,6 +813,7 @@ class Shipping
 
         $freightTitle = Functions::$ltlMultiTitle;
         $shippingTitle = Functions::$smallMultiTitle;
+        $freeShippingTitle = Functions::$freeShipping;
 
         if(!$this->multiOrigins){
             $singleShipmentRes = $this->filterSingleShipmentSameTitleQuotes($finalCheapestQuotes, $freightTitle, $shippingTitle);
@@ -828,12 +829,24 @@ class Shipping
         $shippingQuotesArr = collect($finalCheapestQuotes)->filter(function ($quote) use ($shippingTitle) {
             return strpos($quote['title'], $shippingTitle) !== false;
         })->toArray() ?? [];
+        $freeShippingQuotesArr = collect($finalCheapestQuotes)->filter(function ($quote) use ($freeShippingTitle) {
+            return strpos($quote['title'], $freeShippingTitle) !== false;
+        })->toArray() ?? [];
 
+        if (!empty($freeShippingQuotesArr)) {
+            $freeShippingCheapest[] = $this->getCheapestQuotesArr($freeShippingQuotesArr) ?? [];
+        }
         if (!empty($freightQuotesArr)) {
             $freightCheapest[] = $this->getCheapestQuotesArr($freightQuotesArr) ?? [];
+            if (!empty($freeShippingCheapest)) {
+               $freightCheapest = array_merge($freightCheapest, $freeShippingCheapest);
+            }
         }
         if (!empty($shippingQuotesArr)) {
             $shippingCheapest[] = $this->getCheapestQuotesArr($shippingQuotesArr) ?? [];
+            if (!empty($freeShippingCheapest)) {
+                $shippingCheapest = array_merge($shippingCheapest, $freeShippingCheapest);
+            }
         }
 
         if (empty($freightCheapest) && empty($shippingCheapest)) {
