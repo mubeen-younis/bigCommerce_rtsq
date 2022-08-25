@@ -363,16 +363,6 @@ class FDOController extends Controller
             Log::info('FDO resp for changing carrier status ' . json_encode($curlResp));
 
         }
-
-        // FOR AV
-        if (!blank($promoCodeAv)) {
-            $arr['promocode'] = $promoCodeAv;
-            $data = http_build_query($arr);
-            $endPoint = Endpoints::updateProviderAvEndpoint() . $data;
-            $curlResp = (new CurlRequest())->enSingleCurlRequest($endPoint, [], [], 'GET');
-            Log::info('Av resp for changing carrier status ' . json_encode($curlResp));
-
-        }
     }
 
     /**
