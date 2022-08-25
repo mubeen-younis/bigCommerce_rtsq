@@ -34,6 +34,7 @@ use App\Http\Controllers\DBSC\ShippingProfileController;
 use App\Http\Controllers\DBSC\ShippingOriginController;
 use App\Http\Controllers\DBSC\ShippingZoneController;
 use App\Http\Controllers\DBSC\ShippingRatesController;
+use App\Http\Controllers\DBSC\OtherSettingsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -240,6 +241,9 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/update_dbsc_rates',[ShippingRatesController::class,'update']);
     Route::post('/delete_dbsc_rates',[ShippingRatesController::class,'destroy']);
 
+    // Dbsc Other Settings
+    Route::get('/get_dbsc_other_settings', [OtherSettingsController::class, 'index']);
+    Route::post('/save_dbsc_other_settings', [OtherSettingsController::class, 'store']);
 });
 //Webhook
 Route::post('/bc-subscription-update', [SubscriptionController::class, 'paymentByStripeWebHook']);
