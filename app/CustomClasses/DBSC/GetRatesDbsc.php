@@ -62,6 +62,9 @@ class GetRatesDbsc
         }
         $this->rates = $this->getRates();
         if (!blank($this->rates)) {
+            if($this->isMultiShipment){
+                $this->rates = $this->compileMultishipmentRates($this->rates);
+            }
             return ['rates' => $this->rates, 'ord_wid' => $this->ordWidgetDetails];
         }
         return [];
@@ -164,6 +167,56 @@ class GetRatesDbsc
         return $rates;
     }
 
+    public function compileMultishipmentRates($rates)
+    {
+        $multishipment_preference = 1;
+        if($multishipment_preference == 1){
+
+            $sameProfileRates = [];
+            $diffProfileRates = [];
+          
+            foreach($rates as $key => $rate){
+               $same =  collect($rates)->filter(function($r) use ($rate){
+                return $r['profile_id'] == $rate['profile_id'];
+            })->toArray();
+        
+            if(count($same) > 1){
+        
+                $minRate = min(array_column($same, 'total_price'));
+                foreach ($same as $index => $price) {
+                  
+                    if ($price['total_price'] == $minRate) {
+                        foreach($sameProfileRates as $val){
+                            if($val['profile_id'] == $price['profile_id']){
+                               
+                                break;
+                            }
+                            
+                            $sameProfileRates[] = $price;
+                        }
+                    }
+                }
+            }else{
+                $diffProfileRates[] = $rate;
+            }
+    
+            }
+            
+            return $rates;
+        } else if ($multishipment_preference == 2){
+            $listItem = collect($rates)->sortBy('total_price')->toArray();
+            $listItem = array_values($listItem);
+            $rates = $listItem[count($listItem) - 1];  
+            return $rates;
+        } else {
+            $listItem = collect($rates)->sortBy('total_price')->toArray();
+            $listItem = array_values($listItem);
+            $rates = $listItem[0];
+            return $rates;  
+        }
+
+    }
+
 
     /**
      * Calculates the Shipment rates
@@ -237,7 +290,7 @@ class GetRatesDbsc
                 }
                 // $shippingRate = $this->addHandlingFee($shippingRate, $handlingFee);
                 $shippingRate = $this->checkShippingQuote($shippingRate, $minQuote, $maxQuote);
-                $sServiceArr[] = $rate = $this->createServiceArray($label, $shippingRate);
+                $sServiceArr[] = $rate = $this->createServiceArray($label, $shippingRate, $rate['profile_id']);
                 $this->setOrderWidgetDetails($rate, [
                     'rating_method' => $ratingMethod,
                     'rate_per_mile_or_km' => $ratePerMileOrKm,
@@ -498,12 +551,14 @@ class GetRatesDbsc
      * @param $shippingRate
      * @return array
      */
-    public function createServiceArray($label, $shippingRate)
+    public function createServiceArray($label, $shippingRate, $profielId)
     {
         return array(
             'title' => $label,
             'code' => 'dbsc' . rand(1, 100),
             'total_price' => round($shippingRate, 2),
+            'profile_id' => $profielId,
+            
         );
     }
 
