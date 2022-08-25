@@ -41,6 +41,13 @@ class ShippingProfileController extends Controller
     public function store(Request $request)
     {
         $nickname = DbscShippingProfile::where('p_nickname', '=', $request->nickname)->exists();
+        $req_classes = $request->shipping_classes;
+        $classExists = $this->isClassExists($request, $req_classes);
+
+        if(!$classExists){
+            return response()->json(['error' => true, 'message' => 'Shipping Class already Used', 'data' => []]);
+        }
+       
         if ($nickname) {
             return response()->json(['error' => true, 'message' => 'Shipping Profile already exits']);
         }
@@ -51,6 +58,22 @@ class ShippingProfileController extends Controller
         $shipProfile->save();
 
         return response()->json(['error' => false, 'message' => 'Shipping Profile created Successfully', 'data' => $shipProfile]);
+    }
+
+    public function isClassExists($request, $req_classes)
+    {
+        $profiles = DbscShippingProfile::whereKeyNot($request->id)->select('shipping_classes')->get();
+        foreach($profiles as $profile){
+            $profile_classes = json_decode($profile->shipping_classes);
+            foreach($profile_classes as $profile_class){
+                foreach($req_classes as $request_class){
+                    if($profile_class === $request_class){
+                        return false;   
+                    }   
+                }   
+            }
+        }
+        return true;
     }
 
     /**
@@ -176,6 +199,13 @@ class ShippingProfileController extends Controller
                 'data' => [],
                 'message' => 'Profile Id Not Exists',
             ], 404);
+        }
+     
+        $req_classes = $request->shipping_classes;
+        $classExists = $this->isClassExists($request, $req_classes);
+        
+        if(!$classExists){
+            return response()->json(['error' => true, 'message' => 'Shipping Class already Used', 'data' => []]);
         }
         $shipProfile = DbscShippingProfile::find($request->id);
         if (!empty($shipProfile)) {
