@@ -13,7 +13,7 @@ class GetRatesDbsc
 {
     /*
      * @Author : Saif*/
-
+    private $finalRates;
     /**
      * Using php 8.0 constructor property promotion
      *
@@ -36,7 +36,7 @@ class GetRatesDbsc
                                 public array $ordWidgetDetails
     )
     {
-
+        $this->finalRates = [];
     }
 
 
@@ -65,14 +65,7 @@ class GetRatesDbsc
             
             if($this->isMultiShipment){
                 
-                // $this->rates = $this->compileMultishipmentRates($this->rates);
-                // $totalRate = 0;
-                
-                // foreach($this->rates as $rate){
-                //     $totalRate += $rate['total_price'];
-                // }
-
-                // $this->rates = $this->createServiceArray('Shipping', $totalRate);
+                $this->rates = $this->compileMultishipmentRates($this->rates);
             }
             return ['rates' => $this->rates, 'ord_wid' => $this->ordWidgetDetails];
         }
@@ -173,62 +166,76 @@ class GetRatesDbsc
             }
             $rates = !blank($rates) ? array_merge($rates, $shipmentRates) : $shipmentRates;
         }
+        
         return $rates;
     }
 
     public function compileMultishipmentRates($rates)
     {
         $multishipment_preference = 1;
-         if($multishipment_preference == 1){
-        //     $cheapestProfileRate = [];
+        $label = 'Shipping';
+       
+        if($multishipment_preference == 1){            
+            foreach($rates as $key => $rate) {
+                $same =  collect($rates)->filter(function($r) use ($rate){
+                    return $r['profile_id'] == $rate['profile_id'];
+                })->toArray();
+                
+                if(count($same) > 1){
+                    $this->setMinRate($same);
+                } else {
+                    $this->finalRates[] = $rate;
+                }
+            }
 
-        //     foreach ($rates as $key => $rate){
-
-        //        $sameProfileRates =  collect($rates)->filter(function($filterRate) use ($rate){
-        //         return $filterRate['profile_id'] == $rate['profile_id'];
-        //         })->toArray();
-
-        //         if (count($sameProfileRates) > 1){
-
-        //             foreach ($sameProfileRates as $index => $sameRate){
-        //                 unset($rates[$index]);
-        //             }
-
-        //             $minRate = min(array_column($sameProfileRates, 'total_price'));
-                    
-        //             foreach ($sameProfileRates as $price) {
-        //                 if ($price['total_price'] == $minRate) {
-        //                     $cheapestProfileRate = $price;
-        //                     break;
-        //                 }
-        //             }
-
-        //             $rates[] = $cheapestProfileRate;
-        //         }
-        //     }
-        //     return $rates;
-
+            $this->finalRates = $this->sumMultiRates($label);
+            return $this->finalRates;
         } else if ($multishipment_preference == 2){
-
             $listItem = collect($rates)->sortBy('total_price')->toArray();
             $listItem = array_values($listItem);
-            unset($rates);
-            $rates[] = $listItem[count($listItem) - 1];  
-            
-            return $rates;
+            $this->finalRates = $listItem[count($listItem) - 1];  
 
+            return $this->finalRates;
         } else {
-
             $listItem = collect($rates)->sortBy('total_price')->toArray();
             $listItem = array_values($listItem);
-            unset($rates);
-            $rates[] = $listItem[0];
+            $this->finalRates = $listItem[0];
             
-            return $rates;  
-
+            return $this->finalRates;  
         }
     }
 
+    private function setMinRate($rates) 
+    {
+        if (empty($rates)) {
+            return [];
+        }
+
+        $cheapestRate = collect($rates)->sortBy('total_price')->toArray();
+        $cheapestRate = array_values($cheapestRate);
+
+        foreach ($this->finalRates as $key => $value) {
+            if ($value['profile_id'] == $cheapestRate[0]['profile_id']) {
+                return false;
+            }
+        }
+
+        $this->finalRates[] = $cheapestRate[0];
+    }
+
+    private function sumMultiRates($label)
+    {
+        if (empty($this->finalRates)) {
+            return [];
+        }
+
+        $sum = array_sum(array_column($this->finalRates, 'total_price'));
+        return [
+            'title' => $label,
+            'code' => 'multidbsc123',
+            'rate' => $sum
+        ];
+    }
 
     /**
      * Calculates the Shipment rates

@@ -39,10 +39,12 @@ class ShippingOriginController extends Controller
      */
     public function store(Request $request)
     {
+        $newOrigin = false;
         if($request->from_shipping_origin == 2 || ($request->from_shipping_origin == 1 && !$request->origin_id)){
             $dbscOrigin = DbscOrigin::create([
                 'profile_id' => $request->profile_id,
             ]);
+            $newOrigin = true;
         }else{
             $dbscOrigin['id'] = $request->origin_id;
         }
@@ -58,8 +60,15 @@ class ShippingOriginController extends Controller
         $shipOrigin->origin_id = $dbscOrigin['id'];
         $shipOrigin->availability_in_other_plugins = $request->availability_in_other_plugins;
         $shipOrigin->save();
+
+        if ($newOrigin) {
+            $data['newOrigin'] = $dbscOrigin;
+            $data['origin'] = $shipOrigin;
+        } else {
+            $data = $shipOrigin;
+        }
         
-        return response()->json(['error' => false, 'message' => 'Shipping Origin created Successfully', 'data' => $shipOrigin]);
+        return response()->json(['error' => false, 'message' => 'Shipping Origin created Successfully', 'data' => $data]);
     }
 
     /**
