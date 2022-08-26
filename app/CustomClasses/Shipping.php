@@ -754,8 +754,9 @@ class Shipping
         $quotes = array_values($quotes);
         $current = str_replace(' ', 'T', Carbon::now()) . "-00:00";
         if (!empty(array_filter($quotes))) {
-            $resp['quote_id'] = (string)rand(1, 9);// need to change
-            $resp['messages'] = [];// need to change
+            $resp['quote_id'] = (string)rand(1, 9); // need to change
+            $resp['messages'] = []; // need to change
+            $quotes = $this->freeShippingTitle($quotes);
             $quotes = $this->formatCheapestFinalQuotes($quotes);
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'eniture_quotes', 'display_name' => $this->limitTitle($quotes[0])]];
 
@@ -778,6 +779,31 @@ class Shipping
         return $resp;
     }
 
+    public function freeShippingTitle($finalQuotes)
+    {
+        foreach($finalQuotes as $key => $quote){
+            
+            if(empty($quote['rate']) || $quote['rate'] == '0.00'){
+                if(str_contains($quote['title'], 'w/')){
+                    $label = explode('w', $quote['title'])[0]; 
+                }elseif(str_contains($quote['title'], '(')){
+                    $label =  explode('(', $quote['title'])[0];
+                }elseif(str_contains($quote['title'], '-')){
+                    $label =  explode('(', $quote['title'])[0];
+                }elseif(str_contains($quote['title'], 'Freight')){
+                    $label =  explode('(', $quote['title'])[0];
+                }elseif(!str_contains($quote['title'], 'w/') || !str_contains($quote['title'], '(')){
+                    $label =  $quote['title'];
+                }
+                $labelRemoved =str_replace($label, '',$quote['title']);
+                $quote['title'] = Functions::$freeShipping . $labelRemoved;
+                $finalQuotes[$key]['title'] = $quote['title'];
+            }
+        }
+
+        return $finalQuotes;
+    }
+    
     private function formatCheapestFinalQuotes($quotes): array
     {
         $finalCheapestQuotes = $quotes ?? [];
@@ -787,31 +813,53 @@ class Shipping
 
         $freightTitle = Functions::$ltlMultiTitle;
         $shippingTitle = Functions::$smallMultiTitle;
+        $freeShippingTitle = Functions::$freeShipping;
+
+        if(!$this->isRequestMultishipment){
+            $singleShipmentRes = $this->filterSingleShipmentSameTitleQuotes($finalCheapestQuotes, $freightTitle, $shippingTitle);
+        }
+
+        if(!empty($singleShipmentRes)){
+            return $singleShipmentRes;
+        }
 
         $freightQuotesArr = collect($finalCheapestQuotes)->filter(function ($quote) use ($freightTitle) {
-            return strpos($quote['title'], $freightTitle) !== false;
+            return strpos($quote['title'], $freightTitle) !== false || strpos($quote['title'], 'Freight') !== false;
         })->toArray() ?? [];
         $shippingQuotesArr = collect($finalCheapestQuotes)->filter(function ($quote) use ($shippingTitle) {
             return strpos($quote['title'], $shippingTitle) !== false;
         })->toArray() ?? [];
+        $freeShippingQuotesArr = collect($finalCheapestQuotes)->filter(function ($quote) use ($freeShippingTitle) {
+            return strpos($quote['title'], $freeShippingTitle) !== false;
+        })->toArray() ?? [];
 
-
-        if (empty($freightQuotesArr) && empty($shippingQuotesArr)) {
-            return $finalCheapestQuotes;
-        } else if (empty($freightQuotesArr) && !empty($shippingQuotesArr)) {
-            return $shippingQuotesArr;
-        } else if (!empty($freightQuotesArr) && empty($shippingQuotesArr)) {
-            return $freightQuotesArr;
+        if (!empty($freeShippingQuotesArr)) {
+            $freeShippingCheapest[] = $this->getCheapestQuotesArr($freeShippingQuotesArr) ?? [];
+        }
+        if (!empty($freightQuotesArr)) {
+            $freightCheapest[] = $this->getCheapestQuotesArr($freightQuotesArr) ?? [];
+            if (!empty($freeShippingCheapest)) {
+               $freightCheapest = array_merge($freightCheapest, $freeShippingCheapest);
+            }
+        }
+        if (!empty($shippingQuotesArr)) {
+            $shippingCheapest[] = $this->getCheapestQuotesArr($shippingQuotesArr) ?? [];
+            if (!empty($freeShippingCheapest)) {
+                $shippingCheapest = array_merge($shippingCheapest, $freeShippingCheapest);
+            }
         }
 
-        $freightCheapest = $this->getCheapestQuotesArr($freightQuotesArr) ?? [];
-        $shippingCheapest = $this->getCheapestQuotesArr($shippingQuotesArr) ?? [];
+        if (empty($freightCheapest) && empty($shippingCheapest)) {
+            return $finalCheapestQuotes;
+        } else if (empty($freightCheapest) && !empty($shippingCheapest)) {
+            return $shippingCheapest;
+        } else if (!empty($freightCheapest) && empty($shippingCheapest)) {
+            return $freightCheapest;
+        }
 
         if (!empty($freightCheapest) && !empty($shippingCheapest)) {
             $finalCheapestQuotes = $bothChpeastQuotesArr = [];
-            array_push($bothChpeastQuotesArr, $freightCheapest);
-            array_push($bothChpeastQuotesArr, $shippingCheapest);
-
+            $bothChpeastQuotesArr = array_merge($freightCheapest, $shippingCheapest);
             $finalCheapestQuotes[0] = $this->getCheapestQuotesArr($bothChpeastQuotesArr) ?? [];
         }
 

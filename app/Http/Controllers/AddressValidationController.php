@@ -19,9 +19,6 @@ class AddressValidationController extends Controller
         $storeId = $request['store_id'];
         $store = optional(Store::where('id', $storeId)->first())->toArray() ?? [];
         $coupon = Coupon::getAvCoupon($storeId);
-        if ($coupon === null) {
-            $coupon = $this->getCouponCodeAv($storeId);
-        }
         $store['coupon_code'] = $coupon->code ?? null;
         $store['is_already_user'] = $coupon->is_already_user ?? false;
         $store['used'] = $coupon->used ?? null;
@@ -49,7 +46,7 @@ class AddressValidationController extends Controller
             return $congrats . "You have activated your Promo Code  " . $couponCodeHtml . " with Address Validation account " . $avCompanyIdHtml . ". Now you can enjoy free address validations for 1-year.";
         }
         if (!blank($avCompanyId) && $used == 0 && $IsAlrUser) {
-            return $note . "Get Address Validation free for one year by using promo code [" . $couponCode . "]. Click the button below to apply the promo code";
+            return $note . "Get Address Validation free for one year by using promo code " . $couponCodeHtml . ". Click the button below to apply the promo code";
 
         }
         if (!blank($avCompanyId) && $used == 0 && !$IsAlrUser) {
@@ -59,6 +56,9 @@ class AddressValidationController extends Controller
             $clickHereLogin = "<a target='_blank' rel='noreferrer' href='" . $loginUrl . "'>here</a>";
             $msg = $msg . "Click " . $clickHereLogin . ' to log in.<br><strong>Please refresh the page after logging in. </strong>';
             return $msg;
+        }
+        if (blank($avCompanyId) && $used >=1 && $IsAlrUser) {
+            return $congrats . "You have activated your Promo Code  " . $couponCodeHtml .". Now you can enjoy free address validations for 1-year.";
         }
 
         if ($IsAlrUser) {
@@ -146,11 +146,11 @@ class AddressValidationController extends Controller
             $store->av_company_id = null;
             $message .= 'disconnected successfully';
         }
+
         $store->save();
         $data = $this->getAvCompanyInfo($request, true);
+
         return Helpers::sendJsonResponse(false, $message, $data);
-
-
     }
 
     public function connectVA($storeDetails, $avCompanyId, Request $avRequest)

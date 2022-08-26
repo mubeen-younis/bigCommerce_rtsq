@@ -237,7 +237,7 @@ class FDOController extends Controller
             if (!empty($response) && $response['status'] == false) {
                 return Helpers::sendJsonResponse(true, $response['message'] ?? 'No promo code found');
             }
-            if (isset($response['promo'])) {
+            if (isset($response['promo']) && !empty($response['promo'])) {
                 Store::where('id', $storeId)->update(['av_company_id' => $response['av_company_id']]);
                 Coupon::updateCouponDetails($id, $response['promo']['start_date'], $response['promo']['end_date']);
                 $couponDet = Coupon::getAvCoupon($storeId)->toArray();
@@ -361,16 +361,6 @@ class FDOController extends Controller
             $endPoint = Endpoints::updateProviderFDOEndpoint() . $data;
             $curlResp = (new CurlRequest())->enSingleCurlRequest($endPoint, [], [], 'GET');
             Log::info('FDO resp for changing carrier status ' . json_encode($curlResp));
-
-        }
-
-        // FOR AV
-        if (!blank($promoCodeAv)) {
-            $arr['promocode'] = $promoCodeAv;
-            $data = http_build_query($arr);
-            $endPoint = Endpoints::updateProviderAvEndpoint() . $data;
-            $curlResp = (new CurlRequest())->enSingleCurlRequest($endPoint, [], [], 'GET');
-            Log::info('Av resp for changing carrier status ' . json_encode($curlResp));
 
         }
     }
