@@ -8,6 +8,7 @@ use App\Models\DBSC\DbscShippingZone;
 use Illuminate\Support\Facades\Log;
 use App\Models\DBSC\ShippingClass;
 use App\CustomClasses\SmartyStreet\SmartyStreet;
+use App\Models\DBSC\DbscOtherSettings;
 
 class GetRatesDbsc
 {
@@ -65,7 +66,14 @@ class GetRatesDbsc
             
             if($this->isMultiShipment){
                 
-                $this->rates = $this->compileMultishipmentRates($this->rates);
+                $result[] = $this->compileMultishipmentRates($this->rates);
+                unset($this->rates);
+                $this->rates = $result;
+            } else {
+
+                 foreach($this->rates as $key => $rate){
+                    unset($this->rates[$key]['profile_id']);
+                }
             }
             return ['rates' => $this->rates, 'ord_wid' => $this->ordWidgetDetails];
         }
@@ -172,8 +180,9 @@ class GetRatesDbsc
 
     public function compileMultishipmentRates($rates)
     {
-        $multishipment_preference = 1;
-        $label = 'Shipping';
+        $multiSetting = DbscOtherSettings::first();
+        $multishipment_preference = $multiSetting['multishipment_preference'] ?? 1;
+        $label = !empty($multiSetting['multi_label']) ? $multiSetting['multi_label'] : 'Shipping';
        
         if($multishipment_preference == 1){            
             foreach($rates as $key => $rate) {
@@ -190,18 +199,22 @@ class GetRatesDbsc
 
             $this->finalRates = $this->sumMultiRates($label);
             return $this->finalRates;
+
         } else if ($multishipment_preference == 2){
-            $listItem = collect($rates)->sortBy('total_price')->toArray();
+            $listItem = collect($rates)->sortBy('rate')->toArray();
             $listItem = array_values($listItem);
             $this->finalRates = $listItem[count($listItem) - 1];  
+            $finalRate = $this->finalRates['rate'];
 
-            return $this->finalRates;
+            return $this->getRatesArray($label, $finalRate);
+
         } else {
-            $listItem = collect($rates)->sortBy('total_price')->toArray();
+            $listItem = collect($rates)->sortBy('rate')->toArray();
             $listItem = array_values($listItem);
             $this->finalRates = $listItem[0];
+            $finalRate = $this->finalRates['rate'];
             
-            return $this->finalRates;  
+            return $this->getRatesArray($label, $finalRate);  
         }
     }
 
@@ -211,7 +224,7 @@ class GetRatesDbsc
             return [];
         }
 
-        $cheapestRate = collect($rates)->sortBy('total_price')->toArray();
+        $cheapestRate = collect($rates)->sortBy('rate')->toArray();
         $cheapestRate = array_values($cheapestRate);
 
         foreach ($this->finalRates as $key => $value) {
@@ -229,11 +242,17 @@ class GetRatesDbsc
             return [];
         }
 
-        $sum = array_sum(array_column($this->finalRates, 'total_price'));
+        $sum = array_sum(array_column($this->finalRates, 'rate'));
+        return $this->getRatesArray($label, $sum);
+        
+    }
+
+    private function getRatesArray($label, $rate)
+    {
         return [
             'title' => $label,
-            'code' => 'multidbsc123',
-            'rate' => $sum
+            'code' => 'multidbsc' . rand(1, 100),
+            'rate' => round($rate, 2),
         ];
     }
 
@@ -575,7 +594,7 @@ class GetRatesDbsc
         return array(
             'title' => $label,
             'code' => 'dbsc' . rand(1, 100),
-            'total_price' => round($shippingRate, 2),
+            'rate' => round($shippingRate, 2),
             'profile_id' => $profielId,
             
         );
