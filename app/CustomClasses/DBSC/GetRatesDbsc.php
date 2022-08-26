@@ -62,8 +62,17 @@ class GetRatesDbsc
         }
         $this->rates = $this->getRates();
         if (!blank($this->rates)) {
+            
             if($this->isMultiShipment){
-                $this->rates = $this->compileMultishipmentRates($this->rates);
+                
+                // $this->rates = $this->compileMultishipmentRates($this->rates);
+                // $totalRate = 0;
+                
+                // foreach($this->rates as $rate){
+                //     $totalRate += $rate['total_price'];
+                // }
+
+                // $this->rates = $this->createServiceArray('Shipping', $totalRate);
             }
             return ['rates' => $this->rates, 'ord_wid' => $this->ordWidgetDetails];
         }
@@ -170,51 +179,54 @@ class GetRatesDbsc
     public function compileMultishipmentRates($rates)
     {
         $multishipment_preference = 1;
-        if($multishipment_preference == 1){
+         if($multishipment_preference == 1){
+        //     $cheapestProfileRate = [];
 
-            $sameProfileRates = [];
-            $diffProfileRates = [];
-          
-            foreach($rates as $key => $rate){
-               $same =  collect($rates)->filter(function($r) use ($rate){
-                return $r['profile_id'] == $rate['profile_id'];
-            })->toArray();
-        
-            if(count($same) > 1){
-        
-                $minRate = min(array_column($same, 'total_price'));
-                foreach ($same as $index => $price) {
-                  
-                    if ($price['total_price'] == $minRate) {
-                        foreach($sameProfileRates as $val){
-                            if($val['profile_id'] == $price['profile_id']){
-                               
-                                break;
-                            }
-                            
-                            $sameProfileRates[] = $price;
-                        }
-                    }
-                }
-            }else{
-                $diffProfileRates[] = $rate;
-            }
-    
-            }
+        //     foreach ($rates as $key => $rate){
+
+        //        $sameProfileRates =  collect($rates)->filter(function($filterRate) use ($rate){
+        //         return $filterRate['profile_id'] == $rate['profile_id'];
+        //         })->toArray();
+
+        //         if (count($sameProfileRates) > 1){
+
+        //             foreach ($sameProfileRates as $index => $sameRate){
+        //                 unset($rates[$index]);
+        //             }
+
+        //             $minRate = min(array_column($sameProfileRates, 'total_price'));
+                    
+        //             foreach ($sameProfileRates as $price) {
+        //                 if ($price['total_price'] == $minRate) {
+        //                     $cheapestProfileRate = $price;
+        //                     break;
+        //                 }
+        //             }
+
+        //             $rates[] = $cheapestProfileRate;
+        //         }
+        //     }
+        //     return $rates;
+
+        } else if ($multishipment_preference == 2){
+
+            $listItem = collect($rates)->sortBy('total_price')->toArray();
+            $listItem = array_values($listItem);
+            unset($rates);
+            $rates[] = $listItem[count($listItem) - 1];  
             
             return $rates;
-        } else if ($multishipment_preference == 2){
-            $listItem = collect($rates)->sortBy('total_price')->toArray();
-            $listItem = array_values($listItem);
-            $rates = $listItem[count($listItem) - 1];  
-            return $rates;
-        } else {
-            $listItem = collect($rates)->sortBy('total_price')->toArray();
-            $listItem = array_values($listItem);
-            $rates = $listItem[0];
-            return $rates;  
-        }
 
+        } else {
+
+            $listItem = collect($rates)->sortBy('total_price')->toArray();
+            $listItem = array_values($listItem);
+            unset($rates);
+            $rates[] = $listItem[0];
+            
+            return $rates;  
+
+        }
     }
 
 
@@ -551,7 +563,7 @@ class GetRatesDbsc
      * @param $shippingRate
      * @return array
      */
-    public function createServiceArray($label, $shippingRate, $profielId)
+    public function createServiceArray($label, $shippingRate, $profielId = [])
     {
         return array(
             'title' => $label,
