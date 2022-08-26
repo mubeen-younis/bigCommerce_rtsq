@@ -14,6 +14,9 @@ class DbscShippingProfile extends Model
     protected $fillable = [
         'p_nickname',
         'shipping_classes',
+        'store_id',
+        'is_general_profile',
+        'allow_all_classes',
     ];
 
 

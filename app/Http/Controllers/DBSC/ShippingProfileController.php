@@ -41,16 +41,17 @@ class ShippingProfileController extends Controller
     public function store(Request $request)
     {
         $nickname = DbscShippingProfile::where('p_nickname', '=', $request->nickname)->exists();
+        if ($nickname) {
+            return response()->json(['error' => true, 'message' => 'Shipping Profile already exist']);
+        }
+
         $req_classes = $request->shipping_classes;
         $classExists = $this->isClassExists($request, $req_classes);
 
         if(!$classExists){
             return response()->json(['error' => true, 'message' => 'Shipping Class already Used', 'data' => []]);
         }
-       
-        if ($nickname) {
-            return response()->json(['error' => true, 'message' => 'Shipping Profile already exits']);
-        }
+
         $shipProfile = new DbscShippingProfile();
         $shipProfile->p_nickname = $request->nickname;
         $shipProfile->shipping_classes = json_encode($request->shipping_classes);
@@ -64,7 +65,7 @@ class ShippingProfileController extends Controller
     {
         $profiles = DbscShippingProfile::whereKeyNot($request->id)->select('shipping_classes')->get();
         foreach($profiles as $profile){
-            $profile_classes = json_decode($profile->shipping_classes);
+            $profile_classes = isset($profile->shipping_classes) && !empty($profile->shipping_classes) ? json_decode($profile->shipping_classes) : [];
             foreach($profile_classes as $profile_class){
                 foreach($req_classes as $request_class){
                     if($profile_class === $request_class){
