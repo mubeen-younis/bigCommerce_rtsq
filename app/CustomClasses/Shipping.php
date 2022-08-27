@@ -85,10 +85,9 @@ class Shipping
         try {
             if ($isDbscInstalled) {
                 $getDbscDetails = (new GetRatesDbsc($store_id, $destination, $items, [], [], false, [], []))->getDbscRates($request, $storeData);
-                dd(12, $getDbscDetails);
                 $this->dbscRates = $getDbscDetails['rates'] ?? [];
                 $this->dbscOrdWid = $getDbscDetails['ord_wid'] ?? [];
-
+                dd(12, $this->dbscRates, $this->dbscOrdWid);
             }
         } catch (\Exception $exception) {
             dd(123, $exception);
@@ -172,6 +171,7 @@ class Shipping
         $url = Constant::QUOTES_URL;
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
+        // dd('quotes', $quotes);
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
         /*
       * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
@@ -640,8 +640,6 @@ class Shipping
     public
     function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null)
     {
-
-        //print_r($resp); print_r($multiShipmentQuotes); exit;
         foreach ($finalQuotes as $finalQuote) {
             $RequestTempData = new RequestTempData();
             $RequestTempData->request = json_encode($requestArr);
@@ -654,6 +652,7 @@ class Shipping
             $RequestTempData->cart_id = $cartInfo['cartId'];
             $RequestTempData->box_bins = json_encode($boxbins);
             $RequestTempData->shipping_group_resp = !blank($this->shippingGroupResponse) ? json_encode($this->shippingGroupResponse) : null;
+            $RequestTempData->dbsc_resp = !blank($this->dbscOrdWid) ? json_encode($this->dbscOrdWid): null;
             $RequestTempData->save();
         }
     }
@@ -779,6 +778,7 @@ class Shipping
             $resp['quote_id'] = (string)rand(1, 9);// need to change
             $resp['messages'] = [];// need to change
             $quotes = $this->formatCheapestFinalQuotes($quotes);
+            $quotes = $this->addDbscRates($quotes);
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'eniture_quotes', 'display_name' => $this->limitTitle($quotes[0])]];
 
             foreach ($quotes as $key => $quote) {
@@ -788,8 +788,6 @@ class Shipping
                     'display_name' => $this->limitTitle($quote),
                     'cost' => ['currency' => 'USD', 'amount' => str_replace(',', '', $quote['rate'])],
                     'dispatch_date' => "$current",
-
-
                 ];
             }
         } else {
@@ -911,6 +909,18 @@ class Shipping
         }
 
         return $cheapestQuote;
+    }
+
+    private function addDbscRates($quotes)
+    {
+        if (!isset($this->dbscRates) || empty($this->dbscRates)) {
+            return $quotes;
+        }
+
+        $updatedRates = array_merge($quotes, $this->dbscRates);
+        $updatedRates = $this->addRateId($updatedRates);
+
+        return $updatedRates;
     }
 
     public
