@@ -89,7 +89,6 @@ class Shipping
                 $this->dbscOrdWid = $getDbscDetails['ord_wid'] ?? [];
             }
         } catch (\Exception $exception) {
-            dd(123, $exception);
             Functions::log('DBSC rates exception ', $exception);
         }
 
@@ -773,13 +772,22 @@ class Shipping
     public
     function generateQuoteFormatResponse($quotes)
     {
+        $onlyDbscEnabled = false;
+        if (empty(array_filter($quotes)) && isset($this->dbscRates) && !empty($this->dbscRates)) {
+            $onlyDbscEnabled = true;
+            $quotes = $this->addDbscRates($quotes);
+        }
+
         $quotes = array_values($quotes);
         $current = str_replace(' ', 'T', Carbon::now()) . "-00:00";
         if (!empty(array_filter($quotes))) {
             $resp['quote_id'] = (string)rand(1, 9);// need to change
             $resp['messages'] = [];// need to change
             $quotes = $this->formatCheapestFinalQuotes($quotes);
-            $quotes = $this->addDbscRates($quotes);
+            if (!$onlyDbscEnabled) {
+                $quotes = $this->addDbscRates($quotes);
+            }
+
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'eniture_quotes', 'display_name' => $this->limitTitle($quotes[0])]];
 
             foreach ($quotes as $key => $quote) {
