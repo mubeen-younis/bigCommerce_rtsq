@@ -65,4 +65,56 @@ class DbscShippingProfile extends Model
                 'dbsc_shipping_rates.dbsc_shipping_zone_id' => $zoneId,
             ])->get())->toArray() ?? [];
     }
+
+    public static function makeOrderWidget($data, $order)
+    {
+        $order['rate_id'] = 'dbscidx+634a0b98a7d4e';
+        $order['shipping_name'] = 'distance based';
+        $order['shipping_rate'] = 2965.03;
+
+        $dbscResp = $data['dbsc_resp'] ? json_decode($data['dbsc_resp']) : [];
+        $quotes =  $data['response'] ? json_decode($data['response']) : [];
+        
+        if (!blank($quotes)) {
+            $quotes = collect($quotes->carrier_quotes[0]->quotes)->filter(function($quote) use($order) {
+                return $quote->rate_id === $order['rate_id'];
+            })->toArray() ?? [];
+            $quotes = array_values($quotes);
+        }   
+        
+        $isMultiShipment = $dbscResp->isMultiShipment ?? false;
+        $shipments = $dbscResp->shipments ?? [];
+        if (!$isMultiShipment) {
+            $shipments = collect($shipments)->filter(function($ship) use($order) {
+                return $order['rate_id'] === $ship->rate_details->rate_id;
+            })->toArray() ?? [];
+        }
+
+        $widget = [];
+        if (count($shipments) > 0) {
+            foreach ($shipments as $key => $ship) {
+                $data = [];
+                // $data['locationtype'] = 'Zone ' . $key;
+                $data['locationtype'] = '';
+                $origin = $ship->origin;
+                $data['address'] = $origin->street_address . ', ' . $origin->city . ', ' . $origin->state . ' ' . $origin->zip;
+                $data['shipping_method'] = $order['shipping_name'] ?? '';
+                $rate = $order['shipping_rate'];
+                $data['shipping_rate'] = '$' . number_format((float)$rate, 2,);
+
+                $items = [];
+                foreach ($ship->items as $item) {
+                    $itemQuantity = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
+                    array_push($items, $itemQuantity);
+                }
+
+                $data['items'] = $items;
+                $data['accessories'] = [];
+
+                $widget[] = $data;
+            }
+        }
+
+        return $widget;
+    }
 }

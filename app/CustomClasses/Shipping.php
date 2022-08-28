@@ -87,13 +87,11 @@ class Shipping
                 $getDbscDetails = (new GetRatesDbsc($store_id, $destination, $items, [], [], false, [], []))->getDbscRates($request, $storeData);
                 $this->dbscRates = $getDbscDetails['rates'] ?? [];
                 $this->dbscOrdWid = $getDbscDetails['ord_wid'] ?? [];
-                dd(12, $this->dbscRates, $this->dbscOrdWid);
             }
         } catch (\Exception $exception) {
             dd(123, $exception);
             Functions::log('DBSC rates exception ', $exception);
         }
-
 
         // Items that is not associated with Shipping Group and need to get rates from Ws
         $itemsWithoutShippingGroup = collect($request['lineItemData']['items'])->where('shipping_group', null)->all();
@@ -171,7 +169,6 @@ class Shipping
         $url = Constant::QUOTES_URL;
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
-        // dd('quotes', $quotes);
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
         /*
       * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
@@ -640,6 +637,10 @@ class Shipping
     public
     function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null)
     {
+        if (!blank($this->dbscRates)) {
+            $finalQuotes = array_merge($finalQuotes, $this->dbscRates);
+        }
+
         foreach ($finalQuotes as $finalQuote) {
             $RequestTempData = new RequestTempData();
             $RequestTempData->request = json_encode($requestArr);
@@ -918,8 +919,7 @@ class Shipping
         }
 
         $updatedRates = array_merge($quotes, $this->dbscRates);
-        $updatedRates = $this->addRateId($updatedRates);
-
+       
         return $updatedRates;
     }
 

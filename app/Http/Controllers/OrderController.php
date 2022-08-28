@@ -6,6 +6,7 @@ use App\Constants\Constant;
 use App\CurlRequest;
 use App\CustomClasses\Functions;
 use App\Models\BoxSize;
+use App\Models\DBSC\DbscShippingProfile;
 use App\Models\Locations;
 use App\Models\Orders;
 use App\Models\RequestData;
@@ -57,14 +58,15 @@ class OrderController extends Controller
     public function getOrderWidget(Request $request)
     {
         try {
-            $order = $this->getBCOrderByID($request);
-
-            if (empty($order)) {
-                return response()->json(['error' => true,
-                    'data' => [],
-                    'message' => 'No Order Found',
-                ], 404);
-            }
+            // $order = $this->getBCOrderByID($request);
+            // dd($order);
+            // if (empty($order)) {
+            //     return response()->json(['error' => true,
+            //         'data' => [],
+            //         'message' => 'No Order Found',
+            //     ], 404);
+            // }
+            $order = [];
             $orderWidget = $this->createOrderWidget($request, $order);
             if (empty($orderWidget)) {
                 return response()->json(['error' => true,
@@ -134,9 +136,14 @@ class OrderController extends Controller
 
     public function createOrderWidget($request, $order)
     {
-        $rateId = $order['rate_id'] ?? null;
-        $cartId = $order['cart_id'] ?? null;
-        $data = optional(RequestData::where('rate_id', $rateId)
+        // dd('order widget');
+        // $rateId = $order['rate_id'] ?? null;
+        // $rateId = 'multidbsc11idx+11661606666';
+        $rateId = 'dbscidx+634a0b98a7d4e';
+        // $rateId = 'yrcltlidx+01661511950';
+        // $cartId = $order['cart_id'] ?? null;
+        $cartId = 'b627df98-48d8-4f1e-ae5e-f352a7fcb985';
+        $data = optional(RequestTempData::where('rate_id', $rateId)
                 ->where('cart_id', $cartId)
                 ->where('store_id', $request['store_id'])
                 ->first())->toArray() ?? null;
@@ -150,12 +157,18 @@ class OrderController extends Controller
         if (blank($data)) {
             return [];
         }
-
+        // dd($data);
         $carrierHasInsurance = $this->hasInsureCarrier($rateId);
         $index = explode('idx+', $rateId);
         if (is_string($index[0]) && $index[0] == "shippingGroup") {
             return $this->shippingGroupOrderWidget($data, $order);
         }
+
+        // DBSC order widget
+        if (is_string($index[0]) && strpos($index[0], 'dbsc') !== false) {
+            return $this->dbscOrderWidget($data, $order);
+        }
+
         $index = explode('idx+', $rateId)[1];
         if (!empty($index)) {
             $index = strlen($index) <= 11 ? (int)substr($index, 0, 1) : (int)substr($index, 0, 2);
@@ -328,7 +341,8 @@ class OrderController extends Controller
             $orderWidget[$zip]['locationtype'] = $item->dropship_enabled == 'N' ? 'Warehouse' : 'Dropship';
             $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
-            $sRate = $order['shipping_rate'];
+            $sRate = $order['shipping_rate'] ?? 145.45;
+            $order['shipping_name'] = 'Shipping (date)';
 
             if ($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement) {
                 if ($isHAT) {
@@ -509,6 +523,14 @@ class OrderController extends Controller
         $resp = [
             'widget' => $this->objectToArray($orderWidget)
         ];
+        return $resp;
+    }
+
+    public function dbscOrderWidget($data, $order)
+    {
+        $orderWidget = DbscShippingProfile::makeOrderWidget($data, $order);
+        $resp = ['widget' => $this->objectToArray($orderWidget)];
+
         return $resp;
     }
 

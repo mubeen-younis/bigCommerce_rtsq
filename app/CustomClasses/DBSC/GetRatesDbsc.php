@@ -2,6 +2,7 @@
 
 namespace App\CustomClasses\DBSC;
 
+use App\CustomClasses\Shipping;
 use App\Models\DBSC\DbscShippingOrigin;
 use App\Models\DBSC\DbscShippingProfile;
 use App\Models\DBSC\DbscShippingZone;
@@ -61,25 +62,26 @@ class GetRatesDbsc
         if (blank($this->groupedItemsProfile)) {
             return [];
         }
+
         $this->rates = $this->getRates();
-        if (!blank($this->rates)) {
-            
+        
+        if (!blank($this->rates)) {    
             if($this->isMultiShipment){
-                
                 $result[] = $this->compileMultishipmentRates($this->rates);
                 unset($this->rates);
                 $this->rates = $result;
             } else {
-
                  foreach($this->rates as $key => $rate){
                     unset($this->rates[$key]['profile_id']);
                 }
             }
-            return ['rates' => $this->rates, 'ord_wid' => $this->ordWidgetDetails];
+
+            $widgetInfo['shipments'] = $this->ordWidgetDetails;
+            $widgetInfo['isMultiShipment'] = $this->isMultiShipment;
+            return ['rates' => $this->rates, 'ord_wid' => $widgetInfo];
         }
+
         return [];
-
-
     }
 
     /**
@@ -163,15 +165,17 @@ class GetRatesDbsc
                 Log::info('No zone found ' . $this->storeId);
                 return [];
             }
-            $profileRates = DbscShippingProfile::getProfileRates($profileId, $zoneId, $this->storeId);
 
+            $profileRates = DbscShippingProfile::getProfileRates($profileId, $zoneId, $this->storeId);
             if (blank($profileRates)) {
                 return [];
             }
+
             $shipmentRates = $this->getShipmentRates($profileRates, $items);
             if (blank($shipmentRates)) {
                 return [];
             }
+
             $rates = !blank($rates) ? array_merge($rates, $shipmentRates) : $shipmentRates;
         }
         
@@ -191,7 +195,12 @@ class GetRatesDbsc
                 })->toArray();
                 
                 if(count($same) > 1){
-                    $this->setMinRate($same);
+                   $resp = $this->setMinRate($same);
+                   if (!$resp['status']) {
+                    continue;
+                   }
+
+                   $this->finalRates[] = $resp['rate'];
                 } else {
                     $this->finalRates[] = $rate;
                 }
@@ -226,14 +235,20 @@ class GetRatesDbsc
 
         $cheapestRate = collect($rates)->sortBy('rate')->toArray();
         $cheapestRate = array_values($cheapestRate);
-
+        
+        $resp = [];
         foreach ($this->finalRates as $key => $value) {
             if ($value['profile_id'] == $cheapestRate[0]['profile_id']) {
-                return false;
+                $resp['status'] = false;
+                return $resp;
             }
         }
+        
+        $resp['status'] = true;
+        $resp['rate'] = $cheapestRate[0];
 
-        $this->finalRates[] = $cheapestRate[0];
+        return $resp;
+        // $this->finalRates[] = $cheapestRate[0];
     }
 
     private function sumMultiRates($label)
@@ -249,10 +264,14 @@ class GetRatesDbsc
 
     private function getRatesArray($label, $rate)
     {
+        $code = 'multidbsc';
+        $rateId = $code . 'idx+' . str_shuffle(uniqid());
+
         return [
-            'title' => $label,
             'code' => 'multidbsc' . rand(1, 100),
             'rate' => round($rate, 2),
+            'title' => $label,
+            'rate_id' => $rateId
         ];
     }
 
@@ -274,6 +293,7 @@ class GetRatesDbsc
             Log::info('Issue on fetching origin');
             return [];
         }
+
         foreach ($profileRates as $rate) {
             [
                 $minWeight,
@@ -297,20 +317,22 @@ class GetRatesDbsc
                 $isValidLength = $this->isValidShippingLength($totalShipmentLength, $minLength, $maxLength);
                 $isValidWeight   = $this->isValidShippingWeight($totalShipmentWeight, $minWeight, $maxWeight);
 
-            if ($andOR == "And" && ($isValidWeight && $isValidLength) || $andOR == "Or" && ($isValidWeight || $isValidLength)){
-
+            if ($andOR == "And" && ($isValidWeight && $isValidLength) || $andOR == "Or" && ($isValidWeight || $isValidLength)) {
                 // Firstly we will check the address type
                 if (!$this->checkAddressType($addressType, $unknownDefaultAddress)) {
                    continue;
                 }
+
                 if (!($ratePerMileOrKm > 0)) {
                     $distance['distance_m'] = 0;
                 } else {
                     $distance = $this->findDistance($distanceMethod, $selectedOrigin);
                 }
+                
                 if (isset($distance['error']) || isset($distance['distance_m']['error'])) {
                     continue;
                 }
+
                 $convertedDistance = ($this->convertDistance($distance['distance_m'], $distanceUnit));
                 // added distance adjustment value after convert distance into Mile/Kilometer
                 $distanceAdjustment = $convertedDistance + (float)$distanceAdjustVal;
@@ -326,17 +348,13 @@ class GetRatesDbsc
                 }else {
                     $label = $label . '';
                 }
-                // $shippingRate = $this->addHandlingFee($shippingRate, $handlingFee);
+
                 $shippingRate = $this->checkShippingQuote($shippingRate, $minQuote, $maxQuote);
                 $sServiceArr[] = $rate = $this->createServiceArray($label, $shippingRate, $rate['profile_id']);
-                $this->setOrderWidgetDetails($rate, [
-                    'rating_method' => $ratingMethod,
-                    'rate_per_mile_or_km' => $ratePerMileOrKm,
-                    'distance_method' => $distanceMethod,
-                    'distance_unit' => $distanceUnit,
-                ]);
+                $this->setOrderWidgetDetails($rate, $items, $selectedOrigin[0]);
             }
         }
+
         return $sServiceArr;
     }
 
@@ -591,12 +609,15 @@ class GetRatesDbsc
      */
     public function createServiceArray($label, $shippingRate, $profielId = [])
     {
+        $code = 'dbsc';
+        $rateId = $code . 'idx+' . str_shuffle(uniqid());
+
         return array(
-            'title' => $label,
-            'code' => 'dbsc' . rand(1, 100),
+            'code' => $code . rand(1, 100),
+            'rate_id' => $rateId,
             'rate' => round($shippingRate, 2),
+            'title' => $label,
             'profile_id' => $profielId,
-            
         );
     }
 
@@ -607,9 +628,26 @@ class GetRatesDbsc
      * @param $extras
      * @return void
      */
-    public function setOrderWidgetDetails($rateDetails, $extras)
+    public function setOrderWidgetDetails($rateDetails, $items, $origin)
     {
-        $this->ordWidgetDetails[] = ['rate_details' => $rateDetails, 'extras' => $extras];
-    }
+        if ($this->isMultiShipment) {
+            foreach ($this->ordWidgetDetails as $key => $detail) {
+                if ($detail['rate_details']['profile_id'] == $rateDetails['profile_id']) {
+                    $rates = [$detail['rate_details'], $rateDetails];
+                    $resp = $this->setMinRate($rates);
 
+                    if ($resp['status']) {
+                        $this->ordWidgetDetails[$key]['rate_details'] = $resp['rate'];
+                        $this->ordWidgetDetails[$key]['items'] = $items;
+                        $this->ordWidgetDetails[$key]['origin'] = $origin;
+                        
+                        return false;
+                    }
+                }
+            }
+        }
+
+        $this->ordWidgetDetails[] = ['rate_details' => $rateDetails, 'items' => $items, 'origin' => $origin];
+    }
 }
+

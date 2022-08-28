@@ -24,7 +24,7 @@ class DbscShippingOrigin extends Model
     public static function getOriginsFromOriginId($dbscOriginId)
     {
         return optional(self::where('origin_id', $dbscOriginId)
-            ->select('id', 'city', 'state_or_province as state', 'postal_code as zip', 'country')
+            ->select('id', 'city', 'state_or_province as state', 'postal_code as zip', 'country', 'street_address')
             ->get())->toArray() ?? [];
     }
 }
