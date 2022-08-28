@@ -43,18 +43,21 @@ class OtherSettingsController extends Controller
     public function store(Request $request)
     {
         if (!isset($request->id) || empty($request->id)) {
-            $otherSettings = new DbscOtherSettings();
-        } else {
-            $otherSettings = DbscOtherSettings::find($request->id);
+            return response()->json([
+                'error' => true,
+                'message' => 'Id not found',
+                'data' => null,
+            ]);
         }
 
+        $otherSettings = DbscOtherSettings::find($request->id);
         $otherSettings->multi_label = $request->multi_label;
         $otherSettings->multishipment_preference = $request->multishipment_preference;
         $otherSettings->save();
 
         return response()->json([
             'error' => false,
-            'messgae' => 'Settings saved successfully.',
+            'message' => 'Settings saved successfully.',
             'data' => $otherSettings,
         ]);
     }
