@@ -1,6 +1,6 @@
 <?php
 
-namespace App\CustomClasses\OdflLTL;
+namespace App\CustomClasses\Odfl;
 
 use App\Constants\Constant;
 use App\CustomClasses\CurlRequest;

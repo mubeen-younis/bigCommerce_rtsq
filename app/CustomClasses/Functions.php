@@ -18,6 +18,7 @@ class Functions
     public static $simpleLTLTitle = 'Freight';
     public static $smallMultiTitle = '-smallShipping';
     public static $dbscSlug = 'dbsc';
+    public static $freeShipping = 'Free Shipping ';
 
 
     public static function hasInsureCarrier($code)

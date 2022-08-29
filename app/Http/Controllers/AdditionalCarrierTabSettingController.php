@@ -25,7 +25,7 @@ class AdditionalCarrierTabSettingController extends Controller
             ->join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
             ->where('installed_carriers.id', $installed_carrier)->first();
 
-        if($carrier->slug == 'ltl-quotes' || $carrier->slug == 'freightquote-ltl' || $carrier->slug == 'tql-ltl' || $carrier->slug == "echo-ltl"){
+        if($carrier->slug == 'ltl-quotes' || $carrier->slug == 'freightquote-ltl' || $carrier->slug == 'tql-ltl' || $carrier->slug == "echo-ltl" || $carrier->slug == 'freightquote-chr-ltl'){
             $services = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
                 ->where('installed_carriers.id', $installed_carrier)
                 ->orderBy('speed_freight_carrierName')->get();

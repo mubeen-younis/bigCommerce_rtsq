@@ -25,7 +25,11 @@ class LtlSmallCompileQuotes
                         $alwaysResi = (isset($requestArr['carriers']['upsSmall']['api']['ups_small_pkg_resid_delivery']) && $requestArr['carriers']['upsSmall']['api']['ups_small_pkg_resid_delivery'] == 'yes');
                         $quote['alwaysResi'] = $alwaysResi;
                         $quote['isResi'] = $residential['upsSmall'] == 'Y';
-                    } else if (strpos($quote['code'], 'parcel_12fd') !== false) {
+                    }else if (strpos($quote['code'], 'parcel_12Purolator') !== false) {
+                        $alwaysResi = (isset($requestArr['carriers']['purolator']['api']['purolator_pkg_resid_delivery']) && $requestArr['carriers']['purolator']['api']['purolator_pkg_resid_delivery'] == 'yes');
+                        $quote['alwaysResi'] = $alwaysResi;
+                        $quote['isResi'] = $residential['purolatorSmall'] == 'Y';
+                    }else if (strpos($quote['code'], 'parcel_12fd') !== false) {
                         $alwaysResi = (isset($requestArr['carriers']['fedexSmall']['api']['residentials_delivery']) && $requestArr['carriers']['fedexSmall']['api']['residentials_delivery'] == 'yes');
                         $quote['alwaysResi'] = $alwaysResi;
                         $quote['isResi'] = $residential['fedexSmall'] == 'Y';
@@ -152,7 +156,20 @@ class LtlSmallCompileQuotes
                     } else {
                         $quotesCarrier['ltl']['fq']['simple'][] = $quote;
                     }
-                } else if (strpos($quote['code'], 'estesltl') !== false) {
+                }
+                else if(strpos($quote['code'], 'fqchrltl') !== false){
+                    $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
+                    $quote['isResi'] = isset($residential['freightQuoteChrLtl']) && $residential['freightQuoteChrLtl'] == 'Y';
+                    $quote['alwaysLG'] = isset($connectionSettings['freightquote-chr-ltl']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['freightquote-chr-ltl']['quote_settings']['alwaysLiftGateDelivery'];
+                    if (strpos($quote['code'], '+LG') !== false) {
+                        $quotesCarrier['ltl']['fqchr']['LG'][] = $quote;
+                    } else if(strpos($quote['code'], '+HAT') !== false){
+                        $quotesCarrier['ltl']['fqchr']['HAT'][] = $quote;
+                    } else {
+                        $quotesCarrier['ltl']['fqchr']['simple'][] = $quote;
+                    }
+                }
+                else if(strpos($quote['code'], 'estesltl') !== false){
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
                     $quote['isResi'] = isset($residential['estesLtl']) && $residential['estesLtl'] == 'Y';
                     $quote['alwaysLG'] = isset($connectionSettings['estes-ltl']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['estes-ltl']['quote_settings']['alwaysLiftGateDelivery'];
@@ -185,7 +202,8 @@ class LtlSmallCompileQuotes
                     } else {
                         $quotesCarrier['ltl']['saia']['simple'][] = $quote;
                     }
-                } else if (strpos($quote['code'], 'abfltl') !== false) {
+                }
+                else if (strpos($quote['code'], 'abfltl') !== false) {
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
                     $quote['isResi'] = isset($residential['abfLtl']) && $residential['abfLtl'] == 'Y';
                     $quote['alwaysLG'] = isset($connectionSettings['abf-ltl']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['abf-ltl']['quote_settings']['alwaysLiftGateDelivery'];
@@ -197,7 +215,20 @@ class LtlSmallCompileQuotes
                     } else {
                         $quotesCarrier['ltl']['abf']['simple'][] = $quote;
                     }
-                } else if (strpos($quote['code'], 'SouthEastern') !== false) {
+                }
+                else if(strpos($quote['code'], 'daylightltl') !== false){
+                    $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
+                    $quote['isResi'] = isset($residential['dayLightLtl']) && $residential['dayLightLtl'] == 'Y';
+                    $quote['alwaysLG'] = isset($connectionSettings['daylight-ltl']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['daylight-ltl']['quote_settings']['alwaysLiftGateDelivery'];
+                    if (strpos($quote['code'], '+LG') !== false) {
+                        $quotesCarrier['ltl']['daylight']['LG'][] = $quote;
+                    } else if(strpos($quote['code'], '+HAT') !== false){
+                        $quotesCarrier['ltl']['daylight']['HAT'][] = $quote;
+                    } else {
+                        $quotesCarrier['ltl']['daylight']['simple'][] = $quote;
+                    }
+                }
+                else if (strpos($quote['code'], 'SouthEastern') !== false) {
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
                     $quote['isResi'] = isset($residential['SouthEastern']) && $residential['SouthEastern'] == 'Y';
                     $quote['alwaysLG'] = isset($connectionSettings['southeastern-ltl']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['southeastern-ltl']['quote_settings']['alwaysLiftGateDelivery'];
@@ -209,7 +240,8 @@ class LtlSmallCompileQuotes
                     } else {
                         $quotesCarrier['ltl']['SouthEastern']['simple'][] = $quote;
                     }
-                } else {
+                }
+                else {
                     $alwaysResi = (isset($requestArr['carriers']['wweLTL']['api']['speed_freight_residential_delivery']) && $requestArr['carriers']['wweLTL']['api']['speed_freight_residential_delivery'] == 'Y');
                     $quote['alwaysResi'] = $alwaysResi;
                     $quote['isResi'] = isset($residential['wweLtl']) && $residential['wweLtl'] == 'Y';
@@ -249,7 +281,7 @@ class LtlSmallCompileQuotes
         $isLG = count($ltlLG) > 0;
         $parcel = $quotesCarrierNew['parcel'][0] ?? [];
 
-        if (isset($quotesCarrierNew) && empty($quotesCarrierNew['ltl'])) {
+        if(isset($quotesCarrierNew) && empty($quotesCarrierNew['ltl'])){
             return [];
         }
 
@@ -331,12 +363,12 @@ class LtlSmallCompileQuotes
     private function indexesOfQuotes($quotes)
     {
         $small = $ltl = [];
-        $ltlQuotes = $quotes['wweLTL'] ?? $quotes['upsLTL'] ?? $quotes['fedexLTL'] ?? $quotes['globalTranz'] ?? $quotes['cerasis'] ?? $quotes['xpoLogistics'] ?? $quotes['rnl'] ?? $quotes['yrc'] ?? $quotes['freightQuote'] ?? $quotes['estes'] ?? $quotes['dayross'] ?? $quotes['odfl4me'] ?? $quotes['saia'] ?? $quotes['abf'] ?? $quotes['southeastern'] ?? $quotes['tql'] ?? $quotes['echoLogistics'] ?? [];
+        $ltlQuotes = $quotes['wweLTL'] ?? $quotes['upsLTL'] ?? $quotes['fedexLTL'] ?? $quotes['globalTranz'] ?? $quotes['cerasis'] ?? $quotes['xpoLogistics'] ?? $quotes['rnl'] ?? $quotes['yrc'] ?? $quotes['freightQuote'] ?? $quotes['estes'] ?? $quotes['dayross'] ?? $quotes['odfl4me'] ?? $quotes['saia'] ?? $quotes['abf'] ?? $quotes['southeastern'] ?? $quotes['tql'] ?? $quotes['echoLogistics'] ?? $quotes['daylight'] ?? $quotes['chr'] ?? [];
         foreach ($ltlQuotes as $key => $quote) {
             $ltl[] = $key;
         }
 
-        $smallQuotes = $quotes['wweSmall'] ?? $quotes['upsSmall'] ?? $quotes['fedexSmall'] ?? $quotes['unishippersSmall'] ?? $quotes['usps'] ?? [];
+        $smallQuotes = $quotes['wweSmall'] ?? $quotes['upsSmall'] ?? $quotes['fedexSmall'] ?? $quotes['unishippersSmall'] ?? $quotes['usps'] ?? $quotes['purolator'] ?? [];
         foreach ($smallQuotes as $key => $quote) {
             $small[] = $key;
         }
@@ -372,8 +404,8 @@ class LtlSmallCompileQuotes
 
     private function requestContainSmallLlt($carriers, $quotes)
     {
-        $smallCarriers = ['wweSmall', 'upsSmall', 'fedexSmall', 'unishippersSmall', 'usps'];
-        $ltlCarriers = ['wweLTL', 'upsLTL', 'fedexLTL', 'globalTranz', 'cerasis', 'xpoLogistics', 'rnl', 'yrc', 'freightQuote', 'estes', 'dayross', 'odfl4me', 'saia', 'abf', 'southeastern', 'tql', 'echoLogistics'];
+        $smallCarriers = ['wweSmall', 'upsSmall', 'fedexSmall', 'unishippersSmall', 'usps', 'purolator'];
+        $ltlCarriers = ['wweLTL', 'upsLTL', 'fedexLTL', 'globalTranz', 'cerasis', 'xpoLogistics', 'rnl', 'yrc', 'freightQuote', 'estes', 'dayross', 'odfl4me', 'saia', 'abf', 'southeastern', 'tql', 'echoLogistics', 'daylight', 'chr'];
         $ltl = $small = false;
         foreach ($smallCarriers as $carName) {
             if (isset($carriers[$carName]) && !$small) {

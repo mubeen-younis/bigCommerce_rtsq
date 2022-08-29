@@ -4,7 +4,8 @@ namespace App\Endpoints;
 
 class Endpoints
 {
-    public static $qaUrl = "https://eniture-dev3.com/";
+    public static $qaUrl = "https://ws001.eniture-qa.com/";
+
     public static $prodUrl = "https://eniture.com/";
 
     public static function getBCComEndpoint()
@@ -16,7 +17,7 @@ class Endpoints
     public static function testConnectionEndpoint()
     {
         if (env('APP_ENV') == 'staging') {
-            return self::$prodUrl . "ws/index.php";
+            return self::$qaUrl . "index.php";
         }
         return self::$prodUrl . "ws/index.php";
     }
@@ -24,7 +25,7 @@ class Endpoints
     public static function wweSmallTestEndpoint()
     {
         if (env('APP_ENV') == 'staging') {
-            return self::$qaUrl . "ws/carriers/wwe-small/speedshipTest.php";
+            return self::$qaUrl . "carriers/wwe-small/speedshipTest.php";
         }
         return self::$prodUrl . "ws/carriers/wwe-small/speedshipTest.php";
     }
@@ -32,7 +33,7 @@ class Endpoints
     public static function wweLtlTestEndpoint()
     {
         if (env('APP_ENV') == 'staging') {
-            return self::$qaUrl . "ws/carriers/wwe-freight/speedfreightTest.php";
+            return self::$qaUrl . "carriers/wwe-freight/speedfreightTest.php";
         }
         return self::$prodUrl . "ws/carriers/wwe-freight/speedfreightTest.php";
     }
@@ -116,7 +117,7 @@ class Endpoints
     public static function verifyAvCompDetEndpoint()
     {
         if (env('APP_ENV') == 'staging') {
-            return "https://address-validation.eniture-dev3.com/validateCompany";
+            return "https://address-validation.eniture-qa.com/validateCompany";
         }
         return "https://validate-addresses.com/validateCompany";
 
@@ -125,7 +126,7 @@ class Endpoints
     public static function avCredsEndpoint()
     {
         if (env('APP_ENV') == 'staging') {
-            return "https://address-validation.eniture-dev3.com/connectionFromBC";
+            return "https://address-validation.eniture-qa.com/connectionFromBC";
         }
         return "https://validate-addresses.com/connectionFromBC";
 
@@ -135,7 +136,7 @@ class Endpoints
     public static function disconnectVACompDetEndpoint()
     {
         if (env('APP_ENV') == 'staging') {
-            return "https://address-validation.eniture-dev3.com/disconnectConnectionBC";
+            return "https://address-validation.eniture-qa.com/disconnectConnectionBC";
         }
         return "https://validate-addresses.com/disconnectConnectionBC";
 
@@ -145,7 +146,7 @@ class Endpoints
     public static function getAvCouponEndpoint()
     {
         if (env('APP_ENV') == 'staging') {
-            return "https://address-validation.eniture-dev3.com/use_coupon?shop=";
+            return "https://address-validation.eniture-qa.com/use_coupon?shop=";
         }
         return "https://validate-addresses.com/use_coupon?shop=";
     }
@@ -155,7 +156,7 @@ class Endpoints
     {
 
         if (env('APP_ENV') == 'staging') {
-            return "https://address-validation.eniture-dev3.com/register";
+            return "https://address-validation.eniture-qa.com/register";
         }
         return "https://validate-addresses.com/register";
 
@@ -165,7 +166,7 @@ class Endpoints
     {
 
         if (env('APP_ENV') == 'staging') {
-            return "https://address-validation.eniture-dev3.com/login";
+            return "https://address-validation.eniture-qa.com/login";
         }
         return "https://validate-addresses.com/login";
 
@@ -174,8 +175,7 @@ class Endpoints
     public static function applyPromoCodeAVEndpoint()
     {
         if (env('APP_ENV') == 'staging') {
-            return "https://address-validation.eniture-dev3.com/apply_promo_code?";
-
+            return "https://address-validation.eniture-qa.com/apply_promo_code?";
         }
         return "https://validate-addresses.com/apply_promo_code?";
     }
@@ -184,7 +184,7 @@ class Endpoints
     {
 
         if (env('APP_ENV') == 'staging') {
-            return "https://address-validation.eniture-dev3.com/change_promo_code_status?";
+            return "https://address-validation.eniture-qa.com/change_promo_code_status?";
         }
         return "https://validate-addresses.com/change_promo_code_status?";
 

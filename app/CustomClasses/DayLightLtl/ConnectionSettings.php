@@ -1,6 +1,6 @@
 <?php
 
-namespace App\CustomClasses\TQLLtl;
+namespace App\CustomClasses\DayLightLtl;
 
 use App\CustomClasses\CarriersConnectionSettings;
 use App\CustomClasses\CurlRequest;
@@ -19,45 +19,38 @@ class ConnectionSettings extends CarriersConnectionSettings
             'error' => true,
             'message' => 'Something went wrong!',
         ];
+
         $url = $this->testConnectionUrl;
         $params = array(
-            'dont_auth' => '1',
             'licence_key' => '',
-            'sever_name' => $storeName,
+            'serverName' => $storeName,
+            'dont_auth' => '1',
             // -------------Carrier Credentials------------- //
-            'apiVersion' => '1.0',
-            'carrierName' => 'tql',
+            'userName' => $data->username,
+            'password' => $data->password,
+            'accountNumber' => $data->account_number,
+
+            'carrierName' => 'daylight',
             'carrier_mode' => 'test',
+            'apiVersion' => '1.0',
             'platform' => 'bigcommerce',
-           
-            'traxUsername' => $data->traxUsername,
-            'traxPassword' => $data->traxPassword,
-            'clientId' => $data->clientId,
-            'subscriptionKey' => $data->subscriptionKey,
         );
 
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
 
         if (isset($output['status']) && $output['status'] == false) {
-            $response = [
-                'error' => true,
-                'message' => $output['response'],
-            ];
+            $response['message'] = $output['Message'];
         }
 
         $output = json_decode($output['response'], true);
 
-        if (isset($output['severity']) && $output['severity'] == 'ERROR' && isset($output['Message']) || $output['Message'] == "Unknown response" ) {
-            $response = [
-                'error' => true,
-                'message' => 'Invalid credentials.',
-            ];
-        } elseif ((isset($output['severity']) && $output['severity'] === 'SUCCESS')) {
+        if (isset($output['severity']) && $output['severity'] === 'ERROR' && isset($output['message'])) {
+            $response['message'] = $output['message'];
+        } elseif (isset($output['severity']) && $output['severity'] === 'SUCCESS') {
             $response = [
                 'error' => false,
                 'message' => 'Test connection successful.',
-                'data' => [],
             ];
         }
 
