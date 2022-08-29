@@ -40,7 +40,7 @@ class ShippingClassController extends Controller
     {
         $slug = ShippingClass::where('slug', '=', $request->slug)->exists();
         if ($slug) {
-            return response()->json(['error' => true, 'message' => 'Shipping class already exits']);
+            return response()->json(['error' => true, 'message' => 'Shipping class already exist.']);
         }
         $shipClass = new ShippingClass();
         $shipClass->class_name = $request->class_name;
@@ -48,7 +48,7 @@ class ShippingClassController extends Controller
         $shipClass->description = $request->description;
         $shipClass->save();
         
-        return response()->json(['error' => false, 'message' => 'Shipping class added Successfully', 'data' => $shipClass]);
+        return response()->json(['error' => false, 'message' => 'Shipping class added successfully.', 'data' => $shipClass]);
     }
 
     /**
@@ -101,7 +101,7 @@ class ShippingClassController extends Controller
         $shipClass->description = $request->description;
         $shipClass->save();
 
-        return response()->json(['error' => false, 'message' => 'Shipping class updated successfully', 'data' => $shipClass]);
+        return response()->json(['error' => false, 'message' => 'Shipping class updated successfully.', 'data' => $shipClass]);
     }
 
     /**
@@ -135,7 +135,7 @@ class ShippingClassController extends Controller
         $shipClass->delete();
         return response()->json(
             ['error' => false,
-            'message' => "Shipping Class deleted successfully",
+            'message' => "Shipping class deleted successfully.",
             'data' => $request->id]
         );
     }
