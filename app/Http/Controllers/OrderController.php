@@ -58,15 +58,13 @@ class OrderController extends Controller
     public function getOrderWidget(Request $request)
     {
         try {
-            // $order = $this->getBCOrderByID($request);
-            // dd($order);
-            // if (empty($order)) {
-            //     return response()->json(['error' => true,
-            //         'data' => [],
-            //         'message' => 'No Order Found',
-            //     ], 404);
-            // }
-            $order = [];
+            $order = $this->getBCOrderByID($request);
+            if (empty($order)) {
+                return response()->json(['error' => true,
+                    'data' => [],
+                    'message' => 'No Order Found',
+                ], 404);
+            }
             $orderWidget = $this->createOrderWidget($request, $order);
             if (empty($orderWidget)) {
                 return response()->json(['error' => true,
@@ -136,14 +134,9 @@ class OrderController extends Controller
 
     public function createOrderWidget($request, $order)
     {
-        // dd('order widget');
-        // $rateId = $order['rate_id'] ?? null;
-        // $rateId = 'multidbsc11idx+11661606666';
-        $rateId = 'dbscidx+634a0b98a7d4e';
-        // $rateId = 'yrcltlidx+01661511950';
-        // $cartId = $order['cart_id'] ?? null;
-        $cartId = 'b627df98-48d8-4f1e-ae5e-f352a7fcb985';
-        $data = optional(RequestTempData::where('rate_id', $rateId)
+        $rateId = $order['rate_id'] ?? null;
+        $cartId = $order['cart_id'] ?? null;
+        $data = optional(RequestData::where('rate_id', $rateId)
                 ->where('cart_id', $cartId)
                 ->where('store_id', $request['store_id'])
                 ->first())->toArray() ?? null;
@@ -157,7 +150,7 @@ class OrderController extends Controller
         if (blank($data)) {
             return [];
         }
-        // dd($data);
+
         $carrierHasInsurance = $this->hasInsureCarrier($rateId);
         $index = explode('idx+', $rateId);
         if (is_string($index[0]) && $index[0] == "shippingGroup") {
@@ -341,8 +334,7 @@ class OrderController extends Controller
             $orderWidget[$zip]['locationtype'] = $item->dropship_enabled == 'N' ? 'Warehouse' : 'Dropship';
             $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
-            $sRate = $order['shipping_rate'] ?? 145.45;
-            $order['shipping_name'] = 'Shipping (date)';
+            $sRate = $order['shipping_rate'];
 
             if ($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement) {
                 if ($isHAT) {
