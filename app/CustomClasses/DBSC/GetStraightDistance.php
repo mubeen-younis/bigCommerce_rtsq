@@ -35,7 +35,7 @@ class GetStraightDistance extends GetDistance
             $finalDistance = $this->calculateGeoCodeDistance($origin, $destination);
             $this->insertStraightLineDistanceDatabase($origin['zip'], $destinationZip, $finalDistance);
         }
-
+        Log::info('Final distance ' . $finalDistance);
         return array(
             'distance_m' => $finalDistance,
         );
@@ -61,6 +61,7 @@ class GetStraightDistance extends GetDistance
 
         foreach ($finalGeoCodeData as $key => $data) {
             if (isset($finalGeoCodeData['error'])) {
+                Log::info('Google API Error ' . $finalGeoCodeData['error']);
                 return ['error' => 'Google API Error'];
             };
             $longitude = $data['longitude'];
