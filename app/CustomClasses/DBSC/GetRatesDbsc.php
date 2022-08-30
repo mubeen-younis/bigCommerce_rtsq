@@ -60,6 +60,7 @@ class GetRatesDbsc
         /*Will group items according to there profile*/
         $this->groupedItemsProfile = $this->setGroupItemsProfile();
         if (blank($this->groupedItemsProfile)) {
+            Log::info('No groupedItemsProfile ' . $this->groupedItemsProfile);
             return [];
         }
 
@@ -80,6 +81,7 @@ class GetRatesDbsc
             $widgetInfo['isMultiShipment'] = $this->isMultiShipment;
             return ['rates' => $this->rates, 'ord_wid' => $widgetInfo];
         }
+        Log::info('No Rates ' . $this->rates);
 
         return [];
     }
@@ -95,6 +97,7 @@ class GetRatesDbsc
 
             if (blank($item['shipping_class'])) {
                 if (!$this->generalProfileCanTakeRate()) {
+                    Log::info('No generalProfileCanTakeRate against items ' . $item['shipping_class']);
                     return [];
                 }
                 $groupedItemsProfile[$this->genShipProfSettings['id']][] = $item;
@@ -104,6 +107,7 @@ class GetRatesDbsc
                 if (blank($shippingClassProfileId)) {
 
                     if (!$this->generalProfileCanTakeRate($item['shipping_class'])) {
+                        Log::info('No shippingClassProfileId ' . $shippingClassProfileId);
                         return [];
                     }
 
@@ -168,11 +172,13 @@ class GetRatesDbsc
 
             $profileRates = DbscShippingProfile::getProfileRates($profileId, $zoneId, $this->storeId);
             if (blank($profileRates)) {
+                Log::info('No profileRates found against this zone ' . $zoneId);
                 return [];
             }
 
             $shipmentRates = $this->getShipmentRates($profileRates, $items);
             if (blank($shipmentRates)) {
+                Log::info('No shipmentRates found ' . $shipmentRates);
                 return [];
             }
 
@@ -352,6 +358,8 @@ class GetRatesDbsc
                 $shippingRate = $this->checkShippingQuote($shippingRate, $minQuote, $maxQuote);
                 $sServiceArr[] = $rate = $this->createServiceArray($label, $shippingRate, $rate['profile_id']);
                 $this->setOrderWidgetDetails($rate, $items, $selectedOrigin[0]);
+            }else {
+                Log::info('Valid Weight and Valid Length not correct');
             }
         }
 
