@@ -4,6 +4,8 @@ namespace App\CustomClasses\DBSC;
 
 use App\Models\DBSC\DistanceLookup;
 use App\Models\DBSC\AddressLookup;
+use Illuminate\Support\Facades\Log;
+
 class GetStraightDistance extends GetDistance
 {
 
@@ -160,11 +162,13 @@ class GetStraightDistance extends GetDistance
         if ($geocodeObj != 'server_error') {
             $apiResponse = json_decode($geocodeObj);
         } else {
+            Log::info('Google API error' . json_encode($geocodeObj));
             return ['error' => 'Google API Error'];
         }
         // Check only when origin url is set
         if (!empty($geoCodeUrl)) {
             if ($this->googleAPIErrorExist($apiResponse)) {
+                Log::info('Google API error' . json_encode($geocodeObj));
                 return ['error' => 'Google API Error'];
             };
         }
