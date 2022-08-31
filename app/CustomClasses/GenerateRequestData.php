@@ -242,6 +242,10 @@ class GenerateRequestData
 
     public function wweLtlEnitArr($connSettings, $destination)
     {
+         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            return [];
+         }
+
         return [
 
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',

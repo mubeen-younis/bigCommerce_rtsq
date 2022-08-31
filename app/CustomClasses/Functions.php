@@ -204,4 +204,9 @@ class Functions
     {
         return isset($quote['severity']) && isset($quote['Message']) && $quote['Message'] != self::$ltlErrorMessage;
     }
+
+    public static function isPOBoxAddress($connSettings, $isPoBox): bool
+    {
+        return isset($connSettings['quote_settings']['return_rates']) && $connSettings['quote_settings']['return_rates'] && $isPoBox;
+    }
 }
