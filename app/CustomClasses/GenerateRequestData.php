@@ -962,6 +962,9 @@ class GenerateRequestData
 
         $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
 
+        $liftGatePickup = (isset($connSettings['quote_settings']['liftGatePickup']) && $connSettings['quote_settings']['liftGatePickup'] && $connSettings['quote_settings']['liftGatePickup'] == true) ? 'Y' : 'N';
+        $insideDelivery = (isset($connSettings['quote_settings']['insideDelivery']) && $connSettings['quote_settings']['insideDelivery'] && $connSettings['quote_settings']['insideDelivery'] == true) ? 'Y' : 'N';
+
         $insurance = [
             'code' => '',
             'value' => ''
@@ -982,6 +985,8 @@ class GenerateRequestData
             'speed_freight_residential_delivery' => $alwaysResi ? 'Y' : $residential,
             'speed_freight_lift_gate_delivery' => $liftGate,
             'speed_freight_residential_pickup' => $residentialPickup,
+            'speed_freight_lift_gate_pickup' => $liftGatePickup,
+            'speed_freight_lift_inside_delivery' => $insideDelivery,
             'insureShipment' => 0,
             'insuranceCategory' => $insurance,
             'thresholdWeightLimit' => $weightThreshold,
