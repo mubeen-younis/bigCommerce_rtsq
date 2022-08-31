@@ -134,7 +134,7 @@ class GetDistance
                 $apiResponse = json_decode($distanceObj);
             }
             if ($this->googleAPIErrorExist($apiResponse)) {
-                Log::info('Google API error' . $apiResponse);
+                Log::info('Google API error' . json_encode($distanceObj));
                 return ['error' => 'Google API error.'];
             }
         }
