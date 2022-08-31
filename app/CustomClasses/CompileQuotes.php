@@ -910,6 +910,11 @@ class CompileQuotes
 
     public function compileWweLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
+        $returnRates = $this->residential['returnRates']['wweLtl'] ?? false;
+
+        if($returnRates){
+            return [];
+        }
         if ($this->residential['wweLtl'] == 'Y') {
             $this->isResi = true;
             $this->residentialDlvry = 1;
@@ -1910,6 +1915,13 @@ class CompileQuotes
     public function compileFedexLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
         $fedexLtl = new fedexLtlQuotesResults();
+        
+        $returnRates = $this->residential['returnRates']['fedexLtl'] ?? false;
+
+        if($returnRates){
+            return [];
+        }
+
         if ($residential['fedexLtl'] == 'Y') {
             $this->isResi = true;
             $this->residentialDlvry = 1;

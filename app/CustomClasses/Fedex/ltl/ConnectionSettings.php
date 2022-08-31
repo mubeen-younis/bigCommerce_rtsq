@@ -20,6 +20,23 @@ class ConnectionSettings extends CarriersConnectionSettings
             'message' => 'Something went wrong!',
         ];
 
+        if(isset($data->account_type) && $data->account_type == 'shipper'){
+            if(empty($data->shipping_account_number)){
+                return [
+                    'error' => true,
+                    'message' => 'Shipper Account Number Required',
+                ];
+            }
+
+        }else {
+            if(empty($data->third_party_account)){
+                return [
+                    'error' => true,
+                    'message' => 'Third Party Account No. Required',
+                ];
+            }
+        }
+
         $url = $this->testConnectionUrl;
         $params = array(
             'dont_auth' => '1',
@@ -28,7 +45,7 @@ class ConnectionSettings extends CarriersConnectionSettings
             'carrier_mode' => 'test',
             'carrierName' => 'fedex',
             'sever_name' => $storeName ?? '',
-            'accountType' => 'shipper',
+            'accountType' => $data->account_type,
             'AccountNumber' => $data->account_number ?? '',
             'MeterNumber' => $data->meter_number ?? '',
             'password' => $data->password ?? '',
