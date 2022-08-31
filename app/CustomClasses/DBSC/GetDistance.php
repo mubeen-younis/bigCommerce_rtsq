@@ -167,7 +167,8 @@ class GetDistance
             $nearestAddress['distance_m'] = null;
         }
         //return the final array of distance
-        return $nearestAddress;
+        $resp[] = $nearestAddress;
+        return $resp;
     }
 
 
