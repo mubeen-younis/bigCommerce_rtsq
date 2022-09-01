@@ -335,6 +335,7 @@ class GetRatesDbsc
                     $distance = $this->findDistance($distanceMethod, $selectedOrigin);
                 }
                 
+                Log::info('Distance m ' . json_encode($distance));
                 if (isset($distance['error']) || isset($distance['distance_m']['error'])) {
                     continue;
                 }
