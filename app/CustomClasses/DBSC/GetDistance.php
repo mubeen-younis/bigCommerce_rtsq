@@ -226,8 +226,8 @@ class GetDistance
     public function googleAPIErrorExist($apiResponse)
     {
         return isset($apiResponse->error_message) || (isset($apiResponse->status) &&
-                $apiResponse->status == 'INVALID_REQUEST') || $apiResponse->results[0] == '' ||
-            (isset($apiResponse->rows[0]->elements[0]->status) && $apiResponse->rows[0]->elements[0]->status != 'OK');
+                $apiResponse->status == 'INVALID_REQUEST') || 
+                (isset($apiResponse->rows[0]->elements[0]->status) && $apiResponse->rows[0]->elements[0]->status != 'OK');
     }
 
 
