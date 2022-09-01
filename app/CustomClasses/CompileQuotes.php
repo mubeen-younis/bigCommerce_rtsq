@@ -1997,13 +1997,15 @@ class CompileQuotes
                         $days = $data['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
                         $title = $this->getTitle($data['serviceDesc'], false, false, $data['transitTime'], [], $dateAndDays);
-
+                        
+                        $holdAtTerminal = false;
+                        $holdAtTerminalQuotes = [];
                         if(isset($data['holdAtTerminalResponse']) && !empty($data['holdAtTerminalResponse'])){
-                            $terminalData = $fedexLtl->terminalData($data['holdAtTerminalResponse']);
-                            $terminalTitle = $data['serviceDesc'] . '(T)';
-                            $terminalTitle = $this->getTitle($terminalTitle, false, false, $data['holdAtTerminalResponse']['deliveryTimestamp'], [], $terminalData);
-dd($terminalTitle);
-                            $holdAtTerminal = $fedexLtl->holdAtTerminalResponse($data['holdAtTerminalResponse'], $terminalTitle);
+                            $holdAtTerminal = true;
+
+                            $terminalDateAndDays = $fedexLtl->terminalData($data['holdAtTerminalResponse']);
+                            $terminalTitle = $this->quoteSettings['label_as'] . ' (T)' . $this->getDeliveryEstimates($terminalDateAndDays);
+                            $holdAtTerminalQuotes = $fedexLtl->holdAtTerminalResponse($data['holdAtTerminalResponse'], $terminalTitle, $this->quoteSettings);
                         }
 
                         $arraySorting['simple'][$key] = $price;
@@ -2019,18 +2021,30 @@ dd($terminalTitle);
                             $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
                             $originQuotes[$key]['liftgate']['title'] = $lgTitle;
                         }
+                        // TODO: if condition for 
+                        if ($holdAtTerminal && !empty($holdAtTerminalQuotes)) {
+                            $arraySorting['hat'][$key] = $holdAtTerminalQuotes['rate'];
+                            $originQuotes[$key]['hat']['code'] = $holdAtTerminalQuotes['code'] ?? '';
+                            $originQuotes[$key]['hat']['rate'] = $holdAtTerminalQuotes['rate'] ?? 0.00;
+                            $originQuotes[$key]['hat']['title'] = $holdAtTerminalQuotes['title'] ?? '';
+                        }
                     }
                 }
             }
+            // dd('oq', $originQuotes);
             $compiledQuotes = $fedexLtl->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes, $this->isMultiShipment);
 
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
                 if (count($compiledQuotes) > 1) {
+                    // TODO:add HAT in below blocks 
                     foreach ($compiledQuotes as $k => $service) {
                         $allQuotes['simple'][] = $service['simple'];
                         $multiShipmentQuotes['simple'][$origin] = $service['simple'];
                         $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
                         $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
+                        // HAT
+                        $holdAtTerminal ? $allQuotes['hat'][] = $service['hat'] : null;
+                        $holdAtTerminal ? $multiShipmentQuotes['hat'][$origin] = $service['hat'] : null;
                     }
                 } else {
                     $service = reset($compiledQuotes);
@@ -2038,6 +2052,10 @@ dd($terminalTitle);
                     $multiShipmentQuotes['simple'][$origin] = $service['simple'] ?? '';
                     $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
                     $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
+
+                    // HAT
+                    $holdAtTerminal ? $allQuotes['hat'][] = $service['hat'] : null;
+                    $holdAtTerminal ? $multiShipmentQuotes['hat'][$origin] = $service['hat'] : null;
                 }
             }
             if ($this->isMultiShipment) {
@@ -2045,19 +2063,24 @@ dd($terminalTitle);
             }
             $count++;
         }
+
+        $hatQuotes = $allQuotes['hat'] ?? [];
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
+        $allQuotes = array_merge($allQuotes, $hatQuotes);
+
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
-        if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1)) {
-
+        if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1) || (!empty($multiShipmentQuotes['hat']) && count($multiShipmentQuotes['hat']) > 1)) {
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $this->arrangeOwnFreight($allQuotes),
                 'multiShipmentQuotes' => $multiShipmentQuotes,
             ];
+
             return $resp;
         }
+
         return $this->arrangeOwnFreight($allQuotes);
     }
 

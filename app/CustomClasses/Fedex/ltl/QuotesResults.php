@@ -317,22 +317,47 @@ class QuotesResults
         return $resp;
     }
 
-    public function holdAtTerminalResponse($data){
-        dd(321,$data);
-        $price = $data['totalNetCharge'];
+    public function holdAtTerminalResponse($data, $label = '', $quoteSettings){
+        $price = str_replace(',', '', $data['totalNetCharge']) ?? 0.00;
+        $access = '+hat';
+        $rate = $this->calculateTerminalFee($price, $quoteSettings);
 
-
-       // $data['simple']['code'] = 'fedexltl' . $access;
-       // $data['simple']['rate'] = $price;
-        //$data['simple']['title'] = $title;
+        return [
+            'code' => 'fedexltl' . $access,
+            'rate' => $rate,
+            'title' => $label
+        ];
     }
+
     public function terminalData($data){
-        
         $date = $data['deliveryTimestamp'] ?? null;
         $days = $data['transitDays'] ?? null;
         $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
-        return $dateAndDays;
 
+        return $dateAndDays;
     }
 
+    public function calculateTerminalFee($cost, $quoteSettings = [])
+    {
+        $holdAtTerminalPrice = 0;
+        $symbolicTerminalFee = '';
+     
+        if (isset($quoteSettings['hold_at_terminal_price'])) {
+            $holdAtTerminalPrice = (float)$quoteSettings['hold_at_terminal_price'] ?? 0;
+            $symbolicTerminalFee = strpos($quoteSettings['hold_at_terminal_price'], '%') ? '%' : '';
+        }
+
+        if (strlen($holdAtTerminalPrice) > 0) {
+            if ($symbolicTerminalFee === '%') {
+                $percentVal = $holdAtTerminalPrice / 100 * $cost;
+                $grandTotal = $percentVal + $cost;
+            } else {
+                $grandTotal = $holdAtTerminalPrice + $cost;
+            }
+        } else {
+            $grandTotal = $cost;
+        }
+
+        return $grandTotal;
+    }
 }
