@@ -33,7 +33,7 @@ class GetDistance
                 return $origin;
             }
             $distance = $this->findRouteDistances($origin, $destination);
-            $distance = $distance[0]['distance_m'] ?? 0;
+            $distance['distance_m'] = $distance[0]['distance_m'] ?? 0;
             Log::info('route distance after if condition ' . json_encode($distance));
 
         } else {
