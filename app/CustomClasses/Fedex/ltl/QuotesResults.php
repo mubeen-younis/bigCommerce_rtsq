@@ -317,4 +317,22 @@ class QuotesResults
         return $resp;
     }
 
+    public function holdAtTerminalResponse($data){
+        dd(321,$data);
+        $price = $data['totalNetCharge'];
+
+
+       // $data['simple']['code'] = 'fedexltl' . $access;
+       // $data['simple']['rate'] = $price;
+        //$data['simple']['title'] = $title;
+    }
+    public function terminalData($data){
+        
+        $date = $data['deliveryTimestamp'] ?? null;
+        $days = $data['transitDays'] ?? null;
+        $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
+        return $dateAndDays;
+
+    }
+
 }

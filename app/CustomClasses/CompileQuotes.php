@@ -1998,6 +1998,14 @@ class CompileQuotes
                         $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
                         $title = $this->getTitle($data['serviceDesc'], false, false, $data['transitTime'], [], $dateAndDays);
 
+                        if(isset($data['holdAtTerminalResponse']) && !empty($data['holdAtTerminalResponse'])){
+                            $terminalData = $fedexLtl->terminalData($data['holdAtTerminalResponse']);
+                            $terminalTitle = $data['serviceDesc'] . '(T)';
+                            $terminalTitle = $this->getTitle($terminalTitle, false, false, $data['holdAtTerminalResponse']['deliveryTimestamp'], [], $terminalData);
+dd($terminalTitle);
+                            $holdAtTerminal = $fedexLtl->holdAtTerminalResponse($data['holdAtTerminalResponse'], $terminalTitle);
+                        }
+
                         $arraySorting['simple'][$key] = $price;
                         $originQuotes[$key]['simple']['code'] = 'fedexltl' . $access;
                         $originQuotes[$key]['simple']['rate'] = $price;
