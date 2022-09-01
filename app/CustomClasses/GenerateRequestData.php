@@ -365,7 +365,7 @@ class GenerateRequestData
     public function fedexLtlEnitArr($connSettings, $destination, $enitOrigin)
     {
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
-            $this->returnRates = ture;
+            $this->returnRates = true;
         }
 
         return [
