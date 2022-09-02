@@ -196,6 +196,7 @@ class ShippingOriginController extends Controller
 
                     $shipZone = DbscShippingZone::where('dbsc_origin_id', '=' ,$shipOrigin->origin_id)->delete();
                 }
+                $dbscOrigin = DbscOrigin::where('id', '=', $data['origin_id'])->delete();
             }
             
             return response()->json(['error' => false,
