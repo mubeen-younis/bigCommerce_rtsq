@@ -318,10 +318,14 @@ class GetRatesDbsc
                 $andOR,
                 $distanceAdjustVal,
                 $addressType,
-                $unknownDefaultAddress
+                $unknownDefaultAddress,
+                $minDistance,
+                $maxDistance
+
             ] = $this->setRateVariables($rate);
+
                 $isValidLength = $this->isValidShippingLength($totalShipmentLength, $minLength, $maxLength);
-                $isValidWeight   = $this->isValidShippingWeight($totalShipmentWeight, $minWeight, $maxWeight);
+                $isValidWeight = $this->isValidShippingWeight($totalShipmentWeight, $minWeight, $maxWeight);
 
             if ($andOR == "And" && ($isValidWeight && $isValidLength) || $andOR == "Or" && ($isValidWeight || $isValidLength)) {
                 // Firstly we will check the address type
@@ -335,7 +339,7 @@ class GetRatesDbsc
                     $distance = $this->findDistance($distanceMethod, $selectedOrigin);
                 }
                 
-                Log::info('Distance m ' . json_encode($distance));
+                Log::info('Total Distance' . json_encode($distance));
                 if (isset($distance['error']) || isset($distance['distance_m']['error'])) {
                     continue;
                 }
@@ -343,6 +347,12 @@ class GetRatesDbsc
                 $convertedDistance = ($this->convertDistance($distance['distance_m'], $distanceUnit));
                 // added distance adjustment value after convert distance into Mile/Kilometer
                 $distanceAdjustment = $convertedDistance + (float)$distanceAdjustVal;
+                // check valid shipping distance
+                $isValidDistance = $this->isValidShippingDistance($distanceAdjustment, $minDistance, $maxDistance);
+                if(!$isValidDistance){
+                    continue;
+                }
+                
                 $shippingRate = $ratePerMileOrKm * $distanceAdjustment;
                 $shippingRate = $this->calculateShippingByItem($shippingRate, $ratingMethod, $itemsCount, $ratePerMileOrKm);
                 // added rate adjustment value into calculated rates
@@ -432,6 +442,9 @@ class GetRatesDbsc
         $rateSettings = (object)$rateSettings;
         $minWeight = (isset($rateSettings->minimum_weight) && !empty($rateSettings->minimum_weight)) ? round($rateSettings->minimum_weight, 2) : 0;
         $maxWeight = (isset($rateSettings->maximum_weight) && !empty($rateSettings->maximum_weight)) ? round($rateSettings->maximum_weight, 2) : 0;
+
+        $minDistance = (isset($rateSettings->minimum_distance) && !empty($rateSettings->minimum_distance)) ? round($rateSettings->minimum_distance, 2) : 0;
+        $maxDistance = (isset($rateSettings->maximum_distance) && !empty($rateSettings->maximum_distance)) ? round($rateSettings->maximum_distance, 2) : 0;
         
         $minLength = (isset($rateSettings->minimum_length) && !empty($rateSettings->minimum_length)) ? round($rateSettings->minimum_length, 2) : 0;
         $maxLength = (isset($rateSettings->maximum_length) && !empty($rateSettings->maximum_length)) ? round($rateSettings->maximum_length, 2) : 0;
@@ -475,7 +488,9 @@ class GetRatesDbsc
             $andOr,
             $distanceAdjustVal,
             $addressType,
-            $unknownDefaultAddress
+            $unknownDefaultAddress,
+            $minDistance,
+            $maxDistance
         ];
     }
 
@@ -498,6 +513,10 @@ class GetRatesDbsc
         return (($totalShipmentLength >= $minLength) && (($maxLength == 0) || ($totalShipmentLength <= $maxLength)));
     }
 
+    public function isValidShippingDistance($totalShipmentDistance, $minDistance, $maxDistance)
+    {
+        return (($totalShipmentDistance >= $minDistance) && (($maxDistance == 0) || ($totalShipmentDistance <= $maxDistance)));
+    }
     /**
      * CheckIfAddressType Matches with Smarty Address
      *
