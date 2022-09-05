@@ -87,7 +87,7 @@ class DbscShippingProfile extends Model
                 $origin = $ship->origin;
                 $data['address'] = $origin->street_address . ', ' . $origin->city . ', ' . $origin->state . ' ' . $origin->zip;
                 $data['shipping_method'] = $ship->rate_details->title ?? '';
-                $rate = $order['shipping_rate'] ?? 0.00;
+                $rate = $ship->rate_details->rate ?? 0.00;
                 $data['shipping_rate'] = '$' . number_format((float)$rate, 2,) ?? 0.00;
 
                 $items = [];
