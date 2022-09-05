@@ -242,7 +242,7 @@ class QuotesResults
         return $resp;
     }
 
-    public function formateQuoteBeforeCompile($shipments){
+    public function formateQuoteBeforeCompile($shipments = [], $quoteSettings){
         foreach ($shipments as $shipment => $quotes){
             if(!isset($quotes['q']) || isset($quotes['q']['severity'])){
                 continue;
@@ -260,11 +260,62 @@ class QuotesResults
                         }
 
                     }
+
+                    if (isset($quote['holdAtTerminalResponse']) && !empty($quote['holdAtTerminalResponse'])) {
+                        $hatResp[] = $quote['holdAtTerminalResponse'];
+                        $srvcTitle = $shipments[$shipment]['q'][$key]['serviceDesc'];
+                        $hatCompiledQuotes = $this->formatHATQuotes($hatResp, $srvcTitle);
+                        if (!empty($hatCompiledQuotes)) {
+                            $key = count($shipments[$shipment]['q']);
+                            $shipments[$shipment]['q'][$key] = $hatCompiledQuotes;
+                        }
+                    }
                 }
             }
-
         }
+
         return $shipments;
+    }
+
+    private function formatHATQuotes($hatQuotes = [], $srvcTitle = '')
+    {
+        if (empty($hatQuotes)) {
+            return [];
+        }
+
+        $compiledQuotes = [];
+        foreach ($hatQuotes as $key => $quote) {
+            $compiledQuotes['serviceType'] = 'fedexltl+HAT+';
+            $title = $srvcTitle ?? $quote['Title'] ?? '';
+            $compiledQuotes['serviceDesc'] = $this->titleHAT($title, $quote['address'], $quote['distance'], $quote['custServicePhoneNbr']);
+            $compiledQuotes['totalNetCharge']['Amount'] = $this->getPrice($quote['totalNetCharge'], $quoteSettings['hold_at_terminal_price'] ?? 5);
+            $compiledQuotes['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
+            $compiledQuotes['totalTransitTimeInDays'] = $quote['totalTransitTimeInDays'] ?? '';
+            $compiledQuotes['transitTime'] = $quote['transitTime'] ?? '';
+        }
+
+        return $compiledQuotes;
+    }
+
+    function titleHAT($title, $address, $distance, $custPhoneNo){
+        $distance = $distance['Value'] . ' ' . strtolower($distance['Units'] ?? '') ?? '0 mi';
+
+        return $title . ' | Hold At Terminal | ' . $distance . ' | ' . $address['CountryCode'] . ', ' .  $address['StateOrProvinceCode'] . ', ' . $address['PostalCode'] . ' | ' . $custPhoneNo['PhoneNumber'];
+    }
+
+    function getPrice($price, $hatPrice){
+        if((strlen($hatPrice) > 0)) {
+            $symbolicHATFee = strpos($hatPrice, '%') ? '%' : '';
+            $hatPrice = (float)$hatPrice ?? 0;
+            if ($symbolicHATFee === '%') {
+                $hatPrice = $hatPrice / 100 * $price;
+                $price = $price + $hatPrice;
+            } else {
+                $price = $price + $hatPrice;
+            }
+        }
+        
+        return $price;
     }
 
     public function calenderDays($fDesc, $tnts)
