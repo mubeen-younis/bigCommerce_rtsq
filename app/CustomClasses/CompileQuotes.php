@@ -2067,20 +2067,28 @@ class CompileQuotes
         }
 
         if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1)) {
-            $allQuotes = $this->forceChangeTitle($allQuotes);
-            $resp = [
-                'checkoutQuotes' => $this->arrangeOwnFreight($allQuotes),
-                'multiShipmentQuotes' => $multiShipmentQuotes,
-            ];
+            if (!empty($hatShipments)) {
+                $allQuotes = $this->forceChangeTitle($allQuotes);
+                $hatLabel = explode('|', $hatShipments[0]['serviceDesc']);
+                unset($hatLabel[0]);
+                $lableAs = 'Freight |' . implode('|', $hatLabel);
+                $resp = [
+                    'checkoutQuotes' => $this->arrangeHATFreight($allQuotes, $hatShipments, $lableAs),
+                    'multiShipmentQuotes' => $this->arrangeHATMulti($multiShipmentQuotes, $hatShipments),
+                ];
+            } else {
+                $allQuotes = $this->forceChangeTitle($allQuotes);
+                $resp = [
+                    'checkoutQuotes' => $this->arrangeHATFreight($allQuotes, $hatShipments, Functions::$ltlMultiTitle),
+                    'multiShipmentQuotes' => $multiShipmentQuotes,
+                ];
+            }
 
             return $resp;
         }
 
         if (!empty($hatShipments)) {
-            $lableAs =  $this->quoteSettings['label_as'] ?? '';
-            $lableAs .= ' ' . $hatShipments[0]['serviceDesc'];
-        
-            return $this->arrangeHATFreight($allQuotes, $hatShipments, $lableAs);
+            return $fedexLtl->arrangeHATFreight($allQuotes, $hatShipments);
         }
 
         return $this->arrangeOwnFreight($allQuotes);

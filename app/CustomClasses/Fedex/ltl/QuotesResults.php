@@ -263,7 +263,13 @@ class QuotesResults
 
                     if (isset($quote['holdAtTerminalResponse']) && !empty($quote['holdAtTerminalResponse'])) {
                         $hatResp[] = $quote['holdAtTerminalResponse'];
-                        $srvcTitle = $shipments[$shipment]['q'][$key]['serviceDesc'];
+                        $srvcTitle = $quote['serviceType'] ?? '';
+                        if ($srvcTitle === 'FEDEX_FREIGHT_PRIORITY') {
+                            $srvcTitle = $quoteSettings['fedex_freight_priority_label'] ?? 'LTL Freight Priority';
+                        } else {
+                            $srvcTitle = $quoteSettings['fedex_freight_economy_label'] ?? 'LTL Freight Economy';
+                        }
+
                         $hatCompiledQuotes = $this->formatHATQuotes($hatResp, $srvcTitle);
                         if (!empty($hatCompiledQuotes)) {
                             $key = count($shipments[$shipment]['q']);
@@ -300,7 +306,25 @@ class QuotesResults
     function titleHAT($title, $address, $distance, $custPhoneNo){
         $distance = $distance['Value'] . ' ' . strtolower($distance['Units'] ?? '') ?? '0 mi';
 
-        return $title . ' | Hold At Terminal | ' . $distance . ' | ' . $address['CountryCode'] . ', ' .  $address['StateOrProvinceCode'] . ', ' . $address['PostalCode'] . ' | ' . $custPhoneNo['PhoneNumber'];
+        return $title . ' | Hold At Terminal | ' . $distance . ' | ' . $address['StreetLines'] . ', ' . $address['City'] . ', ' . $address['StateOrProvinceCode'] . ', ' . $address['PostalCode'] . ' | ' . $custPhoneNo['PhoneNumber'];
+    }
+
+    public function arrangeHATFreight($finalQuotes, $HATQuotes)
+    {
+        if (empty($HATQuotes)) {
+            return $finalQuotes;
+        }
+
+        $newQuotes = [];
+        foreach ($HATQuotes as $data) {
+            $newQuotes[] = [
+                'code' => $data['serviceType'],
+                'title' => $data['serviceDesc'],
+                'rate' => $data['totalNetCharge']['Amount'],
+            ];
+        }
+
+        return array_merge($finalQuotes, $newQuotes);
     }
 
     function getPrice($price, $hatPrice){
