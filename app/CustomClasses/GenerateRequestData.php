@@ -2328,6 +2328,7 @@ class GenerateRequestData
             'serviceCode' => '308',
             'serviceCodeDescription' => 'UPS Freight LTL',
             'timeInTransitIndicator' => 'N',
+            'dimWeightBaseAccount' => $connSettings['creds']['rates_my_freight_based'] ?? 0,
             'accessorial' => [
                 'liftgateDelivery' => $liftGate,
                 'residentialDelivery' => $alwaysResi ? 'Y' : $residential,
