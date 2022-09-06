@@ -12,6 +12,8 @@ use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Subscription\SubscriptionController;
+use App\Models\DBSC\DbscOtherSettings;
+use App\Models\DBSC\DbscShippingProfile;
 
 class CarrierController extends Controller
 {
@@ -154,6 +156,17 @@ class CarrierController extends Controller
             $installCarrier->installed_at = now();
             $installCarrier->plan_updated_at = now();
             $installCarrier->save();
+
+            if($carrier->slug == 'dbsc'){
+            
+                $otherSettings = DbscOtherSettings::create();
+                $generalProfile = DbscShippingProfile::create(['p_nickname' => "General Profile", 
+                'store_id' => $request->store_id, 'is_general_profile' => 1,
+                'allow_all_classes' => 1
+                ]);
+    
+            }
+            
             $install_carrier=InstalledCarrier::find($installCarrier->id);
 
             if($carrier->slug == "ltl-quotes" || $carrier->slug == "freightquote-ltl" || $carrier->slug == "tql-ltl" || $carrier->slug == "echo-ltl" || $carrier->slug == "freightquote-chr-ltl"){

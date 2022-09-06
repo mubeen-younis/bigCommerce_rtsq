@@ -66,6 +66,12 @@ class SmartyStreet
     }
     /* Function return value behalf of address type if Commercial return 'c', or Residential return 'r' or not valid return 'n' */
 
+    public function getSmartyAddress($address)
+    {
+        $addressStatus = $this->address_validated($address);
+
+        return $addressStatus;
+    }
     private function address_validated($address)
     {
         $address = $this->set_address($address);

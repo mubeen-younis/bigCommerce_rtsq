@@ -17,6 +17,7 @@ class Functions
     public static $ltlMultiTitle = '-ltlFreight';
     public static $simpleLTLTitle = 'Freight';
     public static $smallMultiTitle = '-smallShipping';
+    public static $dbscSlug = 'dbsc';
     public static $freeShipping = 'Free Shipping ';
 
 
@@ -203,5 +204,10 @@ class Functions
     public static function isNotLtlShipmentError($quote): bool
     {
         return isset($quote['severity']) && isset($quote['Message']) && $quote['Message'] != self::$ltlErrorMessage;
+    }
+
+    public static function removeString($word)
+    {
+        return preg_replace("/[^0-9.]/", "", $word);
     }
 }

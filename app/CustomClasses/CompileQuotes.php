@@ -2760,7 +2760,7 @@ class CompileQuotes
 
         $numberOfShipments = 0;
         foreach ($shipments as $ship) {
-            if (!isset($ship['severity']) || (isset($ship['q']) && !isset($ship['q']['error']))) {
+            if (!isset($ship['severity']) && (isset($ship['q']) && !isset($ship['q']['error']))) {
                 $numberOfShipments++;
             }
         }
@@ -2768,8 +2768,8 @@ class CompileQuotes
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
-
         $labelAs = $this->quoteSettings['label_as'] ?? '';
+        
         foreach ($shipments as $origin => $quote) {
             if (isset($quote['severity']) || (isset($quote['q']) && isset($quote['q']['error']))) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
