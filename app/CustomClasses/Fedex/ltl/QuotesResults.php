@@ -270,7 +270,7 @@ class QuotesResults
                             $srvcTitle = $quoteSettings['fedex_freight_economy_label'] ?? 'LTL Freight Economy';
                         }
 
-                        $hatCompiledQuotes = $this->formatHATQuotes($hatResp, $srvcTitle);
+                        $hatCompiledQuotes = $this->formatHATQuotes($hatResp, $srvcTitle, $quoteSettings);
                         if (!empty($hatCompiledQuotes)) {
                             $key = count($shipments[$shipment]['q']);
                             $shipments[$shipment]['q'][$key] = $hatCompiledQuotes;
@@ -283,7 +283,7 @@ class QuotesResults
         return $shipments;
     }
 
-    private function formatHATQuotes($hatQuotes = [], $srvcTitle = '')
+    private function formatHATQuotes($hatQuotes = [], $srvcTitle = '', $quoteSettings)
     {
         if (empty($hatQuotes)) {
             return [];
@@ -294,7 +294,7 @@ class QuotesResults
             $compiledQuotes['serviceType'] = 'fedexltl+HAT+';
             $title = $srvcTitle ?? $quote['Title'] ?? '';
             $compiledQuotes['serviceDesc'] = $this->titleHAT($title, $quote['address'], $quote['distance'], $quote['custServicePhoneNbr']);
-            $compiledQuotes['totalNetCharge']['Amount'] = $this->getPrice($quote['totalNetCharge'], $quoteSettings['hold_at_terminal_price'] ?? 5);
+            $compiledQuotes['totalNetCharge']['Amount'] = $this->getPrice($quote['totalNetCharge'], $quoteSettings['hold_at_terminal_price'] ?? 0);
             $compiledQuotes['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
             $compiledQuotes['totalTransitTimeInDays'] = $quote['totalTransitTimeInDays'] ?? '';
             $compiledQuotes['transitTime'] = $quote['transitTime'] ?? '';
