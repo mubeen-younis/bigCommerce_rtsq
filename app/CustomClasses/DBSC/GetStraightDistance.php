@@ -128,7 +128,6 @@ class GetStraightDistance extends GetDistance
                     $geoCodeUrl .= urlencode("{$location['city']}  {$location['state']} {$location['zip']}") . "|";
                     // Make combination
                     $enabledCombinations[] = [
-                        //'update_id' => $geoCode['id'],
                         'lookup_count' => $geoCode['lookup_count'],
                         'zip' => $location['zip'],
                         'state' => $location['state'],
@@ -212,7 +211,6 @@ class GetStraightDistance extends GetDistance
     {
         $url = "https://maps.googleapis.com/maps/api/geocode/json?";
         $url .= "address=" . $origin . "&";
-        //$url .= "components=postal_code:".$destination."&";
         $url .= "key=" . $apiKey;
 
         $headers = array(

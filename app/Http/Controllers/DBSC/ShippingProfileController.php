@@ -141,9 +141,6 @@ class ShippingProfileController extends Controller
                 $formattedData[$shipProfile['id']] = null;
                 continue;
             }
-
-            dd(23, $profileOrigins);
-
         }
 
         if ($formattedData === null) {

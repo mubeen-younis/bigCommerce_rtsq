@@ -188,7 +188,7 @@ class GetDistance
         $url .= "origins=" . $origin . "&";
         $url .= "destinations=" . $destination . "&";
         $url .= "key=" . $apiKey;
-//            error_log('$url:' . json_encode($url));
+
         $headers = array(
             "Content-type: text/xml;charset=\"utf-8\"",
             "Accept: text/xml",
@@ -229,12 +229,5 @@ class GetDistance
                 $apiResponse->status == 'INVALID_REQUEST') || 
                 (isset($apiResponse->rows[0]->elements[0]->status) && $apiResponse->rows[0]->elements[0]->status != 'OK');
     }
-
-
-    public function getStraightLineDistance($origin, $destination)
-    {
-        dd(334);
-    }
-
-
+    
 }

@@ -65,7 +65,6 @@ class DbscShippingZone extends Model
                     return true;
                 }
             }
-            /////
 
             if ($zoneDetail['city'] == $destination['city']) {
                 return true;
