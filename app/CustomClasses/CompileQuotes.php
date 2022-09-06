@@ -2052,8 +2052,8 @@ class CompileQuotes
             $this->residentialDlvry = 0;
         }
         $this->alwaysResi = $this->residential['alwaysResi']['xpoLtl'] ?? false;
-        $shipments = $xpoLtl->formateQuoteBeforeCompile($shipments);
         $this->quoteSettings = $connectionSettings['xpo-ltl']['quote_settings'] ?? [];
+        $shipments = $xpoLtl->formateQuoteBeforeCompile($shipments, $this->quoteSettings);
 
         $this->quoteSettingsData();
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
@@ -2101,7 +2101,7 @@ class CompileQuotes
                      * Date 01-07-22
                      * Adding Functionality of Delivery Estimate Options
                      * */
-                    $date = $data['deliveryDate'] ?? null;
+                    $date = $data['deliveryDate'] ?? $data['deliveryTimestamp'] ?? null;
                     $days = $data['totalTransitTimeInDays'] ?? null;
                     $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
                     $title = $this->getTitle($data['serviceDesc'], false, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
