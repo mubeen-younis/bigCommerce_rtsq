@@ -59,6 +59,7 @@ class GenerateRequestData
         $this->storeData = $storeData;
         $this->quoteSettings = $quoteSettings;
         $this->connectionSettings = $connectionSettings;
+        $this->returnRates = false;
     }
 
     /**
@@ -373,6 +374,9 @@ class GenerateRequestData
 
     public function xpoLtlEnitArr($connSettings, $destination, $enitOrigin)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+         }
 
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '', //$this->connectionSettings['license_key'],
@@ -1354,6 +1358,7 @@ class GenerateRequestData
 
         $this->resiCarrier['xpoLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['xpoLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['xpoLtl'] = $this->returnRates;
         $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
 
         $accessorial = [];
