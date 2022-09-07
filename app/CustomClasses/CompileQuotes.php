@@ -2043,6 +2043,12 @@ class CompileQuotes
 
     public function compileXPOLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
+        $returnRates = $this->residential['returnRates']['xpoLtl'] ?? false;
+
+        if($returnRates){
+            return [];
+        }
+
         $xpoLtl = new xpoLtlQuotesResults();
         if ($residential['xpoLtl'] == 'Y') {
             $this->isResi = true;
