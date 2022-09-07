@@ -2069,6 +2069,8 @@ class CompileQuotes
             $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
         $lableAs = $this->quoteSettings['label_as'] ?? '';
+        $hatShipments = [];
+
         foreach ($shipments as $origin => $quote) {
 
             if (isset($quote['severity'])) {
@@ -2095,6 +2097,12 @@ class CompileQuotes
                     $hazShipmentArr[$origin] = $quote['hazardousStatus'] == 'y' ? 'Y' : 'N';
                 }
                 foreach ($quote['q'] as $key => $data) {
+                    $isHATQuote = isset($data['serviceType']) && strpos($data['serviceType'], 'HAT+') !== false;
+                    if ($isHATQuote){
+                        $hatShipments[] = $data;
+                        continue;
+                    }
+
                     $access = $this->getAccessorialCode();
                     $price = $this->calculatePrice($data);
                     /*
@@ -2143,19 +2151,38 @@ class CompileQuotes
             }
             $count++;
         }
+
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
+
         if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1)) {
 
-            $allQuotes = $this->forceChangeTitle($allQuotes);
-            $resp = [
-                'checkoutQuotes' => $this->arrangeOwnFreight($allQuotes),
-                'multiShipmentQuotes' => $multiShipmentQuotes,
-            ];
+            if (!empty($hatShipments)) {
+                $allQuotes = $this->forceChangeTitle($allQuotes);
+                $hatLabel = explode('|', $hatShipments[0]['serviceDesc']);
+                unset($hatLabel[0]);
+                $lableAs = 'Freight |' . implode('|', $hatLabel);
+                $resp = [
+                    'checkoutQuotes' => $this->arrangeHATFreight($allQuotes, $hatShipments, $lableAs),
+                    'multiShipmentQuotes' => $this->arrangeHATMulti($multiShipmentQuotes, $hatShipments),
+                ];
+            } else {
+                $allQuotes = $this->forceChangeTitle($allQuotes);
+                $resp = [
+                    'checkoutQuotes' => $allQuotes,
+                    'multiShipmentQuotes' => $multiShipmentQuotes,
+                ];
+            }
+
             return $resp;
         }
+
+        if (!empty($hatShipments)) {
+            return  $xpoLtl->arrangeHATFreight($allQuotes, $hatShipments);
+        }
+
         return $this->arrangeOwnFreight($allQuotes);
     }
 

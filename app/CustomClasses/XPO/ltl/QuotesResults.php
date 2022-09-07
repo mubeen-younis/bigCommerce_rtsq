@@ -49,10 +49,9 @@ class QuotesResults
                 $shipments[$shipment]['q'][$key]['totalTransitTimeInDays'] = $quote['totalTransitTimeInDays'] ?? '';
             }
 
-            dd($quote);
             if (isset($quote['holdAtTerminalResponse']) && !empty($quote['holdAtTerminalResponse'])) {
                 $hatResp[] = $quote['holdAtTerminalResponse'];
-                $srvcTitle = $quote['serviceType'] ?? '';
+                $srvcTitle = $quoteSettings['label_as'] ?? $shipments[$shipment]['q'][$key]['serviceType'] ?? '';
 
                 $hatCompiledQuotes = $this->formatHATQuotes($hatResp, $srvcTitle, $quoteSettings);
                 if (!empty($hatCompiledQuotes)) {
@@ -61,6 +60,7 @@ class QuotesResults
                 }
             }
         }
+
         return $shipments;
     }
 
@@ -79,15 +79,16 @@ class QuotesResults
             $compiledQuotes['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
             $compiledQuotes['totalTransitTimeInDays'] = $quote['totalTransitTimeInDays'] ?? '';
             $compiledQuotes['transitTime'] = $quote['transitTime'] ?? '';
+            $compiledQuotes['transitDays'] = $quote['transitDays'] ?? '';
         }
 
         return $compiledQuotes;
     }
 
     function titleHAT($title, $address, $distance, $custPhoneNo){
-        $distance = $distance['Value'] . ' ' . strtolower($distance['Units'] ?? '') ?? '0 mi';
+        $distance = $distance['text'] ?? '0 mi';
 
-        return $title . ' | Hold At Terminal | ' . $distance . ' | ' . $address['StreetLines'] . ', ' . $address['City'] . ', ' . $address['StateOrProvinceCode'] . ', ' . $address['PostalCode'] . ' | ' . $custPhoneNo['PhoneNumber'];
+        return $title . ' | Hold At Terminal | ' . $distance . ' | ' . $address['cityName'] . ', ' . $address['stateCd'] . ', ' . $address['postalCd'] . ' | ' . $custPhoneNo;
     }
 
     public function arrangeHATFreight($finalQuotes, $HATQuotes)
