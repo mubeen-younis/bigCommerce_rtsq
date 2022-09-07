@@ -6,6 +6,7 @@ use App\Constants\Constant;
 use App\CurlRequest;
 use App\CustomClasses\Functions;
 use App\Models\BoxSize;
+use App\Models\DBSC\DbscShippingProfile;
 use App\Models\Locations;
 use App\Models\Orders;
 use App\Models\RequestData;
@@ -58,7 +59,6 @@ class OrderController extends Controller
     {
         try {
             $order = $this->getBCOrderByID($request);
-
             if (empty($order)) {
                 return response()->json(['error' => true,
                     'data' => [],
@@ -156,6 +156,12 @@ class OrderController extends Controller
         if (is_string($index[0]) && $index[0] == "shippingGroup") {
             return $this->shippingGroupOrderWidget($data, $order);
         }
+
+        // DBSC order widget
+        if (is_string($index[0]) && strpos($index[0], 'dbsc') !== false) {
+            return $this->dbscOrderWidget($data, $order);
+        }
+
         $index = explode('idx+', $rateId)[1];
         if (!empty($index)) {
             $index = strlen($index) <= 11 ? (int)substr($index, 0, 1) : (int)substr($index, 0, 2);
@@ -509,6 +515,14 @@ class OrderController extends Controller
         $resp = [
             'widget' => $this->objectToArray($orderWidget)
         ];
+        return $resp;
+    }
+
+    public function dbscOrderWidget($data, $order)
+    {
+        $orderWidget = DbscShippingProfile::makeOrderWidget($data, $order);
+        $resp = ['widget' => $this->objectToArray($orderWidget)];
+
         return $resp;
     }
 

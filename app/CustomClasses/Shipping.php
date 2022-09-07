@@ -4,6 +4,7 @@ namespace App\CustomClasses;
 
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
+use App\CustomClasses\DBSC\GetRatesDbsc;
 use App\Models\ShippingGroup;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
@@ -32,6 +33,8 @@ class Shipping
     private $instoreQuotes;
     private $locDelQuotes;
     private $multiOrigins;
+    private $dbscRates;
+    private $dbscOrdWid;
 
     public function __construct()
     {
@@ -42,6 +45,8 @@ class Shipping
         $this->instoreQuotes = false;
         $this->locDelQuotes = false;
         $this->multiOrigins = false;
+        $this->dbscRates = [];
+        $this->dbscOrdWid = [];
     }
 
 
@@ -52,11 +57,11 @@ class Shipping
      * @param $quoteSettings
      * @return array | bool
      */
-    public function collectRates($request, $storeData, $connectionSettings, $cartInfo)
+    public function collectRates($request, $storeData, $connectionSettings, $cartInfo, $isDbscInstalled = false)
     {
         $quoteSettings = $multiShipmentQuotes = [];
         $generateReqData = new GenerateRequestData();
-        //   init is a function to to call it explixitlitly rather constructor
+        //   init is a function to call it explixitlitly rather constructor
 
         $generateReqData->_init($quoteSettings, $connectionSettings, $storeData);
         $origins = $request['lineItemData']['origin'];
@@ -69,6 +74,24 @@ class Shipping
                 return [];
             }
         }
+
+        /*Added for DBSC Carrier
+        Will calculate DBSC rates
+        And also Order widget Details*/
+        $store_id = $storeData['store']['id'];
+        $destination = $request['lineItemData']['destination'];
+        $items = $request['lineItemData']['items'];
+        
+        try {
+            if ($isDbscInstalled) {
+                $getDbscDetails = (new GetRatesDbsc($store_id, $destination, $items, [], [], false, [], []))->getDbscRates($request, $storeData);
+                $this->dbscRates = $getDbscDetails['rates'] ?? [];
+                $this->dbscOrdWid = $getDbscDetails['ord_wid'] ?? [];
+            }
+        } catch (\Exception $exception) {
+            Functions::log('DBSC rates exception ', $exception);
+        }
+
         // Items that is not associated with Shipping Group and need to get rates from Ws
         $itemsWithoutShippingGroup = collect($request['lineItemData']['items'])->where('shipping_group', null)->all();
 
@@ -616,8 +639,10 @@ class Shipping
     public
     function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null)
     {
+        if (!blank($this->dbscRates)) {
+            $finalQuotes = array_merge($finalQuotes, $this->dbscRates);
+        }
 
-        //print_r($resp); print_r($multiShipmentQuotes); exit;
         foreach ($finalQuotes as $finalQuote) {
             $RequestTempData = new RequestTempData();
             $RequestTempData->request = json_encode($requestArr);
@@ -630,6 +655,7 @@ class Shipping
             $RequestTempData->cart_id = $cartInfo['cartId'];
             $RequestTempData->box_bins = json_encode($boxbins);
             $RequestTempData->shipping_group_resp = !blank($this->shippingGroupResponse) ? json_encode($this->shippingGroupResponse) : null;
+            $RequestTempData->dbsc_resp = !blank($this->dbscOrdWid) ? json_encode($this->dbscOrdWid): null;
             $RequestTempData->save();
         }
     }
@@ -750,6 +776,12 @@ class Shipping
     public
     function generateQuoteFormatResponse($quotes)
     {
+        $onlyDbscEnabled = false;
+        if (empty(array_filter($quotes)) && isset($this->dbscRates) && !empty($this->dbscRates)) {
+            $onlyDbscEnabled = true;
+            $quotes = $this->addDbscRates($quotes);
+        }
+
         $quotes = array_values($quotes);
         $current = str_replace(' ', 'T', Carbon::now()) . "-00:00";
         if (!empty(array_filter($quotes))) {
@@ -757,6 +789,10 @@ class Shipping
             $resp['messages'] = []; // need to change
             $quotes = $this->freeShippingTitle($quotes);
             $quotes = $this->formatCheapestFinalQuotes($quotes);
+            if (!$onlyDbscEnabled) {
+                $quotes = $this->addDbscRates($quotes);
+            }
+
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'eniture_quotes', 'display_name' => $this->limitTitle($quotes[0])]];
 
             foreach ($quotes as $key => $quote) {
@@ -766,8 +802,6 @@ class Shipping
                     'display_name' => $this->limitTitle($quote),
                     'cost' => ['currency' => 'USD', 'amount' => str_replace(',', '', $quote['rate'])],
                     'dispatch_date' => "$current",
-
-
                 ];
             }
         } else {
@@ -914,6 +948,17 @@ class Shipping
         }
 
         return $cheapestQuote;
+    }
+
+    private function addDbscRates($quotes)
+    {
+        if (!isset($this->dbscRates) || empty($this->dbscRates)) {
+            return $quotes;
+        }
+
+        $updatedRates = array_merge($quotes, $this->dbscRates);
+       
+        return $updatedRates;
     }
 
     public
