@@ -216,6 +216,7 @@ class OrderController extends Controller
                     }
                     $autoResidentialsStatus = $liftResidentialStatus['resi'] ?? 'n';
                     $residentialsPickup = $liftResidentialStatus['resiPickup'] ?? 'n';
+                    $liftGatePickup = $liftResidentialStatus['lgPickup'] ?? 'n';
 
                     $totalBoxes = 1;
                     if (isset($ws->binPackagingData) && !empty($ws->binPackagingData) && ($isSmallrate/* || $isInspOrLocal*/)) {
@@ -463,6 +464,7 @@ class OrderController extends Controller
             if (!$isSmall) {
                 $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Pickup') : '';
                 $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Delivery') : '';
+                $liftGatePickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Pickup') : '';
             }
             $orderWidget[$zip]['accessories'] = array_values(array_unique($orderWidget[$zip]['accessories']));
             $count++;
@@ -530,7 +532,7 @@ class OrderController extends Controller
     function getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate, $rateId)
     {
         //dd($isSmallLtlrate);
-        $response = ['resi' => 'n', 'liftG' => 'n', 'resiPickup' => 'n'];
+        $response = ['resi' => 'n', 'liftG' => 'n', 'resiPickup' => 'n', 'lgPickup' => 'n'];
         /*if($isSmallrate && !$isSmallLtlrate){
             $checkResi = isset($requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery) && ($requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery == 'Y' || $requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery == 'yes' );
             if($checkResi){
@@ -554,6 +556,7 @@ class OrderController extends Controller
         $response['resi'] = strpos($rateId, '+r') ? 'Y' : 'n';
         $response['liftG'] = strpos($rateId, '+lg') ? 'Y' : 'n';
         $response['resiPickup'] = strpos($rateId, '+pu') ? 'Y' : 'n';
+        $response['lgPickup'] = strpos($rateId, '+lfgpu') ? 'Y' : 'n';
         return $response;
     }
 
