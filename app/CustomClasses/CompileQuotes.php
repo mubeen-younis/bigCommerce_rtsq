@@ -910,6 +910,11 @@ class CompileQuotes
 
     public function compileWweLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
+        $returnRates = $this->residential['returnRates']['wweLtl'] ?? false;
+
+        if($returnRates){
+            return [];
+        }
         if ($this->residential['wweLtl'] == 'Y') {
             $this->isResi = true;
             $this->residentialDlvry = 1;
@@ -1910,6 +1915,12 @@ class CompileQuotes
     public function compileFedexLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
         $fedexLtl = new fedexLtlQuotesResults();
+        
+        $returnRates = $this->residential['returnRates']['fedexLtl'] ?? false;
+        if($returnRates){
+            return [];
+        }
+
         if ($residential['fedexLtl'] == 'Y') {
             $this->isResi = true;
             $this->residentialDlvry = 1;
@@ -1917,32 +1928,39 @@ class CompileQuotes
             $this->isResi = false;
             $this->residentialDlvry = 0;
         }
+
         $this->alwaysResi = $this->residential['alwaysResi']['fedexLtl'] ?? false;
-        $shipments = $fedexLtl->formateQuoteBeforeCompile($shipments);
         $this->quoteSettings = $connectionSettings['fedex-ltl']['quote_settings'] ?? [];
+        $shipments = $fedexLtl->formateQuoteBeforeCompile($shipments, $this->quoteSettings);
         $allConfigServices = [];
+        
         if (isset($this->quoteSettings['fedex_freight_economy']) && $this->quoteSettings['fedex_freight_economy']) {
             array_push($allConfigServices, 'FEDEX_FREIGHT_ECONOMY');
         }
         if (isset($this->quoteSettings['fedex_freight_priority']) && $this->quoteSettings['fedex_freight_priority']) {
             array_push($allConfigServices, 'FEDEX_FREIGHT_PRIORITY');
         }
+        
         $this->quoteSettingsData();
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
         $lgQuotes = false;
         $numberOfShipments = 0;
+        
         foreach ($shipments as $ship) {
             if (!isset($ship['severity'])) {
                 $numberOfShipments++;
             }
         }
+        
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
-        $lableAs = $this->quoteSettings['label_as'] ?? '';
+
         $freightEconomyLableAs = $this->quoteSettings['fedex_freight_economy_label'] ?? '';
         $freightPriorityLableAs = $this->quoteSettings['fedex_freight_priority_label'] ?? '';
+        $hatShipments = [];
+
         foreach ($shipments as $origin => $quote) {
             if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
@@ -1967,8 +1985,15 @@ class CompileQuotes
                 if (isset($quote['hazardousStatus'])) {
                     $hazShipmentArr[$origin] = $quote['hazardousStatus'] == 'y' ? 'Y' : 'N';
                 }
+
                 foreach ($quote['q'] as $key => $data) {
-                    if (isset($data['serviceType']) && isset($data['serviceDesc']) && in_array($data['serviceType'], $allConfigServices)) {
+                    $isHatSrvc = isset($data['serviceType']) && strpos($data['serviceType'], 'HAT+') !== false;
+                    if (isset($data['serviceType']) && isset($data['serviceDesc']) && in_array($data['serviceType'] || $isHatSrvc, $allConfigServices)) {
+                        if ($isHatSrvc) {
+                            $hatShipments[] = $data;
+                            continue;
+                        }
+
                         $access = $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
                         if (isset($data['serviceType']) && $data['serviceType'] === 'FEDEX_FREIGHT_ECONOMY') {
@@ -1985,6 +2010,16 @@ class CompileQuotes
                         $days = $data['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
                         $title = $this->getTitle($data['serviceDesc'], false, false, $data['transitTime'], [], $dateAndDays);
+                        
+                        $holdAtTerminal = false;
+                        $holdAtTerminalQuotes = [];
+                        if(isset($data['holdAtTerminalResponse']) && !empty($data['holdAtTerminalResponse'])){
+                            $holdAtTerminal = true;
+
+                            $terminalDateAndDays = $fedexLtl->terminalData($data['holdAtTerminalResponse']);
+                            $terminalTitle = $this->quoteSettings['label_as'] . ' (T)' . $this->getDeliveryEstimates($terminalDateAndDays);
+                            $holdAtTerminalQuotes = $fedexLtl->holdAtTerminalResponse($data['holdAtTerminalResponse'], $terminalTitle, $this->quoteSettings);
+                        }
 
                         $arraySorting['simple'][$key] = $price;
                         $originQuotes[$key]['simple']['code'] = 'fedexltl' . $access;
@@ -2002,8 +2037,8 @@ class CompileQuotes
                     }
                 }
             }
-            $compiledQuotes = $fedexLtl->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes, $this->isMultiShipment);
 
+            $compiledQuotes = $fedexLtl->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes, $this->isMultiShipment);
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
                 if (count($compiledQuotes) > 1) {
                     foreach ($compiledQuotes as $k => $service) {
@@ -2011,7 +2046,7 @@ class CompileQuotes
                         $multiShipmentQuotes['simple'][$origin] = $service['simple'];
                         $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
                         $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
-                    }
+                   }
                 } else {
                     $service = reset($compiledQuotes);
                     $allQuotes['simple'][] = $service['simple'] ?? '';
@@ -2025,19 +2060,37 @@ class CompileQuotes
             }
             $count++;
         }
+
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
-        if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1)) {
 
-            $allQuotes = $this->forceChangeTitle($allQuotes);
-            $resp = [
-                'checkoutQuotes' => $this->arrangeOwnFreight($allQuotes),
-                'multiShipmentQuotes' => $multiShipmentQuotes,
-            ];
+        if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1)) {
+            if (!empty($hatShipments)) {
+                $allQuotes = $this->forceChangeTitle($allQuotes);
+                $hatLabel = explode('|', $hatShipments[0]['serviceDesc']);
+                unset($hatLabel[0]);
+                $lableAs = 'Freight |' . implode('|', $hatLabel);
+                $resp = [
+                    'checkoutQuotes' => $this->arrangeHATFreight($allQuotes, $hatShipments, $lableAs),
+                    'multiShipmentQuotes' => $this->arrangeHATMulti($multiShipmentQuotes, $hatShipments),
+                ];
+            } else {
+                $allQuotes = $this->forceChangeTitle($allQuotes);
+                $resp = [
+                    'checkoutQuotes' => $this->arrangeHATFreight($allQuotes, $hatShipments, Functions::$ltlMultiTitle),
+                    'multiShipmentQuotes' => $multiShipmentQuotes,
+                ];
+            }
+
             return $resp;
         }
+
+        if (!empty($hatShipments)) {
+            return $fedexLtl->arrangeHATFreight($allQuotes, $hatShipments);
+        }
+
         return $this->arrangeOwnFreight($allQuotes);
     }
 
@@ -3883,7 +3936,7 @@ class CompileQuotes
         }
 
         $lfg = (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery'] == 1) || ($this->isResi && isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']);
-
+        
         if ($this->isMultiShipment == false) {
             if (
                 isset($quotes['liftgate'])
