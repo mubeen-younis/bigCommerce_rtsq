@@ -306,7 +306,7 @@ class QuotesResults
     function titleHAT($title, $address, $distance, $custPhoneNo){
         $distance = $distance['Value'] . ' ' . strtolower($distance['Units'] ?? '') ?? '0 mi';
 
-        return $title . ' | Hold At Terminal | ' . $distance . ' | ' . $address['StreetLines'] . ', ' . $address['City'] . ', ' . $address['StateOrProvinceCode'] . ', ' . $address['PostalCode'] . ' | ' . $custPhoneNo['PhoneNumber'];
+        return $title . ' | Hold At Terminal | ' . $distance . ' | ' . $address['City'] . ', ' . $address['StateOrProvinceCode'] . ', ' . $address['PostalCode'] . ' | ' . $custPhoneNo['PhoneNumber'];
     }
 
     public function arrangeHATFreight($finalQuotes, $HATQuotes)
