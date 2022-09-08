@@ -4,6 +4,7 @@ namespace App\CustomClasses\Fedex\ltl;
 
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
+use App\CustomClasses\Functions;
 
 class QuotesResults
 {
@@ -290,23 +291,23 @@ class QuotesResults
         }
 
         $compiledQuotes = [];
-        foreach ($hatQuotes as $key => $quote) {
+        foreach ($hatQuotes as $quote) {
             $compiledQuotes['serviceType'] = 'fedexltl+HAT+';
             $title = $srvcTitle ?? $quote['Title'] ?? '';
-            $compiledQuotes['serviceDesc'] = $this->titleHAT($title, $quote['address'], $quote['distance'], $quote['custServicePhoneNbr']);
-            $compiledQuotes['totalNetCharge']['Amount'] = $this->getPrice($quote['totalNetCharge'], $quoteSettings['hold_at_terminal_price'] ?? 0);
+            $address['city'] = $quote['address']['City'] ?? '';
+            $address['state'] = $quote['address']['StateOrProvinceCode'] ?? '';
+            $address['zipCode'] = $quote['address']['PostalCode'] ?? '';
+            $distance = $quote['distance']['Value'] . strtolower($quote['distance']['Units']) ?? '0 mi';
+            $phoneNumber = $quote['custServicePhoneNbr']['PhoneNumber'] ?? '';
+
+            $compiledQuotes['serviceDesc'] = Functions::getHATTitle($title, $address, $distance, $phoneNumber);
+            $compiledQuotes['totalNetCharge']['Amount'] = Functions::getHATPrice($quote['totalNetCharge'], $quoteSettings['hold_at_terminal_price'] ?? 0);
             $compiledQuotes['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
             $compiledQuotes['totalTransitTimeInDays'] = $quote['totalTransitTimeInDays'] ?? '';
             $compiledQuotes['transitTime'] = $quote['transitTime'] ?? '';
         }
 
         return $compiledQuotes;
-    }
-
-    function titleHAT($title, $address, $distance, $custPhoneNo){
-        $distance = $distance['Value'] . ' ' . strtolower($distance['Units'] ?? '') ?? '0 mi';
-
-        return $title . ' | Hold At Terminal | ' . $distance . ' | ' . $address['City'] . ', ' . $address['StateOrProvinceCode'] . ', ' . $address['PostalCode'] . ' | ' . $custPhoneNo['PhoneNumber'];
     }
 
     public function arrangeHATFreight($finalQuotes, $HATQuotes)
