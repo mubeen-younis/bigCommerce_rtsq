@@ -946,6 +946,7 @@ class CompileQuotes
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
+            $resiPickup = $lgPickup = '';
             if ($count == 0) { //To be checked only once
                 $isRad = $quote['autoResidentialsStatus'] ?? '';
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
@@ -972,7 +973,7 @@ class CompileQuotes
                 foreach ($quote['q'] as $key => $data) {
 
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) && isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y') {
-                        $access = $this->getAccessorialCode() . $resiPickup . $lgPickup;
+                        $access = $this->getAccessorialCode(false, false, $resiPickup, $lgPickup);
                         $price = $this->calculatePrice($data);
                         /*
                          * Date 01-07-22
@@ -987,7 +988,7 @@ class CompileQuotes
                         $originQuotes[$key]['simple']['rate'] = $price;
                         $originQuotes[$key]['simple']['title'] = $title;
                         if ($lgQuotes) {
-                            $lgAccess = 'wweltl' . $this->getAccessorialCode(true) . $resiPickup . $lgPickup;
+                            $lgAccess = 'wweltl' . $this->getAccessorialCode(true, false, $resiPickup, $lgPickup);
                             $lgPrice = $this->calculatePrice($data, true);
                             $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
                             $arraySorting['liftgate'][$key] = $lgPrice;
@@ -1008,7 +1009,7 @@ class CompileQuotes
                 }
             }
 
-            $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
+            $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes, $resiPickup, $lgPickup);
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
                 if (count($compiledQuotes) > 1) {
                     foreach ($compiledQuotes as $k => $service) {
@@ -4024,7 +4025,7 @@ class CompileQuotes
      *
      * @info: This will return specific code according to the accessorials for appending with the service code.
      */
-    public function getAccessorialCode($lgOption = false, $insideDel = false)
+    public function getAccessorialCode($lgOption = false, $insideDel = false, $resiPickup = '', $lgPickup = '')
     {
         $access = '';
         if ($this->residentialDlvry == '1' || $this->isResi || $this->alwaysResi) {
@@ -4036,6 +4037,14 @@ class CompileQuotes
         if($insideDel){
             $access .= '+ID';
         }
+
+        if (!empty($resiPickup)) {
+            $access .= Functions::$resiPickupTitle;
+        }
+        if (!empty($lgPickup)) {
+            $access .= Functions::$lgPickupTitle;
+        }
+
         return $access;
     }
 
@@ -4650,7 +4659,7 @@ class CompileQuotes
         return $resp;
     }
 
-    public function getCompiledQuotes($services, $arraySorting, $lgQuotes)
+    public function getCompiledQuotes($services, $arraySorting, $lgQuotes, $resiPickup = '', $lgPickup = '')
     {
 
         if (empty($arraySorting) || empty($services)) {
@@ -4667,7 +4676,7 @@ class CompileQuotes
         }
         $sliced = array_slice($arraySorting['simple'], 0, $options, true);
         if ($this->quoteSettings['method'] == 3) {
-            return $this->averageRattingMethod($arraySorting, $options, $lgQuotes);
+            return $this->averageRattingMethod($arraySorting, $options, $lgQuotes, $resiPickup, $lgPickup);
         }
 
         $resp = array_intersect_key($services, $sliced);
@@ -4705,7 +4714,7 @@ class CompileQuotes
      * @param $lgQuotes
      * @return array
      */
-    public function averageRattingMethod($ratesArray, $options, $lgQuotes)
+    public function averageRattingMethod($ratesArray, $options, $lgQuotes, $resiPickup = '', $lgPickup = '')
     {
         $sliced = array_slice($ratesArray['simple'], 0, $options, true);
         $simplePrice = $this->getAveragePrice($sliced, $options);
@@ -4715,7 +4724,7 @@ class CompileQuotes
         $serviceName = $this->customLabel(Functions::$simpleLTLTitle);
         $averageRateService[0]['simple'] = [
             'title' => $this->getTitle($serviceName, false), //$serviceName,
-            'code' => $prefix . $this->getAccessorialCode(),
+            'code' => $prefix . $this->getAccessorialCode(false, false, $resiPickup, $lgPickup),
             'rate' => $simplePrice,
         ];
         if ($lgQuotes) {
@@ -4724,7 +4733,7 @@ class CompileQuotes
             $lfgPrice = $this->getAveragePrice($sliced, $options);
             $averageRateService[0]['liftgate'] = [
                 'title' => $this->getTitle($serviceName, $lgQuotes),
-                'code' => $prefix . $this->getAccessorialCode($lgQuotes),
+                'code' => $prefix . $this->getAccessorialCode($lgQuotes, false, $resiPickup, $lgPickup),
                 'rate' => $lfgPrice,
             ];
         }
