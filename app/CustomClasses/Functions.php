@@ -215,4 +215,63 @@ class Functions
     {
         return isset($connSettings['quote_settings']['return_rates']) && $connSettings['quote_settings']['return_rates'] && $isPoBox;
     }
+
+    public static function arrangeHATFreight($finalQuotes, $HAT, $lableAs = '')
+    {
+        if (empty($HAT)) {
+            return $finalQuotes;
+        }
+        
+        $amount = 0;
+        foreach ($HAT as $data) {
+            $amount += $data['totalNetCharge']['Amount'];
+        }
+        
+        $hatQuotes[] = [
+            'code' => $HAT[0]['serviceType'],
+            'title' => $lableAs,
+            'rate' => $amount,
+        ];
+
+        return array_merge($finalQuotes, $hatQuotes);
+    }
+
+    public static function arrangeHATMulti($mulishipment, $HAT)
+    {
+        $quotes = $mulishipment['simple'] ?? $mulishipment['liftgate'] ?? [];
+        $count = 0;
+        foreach ($quotes as $shipmentId => $quote) {
+            $newQuote = [
+                'code' => $HAT[$count]['serviceType'] ?? '',
+                'rate' => $HAT[$count]['totalNetCharge']['Amount'] ?? '',
+                'title' => $HAT[$count]['serviceDesc'] ?? '',
+            ];
+     
+            $mulishipment['hat'][$shipmentId] = $newQuote;
+        }
+     
+        return $mulishipment;
+    }
+
+    public static function getHATPrice($price, $hatPrice){
+        if((strlen($hatPrice) > 0)) {
+            $symbolicHATFee = strpos($hatPrice, '%') ? '%' : '';
+            $hatPrice = (float)$hatPrice ?? 0;
+            
+            if ($symbolicHATFee === '%') {
+                $hatPrice = $hatPrice / 100 * $price;
+                $price = $price + $hatPrice;
+            } else {
+                $price = $price + $hatPrice;
+            }
+        }
+        
+        return $price;
+    }
+
+    public static function getHATTitle($title = '', $address = [], $hatDistance = '', $phoneNumber = ''){
+        $distance = $hatDistance ?? '0 mi';
+
+        return $title . ' | Hold At Terminal | ' . $distance . ' | ' . $address['city'] . ', ' . $address['state'] . ', ' . $address['zipCode'] . ' | ' . $phoneNumber;
+    }
 }
