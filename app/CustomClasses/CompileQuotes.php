@@ -539,7 +539,7 @@ class CompileQuotes
         $this->resiLabel = Constant::RESI_LABEL;
         $this->lgLabel = Constant::LIFT_LABEL;
         $this->resiLgLabel = Constant::RESI_LIFT_LABEL;
-        $this->insideDel = Constant::INSIDE_LABEL;
+        $this->insideDel = Functions::$insideDelLable;
     }
 
     /**
@@ -1003,6 +1003,15 @@ class CompileQuotes
                             $originQuotes[$key]['insideDelivery']['rate'] = $price;
                             $originQuotes[$key]['insideDelivery']['title'] = $title;
                         }
+                        if ($insideDelivery && $lgQuotes) {
+                            $access = $this->getAccessorialCode(true, true) . $resiPickup;
+                            $price = $this->calculatePrice($data, true, false, false, true);
+                            $title = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays'], [], $dateAndDays, true);
+                            $arraySorting['insideDelivery'][$key] = $price;
+                            $originQuotes[$key]['insideLiftGateDelivery']['code'] = "wweltl" . $data['serviceType'] . $access;
+                            $originQuotes[$key]['insideLiftGateDelivery']['rate'] = $price;
+                            $originQuotes[$key]['insideLiftGateDelivery']['title'] = $title;
+                        }
                     }
                 }
             }
@@ -1017,6 +1026,8 @@ class CompileQuotes
                         $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
                         $insideDelivery ? $allQuotes['insideDelivery'][] = $service['insideDelivery'] : null;
                         $insideDelivery ? $multiShipmentQuotes['insideDelivery'][$origin] = $service['insideDelivery'] : null;
+                        $insideDelivery && $lgQuotes ? $allQuotes['insideLiftGateDelivery'][] = $service['insideLiftGateDelivery'] : null;
+                        $insideDelivery && $lgQuotes ? $multiShipmentQuotes['insideLiftGateDelivery'][$origin] = $service['insideLiftGateDelivery'] : null;
                     }
                 } else {
                     $service = reset($compiledQuotes);
@@ -1026,6 +1037,8 @@ class CompileQuotes
                     $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
                     $insideDelivery ? $allQuotes['insideDelivery'][] = $service['insideDelivery'] : null;
                     $insideDelivery ? $multiShipmentQuotes['insideDelivery'][$origin] = $service['insideDelivery'] : null;
+                    $insideDelivery && $lgQuotes ? $allQuotes['insideLiftGateDelivery'][] = $service['insideLiftGateDelivery'] : null;
+                    $insideDelivery && $lgQuotes ? $multiShipmentQuotes['insideLiftGateDelivery'][$origin] = $service['insideLiftGateDelivery'] : null;
                 }
             }
 
@@ -1035,8 +1048,15 @@ class CompileQuotes
             $count++;
         }
         $inside = $allQuotes['insideDelivery'][0] ?? [];
+        $insideLifGate = $allQuotes['insideLiftGateDelivery'][0] ?? [];
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
-        $allQuotes[] = $inside;
+        
+        if(!$this->isMultiShipment && !empty($inside) && !empty($insideLifGate)){
+            $allQuotes[] = $inside;
+            $allQuotes[] = $insideLifGate;
+        }else if(!$this->isMultiShipment && !empty($inside)){
+            $allQuotes[] = $inside;
+        }
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
@@ -3958,6 +3978,8 @@ class CompileQuotes
                 $rate = 0;
                 $code = '';
                 $isLiftGate = $key == 'liftgate' ? true : false;
+                $isInsideDelivery = $key == 'insideDelivery' ? true : false;
+                $isInsideLiftGateDelivery = $key == 'insideLiftGateDelivery' ? true : false;
                 foreach ($value as $key2 => $data) {
                     $rate += $data['rate'];
                     $code = $data['code'];
@@ -3965,7 +3987,7 @@ class CompileQuotes
                 $quotesArr[] = [
                     'code' => $code,
                     'rate' => $rate,
-                    'title' => $this->getTitle(Functions::$ltlMultiTitle, $isLiftGate, true),
+                    'title' => $this->getTitle(Functions::$ltlMultiTitle, $isLiftGate, true, '', [], [], $isInsideDelivery, $isInsideLiftGateDelivery),
                 ];
             } else {
                 $quotesArr[] = reset($value);
@@ -4084,7 +4106,7 @@ class CompileQuotes
     {
         $lgCost = 0;
         if (!(($this->isResi && isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']) ||
-                (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery'] == '1')) || $getCost) {
+                (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery'] == '1' && !(isset($this->quoteSettings['insideDelivery']) && $this->quoteSettings['insideDelivery']))) || $getCost) {
             if (isset($quotes['surcharges']) && isset($quotes['surcharges']['liftgateFee'])) {
                 $lgCost = $quotes['surcharges']['liftgateFee'];
             }
@@ -4143,7 +4165,7 @@ class CompileQuotes
      *
      * @info: This function will compile name of a service and return service name according to the settings enabled.
      */
-    public function getTitle($serviceName, $lgOption = false, $from = false, $deliveryEstimate = '', $quoteSetting = [], $daysAndDate = [], $insideDel = false)
+    public function getTitle($serviceName, $lgOption = false, $from = false, $deliveryEstimate = '', $quoteSetting = [], $daysAndDate = [], $insideDel = false, $isInsideLiftGateDelivery = false)
     {
         // Here  Making service title
         if (!empty($quoteSetting)) {
@@ -4174,6 +4196,10 @@ class CompileQuotes
             $accessTitle = $this->resiLabel;
         } elseif ($insideDel) {
             $accessTitle = $this->insideDel;
+        }
+        
+        if(($lgOption && $insideDel) || $isInsideLiftGateDelivery){
+            $accessTitle = $accessTitle ? $accessTitle . ' & inside delivery' : $this->lgLabel . ' & inside delivery';
         }
         $resp = $serviceTitle . $accessTitle . $deliveryEstimateLabel;
         return $resp;

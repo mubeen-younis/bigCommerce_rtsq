@@ -19,6 +19,10 @@ class Functions
     public static $smallMultiTitle = '-smallShipping';
     public static $dbscSlug = 'dbsc';
     public static $freeShipping = 'Free Shipping ';
+    public static $insideDelLable = ' w/ inside delivery';
+    public static $insideDelResiLable = ' w/ residential & inside delivery';
+    public static $insideDelLiftGateLable = ' w/ lift gate delivery & inside delivery';
+    public static $insideDelLiftGateResiLable = ' w/ residential / lift gate delivery & inside delivery';
 
 
     public static function hasInsureCarrier($code)

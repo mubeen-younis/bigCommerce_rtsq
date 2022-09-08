@@ -246,9 +246,13 @@ class LtlSmallCompileQuotes
                     $quote['alwaysResi'] = $alwaysResi;
                     $quote['isResi'] = isset($residential['wweLtl']) && $residential['wweLtl'] == 'Y';
                     $quote['alwaysLG'] = isset($connectionSettings['ltl-quotes']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['ltl-quotes']['quote_settings']['alwaysLiftGateDelivery'];
-                    if (strpos($quote['code'], '+LG') !== false) {
+                    if (strpos($quote['code'], '+LG+ID') !== false) {
+                        $quotesCarrier['ltl']['wwe']['LGID'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG') !== false) {
                         $quotesCarrier['ltl']['wwe']['LG'][] = $quote;
-                    } else {
+                    } else if (strpos($quote['code'], '+ID') !== false) {
+                        $quotesCarrier['ltl']['wwe']['ID'][] = $quote;
+                    }   else {
                         $quotesCarrier['ltl']['wwe']['simple'][] = $quote;
                     }
                 }
@@ -304,6 +308,22 @@ class LtlSmallCompileQuotes
                     }
                     $newQuotes[] = [
                         'code' => 'multi' . $rCode . '+LG',
+                        'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
+                        'title' => 'Freight' . $rtitle
+                    ];
+                } else if ($simpleLg === 'ID') {
+                    $rtitle = ($parcel['isResi'] ?? $ltlQuot['isResi']) ? Functions::$insideDelResiLable : Functions::$insideDelLable;
+                    
+                    $newQuotes[] = [
+                        'code' => 'multi' . $rCode . '+ID',
+                        'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
+                        'title' => 'Freight' . $rtitle
+                    ];
+                } else if ($simpleLg === 'LGID') {
+                    $rtitle = ($parcel['isResi'] ?? $ltlQuot['isResi']) ? Functions::$insideDelLiftGateResiLable : Functions::$insideDelLiftGateLable;
+                    
+                    $newQuotes[] = [
+                        'code' => 'multi' . $rCode . '+LG+ID',
                         'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
                         'title' => 'Freight' . $rtitle
                     ];
