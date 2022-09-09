@@ -201,7 +201,6 @@ class Shipping
 
         $quotesFromWs = $quotes ?? [];
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination);
-
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];
@@ -816,22 +815,8 @@ class Shipping
     public function freeShippingTitle($finalQuotes)
     {
         foreach($finalQuotes as $key => $quote){
-            
             if(empty($quote['rate']) || $quote['rate'] == '0.00'){
-                if(str_contains($quote['title'], 'w/')){
-                    $label = explode('w', $quote['title'])[0]; 
-                }elseif(str_contains($quote['title'], '(')){
-                    $label =  explode('(', $quote['title'])[0];
-                }elseif(str_contains($quote['title'], '-')){
-                    $label =  explode('(', $quote['title'])[0];
-                }elseif(str_contains($quote['title'], 'Freight')){
-                    $label =  explode('(', $quote['title'])[0];
-                }elseif(!str_contains($quote['title'], 'w/') || !str_contains($quote['title'], '(')){
-                    $label =  $quote['title'];
-                }
-                $labelRemoved =str_replace($label, '',$quote['title']);
-                $quote['title'] = Functions::$freeShipping . $labelRemoved;
-                $finalQuotes[$key]['title'] = $quote['title'];
+                $finalQuotes[$key]['title'] = Functions::$freeShipping;
             }
         }
 

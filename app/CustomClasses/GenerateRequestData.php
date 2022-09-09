@@ -57,6 +57,7 @@ class GenerateRequestData
     )
     {
         $this->storeData = $storeData;
+        $this->returnRates = false;
         $this->quoteSettings = $quoteSettings;
         $this->connectionSettings = $connectionSettings;
     }
@@ -242,6 +243,10 @@ class GenerateRequestData
 
     public function wweLtlEnitArr($connSettings, $destination)
     {
+         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+         }
+
         return [
 
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
@@ -359,6 +364,10 @@ class GenerateRequestData
 
     public function fedexLtlEnitArr($connSettings, $destination, $enitOrigin)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '', //$this->connectionSettings['license_key'],
             'serverName' => "https://" . $this->storeData['store']['name'], //"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
@@ -961,8 +970,12 @@ class GenerateRequestData
 
         $this->resiCarrier['wweLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['wweLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['wweLtl'] = $this->returnRates;
 
         $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
+
+        $liftGatePickup = (isset($connSettings['quote_settings']['liftGatePickup']) && $connSettings['quote_settings']['liftGatePickup'] && $connSettings['quote_settings']['liftGatePickup'] == true) ? 'Y' : 'N';
+        $insideDelivery = (isset($connSettings['quote_settings']['insideDelivery']) && $connSettings['quote_settings']['insideDelivery'] && $connSettings['quote_settings']['insideDelivery'] == true) ? 'Y' : 'N';
 
         $insurance = [
             'code' => '',
@@ -984,6 +997,8 @@ class GenerateRequestData
             'speed_freight_residential_delivery' => $alwaysResi ? 'Y' : $residential,
             'speed_freight_lift_gate_delivery' => $liftGate,
             'speed_freight_residential_pickup' => $residentialPickup,
+            'speed_freight_lift_gate_pickup' => $liftGatePickup,
+            'speed_freight_lift_inside_delivery' => $insideDelivery,
             'insureShipment' => 0,
             'insuranceCategory' => $insurance,
             'thresholdWeightLimit' => $weightThreshold,
@@ -1260,7 +1275,10 @@ class GenerateRequestData
 
         $this->resiCarrier['fedexLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['fedexLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['fedexLtl'] = $this->returnRates;
         $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
+
+        $holdAtTerminal = (isset($connSettings['quote_settings']['hold_at_terminal']) && $connSettings['quote_settings']['hold_at_terminal'] && $connSettings['quote_settings']['hold_at_terminal'] == true) ? '1' : '0';
 
         $accessorial = [];
         if ($liftGate == 'Y') {
@@ -1306,6 +1324,7 @@ class GenerateRequestData
             'prefferedCurrency' => 'USD',
             'percentDiscount' => $discount, //quote settings
 
+            'holdAtTerminal' => $holdAtTerminal,
             'shipmentDate' => date('m/d/Y'),
             'transactionId' => time(),
             'thresholdWeightLimit' => $weightThreshold,
