@@ -996,7 +996,7 @@ class CompileQuotes
                             $originQuotes[$key]['liftgate']['title'] = $lgTitle;
                         }
                         if ($insideDelivery) {
-                            $access = $this->getAccessorialCode(false, true) . $resiPickup;
+                            $access = $this->getAccessorialCode(false, true, $resiPickup, $lgPickup);
                             $price = $this->calculatePrice($data, false, false, false, true);
                             $title = $this->getTitle($data['serviceDesc'], false, false, $data['totalTransitTimeInDays'], [], $dateAndDays, true);
                             $arraySorting['insideDelivery'][$key] = $price;
@@ -1005,7 +1005,7 @@ class CompileQuotes
                             $originQuotes[$key]['insideDelivery']['title'] = $title;
                         }
                         if ($insideDelivery && $lgQuotes) {
-                            $access = $this->getAccessorialCode(true, true) . $resiPickup;
+                            $access = $this->getAccessorialCode(true, true, $resiPickup, $lgPickup);
                             $price = $this->calculatePrice($data, true, false, false, true);
                             $title = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays'], [], $dateAndDays, true);
                             $arraySorting['insideLiftGateDelivery'][$key] = $price;
