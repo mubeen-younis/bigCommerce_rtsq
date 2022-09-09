@@ -6,6 +6,7 @@ namespace App\CustomClasses\RL\ltl;
 
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
+use App\CustomClasses\Functions;
 
 class QuotesResults
 {
@@ -94,8 +95,17 @@ class QuotesResults
                         $shipments[$shipment]['q'][$key] = $quote;
                         unset($shipments[$shipment]['q'][$key]['totalNetCharge']);
                         $shipments[$shipment]['q'][$key]['serviceType'] = 'rnlltl+HAT+'.$quote['Code'];
-                        $shipments[$shipment]['q'][$key]['serviceDesc'] = $this->titleHAT($quote['Title'], $quotes['holdAtTerminalResponse']['address'], $quotes['holdAtTerminalResponse']['distance']);
-                        $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = $this->getPrice($quote['totalNetCharge'], $quoteSettings['hold_at_terminal_price']);
+                        
+                        $title = $this->title($quote['Code']) ?? '';
+                        $address['city'] = $quotes['holdAtTerminalResponse']['address']['City']; 
+                        $address['state'] = $quotes['holdAtTerminalResponse']['address']['State']; 
+                        $address['zipCode'] = $quotes['holdAtTerminalResponse']['address']['ZipCode'];
+                        $distance = $quotes['holdAtTerminalResponse']['distance']['text'];
+                        $phoneNumber = $quotes['holdAtTerminalResponse']['address']['Phone']; 
+
+                        $shipments[$shipment]['q'][$key]['serviceDesc'] = Functions::getHATTitle($title, $address, $distance, $phoneNumber);
+                        $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = Functions::getHATPrice($quote['totalNetCharge'], $quoteSettings['hold_at_terminal_price'] ?? 0);
+
                         $shipments[$shipment]['q'][$key]['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
                         $shipments[$shipment]['q'][$key]['totalTransitTimeInDays'] = $quote['totalTransitTimeInDays'] ?? '';
                         $shipments[$shipment]['q'][$key]['transitTime'] = $quote['transitTime'] ?? '';

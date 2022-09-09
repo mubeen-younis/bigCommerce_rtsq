@@ -2331,7 +2331,7 @@ class CompileQuotes
                         continue;
                     }
                     $price = $this->calculatePrice($data);
-                    $this->quoteSettings['label_as'] = $lableAs . ' ' . $data['serviceDesc'];
+                    $this->quoteSettings['label_as'] = (!empty($lableAs) ? $lableAs . ' ' : '') . $data['serviceDesc'];
                     $date = $data['deliveryDate'] ?? null;
                     $days = $data['totalTransitTimeInDays'] ?? null;
                     $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
@@ -2400,13 +2400,13 @@ class CompileQuotes
                 unset($hatLabel[0]);
                 $lableAs = 'Freight |' . implode('|', $hatLabel);
                 $resp = [
-                    'checkoutQuotes' => $this->arrangeHATFreight($allQuotes, $HAT, $lableAs),
-                    'multiShipmentQuotes' => $this->arrangeHATMulti($multiShipmentQuotes, $HAT),
+                    'checkoutQuotes' => Functions::arrangeHATFreight($allQuotes, $HAT, $lableAs),
+                    'multiShipmentQuotes' => Functions::arrangeHATMulti($multiShipmentQuotes, $HAT),
                 ];
             } else {
                 $allQuotes = $this->forceChangeTitle($allQuotes);
                 $resp = [
-                    'checkoutQuotes' => $this->arrangeHATFreight($allQuotes, $HAT, Functions::$ltlMultiTitle),
+                    'checkoutQuotes' => Functions::arrangeHATFreight($allQuotes, $HAT, Functions::$ltlMultiTitle),
                     'multiShipmentQuotes' => $multiShipmentQuotes,
                 ];
             }
