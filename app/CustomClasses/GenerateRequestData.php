@@ -388,18 +388,20 @@ class GenerateRequestData
 
     function rnlLtlEnitArr($connSettings, $destination, $enitOrigin, $lineItems)
     {
-        if (isset($connSettings['quote_settings']['returnRates']) && $connSettings['quote_settings']['returnRates'] && $this->isPoBOX) {
+        if (isset($connSettings['quote_settings']['return_rates']) && $connSettings['quote_settings']['return_rates'] && $this->isPoBOX) {
             return [];
         }
+        
         $shipmentPrice = $this->calculatePrice($lineItems);
         if (isset($connSettings['quote_settings']['free_shipping_on_orders']) && $connSettings['quote_settings']['free_shipping_on_orders'] < $shipmentPrice) {
             return [
                 'freeShipment' => true
             ];
         }
+
         return [
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '', //$this->connectionSettings['license_key'],
-            'serverName' => "https://" . $this->storeData['store']['name'], //"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
+            'licenseKey' => $connSettings['creds']['license_key'] ?? '', 
+            'serverName' => "https://" . $this->storeData['store']['name'], 
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',

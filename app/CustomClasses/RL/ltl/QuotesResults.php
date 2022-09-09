@@ -191,4 +191,22 @@ class QuotesResults
         return $access;
     }
 
+    public function arrangeHATQuotes($finalQuotes, $HAT)
+    {
+        if (empty($HAT)) {
+            return $finalQuotes;
+        }
+
+        $hatQuotes = [];
+        foreach ($HAT as $quote) {
+            $hatQuotes[] = [
+                'code' => $quote['serviceType'],
+                'title' => $quote['serviceDesc'],
+                'rate' => $quote['totalNetCharge']['Amount'],
+            ];
+        }
+
+        return array_merge($finalQuotes, $hatQuotes);
+    }
+
 }

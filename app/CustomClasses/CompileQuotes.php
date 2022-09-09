@@ -2321,9 +2321,9 @@ class CompileQuotes
             }
             return $resp;
         }
+
         if (!empty($HAT)) {
-            $lableAs .= ' ' . $HAT[0]['serviceDesc'];
-            return $this->arrangeHATFreight($allQuotes, $HAT, $lableAs);
+            return $rnlLtl->arrangeHATQuotes($allQuotes, $HAT);
         }
 
         return $allQuotes;
