@@ -4196,16 +4196,14 @@ class CompileQuotes
             $accessTitle = $this->resiLabel;
         } 
         
-        if ($insideDel) {
-            $accessTitle = $this->insideDel;
-        }
-        
         if(($lgOption && $insideDel) || $isInsideLiftGateDelivery){
             if ($this->quoteSettings['alwaysLiftGateDelivery'] == '1') {
                 $accessTitle = $accessTitle ? $accessTitle . ' & inside delivery' : $this->insideDel;
-            }else{
+            } else {
                 $accessTitle = $accessTitle ? $accessTitle . ' & inside delivery' : $this->lgLabel . ' & inside delivery';    
             }
+        } else if ($insideDel) {
+            $accessTitle = $this->insideDel;
         }
         $resp = $serviceTitle . $accessTitle . $deliveryEstimateLabel;
         return $resp;
