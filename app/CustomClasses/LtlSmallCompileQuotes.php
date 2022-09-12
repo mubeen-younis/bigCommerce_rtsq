@@ -320,7 +320,11 @@ class LtlSmallCompileQuotes
                         'title' => 'Freight' . $rtitle
                     ];
                 } else if ($simpleLg === 'LGID') {
-                    $rtitle = ($parcel['isResi'] ?? $ltlQuot['isResi']) ? Functions::$insideDelLiftGateResiLable : Functions::$insideDelLiftGateLable;
+                    if (isset($ltlQuot['alwaysLG']) && $ltlQuot['alwaysLG']) {
+                        $rtitle = ($parcel['isResi'] ?? $ltlQuot['isResi']) ? Functions::$insideDelResiLable : Functions::$insideDelLable;
+                    } else {
+                        $rtitle = ($parcel['isResi'] ?? $ltlQuot['isResi']) ? Functions::$insideDelLiftGateResiLable : Functions::$insideDelLiftGateLable;
+                    }
                     
                     $newQuotes[] = [
                         'code' => 'multi' . $rCode . '+LG+ID',
