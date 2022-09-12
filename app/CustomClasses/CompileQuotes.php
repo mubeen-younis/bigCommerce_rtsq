@@ -4194,7 +4194,9 @@ class CompileQuotes
             }
         } elseif ($this->isResi) {
             $accessTitle = $this->resiLabel;
-        } elseif ($insideDel) {
+        } 
+        
+        if ($insideDel) {
             $accessTitle = $this->insideDel;
         }
         
