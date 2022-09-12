@@ -4200,10 +4200,10 @@ class CompileQuotes
             if ($this->quoteSettings['alwaysLiftGateDelivery'] == '1') {
                 $accessTitle = $accessTitle ? $accessTitle . ' & inside delivery' : $this->insideDel;
             } else {
-                $accessTitle = $accessTitle ? $accessTitle . ' & inside delivery' : $this->lgLabel . ' & inside delivery';    
+                $accessTitle = $accessTitle ? $this->resiLgLabel . ' & inside delivery' : $this->lgLabel . ' & inside delivery';    
             }
         } else if ($insideDel) {
-            $accessTitle = $this->insideDel;
+            $accessTitle = $accessTitle ? $accessTitle . ' & inside delivery' : $this->insideDel;
         }
         $resp = $serviceTitle . $accessTitle . $deliveryEstimateLabel;
         return $resp;
