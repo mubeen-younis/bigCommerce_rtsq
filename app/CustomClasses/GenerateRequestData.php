@@ -249,12 +249,11 @@ class GenerateRequestData
 
         return [
 
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'licenseKey' => '',
             'serverName' => "https://" . $this->storeData['store']['name'],
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
-            // 'returnQuotesOnExceedWeight' => $connSettings['quote_settings']['weightExeeds'],
             'returnQuotesOnExceedWeight' => 1,
             'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
             'api' => $this->getApiInfoArrWweLtl($connSettings, $destination),
@@ -369,8 +368,8 @@ class GenerateRequestData
         }
 
         return [
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '', //$this->connectionSettings['license_key'],
-            'serverName' => "https://" . $this->storeData['store']['name'], //"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
+            'licenseKey' => '', 
+            'serverName' => "https://" . $this->storeData['store']['name'],
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
