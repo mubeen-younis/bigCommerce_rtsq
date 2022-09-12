@@ -55,13 +55,13 @@ class QuotesResults
                     foreach ($quotes['quotesWithInsideDel']['ServiceLevels']['ServiceLevel'] as $key => $quote) {
                         $key = isset($shipments[$shipment]['q']) ? count($shipments[$shipment]['q']) :0;
                         $shipments[$shipment]['q'][$key] = $quote;
-                        $shipments[$shipment]['q'][$key]['serviceType'] = 'inside+'.$quote['Code'];
+                        $shipments[$shipment]['q'][$key]['serviceType'] = 'rnlltl+'.$quote['Code'];
                         $shipments[$shipment]['q'][$key]['serviceDesc'] = $quote['Title'];
                         $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = (float) str_replace('$', '',str_replace(',','',$quote['NetCharge']));
                         $shipments[$shipment]['q'][$key]['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
                         $shipments[$shipment]['q'][$key]['transitTime'] = $quote['totalTransitTimeInDays'] ?? '';
                         $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $this->liftGateFees($quotes);
-                        $shipments[$shipment]['q'][$key]['surcharges']['insidedelivery'] = $this->insideFees($quotes);
+                        $shipments[$shipment]['q'][$key]['surcharges']['insideDeliveryFee'] = $this->insideFees($quotes);
                     }
                 }else{
                     //if(isset($quotes['q'])) {

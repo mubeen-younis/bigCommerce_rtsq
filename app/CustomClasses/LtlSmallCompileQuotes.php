@@ -126,9 +126,13 @@ class LtlSmallCompileQuotes
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
                     $quote['isResi'] = isset($residential['rnlLtl']) && $residential['rnlLtl'] == 'Y';
                     $quote['alwaysLG'] = isset($connectionSettings['rl-ltl']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['rl-ltl']['quote_settings']['alwaysLiftGateDelivery'];
-                    if (strpos($quote['code'], '+LG') !== false) {
+                    if (strpos($quote['code'], '+LG+ID') !== false) {
+                        $quotesCarrier['ltl']['wwe']['LGID'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG') !== false) {
                         $quotesCarrier['ltl']['rnl']['LG'][] = $quote;
-                    } else if (strpos($quote['code'], '+HAT') !== false) {
+                    } else if (strpos($quote['code'], '+ID') !== false) {
+                        $quotesCarrier['ltl']['wwe']['ID'][] = $quote;
+                    }  else if (strpos($quote['code'], '+HAT') !== false) {
                         $quotesCarrier['ltl']['rnl']['HAT'][] = $quote;
                     } else {
                         $quotesCarrier['ltl']['rnl']['simple'][] = $quote;
@@ -252,7 +256,7 @@ class LtlSmallCompileQuotes
                         $quotesCarrier['ltl']['wwe']['LG'][] = $quote;
                     } else if (strpos($quote['code'], '+ID') !== false) {
                         $quotesCarrier['ltl']['wwe']['ID'][] = $quote;
-                    }   else {
+                    } else {
                         $quotesCarrier['ltl']['wwe']['simple'][] = $quote;
                     }
                 }

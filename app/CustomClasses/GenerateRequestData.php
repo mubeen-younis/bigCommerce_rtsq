@@ -1426,7 +1426,7 @@ class GenerateRequestData
         } else {
             $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
         }
-
+        $insideDelivery = (isset($connSettings['quote_settings']['insideDelivery']) && $connSettings['quote_settings']['insideDelivery'] && $connSettings['quote_settings']['insideDelivery'] == true) ? 1 : 0;
 
         $this->resiCarrier['rnlLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['rnlLtl'] = $alwaysResi;
@@ -1440,7 +1440,7 @@ class GenerateRequestData
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
             'liftgateDelivery' => $liftGate,
             'residentialDelivery' => $alwaysResi ? 'Y' : $residential,
-            'insideDelAsAnOption' => $connSettings['quote_settings']['offer_inside_delivery'] ?? 0,
+            'insideDelAsAnOption' => $insideDelivery,
 
             'QuoteType' => 'Domestic', //'Domestic or International or AlaskaHawaii'
             'CODAmount' => '0',
