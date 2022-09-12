@@ -540,28 +540,8 @@ class OrderController extends Controller
     public
     function getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate, $rateId)
     {
-        //dd($isSmallLtlrate);
         $response = ['resi' => 'n', 'liftG' => 'n', 'resiPickup' => 'n', 'lgPickup' => 'n'];
-        /*if($isSmallrate && !$isSmallLtlrate){
-            $checkResi = isset($requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery) && ($requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery == 'Y' || $requestToWS->requestArr->carriers->wweSmall->api->residentials_delivery == 'yes' );
-            if($checkResi){
-                $response['resi'] = 'Y';
-            }
-        }else {
-            $checkResi = isset($requestToWS->requestArr->carriers->wweLTL->api->speed_freight_residential_delivery) && ($requestToWS->requestArr->carriers->wweLTL->api->speed_freight_residential_delivery == 'Y' || $requestToWS->requestArr->carriers->wweLTL->api->speed_freight_residential_delivery == 'yes');
-            if($checkResi){
-                $response['resi'] = 'Y';
-            }
-            $checkLift = isset($requestToWS->requestArr->carriers->wweLTL->api->speed_freight_lift_gate_delivery) && ($requestToWS->requestArr->carriers->wweLTL->api->speed_freight_lift_gate_delivery == 'Y' || $requestToWS->requestArr->carriers->wweLTL->api->speed_freight_lift_gate_delivery == 'yes');
-            if($checkLift){
-                $response['liftG'] = 'Y';
-            }
-
-            $checkResiPickup = isset($requestToWS->requestArr->carriers->wweLTL->api->speed_freight_residential_pickup) && ($requestToWS->requestArr->carriers->wweLTL->api->speed_freight_residential_pickup == 'Y' || $requestToWS->requestArr->carriers->wweLTL->api->speed_freight_residential_pickup == 'yes');
-            if($checkResiPickup){
-                $response['resiPickup'] = 'Y';
-            }
-        }*/
+        
         $response['resi'] = strpos($rateId, '+r') ? 'Y' : 'n';
         $response['liftG'] = strpos($rateId, '+lg') ? 'Y' : 'n';
         $response['resiPickup'] = strpos($rateId, '+pu') ? 'Y' : 'n';
