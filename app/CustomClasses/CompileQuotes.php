@@ -2821,6 +2821,12 @@ class CompileQuotes
 
     private function compileYRCLtlQuotes($shipments, $connectionSettings, $allOrigins, $residential)
     {
+        $returnRates = $this->residential['returnRates']['yrcLtl'] ?? false;
+
+        if($returnRates){
+            return [];
+        }
+
         $yrcLtl = new yrcLtlQuotesResults();
 
         if ($residential['yrcLtl'] == 'Y') {
