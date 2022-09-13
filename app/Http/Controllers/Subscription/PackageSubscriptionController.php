@@ -152,6 +152,9 @@ class PackageSubscriptionController extends Controller
             self::$dynamicTrial = 7;
             $responce = $this->subscribeToAddonPackage($data, $addonType);
             //Do Nothing Yet
+        }  elseif ($addonType == self::$addonTypePLT) {
+            self::$dynamicTrial = 15;
+            $responce = $this->subscribeToAddonPackage($data, $addonType);
         } else {
             $responce = [
                 'error' => true,
@@ -322,7 +325,6 @@ class PackageSubscriptionController extends Controller
     //***********************************
     public function createStripeChargeForPackage($package, $mainSubscription, $addonType)
     {
-
         $stripeCustomerId = $mainSubscription->stripe_customer_id;
         try {
             $chargeData = [
