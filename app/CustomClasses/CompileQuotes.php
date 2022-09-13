@@ -2556,6 +2556,12 @@ class CompileQuotes
 
     private function compileUpsLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
+        $returnRates = $this->residential['returnRates']['upsLtl'] ?? false;
+
+        if($returnRates){
+            return [];
+        }
+        
         if ($this->residential['upsLtl'] == 'Y') {
             $this->isResi = true;
             $this->residentialDlvry = 1;
