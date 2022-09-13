@@ -19,6 +19,7 @@ use function GuzzleHttp\Promise\all;
 class PackageSubscriptionController extends Controller
 {
     public static $addonTypeSBS = 'SBS';
+    public static $addonTypePLT = 'PLT';
     public static $addonTypeRAD = 'RAD';
     public static $trialSBS = 1;
     public static $dynamicTrial = '';
@@ -46,6 +47,9 @@ class PackageSubscriptionController extends Controller
             $data = $this->getPkgDetails($addonType);
         } elseif ($addonType == self::$addonTypeRAD) {
             self::$dynamicTrial = 7;
+            $data = $this->getPkgDetails($addonType);
+        } elseif ($addonType == self::$addonTypePLT) {
+            self::$dynamicTrial = 15;
             $data = $this->getPkgDetails($addonType);
         } else {
             $error = true;
@@ -121,7 +125,7 @@ class PackageSubscriptionController extends Controller
         } else {
             $addonPackages = Package::where('addon_type', $addonType)->where('id', '!=', self::$dynamicTrial)->orderBy('sort_by', 'ASC')->get();
         }
-        $addonPkgParam = 'allSbsPackages';
+        $addonPkgParam = $addonType == self::$addonTypeSBS ? 'allSbsPackages' : 'allPalletPackages';
         if ($addonType == self::$addonTypeRAD) {
             $addonPackages->where('name', 'Extreme')->first()->htis = 'Unlimited';
             $addonPkgParam = 'allRadPackages';
@@ -537,6 +541,9 @@ class PackageSubscriptionController extends Controller
         } elseif ($addonType == self::$addonTypeRAD) {
             self::$dynamicTrial = 7;
             $responce = $this->suspendUsage($data, $addonType);
+        } elseif ($addonType == self::$addonTypePLT) {
+            self::$dynamicTrial = 15;
+            $responce = $this->suspendUsage($data, $addonType);
         } else {
             $responce = [
                 'error' => true,
@@ -559,7 +566,7 @@ class PackageSubscriptionController extends Controller
             ->latest()->first();
         $currentPackageSub->status = $data['suspend'];
         $currentPackageSub->save();
-        $addonName = $addonType === 'SBS' ? 'Standard Box Sizes' : 'Residential Address Detection';
+        $addonName = $addonType === self::$addonTypeSBS ? 'Standard Box Sizes' : ($addonType === self::$addonTypePLT ? 'Pallet Packaging' : 'Residential Address Detection');
         return [
             'error' => false,
             'data' => $this->getPkgDetails($addonType),
