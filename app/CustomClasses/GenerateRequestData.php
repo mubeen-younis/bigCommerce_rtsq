@@ -386,6 +386,9 @@ class GenerateRequestData
 
     public function xpoLtlEnitArr($connSettings, $destination, $enitOrigin)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+         }
 
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '', //$this->connectionSettings['license_key'],
@@ -1377,6 +1380,7 @@ class GenerateRequestData
 
         $this->resiCarrier['xpoLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['xpoLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['xpoLtl'] = $this->returnRates;
         $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
 
         $accessorial = [];
@@ -1389,6 +1393,8 @@ class GenerateRequestData
         }
 
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
+        $accessToken = $connSettings['creds']['api_key'] ?? '';
+
         $apiArray = [
             'UserName' => $connSettings['creds']['username'] ?? '',
             'Password' => $connSettings['creds']['password'] ?? '',
@@ -1398,8 +1404,14 @@ class GenerateRequestData
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
             'thresholdWeightLimit' => $weightThreshold,
+            'holdAtTerminal' => $connSettings['quote_settings']['hold_at_terminal'] ? '1' : '0',
+            'basicAccessToken' => $accessToken,
             'accessorial' => $accessorial
         ];
+
+        if (!empty($accessToken)) {
+            $apiArray['xpoApiVersion'] = '1.0';
+        }
 
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
