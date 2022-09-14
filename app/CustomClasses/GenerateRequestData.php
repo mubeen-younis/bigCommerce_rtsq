@@ -629,7 +629,12 @@ class GenerateRequestData
             $liftGateWithAuto = '1';
         }
         $binReponse = $boxBins = [];
-        //
+        // Pallet packaging request
+        $palletPkg = new PalletPackaging($itemsArr);
+        if ($palletPkg->isAddonEnabled($this->storeData)) {
+            $resp = $palletPkg->formatPalletPkgReqArr();
+            dd($resp);
+        }
 
         if (isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs']) {
             $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? $carriers['usps']['originAddress'] ?? $carriers['purolator']['originAddress'] ?? [];

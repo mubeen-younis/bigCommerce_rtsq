@@ -25,6 +25,7 @@ class Functions
     public static $freeShipping = 'Free Shipping';
     public static $resiPickupTitle = '+pu';
     public static $lgPickupTitle = '+lfgpu';
+    public static $palletPkgUrl = 'https://us-east.api.3dbinpacking.com/packer/palletPack';
 
 
     public static function hasInsureCarrier($code)
