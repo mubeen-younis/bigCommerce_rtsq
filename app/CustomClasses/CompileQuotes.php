@@ -2126,7 +2126,6 @@ class CompileQuotes
     public function compileXPOLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
         $returnRates = $this->residential['returnRates']['xpoLtl'] ?? false;
-
         if($returnRates){
             return [];
         }
@@ -2140,6 +2139,7 @@ class CompileQuotes
             $this->residentialDlvry = 0;
         }
         $this->alwaysResi = $this->residential['alwaysResi']['xpoLtl'] ?? false;
+        $this->quoteSettingsData();
         $this->quoteSettings = $connectionSettings['xpo-ltl']['quote_settings'] ?? [];
         $shipments = $xpoLtl->formateQuoteBeforeCompile($shipments, $this->quoteSettings);
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
@@ -4232,7 +4232,7 @@ class CompileQuotes
         } elseif ($this->isResi) {
             $accessTitle = $this->resiLabel;
         } 
-        
+
         if(($lgOption && $insideDel) || $isInsideLiftGateDelivery){
             if ($this->quoteSettings['alwaysLiftGateDelivery'] == '1') {
                 $accessTitle = $accessTitle ? $accessTitle . ' & inside delivery' : $this->insideDel;
