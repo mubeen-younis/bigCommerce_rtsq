@@ -6,6 +6,7 @@ namespace App\CustomClasses\XPO\ltl;
 
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
+use App\CustomClasses\Functions;
 
 class QuotesResults
 {
@@ -15,7 +16,7 @@ class QuotesResults
         $this->CompileQuotes = new CompileQuotes();
     }
 
-    public function formateQuoteBeforeCompile($shipments){
+    public function formateQuoteBeforeCompile($shipments, $quoteSettings){
         foreach ($shipments as $shipment => $quotes){
             if(!isset($quotes['q'])){
               continue;
@@ -48,8 +49,80 @@ class QuotesResults
                 $shipments[$shipment]['q'][$key]['transitTime'] = $quote['transitDays'] ?? '';
                 $shipments[$shipment]['q'][$key]['totalTransitTimeInDays'] = $quote['totalTransitTimeInDays'] ?? '';
             }
+
+            if (isset($quote['holdAtTerminalResponse']) && !empty($quote['holdAtTerminalResponse'])) {
+                $hatResp[] = $quote['holdAtTerminalResponse'];
+                $srvcTitle = $quoteSettings['label_as'] ?? $shipments[$shipment]['q'][$key]['serviceType'] ?? '';
+
+                $hatCompiledQuotes = $this->formatHATQuotes($hatResp, $srvcTitle, $quoteSettings);
+                if (!empty($hatCompiledQuotes)) {
+                    $key = count($shipments[$shipment]['q']);
+                    $shipments[$shipment]['q'][$key] = $hatCompiledQuotes;
+                }
+            }
         }
+
         return $shipments;
+    }
+
+    private function formatHATQuotes($hatQuotes = [], $srvcTitle = '', $quoteSettings)
+    {
+        if (empty($hatQuotes)) {
+            return [];
+        }
+
+        $compiledQuotes = [];
+        foreach ($hatQuotes as $quote) {
+            $compiledQuotes['serviceType'] = 'xpoltl+HAT+';
+            $title = $srvcTitle ?? $quote['Title'] ?? '';
+            $address['city'] = $quote['address']['cityName'] ?? '';
+            $address['state'] = $quote['address']['stateCd'] ?? '';
+            $address['zipCode'] = $quote['address']['postalCd'] ?? '';
+            $distance = $quote['distance']['text'] ?? '0 mi';
+            $phoneNumber = $quote['custServicePhoneNbr'] ?? '';
+
+            $compiledQuotes['serviceDesc'] = Functions::getHATTitle($title, $address, $distance, $phoneNumber);
+            $compiledQuotes['totalNetCharge']['Amount'] = Functions::getHATPrice($quote['totalNetCharge'], $quoteSettings['hold_at_terminal_price'] ?? 0);
+            $compiledQuotes['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
+            $compiledQuotes['totalTransitTimeInDays'] = $quote['totalTransitTimeInDays'] ?? '';
+            $compiledQuotes['transitTime'] = $quote['transitTime'] ?? '';
+            $compiledQuotes['transitDays'] = $quote['transitDays'] ?? '';
+        }
+
+        return $compiledQuotes;
+    }
+
+    public function arrangeHATFreight($finalQuotes, $HATQuotes)
+    {
+        if (empty($HATQuotes)) {
+            return $finalQuotes;
+        }
+
+        $newQuotes = [];
+        foreach ($HATQuotes as $data) {
+            $newQuotes[] = [
+                'code' => $data['serviceType'],
+                'title' => $data['serviceDesc'],
+                'rate' => $data['totalNetCharge']['Amount'],
+            ];
+        }
+
+        return array_merge($finalQuotes, $newQuotes);
+    }
+
+    function getPrice($price, $hatPrice){
+        if((strlen($hatPrice) > 0)) {
+            $symbolicHATFee = strpos($hatPrice, '%') ? '%' : '';
+            $hatPrice = (float)$hatPrice ?? 0;
+            if ($symbolicHATFee === '%') {
+                $hatPrice = $hatPrice / 100 * $price;
+                $price = $price + $hatPrice;
+            } else {
+                $price = $price + $hatPrice;
+            }
+        }
+        
+        return $price;
     }
 
     function netCharge($netCharge){
