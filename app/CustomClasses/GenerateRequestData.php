@@ -630,8 +630,8 @@ class GenerateRequestData
         }
         $binReponse = $boxBins = [];
         // Pallet packaging request
-        $palletPkg = new PalletPackaging($itemsArr);
-        if ($palletPkg->isAddonEnabled($this->storeData)) {
+        $palletPkg = new PalletPackaging($itemsArr, $this->storeData, $cartInfo);
+        if ($palletPkg->isAddonEnabled()) {
             $resp = $palletPkg->formatPalletPkgReqArr();
             dd($resp);
         }
@@ -2496,7 +2496,7 @@ class GenerateRequestData
         $hits = count($items);
         if ((count($items) && count($boxBins)) || count($itemsAlone)) {
             $Bin3D = new Bin3D();
-            $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment);
+            $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment, false);
             if (count($binResponse)) {
                 foreach ($itemsAlone as $key => $itemAlone) {
                     foreach ($itemAlone as $alone) {

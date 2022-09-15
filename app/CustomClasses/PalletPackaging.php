@@ -3,6 +3,7 @@
 namespace App\CustomClasses;
 
 use App\Constants\Constant;
+use App\CustomClasses\Bin3D\Bin3D;
 use App\Helpers\Helpers;
 use App\Models\BoxSize;
 use Illuminate\Support\Facades\Log;
@@ -10,17 +11,24 @@ use Illuminate\Support\Facades\Log;
 class PalletPackaging
 {
     protected $endURL = 'https://us-east.api.3dbinpacking.com/packer/palletPack';
+    public $itemArr;
+    public $storeData;
+    public $storeId;
+    public $cartInfo;
 
-    public function __construct($itemArr = [])
+    public function __construct($itemArr = [], $storeData, $cartInfo)
     {
         $this->palletPkgRequest = [];
         $this->pallet = [];
         $this->itemsArr = $itemArr;
+        $this->storeData = $storeData ?? [];
+        $this->storeId = $storeData['store']['id'];
+        $this->cartInfo = $cartInfo;
     }
 
-    public function isAddonEnabled($storeData): bool
+    public function isAddonEnabled(): bool
     {
-        return isset($storeData['enabled_addon_pallet']) && $storeData['enabled_addon_pallet'];
+        return isset($this->storeData['enabled_addon_pallet']) && $this->storeData['enabled_addon_pallet'];
     }
 
     public function formatPalletPkgReqArr()
@@ -28,8 +36,19 @@ class PalletPackaging
         $this->palletPkgRequest['username'] = Constant::BIN_USER;
         $this->palletPkgRequest['api_key'] = Constant::BIN_API_KEY;
         $this->palletPkgRequest['params'] = $this->getParamsArr();
-        $this->palletPkgRequest['pallet'] = $this->pallet;
-        $this->palletPkgRequest['items'] = $this->formatPalletItems();
+        $this->palletPkgRequest['pallet'] = $this->getPallet();
+        $resp = $this->formatPalletItems();
+        $this->palletPkgRequest['items'] = $resp['items'] ?? [];
+        $pallet = $this->getPallet();
+        $items = $resp['items'] ?? [];
+        $itemsAlone = $resp['shipAloneItems'] ?? [];
+
+        $hits = count($items);
+        if ((count($items) && !empty($pallet)) || count($itemsAlone)) {
+            $Bin3D = new Bin3D();
+            $binResponse = $Bin3D->getBinResponse($this->storeId, $pallet, $items, $itemsAlone, $hits, $this->cartInfo, false, true);
+            dd($binResponse);
+        }
 
         return $this->palletPkgRequest;
     }
@@ -56,13 +75,28 @@ class PalletPackaging
         );
     }
 
-    private function formatPalletItems()
+    private function getPallet()
+    {
+        $pallets = $this->getPalletsFromDB();
+        // TODO:add pallet finding algorithm
+        $pallet = [
+            "w" => "40",
+            "d" => "40",
+            "h" => "90",
+            "id" => "6",
+            "max_wg" => "2000",
+        ];
+
+        return $pallet;
+    }
+
+    private function formatPalletItems(): array
     {
         $items = $itemsAlone = [];
 
         foreach ($this->itemsArr as $key => $item) {
-            $isLtl = (isset($itemsArr[$key]['freightClass']) && $itemsArr[$key]['freightClass'] === 'ltl');
-            $ownPallet = $item['own_pallet'] ?? false;
+            $isLtl = (isset($item['freightClass']) && $item['freightClass'] === 'ltl');
+            $ownPallet = (isset($item['own_pallet']) && $item['own_pallet'] == 1);
 
             if ($isLtl) {
                 $itemId = $item['id'];
@@ -87,7 +121,10 @@ class PalletPackaging
             }
         }
 
-        return $items;
+        return [
+            'items' => $items,
+            'shipAloneItems' => $itemsAlone,
+        ];
     }
 
     public function sendCurlRequest($url, $postData)
@@ -112,9 +149,9 @@ class PalletPackaging
         return $result;
     }
 
-    public function getPalletsFromDB($storeId)
+    public function getPalletsFromDB()
     {
-        $boxes = BoxSize::getPallets($storeId);
+        $boxes = BoxSize::getPallets($this->storeId);
         return $boxes;
     }
 }
