@@ -60,6 +60,7 @@ class GenerateRequestData
         $this->returnRates = false;
         $this->quoteSettings = $quoteSettings;
         $this->connectionSettings = $connectionSettings;
+        $this->returnRates = false;
     }
 
     /**
@@ -323,9 +324,13 @@ class GenerateRequestData
 
     public function upsLtlEnitArr($connSettings, $destination)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '', //$this->connectionSettings['license_key'],
-            'serverName' => "https://" . $this->storeData['store']['name'], //"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
+            'licenseKey' => '',
+            'serverName' => "https://" . $this->storeData['store']['name'], 
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
@@ -381,10 +386,13 @@ class GenerateRequestData
 
     public function xpoLtlEnitArr($connSettings, $destination, $enitOrigin)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+         }
 
         return [
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '', //$this->connectionSettings['license_key'],
-            'serverName' => "https://" . $this->storeData['store']['name'], //"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
+            'licenseKey' => '', 
+            'serverName' => "https://" . $this->storeData['store']['name'],
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
@@ -1372,6 +1380,7 @@ class GenerateRequestData
 
         $this->resiCarrier['xpoLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['xpoLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['xpoLtl'] = $this->returnRates;
         $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
 
         $accessorial = [];
@@ -1384,6 +1393,8 @@ class GenerateRequestData
         }
 
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
+        $accessToken = $connSettings['creds']['api_key'] ?? '';
+
         $apiArray = [
             'UserName' => $connSettings['creds']['username'] ?? '',
             'Password' => $connSettings['creds']['password'] ?? '',
@@ -1393,8 +1404,14 @@ class GenerateRequestData
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
             'thresholdWeightLimit' => $weightThreshold,
+            'holdAtTerminal' => $connSettings['quote_settings']['hold_at_terminal'] ? '1' : '0',
+            'basicAccessToken' => $accessToken,
             'accessorial' => $accessorial
         ];
+
+        if (!empty($accessToken)) {
+            $apiArray['xpoApiVersion'] = '1.0';
+        }
 
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
@@ -2330,6 +2347,8 @@ class GenerateRequestData
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $this->resiCarrier['upsLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['upsLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['upsLtl'] = $this->returnRates;
+
         $paymentType = isset($connSettings['quote_settings']['shipper_relationship']) && $connSettings['quote_settings']['shipper_relationship'] === 'third_party' ? 'ThirdParty' : 'shipper';
         $apiArray = [
             'accessLevel' => $connSettings['creds']['access_level'],
@@ -2346,6 +2365,7 @@ class GenerateRequestData
             'serviceCode' => '308',
             'serviceCodeDescription' => 'UPS Freight LTL',
             'timeInTransitIndicator' => 'N',
+            'dimWeightBaseAccount' => $connSettings['creds']['rates_my_freight_based'] ?? 0,
             'accessorial' => [
                 'liftgateDelivery' => $liftGate,
                 'residentialDelivery' => $alwaysResi ? 'Y' : $residential,
