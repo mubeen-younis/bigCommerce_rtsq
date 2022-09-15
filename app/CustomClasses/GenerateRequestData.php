@@ -633,7 +633,7 @@ class GenerateRequestData
         $palletPkg = new PalletPackaging($itemsArr, $this->storeData, $cartInfo);
         if ($palletPkg->isAddonEnabled()) {
             $resp = $palletPkg->formatPalletPkgReqArr();
-            dd($resp);
+            // dd('bin response', $resp);
         }
 
         if (isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs']) {

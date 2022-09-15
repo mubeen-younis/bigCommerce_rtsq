@@ -4,6 +4,7 @@
 namespace App\CustomClasses\Bin3D;
 
 use App\Constants\Constant;
+use App\CustomClasses\Functions;
 use App\Http\Controllers\Subscription\PackageSubscriptionController;
 use App\Models\BinRequestLog;
 use App\Models\BoxSize;
@@ -25,21 +26,28 @@ class Bin3D
      * @var  string
      */
     private $endURL = Constant::BIN_URL;
+    private $isPalletPkgReq = false;
 
-    public function getBinResponse($storeId, $bins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment)
+    public function getBinResponse($storeId, $bins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment, $palletPkgReq = false)
     {
+        $this->isPalletPkgReq = $palletPkgReq;
         //loop for each bin request
         if ($hits != 0) {
-            $sbsStatus = $this->consumeHits($storeId, $hits);
+            $addonType = $this->isPalletPkgReq ? 'PLT' : 'SBS';
+            $sbsStatus = $this->consumeHits($storeId, $hits, $addonType);
             if (!$sbsStatus['status']) {
                 return [];
             }
         }
         if (count($items) && count($itemsAlone)) {
-
-            foreach ($items as $key => $item) {
-                $binRequest[$key] = $this->generateBinRequest($bins, $item);
+            if ($this->isPalletPkgReq) {
+                $binRequest['pallet'] = $this->generateBinRequest($bins, [], $items);
+            } else {
+                foreach ($items as $key => $item) {
+                    $binRequest[$key] = $this->generateBinRequest($bins, $item);
+                }
             }
+
             $responseFromSBS = $this->binRequest($binRequest, $storeId, $hits, $cartInfo);
 
             if ($isMultishipment) {
@@ -62,9 +70,14 @@ class Bin3D
                 $sbsCompiledResponse = $this->appendNotPackedItemsBoth($responseFromSBS, $items);
             }
         } else if (count($items)) {
-            foreach ($items as $key => $item) {
-                $binRequest[$key] = $this->generateBinRequest($bins, $item);
+            if ($this->isPalletPkgReq) {
+                $binRequest['pallet'] = $this->generateBinRequest($bins, [], $items);
+            } else {
+                foreach ($items as $key => $item) {
+                    $binRequest[$key] = $this->generateBinRequest($bins, $item, $items);
+                }
             }
+
             $responseFromSBS = $this->binRequest($binRequest, $storeId, $hits, $cartInfo);
             $sbsCompiledResponse = $this->appendNotPackedItems($responseFromSBS, $items);
         } else if (count($itemsAlone)) {
@@ -159,7 +172,12 @@ class Bin3D
         foreach ($responseFromSBS as $key => $SBSResp) {
             $response = json_decode($SBSResp)->response;
             if (isset($response->bins_packed)) {
-                $response = $this->AddBoxNicknameAndFee($response);
+                $response = $this->AddBoxNicknameAndFee($response, false);
+            }
+
+            // Pallet packed items
+            if (isset($response->pallets_packed)) {
+                $response = $this->AddBoxNicknameAndFee($response, true);
             }
             $data[$key] = $response;
             $resp = json_decode($SBSResp);
@@ -172,7 +190,11 @@ class Bin3D
                         for ($i = 1; $i <= $notPackedQuantity; $i++) {
                             $not_packed_item = (array)$not_packed_item;
                             $not_packed_item['q'] = 1;
-                            array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
+                            if ($this->isPalletPkgReq) {
+                                array_push($data[$key]->pallets_packed, $this->createItemOwnPackage($not_packed_item));
+                            } else {
+                                array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
+                            }
                         }
                     }
 
@@ -183,13 +205,22 @@ class Bin3D
         return $data;
     }
 
-    public function AddBoxNicknameAndFee($packedResponse)
+    public function AddBoxNicknameAndFee($packedResponse, $palletItems = false)
     {
-        foreach ($packedResponse->bins_packed as $key => $packedBox) {
-            $boxDetail = BoxSize::getBoxNicknameAndFee($packedBox->bin_data->id);
-            $packedResponse->bins_packed[$key]->bin_data->boxname = $boxDetail->nickname ?? null;
-            $packedResponse->bins_packed[$key]->bin_data->boxfee = $boxDetail->box_fee ?? 0;
+        if (!$palletItems) {
+            foreach ($packedResponse->bins_packed as $key => $packedBox) {
+                $boxDetail = BoxSize::getBoxNicknameAndFee($packedBox->bin_data->id);
+                $packedResponse->bins_packed[$key]->bin_data->boxname = $boxDetail->nickname ?? null;
+                $packedResponse->bins_packed[$key]->bin_data->boxfee = $boxDetail->box_fee ?? 0;
+            }
+        } else {
+            foreach ($packedResponse->pallets_packed as $key => $packedBox) {
+                $boxDetail = BoxSize::getBoxNicknameAndFee($packedBox->pallet_data->id);
+                $packedResponse->pallets_packed[$key]->pallet_data->boxname = $boxDetail->nickname ?? null;
+                $packedResponse->pallets_packed[$key]->pallet_data->boxfee = $boxDetail->box_fee ?? 0;
+            }
         }
+
         return $packedResponse;
 
     }
@@ -198,10 +229,10 @@ class Bin3D
      * Consume hits will check is sbs not suspend and has hits for consume
      * response true or false;
      * **/
-    private function consumeHits($storeId, $hits)
+    private function consumeHits($storeId, $hits, $addonType = 'SBS')
     {
         $PackageSubscriptionController = new PackageSubscriptionController();
-        $param = ['store_id' => $storeId, 'hits' => $hits, 'addon_type' => 'SBS'];
+        $param = ['store_id' => $storeId, 'hits' => $hits, 'addon_type' => $addonType];
         $resp = $PackageSubscriptionController->consumeHits($param);
 
         return $resp;
@@ -212,12 +243,11 @@ class Bin3D
      * $bins -> available boxes in db for any store
      * $items -> items with dimensions to be packed in boxes
      */
-    private function generateBinRequest($bins, $item)
+    private function generateBinRequest($bins, $item, $items = [])
     {
         //bins_utilization or bin_number
         $optimizationMode = "bins_utilization";
         $params = [
-            'optimization_mode' => $optimizationMode,
             'images_background_color' => '255,255,255',
             'images_bin_border_color' => '59,59,59',
             'images_bin_fill_color' => '230,230,230',
@@ -235,11 +265,22 @@ class Bin3D
             'images_complete' => '1',
             'images_separated' => '1'
         ];
+
+        if (!$this->isPalletPkgReq) {
+            $params['optimization_mode'] = $optimizationMode;
+        }
         $finalRequest['username'] = $this->userName;
         $finalRequest['api_key'] = $this->apiKey;
         $finalRequest['params'] = $params;
-        $finalRequest['bins'] = $bins;
-        $finalRequest['items'] = $item;
+
+        if ($this->isPalletPkgReq) {
+            $finalRequest['pallet'] = $bins;
+            $finalRequest['items'] = $items;
+        } else {
+            $finalRequest['bins'] = $bins;
+            $finalRequest['items'] = $item;
+        }
+
         return $finalRequest;
     }
 
@@ -250,17 +291,17 @@ class Bin3D
     private function binRequest($binRequest, $storeId, $hits, $cartInfo)
     {
         $requestHash = $this->get_encrypted_params(json_encode($binRequest));
-
         /*
          * Check hash if available same request in last 24 hours then no need to send request to 3dbin
          * **/
-        if (BinRequestLog::where('request_hash', '=', $requestHash)->where('created_at', '>', Carbon::now()->subDay(1))->exists()) {
-            $response = BinRequestLog::select('api_response')->where('request_hash', '=', $requestHash)->where('created_at', '>', Carbon::now()->subDay(1))->latest()->first();
-            $response = (array)json_decode($response['api_response']) ?? [];
-            if (!blank($response)) {
-                return $response;
-            }
-        }
+        // TODO: uncomment request hash check code block
+        // if (BinRequestLog::where('request_hash', '=', $requestHash)->where('created_at', '>', Carbon::now()->subDay(1))->exists()) {
+        //     $response = BinRequestLog::select('api_response')->where('request_hash', '=', $requestHash)->where('created_at', '>', Carbon::now()->subDay(1))->latest()->first();
+        //     $response = (array)json_decode($response['api_response']) ?? [];
+        //     if (!blank($response)) {
+        //         return $response;
+        //     }
+        // }
         $binRequestLog = new BinRequestLog();
         $binRequestLog->store_id = $storeId;
         $binRequestLog->cart_id = $cartInfo['cartId'];
@@ -272,6 +313,7 @@ class Bin3D
         $binRequestLogId = $binRequestLog->id;
 
         $endpoint = $this->endURL;
+        $this->endURL = $this->isPalletPkgReq ? Functions::$palletPkgUrl : $this->endURL;
         // create array for curl handles
         $chs = [];
         // create array for responses

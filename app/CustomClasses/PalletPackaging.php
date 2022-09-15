@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 class PalletPackaging
 {
     protected $endURL = 'https://us-east.api.3dbinpacking.com/packer/palletPack';
-    public $itemArr;
+    public $itemsArr;
     public $storeData;
     public $storeId;
     public $cartInfo;
@@ -39,18 +39,62 @@ class PalletPackaging
         $this->palletPkgRequest['pallet'] = $this->getPallet();
         $resp = $this->formatPalletItems();
         $this->palletPkgRequest['items'] = $resp['items'] ?? [];
-        $pallet = $this->getPallet();
         $items = $resp['items'] ?? [];
-        $itemsAlone = $resp['shipAloneItems'] ?? [];
+        $itemsAlone = $resp['itemsAlone'] ?? [];
+        $pallet = $this->getPallet();
 
         $hits = count($items);
         if ((count($items) && !empty($pallet)) || count($itemsAlone)) {
             $Bin3D = new Bin3D();
             $binResponse = $Bin3D->getBinResponse($this->storeId, $pallet, $items, $itemsAlone, $hits, $this->cartInfo, false, true);
-            dd($binResponse);
+            // dd($this->palletPkgRequest, $binResponse);
+            dd('3d bin response', $binResponse);
+            $boxBins = $newOrigins = $newitemsArr = [];
+            $origins = $this->origins = [];
+
+            if (count($binResponse)) {
+                foreach ($itemsAlone as $key => $itemAlone) {
+                    foreach ($itemAlone as $alone) {
+                        if (count($items) && isset($items[$key])) {
+                            array_push($items[$key], $alone);
+                        } else {
+                            $items[$key][] = $alone;
+                        }
+                    }
+                }
+                // dd('items', $items);
+                $binResponse = $this->addPackagingID($binResponse, $boxBins);
+                // dd('bin resp with pkg id', $binResponse);
+                $counting = 0;
+                $counting = 0;
+
+                foreach ($binResponse as $locationId => $bins) {
+                    foreach ($bins->pallets_packed as $key => $binPacked) {
+                        $bin = $binPacked;
+                        // dd('bin', $bin);
+                        $counting++;
+                        // $origin = $bin->pallet_data->variant_id;
+                        // TODO:need to change origin info according to the request origins
+                        $origin = $bin->pallet_data->variant_id == 7 ? 2100 : 45467;
+                        // dd($origin, $this->itemsArr);
+
+                        $newkey = $origin . $key;
+                        $newOrigins[$newkey] = $origins[$origin] ?? [];
+                        $newitemsArr[$newkey] = $this->updatCommdityDetails($this->itemsArr[$origin], $bin, $boxBins, $this->itemsArr);
+                    }
+                }
+            } else {
+                $newOrigins = $this->origins;
+                $newitemsArr = $this->itemsArr;
+            }
+        } else {
+            $newOrigins = $this->origins;
+            $newitemsArr = $this->itemsArr;
         }
 
-        return $this->palletPkgRequest;
+        // dd('final response', $newOrigins, $newitemsArr);
+        // return $this->palletPkgRequest;
+        return $binResponse;
     }
 
     private function getParamsArr()
@@ -95,8 +139,8 @@ class PalletPackaging
         $items = $itemsAlone = [];
 
         foreach ($this->itemsArr as $key => $item) {
-            $isLtl = (isset($item['freightClass']) && $item['freightClass'] === 'ltl');
-            $ownPallet = (isset($item['own_pallet']) && $item['own_pallet'] == 1);
+            $isLtl = isset($item['freightClass']) && $item['freightClass'] === 'ltl';
+            $ownPallet = isset($item['own_pallet']) && $item['own_pallet'] == 1;
 
             if ($isLtl) {
                 $itemId = $item['id'];
@@ -123,8 +167,62 @@ class PalletPackaging
 
         return [
             'items' => $items,
-            'shipAloneItems' => $itemsAlone,
+            'itemsAlone' => $itemsAlone,
         ];
+    }
+
+    public function addPackagingID($binResponse, $boxBins)
+    {
+        foreach ($binResponse as $locationId => $bins) {
+            foreach ($bins->pallets_packed as $key => $bin) {
+                $items = $bin->items;
+                $item = $items[0];
+                $variant_id = $item->id;
+                $binResponse[$locationId]->pallets_packed[$key]->pallet_data->variant_id = $variant_id;
+                $boxId = $bin->pallet_data->id ?? 0;
+                $binResponse[$locationId]->pallets_packed[$key]->pallet_data->name = isset($boxBins[$boxId]['name']) ? strtoupper(str_replace(' ', '_', trim(explode('__', $boxBins[$boxId]['name'])[0]))) : '';
+            }
+        }
+
+        return $binResponse;
+    }
+
+    public function updatCommdityDetails($item, $bin, $boxBins, $itemsArr)
+    {
+        $boxWeight = 0;
+        $price = $item['lineItemPrice'] ?? 0;
+        $hazmat = 'N';
+
+        if (isset($bin->pallet_data->id) && isset($boxBins[$bin->pallet_data->id])) {
+            $boxWeight = $boxBins[$bin->pallet_data->id]['box_weight'];
+            $price = 0;
+            if (isset($bin->items)) {
+                foreach ($bin->items as $itemData) {
+                    if ($hazmat == 'N') {
+                        $hazmat = $itemsArr[$itemData->id]['isHazmatLineItem'];
+                    }
+                    $price += $itemsArr[$itemData->id]['lineItemPrice'] ?? 0;
+                }
+            }
+        }
+
+        $item['lineItemLength'] = $bin->pallet_data->d ?? 0;
+        $item['lineItemWidth'] = $bin->pallet_data->w ?? 0;
+        $item['lineItemHeight'] = $bin->pallet_data->h ?? 0;
+        $item['lineItemPrice'] = $price;
+        $item['lineItemWeight'] = $bin->pallet_data->weight + $boxWeight;
+        $item['isHazmatLineItem'] = $hazmat;
+
+        $item['shipItemAlone'] = 1;
+        if ((isset($item['own_pallet']) && $item['own_pallet'] == 0)) {
+            $item['piecesOfLineItem'] = 1;
+        }
+
+        if (isset($bin->pallet_data->type) && $bin->pallet_data->type == 'item' && isset($bin->pallet_data->id)) {
+            $item['variant_id'] = $bin->pallet_data->id ?? 0;
+        }
+
+        return $item;
     }
 
     public function sendCurlRequest($url, $postData)

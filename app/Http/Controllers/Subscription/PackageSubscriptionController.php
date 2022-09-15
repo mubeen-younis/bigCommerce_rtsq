@@ -367,6 +367,9 @@ class PackageSubscriptionController extends Controller
         } elseif ($addonType == self::$addonTypeRAD) {
             self::$dynamicTrial = 7;
             $responce = $this->consumeAddonHits($data, $addonType);
+        } elseif ($addonType == self::$addonTypePLT) {
+            self::$dynamicTrial = 15;
+            $responce = $this->consumeAddonHits($data, $addonType);
         } else {
             $responce = [
                 'error' => true,
