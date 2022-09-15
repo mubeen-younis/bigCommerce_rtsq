@@ -3271,7 +3271,7 @@ class CompileQuotes
         }
 
         $this->alwaysResi = $this->residential['alwaysResi']['abfLtl'] ?? false;
-        $shipments = $abfLtl->formateQuoteBeforeCompile($shipments, $connectionSettings['abf-ltl']['creds']);
+        $shipments = $abfLtl->formateQuoteBeforeCompile($shipments, $connectionSettings['abf-ltl']);
         $this->quoteSettings = $connectionSettings['abf-ltl']['quote_settings'] ?? [];
         $this->quoteSettingsData();
 
@@ -3291,6 +3291,8 @@ class CompileQuotes
         }
 
         $labelAs = $this->quoteSettings['label_as'] ?? '';
+        $hatShipments = [];
+
         foreach ($shipments as $origin => $quote) {
             if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
@@ -3326,6 +3328,11 @@ class CompileQuotes
 
                 $quotesArr[] = $quote['q'];
                 foreach ($quotesArr as $key => $data) {
+                    $isHATQuote = isset($data['holdAtTerminalResponse']['serviceType']) && strpos($data['holdAtTerminalResponse']['serviceType'], 'HAT+') !== false;
+                    if ($isHATQuote){
+                        $hatShipments[] = $data['holdAtTerminalResponse'];
+                    }
+
                     $srvcType = $data['serviceType'] ?? '';
                     if (isset($srvcType)) {
                         $access = $this->getAccessorialCode();
@@ -3393,13 +3400,29 @@ class CompileQuotes
 
         /* Multishipment quotes with LGD  */
         if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1)) {
-            $allQuotes = $this->forceChangeTitle($allQuotes);
-            $resp = [
-                'checkoutQuotes' => $allQuotes,
-                'multiShipmentQuotes' => $multiShipmentQuotes,
-            ];
+            
+            if (!empty($hatShipments)) {
+                $allQuotes = $this->forceChangeTitle($allQuotes);
+                $hatLabel = explode('|', $hatShipments[0]['serviceDesc']);
+                unset($hatLabel[0]);
+                $lableAs = 'Freight |' . implode('|', $hatLabel);
+                $resp = [
+                    'checkoutQuotes' => Functions::arrangeHATFreight($allQuotes, $hatShipments, $lableAs),
+                    'multiShipmentQuotes' => Functions::arrangeHATMulti($multiShipmentQuotes, $hatShipments),
+                ];
+            } else {
+                $allQuotes = $this->forceChangeTitle($allQuotes);
+                $resp = [
+                    'checkoutQuotes' => $allQuotes,
+                    'multiShipmentQuotes' => $multiShipmentQuotes,
+                ];
+            }
 
             return $resp;
+        }
+
+        if (!empty($hatShipments)) {
+            return  $abfLtl->arrangeHATFreight($allQuotes, $hatShipments);
         }
 
         $resp = $allQuotes;

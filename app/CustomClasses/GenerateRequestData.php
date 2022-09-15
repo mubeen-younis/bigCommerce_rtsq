@@ -1859,6 +1859,7 @@ class GenerateRequestData
             'senderConsignee' => 'ShipAff',
             'thresholdWeightLimit' => $weightThreshold,
             'accessorial' => $accessorial,
+            'holdAtTerminal' => $connSettings['quote_settings']['hold_at_terminal'] ? '1' : '0',
 
         ];
 
