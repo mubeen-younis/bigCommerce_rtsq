@@ -3254,6 +3254,12 @@ class CompileQuotes
 
     private function compileABFLtlQuotes($shipments, $connectionSettings, $allOrigins, $residential)
     {
+        $returnRates = $this->residential['returnRates']['abfLtl'] ?? false;
+
+        if($returnRates){
+            return [];
+        }
+
         $abfLtl = new abfLtlQuotesResults();
 
         if ($residential['abfLtl'] == 'Y') {

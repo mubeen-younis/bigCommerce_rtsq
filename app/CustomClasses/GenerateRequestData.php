@@ -60,7 +60,6 @@ class GenerateRequestData
         $this->returnRates = false;
         $this->quoteSettings = $quoteSettings;
         $this->connectionSettings = $connectionSettings;
-        $this->returnRates = false;
     }
 
     /**
@@ -526,6 +525,10 @@ class GenerateRequestData
 
     public function abfLtlEnitArr($connSettings, $destination)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
             'licenseKey' => '',
             'serverName' => "https://" . $this->storeData['store']['name'],
@@ -1839,6 +1842,7 @@ class GenerateRequestData
 
         $this->resiCarrier['abfLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['abfLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['abfLtl'] = $this->returnRates;
 
         $accessorial = [];
         if ($alwaysResi || $residential == 'Y') {
