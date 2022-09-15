@@ -4014,6 +4014,8 @@ class CompileQuotes
                 $isLiftGate = $key == 'liftgate' ? true : false;
                 $isInsideDelivery = $key == 'insideDelivery' ? true : false;
                 $isInsideLiftGateDelivery = $key == 'insideLiftGateDelivery' ? true : false;
+                $isLimitedAccess = $key == 'limitedaccess' ? true : false;
+                $isLimitedAccessLG = $key == 'limitedaccessLG' ? true : false;
                 foreach ($value as $key2 => $data) {
                     $rate += $data['rate'];
                     $code = $data['code'];
@@ -4021,7 +4023,7 @@ class CompileQuotes
                 $quotesArr[] = [
                     'code' => $code,
                     'rate' => $rate,
-                    'title' => $this->getTitle(Functions::$ltlMultiTitle, $isLiftGate, true, '', [], [], $isInsideDelivery, $isInsideLiftGateDelivery),
+                    'title' => $this->getTitle(Functions::$ltlMultiTitle, $isLiftGate, true, '', [], [], $isInsideDelivery, $isInsideLiftGateDelivery, $isLimitedAccess, $isLimitedAccessLG),
                 ];
             } else {
                 $quotesArr[] = reset($value);
@@ -4210,7 +4212,7 @@ class CompileQuotes
      *
      * @info: This function will compile name of a service and return service name according to the settings enabled.
      */
-    public function getTitle($serviceName, $lgOption = false, $from = false, $deliveryEstimate = '', $quoteSetting = [], $daysAndDate = [], $insideDel = false, $isInsideLiftGateDelivery = false, $laccess = false)
+    public function getTitle($serviceName, $lgOption = false, $from = false, $deliveryEstimate = '', $quoteSetting = [], $daysAndDate = [], $insideDel = false, $isInsideLiftGateDelivery = false, $laccess = false, $laccessLG = false)
     {
         // Here  Making service title
         if (!empty($quoteSetting)) {
@@ -4251,7 +4253,7 @@ class CompileQuotes
             $accessTitle = $accessTitle ? $accessTitle . ' & inside delivery' : $this->insideDel;
         }
 
-        if($laccess && $lgOption){
+        if($laccess && $lgOption || $laccessLG){
             if ($this->quoteSettings['alwaysLiftGateDelivery'] == '1') {
                 $accessTitle = $this->LADelLabel;
             } else {
