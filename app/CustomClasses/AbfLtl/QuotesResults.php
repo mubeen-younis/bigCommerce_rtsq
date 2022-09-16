@@ -94,7 +94,7 @@ class QuotesResults
 
             if (isset($quotes['holdAtTerminalResponse']) && !empty($quotes['holdAtTerminalResponse'])) {
                 $hatResp[] = $quotes['holdAtTerminalResponse'];
-                $srvcTitle = $connSettings['quote_settings']['label_as'] ?? '';
+                $srvcTitle = $connSettings['quote_settings']['label_as'] ?? $srvcDesc;
 
                 $hatCompiledQuotes = $this->formatHATQuotes($hatResp, $srvcTitle, $connSettings);
                 if (!empty($hatCompiledQuotes)) {

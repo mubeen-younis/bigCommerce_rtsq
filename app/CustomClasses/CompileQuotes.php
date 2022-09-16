@@ -4195,7 +4195,7 @@ class CompileQuotes
     {
         $lgCost = $lgOption ? 0 : $this->getLiftGateCost($data, $getCost, $isUpsLtl);
         $IDCost = $insideDel ? 0 : $this->getInsideDeliveryCost($data); 
-        $LADCost = $laccess ? 0 : $data['limitedAccessDeliveryFee'];
+        $LADCost = $laccess ? 0 : $data['limitedAccessDeliveryFee'] ?? 0;
         $basePrice = str_replace(',', '', $data['totalNetCharge']['Amount']);
         $basePrice = (float)$basePrice;
         $basePrice = $basePrice - $lgCost - $LADCost - $IDCost;
