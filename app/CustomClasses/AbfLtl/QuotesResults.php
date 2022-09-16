@@ -56,6 +56,7 @@ class QuotesResults
         if ($this->isSuppressedRatesShipment($shipments)) {
             return $shipments;
         }
+        $srvcDesc = $connSettings['quote_settings']['label_as'] ?? Functions::$simpleLTLTitle;
         foreach ($shipments as $shipment => $quotes) {
             if (!isset($quotes['q']) || isset($quotes['q']['NUMERRORS'] ) && $quotes['q']['NUMERRORS'] == 1) {
                 continue;
@@ -72,13 +73,13 @@ class QuotesResults
                 foreach ($items as $key => $value) {
                
                     if ($value['@attributes']['TYPE'] == 'CHARGE') {
-                        $lineItems[] = $value;
+                        $lineItems[$key] = $value;
                         $lineItems[$key]['hazardous'] = $value['Hazardous'] ?? '';
                     }
                 }
 
                 $formattedShipments[$shipment]['q'] = $this->formatShipments($quotesArr,
-                'Standard', 'ABF', $lineItems, $lgStatus, $radStatus, $quotesArr['CHARGE']);
+                'Standard', $srvcDesc, $lineItems, $lgStatus, $radStatus, $quotesArr['CHARGE']);
 
                 if (isset($lgStatus) && $lgStatus != 'n') {
 
