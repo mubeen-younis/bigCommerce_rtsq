@@ -404,18 +404,20 @@ class GenerateRequestData
 
     function rnlLtlEnitArr($connSettings, $destination, $enitOrigin, $lineItems)
     {
-        if (isset($connSettings['quote_settings']['returnRates']) && $connSettings['quote_settings']['returnRates'] && $this->isPoBOX) {
+        if (isset($connSettings['quote_settings']['return_rates']) && $connSettings['quote_settings']['return_rates'] && $this->isPoBOX) {
             return [];
         }
+        
         $shipmentPrice = $this->calculatePrice($lineItems);
         if (isset($connSettings['quote_settings']['free_shipping_on_orders']) && $connSettings['quote_settings']['free_shipping_on_orders'] < $shipmentPrice) {
             return [
                 'freeShipment' => true
             ];
         }
+
         return [
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '', //$this->connectionSettings['license_key'],
-            'serverName' => "https://" . $this->storeData['store']['name'], //"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
+            'licenseKey' => '', 
+            'serverName' => "https://" . $this->storeData['store']['name'], 
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
@@ -1440,7 +1442,7 @@ class GenerateRequestData
         } else {
             $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
         }
-
+        $insideDelivery = (isset($connSettings['quote_settings']['insideDelivery']) && $connSettings['quote_settings']['insideDelivery'] && $connSettings['quote_settings']['insideDelivery'] == true) ? 1 : 0;
 
         $this->resiCarrier['rnlLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['rnlLtl'] = $alwaysResi;
@@ -1454,7 +1456,7 @@ class GenerateRequestData
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
             'liftgateDelivery' => $liftGate,
             'residentialDelivery' => $alwaysResi ? 'Y' : $residential,
-            'insideDelAsAnOption' => $connSettings['quote_settings']['offer_inside_delivery'] ?? 0,
+            'insideDelAsAnOption' => $insideDelivery,
 
             'QuoteType' => 'Domestic', //'Domestic or International or AlaskaHawaii'
             'CODAmount' => '0',
