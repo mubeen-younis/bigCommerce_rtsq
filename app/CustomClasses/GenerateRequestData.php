@@ -632,7 +632,7 @@ class GenerateRequestData
         // Pallet packaging request
         $palletPkg = new PalletPackaging($itemsArr, $this->storeData, $cartInfo);
         if ($palletPkg->isAddonEnabled()) {
-            $resp = $palletPkg->formatPalletPkgReqArr();
+            $resp = $palletPkg->formatPalletPkgReqArr($carriers);
             // dd('bin response', $resp);
         }
 

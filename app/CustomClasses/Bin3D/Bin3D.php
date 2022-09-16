@@ -41,7 +41,7 @@ class Bin3D
         }
         if (count($items) && count($itemsAlone)) {
             if ($this->isPalletPkgReq) {
-                $binRequest['pallet'] = $this->generateBinRequest($bins, [], $items);
+                $binRequest['palletResp'] = $this->generateBinRequest($bins, [], $items);
             } else {
                 foreach ($items as $key => $item) {
                     $binRequest[$key] = $this->generateBinRequest($bins, $item);
@@ -71,7 +71,7 @@ class Bin3D
             }
         } else if (count($items)) {
             if ($this->isPalletPkgReq) {
-                $binRequest['pallet'] = $this->generateBinRequest($bins, [], $items);
+                $binRequest['palletResp'] = $this->generateBinRequest($bins, [], $items);
             } else {
                 foreach ($items as $key => $item) {
                     $binRequest[$key] = $this->generateBinRequest($bins, $item, $items);
@@ -159,8 +159,11 @@ class Bin3D
                      * Commented quantity because it was repeating product
                      * now it will be handled by index 'piecesOfLineItem'
                      */
-                    array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
-
+                    if ($this->isPalletPkgReq) {
+                        array_push($data[$key]->pallets_packed, $this->createItemOwnPackage($not_packed_item));
+                    } else {
+                        array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
+                    }
                 }
             }
         }
