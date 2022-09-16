@@ -94,10 +94,14 @@ class QuotesResults
                         $lgFee = number_format($value['Charges'] / 100, 2) ?? 0;
                         $isLG = true;
                     }
+
+                    if (isset($value['Description']) && $value['Description'] == 'LIMITED ACCESS DELIVERY' && isset($value['Code']) && $value['Code'] == 'LTDD') {
+                        $limitedAccessDeliveryFee = number_format($value['Charges'] / 100, 2) ?? 0;
+                    }
                 }
 
                 $formattedShipments[$shipment]['q'] = $this->formatShipments($quotesArr,
-                    $quotesArr['Delivery']['RequestedServiceType'], 'YRC', $lineItems, $lgStatus, $radStatus, $quotesArr['RatedCharges']['TotalCharges']);
+                    $quotesArr['Delivery']['RequestedServiceType'], 'YRC', $lineItems, $lgStatus, $radStatus, $quotesArr['RatedCharges']['TotalCharges'], $limitedAccessDeliveryFee ?? 0);
 
                 if (isset($lgStatus) && $lgStatus != 'n' && $isLG) {
                     $formattedShipments[$shipment]['q']['surcharges']['liftgateFee'] = $lgFee;
@@ -110,7 +114,7 @@ class QuotesResults
         return $formattedShipments;
     }
 
-    private function formatShipments($quotesArr, $srvcType, $srvcDesc, $lineItems, $lgStatus, $radStatus, $charges): array
+    private function formatShipments($quotesArr, $srvcType, $srvcDesc, $lineItems, $lgStatus, $radStatus, $charges, $limitedAccessDeliveryFee = 0): array
     {
         return array(
             'serviceType' => $srvcType ?? '',
@@ -121,6 +125,7 @@ class QuotesResults
             'deliveryDate' => $quotesArr['deliveryDate'] ?? '',
             'totalTransitTimeInDays' => $quotesArr['totalTransitTimeInDays'] ?? 0,
             'totalNetCharge' => array('Amount' => number_format($charges / 100, 2) ?? 0),
+            'limitedAccessDeliveryFee' => $limitedAccessDeliveryFee ?? 0,
         );
     }
 
