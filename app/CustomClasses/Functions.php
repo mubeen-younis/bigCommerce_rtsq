@@ -25,7 +25,8 @@ class Functions
     public static $freeShipping = 'Free Shipping';
     public static $resiPickupTitle = '+pu';
     public static $lgPickupTitle = '+lfgpu';
-
+    public static $limitedAccesDelLabel = ' w/ limited access delivery';
+    public static $limitedAccessLGDelLable = ' w/ lift gate & limited access delivery';
 
     public static function hasInsureCarrier($code)
     {

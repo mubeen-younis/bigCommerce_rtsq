@@ -459,6 +459,10 @@ class GenerateRequestData
 
     public function yrcLtlEnitArr($connSettings, $destination)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
             'serverName' => "https://" . $this->storeData['store']['name'],
@@ -1764,6 +1768,7 @@ class GenerateRequestData
 
         $residential = 'N';
         $alwaysResi = false;
+        $limitedAccess = false;
         /*
             * Check if rad hit not consumed and residential is enables
         * **/
@@ -1780,10 +1785,16 @@ class GenerateRequestData
             }
         } else {
             $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+            
+        }
+        
+        if($residential == 'N' && !$alwaysResi){
+            $limitedAccess = $connSettings['quote_settings']['offer_limited_access_delivery'] ?? false;
         }
 
         $this->resiCarrier['yrcLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['yrcLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['yrcLtl'] = $this->returnRates;
 
         $accessorial = [];
         if ($alwaysResi || $residential == 'Y') {
@@ -1791,6 +1802,9 @@ class GenerateRequestData
         }
         if ($liftGate == 'Y') {
             array_push($accessorial, 'LFTD');
+        }
+        if ($limitedAccess) {
+            array_push($accessorial, 'LTDD');
         }
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $apiArray = [
