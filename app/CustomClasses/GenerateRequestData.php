@@ -1876,10 +1876,10 @@ class GenerateRequestData
         $apiArray = [
 
             'id' => $connSettings['creds']['business_id'],
-            'senderConsignee' => $connSettings['creds']['request_freight_quotes'],
+            'senderConsignee' => $connSettings['creds']['request_freight_quotes'] ?? 'ShipAff',
             'thresholdWeightLimit' => $weightThreshold,
             'accessorial' => $accessorial,
-            'holdAtTerminal' => $connSettings['quote_settings']['hold_at_terminal'] ? '1' : '0',
+            'holdAtTerminal' => isset($connSettings['quote_settings']['hold_at_terminal']) && $connSettings['quote_settings']['hold_at_terminal'] ? '1' : '0',
 
         ];
 
