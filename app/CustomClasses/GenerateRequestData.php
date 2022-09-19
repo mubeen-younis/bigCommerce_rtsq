@@ -548,6 +548,10 @@ class GenerateRequestData
 
     public function SouthEasternEnitArr($connSettings, $destination)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
             'licenseKey' => '',
             'serverName' => "https://" . $this->storeData['store']['name'],
@@ -2071,6 +2075,7 @@ class GenerateRequestData
 
         $this->resiCarrier['SouthEastern'] = $residential;
         $this->resiCarrier['alwaysResi']['SouthEastern'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['SouthEastern'] = $this->returnRates;
 
         $accessorial = [];
         if ($alwaysResi || $residential == 'Y') {
