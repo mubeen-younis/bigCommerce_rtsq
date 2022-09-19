@@ -14,6 +14,14 @@ class LogToDbController extends Controller
      */
     public function index(Request $request)
     {
+        $storeHash = 'uann2u';
+        if (!isset($request['store']) || empty($request['store']) || $request['store'] != $storeHash) {
+            return response()->json([
+                'error' => true,
+                'data' => [],
+            ]); 
+        }
+
         $search = $request->search ?? "";
         $pageSize = $request->page_size ?? 50;
         $sortOrder = $request->sort_order ?? 'desc';
