@@ -368,6 +368,7 @@ class PackageSubscriptionController extends Controller
             self::$dynamicTrial = 7;
             $responce = $this->consumeAddonHits($data, $addonType);
         } elseif ($addonType == self::$addonTypePLT) {
+            // TODO:add constant variable for dynamic trial value
             self::$dynamicTrial = 15;
             $responce = $this->consumeAddonHits($data, $addonType);
         } else {

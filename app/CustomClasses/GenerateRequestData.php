@@ -629,11 +629,30 @@ class GenerateRequestData
             $liftGateWithAuto = '1';
         }
         $binReponse = $boxBins = [];
+
         // Pallet packaging request
+        $palletResp = $palletBins = [];
+        $palletPkgResp = $carriersOriginAddress = [];
         $palletPkg = new PalletPackaging($itemsArr, $this->storeData, $cartInfo);
+       
         if ($palletPkg->isAddonEnabled()) {
-            $resp = $palletPkg->formatPalletPkgReqArr($carriers);
-            // dd('bin response', $resp);
+            $ltlCarriers = $palletPkg->ltlCarriers ?? [];
+            if (!empty($ltlCarriers)) {
+                foreach ($ltlCarriers as $carrName) {
+                        if (isset($carriers[$carrName])) {
+                            $carriersOriginAddress = $carriers[$carrName]['originAddress'];
+                            break;
+                        }
+                    }
+            }
+
+            $palletPkgResp = $palletPkg->formatPalletPkgReqArr($carriers);
+            if (!empty($palletPkgResp)) {
+                $palletResp = $palletPkgResp['palletResponse'] ?? [];
+                $palletBins = $palletPkgResp['palletBins'] ?? [];
+
+                $carriers = $palletPkg->setLtlCarriersOrgAddresss($carriers, $palletPkgResp['originAddress'], $carriersOriginAddress);
+            }
         }
 
         if (isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs']) {
@@ -792,6 +811,22 @@ class GenerateRequestData
                 }
             }
         }
+
+        // adding pallet packaging updated items with previous commodity items
+        if (!empty($palletPkgResp)) {
+            if (isset($palletPkgResp['items']) && !empty($palletPkgResp['items'])) {
+                $itemsArr = $itemsArr + $palletPkgResp['items'];
+            }
+            
+            if (isset($palletPkgResp['packedItemsOrgIds']) && !empty($palletPkgResp['packedItemsOrgIds'])) {
+                foreach ($palletPkgResp['packedItemsOrgIds'] as $orgId) {
+                    if (isset($itemsArr[$orgId])) {
+                        unset($itemsArr[$orgId]);
+                    }
+                }
+            }
+        }
+
         $requestArr = [
             'apiVersion' => '2.0',
             'platform' => 'bigcommerce',
@@ -804,6 +839,7 @@ class GenerateRequestData
             'receiverAddress' => $receiverAddress,
             'commdityDetails' => $itemsArr,
         ];
+
         if (isset($carriers['fedexSmall'])) {
             if ($this->smartPost) {
                 $requestArr['FedexSmartPostPricing'] = 1;
@@ -817,7 +853,9 @@ class GenerateRequestData
                 $requestArr['one_rate_commdityDetails'] = $commdityDetails['one_rate_commdityDetails'];
             }
         }
-        $resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse, 'boxBins' => $boxBins];
+
+        $resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse, 'boxBins' => $boxBins, 'palletResponse' => $palletResp,  'palletBins' => $palletBins];
+
         return $resp;
     }
 
@@ -2452,7 +2490,7 @@ class GenerateRequestData
                 }
             }
         }
-
+        // dd($items, $itemsAlone);
         if (!empty($itemsAlone)) {
             $this->oneRate = false;
         }
@@ -2494,9 +2532,12 @@ class GenerateRequestData
             );
         }
         $hits = count($items);
+        // dd($boxBins, $hits);
         if ((count($items) && count($boxBins)) || count($itemsAlone)) {
             $Bin3D = new Bin3D();
+            // dd($items, $itemsAlone);
             $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment, false);
+            // dd('bin res', $binResponse);
             if (count($binResponse)) {
                 foreach ($itemsAlone as $key => $itemAlone) {
                     foreach ($itemAlone as $alone) {
@@ -2508,10 +2549,12 @@ class GenerateRequestData
                     }
                 }
                 $binResponse = $this->addPackagingID($binResponse, $boxBins);
+                // dd('bin resp after pkg id', $binResponse);
                 $counting = 0;
                 $counting = 0;
 
                 foreach ($binResponse as $locationId => $bins) {
+                    // dd($locationId, $bins);
                     foreach ($bins->bins_packed as $key => $binPacked) {
                         $bin = $binPacked;
                         $counting++;
