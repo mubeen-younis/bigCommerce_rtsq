@@ -3379,8 +3379,8 @@ class CompileQuotes
                     $hazShipmentArr[$origin] = 'N';
                 }
 
-                $quotesArr[] = $quote['q'];
-                foreach ($quotesArr as $key => $data) {
+
+                foreach ($quote as $key => $data) {
                     $isHATQuote = isset($data['holdAtTerminalResponse']['serviceType']) && strpos($data['holdAtTerminalResponse']['serviceType'], 'HAT+') !== false;
                     if ($isHATQuote){
                         $hatShipments[] = $data['holdAtTerminalResponse'];
