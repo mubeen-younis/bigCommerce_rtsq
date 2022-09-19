@@ -5,6 +5,7 @@ namespace App\CustomClasses\Bin3D;
 
 use App\Constants\Constant;
 use App\CustomClasses\Functions;
+use App\CustomClasses\PalletPackaging;
 use App\Http\Controllers\Subscription\PackageSubscriptionController;
 use App\Models\BinRequestLog;
 use App\Models\BoxSize;
@@ -175,12 +176,12 @@ class Bin3D
         foreach ($responseFromSBS as $key => $SBSResp) {
             $response = json_decode($SBSResp)->response;
             if (isset($response->bins_packed)) {
-                $response = $this->AddBoxNicknameAndFee($response, false);
+                $response = $this->AddBoxNicknameAndFee($response);
             }
 
             // Pallet packed items
             if (isset($response->pallets_packed)) {
-                $response = $this->AddBoxNicknameAndFee($response, true);
+                $response = $this->AddBoxNicknameAndFee($response);
             }
             $data[$key] = $response;
             $resp = json_decode($SBSResp);
@@ -208,9 +209,9 @@ class Bin3D
         return $data;
     }
 
-    public function AddBoxNicknameAndFee($packedResponse, $palletItems = false)
+    public function AddBoxNicknameAndFee($packedResponse)
     {
-        if (!$palletItems) {
+        if (!$this->isPalletPkgReq) {
             foreach ($packedResponse->bins_packed as $key => $packedBox) {
                 $boxDetail = BoxSize::getBoxNicknameAndFee($packedBox->bin_data->id);
                 $packedResponse->bins_packed[$key]->bin_data->boxname = $boxDetail->nickname ?? null;
@@ -218,14 +219,15 @@ class Bin3D
             }
         } else {
             foreach ($packedResponse->pallets_packed as $key => $packedBox) {
-                $boxDetail = BoxSize::getBoxNicknameAndFee($packedBox->pallet_data->id);
-                $packedResponse->pallets_packed[$key]->pallet_data->boxname = $boxDetail->nickname ?? null;
-                $packedResponse->pallets_packed[$key]->pallet_data->boxfee = $boxDetail->box_fee ?? 0;
+                if (isset($packedBox->pallet_data)) {
+                    $boxDetail = BoxSize::getBoxNicknameAndFee($packedBox->pallet_data->id);
+                    $packedResponse->pallets_packed[$key]->pallet_data->boxname = $boxDetail->nickname ?? null;
+                    $packedResponse->pallets_packed[$key]->pallet_data->boxfee = $boxDetail->box_fee ?? 0;
+                }
             }
         }
 
         return $packedResponse;
-
     }
 
     /*
@@ -297,14 +299,13 @@ class Bin3D
         /*
          * Check hash if available same request in last 24 hours then no need to send request to 3dbin
          * **/
-        // TODO: uncomment request hash check code block
-        // if (BinRequestLog::where('request_hash', '=', $requestHash)->where('created_at', '>', Carbon::now()->subDay(1))->exists()) {
-        //     $response = BinRequestLog::select('api_response')->where('request_hash', '=', $requestHash)->where('created_at', '>', Carbon::now()->subDay(1))->latest()->first();
-        //     $response = (array)json_decode($response['api_response']) ?? [];
-        //     if (!blank($response)) {
-        //         return $response;
-        //     }
-        // }
+        if (BinRequestLog::where('request_hash', '=', $requestHash)->where('created_at', '>', Carbon::now()->subDay(1))->exists()) {
+            $response = BinRequestLog::select('api_response')->where('request_hash', '=', $requestHash)->where('created_at', '>', Carbon::now()->subDay(1))->latest()->first();
+            $response = (array)json_decode($response['api_response']) ?? [];
+            if (!blank($response)) {
+                return $response;
+            }
+        }
         $binRequestLog = new BinRequestLog();
         $binRequestLog->store_id = $storeId;
         $binRequestLog->cart_id = $cartInfo['cartId'];
@@ -422,19 +423,37 @@ class Bin3D
         $boxFee = $itemPropertiesArr['boxFee'] ?? 0;
         $q = $itemPropertiesArr['q'] ?? 0;
         $itemPackage = new \stdClass();
-        $itemPackage->bin_data = new \stdClass();
-        $itemPackage->bin_data->w = $itemPropertiesArr['w'];
-        $itemPackage->bin_data->h = $itemPropertiesArr['h'];
-        $itemPackage->bin_data->d = $itemPropertiesArr['d'];
-        $itemPackage->bin_data->id = $itemPropertiesArr['id'];
-        $itemPackage->bin_data->type = isset($itemPropertiesArr['weight_based']) && $itemPropertiesArr['weight_based'] ? 'weight_based' : 'item';
-        $itemPackage->bin_data->boxFee = $boxFee * $q;
-        $itemPackage->bin_data->quantity = $q;
-        $itemPackage->bin_data->used_space = '100';
-        $itemPackage->bin_data->weight = $itemPropertiesArr['wg'];
-        $itemPackage->bin_data->used_weight = $itemPropertiesArr['wg'];
-        $itemPackage->bin_data->order_id = 'unknown';
-        $itemPackage->image_complete = 'http://us-east.api.3dbinpacking.com/images/cb0549790cbc9e08eeb636779afa3280/20181207/d4fad4107306d71b188c4b82ff167d16/1544164000-3488-1952286.png';
+
+        if ($this->isPalletPkgReq) {
+            $itemPackage->pallet_data = new \stdClass();
+            $itemPackage->pallet_data->w = $itemPropertiesArr['w'];
+            $itemPackage->pallet_data->h = $itemPropertiesArr['h'];
+            $itemPackage->pallet_data->d = $itemPropertiesArr['d'];
+            $itemPackage->pallet_data->id = $itemPropertiesArr['id'];
+            $itemPackage->pallet_data->type = isset($itemPropertiesArr['weight_based']) && $itemPropertiesArr['weight_based'] ? 'weight_based' : 'item';
+            $itemPackage->pallet_data->boxFee = $boxFee * $q;
+            $itemPackage->pallet_data->quantity = $q;
+            $itemPackage->pallet_data->used_space = '100';
+            $itemPackage->pallet_data->weight = $itemPropertiesArr['wg'];
+            $itemPackage->pallet_data->used_weight = $itemPropertiesArr['wg'];
+            $itemPackage->pallet_data->order_id = 'unknown';
+            $itemPackage->image_complete = 'http://images-us-east.api.3dbinpacking.com/d549b90ece00d180c5b69a51b6354842/20220917/e8d0ddbe6a1d16992864f3cb9b616a4a/1663411199-0625-3201600.png';
+        } else {
+            $itemPackage->bin_data = new \stdClass();
+            $itemPackage->bin_data->w = $itemPropertiesArr['w'];
+            $itemPackage->bin_data->h = $itemPropertiesArr['h'];
+            $itemPackage->bin_data->d = $itemPropertiesArr['d'];
+            $itemPackage->bin_data->id = $itemPropertiesArr['id'];
+            $itemPackage->bin_data->type = isset($itemPropertiesArr['weight_based']) && $itemPropertiesArr['weight_based'] ? 'weight_based' : 'item';
+            $itemPackage->bin_data->boxFee = $boxFee * $q;
+            $itemPackage->bin_data->quantity = $q;
+            $itemPackage->bin_data->used_space = '100';
+            $itemPackage->bin_data->weight = $itemPropertiesArr['wg'];
+            $itemPackage->bin_data->used_weight = $itemPropertiesArr['wg'];
+            $itemPackage->bin_data->order_id = 'unknown';
+            $itemPackage->image_complete = 'http://us-east.api.3dbinpacking.com/images/cb0549790cbc9e08eeb636779afa3280/20181207/d4fad4107306d71b188c4b82ff167d16/1544164000-3488-1952286.png';
+        }
+       
         $itemPackage->images_generation_time = '0.00279';
         $itemPackage->packing_time = '0.00537';
         $itemPackage->items = array();
@@ -445,8 +464,14 @@ class Bin3D
         $itemPackage->items[0]->d = $itemPropertiesArr['d'];
         $itemPackage->items[0]->wg = $itemPropertiesArr['wg'];
         $itemPackage->items[0]->type = 'box';
-        $itemPackage->items[0]->image_separated = 'http://us-east.api.3dbinpacking.com/images/cb0549790cbc9e08eeb636779afa3280/20181207/d4fad4107306d71b188c4b82ff167d16/1544164000-3472-1245616.png';
-        $itemPackage->items[0]->image_sbs = 'http://us-east.api.3dbinpacking.com/images/cb0549790cbc9e08eeb636779afa3280/20181207/d4fad4107306d71b188c4b82ff167d16/1544164000-3481-4328454.png';
+
+        if ($this->isPalletPkgReq) {
+            $itemPackage->items[0]->image_separated = 'http://images-us-east.api.3dbinpacking.com/d549b90ece00d180c5b69a51b6354842/20220917/e8d0ddbe6a1d16992864f3cb9b616a4a/1663411199-0619-6317565.png';
+            $itemPackage->items[0]->image_sbs = 'http://images-us-east.api.3dbinpacking.com/d549b90ece00d180c5b69a51b6354842/20220917/e8d0ddbe6a1d16992864f3cb9b616a4a/1663411199-0623-5211652.png"';
+        } else {
+            $itemPackage->items[0]->image_separated = 'http://us-east.api.3dbinpacking.com/images/cb0549790cbc9e08eeb636779afa3280/20181207/d4fad4107306d71b188c4b82ff167d16/1544164000-3472-1245616.png';
+            $itemPackage->items[0]->image_sbs = 'http://us-east.api.3dbinpacking.com/images/cb0549790cbc9e08eeb636779afa3280/20181207/d4fad4107306d71b188c4b82ff167d16/1544164000-3481-4328454.png';
+        }
         $itemPackage->items[0]->coordinates = new \stdClass();
         $itemPackage->items[0]->coordinates->x1 = '0';
         $itemPackage->items[0]->coordinates->y1 = '0';
