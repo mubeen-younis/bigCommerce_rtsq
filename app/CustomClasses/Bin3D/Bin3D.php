@@ -92,8 +92,14 @@ class Bin3D
     public function multiShipmentOneShipHasBoth($responseFromSBS, $responseFromSBSAlone)
     {
         $responseFromSBS = json_decode($responseFromSBS)->response;
-        foreach ($responseFromSBSAlone->bins_packed as $packed) {
-            array_push($responseFromSBS->bins_packed, $packed);
+        if ($this->isPalletPkgReq) {
+            foreach ($responseFromSBSAlone->pallets_packed as $packed) {
+                array_push($responseFromSBS->pallets_packed, $packed);
+            }
+        } else {
+            foreach ($responseFromSBSAlone->bins_packed as $packed) {
+                array_push($responseFromSBS->bins_packed, $packed);
+            }
         }
         return [
             'response' => $responseFromSBS
@@ -136,12 +142,22 @@ class Bin3D
                     $not_packed_items[count($not_packed_items)] = $item;
                 }
             }
+            
+            if ($this->isPalletPkgReq && count($items)) {
+                foreach ($items as $key => $item) {
+                    $not_packed_items[count($not_packed_items)] = $item;
+                }
+            }
+
             if (count($not_packed_items)) {
                 foreach ($not_packed_items as $not_packed_item) {
                     $not_packed_item = (array)$not_packed_item;
 
-                    array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
-
+                    if ($this->isPalletPkgReq) {
+                        array_push($data['palletResp']->pallets_packed, $this->createItemOwnPackage($not_packed_item));
+                    } else {
+                        array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
+                    }
                 }
             }
         }

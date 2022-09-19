@@ -157,7 +157,7 @@ class PalletPackaging
             $pltRes = $this->getPallet($items);
             $pallet = $pltRes['pallet'] ?? [];
             // formatting packaging items
-            $resp = $this->formatPalletReqItems($orgId);
+            $resp = $this->formatPalletReqItems($orgId, $ship['originId']);
             $reqItems = $resp['items'] ?? [];
             // checking items marked as own pallet
             $itemsAlone = [];
@@ -182,6 +182,7 @@ class PalletPackaging
                     }
                 } catch (\Throwable$th) {
                     Log::info('No repsonse from 3D Bin ' . $th->getMessage());
+                    dd($th);
                 }
             }
         }
@@ -216,7 +217,9 @@ class PalletPackaging
                         "boxFee" => $itemsArr[$key]['boxFee'] ?? 0,
                     ];
 
-                    $this->palletPkgRequest['shipments'][$key]['itemsAlone'][] = $itemsArr[$key];
+                    // $this->palletPkgRequest['shipments'][$key]['itemsAlone'][] = $itemsArr[$key];
+                    $this->palletPkgRequest['shipments'][$origin['locationId']]['itemsAlone'][$key] = $itemsArr[$key];
+                    $this->palletPkgRequest['shipments'][$origin['locationId']]['originId'] = $key;
                 } else {
                     $items[$origin['locationId']][] = [
                         "variant_id" => $key,
@@ -229,7 +232,9 @@ class PalletPackaging
                         "vr" => $itemsArr[$key]['vertical_rotation'] ?? 0,
                     ];
 
-                    $this->palletPkgRequest['shipments'][$key]['items'][] = $itemsArr[$key];
+                    // $this->palletPkgRequest['shipments'][$key]['items'][] = $itemsArr[$key];
+                    $this->palletPkgRequest['shipments'][$origin['locationId']]['items'][$key] = $itemsArr[$key];
+                    $this->palletPkgRequest['shipments'][$origin['locationId']]['originId'] = $key;
                 }
             }
         }
@@ -245,13 +250,12 @@ class PalletPackaging
      *
      * @param orgItemskey This is the key of the item in the array.
      */
-    private function formatPalletReqItems($orgItemskey = null)
+    private function formatPalletReqItems($orgItemskey = null, $variant_id = '')
     {
         $shipments = $this->palletPkgRequest['shipments'] ?? [];
         $pkgItems = $shipments[$orgItemskey]['items'] ?? [];
         $aloneItems = $shipments[$orgItemskey]['itemsAlone'] ?? [];
         $shipItems = array_merge($pkgItems, $aloneItems);
-
         $items = $itemsAlone = [];
 
         if (empty($shipItems)) {
@@ -262,15 +266,15 @@ class PalletPackaging
         }
 
         if (count($shipItems)) {
-            foreach ($shipItems as $item) {
+            foreach ($shipItems as $key => $item) {
                 $isLtl = isset($item['freightClass']) && $item['freightClass'] === 'ltl';
                 $ownPallet = isset($item['own_pallet']) && $item['own_pallet'] == 1;
 
                 if ($isLtl) {
                     if ($ownPallet) {
                         $itemsAlone[$item['id']] = [
-                            "variant_id" => $orgItemskey,
-                            "id" => $orgItemskey,
+                            "variant_id" => $item['variant_id'],
+                            "id" => $item['variant_id'],
                             "wg" => $item['lineItemWeight'] ?? 0,
                             "h" => Helpers::floatValue($item['lineItemHeight'] ?? 0),
                             "d" => Helpers::floatValue($item['lineItemLength'] ?? 0),
@@ -281,8 +285,8 @@ class PalletPackaging
                         ];
                     } else {
                         $items[$item['id']] = [
-                            "variant_id" => $orgItemskey,
-                            "id" => $orgItemskey,
+                            "variant_id" => $item['variant_id'],
+                            "id" => $item['variant_id'],
                             "wg" => $item['lineItemWeight'] ?? 0,
                             "h" => $item['lineItemHeight'] ?? 0,
                             "d" => $item['lineItemLength'] ?? 0,
