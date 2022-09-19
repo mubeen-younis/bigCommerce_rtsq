@@ -463,7 +463,7 @@ class GenerateRequestData
         }
 
         return [
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'licenseKey' => '',
             'serverName' => "https://" . $this->storeData['store']['name'],
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
@@ -1872,10 +1872,10 @@ class GenerateRequestData
         $apiArray = [
 
             'id' => $connSettings['creds']['business_id'],
-            'senderConsignee' => $connSettings['creds']['request_freight_quotes'],
+            'senderConsignee' => $connSettings['creds']['request_freight_quotes'] ?? 'ShipAff',
             'thresholdWeightLimit' => $weightThreshold,
             'accessorial' => $accessorial,
-            'holdAtTerminal' => $connSettings['quote_settings']['hold_at_terminal'] ? '1' : '0',
+            'holdAtTerminal' => isset($connSettings['quote_settings']['hold_at_terminal']) && $connSettings['quote_settings']['hold_at_terminal'] ? '1' : '0',
 
         ];
 
