@@ -40,6 +40,7 @@ class Bin3D
                 return [];
             }
         }
+
         if (count($items) && count($itemsAlone)) {
             if ($this->isPalletPkgReq) {
                 $binRequest['palletResp'] = $this->generateBinRequest($bins, [], $items);
@@ -149,11 +150,12 @@ class Bin3D
 
     public function appendNotPackedItemsOnlyAlone($responseFromSBS)
     {
+        $data = [];
         foreach ($responseFromSBS as $key => $SBSResp) {
             $data[$key] = json_decode($SBSResp)->response;
             $resp = json_decode($SBSResp);
             $not_packed_items = $resp->response->not_packed_items;
-            if (count($not_packed_items)) {
+            if (count((array)$not_packed_items)) {
                 foreach ($not_packed_items as $not_packed_item) {
                     $not_packed_item = (array)$not_packed_item;
                     /*
@@ -506,12 +508,20 @@ class Bin3D
             $notPacked['response_time'] = 0;
             $notPacked['id'] = rand();
             $notPacked['total_cost'] = 0;
-            $notPacked['bins_packed'] = [];
+            if ($this->isPalletPkgReq) {
+                $notPacked['pallets_packed'] = [];
+            } else {
+                $notPacked['bins_packed'] = [];
+            }
             $notPacked['status'] = 1;
             $notPacked['errors'] = [];
             $notPacked['boxFee'] = $items['boxFee'] ?? 0;
             $data['response'] = $notPacked;
-            $object[$Shipkey] = json_encode($data);
+            if ($this->isPalletPkgReq) {
+                $object['palletResp'] = json_encode($data);
+            } else {
+                $object[$Shipkey] = json_encode($data);
+            }
 
         }
         return json_decode(json_encode($object));
@@ -521,7 +531,13 @@ class Bin3D
     {
         $not_packed_items = [];
         foreach ($item as $key => $it) {
-            $not_packed_items[$key] = json_decode(json_encode($it));
+            if ($this->isPalletPkgReq) {
+                if ($key == 'variant_id') {
+                    $not_packed_items[$it] = json_decode(json_encode($item));
+                }
+            } else {
+                $not_packed_items[$key] = json_decode(json_encode($it));
+            }
         }
         return $not_packed_items;
     }

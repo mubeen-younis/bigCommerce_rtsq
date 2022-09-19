@@ -152,9 +152,6 @@ class PalletPackaging
 
         foreach ($shipments as $orgId => $ship) {
             $items = $ship['items'] ?? [];
-            if (empty($items)) {
-                continue;
-            }
 
             // selecting specific pallet for packaging
             $pltRes = $this->getPallet($items);
@@ -162,17 +159,29 @@ class PalletPackaging
             // formatting packaging items
             $resp = $this->formatPalletReqItems($orgId);
             $reqItems = $resp['items'] ?? [];
-            $itemsAlone = $pltRes['itemsAlone'] ?? $resp['itemsAlone'] ?? [];
+            // checking items marked as own pallet
+            $itemsAlone = [];
+            if (isset($pltRes['itemsAlone']) && !empty(
+                $pltRes['itemsAlone'])) {
+                $itemsAlone = $pltRes['itemsAlone'];
+            } elseif ((isset($resp['itemsAlone']) && !empty($resp['itemsAlone']))) {
+                $itemsAlone = $resp['itemsAlone'];
+            }
+
             $this->palletPkgRequest['itemsAlone'] = $itemsAlone;
             $hits = count($reqItems);
 
             if ((count($reqItems) && !empty($pallet)) || count($itemsAlone)) {
                 // setting up 3D Bin request for packaging
-                $Bin3D = new Bin3D();
-                $pltPckgResp = $Bin3D->getBinResponse($this->storeId, $pallet, $reqItems, $itemsAlone, $hits, $this->cartInfo, false, true);
+                try {
+                    $Bin3D = new Bin3D();
+                    $pltPckgResp = $Bin3D->getBinResponse($this->storeId, $pallet, $reqItems, $itemsAlone, $hits, $this->cartInfo, false, true);
 
-                if (!empty($pltPckgResp) && isset($pltPckgResp['palletResp']) && !empty($pltPckgResp['palletResp'])) {
-                    $palletResponse[$orgId] = $pltPckgResp['palletResp'];
+                    if (!empty($pltPckgResp) && isset($pltPckgResp['palletResp']) && !empty($pltPckgResp['palletResp'])) {
+                        $palletResponse[$orgId] = $pltPckgResp['palletResp'];
+                    }
+                } catch (\Throwable$th) {
+                    Log::info('No repsonse from 3D Bin ' . $th->getMessage());
                 }
             }
         }
@@ -206,6 +215,8 @@ class PalletPackaging
                         "vr" => $itemsArr[$key]['vertical_rotation'] ?? 0,
                         "boxFee" => $itemsArr[$key]['boxFee'] ?? 0,
                     ];
+
+                    $this->palletPkgRequest['shipments'][$key]['itemsAlone'][] = $itemsArr[$key];
                 } else {
                     $items[$origin['locationId']][] = [
                         "variant_id" => $key,
@@ -236,9 +247,12 @@ class PalletPackaging
      */
     private function formatPalletReqItems($orgItemskey = null)
     {
-        $items = $itemsAlone = [];
         $shipments = $this->palletPkgRequest['shipments'] ?? [];
-        $shipItems = $shipments[$orgItemskey]['items'] ?? [];
+        $pkgItems = $shipments[$orgItemskey]['items'] ?? [];
+        $aloneItems = $shipments[$orgItemskey]['itemsAlone'] ?? [];
+        $shipItems = array_merge($pkgItems, $aloneItems);
+
+        $items = $itemsAlone = [];
 
         if (empty($shipItems)) {
             return [
@@ -334,7 +348,7 @@ class PalletPackaging
             }
         }
 
-        if ($foundPalletKey) {
+        if ($foundPalletKey != -1) {
             $pallet = [
                 "w" => Helpers::floatValue($pallets[$foundPalletKey]['width']),
                 "d" => Helpers::floatValue($pallets[$foundPalletKey]['length']),
