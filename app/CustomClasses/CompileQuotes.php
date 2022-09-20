@@ -3191,6 +3191,12 @@ class CompileQuotes
 
     private function compileSaiaLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
+        $returnRates = $this->residential['returnRates']['saiaLtl'] ?? false;
+
+        if($returnRates){
+            return [];
+        }
+        
         $saiaLtl = new saiaLtlQuotesResults();
 
         $this->isResi = $residential['saiaLtl'] == 'Y';
