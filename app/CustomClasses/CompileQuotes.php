@@ -1447,6 +1447,12 @@ class CompileQuotes
 
     public function compileEstesltlQuotes($shipments, $connectionSettings, $allOrigins)
     {
+        $returnRates = $this->residential['returnRates']['estesLtl'] ?? false;
+
+        if($returnRates){
+            return [];
+        }
+        
         $this->isResi = $this->residential['estesLtl'] == 'Y';
         $this->residentialDlvry = $this->residential['estesLtl'] == 'Y' ? 1 : 0;
         $this->alwaysResi = $this->residential['alwaysResi']['estesLtl'] ?? false;

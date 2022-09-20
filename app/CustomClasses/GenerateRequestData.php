@@ -441,6 +441,10 @@ class GenerateRequestData
 
     public function estesltlEnitArr($connSettings, $destination)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
             'serverName' => "https://" . $this->storeData['store']['name'],
@@ -1051,6 +1055,7 @@ class GenerateRequestData
 
         $this->resiCarrier['estesLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['estesLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['estesLtl'] = $this->returnRates;
 
         $accessorial = [];
         if ($alwaysResi || $residential == 'Y') {
