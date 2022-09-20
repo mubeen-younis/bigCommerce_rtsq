@@ -1057,6 +1057,8 @@ class GenerateRequestData
         $this->resiCarrier['alwaysResi']['estesLtl'] = $alwaysResi;
         $this->resiCarrier['returnRates']['estesLtl'] = $this->returnRates;
 
+        $holdAtTerminal = (isset($connSettings['quote_settings']['hold_at_terminal']) && $connSettings['quote_settings']['hold_at_terminal'] && $connSettings['quote_settings']['hold_at_terminal'] == true) ? '1' : '0';
+
         $accessorial = [];
         if ($alwaysResi || $residential == 'Y') {
             array_push($accessorial, 'HD');
@@ -1091,6 +1093,7 @@ class GenerateRequestData
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
             'accessorial' => $accessorial,
+            'holdAtTerminal' => $holdAtTerminal,
         ];
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
