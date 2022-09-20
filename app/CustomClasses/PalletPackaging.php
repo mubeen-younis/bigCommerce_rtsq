@@ -17,15 +17,14 @@ class PalletPackaging
     public $ltlCarriers;
     private $origins;
 
-    public function __construct($itemArr = [], $storeData, $cartInfo)
+    public function __construct($itemArr = [], $storeData = [], $cartInfo = [])
     {
         $this->palletPkgRequest = [];
         $this->pallet = [];
         $this->itemsArr = $itemArr;
         $this->storeData = $storeData ?? [];
-        $this->storeId = $storeData['store']['id'];
+        $this->storeId = $storeData['store']['id'] ?? null;
         $this->cartInfo = $cartInfo;
-        $this->palletPkgRequest = [];
         $this->ltlCarriers = $this->getLtlCarriers();
         $this->origins = [];
     }
@@ -69,6 +68,21 @@ class PalletPackaging
         return $isLtlCarr;
     }
 
+    private function isMultiShipment($carriers = [])
+    {
+        $locationIds = [];
+        foreach ($carriers as $carrierName => $carrier) {
+            foreach ($carrier['originAddress'] as $key => $origin) {
+                if (!in_array($origin['locationId'], $locationIds)) {
+                    $locationIds[] = (int) $origin['locationId'];
+                }
+            }
+        }
+
+        $isMulti = count($locationIds) > 1;
+        return $isMulti;
+    }
+
     /**
      * It takes an array of carriers, a new origin address, and a previous origin address, and returns an array of carriers
      * with the new origin address
@@ -92,102 +106,83 @@ class PalletPackaging
         return $carrsOrgAddresses;
     }
 
-    /**
-     * It takes an array of carriers, checks if any of them are LTL carriers, formats the pallet items, sets and gets the
-     * pallet packaging response, formats the pallet bins, adds the packaging ID, gets the updated commodity details, and
-     * finally gets the final response
-     *
-     * @param carriers array of carriers
-     */
-    public function formatPalletPkgReqArr($carriers = [])
+    public function setAndGetPackagingResp($carriers = [])
     {
-        // check if request contains any ltl carrier
         if (!$this->isLtlCarrierExists($carriers)) {
             Log::info('No Ltl carrier found in the request. Req Carriers: ', $carriers);
             return [];
         }
 
-        // format packaging items for each shipments
-        $this->formatPalletItems();
-        // set pallet 3D Bin requests and compiles pallets response
-        $palletResponse = $this->setAndGetPalletPkgResp();
-        Log::info('Pallet packaging reponse: ', $palletResponse);
-        $resp = [];
+        // format packaging and own packaging items
+        $itemsResp = $this->formatPalletItems();
+        $items = $itemsResp['items'] ?? [];
+        $itemsAlone = $itemsResp['itemsAlone'] ?? [];
 
-        // handling pallet packaging response
-        if (count($palletResponse)) {
-            // format pallet bins
-            $palletBins = $this->formatPalletBins();
-            Log::info('Formatted pallets: ', $palletBins);
+        // select specific pallet for packaging
+        $palletResp = $this->getPallet();
+        Log::info('Pallet Resp: ', $palletResp);
 
-            // adding varaint id and pallet name to packed items
-            $palletResponse = $this->addPackagingID($palletResponse, $palletBins);
-            Log::info('Pallet response after adding packaging id: ', $palletResponse);
+        $pallet = $palletResp['pallet'] ?? [];
+        // if no pallet, then all cart items are packed as their own pallet
+        if (empty($pallet) && count($palletResp['itemsAlone'])) {
+            // set all cart items as their own pallet
+            foreach ($this->itemsArr as $key => $value) {
+                $this->itemsArr[$key]['own_pallet'] = 1;
+            }
+            // format cart items again
+            $itemsResp = $this->formatPalletItems();
+            $items = $itemsResp['items'] ?? [];
+            $itemsAlone = $itemsResp['itemsAlone'] ?? [];
+        }
+        // addon hits consumption
+        $hits = count($items);
+        $palletResponse = $resp = [];
 
-            // updating commodity details of packed items for WS request
-            $commodityResp = $this->getUpdatedCommodityDetails($palletResponse, $palletBins);
-            Log::info('Updated commodity details: ', $commodityResp);
+        if ((count($items) && count($pallet)) || count($itemsAlone)) {
+            try {
+                // check for multishipment request
+                $isMultiShipment = $this->isMultiShipment($carriers);
 
-            // Final reponse
-            $resp = $this->getFinalResponse($commodityResp, $palletResponse, $palletBins);
-            Log::info('Final formatted respones:  ', $resp);
+                // setting up 3D Bin request for packaging
+                $Bin3D = new Bin3D();
+                $palletResponse = $Bin3D->getBinResponse($this->storeId, $pallet, $items, $itemsAlone, $hits, $this->cartInfo, $isMultiShipment, true);
 
-            return $resp;
+                if (count($palletResponse)) {
+                    foreach ($itemsAlone as $key => $itemAlone) {
+                        foreach ($itemAlone as $alone) {
+                            if (count($items) && isset($items[$key])) {
+                                array_push($items[$key], $alone);
+                            } else {
+                                $items[$key][] = $alone;
+                            }
+                        }
+                    }
+
+                    // format pallet bins
+                    $palletBins = $this->formatPalletBins();
+                    Log::info('Formatted pallets: ', $palletBins);
+
+                    // adding varaint id and pallet name to packed items
+                    $palletResponse = $this->addPackagingID($palletResponse, $palletBins);
+                    Log::info('Pallet response after adding packaging id: ', $palletResponse);
+
+                    // updating commodity details of packed items for WS request
+                    $commodityResp = $this->getUpdatedCommodityDetails($palletResponse, $palletBins);
+                    Log::info('Updated commodity details: ', $commodityResp);
+
+                    // Final reponse
+                    $resp = $this->getFinalResponse($commodityResp, $palletResponse, $palletBins);
+                    Log::info('Final formatted respones:  ', $resp);
+                }
+            } catch (\Throwable$th) {
+                Log::info('No repsonse from 3D Bin ' . $th->getMessage());
+                // TODO: remove dd from catch block
+                dd($th);
+                $resp = [];
+            }
         }
 
         return $resp;
-    }
-
-    /**
-     * It takes an array of items, and returns an array of items that are packaged together.
-     */
-    private function setAndGetPalletPkgResp()
-    {
-        $shipments = $this->palletPkgRequest['shipments'] ?? [];
-        $palletResponse = [];
-
-        if (empty($shipments)) {
-            return $palletResponse;
-        }
-
-        foreach ($shipments as $orgId => $ship) {
-            $items = $ship['items'] ?? [];
-
-            // selecting specific pallet for packaging
-            $pltRes = $this->getPallet($items);
-            $pallet = $pltRes['pallet'] ?? [];
-            // formatting packaging items
-            $resp = $this->formatPalletReqItems($orgId, $ship['originId']);
-            $reqItems = $resp['items'] ?? [];
-            // checking items marked as own pallet
-            $itemsAlone = [];
-            if (isset($pltRes['itemsAlone']) && !empty(
-                $pltRes['itemsAlone'])) {
-                $itemsAlone = $pltRes['itemsAlone'];
-            } elseif ((isset($resp['itemsAlone']) && !empty($resp['itemsAlone']))) {
-                $itemsAlone = $resp['itemsAlone'];
-            }
-
-            $this->palletPkgRequest['itemsAlone'] = $itemsAlone;
-            $hits = count($reqItems);
-
-            if ((count($reqItems) && !empty($pallet)) || count($itemsAlone)) {
-                // setting up 3D Bin request for packaging
-                try {
-                    $Bin3D = new Bin3D();
-                    $pltPckgResp = $Bin3D->getBinResponse($this->storeId, $pallet, $reqItems, $itemsAlone, $hits, $this->cartInfo, false, true);
-
-                    if (!empty($pltPckgResp) && isset($pltPckgResp['palletResp']) && !empty($pltPckgResp['palletResp'])) {
-                        $palletResponse[$orgId] = $pltPckgResp['palletResp'];
-                    }
-                } catch (\Throwable$th) {
-                    Log::info('No repsonse from 3D Bin ' . $th->getMessage());
-                    dd($th);
-                }
-            }
-        }
-
-        return $palletResponse;
     }
 
     /**
@@ -201,6 +196,7 @@ class PalletPackaging
 
         foreach ($origins as $key => $origin) {
             $isLtl = isset($itemsArr[$key]['freightClass']) && $itemsArr[$key]['freightClass'] === 'ltl';
+            // TODO:check small product also for threshold value
             $ownPallet = isset($itemsArr[$key]['own_pallet']) && $itemsArr[$key]['own_pallet'] == 1;
 
             if ($isLtl) {
@@ -216,10 +212,6 @@ class PalletPackaging
                         "vr" => $itemsArr[$key]['vertical_rotation'] ?? 0,
                         "boxFee" => $itemsArr[$key]['boxFee'] ?? 0,
                     ];
-
-                    // $this->palletPkgRequest['shipments'][$key]['itemsAlone'][] = $itemsArr[$key];
-                    $this->palletPkgRequest['shipments'][$origin['locationId']]['itemsAlone'][$key] = $itemsArr[$key];
-                    $this->palletPkgRequest['shipments'][$origin['locationId']]['originId'] = $key;
                 } else {
                     $items[$origin['locationId']][] = [
                         "variant_id" => $key,
@@ -231,70 +223,6 @@ class PalletPackaging
                         "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
                         "vr" => $itemsArr[$key]['vertical_rotation'] ?? 0,
                     ];
-
-                    // $this->palletPkgRequest['shipments'][$key]['items'][] = $itemsArr[$key];
-                    $this->palletPkgRequest['shipments'][$origin['locationId']]['items'][$key] = $itemsArr[$key];
-                    $this->palletPkgRequest['shipments'][$origin['locationId']]['originId'] = $key;
-                }
-            }
-        }
-
-        return [
-            'items' => $items,
-            'itemsAlone' => $itemsAlone,
-        ];
-    }
-
-    /**
-     * It takes an array of items, and returns an array of items
-     *
-     * @param orgItemskey This is the key of the item in the array.
-     */
-    private function formatPalletReqItems($orgItemskey = null, $variant_id = '')
-    {
-        $shipments = $this->palletPkgRequest['shipments'] ?? [];
-        $pkgItems = $shipments[$orgItemskey]['items'] ?? [];
-        $aloneItems = $shipments[$orgItemskey]['itemsAlone'] ?? [];
-        $shipItems = array_merge($pkgItems, $aloneItems);
-        $items = $itemsAlone = [];
-
-        if (empty($shipItems)) {
-            return [
-                'items' => $items,
-                'itemsAlone' => $itemsAlone,
-            ];
-        }
-
-        if (count($shipItems)) {
-            foreach ($shipItems as $key => $item) {
-                $isLtl = isset($item['freightClass']) && $item['freightClass'] === 'ltl';
-                $ownPallet = isset($item['own_pallet']) && $item['own_pallet'] == 1;
-
-                if ($isLtl) {
-                    if ($ownPallet) {
-                        $itemsAlone[$item['id']] = [
-                            "variant_id" => $item['variant_id'],
-                            "id" => $item['variant_id'],
-                            "wg" => $item['lineItemWeight'] ?? 0,
-                            "h" => Helpers::floatValue($item['lineItemHeight'] ?? 0),
-                            "d" => Helpers::floatValue($item['lineItemLength'] ?? 0),
-                            "w" => Helpers::floatValue($item['lineItemWidth'] ?? 0),
-                            "q" => $item['piecesOfLineItem'] ?? 0,
-                            "vr" => $item['vertical_rotation'] ?? 0, //vertical 0 or 1
-                            "boxFee" => $item['boxFee'] ?? 0,
-                        ];
-                    } else {
-                        $items[$item['id']] = [
-                            "variant_id" => $item['variant_id'],
-                            "id" => $item['variant_id'],
-                            "wg" => $item['lineItemWeight'] ?? 0,
-                            "h" => $item['lineItemHeight'] ?? 0,
-                            "d" => $item['lineItemLength'] ?? 0,
-                            "w" => $item['lineItemWidth'] ?? 0,
-                            "q" => $item['piecesOfLineItem'] ?? 0,
-                            "vr" => $item['vertical_rotation'] ?? 0,
-                        ];
-                    }
                 }
             }
         }
@@ -310,61 +238,75 @@ class PalletPackaging
      *
      * @param items array of items to be packed
      */
-    private function getPallet($items = [])
+    private function getPallet()
     {
         $pallets = $this->getPalletsFromDB();
-        $pallet = [];
         $foundPalletKey = -1;
         $longestDimension = $previousLongestDimension = 0;
+        $items = $this->itemsArr;
+        // as we will check against length, width and height
+        $i = count($items) * 3;
 
-        // First find the cart item with longest dimension size
-        // vertical rotation = 0, then longest dimension from len and wid
-        // vertical rotation = 1, then longest dimension from len and wid and height
-        foreach ($items as $key => $lineItem) {
-            if (!empty($lineItem['own_pallet'])) {
-                continue;
+        while ($foundPalletKey == -1 && $i > 0) {
+            // First find the cart item with longest dimension size
+            // vertical rotation = 0, then longest dimension from len and wid
+            // vertical rotation = 1, then longest dimension from len and wid and height
+            foreach ($items as $key => $lineItem) {
+                if (isset($lineItem['own_pallet']) && $lineItem['own_pallet'] == 1) {
+                    continue;
+                }
+
+                if ($previousLongestDimension == 0) {
+                    $longestDimension = ($lineItem['lineItemWidth'] > $longestDimension) ? $lineItem['lineItemWidth'] : $longestDimension;
+                    $longestDimension = ($lineItem['lineItemLength'] > $longestDimension) ? $lineItem['lineItemLength'] : $longestDimension;
+
+                    if (!empty($lineItem['pallet_vertical_rotation']) && $lineItem['pallet_vertical_rotation'] == 1) {
+                        $longestDimension = ($lineItem['lineItemHeight'] > $longestDimension) ? $lineItem['lineItemHeight'] : $longestDimension;
+                    }
+                } else {
+                    $longestDimension = ($previousLongestDimension > $lineItem['lineItemWidth'] && $lineItem['lineItemWidth'] > $longestDimension) ? $lineItem['lineItemWidth'] : $longestDimension;
+                    $longestDimension = ($previousLongestDimension > $lineItem['lineItemLength'] && $lineItem['lineItemLength'] > $longestDimension) ? $lineItem['lineItemLength'] : $longestDimension;
+
+                    if (!empty($lineItem['pallet_vertical_rotation']) && $lineItem['pallet_vertical_rotation'] == 1) {
+                        $longestDimension = ($previousLongestDimension > $lineItem['lineItemHeight'] && $lineItem['lineItemHeight'] > $longestDimension) ? $lineItem['lineItemHeight'] : $longestDimension;
+                    }
+                }
             }
 
-            if ($previousLongestDimension == 0) {
-                $longestDimension = ($lineItem['lineItemWidth'] > $longestDimension) ? $lineItem['lineItemWidth'] : $longestDimension;
-                $longestDimension = ($lineItem['lineItemLength'] > $longestDimension) ? $lineItem['lineItemLength'] : $longestDimension;
-
-                if (!empty($lineItem['pallet_vertical_rotation']) && $lineItem['pallet_vertical_rotation'] == 1) {
-                    $longestDimension = ($lineItem['lineItemHeight'] > $longestDimension) ? $lineItem['lineItemHeight'] : $longestDimension;
-                }
-            } else {
-                $longestDimension = ($previousLongestDimension > $lineItem['lineItemWidth'] && $lineItem['lineItemWidth'] > $longestDimension) ? $lineItem['lineItemWidth'] : $longestDimension;
-                $longestDimension = ($previousLongestDimension > $lineItem['lineItemLength'] && $lineItem['lineItemLength'] > $longestDimension) ? $lineItem['lineItemLength'] : $longestDimension;
-
-                if (!empty($lineItem['pallet_vertical_rotation']) && $lineItem['pallet_vertical_rotation'] == 1) {
-                    $longestDimension = ($previousLongestDimension > $lineItem['lineItemHeight'] && $lineItem['lineItemHeight'] > $longestDimension) ? $lineItem['lineItemHeight'] : $longestDimension;
+            // From all user defined pallets, finds the one that can accumodate longest dimension product
+            // If no pallet selected, then all items will be marked as ship as own pallet
+            $squareInches = 0;
+            foreach ($pallets as $key => $pallet) {
+                if ($longestDimension != 0 && ($longestDimension <= $pallet['width'] || $longestDimension <= $pallet['length']) && ($squareInches == 0 || $squareInches > ($pallet['width'] * $pallet['length']))) {
+                    $foundPalletKey = $key;
+                    $squareInches = $pallet['width'] * $pallet['length'];
                 }
             }
+
+            $previousLongestDimension = $longestDimension;
+            $longestDimension = 0;
+            $i--;
         }
 
-        // From all user defined pallets, finds the one that can accumodate longest dimension product
-        // If no pallet selected, then all items will be marked as ship as own pallet
-        $squareInches = 0;
-        foreach ($pallets as $key => $pallet) {
-            if ($longestDimension != 0 && ($longestDimension <= $pallet['width'] || $longestDimension <= $pallet['length']) && ($squareInches == 0 || $squareInches > ($pallet['width'] * $pallet['length']))) {
-                $foundPalletKey = $key;
-                $squareInches = $pallet['width'] * $pallet['length'];
-            }
-        }
-
+        $pallet = [];
         if ($foundPalletKey != -1) {
-            $pallet = [
-                "w" => Helpers::floatValue($pallets[$foundPalletKey]['width']),
-                "d" => Helpers::floatValue($pallets[$foundPalletKey]['length']),
-                "h" => Helpers::floatValue($pallets[$foundPalletKey]['height']),
-                "id" => Helpers::floatValue($pallets[$foundPalletKey]['id']),
-                "max_wg" => Helpers::floatValue($pallets[$foundPalletKey]['max_weight']),
-            ];
+            $pallet = $this->getSelectedPallet($pallets[$foundPalletKey]);
         }
 
         return [
             'pallet' => $pallet,
             'itemsAlone' => $foundPalletKey == -1 ? $items : [],
+        ];
+    }
+
+    private function getSelectedPallet($pallet = [])
+    {
+        return [
+            "w" => Helpers::floatValue($pallet['width']),
+            "d" => Helpers::floatValue($pallet['length']),
+            "h" => Helpers::floatValue($pallet['height']),
+            "id" => Helpers::floatValue($pallet['id']),
+            "max_wg" => Helpers::floatValue($pallet['max_weight']),
         ];
     }
 
@@ -404,7 +346,6 @@ class PalletPackaging
     {
         $newOrigins = $newitemsArr = [];
         $packedItemsOrgIds = [];
-        $counting = 0;
 
         foreach ($palletResponse as $pallets) {
             foreach ($pallets->pallets_packed as $key => $palletPacked) {
@@ -413,7 +354,6 @@ class PalletPackaging
                     continue;
                 }
 
-                $counting++;
                 $origin = $pallet->pallet_data->variant_id;
                 if (!in_array($origin, $packedItemsOrgIds)) {
                     array_push($packedItemsOrgIds, $origin);
@@ -421,7 +361,7 @@ class PalletPackaging
 
                 $newkey = $origin . $key;
                 $newOrigins[$newkey] = $this->origins[$origin];
-                $newitemsArr[$newkey] = $this->updatCommdityDetails($this->itemsArr[$origin], $pallet, $palletBins, $this->itemsArr);
+                $newitemsArr[$newkey] = $this->updateCommdityDetails($this->itemsArr[$origin], $pallet, $palletBins, $this->itemsArr);
             }
         }
 
@@ -442,14 +382,14 @@ class PalletPackaging
      *
      * @return the  array.
      */
-    public function updatCommdityDetails($item = [], $pallet, $palletBins = [], $itemsArr = [])
+    public function updateCommdityDetails($item = [], $pallet, $palletBins = [], $itemsArr = [])
     {
-        $boxWeight = 0;
+        $palletWeight = 0;
         $price = $item['lineItemPrice'] ?? 0;
         $hazmat = 'N';
 
         if (isset($pallet->pallet_data->id) && isset($palletBins[$pallet->pallet_data->id])) {
-            $boxWeight = $palletBins[$pallet->pallet_data->id]['box_weight'];
+            $palletWeight = $palletBins[$pallet->pallet_data->id]['box_weight'];
             $price = 0;
             if (isset($pallet->items)) {
                 foreach ($pallet->items as $itemData) {
@@ -465,10 +405,10 @@ class PalletPackaging
         $item['lineItemWidth'] = $pallet->pallet_data->w ?? 0;
         $item['lineItemHeight'] = $pallet->pallet_data->h ?? 0;
         $item['lineItemPrice'] = $price;
-        $item['lineItemWeight'] = $pallet->pallet_data->weight + $boxWeight;
+        $item['lineItemWeight'] = $pallet->pallet_data->weight + $palletWeight;
         $item['isHazmatLineItem'] = $hazmat;
 
-        $item['shipPalletAlone'] = 1;
+        $item['lineItemShipAsPallet'] = 1;
         if ((isset($item['own_pallet']) && $item['own_pallet'] == 0)) {
             $item['piecesOfLineItem'] = 1;
         }
@@ -541,4 +481,5 @@ class PalletPackaging
 
         return $palletBins;
     }
+
 }

@@ -646,7 +646,7 @@ class GenerateRequestData
                     }
             }
 
-            $palletPkgResp = $palletPkg->formatPalletPkgReqArr($carriers);
+            $palletPkgResp = $palletPkg->setAndGetPackagingResp($carriers);
             if (!empty($palletPkgResp)) {
                 $palletResp = $palletPkgResp['palletResponse'] ?? [];
                 $palletBins = $palletPkgResp['palletBins'] ?? [];
@@ -2490,7 +2490,7 @@ class GenerateRequestData
                 }
             }
         }
-        // dd($items, $itemsAlone);
+
         if (!empty($itemsAlone)) {
             $this->oneRate = false;
         }
@@ -2532,12 +2532,10 @@ class GenerateRequestData
             );
         }
         $hits = count($items);
-        // dd($boxBins, $hits);
         if ((count($items) && count($boxBins)) || count($itemsAlone)) {
             $Bin3D = new Bin3D();
-            // dd($items, $itemsAlone);
             $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment, false);
-            // dd('bin res', $binResponse);
+           
             if (count($binResponse)) {
                 foreach ($itemsAlone as $key => $itemAlone) {
                     foreach ($itemAlone as $alone) {
@@ -2549,17 +2547,14 @@ class GenerateRequestData
                     }
                 }
                 $binResponse = $this->addPackagingID($binResponse, $boxBins);
-                // dd('bin resp after pkg id', $binResponse);
                 $counting = 0;
                 $counting = 0;
 
                 foreach ($binResponse as $locationId => $bins) {
-                    // dd($locationId, $bins);
                     foreach ($bins->bins_packed as $key => $binPacked) {
                         $bin = $binPacked;
                         $counting++;
                         $origin = $bin->bin_data->variant_id;
-                        // dd(12,$binResponse,$itemsArr[$origin]);
 
                         $newkey = $origin . $key;
                         $newOrigins[$newkey] = $origins[$origin];

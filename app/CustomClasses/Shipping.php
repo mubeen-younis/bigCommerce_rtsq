@@ -161,7 +161,6 @@ class Shipping
 
         // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
-        dd($requestArr);
         if (empty($requestArr)) {
             return false;
         }
@@ -169,6 +168,7 @@ class Shipping
         $url = Constant::QUOTES_URL;
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
+        // dd('quotes', $quotes);
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
         /*
       * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
@@ -191,6 +191,11 @@ class Shipping
         }
         if (isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])) {
             $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes, false);
+        }
+
+        $palletBins = $requestArr['palletBins'] ?? [];
+        if (isset($requestArr['palletResponse']) && !empty($requestArr['palletResponse'])) {
+            (new PalletPackaging())->addPalletResponseToQuotes($requestArr['palletResponse'], $quotes);
         }
 
         $freeRNL = false;
