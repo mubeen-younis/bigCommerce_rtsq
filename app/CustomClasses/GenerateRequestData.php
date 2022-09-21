@@ -522,6 +522,10 @@ class GenerateRequestData
 
     private function saiaLtlEnitArr($connSettings, $destination)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
             'licenseKey' => '',
             'serverName' => "https://" . $this->storeData['store']['name'],
@@ -2024,6 +2028,7 @@ class GenerateRequestData
 
         $this->resiCarrier['saiaLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['saiaLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['saiaLtl'] = $this->returnRates;
 
         $accessorial = [];
         if ($alwaysResi || $residential != 'N') {
