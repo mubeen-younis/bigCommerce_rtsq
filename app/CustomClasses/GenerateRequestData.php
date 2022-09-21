@@ -263,6 +263,10 @@ class GenerateRequestData
 
     public function odflLtlEnitArr($connSettings, $destination)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
 
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
@@ -1121,6 +1125,7 @@ class GenerateRequestData
 
         $this->resiCarrier['odflLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['odflLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['odflLtl'] = $this->returnRates;
 
         $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
 
