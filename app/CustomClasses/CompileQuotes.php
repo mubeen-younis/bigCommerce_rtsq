@@ -1068,6 +1068,12 @@ class CompileQuotes
 // For ODFL LTL Quotes
     public function compileOdflLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
+        $returnRates = $this->residential['returnRates']['odflLtl'] ?? false;
+
+        if($returnRates){
+            return [];
+        }
+        
         $this->isResi = $this->residential['odflLtl'] == 'Y';
         $this->residentialDlvry = $this->residential['odflLtl'] == 'Y' ? 1 : 0;
         $this->alwaysResi = $this->residential['alwaysResi']['odflLtl'] ?? false;
@@ -3193,6 +3199,12 @@ class CompileQuotes
 
     private function compileSaiaLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
+        $returnRates = $this->residential['returnRates']['saiaLtl'] ?? false;
+
+        if($returnRates){
+            return [];
+        }
+        
         $saiaLtl = new saiaLtlQuotesResults();
 
         $this->isResi = $residential['saiaLtl'] == 'Y';
@@ -3486,6 +3498,12 @@ class CompileQuotes
 
     private function compileSouthEasternQuotes($shipments, $connectionSettings, $allOrigins, $residential)
     {
+        $returnRates = $this->residential['returnRates']['SouthEastern'] ?? false;
+
+        if($returnRates){
+            return [];
+        }
+        
         $SouthEastern = new SouthEasternQuotesResults();
 
         if ($residential['SouthEastern'] == 'Y') {

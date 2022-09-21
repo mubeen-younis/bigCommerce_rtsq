@@ -263,6 +263,10 @@ class GenerateRequestData
 
     public function odflLtlEnitArr($connSettings, $destination)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
 
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
@@ -518,6 +522,10 @@ class GenerateRequestData
 
     private function saiaLtlEnitArr($connSettings, $destination)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
             'licenseKey' => '',
             'serverName' => "https://" . $this->storeData['store']['name'],
@@ -548,6 +556,10 @@ class GenerateRequestData
 
     public function SouthEasternEnitArr($connSettings, $destination)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
             'licenseKey' => '',
             'serverName' => "https://" . $this->storeData['store']['name'],
@@ -1117,6 +1129,7 @@ class GenerateRequestData
 
         $this->resiCarrier['odflLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['odflLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['odflLtl'] = $this->returnRates;
 
         $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
 
@@ -2015,6 +2028,7 @@ class GenerateRequestData
 
         $this->resiCarrier['saiaLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['saiaLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['saiaLtl'] = $this->returnRates;
 
         $accessorial = [];
         if ($alwaysResi || $residential != 'N') {
@@ -2071,6 +2085,7 @@ class GenerateRequestData
 
         $this->resiCarrier['SouthEastern'] = $residential;
         $this->resiCarrier['alwaysResi']['SouthEastern'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['SouthEastern'] = $this->returnRates;
 
         $accessorial = [];
         if ($alwaysResi || $residential == 'Y') {
