@@ -255,6 +255,7 @@ class Functions
             ];
      
             $mulishipment['hat'][$shipmentId] = $newQuote;
+            $count++;
         }
      
         return $mulishipment;
