@@ -195,11 +195,13 @@ class PalletPackaging
         $origins = $this->origins ?? [];
 
         foreach ($origins as $key => $origin) {
-            $isLtl = isset($itemsArr[$key]['freightClass']) && $itemsArr[$key]['freightClass'] === 'ltl';
+            $isLtl = (isset($itemsArr[$key]['freightClass']) && $itemsArr[$key]['freightClass'] === 'ltl');
+            $isSmallLtl = !$isLtl && ($itemsArr[$key]['lineItemWeight'] * $itemsArr[$key]['lineItemWeight'] >= Functions::$defaultThresholdLimit);
+
             // TODO:check small product also for threshold value
             $ownPallet = isset($itemsArr[$key]['own_pallet']) && $itemsArr[$key]['own_pallet'] == 1;
 
-            if ($isLtl) {
+            if ($isLtl || $isSmallLtl) {
                 if ($ownPallet) {
                     $itemsAlone[$origin['locationId']][] = [
                         "variant_id" => $key,
@@ -346,7 +348,6 @@ class PalletPackaging
     {
         $newOrigins = $newitemsArr = [];
         $packedItemsOrgIds = [];
-
         foreach ($palletResponse as $pallets) {
             foreach ($pallets->pallets_packed as $key => $palletPacked) {
                 $pallet = $palletPacked;
@@ -359,7 +360,7 @@ class PalletPackaging
                     array_push($packedItemsOrgIds, $origin);
                 }
 
-                $newkey = $origin . $key;
+                $newkey = str_shuffle($origin . $key . rand(10, 100));
                 $newOrigins[$newkey] = $this->origins[$origin];
                 $newitemsArr[$newkey] = $this->updateCommdityDetails($this->itemsArr[$origin], $pallet, $palletBins, $this->itemsArr);
             }
@@ -412,6 +413,7 @@ class PalletPackaging
         if ((isset($item['own_pallet']) && $item['own_pallet'] == 0)) {
             $item['piecesOfLineItem'] = 1;
         }
+        $item['freightClass'] = 'ltl';
 
         if (isset($pallet->pallet_data->type) && $pallet->pallet_data->type == 'item' && isset($pallet->pallet_data->id)) {
             $item['variant_id'] = $pallet->pallet_data->id ?? 0;

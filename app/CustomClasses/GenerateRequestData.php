@@ -855,7 +855,7 @@ class GenerateRequestData
         }
 
         $resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse, 'boxBins' => $boxBins, 'palletResponse' => $palletResp,  'palletBins' => $palletBins];
-
+        dd($resp);
         return $resp;
     }
 
