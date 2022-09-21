@@ -482,4 +482,66 @@ class PalletPackaging
         return $palletBins;
     }
 
+    public function addPalletResponseToQuotes($palletResponse = [], $quotes = [])
+    {
+        $boxFee = [];
+
+        foreach ($quotes as $carrName => $quote) {
+            $carriers = $this->ltlCarriers ?? [];
+            if (in_array($carrName, $carriers)) {
+                foreach ($palletResponse as $locId => $pallet) {
+                    $quotes[$carrName][$locId]['palletPackagingData']['response'] = $pallet;
+                    $boxFee[$locId] = $this->getCumulativePalletFee($pallet);
+                }
+            }
+        }
+
+        if (!empty($boxFee)) {
+            $quotes = $this->addPalletFeeToQuotes($quotes, $boxFee);
+        }
+
+        return $quotes;
+    }
+
+    private function getCumulativePalletFee($pallets): float
+    {
+        $boxFee = 0;
+        if (!empty($pallets->pallets_packed)) {
+            foreach ($pallets->pallets_packed as $pack) {
+                if (isset($pack->pallet_data->type) && $pack->pallet_data->type === 'item') {
+                    $boxFee += $pack->pallet_data->boxFee ?? 0;
+                } else {
+                    $boxFee += optional($pack)->pallet_data->boxfee ?? 0;
+                }
+            }
+        }
+
+        return $boxFee;
+    }
+
+    private function addPalletFeeToQuotes($quotes = [], $boxFee = 0)
+    {
+        $carriers = $this->ltlCarriers ?? [];
+
+        if (isset($quotes) && !empty($quotes)) {
+            foreach ($quotes as $carName => $quot) {
+                if (in_array($carName, $carriers)) {
+                    foreach ($quot as $locId => $q) {
+                        if (isset($q['q'])) {
+                            foreach ($q['q'] as $key => $qs) {
+                                if (isset($qs['totalNetCharge']['Amount'])) {
+                                    if (isset($boxFee[$locId])) {
+                                        $quotes[$carName][$locId]['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $boxFee[$locId];
+                                        $quotes[$carName][$locId]['q'][$key]['boxFees']['Amount'] = $boxFee[$locId];
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return $quotes;
+    }
 }
