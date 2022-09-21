@@ -490,6 +490,10 @@ class GenerateRequestData
 
     public function freightQuoteLtlEnitArr($connSettings, $destination)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
             'licenseKey' => '',
             'serverName' => "https://" . $this->storeData['store']['name'],
@@ -1509,6 +1513,7 @@ class GenerateRequestData
 
         $this->resiCarrier['freightQuoteLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['freightQuoteLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['freightQuoteLtl'] = $this->returnRates;
 
         $accessorial = [];
         if ($liftGate == 'Y') {

@@ -3053,6 +3053,12 @@ class CompileQuotes
 
     private function compileFreightQuoteLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
+        $returnRates = $this->residential['returnRates']['freightQuoteLtl'] ?? false;
+
+        if($returnRates){
+            return [];
+        }
+        
         $this->isFQ = true;
 
         if ($this->residential['freightQuoteLtl'] == 'Y') {
