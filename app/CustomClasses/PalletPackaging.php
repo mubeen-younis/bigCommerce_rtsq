@@ -302,11 +302,11 @@ class PalletPackaging
     private function getSelectedPallet($pallet = [])
     {
         return [
-            "w" => Helpers::floatValue($pallet['width']),
-            "d" => Helpers::floatValue($pallet['length']),
-            "h" => Helpers::floatValue($pallet['height']),
-            "id" => Helpers::floatValue($pallet['id']),
-            "max_wg" => Helpers::floatValue($pallet['max_weight']),
+            "w" => $pallet['width'],
+            "d" => $pallet['length'],
+            "h" => $pallet['height'],
+            "id" => $pallet['id'],
+            "max_wg" => $pallet['max_weight'],
         ];
     }
 
@@ -484,20 +484,20 @@ class PalletPackaging
 
     public function addPalletResponseToQuotes($palletResponse = [], $quotes = [])
     {
-        $boxFee = [];
+        $palletFee = [];
 
         foreach ($quotes as $carrName => $quote) {
             $carriers = $this->ltlCarriers ?? [];
             if (in_array($carrName, $carriers)) {
                 foreach ($palletResponse as $locId => $pallet) {
                     $quotes[$carrName][$locId]['palletPackagingData']['response'] = $pallet;
-                    $boxFee[$locId] = $this->getCumulativePalletFee($pallet);
+                    $palletFee[$locId] = $this->getCumulativePalletFee($pallet);
                 }
             }
         }
 
-        if (!empty($boxFee)) {
-            $quotes = $this->addPalletFeeToQuotes($quotes, $boxFee);
+        if (!empty($palletFee)) {
+            $quotes = $this->addPalletFeeToQuotes($quotes, $palletFee);
         }
 
         return $quotes;
@@ -505,34 +505,44 @@ class PalletPackaging
 
     private function getCumulativePalletFee($pallets): float
     {
-        $boxFee = 0;
+        $palletFee = 0;
         if (!empty($pallets->pallets_packed)) {
             foreach ($pallets->pallets_packed as $pack) {
                 if (isset($pack->pallet_data->type) && $pack->pallet_data->type === 'item') {
-                    $boxFee += $pack->pallet_data->boxFee ?? 0;
+                    $palletFee += $pack->pallet_data->boxFee ?? 0;
                 } else {
-                    $boxFee += optional($pack)->pallet_data->boxfee ?? 0;
+                    $palletFee += optional($pack)->pallet_data->boxfee ?? 0;
                 }
             }
         }
 
-        return $boxFee;
+        return $palletFee;
     }
 
-    private function addPalletFeeToQuotes($quotes = [], $boxFee = 0)
+    private function addPalletFeeToQuotes($quotes = [], $palletFee = 0)
     {
         $carriers = $this->ltlCarriers ?? [];
-
         if (isset($quotes) && !empty($quotes)) {
             foreach ($quotes as $carName => $quot) {
                 if (in_array($carName, $carriers)) {
                     foreach ($quot as $locId => $q) {
                         if (isset($q['q'])) {
                             foreach ($q['q'] as $key => $qs) {
+                                if ($carName == 'cerasis') {
+                                    $charges =
+                                    $quot[$locId]['quotesWithLiftGate'][$key]['ShipmentRate'] ?? $qs['ShipmentRate'];
+                                } else {
+                                    $charges = $this->getCarrChargesIndex($carName, $qs);
+                                }
+
+                                if ($charges != '') {
+                                    $qs['totalNetCharge']['Amount'] = $charges;
+                                }
+
                                 if (isset($qs['totalNetCharge']['Amount'])) {
-                                    if (isset($boxFee[$locId])) {
-                                        $quotes[$carName][$locId]['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $boxFee[$locId];
-                                        $quotes[$carName][$locId]['q'][$key]['boxFees']['Amount'] = $boxFee[$locId];
+                                    if (isset($palletFee[$locId])) {
+                                        $quotes[$carName][$locId]['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $palletFee[$locId];
+                                        $quotes[$carName][$locId]['q'][$key]['palletFees']['Amount'] = $palletFee[$locId];
                                     }
                                 }
                             }
@@ -541,7 +551,22 @@ class PalletPackaging
                 }
             }
         }
-
+        dd($quotes);
         return $quotes;
+    }
+
+    private function getCarrChargesIndex($carrName = '', $quote = [])
+    {
+        $charges = '';
+        // TODO:handle remaining carriers charges
+        $carriers = ['globalTranz' => $quote['LtlAmount'], 'xpoLogistics' => '', 'rnl' => '', 'freightQuote' => $quote['totalNetCharge'], 'yrc' => '', 'dayross' => '', 'saia' => $quote['totalNetCharge'], 'estes' => $quote['ratpricing']['rattotalPrice'], 'southeastern' => '', 'odfl4me' => $quote['rateEstimate']['netFreightCharge'], 'echoLogistics' => $quote['TotalCharge'], 'abf' => '', 'daylight' => $quote['totalNetCharge'], 'chr' => $quote['totalNetCharge'], 'tql' => $quote['customerRate']];
+
+        foreach ($carriers as $key => $value) {
+            if ($key == $carrName) {
+                $charges = $value;
+            }
+        }
+
+        return $charges;
     }
 }
