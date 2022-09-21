@@ -117,7 +117,7 @@ class QuotesResults
 
         $compiledQuotes = [];
         foreach ($hatQuotes as $quote) {
-            $compiledQuotes['serviceType'] = 'estesltl+HAT+' . $quote['ratquoteNumber'];
+            $compiledQuotes['serviceType'] = 'estesltl+HAT+';
             $title = $srvcTitle ?? '';
             $address['streetLine'] = $terminalInfo['address']['tranline1'] ?? '';
             $address['city'] = $terminalInfo['address']['trancity'] ?? '';
