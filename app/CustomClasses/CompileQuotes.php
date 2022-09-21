@@ -3484,6 +3484,12 @@ class CompileQuotes
 
     private function compileSouthEasternQuotes($shipments, $connectionSettings, $allOrigins, $residential)
     {
+        $returnRates = $this->residential['returnRates']['SouthEastern'] ?? false;
+
+        if($returnRates){
+            return [];
+        }
+        
         $SouthEastern = new SouthEasternQuotesResults();
 
         if ($residential['SouthEastern'] == 'Y') {
