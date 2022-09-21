@@ -1967,9 +1967,11 @@ class CompileQuotes
         
         if (isset($this->quoteSettings['fedex_freight_economy']) && $this->quoteSettings['fedex_freight_economy']) {
             array_push($allConfigServices, 'FEDEX_FREIGHT_ECONOMY');
+            array_push($allConfigServices, 'fedexltl+HAT+EC');
         }
         if (isset($this->quoteSettings['fedex_freight_priority']) && $this->quoteSettings['fedex_freight_priority']) {
             array_push($allConfigServices, 'FEDEX_FREIGHT_PRIORITY');
+            array_push($allConfigServices, 'fedexltl+HAT+PR');
         }
         
         $this->quoteSettingsData();
@@ -2019,7 +2021,7 @@ class CompileQuotes
 
                 foreach ($quote['q'] as $key => $data) {
                     $isHatSrvc = isset($data['serviceType']) && strpos($data['serviceType'], 'HAT+') !== false;
-                    if (isset($data['serviceType']) && isset($data['serviceDesc']) && in_array($data['serviceType'] || $isHatSrvc, $allConfigServices)) {
+                    if (isset($data['serviceType']) && isset($data['serviceDesc']) && in_array($data['serviceType'] , $allConfigServices)) {
                         if ($isHatSrvc) {
                             $hatShipments[] = $data;
                             continue;
