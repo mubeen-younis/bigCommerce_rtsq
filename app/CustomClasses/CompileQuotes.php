@@ -3051,6 +3051,39 @@ class CompileQuotes
         return $resp;
     }
 
+    public function truckLoadQuotes($quote, $allConfigServices, $quoteSettings = []){
+        if(isset($quote['Truckload'])){
+            
+            foreach($quote['Truckload'] as $key => $data){
+                if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices)) {
+                    $access = $this->getAccessorialCode();
+                    $charges = array(
+                        'totalNetCharge' => array(
+                            'Amount' => $data['totalNetCharge'],
+                        ),
+                        'surcharges' => $data['surcharges'],
+                    );
+                    $price = $this->calculatePrice($charges);
+                    /*
+                     * Adding Functionality of Delivery Estimate Options
+                     * */
+                    $date = $data['deliveryTimestamp'] ?? null;
+                    $days = $data['totalTransitTimeInDays'] ?? null;
+                    $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
+
+                    $title = $this->getTruckLoadTitle($data['serviceDesc'], $quoteSettings, $data['totalTransitTimeInDays'], $dateAndDays, $data['serviceType']);
+                    $arraySorting['simple'][$key] = $price;
+                    $originQuotes[$key]['Truckload']['code'] = 'fqltl' . $data['serviceType'] . $access;
+                    $originQuotes[$key]['Truckload']['rate'] = $price;
+                    $originQuotes[$key]['Truckload']['title'] = $title;
+                }
+            }
+        }
+        $TLoriginQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes = false);
+        return $TLoriginQuotes;
+
+    }
+
     private function compileFreightQuoteLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
         $returnRates = $this->residential['returnRates']['freightQuoteLtl'] ?? false;
@@ -3109,7 +3142,7 @@ class CompileQuotes
 
             $originQuotes = [];
             $arraySorting = [];
-
+            $TLquotes = $this->truckLoadQuotes($quote, $allConfigServices, $this->quoteSettings);
             if (isset($quote['q'])) {
                 if (isset($quote['hazardousStatus'])) {
                     $hazShipmentArr[$origin] = $quote['hazardousStatus'] == 'y' ? 'Y' : 'N';
@@ -4286,6 +4319,14 @@ class CompileQuotes
         return $grandTotal;
     }
 
+    public function getTruckLoadTitle($serviceName, $quoteSettings = [], $deliveryEstimate = '', $daysAndDate = [], $serviceType = '')
+    {
+        $serviceTitle = $this->truckLoadCustomLabel($serviceName, $quoteSettings, $serviceType);
+        $deliveryEstimateLabel = $this->getDeliveryEstimates($daysAndDate);
+
+        return $serviceTitle . $deliveryEstimateLabel;
+    }
+
     /**
      * @param $serviceName
      * @param bool $lgOption
@@ -4991,6 +5032,26 @@ class CompileQuotes
         }
         $this->quoteSettings['method'] = $this->quoteSettings['method'] ?? 1;
         return (($this->quoteSettings['method'] == 1 || $this->quoteSettings['method'] == 3) && (isset($this->quoteSettings['label_as']) && $this->quoteSettings['label_as'] != null)) ? $this->quoteSettings['label_as'] : $serviceName;
+    }
+
+    public function truckLoadCustomLabel($serviceName, $quoteSettings = [], $serviceType = '')
+    {
+        if (!empty($quoteSettings)) {
+            $this->quoteSettings = $quoteSettings;
+        }
+        $this->quoteSettings['method'] = $this->quoteSettings['method'] ?? 1;
+        if(($this->quoteSettings['method'] == 1 || $this->quoteSettings['method'] == 3 || $this->quoteSettings['method'] == 2)){
+            if($serviceType === 'TSM'){
+                return $this->quoteSettings['flatbed'] ?? 'Flatbed Truckload Service';
+            } else if($serviceType === 'REEF'){
+                return $this->quoteSettings['refrigerated'] ?? 'Refrigerated Truckload Service';
+            } else if($serviceType === 'ABHB'){
+                return $this->quoteSettings['van'] ?? 'Truckload Service';
+            } else {
+                return $serviceName;
+            }
+        }
+        return $serviceName;
     }
 
     /**
