@@ -3,6 +3,7 @@
 namespace App\CustomClasses;
 
 use App\CustomClasses\Bin3D\Bin3D;
+use App\CustomClasses\XPO\ltl\QuotesResults as xpoLtlQuotesResults;
 use App\Helpers\Helpers;
 use App\Models\BoxSize;
 use Illuminate\Support\Facades\Log;
@@ -524,27 +525,23 @@ class PalletPackaging
     private function addPalletFeeToQuotes($quotes = [], $palletFee = 0)
     {
         $carriers = $this->ltlCarriers ?? [];
+
         if (isset($quotes) && !empty($quotes)) {
             foreach ($quotes as $carName => $quot) {
                 if (in_array($carName, $carriers)) {
                     foreach ($quot as $locId => $q) {
-                        if (isset($q['q'])) {
-                            foreach ($q['q'] as $key => $qs) {
-                                if ($carName == 'cerasis') {
-                                    $charges =
-                                    $quot[$locId]['quotesWithLiftGate'][$key]['ShipmentRate'] ?? $qs['ShipmentRate'];
-                                } else {
-                                    $charges = $this->getCarrChargesIndex($carName, $qs);
-                                }
+                        $updatedQuotes = $this->handlePalletFee($carName, $q, $quotes, $locId, $palletFee);
 
-                                if ($charges != '') {
-                                    $qs['totalNetCharge']['Amount'] = $charges;
-                                }
-
-                                if (isset($qs['totalNetCharge']['Amount'])) {
-                                    if (isset($palletFee[$locId])) {
-                                        $quotes[$carName][$locId]['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $palletFee[$locId];
-                                        $quotes[$carName][$locId]['q'][$key]['palletFees']['Amount'] = $palletFee[$locId];
+                        if (!empty($updatedQuotes)) {
+                            $quotes = $updatedQuotes;
+                        } else {
+                            if (isset($q['q'])) {
+                                foreach ($q['q'] as $key => $qs) {
+                                    if (isset($qs['totalNetCharge']['Amount'])) {
+                                        if (isset($palletFee[$locId])) {
+                                            $quotes[$carName][$locId]['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $palletFee[$locId];
+                                            $quotes[$carName][$locId]['q'][$key]['palletFees']['Amount'] = $palletFee[$locId];
+                                        }
                                     }
                                 }
                             }
@@ -553,15 +550,15 @@ class PalletPackaging
                 }
             }
         }
-        dd($quotes);
+
         return $quotes;
     }
 
     private function getCarrChargesIndex($carrName = '', $quote = [])
     {
         $charges = '';
-        // TODO:handle remaining carriers charges
-        $carriers = ['globalTranz' => $quote['LtlAmount'], 'xpoLogistics' => '', 'rnl' => '', 'freightQuote' => $quote['totalNetCharge'], 'yrc' => '', 'dayross' => '', 'saia' => $quote['totalNetCharge'], 'estes' => $quote['ratpricing']['rattotalPrice'], 'southeastern' => '', 'odfl4me' => $quote['rateEstimate']['netFreightCharge'], 'echoLogistics' => $quote['TotalCharge'], 'abf' => '', 'daylight' => $quote['totalNetCharge'], 'chr' => $quote['totalNetCharge'], 'tql' => $quote['customerRate']];
+
+        $carriers = ['globalTranz' => $quote['LtlAmount'], 'freightQuote' => $quote['totalNetCharge'], 'saia' => $quote['totalNetCharge'], 'estes' => $quote['ratpricing']['rattotalPrice'], 'odfl4me' => $quote['rateEstimate']['netFreightCharge'], 'echoLogistics' => $quote['TotalCharge'], 'daylight' => $quote['totalNetCharge'], 'chr' => $quote['totalNetCharge'], 'tql' => $quote['customerRate']];
 
         foreach ($carriers as $key => $value) {
             if ($key == $carrName) {
@@ -570,5 +567,108 @@ class PalletPackaging
         }
 
         return $charges;
+    }
+
+    private function handlePalletFee($carName = '', $q, $quotes = [], $locId, $palletFee)
+    {
+        $quotesWithFee = $quotes ?? [];
+
+        if (isset($palletFee[$locId]) && isset($q['q'])) {
+            $quotesWithFee[$carName][$locId]['q']['palletFees']['Amount'] = $palletFee[$locId];
+
+            if ($carName == 'upsLTL') {
+                $quotesWithFee[$carName][$locId]['q']['totalNetCharge']['Amount'] = $q['q']['totalNetCharge']['Amount'] + $palletFee[$locId];
+            } elseif ($carName == 'globalTranz') {
+                foreach ($q['q'] as $key => $value) {
+                    $quotesWithFee[$carName][$locId]['q'][$key]['LtlAmount'] = $value['LtlAmount'] + $palletFee[$locId];
+                }
+            } elseif ($carName == 'cerasis') {
+                foreach ($q['q'] as $key => $value) {
+                    $quotesWithFee[$carName][$locId]['q'][$key]['ShipmentRate'] = $value['ShipmentRate'] + $palletFee[$locId];
+                }
+            } elseif ($carName == 'yrc') {
+                $index = $q['q']['pageRoot'] ?? null;
+                $rateQuote = $index['bodyMain']['rateQuote'] ?? null;
+
+                if (!empty($index) && !empty($rateQuote)) {
+                    $quotesWithFee[$carName][$locId]['q']['pageRoot']['bodyMain']['rateQuote']['ratedCharges']['totalCharges'] = $rateQuote['ratedCharges']['totalCharges'] + $palletFee[$locId];
+                } else {
+                    $quotesWithFee[$carName][$locId]['q']['RatedCharges']['TotalCharges'] = $q['q']['RatedCharges']['TotalCharges'] + $palletFee[$locId];
+                }
+            } elseif ($carName == 'abf') {
+                if (!$this->isAbfError($q)) {
+                    $quotesWithFee[$carName][$locId]['q']['CHARGE'] = $q['q']['CHARGE'] + $palletFee[$locId];
+                }
+            } elseif ($carName == 'xpoLogistics') {
+                $charges = (new xpoLtlQuotesResults())->netCharge($q['q']['NetCharge']) ?? $q['q']['totalNetCharge'] ?? 0.00;
+                $quotesWithFee[$carName][$locId]['q']['NetCharge'][0] = (new xpoLtlQuotesResults())->netCharge($q['q']['NetCharge']) + $palletFee[$locId];
+            } elseif ($carName == 'rnl') {
+                if (isset($q['q']['ServiceLevels']['ServiceLevel'])) {
+                    foreach ($q['q']['ServiceLevels']['ServiceLevel'] as $key => $quote) {
+                        $quotesWithFee[$carName][$locId]['q']['ServiceLevels']['ServiceLevel'][$key]['NetCharge'] = (float) str_replace('$', '', str_replace(',', '', $quote['NetCharge'])) + $palletFee[$locId];
+                    }
+                }
+            } elseif ($carName == 'freightQuote' || $carName == 'chr') {
+                foreach ($q['q'] as $key => $value) {
+                    $quotesWithFee[$carName][$locId]['q'][$key]['totalNetCharge'] = $value['totalNetCharge'] + $palletFee[$locId];
+                }
+            } elseif ($carName == 'saia' || $carName == 'daylight') {
+                $quotesWithFee[$carName][$locId]['q']['totalNetCharge'] = $q['q']['totalNetCharge'] + $palletFee[$locId];
+            } elseif ($carName == 'estes') {
+                foreach ($q['q'] as $key => $value) {
+                    $quotesWithFee[$carName][$locId]['q'][$key]['totalNetCharge'] = $value['totalNetCharge'] + $palletFee[$locId];
+                }
+            } elseif ($carName == 'odfl4me') {
+                $quotesWithFee[$carName][$locId]['q']['rateEstimate']['netFreightCharge'] = $q['q']['rateEstimate']['netFreightCharge'] + $palletFee[$locId];
+            } elseif ($carName == 'echoLogistics') {
+                foreach ($q['q'] as $key => $value) {
+                    $quotesWithFee[$carName][$locId]['q'][$key]['TotalCharge'] = $value['TotalCharge'] + $palletFee[$locId];
+                }
+            } elseif ($carName == 'dayross') {
+                if (!$this->dayRossError($q)) {
+                    $charges = $q['q']['TotalAmount'] ?? '';
+                    $notFound = false;
+
+                    if (!empty($charges)) {
+                        $quotesWithFee[$carName][$locId]['q']['TotalAmount'] = $charges + $palletFee[$locId];
+                        $notFound = true;
+                    }
+
+                    if (!$notFound) {
+                        $charges = $value['q']['TotalCharges'] ?? '';
+                        if (!empty($charges)) {
+                            $quotesWithFee[$carName][$locId]['q']['TotalCharges'] = $charges + $palletFee[$locId];
+                        }
+                    }
+                }
+            } elseif ($carName == 'southeastern') {
+                if (!$this->seflError($q)) {
+                    $quotesWithFee[$carName][$locId]['q']['rateQuote'] = $q['q']['rateQuote'] + $palletFee[$locId];
+                }
+            } elseif ($carName == 'tql') {
+                foreach ($q['q'] as $key => $value) {
+                    $quotesWithFee[$carName][$locId]['q'][$key]['customerRate'] = $value['customerRate'] + $palletFee[$locId];
+                }
+            } else {
+                $quotesWithFee = [];
+            }
+        }
+
+        return $quotesWithFee;
+    }
+
+    private function isAbfError($q)
+    {
+        return isset($q['q']['NUMERRORS']) && $q['q']['NUMERRORS'] == 1;
+    }
+
+    private function dayRossError($q)
+    {
+        return isset($q['q']) && !isset($q['q']['soapBody']['soapFault']);
+    }
+
+    private function seflError($q)
+    {
+        return isset($q['q']) && isset($q['q']['error']) && $q['q']['error'] == [];
     }
 }

@@ -195,7 +195,7 @@ class Shipping
 
         $palletBins = $requestArr['palletBins'] ?? [];
         if (isset($requestArr['palletResponse']) && !empty($requestArr['palletResponse'])) {
-            (new PalletPackaging())->addPalletResponseToQuotes($requestArr['palletResponse'], $quotes);
+            $quotes = (new PalletPackaging())->addPalletResponseToQuotes($requestArr['palletResponse'], $quotes);
         }
 
         $freeRNL = false;
