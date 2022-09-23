@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Constants\Constant;
 use App\CurlRequest;
 use App\CustomClasses\Functions;
+use App\CustomClasses\PalletPackaging;
 use App\Models\BoxSize;
 use App\Models\DBSC\DbscShippingProfile;
 use App\Models\Locations;
@@ -58,13 +59,17 @@ class OrderController extends Controller
     public function getOrderWidget(Request $request)
     {
         try {
-            $order = $this->getBCOrderByID($request);
-            if (empty($order)) {
-                return response()->json(['error' => true,
-                    'data' => [],
-                    'message' => 'No Order Found',
-                ], 404);
-            }
+            // $order = $this->getBCOrderByID($request);
+            // if (empty($order)) {
+            //     return response()->json(['error' => true,
+            //         'data' => [],
+            //         'message' => 'No Order Found',
+            //     ], 404);
+            // }
+            $order = [
+                'shipping_name' => 'Small Shipping',
+                'shipping_rate' => 500.00 
+            ];
             $orderWidget = $this->createOrderWidget($request, $order);
             if (empty($orderWidget)) {
                 return response()->json(['error' => true,
@@ -136,7 +141,10 @@ class OrderController extends Controller
     {
         $rateId = $order['rate_id'] ?? null;
         $cartId = $order['cart_id'] ?? null;
-        $data = optional(RequestData::where('rate_id', $rateId)
+        $rateId = 'FWDNwweltl+LG+puidx+31663919061';
+        // $rateId = 'parcel_12wwe3DS+Ridx+01663927364';
+        $cartId = '40ce53b5-a3d2-4c04-bbc0-071690c83af7';
+        $data = optional(RequestTempData::where('rate_id', $rateId)
                 ->where('cart_id', $cartId)
                 ->where('store_id', $request['store_id'])
                 ->first())->toArray() ?? null;
@@ -149,8 +157,7 @@ class OrderController extends Controller
         }
         if (blank($data)) {
             return [];
-        }
-
+        }        
         $carrierHasInsurance = $this->hasInsureCarrier($rateId);
         $index = explode('idx+', $rateId);
         if (is_string($index[0]) && $index[0] == "shippingGroup") {
@@ -299,6 +306,15 @@ class OrderController extends Controller
                         $totalBoxes = isset($key) ? $key + 1 - $itemCount : 0;
 
 
+                    }
+
+                    // Pallet packaging
+                    if (isset($ws->palletPackagingData) && !empty($ws->palletPackagingData)) {
+                        $palletPkgResp = (new PalletPackaging())->formatOrderWidget($responseFromWS, $lineItem); 
+                        if (!empty($palletPkgResp)) {
+                            // $orderWidget['pallet'] = $palletPkgResp;
+                            dd('ppr', $palletPkgResp);
+                        }
                     }
                 }
             }

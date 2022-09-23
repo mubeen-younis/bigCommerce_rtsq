@@ -161,6 +161,7 @@ class Shipping
 
         // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
+        // dd('reqArr',$requestArr);
         if (empty($requestArr)) {
             return false;
         }
@@ -184,7 +185,7 @@ class Shipping
                 $quotes = $this->addBinResponseToQuotes($apiArray['binResponseArr'], $quotes, true);
             }
         }
-
+        // dd($requestArr);
         $boxbins = $requestArr['boxBins'] ?? [];
         if (isset($uspsBoxBins) && !empty($uspsBoxBins)) {
             $boxbins = array_merge($boxbins, $uspsBoxBins);
@@ -442,7 +443,7 @@ class Shipping
                             }
                         }
                     }
-                } else if ($carrierName !== 'fedexSmall' && $carrierName !== 'usps' && $uspsRes === null) {
+                } else if ($carrierName !== 'fedexSmall' && $carrierName !== 'usps' && $uspsRes === null || !$uspsRes) {
                     foreach ($binReponse as $locationId => $bin) {
                         $quotes[$carrierName][$locationId]['binPackagingData']['response'] = $bin;
                         $boxFee[$locationId] = $this->getCumulativeBoxFee($bin);
