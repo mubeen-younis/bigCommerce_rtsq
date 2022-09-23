@@ -22,6 +22,7 @@ use App\CustomClasses\UspsSmall\QuotesResults as uspsSmallQuotesResults;
 use App\CustomClasses\EchoLogisticsLtl\QuotesResults as echoLogisticsLtlQuotesResults;
 use App\CustomClasses\DayLightLtl\QuotesResults as dayLightLtlQuotesResults;
 use App\CustomClasses\FreightQuote\ChrLtl\QuotesResults as FQChrQuotesResults;
+use App\CustomClasses\FreightQuote\Ltl\QuotesResults as FQQuotesResults;
 
 
 use App\Http\Controllers\RADController;
@@ -3051,39 +3052,6 @@ class CompileQuotes
         return $resp;
     }
 
-    public function truckLoadQuotes($quote, $allConfigServices, $quoteSettings = []){
-        if(isset($quote['Truckload'])){
-            
-            foreach($quote['Truckload'] as $key => $data){
-                if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices)) {
-                    $access = $this->getAccessorialCode();
-                    $charges = array(
-                        'totalNetCharge' => array(
-                            'Amount' => $data['totalNetCharge'],
-                        ),
-                        'surcharges' => $data['surcharges'],
-                    );
-                    $price = $this->calculatePrice($charges);
-                    /*
-                     * Adding Functionality of Delivery Estimate Options
-                     * */
-                    $date = $data['deliveryTimestamp'] ?? null;
-                    $days = $data['totalTransitTimeInDays'] ?? null;
-                    $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
-
-                    $title = $this->getTruckLoadTitle($data['serviceDesc'], $quoteSettings, $data['totalTransitTimeInDays'], $dateAndDays, $data['serviceType']);
-                    $arraySorting['simple'][$key] = $price;
-                    $originQuotes[$key]['Truckload']['code'] = 'fqltl' . $data['serviceType'] . $access;
-                    $originQuotes[$key]['Truckload']['rate'] = $price;
-                    $originQuotes[$key]['Truckload']['title'] = $title;
-                }
-            }
-        }
-        $TLoriginQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes = false);
-        return $TLoriginQuotes;
-
-    }
-
     private function compileFreightQuoteLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
         $returnRates = $this->residential['returnRates']['freightQuoteLtl'] ?? false;
@@ -3092,6 +3060,7 @@ class CompileQuotes
             return [];
         }
         
+        $freightQuote = new FQQuotesResults();
         $this->isFQ = true;
 
         if ($this->residential['freightQuoteLtl'] == 'Y') {
@@ -3142,7 +3111,9 @@ class CompileQuotes
 
             $originQuotes = [];
             $arraySorting = [];
-            $TLquotes = $this->truckLoadQuotes($quote, $allConfigServices, $this->quoteSettings);
+            $TLquotes = $freightQuote->truckLoadQuotes($quote, $allConfigServices, $this->quoteSettings);
+            $TLquotes = $this->getCompiledQuotes($TLquotes[0], $TLquotes[1], false);
+
             if (isset($quote['q'])) {
                 if (isset($quote['hazardousStatus'])) {
                     $hazShipmentArr[$origin] = $quote['hazardousStatus'] == 'y' ? 'Y' : 'N';
@@ -3207,6 +3178,10 @@ class CompileQuotes
             }
 
             $count++;
+        }
+
+        foreach($TLquotes as $key => $TL){
+            $allQuotes['Truckload'][] = $TL['Truckload'];
         }
 
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
@@ -4102,14 +4077,14 @@ class CompileQuotes
                 /**
                  * Condition for lift gate as an option
                  * */
-                return array_merge($quotes['simple'], $quotes['liftgate'], $quotes['insideDelivery'] ?? [], $quotes['insideLiftGateDelivery'] ?? [], $quotes['limitedaccess'] ?? [], $quotes['limitedaccessLG'] ?? []);
+                return array_merge($quotes['simple'] ?? [], $quotes['liftgate'] ?? [], $quotes['insideDelivery'] ?? [], $quotes['insideLiftGateDelivery'] ?? [], $quotes['limitedaccess'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['Truckload'] ?? []);
             } elseif ($lfg) {
                 /**
                  * Condition for Always lift gate and lift gate for residential (Single Shipment)
                  * */
-                return array_merge($quotes['liftgate'], $quotes['insideLiftGateDelivery'] ?? [], $quotes['limitedaccessLG'] ?? []) ?? $quotes['simple'];
+                return array_merge($quotes['liftgate'] ?? [], $quotes['insideLiftGateDelivery'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['Truckload'] ?? []) ?? $quotes['simple'];
             } else {
-                return array_merge($quotes['simple'], $quotes['insideDelivery'] ?? [], $quotes['limitedaccess'] ?? []);
+                return array_merge($quotes['simple'] ?? [], $quotes['insideDelivery'] ?? [], $quotes['limitedaccess'] ?? [], $quotes['Truckload'] ?? []);
             }
         } elseif ($lfg) {
             /**
@@ -4317,14 +4292,6 @@ class CompileQuotes
             $grandTotal = $cost;
         }
         return $grandTotal;
-    }
-
-    public function getTruckLoadTitle($serviceName, $quoteSettings = [], $deliveryEstimate = '', $daysAndDate = [], $serviceType = '')
-    {
-        $serviceTitle = $this->truckLoadCustomLabel($serviceName, $quoteSettings, $serviceType);
-        $deliveryEstimateLabel = $this->getDeliveryEstimates($daysAndDate);
-
-        return $serviceTitle . $deliveryEstimateLabel;
     }
 
     /**
@@ -4875,6 +4842,18 @@ class CompileQuotes
             $options = 1;
         }
         $sliced = array_slice($arraySorting['simple'], 0, $options, true);
+        if($this->quoteSettings['method'] == 3 && isset($services[0]['Truckload']) && !empty($services[0]['Truckload'])){
+            $AVR = $this->averageRattingMethod($arraySorting, $options, $lgQuotes);
+
+            $title = explode(' (', $services[0]['Truckload']['title']);
+            $averageRateService[0]['Truckload'] = [
+                'title' => $title[0],
+                'code' => $AVR[0]['simple']['code'] . '+TL',
+                'rate' => $AVR[0]['simple']['rate'],
+            ];
+            return $averageRateService;
+        }
+
         if ($this->quoteSettings['method'] == 3) {
             return $this->averageRattingMethod($arraySorting, $options, $lgQuotes, $resiPickup, $lgPickup, $insideDelivery);
         }
@@ -5032,26 +5011,6 @@ class CompileQuotes
         }
         $this->quoteSettings['method'] = $this->quoteSettings['method'] ?? 1;
         return (($this->quoteSettings['method'] == 1 || $this->quoteSettings['method'] == 3) && (isset($this->quoteSettings['label_as']) && $this->quoteSettings['label_as'] != null)) ? $this->quoteSettings['label_as'] : $serviceName;
-    }
-
-    public function truckLoadCustomLabel($serviceName, $quoteSettings = [], $serviceType = '')
-    {
-        if (!empty($quoteSettings)) {
-            $this->quoteSettings = $quoteSettings;
-        }
-        $this->quoteSettings['method'] = $this->quoteSettings['method'] ?? 1;
-        if(($this->quoteSettings['method'] == 1 || $this->quoteSettings['method'] == 3 || $this->quoteSettings['method'] == 2)){
-            if($serviceType === 'TSM'){
-                return $this->quoteSettings['flatbed'] ?? 'Flatbed Truckload Service';
-            } else if($serviceType === 'REEF'){
-                return $this->quoteSettings['refrigerated'] ?? 'Refrigerated Truckload Service';
-            } else if($serviceType === 'ABHB'){
-                return $this->quoteSettings['van'] ?? 'Truckload Service';
-            } else {
-                return $serviceName;
-            }
-        }
-        return $serviceName;
     }
 
     /**
