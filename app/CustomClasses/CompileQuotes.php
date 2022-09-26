@@ -3107,6 +3107,7 @@ class CompileQuotes
                             (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
                 }
                 $resiPickup = isset($this->quoteSettings['residentialPickup']) && $this->quoteSettings['residentialPickup'] ? '+pu' : '';
+                $isTlQuotes = isset($this->quoteSettings['truckload_weight_threshold']) && $this->quoteSettings['truckload_weight_threshold'] ?? null;
             }
 
             $originQuotes = [];
@@ -3172,6 +3173,12 @@ class CompileQuotes
                     $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
                 }
             }
+            if ($TLquotes !== null && !empty($TLquotes)) {
+                foreach ($TLquotes as $key => $TLservice) {
+                    $isTlQuotes ? $allQuotes['Truckload'][] = $TLservice['Truckload'] : null;
+                    $isTlQuotes ? $multiShipmentQuotes['Truckload'][$origin] = $TLservice['Truckload'] : null;
+                }
+            }
 
             if ($this->isMultiShipment) {
                 $odwArr[$origin]['quotes'] = $compiledQuotes;
@@ -3180,16 +3187,12 @@ class CompileQuotes
             $count++;
         }
 
-        foreach($TLquotes as $key => $TL){
-            $allQuotes['Truckload'][] = $TL['Truckload'];
-        }
-
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
 
-        if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1)) {
+        if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1) || (!empty($multiShipmentQuotes['Truckload']) && count($multiShipmentQuotes['Truckload']) > 1)) {
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $allQuotes,
@@ -4842,19 +4845,21 @@ class CompileQuotes
             $options = 1;
         }
         $sliced = array_slice($arraySorting['simple'], 0, $options, true);
-        if($this->quoteSettings['method'] == 3 && isset($services[0]['Truckload']) && !empty($services[0]['Truckload'])){
-            $AVR = $this->averageRattingMethod($arraySorting, $options, $lgQuotes);
-
-            $title = explode(' (', $services[0]['Truckload']['title']);
-            $averageRateService[0]['Truckload'] = [
-                'title' => $title[0],
-                'code' => $AVR[0]['simple']['code'] . '+TL',
-                'rate' => $AVR[0]['simple']['rate'],
-            ];
-            return $averageRateService;
-        }
-
+        
         if ($this->quoteSettings['method'] == 3) {
+            $services = array_values($services);
+            if(isset($services[0]['Truckload']) && !empty($services[0]['Truckload'])){
+                $AVR = $this->averageRattingMethod($arraySorting, $options, $lgQuotes);
+
+                $title = explode(' (', $services[0]['Truckload']['title']); 
+                $averageRateService[0]['Truckload'] = [
+                    'title' => ($this->quoteSettings['label_as'] ?? Functions::$simpleLTLTitle) . ' - Truckload Service',
+                    'code' => $AVR[0]['simple']['code'] . '+TL',
+                    'rate' => $AVR[0]['simple']['rate'],
+                ];
+                return $averageRateService;
+            }
+
             return $this->averageRattingMethod($arraySorting, $options, $lgQuotes, $resiPickup, $lgPickup, $insideDelivery);
         }
 
