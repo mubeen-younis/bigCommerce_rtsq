@@ -468,13 +468,18 @@ class Bin3D
 
     private function createItemOwnPallet($itemPropertiesArr)
     {
+        $boxFee = $itemPropertiesArr['boxFee'] ?? 0;
+        $q = $itemPropertiesArr['q'] ?? 0;
         $itemPackage = new \stdClass();
+
         $itemPackage->pallet_data = new \stdClass();
         $itemPackage->pallet_data->w = $itemPropertiesArr['w'];
         $itemPackage->pallet_data->h = $itemPropertiesArr['h'];
         $itemPackage->pallet_data->d = $itemPropertiesArr['d'];
         $itemPackage->pallet_data->id = $itemPropertiesArr['id'];
         $itemPackage->pallet_data->type = 'item';
+        $itemPackage->pallet_data->boxFee = $boxFee * $q;
+        $itemPackage->pallet_data->quantity = $q;
         $itemPackage->pallet_data->used_space = 100;
         $itemPackage->pallet_data->weight = $itemPropertiesArr['wg'];
         $itemPackage->pallet_data->used_weight = 100;

@@ -141,8 +141,12 @@ class OrderController extends Controller
     {
         $rateId = $order['rate_id'] ?? null;
         $cartId = $order['cart_id'] ?? null;
-        $rateId = 'FWDNwweltl+LG+puidx+31663919061';
-        // $rateId = 'parcel_12wwe3DS+Ridx+01663927364';
+        // TODO:remove static rate and cart Id's
+        // $rateId = 'FWDNwweltl+LG+puidx+31663919061';
+        $rateId = 'EXLAwweltl+LG+puidx+11664007083';
+        $rateId = 'RDWYwweltl+LG+puidx+11664019124';
+        $rateId = 'parcel_12wwe3DS+Ridx+01663927364';
+        $rateId = 'RDWYwweltl+LG+puidx+11664023310';
         $cartId = '40ce53b5-a3d2-4c04-bbc0-071690c83af7';
         $data = optional(RequestTempData::where('rate_id', $rateId)
                 ->where('cart_id', $cartId)
@@ -308,12 +312,16 @@ class OrderController extends Controller
 
                     }
 
-                    // Pallet packaging
+                    // Pallet packaging order widget
                     if (isset($ws->palletPackagingData) && !empty($ws->palletPackagingData)) {
-                        $palletPkgResp = (new PalletPackaging())->formatOrderWidget($responseFromWS, $lineItem); 
+                        $palletPkgResp = (new PalletPackaging())->formatOrderWidget($responseFromWS, $lineItem);
+                        
                         if (!empty($palletPkgResp)) {
-                            // $orderWidget['pallet'] = $palletPkgResp;
-                            dd('ppr', $palletPkgResp);
+                            if (empty($orderWidget)) {
+                                $orderWidget =  $palletPkgResp;
+                            } else {
+                                $orderWidget[$zip]['pallet'] = $palletPkgResp[$zip]['pallet'];
+                            }
                         }
                     }
                 }
@@ -514,7 +522,7 @@ class OrderController extends Controller
                 $orderWidget[$key]['items'] = $items;
             }
         }
-
+        
         $sbs = '';
         $resp = [
             'widget' => $this->objectToArray($orderWidget),
