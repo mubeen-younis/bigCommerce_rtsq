@@ -18,11 +18,11 @@ class PalletPackaging
     public $ltlCarriers;
     private $origins;
 
-    public function __construct($itemArr = [], $storeData = [], $cartInfo = [])
+    public function __construct($itemsArr = [], $storeData = [], $cartInfo = [])
     {
         $this->palletPkgRequest = [];
         $this->pallet = [];
-        $this->itemsArr = $itemArr;
+        $this->itemsArr = $this->filterLtlCartItems($itemsArr);
         $this->storeData = $storeData ?? [];
         $this->storeId = $storeData['store']['id'] ?? null;
         $this->cartInfo = $cartInfo;
@@ -48,6 +48,21 @@ class PalletPackaging
         $ltlCarriers = ['wweLTL', 'upsLTL', 'fedexLTL', 'globalTranz', 'cerasis', 'xpoLogistics', 'rnl', 'yrc', 'freightQuote', 'estes', 'dayross', 'odfl4me', 'saia', 'abf', 'southeastern', 'tql', 'echoLogistics', 'daylight', 'chr'];
 
         return $ltlCarriers;
+    }
+
+    private function filterLtlCartItems($items = [])
+    {
+        $ltlItemsArr = $items ?? [];
+
+        foreach ($ltlItemsArr as $key => $item) {
+            $isLtl = (isset($item['freightClass']) && $item['freightClass'] === 'ltl');
+
+            if (!$isLtl) {
+                unset($ltlItemsArr[$key]);
+            }
+        }
+
+        return $ltlItemsArr;
     }
 
     /**
@@ -130,17 +145,19 @@ class PalletPackaging
             foreach ($this->itemsArr as $key => $value) {
                 $this->itemsArr[$key]['own_pallet'] = 1;
             }
+
             // format cart items again
             $itemsResp = $this->formatPalletItems();
             $items = $itemsResp['items'] ?? [];
             $itemsAlone = $itemsResp['itemsAlone'] ?? [];
         }
-        // addon hits consumption
-        $hits = count($items);
+
         $palletResponse = $resp = [];
 
         if ((count($items) && count($pallet)) || count($itemsAlone)) {
             try {
+                // addon hits consumption
+                $hits = count($items);
                 // check for multishipment request
                 $isMultiShipment = $this->isMultiShipment($carriers);
 
@@ -196,13 +213,16 @@ class PalletPackaging
         $origins = $this->origins ?? [];
 
         foreach ($origins as $key => $origin) {
-            $isLtl = (isset($itemsArr[$key]['freightClass']) && $itemsArr[$key]['freightClass'] === 'ltl');
-            $isSmallLtl = !$isLtl && ($itemsArr[$key]['lineItemWeight'] * $itemsArr[$key]['lineItemWeight'] >= Functions::$defaultThresholdLimit);
+            if (!isset($itemsArr[$key])) {
+                continue;
+            }
 
-            // TODO:check small product also for threshold value
+            $isLtl = (isset($itemsArr[$key]['freightClass']) && $itemsArr[$key]['freightClass'] === 'ltl');
+            // TODO:also need to handle increased weight threshold value in small products
+
             $ownPallet = isset($itemsArr[$key]['own_pallet']) && $itemsArr[$key]['own_pallet'] == 1;
 
-            if ($isLtl || $isSmallLtl) {
+            if ($isLtl) {
                 if ($ownPallet) {
                     $itemsAlone[$origin['locationId']][] = [
                         "variant_id" => $key,
