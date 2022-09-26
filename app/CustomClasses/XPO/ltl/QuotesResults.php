@@ -52,7 +52,7 @@ class QuotesResults
 
             if (isset($quote['holdAtTerminalResponse']) && !empty($quote['holdAtTerminalResponse'])) {
                 $hatResp[] = $quote['holdAtTerminalResponse'];
-                $srvcTitle = $quoteSettings['label_as'] ?? $shipments[$shipment]['q'][$key]['serviceType'] ?? '';
+                $srvcTitle = $quoteSettings['label_as'] ?? Functions::$simpleLTLTitle ?? '';
 
                 $hatCompiledQuotes = $this->formatHATQuotes($hatResp, $srvcTitle, $quoteSettings);
                 if (!empty($hatCompiledQuotes)) {
