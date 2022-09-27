@@ -445,6 +445,10 @@ class GenerateRequestData
 
     public function estesltlEnitArr($connSettings, $destination)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
             'serverName' => "https://" . $this->storeData['store']['name'],
@@ -1063,6 +1067,9 @@ class GenerateRequestData
 
         $this->resiCarrier['estesLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['estesLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['estesLtl'] = $this->returnRates;
+
+        $holdAtTerminal = (isset($connSettings['quote_settings']['hold_at_terminal']) && $connSettings['quote_settings']['hold_at_terminal'] && $connSettings['quote_settings']['hold_at_terminal'] == true) ? '1' : '0';
 
         $accessorial = [];
         if ($alwaysResi || $residential == 'Y') {
@@ -1098,6 +1105,7 @@ class GenerateRequestData
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
             'accessorial' => $accessorial,
+            'holdAtTerminal' => $holdAtTerminal,
         ];
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }

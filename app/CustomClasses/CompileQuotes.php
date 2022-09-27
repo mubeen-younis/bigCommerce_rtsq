@@ -22,6 +22,7 @@ use App\CustomClasses\UspsSmall\QuotesResults as uspsSmallQuotesResults;
 use App\CustomClasses\EchoLogisticsLtl\QuotesResults as echoLogisticsLtlQuotesResults;
 use App\CustomClasses\DayLightLtl\QuotesResults as dayLightLtlQuotesResults;
 use App\CustomClasses\FreightQuote\ChrLtl\QuotesResults as FQChrQuotesResults;
+use App\CustomClasses\EstesLTL\QuotesResults as estesLtlQuotesResults;
 
 
 use App\Http\Controllers\RADController;
@@ -1453,6 +1454,13 @@ class CompileQuotes
 
     public function compileEstesltlQuotes($shipments, $connectionSettings, $allOrigins)
     {
+        $returnRates = $this->residential['returnRates']['estesLtl'] ?? false;
+
+        if($returnRates){
+            return [];
+        }
+        $estesLtl = new estesLtlQuotesResults();
+        
         $this->isResi = $this->residential['estesLtl'] == 'Y';
         $this->residentialDlvry = $this->residential['estesLtl'] == 'Y' ? 1 : 0;
         $this->alwaysResi = $this->residential['alwaysResi']['estesLtl'] ?? false;
@@ -1465,6 +1473,7 @@ class CompileQuotes
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
         $lgQuotes = false;
+        $hatShipments = [];
 
         $numberOfShipments = 0;
         foreach ($shipments as $ship) {
@@ -1478,6 +1487,9 @@ class CompileQuotes
         }
 
         foreach ($shipments as $origin => $quote) {
+
+            $hatShipments[] = $estesLtl->HatQuoteCompile($quote,$this->quoteSettings);
+            
             if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -1579,13 +1591,31 @@ class CompileQuotes
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
         if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1)) {
-            $allQuotes = $this->forceChangeTitle($allQuotes);
-            $resp = [
-                'checkoutQuotes' => $this->arrangeOwnFreight($allQuotes),
-                'multiShipmentQuotes' => $multiShipmentQuotes,
-            ];
+            
+            if (!empty($hatShipments)) {
+                $allQuotes = $this->forceChangeTitle($allQuotes);
+                $hatLabel = explode('|', $hatShipments[0]['serviceDesc']);
+                unset($hatLabel[0]);
+                $lableAs = 'Freight |' . implode('|', $hatLabel);
+                $resp = [
+                    'checkoutQuotes' => Functions::arrangeHATFreight($allQuotes, $hatShipments, $lableAs),
+                    'multiShipmentQuotes' => Functions::arrangeHATMulti($multiShipmentQuotes, $hatShipments),
+                ];
+            } else {
+                $allQuotes = $this->forceChangeTitle($allQuotes);
+                $resp = [
+                    'checkoutQuotes' => $this->arrangeOwnFreight($allQuotes),
+                    'multiShipmentQuotes' => $multiShipmentQuotes,
+                ];
+            }
+
             return $resp;
         }
+
+        if (!empty($hatShipments)) {
+            return  $estesLtl->arrangeHATFreight($allQuotes, $hatShipments);
+        }
+
         return $this->arrangeOwnFreight($allQuotes);
     }
 
