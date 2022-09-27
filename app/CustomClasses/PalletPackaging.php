@@ -50,6 +50,13 @@ class PalletPackaging
         return $ltlCarriers;
     }
 
+    /**
+     * It takes an array of items, and returns an array of items that have a freightClass of ltl.
+     *
+     * @param items array of items in the cart
+     *
+     * @return An array of items that have a freightClass of ltl.
+     */
     private function filterLtlCartItems($items = [])
     {
         $ltlItemsArr = $items ?? [];
@@ -84,6 +91,11 @@ class PalletPackaging
         return $isLtlCarr;
     }
 
+    /**
+     * It checks if the carriers have more than one origin address
+     *
+     * @param carriers This is an array of carriers that you want to ship with.
+     */
     private function isMultiShipment($carriers = [])
     {
         $locationIds = [];
@@ -122,6 +134,11 @@ class PalletPackaging
         return $carrsOrgAddresses;
     }
 
+    /**
+     * It formats the packaging request and returns 3D Bin response
+     *
+     * @param carriers array of carriers
+     */
     public function setAndGetPackagingResp($carriers = [])
     {
         if (!$this->isLtlCarrierExists($carriers)) {
@@ -194,8 +211,6 @@ class PalletPackaging
                 }
             } catch (\Throwable$th) {
                 Log::info('No repsonse from 3D Bin ' . $th->getMessage());
-                // TODO: remove dd from catch block
-                dd($th);
                 $resp = [];
             }
         }

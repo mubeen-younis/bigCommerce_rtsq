@@ -182,7 +182,7 @@ class OrderController extends Controller
         $isSmallrate = substr($rateId, 0, 9) == 'parcel_12' || substr($rateId, 0, 5) == 'multi' ? true : false;
         $isLG = strpos($rateId, '+lg');
         $isOwnArrangement = strpos($rateId, 'own_arrangement') === 0 || strpos($rateId, 'freernlltl') === 0 ? true : false;
-
+        $isLtlRate = $isSmallLtlrate || (substr($rateId, 0, 9) != 'parcel_12') || (strpos($rateId, 'ltl') != false);
         /*
         * Stored Response from WS */
         $lineItem = json_decode($data['lineitems'])->lineItemData;
@@ -227,7 +227,7 @@ class OrderController extends Controller
 
                     $totalBoxes = 1;
                     // TODO:revert back small rate check
-                    if (isset($ws->binPackagingData) && !empty($ws->binPackagingData)) {
+                    if (isset($ws->binPackagingData) && !empty($ws->binPackagingData) && ($isSmallrate)) {
                         if ($isGround) {
                             $sbsData = $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->bins_packed ?? [];
                         } else if ($isAir) {
@@ -310,7 +310,7 @@ class OrderController extends Controller
                     }
 
                     // Pallet packaging order widget
-                    if (isset($ws->palletPackagingData) && !empty($ws->palletPackagingData)) {
+                    if (isset($ws->palletPackagingData) && !empty($ws->palletPackagingData) && $isLtlRate) {
                         $palletPkgResp = (new PalletPackaging())->formatOrderWidget($responseFromWS, $lineItem);
                         
                         if (!empty($palletPkgResp)) {
