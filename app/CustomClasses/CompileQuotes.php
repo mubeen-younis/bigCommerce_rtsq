@@ -3936,6 +3936,12 @@ class CompileQuotes
     
     private function compileFreightQuoteChrLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
+        $returnRates = $this->residential['returnRates']['freightQuoteChrLtl'] ?? false;
+
+        if($returnRates){
+            return [];
+        }
+        
         $fqChrQuotes = new FQChrQuotesResults();
 
         $this->isFQChr = true;
