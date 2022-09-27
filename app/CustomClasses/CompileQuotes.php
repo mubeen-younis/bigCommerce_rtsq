@@ -2110,7 +2110,11 @@ class CompileQuotes
 
             $compiledQuotes = $fedexLtl->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes, $this->isMultiShipment);
             $hatShipment = array_values($fedexLtl->getCompiledQuotes($hatShipments, $hatArraySorting, $lgQuotes, $this->isMultiShipment));
-            $HAT[] = $hatShipment[0];
+            if($this->isMultiShipment){
+                $HAT[] = $hatShipment[0];
+            }else {
+                $HAT = $hatShipment;
+            }
 
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
                 if (count($compiledQuotes) > 1) {
@@ -2466,9 +2470,11 @@ class CompileQuotes
                     $insideDelivery && $lgQuotes ? $multiShipmentQuotes['insideLiftGateDelivery'][$origin] = $service['insideLiftGateDelivery'] : null;
                 }
             }
-            if($HAT !== null && !empty($HAT)){
+            if($HAT !== null && !empty($HAT) && $this->isMultiShipment){
                 $HATS[] = $HAT[0];
                 unset($HAT); 
+            }else {
+                $HATS = $HAT;
             }
             if ($this->isMultiShipment) {
                 $odwArr[$origin]['quotes'] = $compiledQuotes;
