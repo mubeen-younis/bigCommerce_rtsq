@@ -183,7 +183,7 @@ class Shipping
                 $quotes = $this->addBinResponseToQuotes($apiArray['binResponseArr'], $quotes, true);
             }
         }
-        // dd($requestArr);
+
         $boxbins = $requestArr['boxBins'] ?? [];
         if (isset($uspsBoxBins) && !empty($uspsBoxBins)) {
             $boxbins = array_merge($boxbins, $uspsBoxBins);

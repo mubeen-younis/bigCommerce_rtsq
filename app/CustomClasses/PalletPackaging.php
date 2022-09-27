@@ -363,7 +363,12 @@ class PalletPackaging
                 }
 
                 $items = $pallet->items;
-                $item = $items[0];
+                $item = $items[0] ?? null;
+                if (empty($item) || $item == null) {
+                    Log::info('Pallet items: ', $items);
+                    continue;
+                }
+
                 $variant_id = $item->id;
                 $palletResponse[$locationId]->pallets_packed[$key]->pallet_data->variant_id = $variant_id;
                 $boxId = $pallet->pallet_data->id ?? 0;

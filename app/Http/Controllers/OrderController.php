@@ -142,7 +142,10 @@ class OrderController extends Controller
         $rateId = $order['rate_id'] ?? null;
         $cartId = $order['cart_id'] ?? null;
         // TODO:remove static rate and cart Id's
-        $rateId = 'multi+LGidx+11664199393';
+        $rateId = 'wweltlEXLA+puidx+01664272229';
+        $rateId = 'EXLAwweltl+LG+puidx+11664274064';
+        $rateId = 'DPHEwweltl+LGidx+11664274269';
+        $rateId = 'DPHEwweltl+LGidx+11664275821';
         $cartId = '40ce53b5-a3d2-4c04-bbc0-071690c83af7';
         $data = optional(RequestTempData::where('rate_id', $rateId)
                 ->where('cart_id', $cartId)
@@ -183,11 +186,13 @@ class OrderController extends Controller
         $isLG = strpos($rateId, '+lg');
         $isOwnArrangement = strpos($rateId, 'own_arrangement') === 0 || strpos($rateId, 'freernlltl') === 0 ? true : false;
         $isLtlRate = $isSmallLtlrate || (substr($rateId, 0, 9) != 'parcel_12') || (strpos($rateId, 'ltl') != false);
+        // dd($rateId, $isLtlRate);
         /*
         * Stored Response from WS */
         $lineItem = json_decode($data['lineitems'])->lineItemData;
         $originalItemsReq = json_decode(json_encode($lineItem->items));
         $responseFromWS = json_decode($data['quotes']);
+        // dd($responseFromWS);
         $shippingGroupResp = !blank($data['shipping_group_resp']) ? json_decode($data['shipping_group_resp']) : [];
 
         $requestToWS = json_decode($data['request']);
