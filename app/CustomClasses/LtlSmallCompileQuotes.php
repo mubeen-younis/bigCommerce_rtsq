@@ -184,6 +184,8 @@ class LtlSmallCompileQuotes
                         $quotesCarrier['ltl']['fqchr']['LG'][] = $quote;
                     } else if(strpos($quote['code'], '+HAT') !== false){
                         $quotesCarrier['ltl']['fqchr']['HAT'][] = $quote;
+                    } else if (strpos($quote['code'], '+TL') !== false) {
+                        $quotesCarrier['ltl']['fqchr']['TL'][] = $quote;
                     } else {
                         $quotesCarrier['ltl']['fqchr']['simple'][] = $quote;
                     }
