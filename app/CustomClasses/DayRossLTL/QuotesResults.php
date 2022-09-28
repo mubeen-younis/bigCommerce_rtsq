@@ -3,6 +3,7 @@
 namespace App\CustomClasses\DayRossLTL;
 
 use App\CustomClasses\CompileQuotes;
+use App\CustomClasses\Functions;
 
 class QuotesResults
 {
@@ -107,5 +108,81 @@ class QuotesResults
         $originQuotes[$origin][$index]['title'] = $title;
 
         return $originQuotes;
+    }
+
+    public function HatQuoteCompile($shipments, $quoteSettings)
+    {
+        $hatShipments = [];
+        if (isset($shipments['holdAtTerminalResponse']) && !empty($shipments['holdAtTerminalResponse'])) {
+            foreach ($shipments['holdAtTerminalResponse'] as $shipment => $quotes) {
+
+                foreach ($quotes as $key => $quote) {
+                    $isStandardService = isset($quote['ratserviceLevel']) && isset($quote['ratserviceLevel']['rattext']) && $quote['ratserviceLevel']['rattext'] == 'LTL Standard Transit';
+
+                    if (!$isStandardService) {
+                        continue;
+                    }
+
+                    $hatResp[] = $quote;
+                    $srvcTitle = $quoteSettings['label_as'] ?? Functions::$simpleLTLTitle ?? $quote['ratserviceLevel']['rattext'] ?? '';
+                    $terminalInfo = $shipments['holdAtTerminalResponse']['terminalInfo'];
+                    $hatCompiledQuotes = $this->formatHATQuotes($hatResp, $srvcTitle, $quoteSettings, $terminalInfo);
+                    if (!empty($hatCompiledQuotes)) {
+                        $hatShipments = $hatCompiledQuotes;
+                    }
+                }
+            }
+        }
+        return $hatShipments;
+    }
+
+    private function formatHATQuotes($hatQuotes = [], $srvcTitle = '', $quoteSettings, $terminalInfo = [])
+    {
+        if (empty($hatQuotes)) {
+            return [];
+        }
+
+        $compiledQuotes = [];
+        foreach ($hatQuotes as $quote) {
+            $compiledQuotes['serviceType'] = 'estesltl+HAT+';
+            $title = $srvcTitle ?? '';
+            $address['streetLine'] = $terminalInfo['address']['tranline1'] ?? '';
+            $address['city'] = $terminalInfo['address']['trancity'] ?? '';
+            $address['state'] = $terminalInfo['address']['transtateProvince'] ?? '';
+            $address['zipCode'] = $terminalInfo['address']['tranpostalCode'] ?? '';
+            $address['countryCode'] = $terminalInfo['address']['trancountryCode'] ?? '';
+            $distance = $terminalInfo['distance']['text'] ?? '0 mi';
+            $phoneNumber = $terminalInfo['phoneNumber']['trancountry'] . $terminalInfo['phoneNumber']['tranareaCode'] . $terminalInfo['phoneNumber']['transubscriber'] ?? '';
+
+            $compiledQuotes['serviceDesc'] = Functions::getHATTitle($title, $address, $distance, $phoneNumber);
+            $compiledQuotes['totalNetCharge']['Amount'] = Functions::getHATPrice($quote['ratpricing']['rattotalPrice'], $quoteSettings['hold_at_terminal_price'] ?? 0);
+            $compiledQuotes['deliveryTimestamp'] = $quote['ratdelivery']['ratdate'] ?? '';
+            $compiledQuotes['totalTransitTimeInDays'] = $quote['ratdelivery']['totalTransitTimeInDays'] ?? '';
+            $compiledQuotes['transitTime'] = $quote['ratdelivery']['rattime'] ?? '';
+        }
+
+        return $compiledQuotes;
+    }
+
+    public function arrangeHATFreight($finalQuotes, $HATQuotes)
+    {
+        if (empty($HATQuotes)) {
+            return $finalQuotes;
+        }
+
+        $newQuotes = [];
+        foreach ($HATQuotes as $data) {
+
+            if (empty($data)) {
+                return $finalQuotes;
+            }
+            $newQuotes[] = [
+                'code' => $data['serviceType'],
+                'title' => $data['serviceDesc'],
+                'rate' => $data['totalNetCharge']['Amount'],
+            ];
+        }
+
+        return array_merge($finalQuotes, $newQuotes);
     }
 }
