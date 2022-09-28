@@ -1197,6 +1197,11 @@ class CompileQuotes
 
     public function compileTqlLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
+        $returnRates = $this->residential['returnRates']['tqlLtl'] ?? false;
+        if($returnRates){
+            return [];
+        }
+
         if ($this->residential['tqlLtl'] == 'Y') {
             $this->isResi = true;
             $this->residentialDlvry = 1;
