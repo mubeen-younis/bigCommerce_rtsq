@@ -2804,6 +2804,12 @@ class CompileQuotes
 
     private function compileDayRossLtlQuotes($shipments, $connectionSettings, $allOrigins, $hazmatAllItems, $residential)
     {
+        $returnRates = $this->residential['returnRates']['dayrossLtl'] ?? false;
+
+        if($returnRates){
+            return [];
+        }
+
         $dayRossLtl = new dayRossLtlQuotesResults();
         $this->isResi = $residential['dayrossLtl'] == 'Y';
         $this->residentialDlvry = $residential['dayrossLtl'] == 'Y' ? 1 : 0;

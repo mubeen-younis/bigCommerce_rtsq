@@ -511,6 +511,10 @@ class GenerateRequestData
 
     public function rossdayLtlEnitArr($connSettings, $destination)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
             'serverName' => "https://" . $this->storeData['store']['name'],
@@ -1980,6 +1984,7 @@ class GenerateRequestData
 
         $this->resiCarrier['dayrossLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['dayrossLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['dayrossLtl'] = $this->returnRates;
 
         $accessorial = [];
         if ($alwaysResi || $residential != 'N') {
@@ -1990,6 +1995,7 @@ class GenerateRequestData
         }
 
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
+        $holdAtTerminal = (isset($connSettings['quote_settings']['hold_at_terminal']) && $connSettings['quote_settings']['hold_at_terminal'] && $connSettings['quote_settings']['hold_at_terminal'] == true) ? '1' : '0';
 
         $apiArray = [
             'emailAddress' => $connSettings['creds']['email'],
@@ -1998,6 +2004,7 @@ class GenerateRequestData
 
             'prefferedCurrency' => 'USD',
             'thresholdWeightLimit' => $weightThreshold,
+            'holdAtTerminal' => $holdAtTerminal,
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
             /* Accessorial array */
