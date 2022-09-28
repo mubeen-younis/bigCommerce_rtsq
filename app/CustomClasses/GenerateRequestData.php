@@ -498,6 +498,10 @@ class GenerateRequestData
 
     public function freightQuoteLtlEnitArr($connSettings, $destination)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
             'licenseKey' => '',
             'serverName' => "https://" . $this->storeData['store']['name'],
@@ -1534,6 +1538,7 @@ class GenerateRequestData
 
         $this->resiCarrier['freightQuoteLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['freightQuoteLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['freightQuoteLtl'] = $this->returnRates;
 
         $accessorial = [];
         if ($liftGate == 'Y') {
@@ -1542,6 +1547,9 @@ class GenerateRequestData
         if ($residential == 'Y' || $alwaysResi) {
             array_push($accessorial, 'RESDEL');
         }
+
+        $quoteLTLAboveThreshold = (isset($connSettings['quote_settings']['quoteltl_and_truckload']) && $connSettings['quote_settings']['quoteltl_and_truckload']) ? '1' : '0';
+        $TLWeightThreshold = $connSettings['quote_settings']['truckload_weight_threshold'] ?? '0';
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $apiArray = [
             'name' => $connSettings['creds']['username'] ?? '',
@@ -1554,6 +1562,8 @@ class GenerateRequestData
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
             'accessorial' => $accessorial,
+            'quoteLTLAboveThreshold' => $quoteLTLAboveThreshold,
+            'TLWeightThreshold' => $TLWeightThreshold
         ];
 
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));

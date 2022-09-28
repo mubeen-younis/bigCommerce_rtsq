@@ -170,6 +170,8 @@ class LtlSmallCompileQuotes
                         $quotesCarrier['ltl']['fq']['LG'][] = $quote;
                     } else if (strpos($quote['code'], '+HAT') !== false) {
                         $quotesCarrier['ltl']['fq']['HAT'][] = $quote;
+                    } else if (strpos($quote['code'], '+TL') !== false) {
+                        $quotesCarrier['ltl']['fq']['TL'][] = $quote;
                     } else {
                         $quotesCarrier['ltl']['fq']['simple'][] = $quote;
                     }
@@ -367,6 +369,13 @@ class LtlSmallCompileQuotes
                         'code' => 'multi' . $rCode . '+LG+LAD',
                         'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
                         'title' => 'Freight' . $rtitle
+                    ];
+                } else if ($simpleLg === 'TL') {
+
+                    $newQuotes[] = [
+                        'code' => 'multi' . '+TL',
+                        'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
+                        'title' => 'Freight'
                     ];
                 } else {
                     $title = explode('|', $ltlQuot['title']);
