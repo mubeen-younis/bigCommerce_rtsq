@@ -278,7 +278,7 @@ class Functions
     }
 
     public static function getHATTitle($title = '', $address = [], $hatDistance = '', $phoneNumber = ''){
-        $distance = $hatDistance ?? '0 mi';
+        $distance = !empty($hatDistance) ? $hatDistance : '0 mi';
 
         return $title . ' | Hold At Terminal | ' . $distance . ' | ' . $address['city'] . ', ' . $address['state'] . ', ' . $address['zipCode'] . ' | ' . $phoneNumber;
     }

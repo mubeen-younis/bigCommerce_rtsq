@@ -4,6 +4,7 @@ namespace App\CustomClasses\DayRossLTL;
 
 use App\CustomClasses\CompileQuotes;
 use App\CustomClasses\Functions;
+use App\Models\TerminalLocation;
 
 class QuotesResults
 {
@@ -184,5 +185,48 @@ class QuotesResults
         }
 
         return array_merge($finalQuotes, $newQuotes);
+    }
+
+    public function getAndformatHATQuotes($quoteSettings, $shipments = [])
+    {
+        if (empty($quoteSettings) || blank($shipments) || !isset($quoteSettings['hold_at_terminal']) || $quoteSettings['hold_at_terminal'] == false) {
+            return [];
+        }
+
+        $terminals = TerminalLocation::getTerminalLocations();
+        if (blank($terminals)) {
+            return [];
+        }
+
+        $hatQuotes = [];
+
+        foreach ($shipments as $ship) {
+            $isError = isset($ship['q']['soapBody']['soapFault']);
+            if ($isError) {
+                continue;
+            }
+
+            $code = $ship['q']['DestinationTerminal'] ?? 'CLG';
+            $charges = $ship['q']['TotalAmount'] ?? $ship['q']['TotalCharges'] ?? 0.00;
+
+            foreach ($terminals as $terminal) {
+                if ($terminal['terminal_code'] == $code) {
+                    $terminal['serviceType'] = 'dayrossltl+HAT+' . $code;
+                    $title = !empty($quoteSettings['label_as']) ? $quoteSettings['label_as'] : 'Day & Ross';
+                    $address['city'] = $terminal['city'] ?? '';
+                    $address['state'] = $terminal['state'] ?? '';
+                    $address['zipCode'] = $terminal['zip'] ?? '';
+                    $distance = '';
+                    $phoneNumber = $terminal['phoneNo'] ?? '';
+
+                    $terminal['serviceDesc'] = Functions::getHATTitle($title, $address, $distance, $phoneNumber);
+                    $terminal['totalNetCharge']['Amount'] = Functions::getHATPrice($charges, $quoteSettings['hold_at_terminal_price'] ?? 0);
+
+                    $hatQuotes[] = $terminal;
+                }
+            }
+        }
+
+        return $hatQuotes;
     }
 }

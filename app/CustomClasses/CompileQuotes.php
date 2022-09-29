@@ -2826,6 +2826,7 @@ class CompileQuotes
             $this->isMultiShipment = $dayRossLtl->isMultiShipment($shipments);
         }
         $labelAs = $this->quoteSettings['label_as'] ?? '';
+        $hatShipments = $dayRossLtl->getAndformatHATQuotes($this->quoteSettings, $shipments);
 
         /* Quotes compilation */
         foreach ($shipments as $origin => $quote) {
@@ -2920,17 +2921,32 @@ class CompileQuotes
 
         /* Multishipment quotes with LGD  */
         if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1)) {
-            $allQuotes = $this->forceChangeTitle($allQuotes);
-            $resp = [
-                'checkoutQuotes' => $allQuotes,
-                'multiShipmentQuotes' => $multiShipmentQuotes,
-            ];
-
+            if (!empty($hatShipments)) {
+                $allQuotes = $this->forceChangeTitle($allQuotes);
+                $hatLabel = explode('|', $hatShipments[0]['serviceDesc']);
+                unset($hatLabel[0]);
+                $lableAs = 'Freight |' . implode('|', $hatLabel);
+                
+                $resp = [
+                    'checkoutQuotes' => Functions::arrangeHATFreight($allQuotes, $hatShipments, $lableAs),
+                    'multiShipmentQuotes' => Functions::arrangeHATMulti($multiShipmentQuotes, $hatShipments),
+                ];
+            } else {
+                $allQuotes = $this->forceChangeTitle($allQuotes);
+                $resp = [
+                    'checkoutQuotes' => $this->arrangeOwnFreight($allQuotes),
+                    'multiShipmentQuotes' => $multiShipmentQuotes,
+                ];
+            }
+         
             return $resp;
         }
 
-        $resp = $allQuotes;
-        return $resp;
+        if (!empty($hatShipments)) {
+            return  $dayRossLtl->arrangeHATFreight($allQuotes, $hatShipments);
+        }
+
+        return $this->arrangeOwnFreight($allQuotes);
     }
 
     private function compileYRCLtlQuotes($shipments, $connectionSettings, $allOrigins, $residential)
