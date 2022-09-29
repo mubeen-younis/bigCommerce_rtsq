@@ -590,6 +590,10 @@ class GenerateRequestData
 
     private function echoLtlEnitArr($connSettings, $destination)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+        
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
             'serverName' => "https://" . $this->storeData['store']['name'],
@@ -2199,6 +2203,7 @@ class GenerateRequestData
 
         $this->resiCarrier['echoLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['echoLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['echoLtl'] = $this->returnRates;
 
         $accessorial = [];
         if ($alwaysResi || $residential != 'N') {
