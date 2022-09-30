@@ -282,4 +282,13 @@ class Functions
 
         return $title . ' | Hold At Terminal | ' . $distance . ' | ' . $address['city'] . ', ' . $address['state'] . ', ' . $address['zipCode'] . ' | ' . $phoneNumber;
     }
+
+    public static function quotesLtlTruckLoad($quotes){
+       if(isset($quotes['Truckload']) && !empty($quotes['Truckload']) && isset($quotes['simple']) && !empty($quotes['simple'])){
+            $quotes['simple'][0]['rate'] = $quotes['simple'][0]['rate'] + $quotes['Truckload'][0]['rate'];
+            $quotes['liftgate'][0]['rate'] = $quotes['liftgate'][0]['rate'] + $quotes['Truckload'][0]['rate'];
+            unset($quotes['Truckload']);
+       }
+       return $quotes;
+    }
 }

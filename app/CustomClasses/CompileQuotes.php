@@ -4068,6 +4068,9 @@ class CompileQuotes
 
             $count++;
         }
+        if(!(isset($this->quoteSettings['quoteltl_and_truckload']) && $this->quoteSettings['quoteltl_and_truckload'])){
+            $allQuotes = Functions::quotesLtlTruckLoad($allQuotes);
+        }
 
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
@@ -4931,9 +4934,13 @@ class CompileQuotes
             if(isset($services[0]['Truckload']) && !empty($services[0]['Truckload'])){
                 $AVR = $this->averageRattingMethod($arraySorting, $options, $lgQuotes);
 
-                $title = explode(' (', $services[0]['Truckload']['title']); 
+                if(isset($this->isFQChr) && $this->isFQChr){
+                    $title = $this->quoteSettings['truck_label_as'] ?? Functions::$simpleLTLTitle . ' - Truckload Service';
+                }else {
+                    $title = ($this->quoteSettings['label_as'] ?? Functions::$simpleLTLTitle) . ' - Truckload Service';
+                }
                 $averageRateService[0]['Truckload'] = [
-                    'title' => $this->quoteSettings['truck_label_as'] ?? Functions::$simpleLTLTitle . ' - Truckload Service',
+                    'title' => $title,
                     'code' => $AVR[0]['simple']['code'] . '+TL',
                     'rate' => $AVR[0]['simple']['rate'],
                 ];
