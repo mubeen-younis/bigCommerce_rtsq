@@ -902,6 +902,9 @@ class CompileQuotes
             if (!empty($ownArrangement) && !array_search('own_arrangement', array_column($newQuotes['checkoutQuotes'], 'code'))) {
                 array_push($newQuotes['checkoutQuotes'], $ownArrangement);
             }
+            if(empty($newQuotes['multiShipmentQuotes']) || empty($newQuotes['checkoutQuotes'])){
+                return [];
+            }
         } else {
             foreach ($quotes as $car => $quote) {
                 foreach ($quote as $key => $quot) {
@@ -4076,8 +4079,13 @@ class CompileQuotes
 
             $count++;
         }
-        if(!(isset($this->quoteSettings['quoteltl_and_truckload']) && $this->quoteSettings['quoteltl_and_truckload'])){
-            $allQuotes = Functions::quotesLtlTruckLoad($allQuotes);
+
+        if(!(isset($this->quoteSettings['quoteltl_and_truckload']) && $this->quoteSettings['quoteltl_and_truckload']) && $this->isMultiShipment ){
+            
+            $ltlTruckloadQuotes = Functions::quotesLtlTruckLoad($allQuotes, $shipments);
+            $allQuotes = !empty($ltlTruckloadQuotes) ? $ltlTruckloadQuotes[0] : null;
+            $multiShipmentQuotes = !empty($ltlTruckloadQuotes) ? $ltlTruckloadQuotes[1] : null;
+
         }
 
         $allQuotes = $this->getFinalQuotesArray($allQuotes);

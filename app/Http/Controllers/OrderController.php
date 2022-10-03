@@ -491,10 +491,12 @@ class OrderController extends Controller
             if (!$isSmall) {
                 $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Pickup') : '';
                 $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Delivery') : '';
+                $isFreightTruckLoad != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Delivery') : '';
                 $liftGatePickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Pickup') : '';
                 $insideDelivery != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Inside Delivery') : '';
                 $LimitedAccessDel != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Limited Access Delivery') : '';
-                $isTruckLoad ?? $isFreightTruckLoad != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Truck Load Delivery') : '';
+                $isTruckLoad != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Truck Load Delivery') : '';
+                $isFreightTruckLoad != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Truck Load Delivery') : '';
             }
             $orderWidget[$zip]['accessories'] = array_values(array_unique($orderWidget[$zip]['accessories']));
             $count++;
