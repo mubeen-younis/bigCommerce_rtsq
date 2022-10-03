@@ -263,6 +263,10 @@ class GenerateRequestData
 
     public function odflLtlEnitArr($connSettings, $destination)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
 
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
@@ -323,9 +327,13 @@ class GenerateRequestData
 
     public function upsLtlEnitArr($connSettings, $destination)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '', //$this->connectionSettings['license_key'],
-            'serverName' => "https://" . $this->storeData['store']['name'], //"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
+            'licenseKey' => '',
+            'serverName' => "https://" . $this->storeData['store']['name'], 
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
@@ -381,10 +389,13 @@ class GenerateRequestData
 
     public function xpoLtlEnitArr($connSettings, $destination, $enitOrigin)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+         }
 
         return [
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '', //$this->connectionSettings['license_key'],
-            'serverName' => "https://" . $this->storeData['store']['name'], //"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
+            'licenseKey' => '', 
+            'serverName' => "https://" . $this->storeData['store']['name'],
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
@@ -396,18 +407,20 @@ class GenerateRequestData
 
     function rnlLtlEnitArr($connSettings, $destination, $enitOrigin, $lineItems)
     {
-        if (isset($connSettings['quote_settings']['returnRates']) && $connSettings['quote_settings']['returnRates'] && $this->isPoBOX) {
+        if (isset($connSettings['quote_settings']['return_rates']) && $connSettings['quote_settings']['return_rates'] && $this->isPoBOX) {
             return [];
         }
+        
         $shipmentPrice = $this->calculatePrice($lineItems);
         if (isset($connSettings['quote_settings']['free_shipping_on_orders']) && $connSettings['quote_settings']['free_shipping_on_orders'] < $shipmentPrice) {
             return [
                 'freeShipment' => true
             ];
         }
+
         return [
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '', //$this->connectionSettings['license_key'],
-            'serverName' => "https://" . $this->storeData['store']['name'], //"https://store-".$this->storeData['store'].".mybigcommerce.com", //https://store-uann2u.mybigcommerce.com/
+            'licenseKey' => '', 
+            'serverName' => "https://" . $this->storeData['store']['name'], 
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
@@ -432,16 +445,19 @@ class GenerateRequestData
 
     public function estesltlEnitArr($connSettings, $destination)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'licenseKey' => '',
             'serverName' => "https://" . $this->storeData['store']['name'],
             'carrierMode' => 'pro',
-            'quotestType' => 'ltl', // ltl / small
+            'quotestType' => 'ltl', 
             'version' => '1.0.0',
             'returnQuotesOnExceedWeight' => 1,
             'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
             'api' => $this->getApiInfoEsterLtl($connSettings, $destination),
-
         ];
 
 
@@ -449,8 +465,12 @@ class GenerateRequestData
 
     public function yrcLtlEnitArr($connSettings, $destination)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'licenseKey' => '',
             'serverName' => "https://" . $this->storeData['store']['name'],
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
@@ -505,6 +525,10 @@ class GenerateRequestData
 
     private function saiaLtlEnitArr($connSettings, $destination)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
             'licenseKey' => '',
             'serverName' => "https://" . $this->storeData['store']['name'],
@@ -518,6 +542,10 @@ class GenerateRequestData
 
     public function abfLtlEnitArr($connSettings, $destination)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
             'licenseKey' => '',
             'serverName' => "https://" . $this->storeData['store']['name'],
@@ -531,6 +559,10 @@ class GenerateRequestData
 
     public function SouthEasternEnitArr($connSettings, $destination)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
             'licenseKey' => '',
             'serverName' => "https://" . $this->storeData['store']['name'],
@@ -1077,6 +1109,9 @@ class GenerateRequestData
 
         $this->resiCarrier['estesLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['estesLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['estesLtl'] = $this->returnRates;
+
+        $holdAtTerminal = (isset($connSettings['quote_settings']['hold_at_terminal']) && $connSettings['quote_settings']['hold_at_terminal'] && $connSettings['quote_settings']['hold_at_terminal'] == true) ? '1' : '0';
 
         $accessorial = [];
         if ($alwaysResi || $residential == 'Y') {
@@ -1112,6 +1147,7 @@ class GenerateRequestData
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
             'accessorial' => $accessorial,
+            'holdAtTerminal' => $holdAtTerminal,
         ];
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
@@ -1143,6 +1179,7 @@ class GenerateRequestData
 
         $this->resiCarrier['odflLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['odflLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['odflLtl'] = $this->returnRates;
 
         $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
 
@@ -1415,6 +1452,7 @@ class GenerateRequestData
 
         $this->resiCarrier['xpoLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['xpoLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['xpoLtl'] = $this->returnRates;
         $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
 
         $accessorial = [];
@@ -1427,6 +1465,8 @@ class GenerateRequestData
         }
 
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
+        $accessToken = $connSettings['creds']['api_key'] ?? '';
+
         $apiArray = [
             'UserName' => $connSettings['creds']['username'] ?? '',
             'Password' => $connSettings['creds']['password'] ?? '',
@@ -1436,8 +1476,14 @@ class GenerateRequestData
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
             'thresholdWeightLimit' => $weightThreshold,
+            'holdAtTerminal' => $connSettings['quote_settings']['hold_at_terminal'] ? '1' : '0',
+            'basicAccessToken' => $accessToken,
             'accessorial' => $accessorial
         ];
+
+        if (!empty($accessToken)) {
+            $apiArray['xpoApiVersion'] = '1.0';
+        }
 
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
@@ -1466,7 +1512,7 @@ class GenerateRequestData
         } else {
             $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
         }
-
+        $insideDelivery = (isset($connSettings['quote_settings']['insideDelivery']) && $connSettings['quote_settings']['insideDelivery'] && $connSettings['quote_settings']['insideDelivery'] == true) ? 1 : 0;
 
         $this->resiCarrier['rnlLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['rnlLtl'] = $alwaysResi;
@@ -1480,7 +1526,7 @@ class GenerateRequestData
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
             'liftgateDelivery' => $liftGate,
             'residentialDelivery' => $alwaysResi ? 'Y' : $residential,
-            'insideDelAsAnOption' => $connSettings['quote_settings']['offer_inside_delivery'] ?? 0,
+            'insideDelAsAnOption' => $insideDelivery,
 
             'QuoteType' => 'Domestic', //'Domestic or International or AlaskaHawaii'
             'CODAmount' => '0',
@@ -1788,6 +1834,7 @@ class GenerateRequestData
 
         $residential = 'N';
         $alwaysResi = false;
+        $limitedAccess = false;
         /*
             * Check if rad hit not consumed and residential is enables
         * **/
@@ -1804,10 +1851,16 @@ class GenerateRequestData
             }
         } else {
             $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+            
+        }
+        
+        if($residential == 'N' && !$alwaysResi){
+            $limitedAccess = $connSettings['quote_settings']['offer_limited_access_delivery'] ?? false;
         }
 
         $this->resiCarrier['yrcLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['yrcLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['yrcLtl'] = $this->returnRates;
 
         $accessorial = [];
         if ($alwaysResi || $residential == 'Y') {
@@ -1815,6 +1868,9 @@ class GenerateRequestData
         }
         if ($liftGate == 'Y') {
             array_push($accessorial, 'LFTD');
+        }
+        if ($limitedAccess) {
+            array_push($accessorial, 'LTDD');
         }
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $apiArray = [
@@ -1865,6 +1921,7 @@ class GenerateRequestData
 
         $this->resiCarrier['abfLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['abfLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['abfLtl'] = $this->returnRates;
 
         $accessorial = [];
         if ($alwaysResi || $residential == 'Y') {
@@ -1878,9 +1935,10 @@ class GenerateRequestData
         $apiArray = [
 
             'id' => $connSettings['creds']['business_id'],
-            'senderConsignee' => 'ShipAff',
+            'senderConsignee' => $connSettings['creds']['request_freight_quotes'] ?? 'ShipAff',
             'thresholdWeightLimit' => $weightThreshold,
             'accessorial' => $accessorial,
+            'holdAtTerminal' => isset($connSettings['quote_settings']['hold_at_terminal']) && $connSettings['quote_settings']['hold_at_terminal'] ? '1' : '0',
 
         ];
 
@@ -2020,6 +2078,7 @@ class GenerateRequestData
 
         $this->resiCarrier['saiaLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['saiaLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['saiaLtl'] = $this->returnRates;
 
         $accessorial = [];
         if ($alwaysResi || $residential != 'N') {
@@ -2076,6 +2135,7 @@ class GenerateRequestData
 
         $this->resiCarrier['SouthEastern'] = $residential;
         $this->resiCarrier['alwaysResi']['SouthEastern'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['SouthEastern'] = $this->returnRates;
 
         $accessorial = [];
         if ($alwaysResi || $residential == 'Y') {
@@ -2373,6 +2433,8 @@ class GenerateRequestData
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $this->resiCarrier['upsLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['upsLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['upsLtl'] = $this->returnRates;
+
         $paymentType = isset($connSettings['quote_settings']['shipper_relationship']) && $connSettings['quote_settings']['shipper_relationship'] === 'third_party' ? 'ThirdParty' : 'shipper';
         $apiArray = [
             'accessLevel' => $connSettings['creds']['access_level'],
@@ -2389,6 +2451,7 @@ class GenerateRequestData
             'serviceCode' => '308',
             'serviceCodeDescription' => 'UPS Freight LTL',
             'timeInTransitIndicator' => 'N',
+            'dimWeightBaseAccount' => $connSettings['creds']['rates_my_freight_based'] ?? 0,
             'accessorial' => [
                 'liftgateDelivery' => $liftGate,
                 'residentialDelivery' => $alwaysResi ? 'Y' : $residential,

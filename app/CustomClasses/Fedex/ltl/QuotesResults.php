@@ -265,13 +265,16 @@ class QuotesResults
                     if (isset($quote['holdAtTerminalResponse']) && !empty($quote['holdAtTerminalResponse'])) {
                         $hatResp[] = $quote['holdAtTerminalResponse'];
                         $srvcTitle = $quote['serviceType'] ?? '';
+                        $postFix = '';
                         if ($srvcTitle === 'FEDEX_FREIGHT_PRIORITY') {
                             $srvcTitle = $quoteSettings['fedex_freight_priority_label'] ?? 'LTL Freight Priority';
+                            $postFix = 'PR';
                         } else {
                             $srvcTitle = $quoteSettings['fedex_freight_economy_label'] ?? 'LTL Freight Economy';
+                            $postFix = 'EC';
                         }
 
-                        $hatCompiledQuotes = $this->formatHATQuotes($hatResp, $srvcTitle, $quoteSettings);
+                        $hatCompiledQuotes = $this->formatHATQuotes($hatResp, $srvcTitle, $quoteSettings, $postFix);
                         if (!empty($hatCompiledQuotes)) {
                             $key = count($shipments[$shipment]['q']);
                             $shipments[$shipment]['q'][$key] = $hatCompiledQuotes;
@@ -284,7 +287,7 @@ class QuotesResults
         return $shipments;
     }
 
-    private function formatHATQuotes($hatQuotes = [], $srvcTitle = '', $quoteSettings)
+    private function formatHATQuotes($hatQuotes = [], $srvcTitle = '', $quoteSettings, $postFix = '')
     {
         if (empty($hatQuotes)) {
             return [];
@@ -292,7 +295,7 @@ class QuotesResults
 
         $compiledQuotes = [];
         foreach ($hatQuotes as $quote) {
-            $compiledQuotes['serviceType'] = 'fedexltl+HAT+';
+            $compiledQuotes['serviceType'] = 'fedexltl+HAT+' . $postFix;
             $title = $srvcTitle ?? $quote['Title'] ?? '';
             $address['city'] = $quote['address']['City'] ?? '';
             $address['state'] = $quote['address']['StateOrProvinceCode'] ?? '';

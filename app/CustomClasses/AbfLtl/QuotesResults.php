@@ -4,6 +4,7 @@ namespace App\CustomClasses\AbfLtl;
 
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
+use App\CustomClasses\Functions;
 
 class QuotesResults
 {
@@ -55,6 +56,7 @@ class QuotesResults
         if ($this->isSuppressedRatesShipment($shipments)) {
             return $shipments;
         }
+        $srvcDesc = $connSettings['quote_settings']['label_as'] ?? Functions::$simpleLTLTitle;
         foreach ($shipments as $shipment => $quotes) {
             if (!isset($quotes['q']) || isset($quotes['q']['NUMERRORS'] ) && $quotes['q']['NUMERRORS'] == 1) {
                 continue;
@@ -71,13 +73,13 @@ class QuotesResults
                 foreach ($items as $key => $value) {
                
                     if ($value['@attributes']['TYPE'] == 'CHARGE') {
-                        $lineItems[] = $value;
+                        $lineItems[$key] = $value;
                         $lineItems[$key]['hazardous'] = $value['Hazardous'] ?? '';
                     }
                 }
 
                 $formattedShipments[$shipment]['q'] = $this->formatShipments($quotesArr,
-                'Standard', 'ABF', $lineItems, $lgStatus, $radStatus, $quotesArr['CHARGE']);
+                'Standard', $srvcDesc, $lineItems, $lgStatus, $radStatus, $quotesArr['CHARGE']);
 
                 if (isset($lgStatus) && $lgStatus != 'n') {
 
@@ -90,6 +92,16 @@ class QuotesResults
                 
             }
 
+            if (isset($quotes['holdAtTerminalResponse']) && !empty($quotes['holdAtTerminalResponse'])) {
+                $hatResp[] = $quotes['holdAtTerminalResponse'];
+                $srvcTitle = $connSettings['quote_settings']['label_as'] ?? $srvcDesc;
+
+                $hatCompiledQuotes = $this->formatHATQuotes($hatResp, $srvcTitle, $connSettings);
+                if (!empty($hatCompiledQuotes)) {
+                    $key = count($shipments[$shipment]['q']);
+                    $formattedShipments[$shipment]['q']['holdAtTerminalResponse'] = $hatCompiledQuotes;
+                }
+            }
         }
 
         return $formattedShipments;
@@ -108,6 +120,33 @@ class QuotesResults
             'totalNetCharge' => array('Amount' => $charges ?? 0),
 
         );
+    }
+
+    private function formatHATQuotes($hatQuotes = [], $srvcTitle = '', $quoteSettings)
+    {
+        if (empty($hatQuotes)) {
+            return [];
+        }
+
+        $compiledQuotes = [];
+        foreach ($hatQuotes as $quote) {
+            $compiledQuotes['serviceType'] = 'abfltl+HAT+';
+            $title = $srvcTitle ?? $quote['Title'] ?? '';
+            $address['city'] = $quote['address']['DESTTERMCITY'] ?? '';
+            $address['state'] = $quote['address']['DESTTERMSTATE'] ?? '';
+            $address['zipCode'] = $quote['address']['DESTTERMZIP'] ?? '';
+            $distance = $quote['distance']['text'] ?? '0 mi';
+            $phoneNumber = $quote['address']['DESTTERMPHONE'] ?? '';
+
+            $compiledQuotes['serviceDesc'] = Functions::getHATTitle($title, $address, $distance, $phoneNumber);
+            $compiledQuotes['totalNetCharge']['Amount'] = Functions::getHATPrice($quote['totalNetCharge'], $quoteSettings['quote_settings']['hold_at_terminal_price'] ?? 0);
+            $compiledQuotes['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
+            $compiledQuotes['totalTransitTimeInDays'] = $quote['totalTransitTimeInDays'] ?? '';
+            $compiledQuotes['transitTime'] = $quote['transitTime'] ?? '';
+            $compiledQuotes['transitDays'] = $quote['transitDays'] ?? '';
+        }
+
+        return $compiledQuotes;
     }
 
     public function quoteSettingsData()
@@ -130,6 +169,24 @@ class QuotesResults
         $this->resiLabel = Constant::RESI_LABEL;
         $this->lgLabel = Constant::LIFT_LABEL;
         $this->resiLgLabel = Constant::RESI_LIFT_LABEL;
+    }
+
+    public function arrangeHATFreight($finalQuotes, $HATQuotes)
+    {
+        if (empty($HATQuotes)) {
+            return $finalQuotes;
+        }
+
+        $newQuotes = [];
+        foreach ($HATQuotes as $data) {
+            $newQuotes[] = [
+                'code' => $data['serviceType'],
+                'title' => $data['serviceDesc'],
+                'rate' => $data['totalNetCharge']['Amount'],
+            ];
+        }
+
+        return array_merge($finalQuotes, $newQuotes);
     }
 
     public function getCompiledQuotes($services, $arraySorting, $isMulitshipment)
