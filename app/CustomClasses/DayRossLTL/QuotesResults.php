@@ -229,4 +229,63 @@ class QuotesResults
 
         return $hatQuotes;
     }
+
+    public static function getEnabledPremiumFreightService($quoteSettings)
+    {
+        $qsServices = $quoteSettings ?? [];
+
+        if (empty($qsServices)) {
+            return '';
+        }
+
+        $services = ['deliver_to_threshold', 'deliver_to_room_of_choice', 'deliver_and_packaging_removal', 'deliver_to_threshold_two_man', 'deliver_to_room_of_choice_two_man', 'deliver_and_packaging_removal_two_man'];
+        $enabledSrvcName = '';
+
+        foreach ($services as $srvc) {
+            if (isset($qsServices[$srvc]) && $qsServices[$srvc]) {
+                $enabledSrvcName = self::getServiceCode($srvc);
+                break;
+            }
+        }
+
+        return $enabledSrvcName;
+    }
+
+    private static function getServiceCode($srvcIndex)
+    {
+        switch ($srvcIndex) {
+            case 'deliver_to_threshold':
+                return 'H1';
+            case 'deliver_to_room_of_choice':
+                return 'H2';
+            case 'deliver_and_packaging_removal':
+                return 'H3';
+            case 'deliver_to_threshold_two_man':
+                return 'H4';
+            case 'deliver_to_room_of_choice_two_man':
+                return 'H5';
+            case 'deliver_and_packaging_removal_two_man':
+                return 'H6';
+            default:
+                return '';
+        }
+    }
+
+    public static function isTwoManDeliveryEnabled($connSettings)
+    {
+        if (isset($connSettings['quote_settings']['always_two_man_delivery']) && $connSettings['quote_settings']['always_two_man_delivery'] || (isset($connSettings['quote_settings']['offer_two_man_delivery']) && $connSettings['quote_settings']['offer_two_man_delivery'])) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public static function isAppointmentManDeliveryEnabled($connSettings)
+    {
+        if (isset($connSettings['quote_settings']['always_appointment_delivery']) && $connSettings['quote_settings']['always_appointment_delivery'] || (isset($connSettings['quote_settings']['offer_appointment_delivery']) && $connSettings['quote_settings']['offer_appointment_delivery'])) {
+            return true;
+        }
+
+        return false;
+    }
 }

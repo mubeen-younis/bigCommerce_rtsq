@@ -12,6 +12,7 @@ use App\CustomClasses\UspsSmall\QuotesResults as UspsSmallQuotesResults;
 use App\CustomClasses\UspsSmall\PackagingRequest as UspsSmallPackagingRequest;
 use Illuminate\Support\Facades\Log;
 use App\CustomClasses\DayLightLtl\QuotesResults as dayLightQuotesResults;
+use App\CustomClasses\DayRossLTL\QuotesResults;
 
 /**
  * class that generated request data
@@ -1994,10 +1995,24 @@ class GenerateRequestData
             $accessorial['TLGDEL'] = 'Tailgate Delivery';
         }
 
+        // 2-Man delivery
+        if (QuotesResults::isTwoManDeliveryEnabled($connSettings)) {
+            $accessorial['2-MAN'] = '2-Man Delivery';
+        }
+
+        // Appointment delivery
+        if (QuotesResults::isAppointmentManDeliveryEnabled($connSettings)) {
+             $accessorial['APPT'] = 'Delivery Appointment';
+        }
+
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $holdAtTerminal = (isset($connSettings['quote_settings']['hold_at_terminal']) && $connSettings['quote_settings']['hold_at_terminal'] && $connSettings['quote_settings']['hold_at_terminal'] == true) ? '1' : '0';
 
         $apiArray = [
+            // Sameday Api settings
+            'sameDayDivision' => $connSettings['creds']['api_type'] == 'sameday' ? '1' : '0',
+            'premiumFreightService' => QuotesResults::getEnabledPremiumFreightService($connSettings['quote_settings']),
+
             'emailAddress' => $connSettings['creds']['email'],
             'password' => $connSettings['creds']['password'],
             'billToAccountNumber' => $connSettings['creds']['billing_account_number'],
