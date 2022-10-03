@@ -3238,6 +3238,14 @@ class CompileQuotes
 
             $count++;
         }
+        
+        if(!(isset($this->quoteSettings['quoteltl_and_truckload']) && $this->quoteSettings['quoteltl_and_truckload']) && $this->isMultiShipment ){
+            
+            $ltlTruckloadQuotes = Functions::quotesLtlTruckLoad($allQuotes, $shipments);
+            $allQuotes = $ltlTruckloadQuotes[0];
+            $multiShipmentQuotes = $ltlTruckloadQuotes[1];
+
+        }
 
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
