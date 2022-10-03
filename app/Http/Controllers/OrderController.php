@@ -59,17 +59,13 @@ class OrderController extends Controller
     public function getOrderWidget(Request $request)
     {
         try {
-            // $order = $this->getBCOrderByID($request);
-            // if (empty($order)) {
-            //     return response()->json(['error' => true,
-            //         'data' => [],
-            //         'message' => 'No Order Found',
-            //     ], 404);
-            // }
-            $order = [
-                'shipping_name' => 'Small Shipping',
-                'shipping_rate' => 500.00 
-            ];
+            $order = $this->getBCOrderByID($request);
+            if (empty($order)) {
+                return response()->json(['error' => true,
+                    'data' => [],
+                    'message' => 'No Order Found',
+                ], 404);
+            }
             $orderWidget = $this->createOrderWidget($request, $order);
             if (empty($orderWidget)) {
                 return response()->json(['error' => true,
