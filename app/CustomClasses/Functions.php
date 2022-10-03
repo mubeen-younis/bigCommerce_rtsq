@@ -283,12 +283,32 @@ class Functions
         return $title . ' | Hold At Terminal | ' . $distance . ' | ' . $address['city'] . ', ' . $address['state'] . ', ' . $address['zipCode'] . ' | ' . $phoneNumber;
     }
 
-    public static function quotesLtlTruckLoad($quotes){
-       if(isset($quotes['Truckload']) && !empty($quotes['Truckload']) && isset($quotes['simple']) && !empty($quotes['simple'])){
-            $quotes['simple'][0]['rate'] = $quotes['simple'][0]['rate'] + $quotes['Truckload'][0]['rate'];
-            $quotes['liftgate'][0]['rate'] = $quotes['liftgate'][0]['rate'] + $quotes['Truckload'][0]['rate'];
+    public static function addQuotesLtlTruckLoad($quotes){
+       
+        if(isset($quotes['simple']) && !empty($quotes['simple']) && isset($quotes['Truckload']) && !empty($quotes['Truckload'])){
+            $key = count($quotes['simple']);
+            $quotes['simple'][$key] = $quotes['Truckload'][0];
+            $quotes['Truckload'][0]['code'] = 'fqltl+FLGTL';
+            isset($quotes['liftgate']) ? $quotes['liftgate'][$key] = $quotes['Truckload'][0] : null;
             unset($quotes['Truckload']);
-       }
-       return $quotes;
+        }
+
+        return $quotes;
+    }
+
+    public static function quotesLtlTruckLoad($allQuotes, $shipments){
+       
+        foreach($shipments as $key => $shipment){
+            $index[] = $key;
+        }
+        $allQuotes = self::addQuotesLtlTruckLoad($allQuotes);
+        foreach($allQuotes as $key1 => $quotes){
+            foreach($quotes as $key2 => $quote){
+                $multiShipmentQuotes[$key1][$index[$key2]] = $quote;
+            }
+        }
+    
+        return [$allQuotes, $multiShipmentQuotes];
+
     }
 }
