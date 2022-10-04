@@ -345,6 +345,10 @@ class GenerateRequestData
 
     public function upsSmallEnitArr($connSettings, $destination)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
             'serverName' => "https://" . $this->storeData['store']['name'],
@@ -1656,6 +1660,8 @@ class GenerateRequestData
         $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
         $this->resiCarrier['upsSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['upsSmall'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['upsSmall'] = $this->returnRates;
+
         $apiArray = [
             'ups_small_pkg_username' => $connSettings['creds']['username'],
             'ups_small_pkg_password' => $connSettings['creds']['password'],
