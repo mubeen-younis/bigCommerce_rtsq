@@ -425,6 +425,11 @@ class LtlSmallCompileQuotes
                 $multiShipments[$count]['hat'][$indexes['small'][0]] = $parcel;
                 $count++;
             }
+            if (isset($quotes['TL'][0])) {
+                $multiShipments[$count]['Truckload'][$indexes['ltl'][0]] = $quotes['TL'][0];
+                $multiShipments[$count]['Truckload'][$indexes['small'][0]] = $parcel;
+                $count++;
+            }
         }
         return $multiShipments;
     }
