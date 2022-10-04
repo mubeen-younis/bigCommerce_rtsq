@@ -174,7 +174,7 @@ class OrderController extends Controller
         $rateId = strtolower($rateId);
         $isInspOrLocal = substr($rateId, 0, 4) == 'insp' || substr($rateId, 0, 6) == 'locdel';
         $isSmallrate = substr($rateId, 0, 9) == 'parcel_12' || substr($rateId, 0, 5) == 'multi' ? true : false;
-        $isLG = strpos($rateId, '+lg');
+        $isLG = strpos($rateId, '+lg') != false;
         $isOwnArrangement = strpos($rateId, 'own_arrangement') === 0 || strpos($rateId, 'freernlltl') === 0 ? true : false;
         $isLtlRate = $isSmallLtlrate || (substr($rateId, 0, 9) != 'parcel_12') || (strpos($rateId, 'ltl') != false);
         /*
@@ -356,11 +356,11 @@ class OrderController extends Controller
                 if ($isHAT) {
                     $sRate = $multiShipmentresponse->$index->hat->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->hat->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
-                } else if ($isLG && $insideDelivery) {
+                } else if ($isLG && $insideDelivery == 'Y') {
                     $sRate = $multiShipmentresponse->$index->insideLiftGateDelivery->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->insideLiftGateDelivery->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
                     $code = $multiShipmentresponse->$index->insideLiftGateDelivery->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
-                } else if ($LimitedAccessDel && $isLG) {
+                } else if ($LimitedAccessDel == 'Y' && $isLG) {
                     $sRate = $multiShipmentresponse->$index->limitedaccessLG->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->limitedaccessLG->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
                     $code = $multiShipmentresponse->$index->limitedaccessLG->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
@@ -368,11 +368,11 @@ class OrderController extends Controller
                     $sRate = $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->liftgate->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
                     $code = $multiShipmentresponse->$index->liftgate->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
-                } else if ($insideDelivery) {
+                } else if ($insideDelivery == 'Y') {
                     $sRate = $multiShipmentresponse->$index->insideDelivery->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->insideDelivery->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
                     $code = $multiShipmentresponse->$index->insideDelivery->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
-                } else if ($LimitedAccessDel) {
+                } else if ($LimitedAccessDel == 'Y') {
                     $sRate = $multiShipmentresponse->$index->limitedaccess->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->limitedaccess->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
                     $code = $multiShipmentresponse->$index->limitedaccess->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';

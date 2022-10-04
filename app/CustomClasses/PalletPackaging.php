@@ -450,7 +450,7 @@ class PalletPackaging
         $item['lineItemWeight'] = $pallet->pallet_data->weight + $palletWeight;
         $item['isHazmatLineItem'] = $hazmat;
 
-        $item['lineItemShipAsPallet'] = 1;
+        $item['lineItemPalletFlag'] = 1;
         if ((isset($item['own_pallet']) && $item['own_pallet'] == 0)) {
             $item['piecesOfLineItem'] = 1;
         }

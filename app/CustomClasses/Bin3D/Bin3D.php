@@ -56,7 +56,7 @@ class Bin3D
                 foreach ($sbsCompiledResponseAlone as $key => $responseFromSBSAlone) {
                     $responseFromSBSAlone->not_packed_items = [];
                     $response['response'] = $responseFromSBSAlone;
-                    //$responseFromSBS[$key] = json_encode($response);
+        
                     if (isset($responseFromSBS[$key])) {
                         $responseFromSBS[$key] = json_encode($this->multiShipmentOneShipHasBoth($responseFromSBS[$key], $responseFromSBSAlone));
                     } else {
@@ -192,7 +192,6 @@ class Bin3D
             $resp = json_decode($SBSResp);
             $not_packed_items = $resp->response->not_packed_items;
             if (count($not_packed_items)) {
-                // foreach ($items[$key] as $itemKey => $item) {
                 foreach ($not_packed_items as $not_packed_item) {
                     $notPackedQuantity = optional($not_packed_item)->q ?? 0;
                     if ($notPackedQuantity != 0) {
@@ -208,7 +207,6 @@ class Bin3D
                     }
 
                 }
-                //  }
             }
         }
         return $data;
@@ -285,10 +283,8 @@ class Bin3D
 
         if ($this->isPalletPkgReq) {
             $finalRequest['pallet'] = $bins;
-            // $finalRequest['items'] = $items;
         } else {
             $finalRequest['bins'] = $bins;
-            // $finalRequest['items'] = $item;
         }
         $finalRequest['items'] = $item;
 
@@ -539,12 +535,6 @@ class Bin3D
             $notPacked['errors'] = [];
             $notPacked['boxFee'] = $items['boxFee'] ?? 0;
             $data['response'] = $notPacked;
-
-            // if ($this->isPalletPkgReq) {
-            //     $object['palletResp'] = json_encode($data);
-            // } else {
-            //     $object[$Shipkey] = json_encode($data);
-            // }
             
             $object[$Shipkey] = json_encode($data);
         }
@@ -555,14 +545,6 @@ class Bin3D
     {
         $not_packed_items = [];
         foreach ($item as $key => $it) {
-            // if ($this->isPalletPkgReq) {
-            //     if ($key == 'variant_id') {
-            //         $not_packed_items[$it] = json_decode(json_encode($item));
-            //     }
-            // } else {
-            //     $not_packed_items[$key] = json_decode(json_encode($it));
-            // }
-
             $not_packed_items[$key] = json_decode(json_encode($it));
         }
         return $not_packed_items;
