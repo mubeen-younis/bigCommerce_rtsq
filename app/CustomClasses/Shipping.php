@@ -792,9 +792,10 @@ class Shipping
         if (!empty(array_filter($quotes))) {
             $resp['quote_id'] = (string)rand(1, 9); // need to change
             $resp['messages'] = []; // need to change
-            $quotes = $this->freeShippingTitle($quotes);
-            $quotes = $this->formatCheapestFinalQuotes($quotes);
+            
             if (!$onlyDbscEnabled) {
+                $quotes = $this->freeShippingTitle($quotes);
+                $quotes = $this->formatCheapestFinalQuotes($quotes);
                 $quotes = $this->addDbscRates($quotes);
             }
 
