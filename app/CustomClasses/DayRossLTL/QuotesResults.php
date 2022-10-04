@@ -16,6 +16,7 @@ class QuotesResults
     public function formateQuoteBeforeCompile($shipments, $quoteSettings): array
     {
         $formattedShipments = $shipments ?? [];
+        dd('fs', $formattedShipments);
 
         foreach ($formattedShipments as $key => $value) {
             $isError = isset($formattedShipments[$key]['q']['soapBody']['soapFault']);
@@ -35,7 +36,20 @@ class QuotesResults
                             $formattedShipments[$key]['q']['surcharges']['liftgateFee'] = $value['Amount'];
                         }
                     }
+
                     unset($formattedShipments[$key]['q']['ShipmentCharges']);
+                } elseif (isset($value['q']['Division']) && $value['q']['Division'] == 'Sameday') {
+                    $serviceDescription = $value['q']['Description'] ?? '';
+                    $shipmentCharges = $value['q']['ShipmentCharges']['ShipmentCharge'];
+
+                    // TODO:filter shipments with respect to active services
+                    foreach ($shipmentCharges as $k => $value) {
+                        if (isset($value['ChargeCode']) && $value['ChargeCode'] == 'TLGDEL' && isset($value['Description']) && $value['Description'] == 'TAILGATE DELIVERY') {
+                            $formattedShipments[$key]['q']['surcharges']['liftgateFee'] = $this->formatCharges($value['Amount']);
+                            $formattedShipments[$key]['q']['surcharges']['liftgateFee'] = $value['Amount'];
+                        }
+                    }
+
                 } else {
                     $serviceDescription = 'Day & Ross';
                     $charges = $this->formatCharges($value['q']['TotalCharges']);
@@ -287,5 +301,37 @@ class QuotesResults
         }
 
         return false;
+    }
+
+    public function getActiveServices($quoteSettings)
+    {
+        // Domestic (CA to CA)
+        $activeServices = array();
+        if (isset($quoteSettings['service']['AM_SERVICE']) && $quoteSettings['service']['AM_SERVICE'] == 1) {
+            $activeServices[] = 'AM';
+        }
+
+        if (isset($quoteSettings['service']['GROUND_SERVICE']) && $quoteSettings['service']['GROUND_SERVICE'] == 1) {
+            $activeServices[] = 'EG';
+        }
+
+        if (isset($quoteSettings['service']['URGENT_PAC']) && $quoteSettings['service']['URGENT_PAC'] == 1) {
+            $activeServices[] = 'UP';
+        }
+
+        // International (CA to US)
+        if (isset($quoteSettings['service']['US_NEXT_PM']) && $quoteSettings['service']['US_NEXT_PM'] == 1) {
+            $activeServices[] = 'AD';
+        }
+
+        if (isset($quoteSettings['service']['US_2ND_DAY']) && $quoteSettings['service']['US_2ND_DAY'] == 1) {
+            $activeServices[] = 'A2';
+        }
+
+        if (isset($quoteSettings['service']['US_GROUND']) && $quoteSettings['service']['US_GROUND'] == 1) {
+            $activeServices[] = 'AG';
+        }
+
+        return $activeServices;
     }
 }
