@@ -27,6 +27,9 @@ class Functions
     public static $lgPickupTitle = '+lfgpu';
     public static $limitedAccesDelLabel = ' w/ limited access delivery';
     public static $limitedAccessLGDelLable = ' w/ lift gate & limited access delivery';
+    public static $twoManDeliveryLabel = ' w/ two man delivery';
+    public static $appointmentDeliveryLabel = ' w/ appointment delivery';
+    public static $twoManAppDelLabel = ' w/ two man & appointment delivery';
 
     public static function hasInsureCarrier($code)
     {

@@ -2821,12 +2821,13 @@ class CompileQuotes
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
         $lgQuotes = false;
+        $twoManQuotes = $appointmentQuotes = false;
 
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = $dayRossLtl->isMultiShipment($shipments);
         }
         $labelAs = $this->quoteSettings['label_as'] ?? '';
-        $hatShipments = $dayRossLtl->getAndformatHATQuotes($this->quoteSettings, $shipments);
+        $hatShipments = $connectionSettings['dayross-ltl']['creds']['api_type'] == 'sameday' ? [] : $dayRossLtl->getAndformatHATQuotes($this->quoteSettings, $shipments);
 
         /* Quotes compilation */
         foreach ($shipments as $origin => $quote) {
@@ -2843,6 +2844,9 @@ class CompileQuotes
                 if (!$lgQuotes) {
                     $lgQuotes = $dayRossLtl->isRADEnabled($this->quoteSettings, $this->isResi);
                 }
+
+                $twoManQuotes = $dayRossLtl->isTwoManDeliveryEnabled($connectionSettings['dayross-ltl']);
+                $appointmentQuotes = $dayRossLtl->isAppointmentManDeliveryEnabled($connectionSettings['dayross-ltl']);
             }
 
             $originQuotes = $arraySorting = [];
@@ -2883,6 +2887,38 @@ class CompileQuotes
                             $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
                             $originQuotes[$key]['liftgate']['title'] = $lgTitle;
                         }
+
+                        if ($twoManQuotes && !$lgQuotes) {
+                            $tmAccess = $this->getAccessorialCode(false, false, '', '', false, true, false);
+                            $tmPrice = $this->calculatePrice($data, false, false, false, false, false, true, false);
+                            $tmTitle = $this->getTitle($data['serviceDesc'], false, false, $days, [], $dateAndDays, false, false, false, false, true, false);
+                            $arraySorting['twoManDel'][$key] = $tmPrice;
+                            $originQuotes[$key]['twoManDel']['code'] = 'dayrossltl' . $tmAccess;
+                            $originQuotes[$key]['twoManDel']['rate'] = $tmPrice;
+                            $originQuotes[$key]['twoManDel']['title'] = $tmTitle;
+                        }
+
+                        if ($appointmentQuotes && !$lgQuotes) {
+                            $aptAccess = $this->getAccessorialCode(false, false, '', '', false, false, true);
+                            $aptPrice = $this->calculatePrice($data, false, false, false, false, false, false, true);
+                            $tmTitle = $this->getTitle($data['serviceDesc'], false, false, $days, [], $dateAndDays, false, false, false, false, false, true);
+
+                            $arraySorting['aptDel'][$key] = $aptPrice;
+                            $originQuotes[$key]['aptDel']['code'] = 'dayrossltl' . $aptAccess;
+                            $originQuotes[$key]['aptDel']['rate'] = $aptPrice;
+                            $originQuotes[$key]['aptDel']['title'] = $tmTitle;
+                        }
+
+                        if ($twoManQuotes &&  $appointmentQuotes && !$lgQuotes) {
+                            $aptAccess = $this->getAccessorialCode(false, false, '', '', false, true, true);
+                            $aptPrice = $this->calculatePrice($data, false, false, false, false, false, true, true);
+                            $tmTitle = $this->getTitle($data['serviceDesc'], false, false, $days, [], $dateAndDays, false, false, false, false, true, true);
+
+                            $arraySorting['twoManAptDel'][$key] = $aptPrice;
+                            $originQuotes[$key]['twoManAptDel']['code'] = 'dayrossltl' . $aptAccess;
+                            $originQuotes[$key]['twoManAptDel']['rate'] = $aptPrice;
+                            $originQuotes[$key]['twoManAptDel']['title'] = $tmTitle;
+                        }
                     }
                 }
             }
@@ -2895,6 +2931,15 @@ class CompileQuotes
                         $multiShipmentQuotes['simple'][$origin] = $service['simple'];
                         $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
                         $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
+
+                        $twoManQuotes ? $allQuotes['twoManDel'][] = $service['twoManDel'] : null;
+                        $twoManQuotes ? $multiShipmentQuotes['twoManDel'][$origin] = $service['twoManDel'] : null;
+
+                        $appointmentQuotes ? $allQuotes['aptDel'][] = $service['aptDel'] : null;
+                        $appointmentQuotes ? $multiShipmentQuotes['aptDel'][$origin] = $service['aptDel'] : null;
+
+                        $twoManQuotes && $appointmentQuotes ? $allQuotes['twoManAptDel'][] = $service['twoManAptDel'] : null;
+                        $twoManQuotes && $appointmentQuotes ? $multiShipmentQuotes['twoManAptDel'][$origin] = $service['twoManAptDel'] : null;
                     }
                 } else {
                     $service = reset($compiledQuotes);
@@ -2902,6 +2947,15 @@ class CompileQuotes
                     $multiShipmentQuotes['simple'][$origin] = $service['simple'] ?? '';
                     $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
                     $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
+
+                    $twoManQuotes ? $allQuotes['twoManDel'][] = $service['twoManDel'] : null;
+                    $twoManQuotes ? $multiShipmentQuotes['twoManDel'][$origin] = $service['twoManDel'] : null;
+
+                    $appointmentQuotes ? $allQuotes['aptDel'][] = $service['aptDel'] : null;
+                    $appointmentQuotes ? $multiShipmentQuotes['aptDel'][$origin] = $service['aptDel'] : null;
+
+                    $twoManQuotes && $appointmentQuotes ? $allQuotes['twoManAptDel'][] = $service['twoManAptDel'] : null;
+                    $twoManQuotes && $appointmentQuotes ? $multiShipmentQuotes['twoManAptDel'][$origin] = $service['twoManAptDel'] : null;
                 }
             }
 
@@ -2912,8 +2966,8 @@ class CompileQuotes
             $count++;
         }
 
-        $allQuotes = $this->getFinalQuotesArray($allQuotes);
-
+        $allQuotes = $this->getFinalQuotesArray($allQuotes);    
+        
         /* Quotes for instore delivery */
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
@@ -4156,7 +4210,7 @@ class CompileQuotes
                  * */
                 return array_merge($quotes['liftgate'], $quotes['insideLiftGateDelivery'] ?? [], $quotes['limitedaccessLG'] ?? []) ?? $quotes['simple'];
             } else {
-                return array_merge($quotes['simple'], $quotes['insideDelivery'] ?? [], $quotes['limitedaccess'] ?? []);
+                return array_merge($quotes['simple'], $quotes['insideDelivery'] ?? [], $quotes['limitedaccess'] ?? $quotes['twoManDel'] ?? [], $quotes['aptDel'] ?? [], $quotes['twoManAptDel'] ?? []);
             }
         } elseif ($lfg) {
             /**
@@ -4243,7 +4297,7 @@ class CompileQuotes
      *
      * @info: This will return specific code according to the accessorials for appending with the service code.
      */
-    public function getAccessorialCode($lgOption = false, $insideDel = false, $resiPickup = '', $lgPickup = '', $laccess = false)
+    public function getAccessorialCode($lgOption = false, $insideDel = false, $resiPickup = '', $lgPickup = '', $laccess = false, $twoManDel = false, $appDel = false)
     {
         $access = '';
         if ($this->residentialDlvry == '1' || $this->isResi || $this->alwaysResi) {
@@ -4257,6 +4311,14 @@ class CompileQuotes
         }
         if($laccess){
             $access .= '+LAD';
+        }
+
+        if ($twoManDel) {
+            $access .= '+TMD';
+        }
+
+        if ($appDel) {
+            $access .= '+APD';
         }
 
         if (!empty($resiPickup)) {
@@ -4277,14 +4339,16 @@ class CompileQuotes
      *
      * @info: This function will calculate all prices and return price against a specific service
      */
-    public function calculatePrice($data, $lgOption = false, $getCost = false, $isUpsLtl = false, $insideDel = false, $laccess = false)
+    public function calculatePrice($data, $lgOption = false, $getCost = false, $isUpsLtl = false, $insideDel = false, $laccess = false, $twoManDel = false, $appDel = false)
     {
         $lgCost = $lgOption ? 0 : $this->getLiftGateCost($data, $getCost, $isUpsLtl);
         $IDCost = $insideDel ? 0 : $this->getInsideDeliveryCost($data); 
         $LADCost = $laccess ? 0 : $data['limitedAccessDeliveryFee'] ?? 0;
+        $TMDCost = $twoManDel ? 0 : $data['surcharges']['twoManFee'] ?? 0;
+        $APDCost = $appDel ? 0 : $data['surcharges']['appointmentFee'] ?? 0;
         $basePrice = str_replace(',', '', $data['totalNetCharge']['Amount']);
         $basePrice = (float)$basePrice;
-        $basePrice = $basePrice - $lgCost - $LADCost - $IDCost;
+        $basePrice = $basePrice - $lgCost - $LADCost - $IDCost - $TMDCost - $APDCost;
         $basePrice = $this->calculateHandlingFee($basePrice);
         return $basePrice;
     }
@@ -4375,7 +4439,7 @@ class CompileQuotes
      *
      * @info: This function will compile name of a service and return service name according to the settings enabled.
      */
-    public function getTitle($serviceName, $lgOption = false, $from = false, $deliveryEstimate = '', $quoteSetting = [], $daysAndDate = [], $insideDel = false, $isInsideLiftGateDelivery = false, $laccess = false, $laccessLG = false)
+    public function getTitle($serviceName, $lgOption = false, $from = false, $deliveryEstimate = '', $quoteSetting = [], $daysAndDate = [], $insideDel = false, $isInsideLiftGateDelivery = false, $laccess = false, $laccessLG = false, $twoManDel = false, $appDel = false)
     {
         // Here  Making service title
         if (!empty($quoteSetting)) {
@@ -4425,6 +4489,15 @@ class CompileQuotes
         } else if($laccess){
             $accessTitle = $this->LADelLabel;
         }
+
+        if ($twoManDel && $appDel) {
+            $accessTitle = empty($accessTitle) ? Functions::$twoManAppDelLabel : $accessTitle . ' & two man & appointment delivery';
+        } elseif($twoManDel) {
+            $accessTitle = empty($accessTitle) ? Functions::$twoManDeliveryLabel : $accessTitle . ' & two man delivery';
+        } elseif($appDel) {
+            $accessTitle = empty($accessTitle) ? Functions::$appointmentDeliveryLabel : $accessTitle . ' & appointment delivery';
+        }
+
         $resp = $serviceTitle . $accessTitle . $deliveryEstimateLabel;
         return $resp;
     }
