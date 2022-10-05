@@ -3715,6 +3715,12 @@ class CompileQuotes
 
     private function compileUspsSmallQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
+        $returnRates = $this->residential['returnRates']['uspsSmall'] ?? false;
+
+        if($returnRates){
+            return [];
+        }
+
         $uspsSmallQuotesResults = new uspsSmallQuotesResults();
         $this->isResi = $residential['uspsSmall'] == 'Y' ? true : false;
         $this->residentialDlvry = $residential['uspsSmall'] == 'Y' ? 1 : 0;
