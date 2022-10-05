@@ -22,6 +22,7 @@ use App\CustomClasses\UspsSmall\QuotesResults as uspsSmallQuotesResults;
 use App\CustomClasses\EchoLogisticsLtl\QuotesResults as echoLogisticsLtlQuotesResults;
 use App\CustomClasses\DayLightLtl\QuotesResults as dayLightLtlQuotesResults;
 use App\CustomClasses\FreightQuote\ChrLtl\QuotesResults as FQChrQuotesResults;
+use App\CustomClasses\FreightQuote\Ltl\QuotesResults as FQQuotesResults;
 use App\CustomClasses\EstesLTL\QuotesResults as estesLtlQuotesResults;
 
 
@@ -3105,6 +3106,13 @@ class CompileQuotes
 
     private function compileFreightQuoteLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
+        $returnRates = $this->residential['returnRates']['freightQuoteLtl'] ?? false;
+
+        if($returnRates){
+            return [];
+        }
+        
+        $freightQuote = new FQQuotesResults();
         $this->isFQ = true;
 
         if ($this->residential['freightQuoteLtl'] == 'Y') {
@@ -3151,10 +3159,13 @@ class CompileQuotes
                             (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
                 }
                 $resiPickup = isset($this->quoteSettings['residentialPickup']) && $this->quoteSettings['residentialPickup'] ? '+pu' : '';
+                $isTlQuotes = isset($this->quoteSettings['truckload_weight_threshold']) && $this->quoteSettings['truckload_weight_threshold'] ?? null;
             }
 
             $originQuotes = [];
             $arraySorting = [];
+            $TLquotes = $freightQuote->truckLoadQuotes($quote, $allConfigServices, $this->quoteSettings);
+            $TLquotes = $this->getCompiledQuotes($TLquotes[0], $TLquotes[1], false);
 
             if (isset($quote['q'])) {
                 if (isset($quote['hazardousStatus'])) {
@@ -3214,6 +3225,12 @@ class CompileQuotes
                     $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
                 }
             }
+            if ($TLquotes !== null && !empty($TLquotes)) {
+                foreach ($TLquotes as $key => $TLservice) {
+                    $isTlQuotes ? $allQuotes['Truckload'][] = $TLservice['Truckload'] : null;
+                    $isTlQuotes ? $multiShipmentQuotes['Truckload'][$origin] = $TLservice['Truckload'] : null;
+                }
+            }
 
             if ($this->isMultiShipment) {
                 $odwArr[$origin]['quotes'] = $compiledQuotes;
@@ -3221,13 +3238,21 @@ class CompileQuotes
 
             $count++;
         }
+        
+        if(!(isset($this->quoteSettings['quoteltl_and_truckload']) && $this->quoteSettings['quoteltl_and_truckload']) && $this->isMultiShipment ){
+            
+            $ltlTruckloadQuotes = Functions::quotesLtlTruckLoad($allQuotes, $shipments);
+            $allQuotes = $ltlTruckloadQuotes[0];
+            $multiShipmentQuotes = $ltlTruckloadQuotes[1];
+
+        }
 
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
 
-        if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1)) {
+        if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1) || (!empty($multiShipmentQuotes['Truckload']) && count($multiShipmentQuotes['Truckload']) > 1)) {
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $allQuotes,
@@ -4127,14 +4152,14 @@ class CompileQuotes
                 /**
                  * Condition for lift gate as an option
                  * */
-                return array_merge($quotes['simple'], $quotes['liftgate'], $quotes['insideDelivery'] ?? [], $quotes['insideLiftGateDelivery'] ?? [], $quotes['limitedaccess'] ?? [], $quotes['limitedaccessLG'] ?? []);
+                return array_merge($quotes['simple'] ?? [], $quotes['liftgate'] ?? [], $quotes['insideDelivery'] ?? [], $quotes['insideLiftGateDelivery'] ?? [], $quotes['limitedaccess'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['Truckload'] ?? []);
             } elseif ($lfg) {
                 /**
                  * Condition for Always lift gate and lift gate for residential (Single Shipment)
                  * */
-                return array_merge($quotes['liftgate'], $quotes['insideLiftGateDelivery'] ?? [], $quotes['limitedaccessLG'] ?? []) ?? $quotes['simple'];
+                return array_merge($quotes['liftgate'] ?? [], $quotes['insideLiftGateDelivery'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['Truckload'] ?? []) ?? $quotes['simple'];
             } else {
-                return array_merge($quotes['simple'], $quotes['insideDelivery'] ?? [], $quotes['limitedaccess'] ?? []);
+                return array_merge($quotes['simple'] ?? [], $quotes['insideDelivery'] ?? [], $quotes['limitedaccess'] ?? [], $quotes['Truckload'] ?? []);
             }
         } elseif ($lfg) {
             /**
@@ -4892,7 +4917,21 @@ class CompileQuotes
             $options = 1;
         }
         $sliced = array_slice($arraySorting['simple'], 0, $options, true);
+        
         if ($this->quoteSettings['method'] == 3) {
+            $services = array_values($services);
+            if(isset($services[0]['Truckload']) && !empty($services[0]['Truckload'])){
+                $AVR = $this->averageRattingMethod($arraySorting, $options, $lgQuotes);
+
+                $title = explode(' (', $services[0]['Truckload']['title']); 
+                $averageRateService[0]['Truckload'] = [
+                    'title' => ($this->quoteSettings['label_as'] ?? Functions::$simpleLTLTitle) . ' - Truckload Service',
+                    'code' => $AVR[0]['simple']['code'] . '+TL',
+                    'rate' => $AVR[0]['simple']['rate'],
+                ];
+                return $averageRateService;
+            }
+
             return $this->averageRattingMethod($arraySorting, $options, $lgQuotes, $resiPickup, $lgPickup, $insideDelivery);
         }
 
