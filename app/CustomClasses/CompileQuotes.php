@@ -2050,6 +2050,7 @@ class CompileQuotes
             }
             $originQuotes = [];
             $arraySorting = [];
+            $hatArraySorting = [];
 
             if (isset($quote['q'])) {
                 if (isset($quote['hazardousStatus'])) {
@@ -4338,12 +4339,12 @@ class CompileQuotes
             $access .= '+LAD';
         }
 
-        if ($twoManDel) {
-            $access .= '+TMD';
-        }
-
-        if ($appDel) {
-            $access .= '+APD';
+        if ($twoManDel && $appDel) {
+            $access .= Functions::$twoManAptDelAccess;
+        } elseif ($twoManDel) {
+            $access .= Functions::$twoManDelAccess;
+        } elseif ($appDel) {
+            $access .= Functions::$appointmentDelAccess;
         }
 
         if (!empty($resiPickup)) {
