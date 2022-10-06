@@ -171,6 +171,8 @@ class OrderController extends Controller
         $isHAT = strpos(strtolower($rateId), '+hat');
         $insideDelivery = strpos($rateId, '+ID') ? 'Y' : 'n';
         $LimitedAccessDel = strpos($rateId, '+LAD') ? 'Y' : 'n';
+        $isTruckLoad = strpos($rateId, '+TL') ? 'Y' : 'n';
+        $isFreightTruckLoad = strpos($rateId, '+FLGTL') ? 'Y' : 'n';
         $rateId = strtolower($rateId);
         $isInspOrLocal = substr($rateId, 0, 4) == 'insp' || substr($rateId, 0, 6) == 'locdel';
         $isSmallrate = substr($rateId, 0, 9) == 'parcel_12' || substr($rateId, 0, 5) == 'multi' ? true : false;
@@ -342,11 +344,11 @@ class OrderController extends Controller
                 if ($isHAT) {
                     $sRate = $multiShipmentresponse->$index->hat->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->hat->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
-                } else if ($isLG && $insideDelivery) {
+                } else if ($isLG && $insideDelivery == 'Y') {
                     $sRate = $multiShipmentresponse->$index->insideLiftGateDelivery->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->insideLiftGateDelivery->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
                     $code = $multiShipmentresponse->$index->insideLiftGateDelivery->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
-                } else if ($LimitedAccessDel && $isLG) {
+                } else if ($LimitedAccessDel == 'Y' && $isLG) {
                     $sRate = $multiShipmentresponse->$index->limitedaccessLG->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->limitedaccessLG->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
                     $code = $multiShipmentresponse->$index->limitedaccessLG->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
@@ -354,11 +356,19 @@ class OrderController extends Controller
                     $sRate = $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->liftgate->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
                     $code = $multiShipmentresponse->$index->liftgate->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
-                } else if ($insideDelivery) {
+                } else if ($isFreightTruckLoad == 'Y') {
+                    $sRate = $multiShipmentresponse->$index->Truckload->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? 0.00;
+                    $order['shipping_name'] = $multiShipmentresponse->$index->Truckload->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? '';
+                    $code = $multiShipmentresponse->$index->Truckload->$zip->code ?? $multiShipmentresponse->$index->liftgate->$zip->code ?? '';
+                } else if ($isTruckLoad == 'Y') {
+                    $sRate = $multiShipmentresponse->$index->Truckload->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? 0.00;
+                    $order['shipping_name'] = $multiShipmentresponse->$index->Truckload->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? '';
+                    $code = $multiShipmentresponse->$index->Truckload->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? $multiShipmentresponse->$index->liftgate->$zip->code ?? '';
+                } else if ($insideDelivery == 'Y') {
                     $sRate = $multiShipmentresponse->$index->insideDelivery->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->insideDelivery->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
                     $code = $multiShipmentresponse->$index->insideDelivery->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
-                } else if ($LimitedAccessDel) {
+                } else if ($LimitedAccessDel == 'Y') {
                     $sRate = $multiShipmentresponse->$index->limitedaccess->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->limitedaccess->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
                     $code = $multiShipmentresponse->$index->limitedaccess->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
@@ -481,9 +491,13 @@ class OrderController extends Controller
             if (!$isSmall) {
                 $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Pickup') : '';
                 $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Delivery') : '';
+                $isFreightTruckLoad != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Delivery') : '';
                 $liftGatePickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Pickup') : '';
                 $insideDelivery != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Inside Delivery') : '';
                 $LimitedAccessDel != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Limited Access Delivery') : '';
+                $isTruckLoad != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Truck Load Delivery') : '';
+                $isFreightTruckLoad != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Truck Load Delivery') : '';
+
             }
             $orderWidget[$zip]['accessories'] = array_values(array_unique($orderWidget[$zip]['accessories']));
             $count++;
