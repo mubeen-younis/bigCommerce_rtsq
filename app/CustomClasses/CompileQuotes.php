@@ -1592,7 +1592,7 @@ class CompileQuotes
         }
         if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1)) {
             
-            if (!empty($hatShipments)) {
+            if (isset($hatShipments[0]['serviceDesc']) && !empty($hatShipments)) {
                 $allQuotes = $this->forceChangeTitle($allQuotes);
                 $hatLabel = explode('|', $hatShipments[0]['serviceDesc']);
                 unset($hatLabel[0]);
@@ -2029,6 +2029,7 @@ class CompileQuotes
         $freightEconomyLableAs = $this->quoteSettings['fedex_freight_economy_label'] ?? '';
         $freightPriorityLableAs = $this->quoteSettings['fedex_freight_priority_label'] ?? '';
         $hatShipments = [];
+        $hatArraySorting = [];
 
         foreach ($shipments as $origin => $quote) {
             if (isset($quote['severity'])) {
@@ -2110,7 +2111,7 @@ class CompileQuotes
 
             $compiledQuotes = $fedexLtl->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes, $this->isMultiShipment);
             $hatShipment = array_values($fedexLtl->getCompiledQuotes($hatShipments, $hatArraySorting, $lgQuotes, $this->isMultiShipment));
-            if($this->isMultiShipment){
+            if($this->isMultiShipment && !empty($hatShipment)){
                 $HAT[] = $hatShipment[0];
             }else {
                 $HAT = $hatShipment;
