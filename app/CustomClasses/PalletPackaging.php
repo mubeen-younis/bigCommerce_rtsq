@@ -640,8 +640,8 @@ class PalletPackaging
                     $quotesWithFee[$carName][$locId]['q']['CHARGE'] = $q['q']['CHARGE'] + $palletFee[$locId];
                 }
             } elseif ($carName == 'xpoLogistics') {
-                $charges = (new xpoLtlQuotesResults())->netCharge($q['q']['NetCharge']) ?? $q['q']['totalNetCharge'] ?? 0.00;
-                $quotesWithFee[$carName][$locId]['q']['NetCharge'][0] = (new xpoLtlQuotesResults())->netCharge($q['q']['NetCharge']) + $palletFee[$locId];
+                $charges = (new xpoLtlQuotesResults())->netCharge($q['q']['NetCharge'] ?? $q['q']['totalNetCharge'] ?? 0.00);
+                $quotesWithFee[$carName][$locId]['q']['NetCharge'][0] = $charges + $palletFee[$locId];
             } elseif ($carName == 'rnl') {
                 if (isset($q['q']['ServiceLevels']['ServiceLevel'])) {
                     foreach ($q['q']['ServiceLevels']['ServiceLevel'] as $key => $quote) {
@@ -709,7 +709,7 @@ class PalletPackaging
 
     private function seflError($q)
     {
-        return isset($q['q']) && isset($q['q']['error']) && $q['q']['error'] == [];
+        return isset($q['q']) && isset($q['q']['error']) && ($q['q']['error'] == [] || $q['q']['error'] == 1);
     }
 
     public function formatOrderWidget($responseFromWS, $lineItem)
