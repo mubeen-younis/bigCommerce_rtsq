@@ -763,6 +763,7 @@ class GenerateRequestData
                         } else {
                             $this->allPacked($sbsResponseOneRate);
                         }
+
                         if ($this->oneRate) {
                             $itemsArrOneRate = $sbsResponseOneRate['items'] ?? $itemsArr;
                             $commdityDetails['one_rate_commdityDetails'] = $this->lineItems($itemsArrOneRate, $carriers['fedexSmall']['originAddress'], true, $sbsResponseOneRate['binResponse']);
@@ -792,10 +793,12 @@ class GenerateRequestData
                     }
 
                     if (isset($carriers['upsSmall'])) {
-                        $this->fedexType = 'simple-rate';
+                        $this->checkUpsServiceEnabled();
                         
                         if ($this->simpleRate) {
+                            $this->fedexType = 'simple-rate';
                             $sbsSimpleRateResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
+                            dd($sbsSimpleRateResponse['binResponse']);
 
                             if (empty($sbsSimpleRateResponse['binResponse'])) {
                                 $this->simpleRate = false;
@@ -936,6 +939,17 @@ class GenerateRequestData
                 if (!$this->air && $service && in_array($key, $air)) {
                     $this->air = true;
                 }
+            }
+        }
+    }
+
+    public function checkUpsServiceEnabled()
+    {
+        $carrierServices = $this->connectionSettings['ups-small']['quote_settings']['carrier_services'] ?? [];
+        foreach ($carrierServices as $key => $service) {
+            $simpleRate = ['simple_rate_ups_ground', 'simple_rate_ups_2nd_day_air', 'simple_rate_ups_next_day_air_saver', 'simple_rate_ups_3_day_select'];
+            if (!$this->simpleRate && $service && in_array($key, $simpleRate)) {
+                $this->simpleRate = true;
             }
         }
     }
@@ -2601,7 +2615,6 @@ class GenerateRequestData
         if ((count($items) && count($boxBins)) || count($itemsAlone)) {
             $Bin3D = new Bin3D();
             $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment);
-            dd($binResponse);
             if (count($binResponse)) {
                 foreach ($itemsAlone as $key => $itemAlone) {
                     foreach ($itemAlone as $alone) {
