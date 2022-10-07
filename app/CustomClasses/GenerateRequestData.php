@@ -12,6 +12,7 @@ use App\CustomClasses\UspsSmall\QuotesResults as UspsSmallQuotesResults;
 use App\CustomClasses\UspsSmall\PackagingRequest as UspsSmallPackagingRequest;
 use Illuminate\Support\Facades\Log;
 use App\CustomClasses\DayLightLtl\QuotesResults as dayLightQuotesResults;
+use App\Models\BoxSize;
 
 /**
  * class that generated request data
@@ -43,6 +44,7 @@ class GenerateRequestData
     public $itemsArr = [];
     public $carriers = [];
     public $isPoBOX = false;
+    public $simpleRate = false;
 
     /**
      * constructor of class that accepts request object
@@ -60,6 +62,7 @@ class GenerateRequestData
         $this->returnRates = false;
         $this->quoteSettings = $quoteSettings;
         $this->connectionSettings = $connectionSettings;
+        $this->simpleRate = false;
     }
 
     /**
@@ -777,8 +780,8 @@ class GenerateRequestData
                     $itemsArr = !empty($itemsArrGround) ? $itemsArrGround : $itemsArr;
                     $sbsResponse['binResponse'] = $binReponse;
                 } else {
-                    $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
-                    $itemsArr = $sbsResponse['items'] ?? $itemsArr;
+                    // $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
+                    // $itemsArr = $sbsResponse['items'] ?? $itemsArr;
                     if (isset($carriers) && count($carriers) == 1 && isset($carriers['usps'])) {
                         $sbsResponse['binResponse'] = [];
                         $sbsResponse['boxBins'] = [];
@@ -787,9 +790,29 @@ class GenerateRequestData
                     if (isset($carriers['wweSmall'])) {
                         $carriers['wweSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                     }
+
                     if (isset($carriers['upsSmall'])) {
+                        $this->fedexType = 'simple-rate';
+                        
+                        if ($this->simpleRate) {
+                            $sbsSimpleRateResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
+
+                            if (empty($sbsSimpleRateResponse['binResponse'])) {
+                                $this->simpleRate = false;
+                            } else {
+                                $this->allPacked($sbsSimpleRateResponse);
+                            }
+
+                            if ($this->simpleRate) {
+                                $itemsArrSimpleRate = $sbsSimpleRateResponse['items'] ?? $itemsArr;
+                                $commdityDetails['simple_rate_commdityDetails'] = $this->lineItems($itemsArrSimpleRate, $carriers['upsSmall']['originAddress'], true, $sbsSimpleRateResponse['binResponse']);
+                                $binReponse['simpleRate'] = $sbsSimpleRateResponse['binResponse'];
+                            }
+                        }
+                            
                         $carriers['upsSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                     }
+
                     if (isset($carriers['unishippersSmall'])) {
                         $carriers['unishippersSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                     }
@@ -878,11 +901,13 @@ class GenerateRequestData
                     foreach ($bins_packed as $packed) {
                         if (isset($packed->bin_data->type) && ($packed->bin_data->type == 'item' || $packed->bin_data->type == 'weight_based')) {
                             $this->oneRate = false;
+                            $this->simpleRate = false;
                             break 2;
                         }
                     }
                 } else {
                     $this->oneRate = false;
+                    $this->simpleRate = false;
                     break;
                 }
             }
@@ -2529,6 +2554,7 @@ class GenerateRequestData
 
         if (!empty($itemsAlone)) {
             $this->oneRate = false;
+            $this->simpleRate = false;
         }
 
         $boxBins = $newOrigins = $newitemsArr = [];
@@ -2545,9 +2571,11 @@ class GenerateRequestData
                 $boxes = DB::table('box_sizes')->where('store_id', $storeId)
                     ->where('is_available', 1)->get();
                 break;
+            case 'simple-rate':
+                $boxes = BoxSize::getUpsSmallAvailableBoxes($storeId);
+                break;
         }
-        /*$boxes = DB::table('box_sizes')->where('store_id', $storeId)
-            ->where('is_available', 1)->get();*/
+
         foreach ($boxes as $box) {
             $boxBins[$box->id] = array(
                 'nickname' => $box->nickname,
@@ -2567,10 +2595,13 @@ class GenerateRequestData
                 /*END*/
             );
         }
+
         $hits = count($items);
+
         if ((count($items) && count($boxBins)) || count($itemsAlone)) {
             $Bin3D = new Bin3D();
             $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment);
+            dd($binResponse);
             if (count($binResponse)) {
                 foreach ($itemsAlone as $key => $itemAlone) {
                     foreach ($itemAlone as $alone) {
