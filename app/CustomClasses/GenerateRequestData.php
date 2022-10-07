@@ -788,6 +788,7 @@ class GenerateRequestData
                         $carriers['wweSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                     }
                     if (isset($carriers['upsSmall'])) {
+                        $this->checkUpsServiceEnabled();
                         $carriers['upsSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                     }
                     if (isset($carriers['unishippersSmall'])) {
@@ -911,6 +912,17 @@ class GenerateRequestData
                 if (!$this->air && $service && in_array($key, $air)) {
                     $this->air = true;
                 }
+            }
+        }
+    }
+
+    public function checkUpsServiceEnabled()
+    {
+        $carrierServices = $this->connectionSettings['ups-small']['quote_settings']['carrier_services'] ?? [];
+        foreach ($carrierServices as $key => $service) {
+            $simpleRate = ['simple_rate_ups_ground', 'simple_rate_ups_2nd_day_air', 'simple_rate_ups_next_day_air_saver', 'simple_rate_ups_3_day_select'];
+            if (!$this->simpleRate && $service && in_array($key, $simpleRate)) {
+                $this->simpleRate = true;
             }
         }
     }
