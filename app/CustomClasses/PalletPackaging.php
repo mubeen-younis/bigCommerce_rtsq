@@ -3,7 +3,6 @@
 namespace App\CustomClasses;
 
 use App\CustomClasses\Bin3D\Bin3D;
-use App\CustomClasses\XPO\ltl\QuotesResults as xpoLtlQuotesResults;
 use App\Helpers\Helpers;
 use App\Models\BoxSize;
 use Illuminate\Support\Facades\Log;
@@ -640,8 +639,13 @@ class PalletPackaging
                     $quotesWithFee[$carName][$locId]['q']['CHARGE'] = $q['q']['CHARGE'] + $palletFee[$locId];
                 }
             } elseif ($carName == 'xpoLogistics') {
-                $charges = (new xpoLtlQuotesResults())->netCharge($q['q']['NetCharge'] ?? $q['q']['totalNetCharge'] ?? 0.00);
-                $quotesWithFee[$carName][$locId]['q']['NetCharge'][0] = $charges + $palletFee[$locId];
+                if (isset($q['q']['serviceType']) && isset($q['q']['totalNetCharge'])) {
+                    $quotesWithFee[$carName][$locId]['q']['totalNetCharge'] = $q['q']['totalNetCharge'] + $palletFee[$locId];
+                }
+
+                if (isset($q['q']['NetCharge'])) {
+                    $quotesWithFee[$carName][$locId]['q']['NetCharge'][0] = $q['q']['NetCharge'][0] + $palletFee[$locId];
+                }
             } elseif ($carName == 'rnl') {
                 if (isset($q['q']['ServiceLevels']['ServiceLevel'])) {
                     foreach ($q['q']['ServiceLevels']['ServiceLevel'] as $key => $quote) {

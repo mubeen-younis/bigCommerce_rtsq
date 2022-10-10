@@ -29,6 +29,7 @@ class PackageSubscriptionController extends Controller
     public static $updateFullSubscription = 2;
     public static $updateToBeChargeonly = 1;
     public static $minSbsPaidPackage = 2;
+    public static $palletPkgDynamicTrial = 15;
 
     public function __construct()
     {
@@ -49,7 +50,7 @@ class PackageSubscriptionController extends Controller
             self::$dynamicTrial = 7;
             $data = $this->getPkgDetails($addonType);
         } elseif ($addonType == self::$addonTypePLT) {
-            self::$dynamicTrial = 15;
+            self::$dynamicTrial = self::$palletPkgDynamicTrial;
             $data = $this->getPkgDetails($addonType);
         } else {
             $error = true;
@@ -153,7 +154,7 @@ class PackageSubscriptionController extends Controller
             $responce = $this->subscribeToAddonPackage($data, $addonType);
             //Do Nothing Yet
         }  elseif ($addonType == self::$addonTypePLT) {
-            self::$dynamicTrial = 15;
+            self::$dynamicTrial = self::$palletPkgDynamicTrial;
             $responce = $this->subscribeToAddonPackage($data, $addonType);
         } else {
             $responce = [
@@ -368,8 +369,7 @@ class PackageSubscriptionController extends Controller
             self::$dynamicTrial = 7;
             $responce = $this->consumeAddonHits($data, $addonType);
         } elseif ($addonType == self::$addonTypePLT) {
-            // TODO:add constant variable for dynamic trial value
-            self::$dynamicTrial = 15;
+            self::$dynamicTrial = self::$palletPkgDynamicTrial;
             $responce = $this->consumeAddonHits($data, $addonType);
         } else {
             $responce = [
@@ -548,7 +548,7 @@ class PackageSubscriptionController extends Controller
             self::$dynamicTrial = 7;
             $responce = $this->suspendUsage($data, $addonType);
         } elseif ($addonType == self::$addonTypePLT) {
-            self::$dynamicTrial = 15;
+            self::$dynamicTrial = self::$palletPkgDynamicTrial;
             $responce = $this->suspendUsage($data, $addonType);
         } else {
             $responce = [
