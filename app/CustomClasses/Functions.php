@@ -311,4 +311,26 @@ class Functions
         return [$allQuotes, $multiShipmentQuotes];
 
     }
+
+    public static function getSimpleRateBox($items, $bins)
+    {
+        $binData = $bins[0]->bin_data ?? [];
+
+        if (empty($binData)) {
+            return [];
+        }
+
+        $box = [
+            'length' => $binData->d,
+            'width' => $binData->w,
+            'height' => $binData->h,
+        ];
+
+        foreach ($items as $item) {
+            $box['weight'] = $item['lineItemWeight'];
+            $box['price'] = $item['lineItemPrice'];
+        }
+
+        return $box;
+    }
 }

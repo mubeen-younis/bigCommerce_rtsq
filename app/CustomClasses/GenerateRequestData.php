@@ -798,9 +798,10 @@ class GenerateRequestData
                         if ($this->simpleRate) {
                             $this->fedexType = 'simple-rate';
                             $sbsSimpleRateResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
-                            // dd(123, $sbsSimpleRateResponse['binResponse']);
+                            // dd(123, $sbsSimpleRateResponse);
+                            $this->allPacked($sbsSimpleRateResponse);
 
-                            if (empty($sbsSimpleRateResponse['binResponse'])) {
+                            if (empty($sbsSimpleRateResponse['binResponse']) || !$this->simpleRate) {
                                 $this->simpleRate = false;
                             } else {
                                 if ($isMultishipment) {
@@ -812,17 +813,16 @@ class GenerateRequestData
 
                                         if (!empty($key) && isset($sbsSimpleRateResponse['binResponse'][$key]) && !empty($sbsSimpleRateResponse['binResponse'][$key]) && count($sbsSimpleRateResponse['binResponse'][$key]->bins_packed) == 1) {
                                             $itemsArrSimpleRate = $sbsSimpleRateResponse['items'] ?? $itemsArr;
+                                            // dd($itemsArrSimpleRate);
 
-                                            dd(123, $carriers, $sbsSimpleRateResponse['binResponse'][$key], $itemsArrSimpleRate);
+                                            // dd(123, $carriers, $sbsSimpleRateResponse['binResponse'][$key], $itemsArrSimpleRate);
                                             // simpleRateFlag
                                             // simpleRateBox
                                             $carriers['upsSmall']['api']['simpleRateFlag'] = '1';
-                                            $carriers['upsSmall']['api']['simpleRateBox'] = [];
+                                            $carriers['upsSmall']['api']['simpleRateBox'] = Functions::getSimpleRateBox($itemsArrSimpleRate, $sbsSimpleRateResponse['binResponse'][$key]->bins_packed);
                                         }
                                     }
                                 }
-
-                                $this->allPacked($sbsSimpleRateResponse);
                             }
 
                             if ($this->simpleRate) {
@@ -2709,7 +2709,6 @@ class GenerateRequestData
         $item['lineItemPrice'] = $price; //$item['lineItemPrice']*$quantityPacked;
         $item['lineItemWeight'] = $bin->bin_data->weight + $boxWeight;
         $item['isHazmatLineItem'] = $hazmat;
-
 
         //$item['piecesOfLineItem'] = 1 ?? 0;
         $item['shipItemAlone'] = 1;
