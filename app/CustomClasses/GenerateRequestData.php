@@ -798,17 +798,36 @@ class GenerateRequestData
                         if ($this->simpleRate) {
                             $this->fedexType = 'simple-rate';
                             $sbsSimpleRateResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
-                            dd($sbsSimpleRateResponse['binResponse']);
+                            // dd(123, $sbsSimpleRateResponse['binResponse']);
 
                             if (empty($sbsSimpleRateResponse['binResponse'])) {
                                 $this->simpleRate = false;
                             } else {
+                                if ($isMultishipment) {
+
+                                } else {
+                                    if (count($sbsSimpleRateResponse['binResponse']) == 1) {
+                                        // dd('else', $sbsSimpleRateResponse['binResponse']);
+                                        $key = array_keys($sbsSimpleRateResponse['binResponse'])[0] ?? null;
+
+                                        if (!empty($key) && isset($sbsSimpleRateResponse['binResponse'][$key]) && !empty($sbsSimpleRateResponse['binResponse'][$key]) && count($sbsSimpleRateResponse['binResponse'][$key]->bins_packed) == 1) {
+                                            $itemsArrSimpleRate = $sbsSimpleRateResponse['items'] ?? $itemsArr;
+
+                                            dd(123, $carriers, $sbsSimpleRateResponse['binResponse'][$key], $itemsArrSimpleRate);
+                                            // simpleRateFlag
+                                            // simpleRateBox
+                                            $carriers['upsSmall']['api']['simpleRateFlag'] = '1';
+                                            $carriers['upsSmall']['api']['simpleRateBox'] = [];
+                                        }
+                                    }
+                                }
+
                                 $this->allPacked($sbsSimpleRateResponse);
                             }
 
                             if ($this->simpleRate) {
                                 $itemsArrSimpleRate = $sbsSimpleRateResponse['items'] ?? $itemsArr;
-                                $commdityDetails['simple_rate_commdityDetails'] = $this->lineItems($itemsArrSimpleRate, $carriers['upsSmall']['originAddress'], true, $sbsSimpleRateResponse['binResponse']);
+                                // $commdityDetails['simple_rate_commdityDetails'] = $this->lineItems($itemsArrSimpleRate, $carriers['upsSmall']['originAddress'], true, $sbsSimpleRateResponse['binResponse']);
                                 $binReponse['simpleRate'] = $sbsSimpleRateResponse['binResponse'];
                             }
                         }
