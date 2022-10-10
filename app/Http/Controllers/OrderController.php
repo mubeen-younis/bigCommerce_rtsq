@@ -222,7 +222,6 @@ class OrderController extends Controller
                     $liftGatePickup = $liftResidentialStatus['lgPickup'] ?? 'n';
 
                     $totalBoxes = 1;
-                    // TODO:revert back small rate check
                     if (isset($ws->binPackagingData) && !empty($ws->binPackagingData) && ($isSmallrate)) {
                         if ($isGround) {
                             $sbsData = $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->bins_packed ?? [];
