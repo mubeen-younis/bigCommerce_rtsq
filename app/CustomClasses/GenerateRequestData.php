@@ -829,6 +829,9 @@ class GenerateRequestData
                                 $itemsArrSimpleRate = $sbsSimpleRateResponse['items'] ?? $itemsArr;
                                 // $commdityDetails['simple_rate_commdityDetails'] = $this->lineItems($itemsArrSimpleRate, $carriers['upsSmall']['originAddress'], true, $sbsSimpleRateResponse['binResponse']);
                                 $binReponse['simpleRate'] = $sbsSimpleRateResponse['binResponse'];
+                                $sbsResponse['binResponse']['simpleRate'] = $sbsSimpleRateResponse['binResponse'];
+
+                                $carriers['upsSmall']['originAddress'] = $sbsSimpleRateResponse['originAddress'] ?? $carriersoriginAddress;
                             }
                         }
                             

@@ -42,7 +42,7 @@ class QuotesResults
     public function addHazmatAmountsInServices($amount, $serviceCode, $quoteSettings)
     {
         // Adding hazmat fee to Ground Service
-        if ($serviceCode == "03") {
+        if ($serviceCode == "03" || $serviceCode = 'SR_03') {
             if (isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
                 $amount = $amount + $quoteSettings['ground_hazardous_material_fee'];
             }
@@ -108,7 +108,6 @@ class QuotesResults
 
     public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment)
     {
-
         $shipments = $this->formateQuoteBeforeCompile($shipments);
         $this->quoteSettings = [];
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
@@ -135,6 +134,7 @@ class QuotesResults
         $originQuotes = $multiShipmentQuotes = $multiShipmentQuote = [];
         $shipmentCount = 0;
         $count = 0;
+
         foreach ($shipments as $origin => $quote) {
 
             if ((isset($quote['severity']) || !isset($ship['q']) || (isset($ship['q']) && empty($ship['q'])))) {
@@ -148,14 +148,13 @@ class QuotesResults
             $lowestAmount = 0;
 
             if (isset($quote['q'])) {
-                //print_r($quote['q']); exit;
                 foreach ($quote['q'] as $key => $data) {
                     // Check if service type is checked to show
                     if (isset($data['severity'])) {
                         continue;
                     }
                     //  CHeck FOr Ups ground transit days
-                    if ($data['serviceType'] == "03") {
+                    if ($data['serviceType'] == "03" || $data['serviceType'] == "SR_03") {
                         if (isset($this->quoteSettings['number_of_transit_days']) && $this->quoteSettings['number_of_transit_days'] != null && isset($this->quoteSettings['ground_metric']) && $this->quoteSettings['ground_metric'] != null) {
                             $islimited = $this->checkGroundTransit($data, $this->quoteSettings);
                             if ($islimited) {
@@ -165,7 +164,7 @@ class QuotesResults
                     }
                     //  CHecks FOr Only quote ground service if hazardous
                     if ($isHazmat && isset($this->quoteSettings['ground_service_for_hazardous_material']) && $this->quoteSettings['ground_service_for_hazardous_material']) {
-                        if ($data['serviceType'] != "03") {
+                        if ($data['serviceType'] != "03" && $data['serviceType'] != "SR_03") {
                             continue;
                         }
                     }
@@ -267,10 +266,16 @@ class QuotesResults
         $servicesDesc = [];
         foreach ($shipments as $quote) {
             if (isset($quote['ups_services'])) {
+                $quote['ups_services']['SR_02'] = 'UPS Simple Rate 2nd Day Air';
+                $quote['ups_services']['SR_03'] = 'UPS Simple Rate Ground';
+                $quote['ups_services']['SR_12'] = 'UPS Simple Rate 3 Day Select';
+                $quote['ups_services']['SR_13'] = 'UPS Simple Rate Next Day Air Saver';
+
                 $servicesDesc = $quote['ups_services'];
                 break;
             }
         }
+  
         foreach ($shipments as $shipment => $quotes) {
             $temp = [];
             if (!isset($quotes['q'])) {
