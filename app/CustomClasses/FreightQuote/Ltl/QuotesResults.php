@@ -2,7 +2,8 @@
 
 namespace App\CustomClasses\FreightQuote\Ltl;
 
-use App\CustomClasses\CompileQuotes;
+use App\Constants\Constant;
+use App\CustomClasses\CompileQuotes as compileQuotes;
 
 class QuotesResults
 {
@@ -12,10 +13,71 @@ class QuotesResults
         $this->CompileQuotes = new CompileQuotes();
     }
 
-    public function formateQuoteBeforeCompile($shipments)
+    public function truckLoadQuotes($quote, $allConfigServices, $quoteSettings = []){
+        $originQuotes = [];
+        $arraySorting = [];
+        if(isset($quote['Truckload'])){
+            
+            foreach($quote['Truckload'] as $key => $data){
+                if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices)) {
+                    $access = $this->CompileQuotes->getAccessorialCode();
+                    $charges = array(
+                        'totalNetCharge' => array(
+                            'Amount' => $data['totalNetCharge'],
+                        ),
+                        'surcharges' => $data['surcharges'],
+                    );
+                    $price = $this->CompileQuotes->calculatePrice($charges);
+                    /*
+                     * Adding Functionality of Delivery Estimate Options
+                     * */
+                    $date = $data['deliveryTimestamp'] ?? null;
+                    $days = $data['totalTransitTimeInDays'] ?? null;
+                    $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
+                    
+                    $title = $this->getTruckLoadTitle($data['serviceDesc'], $quoteSettings, $data['totalTransitTimeInDays'], $dateAndDays, $data['serviceType']);
+                    $arraySorting['simple'][$key] = $price;
+                    $originQuotes[$key]['Truckload']['code'] = 'fqltl' . $data['serviceType'] . '+TL';
+                    $originQuotes[$key]['Truckload']['rate'] = $price;
+                    $originQuotes[$key]['Truckload']['title'] = $title;
+                }
+            }
+        }
+        return [$originQuotes, $arraySorting];
+
+    }
+
+    public function getTruckLoadTitle($serviceName, $quoteSettings = [], $deliveryEstimate = '', $dateAndDays = '', $serviceType = '')
     {
-        foreach ($shipments as $shipment => $quotes) {
-            if (!isset($quotes['q'])) {
+        $serviceTitle = $this->truckLoadCustomLabel($serviceName, $quoteSettings, $serviceType);
+        $deliveryEstimateLabel = $this->getDeliveryEstimates($dateAndDays);
+
+        return $serviceTitle . $deliveryEstimateLabel;
+    }
+
+    public function truckLoadCustomLabel($serviceName, $quoteSettings = [], $serviceType = '')
+    {
+        if (!empty($quoteSettings)) {
+            $this->quoteSettings = $quoteSettings;
+        }
+        $this->quoteSettings['method'] = $this->quoteSettings['method'] ?? 1;
+        if(($this->quoteSettings['method'] == 1 || $this->quoteSettings['method'] == 3 || $this->quoteSettings['method'] == 2)){
+            if($serviceType === 'TSM'){
+                return $this->quoteSettings['flatbed'] ?? 'Flatbed Truckload Service';
+            } else if($serviceType === 'REEF'){
+                return $this->quoteSettings['refrigerated'] ?? 'Refrigerated Truckload Service';
+            } else if($serviceType === 'ABHB'){
+                return $this->quoteSettings['van'] ?? 'Truckload Service';
+            } else {
+                return $serviceName;
+            }
+        }
+        return $serviceName;
+    }
+    
+    public function formateQuoteBeforeCompile($shipments){
+        foreach ($shipments as $shipment => $quotes){
+            if(!isset($quotes['q'])){
                 continue;
             }
             /*
@@ -66,6 +128,21 @@ class QuotesResults
             }
         }
         return $amount;
+    }
+
+    public function getDeliveryEstimates($dateAndDays): string
+    {
+        $date = $dateAndDays['deliveryDate'] ?? null;
+        $days = $dateAndDays['totalTransitTimeInDays'] ?? null;
+
+        $deliveryEstimates = "";
+        if (isset($this->quoteSettings['delivery_estimate_options']) && $this->quoteSettings['delivery_estimate_options'] == 2) {
+            $deliveryEstimates = !blank($days) ? " (Estimated number of days until delivery is " . $days . ")" : "";
+        } elseif (isset($this->quoteSettings['delivery_estimate_options']) && $this->quoteSettings['delivery_estimate_options'] == 3) {
+            $deliveryEstimates = !blank($date) ? " (Estimated delivery date is " . date('m-d-Y', strtotime($date)) . ")" : "";
+        }
+
+        return $deliveryEstimates;
     }
 
     public function calculatePrice($data, $uoteSettings, $lgOption = false, $notify = false, $laccess = false)
