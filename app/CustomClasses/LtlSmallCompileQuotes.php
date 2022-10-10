@@ -140,11 +140,11 @@ class LtlSmallCompileQuotes
                     $quote['isResi'] = isset($residential['rnlLtl']) && $residential['rnlLtl'] == 'Y';
                     $quote['alwaysLG'] = isset($connectionSettings['rl-ltl']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['rl-ltl']['quote_settings']['alwaysLiftGateDelivery'];
                     if (strpos($quote['code'], '+LG+ID') !== false) {
-                        $quotesCarrier['ltl']['wwe']['LGID'][] = $quote;
+                        $quotesCarrier['ltl']['rnl']['LGID'][] = $quote;
                     } else if (strpos($quote['code'], '+LG') !== false) {
                         $quotesCarrier['ltl']['rnl']['LG'][] = $quote;
                     } else if (strpos($quote['code'], '+ID') !== false) {
-                        $quotesCarrier['ltl']['wwe']['ID'][] = $quote;
+                        $quotesCarrier['ltl']['rnl']['ID'][] = $quote;
                     }  else if (strpos($quote['code'], '+HAT') !== false) {
                         $quotesCarrier['ltl']['rnl']['HAT'][] = $quote;
                     } else {
@@ -425,6 +425,36 @@ class LtlSmallCompileQuotes
             if (isset($quotes['HAT'][0])) {
                 $multiShipments[$count]['hat'][$indexes['ltl'][0]] = $quotes['HAT'][0];
                 $multiShipments[$count]['hat'][$indexes['small'][0]] = $parcel;
+                $count++;
+            }
+            
+            if (isset($quotes['ID'][0])) {
+                $multiShipments[$count]['insideDelivery'][$indexes['ltl'][0]] = $quotes['ID'][0];
+                $multiShipments[$count]['insideDelivery'][$indexes['small'][0]] = $parcel;
+                $count++;
+            }
+
+            if (isset($quotes['LGID'][0])) {
+                $multiShipments[$count]['insideLiftGateDelivery'][$indexes['ltl'][0]] = $quotes['LGID'][0];
+                $multiShipments[$count]['insideLiftGateDelivery'][$indexes['small'][0]] = $parcel;
+                $count++;
+            }
+
+            if (isset($quotes['LAD'][0])) {
+                $multiShipments[$count]['limitedaccess'][$indexes['ltl'][0]] = $quotes['LAD'][0];
+                $multiShipments[$count]['limitedaccess'][$indexes['small'][0]] = $parcel;
+                $count++;
+            }
+
+            if (isset($quotes['LGLAD'][0])) {
+                $multiShipments[$count]['limitedaccessLG'][$indexes['ltl'][0]] = $quotes['LGLAD'][0];
+                $multiShipments[$count]['limitedaccessLG'][$indexes['small'][0]] = $parcel;
+                $count++;
+            }
+
+            if (isset($quotes['TL'][0])) {
+                $multiShipments[$count]['Truckload'][$indexes['ltl'][0]] = $quotes['TL'][0];
+                $multiShipments[$count]['Truckload'][$indexes['small'][0]] = $parcel;
                 $count++;
             }
         }

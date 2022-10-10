@@ -38,13 +38,10 @@ class ShippingClassController extends Controller
      */
     public function store(Request $request)
     {
-        $slug = ShippingClass::where('slug', '=', $request->slug)->exists();
-        if ($slug) {
-            return response()->json(['error' => true, 'message' => 'Shipping class already exist.']);
-        }
         $shipClass = new ShippingClass();
         $shipClass->class_name = $request->class_name;
-        $shipClass->slug = $request->slug;
+        $slug = ShippingClass::getSlug($request->class_name);
+        $shipClass->slug = $slug;
         $shipClass->description = $request->description;
         $shipClass->save();
         
