@@ -209,6 +209,6 @@ class Endpoints
         if (env('APP_ENV') == 'staging') {
             return self::$qaUrl . "s/fedex/fedex_shipment_rates_test.php";
         }
-        return self::$prodUrl . "ws/s/fedex/fedex_shipment_rates_test.php";
+        return "https://ws026.eniture.com/s/fedex/fedex_shipment_rates_test.php";
     }
 }
