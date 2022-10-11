@@ -147,11 +147,24 @@ class QuotesResults
             }
             $lowestAmount = 0;
 
+            $quote['ups_services']['SR_02']  = 'Simple Rate Ups 2nd Day Air';
+            $quote['ups_services']['SR_03']  = 'Simple Rate UPS Ground';
+            $quote['ups_services']['SR_12']  = 'Simple Rate Ups 3 Day Select';
+            $quote['ups_services']['SR_13']  = 'Simple Rate Ups Next Day Air Saver';
+
             if (isset($quote['q'])) {
                 foreach ($quote['q'] as $key => $data) {
                     // Check if service type is checked to show
                     if (isset($data['severity'])) {
                         continue;
+                    }
+                    if(isset($quote['ups_services'][$key])){
+                        $serviceName = $quote['ups_services'][$key];
+                        $service = str_replace(' ', '_', strtolower($serviceName));
+                        $isServiceEnabled = $this->quoteSettings['carrier_services'][$service];
+                        if(!$isServiceEnabled){
+                            continue;
+                        }
                     }
                     //  CHeck FOr Ups ground transit days
                     if ($data['serviceType'] == "03" || $data['serviceType'] == "SR_03") {

@@ -1738,14 +1738,14 @@ class GenerateRequestData
             'ups_small_pkg_resid_delivery' => ($alwaysResi ? 'Y' : $residential == 'Y') ? 'yes' : 'no',
             'prefferedCurrency' => 'USD',
             'services' => [
-                'ups_small_pkg_Ground' => $this->issetIndex($carrierServices, 'ups_ground'),
-                'ups_small_pkg_3_Day_Select' => $this->issetIndex($carrierServices, 'ups_3_day_select'),
+                'ups_small_pkg_Ground' => $this->issetIndex($carrierServices, 'ups_ground', 'simple_rate_ups_ground'),
+                'ups_small_pkg_3_Day_Select' => $this->issetIndex($carrierServices, 'ups_3_day_select', 'simple_rate_ups_3_day_select'),
 
-                'ups_small_pkg_2nd_Day_Air' => $this->issetIndex($carrierServices, 'ups_2nd_day_air'),
+                'ups_small_pkg_2nd_Day_Air' => $this->issetIndex($carrierServices, 'ups_2nd_day_air', 'simple_rate_ups_2nd_day_air'),
                 'ups_small_pkg_2nd_Day_Air_AM' => $this->issetIndex($carrierServices, 'ups_2nd_day_air_am'),
 
                 'ups_small_pkg_Next_Day_Air' => $this->issetIndex($carrierServices, 'ups_next_day_air'),
-                'ups_small_pkg_Next_Day_Air_Saver' => $this->issetIndex($carrierServices, 'ups_next_day_air_saver'),
+                'ups_small_pkg_Next_Day_Air_Saver' => $this->issetIndex($carrierServices, 'ups_next_day_air_saver', 'simple_rate_ups_next_day_air_saver'),
                 'ups_small_pkg_Next_Day_Air_Early_AM' => $this->issetIndex($carrierServices, 'ups_next_day_air_early'),
 
                 "ups_small_surepost_less_than_1LB" => $this->issetIndex($carrierServices, 'ups_surepost_less_than_1lb'),
@@ -2424,10 +2424,10 @@ class GenerateRequestData
         return $selectedDays;
     }
 
-    private function issetIndex($quoteSettings, $index)
+    private function issetIndex($quoteSettings, $index, $SRindex = '')
     {
         $resp = 'N';
-        if (isset($quoteSettings[$index]) && $quoteSettings[$index] === true) {
+        if (isset($quoteSettings[$index]) && $quoteSettings[$index] === true || isset($quoteSettings[$SRindex]) && $quoteSettings[$SRindex] === true) {
             $resp = 'yes';
         }
         return $resp;
