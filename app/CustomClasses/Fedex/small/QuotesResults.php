@@ -42,7 +42,7 @@ class QuotesResults
     public function addHazmatAmountsInServices($amount, $serviceCode, $quoteSettings)
     {
         // Adding hazmat fee to Ground Service
-        if ($serviceCode == "FEDEX_GROUND" || $serviceCode == "GROUND_HOME_DELIVERY" || $serviceCode == "FEDEX_GROUND_HOME_DELIVERY" || $serviceCode == "GROUND_HOME_DELIVERY_AIR_SERVICE") {
+        if ($serviceCode == "FEDEX_GROUND" || $serviceCode == "GROUND_HOME_DELIVERY" || $serviceCode == "FEDEX_GROUND_HOME_DELIVERY" || $serviceCode == "GROUND_HOME_DELIVERY_AIR_SERVICE" || $serviceCode == "FEDEX_APPOINTMENT_HOME_DELIVERY" || $serviceCode == "FEDEX_DATE_CERTAIN_HOME_DELIVERY" || $serviceCode == "FEDEX_EVENING_HOME_DELIVERY") {
             if (isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
                 $amount = $amount + $quoteSettings['ground_hazardous_material_fee'];
             }
@@ -230,7 +230,7 @@ class QuotesResults
                         continue;
                     }
                     //  CHeck FOr Ups ground transit days
-                    if ($serviceName == "FEDEX_GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "FEDEX_GROUND_HOME_DELIVERY") {
+                    if ($serviceName == "FEDEX_GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "FEDEX_GROUND_HOME_DELIVERY" || $serviceName == "FEDEX_APPOINTMENT_HOME_DELIVERY" || $serviceName == "FEDEX_DATE_CERTAIN_HOME_DELIVERY" || $serviceName == "FEDEX_EVENING_HOME_DELIVERY") {
                         if (isset($this->quoteSettings['number_of_transit_days']) && $this->quoteSettings['number_of_transit_days'] != null && isset($this->quoteSettings['ground_metric']) && $this->quoteSettings['ground_metric'] != null) {
                             $islimited = $this->checkGroundTransit($data, $this->quoteSettings);
                             if ($islimited) {
@@ -240,7 +240,7 @@ class QuotesResults
                     }
                     //  CHecks FOr Only quote ground service if hazardous
                     if ($isHazmat && isset($this->quoteSettings['ground_service_for_hazardous_material']) && $this->quoteSettings['ground_service_for_hazardous_material']) {
-                        if (!($serviceName == "FEDEX_GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "FEDEX_GROUND_HOME_DELIVERY")) {
+                        if (!($serviceName == "FEDEX_GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "FEDEX_GROUND_HOME_DELIVERY" || $serviceName == "FEDEX_APPOINTMENT_HOME_DELIVERY" || $serviceName == "FEDEX_DATE_CERTAIN_HOME_DELIVERY" || $serviceName == "FEDEX_EVENING_HOME_DELIVERY")) {
                             continue;
                         }
                     }
@@ -403,6 +403,11 @@ class QuotesResults
     {
         
         foreach ($shipments as $shipment => $serviceTypes) {
+
+            $ship = $this->formateQuoteHomeDelivery($serviceTypes);
+            unset($shipments[$shipment]['homeDeliveryAppointment'], $shipments[$shipment]['homeDeliveryDateCertain'], $shipments[$shipment]['homeDeliveryEvening']);
+            $serviceTypes['fedexServices']['q'] = array_merge($serviceTypes['fedexServices']['q'],$ship);
+
             $inStoreLocal = [];
             foreach ($serviceTypes as $serviceName => $quotes) {
                 if (isset($quotes['InstorPickupLocalDelivery'])) {
@@ -445,6 +450,27 @@ class QuotesResults
             }
         }
         return $shipments;
+    }
+
+    public function formateQuoteHomeDelivery($serviceTypes)
+    {
+        $ship = [];
+
+        if(isset($serviceTypes['homeDeliveryAppointment']) && !isset($serviceTypes['homeDeliveryAppointment']['severity'])){
+            $ship['FEDEX_APPOINTMENT_HOME_DELIVERY'] = $serviceTypes['homeDeliveryAppointment']['q']['GROUND_HOME_DELIVERY'];
+        }
+        if(isset($serviceTypes['homeDeliveryDateCertain']) && !isset($serviceTypes['homeDeliveryDateCertain']['severity'])){
+            $ship['FEDEX_DATE_CERTAIN_HOME_DELIVERY'] = $serviceTypes['homeDeliveryDateCertain']['q']['GROUND_HOME_DELIVERY'];
+        }
+        if(isset($serviceTypes['homeDeliveryEvening']) && !isset($serviceTypes['homeDeliveryEvening']['severity'])){
+            $ship['FEDEX_EVENING_HOME_DELIVERY'] = $serviceTypes['homeDeliveryEvening']['q']['GROUND_HOME_DELIVERY'];    
+        }
+        
+        foreach($ship as $k => $q){
+            $ship[$k]['serviceType'] = $k;
+        }
+        
+        return $ship;
     }
 
     public
