@@ -2,6 +2,7 @@
 
 namespace App\CustomClasses;
 
+use App\Constants\Constant;
 use App\CustomClasses\XPO\ltl\XPOCompileQuotes;
 use App\Helpers\Helpers;
 use App\Http\Controllers\BoxSizeController;
@@ -718,6 +719,39 @@ class GenerateRequestData
                             foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
                                 $carriers['upsSmall']['originAddress'][$key] = $origin;
                             }
+
+                            // checks if any ups simple rate service is enabled
+                            $this->checkUpsServiceEnabled();
+
+                            if ($this->simpleRate) {
+                                // simple rate packaging request
+                                $this->fedexType = 'simple-rate';
+                                $sbsSimpleRateResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
+                                
+                                // checks for items with own packaging
+                                $this->allPacked($sbsSimpleRateResponse);
+                                
+                                if (empty($sbsSimpleRateResponse['binResponse']) || !$this->simpleRate) {
+                                    $this->simpleRate = false;
+                                } else {
+                                    $carriers['upsSmall']['api']['simpleRateFlag'] = '1';
+                                    $itemsArrSimpleRate = $itemsArr = $sbsSimpleRateResponse['items'] ?? $itemsArr;
+
+                                    foreach ($sbsSimpleRateResponse['binResponse'] as $key => $resp) {
+                                        if (isset($resp->bins_packed) && count($resp->bins_packed) == 1) {
+                                            $carriers['upsSmall']['api']['simpleRateBox'][$key] = Functions::getSimpleRateBox($itemsArrSimpleRate, $sbsSimpleRateResponse['binResponse'][$key]->bins_packed);
+                                        }
+                                    }
+                                }
+
+                                if ($this->simpleRate) {
+                                    $binReponse['simpleRate'] = $sbsSimpleRateResponse['binResponse'];
+
+                                    foreach ($sbsSimpleRateResponse['originAddress'] as $key => $origin) {
+                                        $carriers['upsSmall']['originAddress'][$key] = $origin;
+                                    }
+                                }
+                            }
                         }
 
                         if (isset($carriers['wweSmall'])) {
@@ -754,7 +788,7 @@ class GenerateRequestData
                         ///////////////////////////////////////////
                         $binReponse['ground'] = $sbsResponseGround['binResponse'];
                     }
-
+                    
                     if ($this->oneRate) {
                         $this->fedexType = 'fedex'; // one rate services
                         $sbsResponseOneRate = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
@@ -778,11 +812,18 @@ class GenerateRequestData
                         $commdityDetails['air_services_commdityDetails'] = $this->lineItems($itemsArrAir, $carriers['fedexSmall']['originAddress']);
                         $binReponse['air'] = $sbsResponseAir['binResponse'];
                     }
+
                     $itemsArr = !empty($itemsArrGround) ? $itemsArrGround : $itemsArr;
+
+                    if (isset($itemsArrSimpleRate) && !empty($itemsArrSimpleRate)) {
+                        $itemsArr = $itemsArr + $itemsArrSimpleRate;
+                    }
+
                     $sbsResponse['binResponse'] = $binReponse;
                 } else {
-                    // $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
-                    // $itemsArr = $sbsResponse['items'] ?? $itemsArr;
+                    $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
+                    $itemsArr = $sbsResponse['items'] ?? $itemsArr;
+
                     if (isset($carriers) && count($carriers) == 1 && isset($carriers['usps'])) {
                         $sbsResponse['binResponse'] = [];
                         $sbsResponse['boxBins'] = [];
@@ -792,64 +833,63 @@ class GenerateRequestData
                         $carriers['wweSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                     }
 
-                    if (isset($carriers['upsSmall'])) {
-                        $this->checkUpsServiceEnabled();
-                        
-                        if ($this->simpleRate) {
-                            $this->fedexType = 'simple-rate';
-                            $sbsSimpleRateResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
-                            // dd(123, $sbsSimpleRateResponse);
-                            $this->allPacked($sbsSimpleRateResponse);
-
-                            if (empty($sbsSimpleRateResponse['binResponse']) || !$this->simpleRate) {
-                                $this->simpleRate = false;
-                            } else {
-                                if ($isMultishipment) {
-                                    $res = $this->simpleRateMultishipment($carriers);
-                                    dd($res);
-                                } else {
-                                    if (count($sbsSimpleRateResponse['binResponse']) == 1) {
-                                        // dd('else', $sbsSimpleRateResponse['binResponse']);
-                                        $key = array_keys($sbsSimpleRateResponse['binResponse'])[0] ?? null;
-
-                                        if (!empty($key) && isset($sbsSimpleRateResponse['binResponse'][$key]) && !empty($sbsSimpleRateResponse['binResponse'][$key]) && count($sbsSimpleRateResponse['binResponse'][$key]->bins_packed) == 1) {
-                                            $itemsArrSimpleRate = $sbsSimpleRateResponse['items'] ?? $itemsArr;
-                                            // dd($itemsArrSimpleRate);
-
-                                            // dd(123, $carriers, $sbsSimpleRateResponse['binResponse'][$key], $itemsArrSimpleRate);
-                                            // simpleRateFlag
-                                            // simpleRateBox
-                                            $carriers['upsSmall']['api']['simpleRateFlag'] = '1';
-                                            $carriers['upsSmall']['api']['simpleRateBox'] = Functions::getSimpleRateBox($itemsArrSimpleRate, $sbsSimpleRateResponse['binResponse'][$key]->bins_packed);
-                                        }
-                                    }
-                                }
-                            }
-
-                            if ($this->simpleRate) {
-                                $itemsArrSimpleRate = $sbsSimpleRateResponse['items'] ?? $itemsArr;
-                                // $commdityDetails['simple_rate_commdityDetails'] = $this->lineItems($itemsArrSimpleRate, $carriers['upsSmall']['originAddress'], true, $sbsSimpleRateResponse['binResponse']);
-                                $binReponse['simpleRate'] = $sbsSimpleRateResponse['binResponse'];
-                                $sbsResponse['binResponse']['simpleRate'] = $sbsSimpleRateResponse['binResponse'];
-
-                                $carriers['upsSmall']['originAddress'] = $sbsSimpleRateResponse['originAddress'] ?? $carriersoriginAddress;
-                            }
-                        }
-                            
-                        $carriers['upsSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
-                    }
-
                     if (isset($carriers['unishippersSmall'])) {
                         $carriers['unishippersSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
-                    }
-                    if (isset($carriers['purolator'])) {
-                        $carriers['purolator']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                     }
 
                     if (isset($carriers['usps'])) {
                         $carriers['usps']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                     }
+
+                    if (isset($carriers['purolator'])) {
+                        $carriers['purolator']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
+                    }
+
+                    if (isset($carriers['upsSmall'])) {
+                        $carriers['upsSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
+
+                        // checks for ups simple rate enabled services
+                        $this->checkUpsServiceEnabled();
+                        
+                        if ($this->simpleRate) {
+                            $this->fedexType = 'simple-rate';
+                            $sbsSimpleRateResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
+
+                            // checking for own packaging items
+                            $this->allPacked($sbsSimpleRateResponse);
+
+                            if (empty($sbsSimpleRateResponse['binResponse']) || !$this->simpleRate) {
+                                $this->simpleRate = false;
+                            } else {
+                                $carriers['upsSmall']['api']['simpleRateFlag'] = '1';
+                                $itemsArrSimpleRate = $sbsSimpleRateResponse['items'] ?? $itemsArr;
+
+                                foreach ($sbsSimpleRateResponse['binResponse'] as $key => $resp) {
+                                    if (isset($resp->bins_packed) && count($resp->bins_packed) == 1) {
+                                        $carriers['upsSmall']['api']['simpleRateBox'][$key] = Functions::getSimpleRateBox($itemsArrSimpleRate, $sbsSimpleRateResponse['binResponse'][$key]->bins_packed);
+                                    }
+                                }
+
+                                // assign simple rate bin response
+                                $binReponse['simpleRate'] = $sbsSimpleRateResponse['binResponse'];
+                                $binReponse['normal'] = $sbsResponse['binResponse'];
+                                $sbsResponse = [];
+                                $sbsResponse['binResponse'] = $binReponse;
+
+                                // add simple rate packaging items with other cart items
+                                if (isset($itemsArrSimpleRate) && !empty($itemsArrSimpleRate)) {
+                                    $itemsArr = $itemsArr + $itemsArrSimpleRate;
+                                }
+
+                                // append origin addresses of simple rate packaging items
+                                foreach ($sbsSimpleRateResponse['originAddress'] as $key => $origin) {
+                                    $carriers['upsSmall']['originAddress'][$key] = $origin;
+                                }
+                            }
+                        }
+                    }
                 }
+
                 $binReponse = $sbsResponse['binResponse'] ?? [];
                 $boxBins = $sbsResponse['boxBins'] ?? [];
                 $isLtl = isset($carriers['wweLTL'])
@@ -920,7 +960,7 @@ class GenerateRequestData
 
     public function allPacked($sbsResponseOneRate)
     {
-        if ($this->oneRate && isset($sbsResponseOneRate['binResponse'])) {
+        if (($this->oneRate || $this->simpleRate) && isset($sbsResponseOneRate['binResponse'])) {
             foreach ($sbsResponseOneRate['binResponse'] as $shipment => $binResponse) {
                 $bins_packed = $binResponse->bins_packed ?? [];
                 if (!empty($bins_packed)) {
@@ -980,6 +1020,7 @@ class GenerateRequestData
     public function simpleRateMultishipment($carriers = [])
     {
         $binRequest = [];
+        
         foreach ($carriers as $key => $value) {
             //TODO: add multi curl for multi-shipment packaging
             $binRequest[$key] = $value;
@@ -2652,7 +2693,12 @@ class GenerateRequestData
             $isNotLtl = !(isset($itemsArr[$key]['freightClass']) && $itemsArr[$key]['freightClass'] === 'ltl');
             $shipBinAlone = $itemsArr[$key]['shipBinAlone'] ?? false;
             $weightBasedItem = $itemsArr[$key]['exclude_packaging'] ?? false;
+            $multiplePkgItem = $itemsArr[$key]['shipMultiplePackage'] ?? false;
             if ($isNotLtl) {
+                if ($this->fedexType == 'simple-rate' && $multiplePkgItem) {
+                    continue;
+                }
+
                 /*Added COndition after not requiring dimesnions*/
                 if ($weightBasedItem) {
                     $itemsAlone[$origin['locationId']][] = [
@@ -2711,7 +2757,7 @@ class GenerateRequestData
                 break;
             case 'both':
                 $boxes = DB::table('box_sizes')->where('store_id', $storeId)
-                    ->where('is_available', 1)->get();
+                    ->where('is_available', 1)->where('box_type', 1)->orWhere('box_type', 2)->get();
                 break;
             case 'simple-rate':
                 $boxes = BoxSize::getUpsSmallAvailableBoxes($storeId);
@@ -2762,9 +2808,12 @@ class GenerateRequestData
                         $bin = $binPacked;
                         $counting++;
                         $origin = $bin->bin_data->variant_id;
-                        // dd(12,$binResponse,$itemsArr[$origin]);
 
                         $newkey = $origin . $key;
+                        if ($this->fedexType == 'simple-rate') {
+                            $newkey = str_shuffle($newkey . rand(100, 500));
+                        }
+
                         $newOrigins[$newkey] = $origins[$origin];
                         $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins, $itemsArr);
                     }

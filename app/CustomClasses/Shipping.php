@@ -161,8 +161,6 @@ class Shipping
 
         // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
-        dd('reqArr', $requestArr);
-        // return $requestArr;
         if (empty($requestArr)) {
             return false;
         }
@@ -170,7 +168,6 @@ class Shipping
         $url = Constant::QUOTES_URL;
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
-        // dd('quotes', $quotes);
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
         /*
       * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
@@ -439,10 +436,23 @@ class Shipping
                             }
                         }
                     }
-                } else if ($carrierName !== 'fedexSmall' && $carrierName !== 'usps' && $uspsRes === null) {
-                    foreach ($binReponse as $locationId => $bin) {
-                        $quotes[$carrierName][$locationId]['binPackagingData']['response'] = $bin;
-                        $boxFee[$locationId] = $this->getCumulativeBoxFee($bin);
+                } else if ($carrierName !== 'fedexSmall' && $carrierName !== 'usps' && ($uspsRes === null || !$uspsRes)) {
+                    if ($carrierName == 'upsSmall') {
+                        if (isset($binReponse['simpleRate']) && isset($binReponse['normal'])) {
+                            foreach ($binReponse as $serviceType => $response) {
+                                foreach ($response as $locationId => $bin) {
+                                    $quotes[$carrierName][$locationId]['binPackagingData']['response'][$serviceType] = $bin;
+                                    $fee = $this->getCumulativeBoxFee($bin);
+                                    $boxFee[$locationId] = $fee;
+                                    $fedexBoxesFee[$locationId][$serviceType] = $fee;
+                                }
+                            }
+                        } else {
+                            foreach ($binReponse as $locationId => $bin) {
+                                $quotes[$carrierName][$locationId]['binPackagingData']['response'] = $bin;
+                                $boxFee[$locationId] = $this->getCumulativeBoxFee($bin);
+                            }
+                        }
                     }
                 }
             }
