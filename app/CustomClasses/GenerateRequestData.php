@@ -615,6 +615,10 @@ class GenerateRequestData
 
     private function dayLightLtlEnityArr($connSettings, $destination): array
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
             'licenseKey' => '',
             'platform' => 'bigcommerce',
@@ -2296,6 +2300,7 @@ class GenerateRequestData
         $resp = $this->verifyRADStatus($connSettings, $destination);
         $this->resiCarrier['dayLightLtl'] = $resp['residential'];
         $this->resiCarrier['alwaysResi']['dayLightLtl'] = $resp['alwaysResi'];
+        $this->resiCarrier['returnRates']['dayLightLtl'] = $this->returnRates;
         $dayLightQuotes = new dayLightQuotesResults();
         $apiArray = $dayLightQuotes->getApiArr($connSettings, $resp);
 
