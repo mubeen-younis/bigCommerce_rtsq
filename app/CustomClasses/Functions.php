@@ -302,6 +302,9 @@ class Functions
 
     public static function quotesLtlTruckLoad($allQuotes, $shipments){
        
+        if(empty($allQuotes)){
+            return [];
+        }
         foreach($shipments as $key => $shipment){
             $index[] = $key;
         }

@@ -902,6 +902,9 @@ class CompileQuotes
             if (!empty($ownArrangement) && !array_search('own_arrangement', array_column($newQuotes['checkoutQuotes'], 'code'))) {
                 array_push($newQuotes['checkoutQuotes'], $ownArrangement);
             }
+            if(empty($newQuotes['multiShipmentQuotes']) || empty($newQuotes['checkoutQuotes'])){
+                return [];
+            }
         } else {
             foreach ($quotes as $car => $quote) {
                 foreach ($quote as $key => $quot) {
@@ -3968,6 +3971,12 @@ class CompileQuotes
     
     private function compileFreightQuoteChrLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
+        $returnRates = $this->residential['returnRates']['freightQuoteChrLtl'] ?? false;
+
+        if($returnRates){
+            return [];
+        }
+        
         $fqChrQuotes = new FQChrQuotesResults();
 
         $this->isFQChr = true;
@@ -3994,10 +4003,13 @@ class CompileQuotes
             if ($count == 0) {
                  $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
                 $lgQuotes = $fqChrQuotes->isLGQuotes($this->quoteSettings, $this->isResi);
+                $isTlQuotes = isset($this->quoteSettings['truckload_weight_threshold']) && $this->quoteSettings['truckload_weight_threshold'] ?? null;
             }
 
             $originQuotes = [];
             $arraySorting = [];
+            $TLquotes = $fqChrQuotes->truckLoadQuotes($quote, $allConfigServices, $this->quoteSettings);
+            $TLquotes = $this->getCompiledQuotes($TLquotes[0], $TLquotes[1], false);
 
             if (isset($quote['q'])) {
                 if (isset($quote['hazardousStatus'])) {
@@ -4055,6 +4067,13 @@ class CompileQuotes
                 }
             }
 
+            if ($TLquotes !== null && !empty($TLquotes)) {
+                foreach ($TLquotes as $key => $TLservice) {
+                    $isTlQuotes ? $allQuotes['Truckload'][] = $TLservice['Truckload'] : null;
+                    $isTlQuotes ? $multiShipmentQuotes['Truckload'][$origin] = $TLservice['Truckload'] : null;
+                }
+            }
+
             if ($this->isMultiShipment) {
                 $odwArr[$origin]['quotes'] = $compiledQuotes;
             }
@@ -4062,12 +4081,20 @@ class CompileQuotes
             $count++;
         }
 
+        if(!(isset($this->quoteSettings['quoteltl_and_truckload']) && $this->quoteSettings['quoteltl_and_truckload']) && $this->isMultiShipment ){
+            
+            $ltlTruckloadQuotes = Functions::quotesLtlTruckLoad($allQuotes, $shipments);
+            $allQuotes = !empty($ltlTruckloadQuotes) ? $ltlTruckloadQuotes[0] : null;
+            $multiShipmentQuotes = !empty($ltlTruckloadQuotes) ? $ltlTruckloadQuotes[1] : null;
+
+        }
+
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
 
-        if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1)) {
+        if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1) || (!empty($multiShipmentQuotes['Truckload']) && count($multiShipmentQuotes['Truckload']) > 1)) {
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $allQuotes,
@@ -4924,9 +4951,13 @@ class CompileQuotes
             if(isset($services[0]['Truckload']) && !empty($services[0]['Truckload'])){
                 $AVR = $this->averageRattingMethod($arraySorting, $options, $lgQuotes);
 
-                $title = explode(' (', $services[0]['Truckload']['title']); 
+                if(isset($this->isFQChr) && $this->isFQChr){
+                    $title = $this->quoteSettings['truck_label_as'] ?? Functions::$simpleLTLTitle . ' - Truckload Service';
+                }else {
+                    $title = ($this->quoteSettings['label_as'] ?? Functions::$simpleLTLTitle) . ' - Truckload Service';
+                }
                 $averageRateService[0]['Truckload'] = [
-                    'title' => ($this->quoteSettings['label_as'] ?? Functions::$simpleLTLTitle) . ' - Truckload Service',
+                    'title' => $title,
                     'code' => $AVR[0]['simple']['code'] . '+TL',
                     'rate' => $AVR[0]['simple']['rate'],
                 ];
@@ -4977,6 +5008,7 @@ class CompileQuotes
         $simplePrice = $this->getAveragePrice($sliced, $options);
         $prefix = $this->isGTZCerasis ? 'AVG' : 'AVGwweltl';
         $prefix = isset($this->isFQ) && $this->isFQ ? 'AVGfqltl' : $prefix;
+        $prefix = isset($this->isFQChr) && $this->isFQChr ? 'AVGfqchrltl' : $prefix;
         $prefix = isset($this->EchoLogistics) && $this->EchoLogistics ? 'AVGecholtl' : $prefix;
         $serviceName = $this->customLabel(Functions::$simpleLTLTitle);
         $averageRateService[0]['simple'] = [

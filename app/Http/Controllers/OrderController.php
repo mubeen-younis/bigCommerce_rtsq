@@ -510,7 +510,6 @@ class OrderController extends Controller
                 $LimitedAccessDel != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Limited Access Delivery') : '';
                 $isTruckLoad != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Truck Load Delivery') : '';
                 $isFreightTruckLoad != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Truck Load Delivery') : '';
-
             }
             $orderWidget[$zip]['accessories'] = array_values(array_unique($orderWidget[$zip]['accessories']));
             $count++;
