@@ -3741,6 +3741,12 @@ class CompileQuotes
 
     private function compileEchoLogisticsLtlQuotes($shipments, $connectionSettings, $allOrigins, $hazmatAllItems, $residential)
     {
+        $returnRates = $residential['returnRates']['echoLtl'] ?? false;
+
+        if($returnRates){
+            return [];
+        }
+
         $this->EchoLogistics = true;
         $this->isResi = $residential['echoLtl'] == 'Y';
         $this->residentialDlvry = $residential['echoLtl'] == 'Y' ? 1 : 0;
