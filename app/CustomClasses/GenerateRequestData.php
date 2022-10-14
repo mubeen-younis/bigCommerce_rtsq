@@ -243,9 +243,10 @@ class GenerateRequestData
 
     public function wweLtlEnitArr($connSettings, $destination)
     {
-         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+        $this->returnRates = false;
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
-         }
+        }
 
         return [
 
@@ -263,6 +264,7 @@ class GenerateRequestData
 
     public function odflLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
@@ -327,6 +329,7 @@ class GenerateRequestData
 
     public function upsLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
@@ -371,6 +374,7 @@ class GenerateRequestData
 
     public function fedexLtlEnitArr($connSettings, $destination, $enitOrigin)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
@@ -389,6 +393,7 @@ class GenerateRequestData
 
     public function xpoLtlEnitArr($connSettings, $destination, $enitOrigin)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
          }
@@ -445,6 +450,7 @@ class GenerateRequestData
 
     public function estesltlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
@@ -465,6 +471,7 @@ class GenerateRequestData
 
     public function yrcLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
@@ -483,6 +490,7 @@ class GenerateRequestData
 
     public function tqlLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
@@ -501,6 +509,7 @@ class GenerateRequestData
 
     public function freightQuoteLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
@@ -533,6 +542,7 @@ class GenerateRequestData
 
     private function saiaLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
@@ -550,6 +560,7 @@ class GenerateRequestData
 
     public function abfLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
@@ -567,6 +578,7 @@ class GenerateRequestData
 
     public function SouthEasternEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
@@ -598,6 +610,7 @@ class GenerateRequestData
 
     private function echoLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
@@ -615,6 +628,7 @@ class GenerateRequestData
 
     private function dayLightLtlEnityArr($connSettings, $destination): array
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
@@ -634,6 +648,7 @@ class GenerateRequestData
 
     public function freightQuoteChrLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
