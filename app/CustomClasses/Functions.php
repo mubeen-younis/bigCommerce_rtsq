@@ -318,4 +318,15 @@ class Functions
         return [$allQuotes, $multiShipmentQuotes];
 
     }
+
+    public static function getServerName($storeData)
+    {
+        $serverName = $storeData['store']['name'];
+        
+        if (isset($storeData['store']['store_domain']) && !empty($storeData['store']['store_domain'])) {
+            $serverName = $storeData['store']['store_domain'];
+        } 
+
+        return $serverName;
+    }
 }
