@@ -11,6 +11,7 @@ use App\Models\BinRequestLog;
 use App\Models\BoxSize;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log;
 use ReflectionFunctionAbstract;
 
 class Bin3D
@@ -33,9 +34,11 @@ class Bin3D
     public function getBinResponse($storeId, $bins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment, $palletPkgReq = false)
     {
         $this->isPalletPkgReq = $palletPkgReq;
+        Log::info("plt packaging" . $palletPkgReq);
         //loop for each bin request
         if ($hits != 0) {
             $addonType = $this->isPalletPkgReq ? 'PLT' : 'SBS';
+            Log::info("plt packaging" . $addonType);
             $sbsStatus = $this->consumeHits($storeId, $hits, $addonType);
             if (!$sbsStatus['status']) {
                 return [];
@@ -46,8 +49,9 @@ class Bin3D
             foreach ($items as $key => $item) {
                 $binRequest[$key] = $this->generateBinRequest($bins, $item);
             }
-            
+            Log::info("bin request" . json_encode($binRequest));
             $responseFromSBS = $this->binRequest($binRequest, $storeId, $hits, $cartInfo);
+            Log::info("before compile respoes" . json_encode($responseFromSBS));
             
             if ($isMultishipment) {
                 $items = $items + $itemsAlone;
@@ -64,21 +68,30 @@ class Bin3D
                     }
                 }
                 $sbsCompiledResponse = $this->appendNotPackedItems($responseFromSBS, $items);
+            Log::info("sbs compiled multi shipment respoes" . json_encode($responseFromSBS));
+
             } else {
                 $items = $itemsAlone;
                 $sbsCompiledResponse = $this->appendNotPackedItemsBoth($responseFromSBS, $items);
+                Log::info("sbs compiled single respoes" . json_encode($responseFromSBS));
             }
         } else if (count($items)) {
             foreach ($items as $key => $item) {
                 $binRequest[$key] = $this->generateBinRequest($bins, $item, $items);
             }
+            Log::info("only items bin request" . json_encode($binRequest));
 
             $responseFromSBS = $this->binRequest($binRequest, $storeId, $hits, $cartInfo);
             $sbsCompiledResponse = $this->appendNotPackedItems($responseFromSBS, $items);
+            Log::info("only items resp from sbs" . json_encode($responseFromSBS));
+            Log::info("only items sbs compiled resp" . json_encode($sbsCompiledResponse));
+
         } else if (count($itemsAlone)) {
             $responseFromSBS = $this->generateShipAloneBinResponse($itemsAlone);
             $sbsCompiledResponse = $this->appendNotPackedItemsOnlyAlone($responseFromSBS);
         }
+        Log::info("returned sbs compiled resp" . json_encode($sbsCompiledResponse));
+
         return $sbsCompiledResponse;
     }
 
