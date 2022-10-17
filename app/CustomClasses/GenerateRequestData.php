@@ -616,7 +616,7 @@ class GenerateRequestData
         }
         
         return [
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'licenseKey' => '',
             'serverName' => "https://" . $this->storeData['store']['name'],
             'carrierMode' => 'pro',
             'quotestType' => 'ltl',
