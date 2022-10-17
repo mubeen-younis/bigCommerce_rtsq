@@ -15,11 +15,11 @@ class BoxSizeController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
         //$boxes = BoxSize::get();
         $boxes = [];
-        foreach (BoxSize::get() as $key => $box){
+        foreach (BoxSize::where('store_id', $request['store_id'])->get() as $key => $box){
 
             $boxes[$key] = $box;
             $boxes[$key]['availability'] = $box['is_available'] ? 'Yes' : 'No';
