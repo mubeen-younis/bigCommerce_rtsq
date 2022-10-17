@@ -695,6 +695,7 @@ class GenerateRequestData
             }
         }
 
+        Log::info('is packaging enabled', $this->storeData['enabled_addon_sbs']);
         if (isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs']) {
             $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? $carriers['usps']['originAddress'] ?? $carriers['purolator']['originAddress'] ?? [];
             $this->itemsArr = $itemsArr;
@@ -706,6 +707,7 @@ class GenerateRequestData
                 || isset($carriers['unishippersSmall'])
                 || isset($carriers['purolator'])
                 || isset($carriers['usps']);
+            Log::info('hasSmall carrier', $hasSmall);
             if ($hasSmall) {
                 $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
                 if (empty($multiplePackaging)) {
@@ -720,9 +722,12 @@ class GenerateRequestData
 
                 if (isset($carriers['fedexSmall'])) {
                     $this->checkServiceEnabled();
+                    Log::info('ground check', $this->ground);
                     if ($this->ground) {
                         $this->fedexType = 'normal'; // ground services
                         $sbsResponseGround = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
+                        Log::info('sbs ground response', $sbsResponseGround);
+
                         $itemsArrGround = $sbsResponseGround['items'] ?? $itemsArr;
                         unset($carriers['fedexSmall']['originAddress']);
                         foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
@@ -826,6 +831,8 @@ class GenerateRequestData
                     }
                 }
                 $binReponse = $sbsResponse['binResponse'] ?? [];
+                Log::info('bin response', $binReponse);
+
                 $boxBins = $sbsResponse['boxBins'] ?? [];
                 $isLtl = isset($carriers['wweLTL'])
                     || isset($carriers['upsLTL'])
@@ -879,6 +886,7 @@ class GenerateRequestData
             'receiverAddress' => $receiverAddress,
             'commdityDetails' => $itemsArr,
         ];
+        Log::info('requestArr', $requestArr);
 
         if (isset($carriers['fedexSmall'])) {
             if ($this->smartPost) {
@@ -895,7 +903,8 @@ class GenerateRequestData
         }
 
         $resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse, 'boxBins' => $boxBins, 'palletResponse' => $palletResp,  'palletBins' => $palletBins];
-        
+        Log::info('requestArr resp', $resp);
+ 
         return $resp;
     }
 
@@ -935,6 +944,7 @@ class GenerateRequestData
     public function checkServiceEnabled()
     {
         $carrierServices = $this->connectionSettings['fedex-small']['quote_settings']['carrier_services'] ?? [];
+        Log::info('carrier srevices', $carrierServices);
         foreach ($carrierServices as $key => $service) {
             $oneRate = ['one_rate_express_saver', 'one_rate_2_day', 'one_rate_2_day_am', 'one_rate_standard_overnight', 'one_rate_priority_overnight', 'one_rate_first_overnight'];
             if (!$this->oneRate && $service && in_array($key, $oneRate)) {
@@ -943,6 +953,7 @@ class GenerateRequestData
 
             $ground = ['fedex_home_delivery', 'fedex_appointment_home_delivery', 'fedex_ground', 'international_ground', 'fedex_evening_home_delivery', 'fedex_date_certain_home_delivery', 'fedex_smartpost'];
             if (!$this->ground && $service && in_array($key, $ground)) {
+                Log::info('is ground service: ', true);
                 $this->ground = true;
             }
 
