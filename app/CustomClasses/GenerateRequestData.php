@@ -2626,10 +2626,16 @@ class GenerateRequestData
                 /*END*/
             );
         }
+        Log::info('boxes' . json_encode($boxBins));
+        Log::info('fedex type' . json_encode($this->fedexType));
+
+        Log::info('before items' . json_encode($items));
         $hits = count($items);
         if ((count($items) && count($boxBins)) || count($itemsAlone)) {
+            Log::info('items' . json_encode($items));
             $Bin3D = new Bin3D();
             $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment, false);
+            Log::info('binResoinse' . json_encode($binResponse));
            
             if (count($binResponse)) {
                 foreach ($itemsAlone as $key => $itemAlone) {
