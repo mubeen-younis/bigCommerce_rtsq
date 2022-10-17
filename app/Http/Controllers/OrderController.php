@@ -208,8 +208,6 @@ class OrderController extends Controller
 
         /*
         * Shipment Packaging */
-        // dd('rfws', $responseFromWS, $multiShipmentresponse);
-        // dd($isOneRate, $isGround, $isAir);
         $sbsItems = [];
         foreach ($responseFromWS as $carrrierName => $WsResp) {
             foreach ($WsResp as $zip => $ws) {

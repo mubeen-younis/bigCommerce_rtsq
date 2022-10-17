@@ -847,6 +847,7 @@ class GenerateRequestData
 
                     if (isset($carriers['upsSmall'])) {
                         $carriers['upsSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
+                        $binReponse['ground'] = $sbsResponse['binResponse'];
 
                         // checks for ups simple rate enabled services
                         $this->checkUpsServiceEnabled();
@@ -872,7 +873,6 @@ class GenerateRequestData
 
                                 // assign simple rate bin response
                                 $binReponse['simpleRate'] = $sbsSimpleRateResponse['binResponse'];
-                                $binReponse['normal'] = $sbsResponse['binResponse'];
                                 $sbsResponse = [];
                                 $sbsResponse['binResponse'] = $binReponse;
 
@@ -2785,7 +2785,6 @@ class GenerateRequestData
         }
 
         $hits = count($items);
-
         if ((count($items) && count($boxBins)) || count($itemsAlone)) {
             $Bin3D = new Bin3D();
             $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment);

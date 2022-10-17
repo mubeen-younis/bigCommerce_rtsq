@@ -413,13 +413,16 @@ class Shipping
         $uspsBoxesFee = [];
         foreach ($quotes as $carrierName => $quote) {
             if ($this->isSmallCarrier($carrierName)) {
-                if ($carrierName == 'fedexSmall' && !$uspsRes) {
+                if (($carrierName == 'fedexSmall' || $carrierName == 'upsSmall') && !$uspsRes) {
                     foreach ($binReponse as $serviceType => $response) {
                         foreach ($response as $locationId => $bin) {
                             $quotes[$carrierName][$locationId]['binPackagingData']['response'][$serviceType] = $bin;
                             $fee = $this->getCumulativeBoxFee($bin);
                             $boxFee[$locationId] = $fee;
-                            $fedexBoxesFee[$locationId][$serviceType] = $fee;
+                            
+                            if ($carrierName == 'fedexSmall') {
+                                $fedexBoxesFee[$locationId][$serviceType] = $fee;
+                            }
                         }
                     }
                 } else if ($carrierName == 'usps' && $uspsRes) {
@@ -437,22 +440,9 @@ class Shipping
                         }
                     }
                 } else if ($carrierName !== 'fedexSmall' && $carrierName !== 'usps' && ($uspsRes === null || !$uspsRes)) {
-                    if ($carrierName == 'upsSmall') {
-                        if (isset($binReponse['simpleRate']) && isset($binReponse['normal'])) {
-                            foreach ($binReponse as $serviceType => $response) {
-                                foreach ($response as $locationId => $bin) {
-                                    $quotes[$carrierName][$locationId]['binPackagingData']['response'][$serviceType] = $bin;
-                                    $fee = $this->getCumulativeBoxFee($bin);
-                                    $boxFee[$locationId] = $fee;
-                                    $fedexBoxesFee[$locationId][$serviceType] = $fee;
-                                }
-                            }
-                        } else {
-                            foreach ($binReponse as $locationId => $bin) {
-                                $quotes[$carrierName][$locationId]['binPackagingData']['response'] = $bin;
-                                $boxFee[$locationId] = $this->getCumulativeBoxFee($bin);
-                            }
-                        }
+                    foreach ($binReponse as $locationId => $bin) {
+                        $quotes[$carrierName][$locationId]['binPackagingData']['response'] = $bin;
+                        $boxFee[$locationId] = $this->getCumulativeBoxFee($bin);
                     }
                 }
             }

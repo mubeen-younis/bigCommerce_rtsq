@@ -134,6 +134,7 @@ class QuotesResults
         $originQuotes = $multiShipmentQuotes = $multiShipmentQuote = [];
         $shipmentCount = 0;
         $count = 0;
+        $access2 = $access;
 
         foreach ($shipments as $origin => $quote) {
 
@@ -198,9 +199,15 @@ class QuotesResults
                         }
                     }
 
+                    if ($data['serviceType'] == '03' && !strpos($access2, '+gd') && !strpos($data['serviceType'], 'SR_')) {
+                        $access2 = $access2 . '+gd'; 
+                    } else if (strpos($data['serviceType'], 'SR_') != false && !strpos($access2, '+sr')) {
+                        $access2 = $access2 . '+sr'; 
+                    } 
+
                     $title = $this->getServiceTitle($data['serviceDesc'], $data, $data['serviceType'], $this->quoteSettings, $residential);
                     $price = (float)str_replace(',', '', $price);
-                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12ups' . $data['serviceType'] . $access;
+                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12ups' . $data['serviceType'] . $access2;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
 
@@ -225,7 +232,7 @@ class QuotesResults
                 $minValueFromNetChargeArr = min(array_column($netChargeArray, 'rate'));
 
                 $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
-                $originQuotesMulti[0]['code'] = 'Multiups' . $access;
+                $originQuotesMulti[0]['code'] = 'Multiups' . $access2;
                 $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
                 $originQuotesMulti[0]['title'] = $residential ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
             }
