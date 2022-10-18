@@ -304,8 +304,9 @@ class ProductSettingController extends Controller
                 $count = ProductSetting::where('store_id', $request->store_id)
                     ->orderBy('name', $sortProd)->get();
             } else {
-                $count = ProductSetting::where('store_id', $request->store_id)
-                    ->where('name', 'LIKE', '%' . $search . '%')->orderBy('name', $sortProd)->get();
+                $count = ProductSetting::where('name', 'LIKE', '%' . $search . '%')
+                ->where('store_id', $request->store_id)->orderBy('name', $sortProd)
+                ->get();
             }
 
             if ($count->count()) {
@@ -317,12 +318,13 @@ class ProductSettingController extends Controller
                 $products = ProductSetting::where('store_id', $request->store_id)
                     ->groupBy('source_product_id')->orderBy('name', $sortProd)->skip(($page - 1) * $perPage)->take($perPage)->get();
             } else {
-                $products = ProductSetting::where('store_id', $request->store_id)
-                    ->groupBy('source_product_id')->orderBy('name', $sortProd)
-                    ->where('name', 'LIKE', '%' . $search . '%')
-                    ->orWhere('variant_id', $search)
-                    ->orWhere('source_product_id', $search)
-                    ->skip(($page - 1) * $perPage)->take($perPage)->get();
+                $products = ProductSetting::where(function($query) use ($search) {
+                    $query->where('name', 'LIKE', '%' . $search . '%');
+                    $query->orWhere('variant_id', $search);
+                    $query->orWhere('source_product_id', $search);
+                })->where('store_id', $request->store_id)
+                ->orderBy('name', $sortProd)
+                ->skip(($page - 1) * $perPage)->take($perPage)->get();
             }
             if ($products->isEmpty()) {
                 return response()->json(['error' => true,
