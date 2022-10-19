@@ -156,7 +156,7 @@ class OrderController extends Controller
         if (is_string($index[0]) && $index[0] == "shippingGroup") {
             return $this->shippingGroupOrderWidget($data, $order);
         }
-
+        $this->bcReportingData($request, $data);
         // DBSC order widget
         if (is_string($index[0]) && strpos($index[0], 'dbsc') !== false) {
             return $this->dbscOrderWidget($data, $order);
@@ -1108,6 +1108,35 @@ class OrderController extends Controller
             }
         }
         return false;
+    }
+
+    private function bcReportingData($request, $OrderData)
+    {   $reqData = json_decode($OrderData['request']);
+        //$platform = $reqData->requestArr->platform;
+        $carriers = $reqData->requestArr->carriers;
+        dd($OrderData);
+        $orders[] = [
+            'orderId'    => $OrderData['id'] ?? null,
+            'store_name'    => $request['store_name'] ?? '',
+            //quoted id
+            'orderCreatedDate'    => $OrderData['created_at'] ?? '', 
+            'carrierName'    => $carrierName ?? '',
+            'carrierType'    => $carrierType ?? '',   // ltl or small
+            'serviceId'    => 'FEDEX_GROUND' ?? '',   // scac code
+            'serviceName'    => 'Fedex Ground' ?? '', // service description 
+            'serviceCharge'    => '150' ?? null, 
+            // json data encoded with base 64
+            'orderMeta'    => '' // json data encoded with base 64
+        ];
+        $data =[
+            'licenseKey' => 'V1T9Z7QY-X357RURI-01MMZZ3W-O0TOJAQG',
+            'platform' => $platform ?? '',
+            'currencyUnit' => $currencyUnit ?? '',
+            'parsedData' => '1', 
+
+            'orders' => $orders ?? [],
+        ];
+        dd($data);
     }
 
 }
