@@ -156,7 +156,6 @@ class OrderController extends Controller
         if (is_string($index[0]) && $index[0] == "shippingGroup") {
             return $this->shippingGroupOrderWidget($data, $order);
         }
-        $this->bcReportingData($request, $data);
         // DBSC order widget
         if (is_string($index[0]) && strpos($index[0], 'dbsc') !== false) {
             return $this->dbscOrderWidget($data, $order);
@@ -513,6 +512,10 @@ class OrderController extends Controller
             }
             $orderWidget[$zip]['accessories'] = array_values(array_unique($orderWidget[$zip]['accessories']));
             $count++;
+
+            $accessorials = $orderWidget[$zip]['accessories'];
+            $reportData = $this->bcReportingData($request, $order, $isSmall,$data, $key, $origin, $accessorials);
+            $reportRes = $this->curlRequest->reportingDataCurlRequest($reportData);
         }
         /*
          * Added For Catering items that ship as SHippping Group*/
@@ -534,7 +537,7 @@ class OrderController extends Controller
                 $orderWidget[$key]['items'] = $items;
             }
         }
-        
+
         $sbs = '';
         $resp = [
             'widget' => $this->objectToArray($orderWidget),
@@ -1110,33 +1113,57 @@ class OrderController extends Controller
         return false;
     }
 
-    private function bcReportingData($request, $OrderData)
-    {   $reqData = json_decode($OrderData['request']);
-        //$platform = $reqData->requestArr->platform;
-        $carriers = $reqData->requestArr->carriers;
-        dd($OrderData);
+    private function bcReportingData($request, $OrderData, $isSmall, $data, $loc_code, $origin, $accessorials)
+    {
+        $carrierCodes = ['wweltl', 'rnlltl', 'xpoltl', 'fedexltl', 'gtzltl', 'cltl', 'upsltl', 'fqltl', 'tqlltl', 'yrcltl', 'odflltl', 'dayrossltl', 'fqchrltl', 'estesltl', 'echoltl', 'saialtl', 'abfltl', 'daylightltl', 'SouthEastern', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship', 'parcel_12Purolator', 'parcel_12usps'];
+        $rateId = $OrderData['rate_id'];
+        foreach($carrierCodes as $key => $code){
+            if (strpos($rateId, $code) !== false) {
+                $carrierName = Functions::getCarrierNameFromCode($code);
+                $carrierType = Functions::isSmallCarrier($code) ? 'small' : 'ltl';
+            }
+
+        }     
+        
+        $lineItems = json_decode($data['lineitems'])->lineItemData;
+        $address['origin'] = $origin;
+        $address['destination'] = $lineItems->destination;
+        $orderMeta[$loc_code]['ship_details'] = [
+            'ship_type' => $origin->location,
+            'loc_code' => $loc_code,
+            'app_id' => '',
+            'app_name' => '',
+            'address' => $address,
+            'accessorials' => json_encode($accessorials),
+            'service_name' => '',
+            'items' => $lineItems->items,
+            'ship_price' => $OrderData['shipping_rate'],
+            'carrier_name' => $carrierName,
+        ];
+        $orderMeta[$loc_code]['carrier_type'] = $carrierType;
+        
         $orders[] = [
             'orderId'    => $OrderData['id'] ?? null,
             'store_name'    => $request['store_name'] ?? '',
             //quoted id
-            'orderCreatedDate'    => $OrderData['created_at'] ?? '', 
-            'carrierName'    => $carrierName ?? '',
-            'carrierType'    => $carrierType ?? '',   // ltl or small
-            'serviceId'    => 'FEDEX_GROUND' ?? '',   // scac code
-            'serviceName'    => 'Fedex Ground' ?? '', // service description 
-            'serviceCharge'    => '150' ?? null, 
+            'orderCreatedDate' => $OrderData['date_created'] ?? '', 
+            'carrierName' =>  $carrierName ?? '',
+            'carrierType' => $carrierType ?? '',   // ltl or small
+            'serviceId' => '',   // scac code
+            'serviceName' => '', // service description 
+            'serviceCharge' => $OrderData['shipping_rate'] ?? null, 
             // json data encoded with base 64
-            'orderMeta'    => '' // json data encoded with base 64
+            'orderMeta'    => base64_encode(json_encode($orderMeta)), // json data encoded with base 64
         ];
+
         $data =[
             'licenseKey' => 'V1T9Z7QY-X357RURI-01MMZZ3W-O0TOJAQG',
-            'platform' => $platform ?? '',
-            'currencyUnit' => $currencyUnit ?? '',
+            'platform' => 'bigcommerce',
+            'currencyUnit' => $OrderData['currency_code'] ?? '',
             'parsedData' => '1', 
 
             'orders' => $orders ?? [],
         ];
-        dd($data);
     }
 
 }

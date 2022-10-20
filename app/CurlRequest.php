@@ -60,6 +60,23 @@ class CurlRequest
         }
     }
 
+    public function reportingDataCurlRequest($data)
+    {
+        try{
+        $field_string = json_encode($data);
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "https://ws001.eniture-qa.com/order-meta/index.php");
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $field_string);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        $output = curl_exec($ch);
+        curl_close($ch);
+        return $output;
+        }catch (\Exception $exception){
+            Log::info('ReportData Curl Exception '.json_encode($exception->getMessage()));
+            return json_encode($exception->getMessage());
+        }
+    }
     /**
      * @param $requestArr
      * @param $method
