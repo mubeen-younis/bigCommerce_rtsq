@@ -65,7 +65,7 @@ class CurlRequest
         try{
         $field_string = json_encode($data);
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, "https://ws001.eniture-qa.com/order-meta/index.php");
+        curl_setopt($ch, CURLOPT_URL, Functions::$reportDataUrl);
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $field_string);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);

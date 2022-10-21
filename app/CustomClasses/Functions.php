@@ -31,6 +31,7 @@ class Functions
     public static $imageSbsUrl = 'https://us-east.api.3dbinpacking.com/images/70785010926d0cc360921e4541811a53/20181106/4c114cebfa2d61a0c8153b3170ab6663/1541503329-24-8612722.png';
     public static $limitedAccesDelLabel = ' w/ limited access delivery';
     public static $limitedAccessLGDelLable = ' w/ lift gate & limited access delivery';
+    public static $reportDataUrl = "https://ws001.eniture-qa.com/order-meta/index.php";
 
     public static function hasInsureCarrier($code)
     {
@@ -78,6 +79,19 @@ class Functions
         return $carrierCodesWithName[$carrierCode] ?? null;
 
 
+    }
+
+    public static function getCarrierName($carrierCode): ?string
+    {
+        $carrierCodesWithName = ['wweltl' => 'wwe', 'upsltl' => 'ups', 'rnlltl' => 'rnl', 'xpoltl' => 'xpoLogistics',
+            'fedexltl' => 'fedex', 'gtzltl' => 'globaltranz', 'cltl' => 'cerasis',
+            'parcel_12wwe' => 'wwe_small_packages_quotes', 'parcel_12ups' => 'ups_small', 'parcel_12fd' => 'fedex_small', 'parcel_12uniship' => 'unishippers_small', 
+            'fqltl' => 'freightquote', 'fqchrltl' => 'freightquotechr', 'parcel_12Purolator' => 'purolator_small', 'parcel_12usps' => 'usps_small', 
+            'tqlltl' => 'tql', 'yrcltl' => 'yrc', 'odflltl' => 'odfl4me', 'dayrossltl' => 'dayross', 
+            'estesltl' => 'estes', 'echoltl' => 'echoLogistics', 'saialtl' => 'saia', 'abfltl' => 'abf', 'daylightltl' => 'daylight', 
+            'SouthEastern' => 'southeastern'];
+
+        return $carrierCodesWithName[$carrierCode] ?? null;
     }
 
     public static function getLiftResidentialStatus($rateId)
