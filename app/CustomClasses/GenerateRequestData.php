@@ -2597,6 +2597,11 @@ class GenerateRequestData
         /*$boxes = DB::table('box_sizes')->where('store_id', $storeId)
             ->where('is_available', 1)->get();*/
         foreach ($boxes as $box) {
+            $dimension = array($bin['width'], $bin['height'], $bin['length']);
+            $maxWeight = ($bin['max_weight'] == 0) ? $this->defaultMaxWeightSmall : $bin['max_weight'];
+            $boxWeight = $maxWeight - $bin['box_weight'];
+            $boxVolume = array_product($dimension);
+
             $boxBins[$box->id] = array(
                 'nickname' => $box->nickname,
                 'name' => $box->box_name,

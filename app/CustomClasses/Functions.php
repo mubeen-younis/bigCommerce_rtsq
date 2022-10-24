@@ -329,4 +329,19 @@ class Functions
 
         return $serverName;
     }
+
+     private function calculateCartInfo(array $item)
+    {
+        #calculate total volume and weight...
+        $itemVolume = ($item['product_length']  $item['product_widht']  $item['product_height']);
+        $itemWeight = $item['product_weight'];
+        $this->cubicVolumeArray[$this->requestKey]['volume'][$item['variant_id']] = $itemVolume;
+        $this->cubicVolumeArray[$this->requestKey]['weight'][$item['variant_id']] = $itemWeight;
+        $cartInfo = [
+            'total_volume' => $this->cartInfo[$this->requestKey]['total_volume'] + ($itemVolume * $item['quantity']),
+            'total_weight' => $this->cartInfo[$this->requestKey]['total_weight'] + ($itemWeight * $item['quantity'])
+        ];
+        
+        return $cartInfo;
+    }
 }
