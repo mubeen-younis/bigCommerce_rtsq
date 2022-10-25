@@ -31,6 +31,7 @@ class Functions
     public static $imageSbsUrl = 'https://us-east.api.3dbinpacking.com/images/70785010926d0cc360921e4541811a53/20181106/4c114cebfa2d61a0c8153b3170ab6663/1541503329-24-8612722.png';
     public static $limitedAccesDelLabel = ' w/ limited access delivery';
     public static $limitedAccessLGDelLable = ' w/ lift gate & limited access delivery';
+    public static $defaultMaxWeightSmall = 150;
 
     public static function hasInsureCarrier($code)
     {
@@ -332,8 +333,7 @@ class Functions
 
      private function calculateCartInfo(array $item)
     {
-        #calculate total volume and weight...
-        $itemVolume = ($item['product_length']  $item['product_widht']  $item['product_height']);
+        $itemVolume = ($item['product_length'] * $item['product_widht'] * $item['product_height']);
         $itemWeight = $item['product_weight'];
         $this->cubicVolumeArray[$this->requestKey]['volume'][$item['variant_id']] = $itemVolume;
         $this->cubicVolumeArray[$this->requestKey]['weight'][$item['variant_id']] = $itemWeight;
@@ -343,5 +343,27 @@ class Functions
         ];
         
         return $cartInfo;
+    }
+
+    public static function calculateCubicVolume($pkgItems = [])
+    {
+        if (empty($pkgItems)) {
+            return [];
+        }
+
+        $cubicVolumeArr = [];
+
+        foreach ($pkgItems as $items) {
+            foreach ($items as $item) {
+                $dimensions = array($item['w'], $item['h'], $item['d']);
+                $itemVolume = array_product($dimensions);
+                $itemWeight = $item['wg'];
+                
+                $cubicVolumeArr['volume'][] = $itemVolume;
+                $cubicVolumeArr['weight'][] = $itemWeight;
+            }
+        }
+
+        return $cubicVolumeArr;
     }
 }

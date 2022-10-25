@@ -2594,13 +2594,25 @@ class GenerateRequestData
                     ->where('is_available', 1)->get();
                 break;
         }
-        /*$boxes = DB::table('box_sizes')->where('store_id', $storeId)
-            ->where('is_available', 1)->get();*/
+        
+        $itemsCubicVolumeArr = Functions::calculateCubicVolume($items);
+        
+        if (!empty($itemsCubicVolumeArr) && isset($itemsCubicVolumeArr['volume']) && isset($itemsCubicVolumeArr['weight'])) {
+            $itemMinVolume = min(array_values($itemsCubicVolumeArr['volume']));
+            $itemMinWeight = min(array_values($itemsCubicVolumeArr['weight']));
+        }
+
         foreach ($boxes as $box) {
-            $dimension = array($bin['width'], $bin['height'], $bin['length']);
-            $maxWeight = ($bin['max_weight'] == 0) ? $this->defaultMaxWeightSmall : $bin['max_weight'];
-            $boxWeight = $maxWeight - $bin['box_weight'];
-            $boxVolume = array_product($dimension);
+            if (!empty($itemsCubicVolumeArr) && isset($itemMinVolume) && isset($itemMinWeight)) {
+                $dimensions = array($box->width, $box->height, $box->length);
+                $maxWeight = $box->max_weight == 0 ? Functions::$defaultMaxWeightSmall : $box->max_weight;
+                $boxWeight = $maxWeight - $box->box_weight;
+                $boxVolume = array_product($dimensions);
+
+                if (($itemMinVolume > $boxVolume) || ($itemMinWeight > $boxWeight)) {
+                    continue;
+                }
+            }
 
             $boxBins[$box->id] = array(
                 'nickname' => $box->nickname,
@@ -2620,6 +2632,7 @@ class GenerateRequestData
                 /*END*/
             );
         }
+
         $hits = count($items);
         if ((count($items) && count($boxBins)) || count($itemsAlone)) {
             $Bin3D = new Bin3D();
