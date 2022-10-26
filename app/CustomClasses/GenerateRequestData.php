@@ -516,12 +516,13 @@ class GenerateRequestData
 
     public function rossdayLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
 
         return [
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'licenseKey' =>'',
             'serverName' => "https://" . $this->storeData['store']['name'],
             'carrierMode' => 'pro',
             'quotestType' => 'ltl',
@@ -1976,8 +1977,9 @@ class GenerateRequestData
          * **/
         $residential = 'N';
         $alwaysResi = false;
+        $isSameDayApi = $connSettings['creds']['api_type'] == 'sameday' ? true : false;
 
-        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])) && !$isSameDayApi) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -2005,23 +2007,25 @@ class GenerateRequestData
             $accessorial['TLGDEL'] = 'Tailgate Delivery';
         }
 
-        // 2-Man delivery
-        if (QuotesResults::isTwoManDeliveryEnabled($connSettings)) {
-            $accessorial['2-MAN'] = '2-Man Delivery';
-        }
+        if ($isSameDayApi) {
+            // 2-Man delivery
+            if (QuotesResults::isTwoManDeliveryEnabled($connSettings)) {
+                $accessorial['2-MAN'] = '2-Man Delivery';
+            }
 
-        // Appointment delivery
-        if (QuotesResults::isAppointmentManDeliveryEnabled($connSettings)) {
-             $accessorial['APPT'] = 'Delivery Appointment';
+            // Appointment delivery
+            if (QuotesResults::isAppointmentManDeliveryEnabled($connSettings)) {
+                $accessorial['APPT'] = 'Delivery Appointment';
+            }
         }
-
+        
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $holdAtTerminal = (isset($connSettings['quote_settings']['hold_at_terminal']) && $connSettings['quote_settings']['hold_at_terminal'] && $connSettings['quote_settings']['hold_at_terminal'] == true) ? '1' : '0';
 
         $apiArray = [
             // Sameday Api settings
-            'sameDayDivision' => $connSettings['creds']['api_type'] == 'sameday' ? '1' : '0',
-            'premiumFreightService' => QuotesResults::getEnabledPremiumFreightService($connSettings['quote_settings']),
+            'sameDayDivision' => $isSameDayApi ? '1' : '0',
+            'premiumFreightService' => $isSameDayApi ? QuotesResults::getEnabledPremiumFreightService($connSettings['quote_settings']) : '',
 
             'emailAddress' => $connSettings['creds']['email'],
             'password' => $connSettings['creds']['password'],
@@ -2029,7 +2033,7 @@ class GenerateRequestData
 
             'prefferedCurrency' => 'USD',
             'thresholdWeightLimit' => $weightThreshold,
-            'holdAtTerminal' => $holdAtTerminal,
+            'holdAtTerminal' => $isSameDayApi ? '0' : $holdAtTerminal,
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
             /* Accessorial array */

@@ -2812,9 +2812,17 @@ class CompileQuotes
             return [];
         }
 
+        $this->isSameDayApi = $connectionSettings['dayross-ltl']['creds']['api_type'] == 'sameday' ? true : false;
         $dayRossLtl = new dayRossLtlQuotesResults();
-        $this->isResi = $residential['dayrossLtl'] == 'Y';
-        $this->residentialDlvry = $residential['dayrossLtl'] == 'Y' ? 1 : 0;
+
+        if (!$this->isSameDayApi) {
+            $this->isResi = $residential['dayrossLtl'] == 'Y';
+            $this->residentialDlvry = $residential['dayrossLtl'] == 'Y' ? 1 : 0;
+        } else {
+            $this->isResi = false;
+            $this->residentialDlvry = false;
+        }
+        
         $this->alwaysResi = $this->residential['alwaysResi']['dayrossLtl'] ?? false;
         $this->quoteSettings = $connectionSettings['dayross-ltl']['quote_settings'] ?? [];
         $shipments = $dayRossLtl->formateQuoteBeforeCompile($shipments, $this->quoteSettings);
@@ -2828,8 +2836,9 @@ class CompileQuotes
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = $dayRossLtl->isMultiShipment($shipments);
         }
+
         $labelAs = $this->quoteSettings['label_as'] ?? '';
-        $hatShipments = $connectionSettings['dayross-ltl']['creds']['api_type'] == 'sameday' ? [] : $dayRossLtl->getAndformatHATQuotes($this->quoteSettings, $shipments);
+        $hatShipments = $this->isSameDayApi ? [] : $dayRossLtl->getAndformatHATQuotes($this->quoteSettings, $shipments);
 
         /* Quotes compilation */
         foreach ($shipments as $origin => $quote) {
@@ -2843,12 +2852,14 @@ class CompileQuotes
                 unset($quote['InstorPickupLocalDelivery']);
 
                 $lgQuotes = $dayRossLtl->isLGQuotes($this->quoteSettings);
-                if (!$lgQuotes) {
+                if (!$lgQuotes && !$this->isSameDayApi) {
                     $lgQuotes = $dayRossLtl->isRADEnabled($this->quoteSettings, $this->isResi);
                 }
 
-                $twoManQuotes = $dayRossLtl->isTwoManDeliveryEnabled($connectionSettings['dayross-ltl']);
-                $appointmentQuotes = $dayRossLtl->isAppointmentManDeliveryEnabled($connectionSettings['dayross-ltl']);
+                if ($this->isSameDayApi) {
+                    $twoManQuotes = $dayRossLtl->isTwoManDeliveryEnabled($connectionSettings['dayross-ltl']);
+                    $appointmentQuotes = $dayRossLtl->isAppointmentManDeliveryEnabled($connectionSettings['dayross-ltl']);
+                }
             }
 
             $originQuotes = $arraySorting = [];
@@ -2871,6 +2882,10 @@ class CompileQuotes
                         $price = $this->calculatePrice($data);
                         $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : 'Freight';
 
+                        if ($this->isSameDayApi) {
+                            $this->quoteSettings['label_as'] = '';
+                        }
+
                         $days = $data['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = $dayRossLtl->getShipmentDateAndDays($data);
                         $title = $this->getTitle($data['serviceDesc'], false, false, $days, [], $dateAndDays);
@@ -2890,36 +2905,43 @@ class CompileQuotes
                             $originQuotes[$key]['liftgate']['title'] = $lgTitle;
                         }
 
-                        if ($twoManQuotes && !$lgQuotes) {
-                            $tmAccess = $this->getAccessorialCode(false, false, '', '', false, true, false);
-                            $tmPrice = $this->calculatePrice($data, false, false, false, false, false, true, false);
-                            $tmTitle = $this->getTitle($data['serviceDesc'], false, false, $days, [], $dateAndDays, false, false, false, false, true, false);
-                            $arraySorting['twoManDel'][$key] = $tmPrice;
-                            $originQuotes[$key]['twoManDel']['code'] = 'dayrossltl' . $tmAccess;
-                            $originQuotes[$key]['twoManDel']['rate'] = $tmPrice;
-                            $originQuotes[$key]['twoManDel']['title'] = $tmTitle;
-                        }
+                        if ($this->isSameDayApi) {
+                            $offerTwoManDelAsOpt = isset($this->quoteSettings['offer_two_man_delivery']) && $this->quoteSettings['offer_two_man_delivery'] ? true : false;
+                            $offerAppDelAsOpt = isset($this->quoteSettings['offer_appointment_delivery']) && $this->quoteSettings['offer_appointment_delivery'] ? true : false;
+                            $this->quoteSettings['label_as'] = '';
 
-                        if ($appointmentQuotes && !$lgQuotes) {
-                            $aptAccess = $this->getAccessorialCode(false, false, '', '', false, false, true);
-                            $aptPrice = $this->calculatePrice($data, false, false, false, false, false, false, true);
-                            $tmTitle = $this->getTitle($data['serviceDesc'], false, false, $days, [], $dateAndDays, false, false, false, false, false, true);
+                            if ($twoManQuotes && !$lgQuotes) {
+                                $tmAccess = $this->getAccessorialCode(false, false, '', '', false, true, false);
+                                $tmPrice = $this->calculatePrice($data, false, false, false, false, false, true, false);
+                                $tmTitle = $this->getTitle($data['serviceDesc'], false, false, $days, [], $dateAndDays, false, false, false, false, $offerTwoManDelAsOpt, false);
 
-                            $arraySorting['aptDel'][$key] = $aptPrice;
-                            $originQuotes[$key]['aptDel']['code'] = 'dayrossltl' . $aptAccess;
-                            $originQuotes[$key]['aptDel']['rate'] = $aptPrice;
-                            $originQuotes[$key]['aptDel']['title'] = $tmTitle;
-                        }
+                                $arraySorting['twoManDel'][$key] = $tmPrice;
+                                $originQuotes[$key]['twoManDel']['code'] = 'dayrossltl' . $tmAccess;
+                                $originQuotes[$key]['twoManDel']['rate'] = $tmPrice;
+                                $originQuotes[$key]['twoManDel']['title'] = $tmTitle;
+                            }
 
-                        if ($twoManQuotes &&  $appointmentQuotes && !$lgQuotes) {
-                            $aptAccess = $this->getAccessorialCode(false, false, '', '', false, true, true);
-                            $aptPrice = $this->calculatePrice($data, false, false, false, false, false, true, true);
-                            $tmTitle = $this->getTitle($data['serviceDesc'], false, false, $days, [], $dateAndDays, false, false, false, false, true, true);
+                            if ($appointmentQuotes && !$lgQuotes) {
+                                $aptAccess = $this->getAccessorialCode(false, false, '', '', false, false, true);
+                                $aptPrice = $this->calculatePrice($data, false, false, false, false, false, false, true);
+                                $tmTitle = $this->getTitle($data['serviceDesc'], false, false, $days, [], $dateAndDays, false, false, false, false, false, $offerAppDelAsOpt);
 
-                            $arraySorting['twoManAptDel'][$key] = $aptPrice;
-                            $originQuotes[$key]['twoManAptDel']['code'] = 'dayrossltl' . $aptAccess;
-                            $originQuotes[$key]['twoManAptDel']['rate'] = $aptPrice;
-                            $originQuotes[$key]['twoManAptDel']['title'] = $tmTitle;
+                                $arraySorting['aptDel'][$key] = $aptPrice;
+                                $originQuotes[$key]['aptDel']['code'] = 'dayrossltl' . $aptAccess;
+                                $originQuotes[$key]['aptDel']['rate'] = $aptPrice;
+                                $originQuotes[$key]['aptDel']['title'] = $tmTitle;
+                            }
+
+                            if ($twoManQuotes &&  $appointmentQuotes && !$lgQuotes) {
+                                $aptAccess = $this->getAccessorialCode(false, false, '', '', false, true, true);
+                                $aptPrice = $this->calculatePrice($data, false, false, false, false, false, true, true);
+                                $tmTitle = $this->getTitle($data['serviceDesc'], false, false, $days, [], $dateAndDays, false, false, false, false, $offerTwoManDelAsOpt, $offerAppDelAsOpt);
+                                
+                                $arraySorting['twoManAptDel'][$key] = $aptPrice;
+                                $originQuotes[$key]['twoManAptDel']['code'] = 'dayrossltl' . $aptAccess;
+                                $originQuotes[$key]['twoManAptDel']['rate'] = $aptPrice;
+                                $originQuotes[$key]['twoManAptDel']['title'] = $tmTitle;
+                            }
                         }
                     }
                 }
@@ -2967,9 +2989,9 @@ class CompileQuotes
 
             $count++;
         }
-
+        dd('aq', $allQuotes, $multiShipmentQuotes);
         $allQuotes = $this->getFinalQuotesArray($allQuotes);    
-        
+        // dd('aq', $allQuotes, $multiShipmentQuotes);
         /* Quotes for instore delivery */
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
@@ -2988,6 +3010,7 @@ class CompileQuotes
                     'multiShipmentQuotes' => Functions::arrangeHATMulti($multiShipmentQuotes, $hatShipments),
                 ];
             } else {
+                dd('msq', $allQuotes, $multiShipmentQuotes);
                 $allQuotes = $this->forceChangeTitle($allQuotes);
                 $resp = [
                     'checkoutQuotes' => $this->arrangeOwnFreight($allQuotes),
