@@ -2525,6 +2525,12 @@ class CompileQuotes
 
     public function compileWweSmallQuotes($shipments, $connectionSettings, $allOrigins, $isHazmat, $smalLtlHazmat, $hazmatAllItems)
     {
+        $doNotReturnRates = $this->residential['returnRates']['wweSmall'] ?? false;
+
+        if($doNotReturnRates){
+            return [];
+        }
+        
         if ($this->residential['wweSmall'] == 'Y') {
             $this->isResi = true;
             $this->residentialDlvry = 1;

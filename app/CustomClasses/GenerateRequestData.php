@@ -304,8 +304,13 @@ class GenerateRequestData
 
     public function wweSmallEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'licenseKey' => '',
             'serverName' => "https://" . $this->storeData['store']['name'],
             'carrierMode' => 'pro',
             'quotestType' => 'small', // ltl / small
@@ -1667,6 +1672,8 @@ class GenerateRequestData
 
         $this->resiCarrier['wweSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['wweSmall'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['wweSmall'] = $this->returnRates;
+
         $apiArray = [
             'speed_ship_username' => $connSettings['creds']['username'],
             'speed_ship_password' => $connSettings['creds']['password'],

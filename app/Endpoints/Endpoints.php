@@ -41,7 +41,7 @@ class Endpoints
     public static function upsSmallTestEndpoint()
     {
         if (env('APP_ENV') == 'staging') {
-            return self::$qaUrl . "ws/s/ups/auth.php";
+            return self::$qaUrl . "s/ups/auth.php";
         }
         return self::$prodUrl . "ws/s/ups/auth.php";
     }
