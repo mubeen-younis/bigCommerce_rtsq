@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Constants\Constant;
 use App\CurlRequest;
 use App\CustomClasses\Functions;
+use App\CustomClasses\PalletPackaging;
 use App\Models\BoxSize;
 use App\Models\DBSC\DbscShippingProfile;
 use App\Models\Locations;
@@ -149,8 +150,7 @@ class OrderController extends Controller
         }
         if (blank($data)) {
             return [];
-        }
-
+        }        
         $carrierHasInsurance = $this->hasInsureCarrier($rateId);
         $index = explode('idx+', $rateId);
         if (is_string($index[0]) && $index[0] == "shippingGroup") {
@@ -178,9 +178,9 @@ class OrderController extends Controller
         $rateId = strtolower($rateId);
         $isInspOrLocal = substr($rateId, 0, 4) == 'insp' || substr($rateId, 0, 6) == 'locdel';
         $isSmallrate = substr($rateId, 0, 9) == 'parcel_12' || substr($rateId, 0, 5) == 'multi' ? true : false;
-        $isLG = strpos($rateId, '+lg');
+        $isLG = strpos($rateId, '+lg') != false;
         $isOwnArrangement = strpos($rateId, 'own_arrangement') === 0 || strpos($rateId, 'freernlltl') === 0 ? true : false;
-
+        $isLtlRate = $isSmallLtlrate || (substr($rateId, 0, 9) != 'parcel_12') || (strpos($rateId, 'ltl') != false);
         /*
         * Stored Response from WS */
         $lineItem = json_decode($data['lineitems'])->lineItemData;
@@ -223,7 +223,7 @@ class OrderController extends Controller
                     $liftGatePickup = $liftResidentialStatus['lgPickup'] ?? 'n';
 
                     $totalBoxes = 1;
-                    if (isset($ws->binPackagingData) && !empty($ws->binPackagingData) && ($isSmallrate/* || $isInspOrLocal*/)) {
+                    if (isset($ws->binPackagingData) && !empty($ws->binPackagingData) && ($isSmallrate)) {
                         if ($isGround) {
                             $sbsData = $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->bins_packed ?? [];
                         } else if ($isAir) {
@@ -303,6 +303,19 @@ class OrderController extends Controller
                         $totalBoxes = isset($key) ? $key + 1 - $itemCount : 0;
 
 
+                    }
+
+                    // Pallet packaging order widget
+                    if (isset($ws->palletPackagingData) && !empty($ws->palletPackagingData) && $isLtlRate) {
+                        $palletPkgResp = (new PalletPackaging())->formatOrderWidget($responseFromWS, $lineItem);
+                        
+                        if (!empty($palletPkgResp)) {
+                            if (empty($orderWidget)) {
+                                $orderWidget =  $palletPkgResp;
+                            } else {
+                                $orderWidget[$zip]['pallet'] = $palletPkgResp[$zip]['pallet'];
+                            }
+                        }
                     }
                 }
             }
@@ -536,7 +549,7 @@ class OrderController extends Controller
                 $orderWidget[$key]['items'] = $items;
             }
         }
-
+        
         $sbs = '';
         $resp = [
             'widget' => $this->objectToArray($orderWidget),

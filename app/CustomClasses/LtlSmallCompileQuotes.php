@@ -190,6 +190,8 @@ class LtlSmallCompileQuotes
                         $quotesCarrier['ltl']['fqchr']['LG'][] = $quote;
                     } else if(strpos($quote['code'], '+HAT') !== false){
                         $quotesCarrier['ltl']['fqchr']['HAT'][] = $quote;
+                    } else if (strpos($quote['code'], '+TL') !== false) {
+                        $quotesCarrier['ltl']['fqchr']['TL'][] = $quote;
                     } else {
                         $quotesCarrier['ltl']['fqchr']['simple'][] = $quote;
                     }
@@ -533,8 +535,8 @@ class LtlSmallCompileQuotes
         $carriers = $request['carriers'] ?? [];
         $isMultiOrign = false;
         $hasSmallLtl = $this->requestContainSmallLlt($carriers, $quotes);
-        if (!$hasSmallLtl) {
-            return false;
+        if ($hasSmallLtl) {
+            return true;
         }
         foreach ($carriers as $carrier) {
             $output = $this->multi_unique($carrier['originAddress']);
@@ -558,9 +560,13 @@ class LtlSmallCompileQuotes
         $smallCarriers = ['wweSmall', 'upsSmall', 'fedexSmall', 'unishippersSmall', 'usps', 'purolator'];
         $ltlCarriers = ['wweLTL', 'upsLTL', 'fedexLTL', 'globalTranz', 'cerasis', 'xpoLogistics', 'rnl', 'yrc', 'freightQuote', 'estes', 'dayross', 'odfl4me', 'saia', 'abf', 'southeastern', 'tql', 'echoLogistics', 'daylight', 'chr'];
         $ltl = $small = false;
+        $locationsIds = [];
+
         foreach ($smallCarriers as $carName) {
             if (isset($carriers[$carName]) && !$small) {
-                foreach ($quotes[$carName] as $quote) {
+                foreach ($quotes[$carName] as $key => $quote) {
+                    $locationsIds[] = $key;
+
                     if (!isset($quote['severity'])) {
                         $small = true;
                         break 2;
@@ -570,7 +576,9 @@ class LtlSmallCompileQuotes
         }
         foreach ($ltlCarriers as $carName) {
             if (isset($carriers[$carName]) && !$ltl) {
-                foreach ($quotes[$carName] as $quote) {
+                foreach ($quotes[$carName] as $key => $quote) {
+                    $locationsIds[] = $key;
+
                     $dayRossLtlError = $carName === 'dayross' && isset($quote['q']['soapBody']['soapFault']);
                     if (!isset($quote['severity']) || !$dayRossLtlError) {
                         $ltl = true;
@@ -579,6 +587,11 @@ class LtlSmallCompileQuotes
                 }
             }
         }
-        return $ltl && $small;
+
+        if ($ltl && $small && count(array_unique($locationsIds)) > 1) {
+            return true;
+        }
+
+        return false;
     }
 }
