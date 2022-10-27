@@ -2843,7 +2843,7 @@ class CompileQuotes
 
         /* Quotes compilation */
         foreach ($shipments as $origin => $quote) {
-            $isError = isset($quote['severity']) || isset($quote['q']['soapBody']['soapFault']);
+            $isError = isset($quote['severity']) || isset($quote['error']) || isset($quote['q']['soapBody']['soapFault']);
             if ($isError) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
