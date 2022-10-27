@@ -65,7 +65,6 @@ class OrderController extends Controller
                     'message' => 'No Order Found',
                 ], 404);
             }
-            $order = ['shipping_rate' => $order['shipping_rate'], 'shipping_name' => $order['shipping_name'] ];
             $orderWidget = $this->createOrderWidget($request, $order);
             if (empty($orderWidget)) {
                 return response()->json(['error' => true,
@@ -137,9 +136,7 @@ class OrderController extends Controller
     {
         $rateId = $order['rate_id'] ?? null;
         $cartId = $order['cart_id'] ?? null;
-        $rateId = 'dayrossltlidx+01666796658';
-        $cartId = '40ce53b5-a3d2-4c04-bbc0-071690c83af7';
-        $data = optional(RequestTempData::where('rate_id', $rateId)
+        $data = optional(RequestData::where('rate_id', $rateId)
                 ->where('cart_id', $cartId)
                 ->where('store_id', $request['store_id'])
                 ->first())->toArray() ?? null;
@@ -150,7 +147,6 @@ class OrderController extends Controller
                     ->first())->toArray() ?? null;
             $rateId = $order['full_rate_id'] ?? null;
         }
-        // dd(123, $data);
         if (blank($data)) {
             return [];
         }
@@ -210,7 +206,6 @@ class OrderController extends Controller
         $isOneRate = strpos($rateId, '+or');
         $isGround = strpos($rateId, '+gd');
         $isAir = strpos($rateId, '+as');
-        dd(123, $multiShipmentresponse);
         /*
         * Shipment Packaging */
 

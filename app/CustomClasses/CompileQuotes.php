@@ -2863,7 +2863,7 @@ class CompileQuotes
                 }
             }
 
-            $originQuotes = $arraySorting = [];
+            $originQuotes = $arraySorting = $quotesArr = [];
 
             if (isset($quote['q'])) {
                 $items = $quote['q']['lineItems'] ?? [];
@@ -2979,8 +2979,8 @@ class CompileQuotes
                     $appointmentQuotes ? $allQuotes['aptDel'][] = $service['aptDel'] : null;
                     $appointmentQuotes ? $multiShipmentQuotes['aptDel'][$origin] = $service['aptDel'] : null;
 
-                    $twoManQuotes && $appointmentQuotes ? $allQuotes['twoManAptDel'][] = $service['twoManAptDel'] : null;
-                    $twoManQuotes && $appointmentQuotes ? $multiShipmentQuotes['twoManAptDel'][$origin] = $service['twoManAptDel'] : null;
+                    ($twoManQuotes && $appointmentQuotes) ? $allQuotes['twoManAptDel'][] = $service['twoManAptDel'] : null;
+                    ($twoManQuotes && $appointmentQuotes) ? $multiShipmentQuotes['twoManAptDel'][$origin] = $service['twoManAptDel'] : null;
                 }
             }
 
@@ -2991,7 +2991,6 @@ class CompileQuotes
             $count++;
         }
         
-        dd('all quotes', $allQuotes, $multiShipmentQuotes);
         $allQuotes = $this->getFinalQuotesArray($allQuotes);    
         /* Quotes for instore delivery */
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
