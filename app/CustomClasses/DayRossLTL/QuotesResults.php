@@ -44,6 +44,11 @@ class QuotesResults
                     $serviceDescription = $value['q']['Description'] ?? '';
                     $resp = $this->compileSameDayApiQuotes($quoteSettings, $value);
 
+                    if (empty($resp)) {
+                        $formattedShipments[$key]['q']['soapBody']['soapFault'] = 'No quotes found';
+                        continue;
+                    } 
+
                     $charges = $resp['charges'];
                     $formattedShipments[$key]['q']['surcharges']['twoManFee'] = $resp['twoManFee'];
                     $formattedShipments[$key]['q']['surcharges']['appointmentFee'] = $resp['appointmentFee'];
@@ -81,7 +86,7 @@ class QuotesResults
     {
         $numberOfShipments = 0;
         foreach ($shipments as $ship) {
-            if (!isset($ship['severity']) && !isset($quote['q']['soapBody']['soapFault'])) {
+            if (!isset($ship['severity']) && !isset($ship['q']['soapBody']['soapFault'])) {
                 $numberOfShipments++;
             }
         }
@@ -255,6 +260,8 @@ class QuotesResults
 
         if (in_array($serviceCode, $allServicesArr)) {
             $charges = $value['q']['TotalAmount'];
+        } else {
+            return [];
         }
 
         $twoManDeliveryFee = $appointmentDeliveryFee = $lgFee = 0;

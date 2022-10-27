@@ -29,6 +29,7 @@ use App\CustomClasses\EstesLTL\QuotesResults as estesLtlQuotesResults;
 use App\Http\Controllers\RADController;
 use App\Models\Locations;
 use Carbon\Carbon;
+use Facade\Ignition\DumpRecorder\Dump;
 use Illuminate\Support\Facades\DB;
 
 class CompileQuotes
@@ -2989,9 +2990,9 @@ class CompileQuotes
 
             $count++;
         }
-        dd('aq', $allQuotes, $multiShipmentQuotes);
+        
+        dd('all quotes', $allQuotes, $multiShipmentQuotes);
         $allQuotes = $this->getFinalQuotesArray($allQuotes);    
-        // dd('aq', $allQuotes, $multiShipmentQuotes);
         /* Quotes for instore delivery */
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
@@ -3010,7 +3011,6 @@ class CompileQuotes
                     'multiShipmentQuotes' => Functions::arrangeHATMulti($multiShipmentQuotes, $hatShipments),
                 ];
             } else {
-                dd('msq', $allQuotes, $multiShipmentQuotes);
                 $allQuotes = $this->forceChangeTitle($allQuotes);
                 $resp = [
                     'checkoutQuotes' => $this->arrangeOwnFreight($allQuotes),
