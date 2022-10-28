@@ -112,7 +112,6 @@ class DbExportController extends Controller
 
         // request_temp table data export
         $requestTempResults = self::runQueries('request_temp', '2 DAY', $connect_db, $connect_db2);
-        dd(1, $requestTempResults);
 
         // app_logs table data export
         $appLogsResults = self::runQueries('app_logs', '4 HOUR', $connect_db, $connect_db2);
