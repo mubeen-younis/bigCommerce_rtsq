@@ -243,9 +243,10 @@ class GenerateRequestData
 
     public function wweLtlEnitArr($connSettings, $destination)
     {
-         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+        $this->returnRates = false;
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
-         }
+        }
 
         return [
 
@@ -263,6 +264,7 @@ class GenerateRequestData
 
     public function odflLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
@@ -302,9 +304,14 @@ class GenerateRequestData
 
     public function wweSmallEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
-            'serverName' => Functions::getServerName($this->storeData),
+            'licenseKey' => '',
+            'serverName' => "https://" . $this->storeData['store']['name'],
             'carrierMode' => 'pro',
             'quotestType' => 'small', // ltl / small
             'version' => '2.0.4',
@@ -327,6 +334,7 @@ class GenerateRequestData
 
     public function upsLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
@@ -371,6 +379,7 @@ class GenerateRequestData
 
     public function fedexLtlEnitArr($connSettings, $destination, $enitOrigin)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
@@ -389,6 +398,7 @@ class GenerateRequestData
 
     public function xpoLtlEnitArr($connSettings, $destination, $enitOrigin)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
          }
@@ -445,6 +455,7 @@ class GenerateRequestData
 
     public function estesltlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
@@ -465,6 +476,7 @@ class GenerateRequestData
 
     public function yrcLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
@@ -483,6 +495,11 @@ class GenerateRequestData
 
     public function tqlLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -497,6 +514,7 @@ class GenerateRequestData
 
     public function freightQuoteLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
@@ -529,6 +547,7 @@ class GenerateRequestData
 
     private function saiaLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
@@ -546,6 +565,7 @@ class GenerateRequestData
 
     public function abfLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
@@ -563,6 +583,7 @@ class GenerateRequestData
 
     public function SouthEasternEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
@@ -594,9 +615,14 @@ class GenerateRequestData
 
     private function echoLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+        
         return [
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
-            'serverName' => Functions::getServerName($this->storeData),
+            'licenseKey' => '',
+            'serverName' => "https://" . $this->storeData['store']['name'],
             'carrierMode' => 'pro',
             'quotestType' => 'ltl',
             'version' => '1.0',
@@ -607,6 +633,11 @@ class GenerateRequestData
 
     private function dayLightLtlEnityArr($connSettings, $destination): array
     {
+        $this->returnRates = false;
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
             'licenseKey' => '',
             'platform' => 'bigcommerce',
@@ -622,6 +653,7 @@ class GenerateRequestData
 
     public function freightQuoteChrLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
@@ -895,7 +927,7 @@ class GenerateRequestData
         }
 
         $resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse, 'boxBins' => $boxBins, 'palletResponse' => $palletResp,  'palletBins' => $palletBins];
-        
+ 
         return $resp;
     }
 
@@ -1640,6 +1672,8 @@ class GenerateRequestData
 
         $this->resiCarrier['wweSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['wweSmall'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['wweSmall'] = $this->returnRates;
+
         $apiArray = [
             'speed_ship_username' => $connSettings['creds']['username'],
             'speed_ship_password' => $connSettings['creds']['password'],
@@ -1986,6 +2020,7 @@ class GenerateRequestData
 
         $this->resiCarrier['tqlLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['tqlLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['tqlLtl'] = $this->returnRates;
 
         $accessorial = [];
         if ($liftGate == 'Y') {
@@ -2256,6 +2291,7 @@ class GenerateRequestData
 
         $this->resiCarrier['echoLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['echoLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['echoLtl'] = $this->returnRates;
 
         $accessorial = [];
         if ($alwaysResi || $residential != 'N') {
@@ -2286,6 +2322,7 @@ class GenerateRequestData
         $resp = $this->verifyRADStatus($connSettings, $destination);
         $this->resiCarrier['dayLightLtl'] = $resp['residential'];
         $this->resiCarrier['alwaysResi']['dayLightLtl'] = $resp['alwaysResi'];
+        $this->resiCarrier['returnRates']['dayLightLtl'] = $this->returnRates;
         $dayLightQuotes = new dayLightQuotesResults();
         $apiArray = $dayLightQuotes->getApiArr($connSettings, $resp);
 

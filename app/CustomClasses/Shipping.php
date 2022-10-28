@@ -821,6 +821,9 @@ class Shipping
     public function freeShippingTitle($finalQuotes)
     {
         foreach($finalQuotes as $key => $quote){
+            if(isset($quote['code']) && ($quote['code'] == 'INSP' || $quote['code'] == 'LOCDEL')){
+                continue;
+            }
             if(empty($quote['rate']) || $quote['rate'] == '0.00'){
                 $finalQuotes[$key]['title'] = Functions::$freeShipping;
             }

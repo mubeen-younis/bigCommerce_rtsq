@@ -1201,6 +1201,11 @@ class CompileQuotes
 
     public function compileTqlLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
+        $returnRates = $this->residential['returnRates']['tqlLtl'] ?? false;
+        if($returnRates){
+            return [];
+        }
+
         if ($this->residential['tqlLtl'] == 'Y') {
             $this->isResi = true;
             $this->residentialDlvry = 1;
@@ -2520,6 +2525,12 @@ class CompileQuotes
 
     public function compileWweSmallQuotes($shipments, $connectionSettings, $allOrigins, $isHazmat, $smalLtlHazmat, $hazmatAllItems)
     {
+        $doNotReturnRates = $this->residential['returnRates']['wweSmall'] ?? false;
+
+        if($doNotReturnRates){
+            return [];
+        }
+        
         if ($this->residential['wweSmall'] == 'Y') {
             $this->isResi = true;
             $this->residentialDlvry = 1;
@@ -3736,6 +3747,12 @@ class CompileQuotes
 
     private function compileEchoLogisticsLtlQuotes($shipments, $connectionSettings, $allOrigins, $hazmatAllItems, $residential)
     {
+        $returnRates = $residential['returnRates']['echoLtl'] ?? false;
+
+        if($returnRates){
+            return [];
+        }
+
         $this->EchoLogistics = true;
         $this->isResi = $residential['echoLtl'] == 'Y';
         $this->residentialDlvry = $residential['echoLtl'] == 'Y' ? 1 : 0;
@@ -3863,6 +3880,12 @@ class CompileQuotes
 
     private function compileDayLightLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
+        $returnRates = $this->residential['returnRates']['dayLightLtl'] ?? false;
+
+        if($returnRates){
+            return [];
+        }
+
         $dayLightQuotes = new dayLightLtlQuotesResults();
 
         $this->isResi = $residential['dayLightLtl'] == 'Y';

@@ -11,6 +11,7 @@ use App\Models\BinRequestLog;
 use App\Models\BoxSize;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log;
 use ReflectionFunctionAbstract;
 
 class Bin3D
@@ -46,7 +47,6 @@ class Bin3D
             foreach ($items as $key => $item) {
                 $binRequest[$key] = $this->generateBinRequest($bins, $item);
             }
-            
             $responseFromSBS = $this->binRequest($binRequest, $storeId, $hits, $cartInfo);
             
             if ($isMultishipment) {
