@@ -89,18 +89,17 @@ class DbExportController extends Controller
         $request = [];
         $url = '';
 
-        $db_name = 'bg_cmrc';
-        $db_user = 'root';
+        $db_name = '';
+        $db_user = '';
         $db_pass = '';
-        $db_host = '127.0.0.1';
+        $db_host = '';
         $connect_db = '';
 
-        // for backup to dev3 server
-        $db_name2 = 'test_bc';
-        $db_user2 = 'root';
+        $db_name2 = '';
+        $db_user2 = '';
         $db_pass2 = '';
-        $db_host2 = '127.0.0.1';
-        $connect_db2 = 'localhost';
+        $db_host2 = '';
+        $connect_db2 = '';
 
         $connect_db = new mysqli($db_host, $db_user, $db_pass, $db_name);
         $connect_db2 = new mysqli($db_host2, $db_user2, $db_pass2, $db_name2);
