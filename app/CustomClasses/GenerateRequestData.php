@@ -311,7 +311,7 @@ class GenerateRequestData
 
         return [
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'small', // ltl / small
             'version' => '2.0.4',
@@ -622,7 +622,7 @@ class GenerateRequestData
         
         return [
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl',
             'version' => '1.0',
