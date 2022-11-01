@@ -17,7 +17,6 @@ use Illuminate\Http\Request;
 use App\Models\ProductSetting;
 use App\CustomClasses\Shipping;
 use App\Models\Subscription\Subscription;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 
 class GetRatesController extends Controller
@@ -65,9 +64,6 @@ class GetRatesController extends Controller
         if (!$this->storePlanStatus($storeData['store']['id'])) {
             return [];
         }
-        
-        dd($storeData['store']['enable_logs']);
-        Config::set('global.logs_enabled', $storeData['store']['enable_logs']);
         
         $cartInfo['cartId'] = $request->base_options['request_context']['reference_values'][0]['value'] ?? 0;
         $cartInfo['store_id'] = $storeData['installed_carriers'][0]['store_id'] ?? 0;
