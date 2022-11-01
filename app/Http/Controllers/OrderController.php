@@ -419,6 +419,12 @@ class OrderController extends Controller
             $sName = str_replace(Constant::RESI_LABEL, '', $sName);
             $sName = str_replace(Constant::LIFT_LABEL, '', $sName);
             $sName = str_replace(Constant::RESI_LIFT_LABEL, '', $sName);
+            $sName = str_replace(Functions::$twoManDeliveryLabel, '', $sName);
+            $sName = str_replace(Functions::$appointmentDeliveryLabel, '', $sName);
+            $sName = str_replace(Functions::$twoManAppDelLabel, '', $sName);
+            $sName = str_replace(Functions::$twoManDelResiLabel, '', $sName);
+            $sName = str_replace(Functions::$appointmentDelResiLabel, '', $sName);
+            $sName = str_replace(Functions::$twoManAptDelResiLabel, '', $sName);
             $sMethod = isset($shipping_name[1]) ? '(' . $shipping_name[1] : '';
 
             $orderWidget[$zip]['shipping_method'] = $sName . $sMethod;

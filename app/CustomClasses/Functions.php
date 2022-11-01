@@ -37,9 +37,9 @@ class Functions
     public static $twoManDelAccess = '+TMD';
     public static $appointmentDelAccess = '+APD';
     public static $twoManAptDelAccess = '+TMD+APD';
-    public static $twoManDelResiLabel = ' w/ redidential & two man delivery';
-    public static $appointmentDelResiLabel = ' w/ redidential & appointment delivery';
-    public static $twoManAptDelResiLabel = ' w/ redidential & two man & appointment delivery';
+    public static $twoManDelResiLabel = ' w/ residential & two man delivery';
+    public static $appointmentDelResiLabel = ' w/ residential & appointment delivery';
+    public static $twoManAptDelResiLabel = ' w/ residential & two man & appointment delivery';
 
     public static function hasInsureCarrier($code)
     {
