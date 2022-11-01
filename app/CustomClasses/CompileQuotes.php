@@ -4290,6 +4290,7 @@ class CompileQuotes
         }
 
         $lfg = (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery'] == 1) || ($this->isResi && isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']);
+        $tmd_aptd = (isset($this->quoteSettings['always_two_man_delivery']) && $this->quoteSettings['always_two_man_delivery'] == 1) || (isset($this->quoteSettings['always_appointment_delivery']) && $this->quoteSettings['always_appointment_delivery'] == 1);
         
         if ($this->isMultiShipment == false) {
             if (
@@ -4308,10 +4309,15 @@ class CompileQuotes
                  * Condition for Always lift gate and lift gate for residential (Single Shipment)
                  * */
                 return array_merge($quotes['liftgate'] ?? [], $quotes['insideLiftGateDelivery'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['Truckload'] ?? []) ?? $quotes['simple'];
+            } elseif ($tmd_aptd) {
+                /**
+                 * Condition for Always two man and appointment delivery (Single Shipment)
+                 * */
+                return array_merge($quotes['twoManDel'] ?? [], $quotes['aptDel'] ?? [], $quotes['twoManAptDel'] ?? []) ?? $quotes['simple'];
             } else {
                 return array_merge($quotes['simple'] ?? [], $quotes['insideDelivery'] ?? [], $quotes['limitedaccess'] ?? [], $quotes['Truckload'] ?? [], $quotes['twoManDel'] ?? [], $quotes['aptDel'] ?? [], $quotes['twoManAptDel'] ?? []);
             }
-        } elseif ($lfg) {
+        } elseif ($lfg || $tmd_aptd) {
             /**
              * Condition for always lift gate and lift gate for residential (Multi Shipment)
              * */
@@ -4332,6 +4338,9 @@ class CompileQuotes
                 $isInsideLiftGateDelivery = $key == 'insideLiftGateDelivery' ? true : false;
                 $isLimitedAccess = $key == 'limitedaccess' ? true : false;
                 $isLimitedAccessLG = $key == 'limitedaccessLG' ? true : false;
+                $twoManDel = $key == 'twoManDel' ? true : false;
+                $appDel = $key == 'aptDel' ? true : false;
+                $twoManAptDel = $key == 'twoManAptDel' ? true : false;
                 foreach ($value as $key2 => $data) {
                     $rate += $data['rate'];
                     $code = $data['code'];
@@ -4339,7 +4348,7 @@ class CompileQuotes
                 $quotesArr[] = [
                     'code' => $code,
                     'rate' => $rate,
-                    'title' => $this->getTitle(Functions::$ltlMultiTitle, $isLiftGate, true, '', [], [], $isInsideDelivery, $isInsideLiftGateDelivery, $isLimitedAccess, $isLimitedAccessLG),
+                    'title' => $this->getTitle(Functions::$ltlMultiTitle, $isLiftGate, true, '', [], [], $isInsideDelivery, $isInsideLiftGateDelivery, $isLimitedAccess, $isLimitedAccessLG, $twoManDel, $appDel, $twoManAptDel),
                 ];
             } else {
                 $quotesArr[] = reset($value);
@@ -4538,7 +4547,7 @@ class CompileQuotes
      *
      * @info: This function will compile name of a service and return service name according to the settings enabled.
      */
-    public function getTitle($serviceName, $lgOption = false, $from = false, $deliveryEstimate = '', $quoteSetting = [], $daysAndDate = [], $insideDel = false, $isInsideLiftGateDelivery = false, $laccess = false, $laccessLG = false, $twoManDel = false, $appDel = false)
+    public function getTitle($serviceName, $lgOption = false, $from = false, $deliveryEstimate = '', $quoteSetting = [], $daysAndDate = [], $insideDel = false, $isInsideLiftGateDelivery = false, $laccess = false, $laccessLG = false, $twoManDel = false, $appDel = false, $twoManAptDel = false)
     {
         // Here  Making service title
         if (!empty($quoteSetting)) {
@@ -4589,12 +4598,24 @@ class CompileQuotes
             $accessTitle = $this->LADelLabel;
         }
 
-        if ($twoManDel && $appDel) {
-            $accessTitle = empty($accessTitle) ? Functions::$twoManAppDelLabel : $accessTitle . ' & two man & appointment delivery';
+        if (($twoManDel && $appDel) || $twoManAptDel) {
+            if ($this->quoteSettings['always_two_man_delivery'] == '1' && $this->quoteSettings['always_appointment_delivery'] == '1') {
+                $accessTitle = $accessTitle;
+            } else {
+                $accessTitle = empty($accessTitle) ? Functions::$twoManAppDelLabel : $accessTitle . ' & two man & appointment delivery';
+            }
         } elseif($twoManDel) {
-            $accessTitle = empty($accessTitle) ? Functions::$twoManDeliveryLabel : $accessTitle . ' & two man delivery';
+            if ($this->quoteSettings['always_two_man_delivery'] == '1') {
+                $accessTitle = $accessTitle;
+            } else {
+                $accessTitle = empty($accessTitle) ? Functions::$twoManDeliveryLabel : $accessTitle . ' & two man delivery';
+            }
         } elseif($appDel) {
-            $accessTitle = empty($accessTitle) ? Functions::$appointmentDeliveryLabel : $accessTitle . ' & appointment delivery';
+            if ($this->quoteSettings['always_appointment_delivery'] == '1') {
+                $accessTitle = $accessTitle;
+            } else {
+                $accessTitle = empty($accessTitle) ? Functions::$appointmentDeliveryLabel : $accessTitle . ' & appointment delivery';
+            }
         }
 
         $resp = $serviceTitle . $accessTitle . $deliveryEstimateLabel;
