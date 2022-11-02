@@ -4290,7 +4290,8 @@ class CompileQuotes
         }
 
         $lfg = (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery'] == 1) || ($this->isResi && isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']);
-        $tmd_aptd = (isset($this->quoteSettings['always_two_man_delivery']) && $this->quoteSettings['always_two_man_delivery'] == 1) || (isset($this->quoteSettings['always_appointment_delivery']) && $this->quoteSettings['always_appointment_delivery'] == 1);
+        $TMD_or_APD = (isset($this->quoteSettings['always_two_man_delivery']) && $this->quoteSettings['always_two_man_delivery'] == 1) || (isset($this->quoteSettings['always_appointment_delivery']) && $this->quoteSettings['always_appointment_delivery'] == 1);
+        $TMD_and_APD = (isset($this->quoteSettings['always_two_man_delivery']) && $this->quoteSettings['always_two_man_delivery'] == 1) && (isset($this->quoteSettings['always_appointment_delivery']) && $this->quoteSettings['always_appointment_delivery'] == 1);
         
         if ($this->isMultiShipment == false) {
             if (
@@ -4309,19 +4310,30 @@ class CompileQuotes
                  * Condition for Always lift gate and lift gate for residential (Single Shipment)
                  * */
                 return array_merge($quotes['liftgate'] ?? [], $quotes['insideLiftGateDelivery'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['Truckload'] ?? []) ?? $quotes['simple'];
-            } elseif ($tmd_aptd) {
+            } elseif ($TMD_and_APD) {
                 /**
                  * Condition for Always two man and appointment delivery (Single Shipment)
                  * */
-                return array_merge($quotes['twoManDel'] ?? [], $quotes['aptDel'] ?? [], $quotes['twoManAptDel'] ?? []) ?? $quotes['simple'];
+                return array_merge($quotes['twoManAptDel'] ?? []) ?? $quotes['simple'];
+            } elseif ($TMD_or_APD) {
+                /**
+                 * Condition for Always two man or appointment delivery (Single Shipment)
+                 * */
+                return array_merge($quotes['twoManDel'] ?? [], $quotes['aptDel'] ?? []) ?? $quotes['simple'];
             } else {
                 return array_merge($quotes['simple'] ?? [], $quotes['insideDelivery'] ?? [], $quotes['limitedaccess'] ?? [], $quotes['Truckload'] ?? [], $quotes['twoManDel'] ?? [], $quotes['aptDel'] ?? [], $quotes['twoManAptDel'] ?? []);
             }
-        } elseif ($lfg || $tmd_aptd) {
+        } elseif ($TMD_and_APD) {
+            /**
+             * Condition for Always two man and appointment delivery (Multi Shipment)
+             * */
+            unset($quotes['simple'], $quotes['insideDelivery'], $quotes['limitedaccess'],$quotes['twoManDel'], $quotes['aptDel']);
+        } elseif ($lfg || $TMD_or_APD) {
             /**
              * Condition for always lift gate and lift gate for residential (Multi Shipment)
+             * Condition for Always two man or appointment delivery (Multi Shipment)
              * */
-            unset($quotes['simple'], $quotes['insideDelivery'], $quotes['limitedaccess']);
+            unset($quotes['simple'], $quotes['insideDelivery'], $quotes['limitedaccess'], $quotes['twoManAptDel']);
         }
         return $this->organizeQuotesArray($quotes);
     }
