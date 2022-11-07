@@ -56,8 +56,8 @@ class OrderController extends Controller
         }
     }
 
-    public function getOrderWidget(Request $request)
-    {
+    public function getOrderWidget(Request $request, $reportingFlag = false)
+    {Log::info('call from webhook'.json_encode($request));
         try {
             $order = $this->getBCOrderByID($request);
             if (empty($order)) {
@@ -66,7 +66,7 @@ class OrderController extends Controller
                     'message' => 'No Order Found',
                 ], 404);
             }
-            $orderWidget = $this->createOrderWidget($request, $order);
+            $orderWidget = $this->createOrderWidget($request, $order, $reportingFlag);
             if (empty($orderWidget)) {
                 return response()->json(['error' => true,
                     'data' => [],
@@ -133,7 +133,7 @@ class OrderController extends Controller
         return $newOrigin;
     }
 
-    public function createOrderWidget($request, $order)
+    public function createOrderWidget($request, $order, $reportingFlag)
     {
         $rateId = $order['rate_id'] ?? null;
         $cartId = $order['cart_id'] ?? null;
@@ -514,11 +514,14 @@ class OrderController extends Controller
             $count++;
 
         }
-    
-        $reportData = $this->bcReportingData($request, $order,$data, $isMulti, $orderWidget, $zip);
-        Log::info('Reporting Data Request'.json_encode($reportData));
-        $reportDataResp = $this->curlRequest->reportingDataCurlRequest($reportData);
-        Log::info('Reporting Data Response'.json_encode($reportDataResp));
+        
+        if($reportingFlag){
+            $reportData = $this->bcReportingData($request, $order,$data, $isMulti, $orderWidget, $zip);
+            Log::info('Reporting Data Request'.json_encode($reportData));
+            $reportDataResp = $this->curlRequest->reportingDataCurlRequest($reportData);
+            Log::info('Reporting Data Response'.json_encode($reportDataResp));
+        }
+        
         
         /*
          * Added For Catering items that ship as SHippping Group*/
@@ -928,6 +931,7 @@ class OrderController extends Controller
                 return null;
             }
             $toRequest['store_id'] = $store->id;
+            $toRequest['store_name'] = $store->name;
             $toRequest['store_hash'] = $storeHash;
             $toRequest['order_id'] = $orderId;
             $this->accessToken = $store->access_token;
@@ -1073,6 +1077,7 @@ class OrderController extends Controller
                     if (!blank($reqData)) {
                         unset($reqData['id']);
                         RequestData::insert($reqData);
+                        $this->getOrderWidget($toRequest , true);
                     }
 
                     // RequestTempData::where('cart_id', $cartId)->delete();
