@@ -40,6 +40,7 @@ class Functions
     public static $twoManDelResiLabel = ' w/ residential & two man delivery';
     public static $appointmentDelResiLabel = ' w/ residential & appointment delivery';
     public static $twoManAptDelResiLabel = ' w/ residential & two man & appointment delivery';
+    public static $defaultMaxWeightSmall = 150;
 
     public static function hasInsureCarrier($code)
     {
@@ -326,5 +327,52 @@ class Functions
     
         return [$allQuotes, $multiShipmentQuotes];
 
+    }
+
+    public static function getServerName($storeData)
+    {
+        $serverName = $storeData['store']['name'];
+        
+        if (isset($storeData['store']['store_domain']) && !empty($storeData['store']['store_domain'])) {
+            $serverName = $storeData['store']['store_domain'];
+        } 
+
+        return $serverName;
+    }
+
+     private function calculateCartInfo(array $item)
+    {
+        $itemVolume = ($item['product_length'] * $item['product_widht'] * $item['product_height']);
+        $itemWeight = $item['product_weight'];
+        $this->cubicVolumeArray[$this->requestKey]['volume'][$item['variant_id']] = $itemVolume;
+        $this->cubicVolumeArray[$this->requestKey]['weight'][$item['variant_id']] = $itemWeight;
+        $cartInfo = [
+            'total_volume' => $this->cartInfo[$this->requestKey]['total_volume'] + ($itemVolume * $item['quantity']),
+            'total_weight' => $this->cartInfo[$this->requestKey]['total_weight'] + ($itemWeight * $item['quantity'])
+        ];
+        
+        return $cartInfo;
+    }
+
+    public static function calculateCubicVolume($pkgItems = [])
+    {
+        if (empty($pkgItems)) {
+            return [];
+        }
+
+        $cubicVolumeArr = [];
+
+        foreach ($pkgItems as $items) {
+            foreach ($items as $item) {
+                $dimensions = array($item['w'], $item['h'], $item['d']);
+                $itemVolume = array_product($dimensions);
+                $itemWeight = $item['wg'];
+                
+                $cubicVolumeArr['volume'][] = $itemVolume;
+                $cubicVolumeArr['weight'][] = $itemWeight;
+            }
+        }
+
+        return $cubicVolumeArr;
     }
 }

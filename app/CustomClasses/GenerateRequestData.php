@@ -252,7 +252,7 @@ class GenerateRequestData
         return [
 
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
@@ -273,7 +273,7 @@ class GenerateRequestData
         return [
 
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0',
@@ -290,7 +290,7 @@ class GenerateRequestData
         $api = $this->getApiInfoArrGTZLtl($connSettings, $destination, $carName);
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
@@ -312,7 +312,7 @@ class GenerateRequestData
 
         return [
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'small', // ltl / small
             'version' => '2.0.4',
@@ -325,7 +325,7 @@ class GenerateRequestData
     {
         return [
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'small', // ltl / small
             'version' => '1.0',
@@ -342,7 +342,7 @@ class GenerateRequestData
 
         return [
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'], 
+            'serverName' => Functions::getServerName($this->storeData), 
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
@@ -356,7 +356,7 @@ class GenerateRequestData
     {
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'small', // ltl / small
             'version' => '1.0.0',
@@ -369,7 +369,7 @@ class GenerateRequestData
     {
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'small', // ltl / small
             'version' => '1.0.0',
@@ -387,7 +387,7 @@ class GenerateRequestData
 
         return [
             'licenseKey' => '', 
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
@@ -406,7 +406,7 @@ class GenerateRequestData
 
         return [
             'licenseKey' => '', 
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
@@ -431,7 +431,7 @@ class GenerateRequestData
 
         return [
             'licenseKey' => '', 
-            'serverName' => "https://" . $this->storeData['store']['name'], 
+            'serverName' => Functions::getServerName($this->storeData), 
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
@@ -445,7 +445,7 @@ class GenerateRequestData
     {
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'small', // ltl / small
             'version' => '1.0.0',
@@ -463,7 +463,7 @@ class GenerateRequestData
 
         return [
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', 
             'version' => '1.0.0',
@@ -484,7 +484,7 @@ class GenerateRequestData
 
         return [
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
@@ -503,7 +503,7 @@ class GenerateRequestData
 
         return [
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl',
             'version' => '1.0.0',
@@ -522,7 +522,7 @@ class GenerateRequestData
 
         return [
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl',
             'version' => '1.0.0',
@@ -541,7 +541,7 @@ class GenerateRequestData
 
         return [
             'licenseKey' =>'',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl',
             'version' => '1.0.0',
@@ -560,7 +560,7 @@ class GenerateRequestData
 
         return [
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl',
             'version' => '1.0',
@@ -578,7 +578,7 @@ class GenerateRequestData
 
         return [
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl',
             'version' => '1.0',
@@ -596,7 +596,7 @@ class GenerateRequestData
 
         return [
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
@@ -610,7 +610,7 @@ class GenerateRequestData
     {
         return [
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'small',
             'version' => '1.0',
@@ -628,7 +628,7 @@ class GenerateRequestData
         
         return [
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl',
             'version' => '1.0',
@@ -647,7 +647,7 @@ class GenerateRequestData
         return [
             'licenseKey' => '',
             'platform' => 'bigcommerce',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl',
             'version' => '1.0',
@@ -666,7 +666,7 @@ class GenerateRequestData
 
         return [
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl',
             'version' => '1.0.0',
@@ -2657,9 +2657,26 @@ class GenerateRequestData
                     ->where('is_available', 1)->get();
                 break;
         }
-        /*$boxes = DB::table('box_sizes')->where('store_id', $storeId)
-            ->where('is_available', 1)->get();*/
+        
+        $itemsCubicVolumeArr = Functions::calculateCubicVolume($items);
+        
+        if (!empty($itemsCubicVolumeArr) && isset($itemsCubicVolumeArr['volume']) && isset($itemsCubicVolumeArr['weight'])) {
+            $itemMinVolume = min(array_values($itemsCubicVolumeArr['volume']));
+            $itemMinWeight = min(array_values($itemsCubicVolumeArr['weight']));
+        }
+
         foreach ($boxes as $box) {
+            if (!empty($itemsCubicVolumeArr) && isset($itemMinVolume) && isset($itemMinWeight)) {
+                $dimensions = array($box->width, $box->height, $box->length);
+                $maxWeight = $box->max_weight == 0 ? Functions::$defaultMaxWeightSmall : $box->max_weight;
+                $boxWeight = $maxWeight - $box->box_weight;
+                $boxVolume = array_product($dimensions);
+
+                if (($itemMinVolume > $boxVolume) || ($itemMinWeight > $boxWeight)) {
+                    continue;
+                }
+            }
+
             $boxBins[$box->id] = array(
                 'nickname' => $box->nickname,
                 'name' => $box->box_name,
@@ -2678,6 +2695,7 @@ class GenerateRequestData
                 /*END*/
             );
         }
+
         $hits = count($items);
         if ((count($items) && count($boxBins)) || count($itemsAlone)) {
             $Bin3D = new Bin3D();
