@@ -31,6 +31,15 @@ class Functions
     public static $imageSbsUrl = 'https://us-east.api.3dbinpacking.com/images/70785010926d0cc360921e4541811a53/20181106/4c114cebfa2d61a0c8153b3170ab6663/1541503329-24-8612722.png';
     public static $limitedAccesDelLabel = ' w/ limited access delivery';
     public static $limitedAccessLGDelLable = ' w/ lift gate & limited access delivery';
+    public static $twoManDeliveryLabel = ' w/ two man delivery';
+    public static $appointmentDeliveryLabel = ' w/ appointment delivery';
+    public static $twoManAppDelLabel = ' w/ two man & appointment delivery';
+    public static $twoManDelAccess = '+TMD';
+    public static $appointmentDelAccess = '+APD';
+    public static $twoManAptDelAccess = '+TMD+APD';
+    public static $twoManDelResiLabel = ' w/ residential & two man delivery';
+    public static $appointmentDelResiLabel = ' w/ residential & appointment delivery';
+    public static $twoManAptDelResiLabel = ' w/ residential & two man & appointment delivery';
     public static $defaultMaxWeightSmall = 150;
 
     public static function hasInsureCarrier($code)
@@ -283,7 +292,7 @@ class Functions
     }
 
     public static function getHATTitle($title = '', $address = [], $hatDistance = '', $phoneNumber = ''){
-        $distance = $hatDistance ?? '0 mi';
+        $distance = !empty($hatDistance) ? $hatDistance : '0 mi';
 
         return $title . ' | Hold At Terminal | ' . $distance . ' | ' . $address['city'] . ', ' . $address['state'] . ', ' . $address['zipCode'] . ' | ' . $phoneNumber;
     }

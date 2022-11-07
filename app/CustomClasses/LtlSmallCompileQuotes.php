@@ -159,6 +159,12 @@ class LtlSmallCompileQuotes
                         $quotesCarrier['ltl']['dayross']['LG'][] = $quote;
                     } else if (strpos($quote['code'], '+HAT') !== false) {
                         $quotesCarrier['ltl']['dayross']['HAT'][] = $quote;
+                    } elseif(strpos($quote['code'], Functions::$twoManAptDelAccess) !== false) {
+                        $quotesCarrier['ltl']['dayross']['TMDAPD'][] = $quote;
+                    } else if (strpos($quote['code'], '+TMD') !== false) {
+                        $quotesCarrier['ltl']['dayross']['TMD'][] = $quote;
+                    } else if (strpos($quote['code'], '+APD') !== false) {
+                        $quotesCarrier['ltl']['dayross']['APD'][] = $quote;
                     } else {
                         $quotesCarrier['ltl']['dayross']['simple'][] = $quote;
                     }
@@ -379,6 +385,30 @@ class LtlSmallCompileQuotes
                         'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
                         'title' => 'Freight'
                     ];
+                } elseif ($simpleLg == 'TMD'){
+                    $rtitle = ($parcel['isResi'] ?? $ltlQuot['isResi']) ? Functions::$twoManDelResiLabel : Functions::$twoManDeliveryLabel;
+
+                    $newQuotes[] = [
+                        'code' => 'multi' . $rCode . Functions::$twoManDelAccess,
+                        'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
+                        'title' => 'Freight' . $rtitle
+                    ];
+                } elseif ($simpleLg == 'APD'){
+                    $rtitle = ($parcel['isResi'] ?? $ltlQuot['isResi']) ? Functions::$appointmentDelResiLabel : Functions::$appointmentDeliveryLabel;
+
+                    $newQuotes[] = [
+                        'code' => 'multi' . $rCode . Functions::$appointmentDelAccess,
+                        'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
+                        'title' => 'Freight' . $rtitle
+                    ];
+                } elseif ($simpleLg == 'TMDAPD'){
+                    $rtitle = ($parcel['isResi'] ?? $ltlQuot['isResi']) ? Functions::$twoManAptDelResiLabel : Functions::$twoManAppDelLabel;
+
+                    $newQuotes[] = [
+                        'code' => 'multi' . $rCode . Functions::$twoManAptDelAccess,
+                        'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
+                        'title' => 'Freight' . $rtitle
+                    ];
                 } else {
                     $title = explode('|', $ltlQuot['title']);
                     unset($title[0]);
@@ -391,14 +421,16 @@ class LtlSmallCompileQuotes
                 }
             }
         }
+
         $indexes = $this->indexesOfQuotes($quotesFromWs);
         $multiShipmentQuotes = $this->createOrderWidget($quotesCarrierNew, $indexes);
+        
         if (!empty($ownArrangement)) {
             foreach ($ownArrangement as $quote) {
                 $newQuotes[count($newQuotes)] = $quote;
             }
-
         }
+        
         $resp = [
             'multiShipmentQuotes' => $multiShipmentQuotes,
             'checkoutQuotes' => $newQuotes
@@ -457,7 +489,26 @@ class LtlSmallCompileQuotes
                 $multiShipments[$count]['Truckload'][$indexes['small'][0]] = $parcel;
                 $count++;
             }
+
+            if (isset($quotes['TMD'][0])) {
+                $multiShipments[$count]['twoMan'][$indexes['ltl'][0]] = $quotes['TMD'][0];
+                $multiShipments[$count]['twoMan'][$indexes['small'][0]] = $parcel;
+                $count++;
+            }
+
+            if (isset($quotes['APD'][0])) {
+                $multiShipments[$count]['appointment'][$indexes['ltl'][0]] = $quotes['APD'][0];
+                $multiShipments[$count]['appointment'][$indexes['small'][0]] = $parcel;
+                $count++;
+            }
+
+            if (isset($quotes['TMDAPD'][0])) {
+                $multiShipments[$count]['twoManAptDelivery'][$indexes['ltl'][0]] = $quotes['TMDAPD'][0];
+                $multiShipments[$count]['twoManAptDelivery'][$indexes['small'][0]] = $parcel;
+                $count++;
+            }
         }
+
         return $multiShipments;
     }
 
