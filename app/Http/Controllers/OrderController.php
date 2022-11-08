@@ -1100,7 +1100,7 @@ class OrderController extends Controller
                         RequestData::insert($reqData);
                         Log::info('request all');
                         $request = new Request();
-                        $myNewData = $request->request->add([
+                        $myNewData = $request->merge([
                             'store_name' => $toRequest['store_name'],
                             'store_id' => $toRequest['store_id'],
                             'store_hash' => $toRequest['store_hash'],
