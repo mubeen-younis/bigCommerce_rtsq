@@ -1077,11 +1077,17 @@ class OrderController extends Controller
                     if (!blank($reqData)) {
                         unset($reqData['id']);
                         RequestData::insert($reqData);
-                        $request = new Illuminate\Http\Request($toRequest);
-                        Log::info('call request '.json_encode($request));
-                        $this->getOrderWidget($request , true);
+                        Log::info('request all');
+                        $request = new Request();
+                        $myNewData = $request->request->add([
+                            'store_name' => $toRequest['store_name'],
+                            'store_id' => $toRequest['store_id'],
+                            'store_hash' => $toRequest['store_hash'],
+                            'order_id' => $toRequest['order_id']
+                        ]);
+                        Log::info('call request '.json_encode($myNewData));
+                        $this->getOrderWidget($myNewData , true);
                     }
-
                     // RequestTempData::where('cart_id', $cartId)->delete();
                 }
             }
