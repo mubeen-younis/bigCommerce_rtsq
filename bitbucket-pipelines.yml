@@ -15,10 +15,10 @@ pipelines:
           script:
             - pipe: atlassian/ssh-run:0.2.2
               variables:
-                SSH_USER: 'eniture'
-                SERVER: '3.210.152.102'
+                SSH_USER: 'apx-bc-01'
+                SERVER: '54.165.5.4'
                 MODE: 'command'
-                COMMAND: '/home/eniture/public_html/bigcommerce/backend/remote-script.sh'
+                COMMAND: '/home/apx-bc-01/html/bc/remote-script.sh'
 
     staging:
       - step:
