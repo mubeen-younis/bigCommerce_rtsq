@@ -1077,7 +1077,13 @@ class OrderController extends Controller
                     if (!blank($reqData)) {
                         unset($reqData['id']);
                         RequestData::insert($reqData);
-                        $this->getOrderWidget($toRequest , true);
+                        $req = new Request();
+                        $req->store_name = $toRequest['store_name'];
+                        $req->store_hash = $toRequest['store_hash'];
+                        $req->order_id = $toRequest['order_id'];
+                        $req->store_id = $toRequest['store_id'];
+
+                        $this->getOrderWidget($req , true);
                     }
 
                     // RequestTempData::where('cart_id', $cartId)->delete();
