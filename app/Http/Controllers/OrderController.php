@@ -56,7 +56,7 @@ class OrderController extends Controller
         }
     }
 
-    public function getOrderWidget(Request $request, $reportingFlag = false)
+    public function getOrderWidget(Request $request, $reportingFlag = true)
     {Log::info('call from webhook'.json_encode($request));
         try {
             $order = $this->getBCOrderByID($request);
@@ -1098,16 +1098,16 @@ class OrderController extends Controller
                     if (!blank($reqData)) {
                         unset($reqData['id']);
                         RequestData::insert($reqData);
-                        Log::info('request all');
-                        $request = new Request();
-                        $myNewData = $request->merge([
-                            'store_name' => $toRequest['store_name'],
-                            'store_id' => $toRequest['store_id'],
-                            'store_hash' => $toRequest['store_hash'],
-                            'order_id' => $toRequest['order_id']
-                        ]);
-                        Log::info('call request '.json_encode($myNewData));
-                        $this->getOrderWidget($myNewData , true);
+                       // Log::info('request all');
+                       // $request = new Request();
+                        // $myNewData = $request->merge([
+                        //     'store_name' => $toRequest['store_name'],
+                        //     'store_id' => $toRequest['store_id'],
+                        //     'store_hash' => $toRequest['store_hash'],
+                        //     'order_id' => $toRequest['order_id']
+                        // ]);
+                        // Log::info('call request '.json_encode($myNewData));
+                        // $this->getOrderWidget($myNewData , true);
                     }
                     // RequestTempData::where('cart_id', $cartId)->delete();
                 }
