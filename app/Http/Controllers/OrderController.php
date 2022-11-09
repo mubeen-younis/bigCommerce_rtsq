@@ -56,8 +56,8 @@ class OrderController extends Controller
         }
     }
 
-    public function getOrderWidget(Request $request, $reportingFlag = false)
-    {Log::info('call from webhook'.json_encode($request));
+    public function getOrderWidget(Request $request, $reportingFlag = true)
+    {//Log::info('call from webhook'.json_encode($request));
         try {
             $order = $this->getBCOrderByID($request);
             if (empty($order)) {
@@ -1098,10 +1098,10 @@ class OrderController extends Controller
                     if (!blank($reqData)) {
                         unset($reqData['id']);
                         RequestData::insert($reqData);
-                       Log::info('request all');
-                       $request = new Illuminate\Http\Request($toRequest);
-                        Log::info('call request '.json_encode($request));
-                        $this->getOrderWidget($request , true);
+                    //    Log::info('request all');
+                    //    $request = new Illuminate\Http\Request($toRequest);
+                    //     Log::info('call request '.json_encode($request));
+                    //     $this->getOrderWidget($request , true);
                     }
                     // RequestTempData::where('cart_id', $cartId)->delete();
                 }
