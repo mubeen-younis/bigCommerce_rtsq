@@ -957,7 +957,7 @@ class OrderController extends Controller
             $toRequest['order_id'] = $orderId;
             $this->accessToken = $store->access_token;
             $this->storeHash = $storeHash;
-            $this->moveQuotesTempToReq($toRequest);
+            $this->moveQuotesTempToReq($toRequest, $request);
             return response()->json(true, 200);
         } catch (\Exception $exception) {
             Log::info('Exception On Moving Quotes ' . json_encode($exception->getTraceAsString()));
@@ -1065,7 +1065,7 @@ class OrderController extends Controller
      * delete all rows from request_temp relevant to cart_id
      */
     public
-    function moveQuotesTempToReq($toRequest)
+    function moveQuotesTempToReq($toRequest, Request $request)
     {
         $headers[] = 'X-Auth-Token: ' . $this->accessToken;
         $headers[] = 'Content-Type: application/json';
@@ -1102,6 +1102,22 @@ class OrderController extends Controller
                     //    $request = new Illuminate\Http\Request($toRequest);
                     //     Log::info('call request '.json_encode($request));
                     //     $this->getOrderWidget($request , true);
+                        Log::info('request all');
+                        // $request = new Request();
+                        // $myNewData = $request->request->add([
+                        //     'store_name' => $toRequest['store_name'],
+                        //     'store_id' => $toRequest['store_id'],
+                        //     'store_hash' => $toRequest['store_hash'],
+                        //     'order_id' => $toRequest['order_id']
+                        // ]);
+                        // Log::info('call request '.json_encode($myNewData));
+                        $request['store_name'] = $toRequest['store_name'];
+                        $request['store_id'] = $toRequest['store_id'];
+                        $request['store_hash'] = $toRequest['store_hash'];
+                        $request['order_id'] = $toRequest['order_id'];
+
+                        // $this->getOrderWidget($myNewData , true);
+                        $this->getOrderWidget($request, true);
                     }
                     // RequestTempData::where('cart_id', $cartId)->delete();
                 }
