@@ -1631,6 +1631,12 @@ class CompileQuotes
 
     public function compileFedexSmallQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $destination)
     {
+        $returnRates = $this->residential['returnRates']['fedexSmall'] ?? false;
+
+        if($returnRates){
+            return [];
+        }
+
         $this->fedexSmallQuotesResults = new fedexSmallQuotesResults();
         if ($residential['fedexSmall'] == 'Y') {
             $this->isResi = true;

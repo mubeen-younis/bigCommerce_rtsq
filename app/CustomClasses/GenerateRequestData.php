@@ -44,6 +44,7 @@ class GenerateRequestData
     public $itemsArr = [];
     public $carriers = [];
     public $isPoBOX = false;
+    public $homeDeliveryServices = false;
 
     /**
      * constructor of class that accepts request object
@@ -365,15 +366,19 @@ class GenerateRequestData
         ];
     }
 
-    public function fedexSmallEnitArr($connSettings, $destination)
+    public function fedexSmallEnitArr($connSettings, $destination, $enitOrigin)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
             'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'small', // ltl / small
             'version' => '1.0.0',
-            'api' => $this->getApiInfoArrFedexSmall($connSettings, $destination),
+            'api' => $this->getApiInfoArrFedexSmall($connSettings, $destination, $enitOrigin),
             'getDistance' => 0,
         ];
     }
@@ -930,6 +935,9 @@ class GenerateRequestData
                 $requestArr['FedexOneRatePricing'] = 1;
                 $requestArr['one_rate_commdityDetails'] = $commdityDetails['one_rate_commdityDetails'];
             }
+            if ($this->homeDeliveryServices) {
+                $requestArr['FedexHomeDeliveryPremiumPricing'] = 1;
+            }
         }
 
         $resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse, 'boxBins' => $boxBins, 'palletResponse' => $palletResp,  'palletBins' => $palletBins];
@@ -983,7 +991,11 @@ class GenerateRequestData
             if (!$this->ground && $service && in_array($key, $ground)) {
                 $this->ground = true;
             }
-
+            // CHecking if we have any home delivery service active
+            $homeDelivery = ['fedex_appointment_home_delivery', 'fedex_evening_home_delivery', 'fedex_date_certain_home_delivery'];
+            if (!$this->homeDeliveryServices && $service && in_array($key, $homeDelivery)) {
+                $this->homeDeliveryServices = true;
+            }
             // CHecking if we have any fedex box
             if (DB::table('box_sizes')->where('store_id', $this->storeData['store']->id)
                 ->where('is_available', 1)->where('box_type', 2)->count()
@@ -1785,7 +1797,7 @@ class GenerateRequestData
         return $apiArray;
     }
 
-    function getApiInfoArrFedexSmall($connSettings, $destination)
+    function getApiInfoArrFedexSmall($connSettings, $destination, $Origins)
     {
         $residential = 'N';
         $alwaysResi = false;
@@ -1804,9 +1816,21 @@ class GenerateRequestData
         $this->setIsSmartPost($connSettings);
         $this->resiCarrier['fedexSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['fedexSmall'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['fedexSmall'] = $this->returnRates;
+
         $hubIdindicia = isset($connSettings['creds']['hub_id']) ? explode('(', $connSettings['creds']['hub_id']) : '';
         $hubId = isset($hubIdindicia[0]) ? trim($hubIdindicia[0]) : '';
         $indicia = 'PARCEL_SELECT'; //trim(explode(')',$hubIdindicia[1])[0]);
+        
+        $premiumTypeServices = $connSettings['quote_settings']['carrier_services'];
+        $premiumType = ($premiumTypeServices['fedex_date_certain_home_delivery'] ? 'DATE_CERTAIN' : '') . ($premiumTypeServices['fedex_evening_home_delivery'] ? ',EVENING' : '') . ($premiumTypeServices['fedex_appointment_home_delivery'] ? ',APPOINTMENT' : '');
+        $premiumType = ltrim($premiumType, ',');
+
+        foreach($Origins as $origin){
+            $phoneNumber = !empty($origin['phone']) ? $origin['phone'] : '1234567820';
+            break;
+        }
+
         $apiArray = [
 
             'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
@@ -1824,7 +1848,9 @@ class GenerateRequestData
             'prefferedCurrency' => 'USD',
             'includeDeclaredValue' => '1', //insurance active with sbs active 0 or 1
             'pkgType' => '00',
-            'saturdayDelivery' => 'on'
+            'saturdayDelivery' => 'on',
+            'recipientPhoneNumber' => $phoneNumber,
+            'homeDeliveryPremiumType' => $premiumType,
         ];
         if ($this->smartPost) {
             $apiArray['smartPostData'] = [
