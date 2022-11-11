@@ -368,6 +368,7 @@ class GenerateRequestData
 
     public function fedexSmallEnitArr($connSettings, $destination, $enitOrigin)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
