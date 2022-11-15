@@ -41,6 +41,7 @@ class Functions
     public static $appointmentDelResiLabel = ' w/ residential & appointment delivery';
     public static $twoManAptDelResiLabel = ' w/ residential & two man & appointment delivery';
     public static $defaultMaxWeightSmall = 150;
+    public static $reportDataUrl = "https://ws001.eniture-qa.com/order-meta/index.php";
 
     public static function hasInsureCarrier($code)
     {
@@ -80,10 +81,27 @@ class Functions
     {
         $carrierCodesWithName = ['wweltl' => 'Worldwide Express LTL', 'upsltl' => 'UPS LTL', 'rnlltl' => 'R&L Carriers', 'xpoltl' => 'XPO Logistics',
             'fedexltl' => 'FedEx LTL', 'gtzltl' => 'GlobalTranz LTL', 'cltl' => 'Cerasis Ltl',
-            'parcel_12wwe' => 'Worldwide Express Small', 'parcel_12ups' => 'UPS Small', 'parcel_12fd' => 'FedEx Small', 'parcel_12uniship' => 'Unishippers Small'];
+            'parcel_12wwe' => 'Worldwide Express Small', 'parcel_12ups' => 'UPS Small', 'parcel_12fd' => 'FedEx Small', 'parcel_12uniship' => 'Unishippers Small', 
+            'fqltl' => 'Freight Quote', 'fqchrltl' => 'C.H. Robinson', 'parcel_12Purolator' => 'Purolator Small', 'parcel_12usps' => 'United State Postal Service', 
+            'tqlltl' => 'Total Quality Logistics', 'yrcltl' => 'YRC Freight', 'odflltl' => 'Old Dominion Freight Lines', 'dayrossltl' => 'Day & Ross Ltl', 
+            'estesltl' => 'Estes Express Ltl', 'echoltl' => 'Echo Global Logistics', 'saialtl' => 'SAIA LTL Freight', 'abfltl' => 'ABF Freight', 'daylightltl' => 'DayLight LTL Freight', 
+            'SouthEastern' => 'Southeastern LTL Freight'];
         return $carrierCodesWithName[$carrierCode] ?? null;
 
 
+    }
+
+    public static function getCarrierName($carrierCode): ?string
+    {
+        $carrierCodesWithName = ['wweltl' => 'wwe', 'upsltl' => 'ups', 'rnlltl' => 'rnl', 'xpoltl' => 'xpoLogistics',
+            'fedexltl' => 'fedex', 'gtzltl' => 'globaltranz', 'cltl' => 'cerasis',
+            'parcel_12wwe' => 'wwe_small_packages_quotes', 'parcel_12ups' => 'ups_small', 'parcel_12fd' => 'fedex_small', 'parcel_12uniship' => 'unishippers_small', 
+            'fqltl' => 'freightquote', 'fqchrltl' => 'freightquotechr', 'parcel_12Purolator' => 'purolator_small', 'parcel_12usps' => 'usps_small', 
+            'tqlltl' => 'tql', 'yrcltl' => 'yrc', 'odflltl' => 'odfl4me', 'dayrossltl' => 'dayross', 
+            'estesltl' => 'estes', 'echoltl' => 'echoLogistics', 'saialtl' => 'saia', 'abfltl' => 'abf', 'daylightltl' => 'daylight', 
+            'SouthEastern' => 'southeastern'];
+
+        return $carrierCodesWithName[$carrierCode] ?? null;
     }
 
     public static function getLiftResidentialStatus($rateId)

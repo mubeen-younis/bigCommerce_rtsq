@@ -135,9 +135,10 @@ class QuotesResults
         $originQuotes = $multiShipmentQuotes = $multiShipmentQuote = [];
         $shipmentCount = 0;
         $count = 0;
+        unset($shipments['air'],$shipments['ground']);
         foreach ($shipments as $origin => $quote) {
 
-            if ((isset($quote['severity']) || !isset($ship['q']) || (isset($ship['q']) && empty($ship['q'])))) {
+            if ((isset($quote['severity']) || !isset($quote['q']) || (isset($quote['q']) && empty($quote['q'])))) {
                 return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);                
             }
             if ($count == 0) { //To be checked only once
@@ -275,6 +276,10 @@ class QuotesResults
             $temp = [];
             if (!isset($quotes['q'])) {
                 continue;
+            }
+
+            if(isset($shipments['ground'])){
+                $shipments[$shipment]['binPackagingData']['response'] = $shipments['ground']['binPackagingData']['response'][$shipment] ?? [];
             }
             foreach ($quotes['q'] as $key => $quote) {
                 if (!isset($quote['severity']) && isset($servicesDesc[$key])) {

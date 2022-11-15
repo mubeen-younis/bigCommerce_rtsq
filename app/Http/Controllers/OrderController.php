@@ -56,7 +56,7 @@ class OrderController extends Controller
         }
     }
 
-    public function getOrderWidget(Request $request)
+    public function getOrderWidget(Request $request, $reportingFlag = false)
     {
         try {
             $order = $this->getBCOrderByID($request);
@@ -66,7 +66,7 @@ class OrderController extends Controller
                     'message' => 'No Order Found',
                 ], 404);
             }
-            $orderWidget = $this->createOrderWidget($request, $order);
+            $orderWidget = $this->createOrderWidget($request, $order, $reportingFlag);
             if (empty($orderWidget)) {
                 return response()->json(['error' => true,
                     'data' => [],
@@ -133,7 +133,7 @@ class OrderController extends Controller
         return $newOrigin;
     }
 
-    public function createOrderWidget($request, $order)
+    public function createOrderWidget($request, $order, $reportingFlag)
     {
         $rateId = $order['rate_id'] ?? null;
         $cartId = $order['cart_id'] ?? null;
@@ -156,7 +156,6 @@ class OrderController extends Controller
         if (is_string($index[0]) && $index[0] == "shippingGroup") {
             return $this->shippingGroupOrderWidget($data, $order);
         }
-
         // DBSC order widget
         if (is_string($index[0]) && strpos($index[0], 'dbsc') !== false) {
             return $this->dbscOrderWidget($data, $order);
@@ -534,7 +533,17 @@ class OrderController extends Controller
             }
             $orderWidget[$zip]['accessories'] = array_values(array_unique($orderWidget[$zip]['accessories']));
             $count++;
+
         }
+        
+        if($reportingFlag){
+            $reportData = $this->bcReportingData($request, $order,$data, $isMulti, $orderWidget, $zip);
+            Log::info('Reporting Data Request'.json_encode($reportData));
+            $reportDataResp = $this->curlRequest->reportingDataCurlRequest($reportData);
+            Log::info('Reporting Data Response'.json_encode($reportDataResp));
+        }
+        
+        
         /*
          * Added For Catering items that ship as SHippping Group*/
         $itemsWithShipGroup = collect($items)->where('shipping_group', '!=', null)->all();
@@ -555,7 +564,7 @@ class OrderController extends Controller
                 $orderWidget[$key]['items'] = $items;
             }
         }
-        
+
         $sbs = '';
         $resp = [
             'widget' => $this->objectToArray($orderWidget),
@@ -943,11 +952,12 @@ class OrderController extends Controller
                 return null;
             }
             $toRequest['store_id'] = $store->id;
+            $toRequest['store_name'] = $store->name;
             $toRequest['store_hash'] = $storeHash;
             $toRequest['order_id'] = $orderId;
             $this->accessToken = $store->access_token;
             $this->storeHash = $storeHash;
-            $this->moveQuotesTempToReq($toRequest);
+            $this->moveQuotesTempToReq($toRequest, $request);
             return response()->json(true, 200);
         } catch (\Exception $exception) {
             Log::info('Exception On Moving Quotes ' . json_encode($exception->getTraceAsString()));
@@ -1055,7 +1065,7 @@ class OrderController extends Controller
      * delete all rows from request_temp relevant to cart_id
      */
     public
-    function moveQuotesTempToReq($toRequest)
+    function moveQuotesTempToReq($toRequest, Request $request)
     {
         $headers[] = 'X-Auth-Token: ' . $this->accessToken;
         $headers[] = 'Content-Type: application/json';
@@ -1088,9 +1098,13 @@ class OrderController extends Controller
                     if (!blank($reqData)) {
                         unset($reqData['id']);
                         RequestData::insert($reqData);
+                        
+                        $request['store_name'] = $toRequest['store_name'];
+                        $request['store_id'] = $toRequest['store_id'];
+                        $request['store_hash'] = $toRequest['store_hash'];
+                        $request['order_id'] = $toRequest['order_id'];
+                        $this->getOrderWidget($request, true);
                     }
-
-                    // RequestTempData::where('cart_id', $cartId)->delete();
                 }
             }
         }
@@ -1129,6 +1143,124 @@ class OrderController extends Controller
             }
         }
         return false;
+    }
+
+    private function bcReportingData($request, $OrderData, $dbData, $isMulti, $orderWidget, $zip)
+    {
+        $multiShipmentresponse = json_decode($dbData['multiShipmentresponse']) ?? [];
+        $rateId =  $OrderData['rate_id'] ?? '';
+        $ratecode = [];
+
+        if($isMulti){
+            foreach($multiShipmentresponse as $mul => $shipment){
+                foreach($shipment as $key => $quote){
+                    if (strpos($rateId, 'LG') !== false && $key === 'liftgate'){
+                        foreach($quote as $loc => $code){
+                            
+                            $ratecode[$loc] = $code->code;
+                        }
+                    } else if(strpos($rateId, 'HAT') !== false && $key === 'hat'){
+                        foreach($quote as $loc =>  $code){
+                            $ratecode[$loc] = $code->code;
+                        }
+                    } else if(strpos($rateId, 'ID') !== false && $key === 'insideDelivery'){
+                        foreach($quote as $loc =>  $code){
+                            $ratecode[$loc] = $code->code;
+                        }
+                    } else if(strpos($rateId, 'LGID') !== false && $key === 'insideLiftGateDelivery'){
+                        foreach($quote as $loc =>  $code){
+                            $ratecode[$loc] = $code->code;
+                        }
+                    } else if(strpos($rateId, 'LAD') !== false && $key === 'limitedaccess'){
+                        foreach($quote as $loc =>  $code){
+                            $ratecode[$loc] = $code->code;
+                        }
+                    } else if(strpos($rateId, 'LGLAD') !== false && $key === 'limitedaccessLG'){
+                        foreach($quote as $loc =>  $code){
+                            $ratecode[$loc] = $code->code;
+                        }
+                    } else if(strpos($rateId, 'TL') !== false && $key === 'Truckload'){
+                        foreach($quote as $loc =>  $code){
+                            $ratecode[$loc] = $code->code;
+                        }
+                    } else {
+                        foreach($quote as $loc =>  $code){
+                            $ratecode[$loc] = $code->code;
+                        }
+                    }
+                    break;
+                }
+                break;
+            }
+        }
+
+        if(empty($ratecode)){
+            $ratecode[$zip] = $rateId ?? '';
+        }
+        
+        $carrierCodes = ['wweltl', 'rnlltl', 'xpoltl', 'fedexltl', 'gtzltl', 'cltl', 'upsltl', 'fqltl', 'tqlltl', 'yrcltl', 'odflltl', 'dayrossltl', 'fqchrltl', 'estesltl', 'echoltl', 'saialtl', 'abfltl', 'daylightltl', 'SouthEastern', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship', 'parcel_12Purolator', 'parcel_12usps'];
+        $orderMeta = [];
+        $serviceId = 0;
+        foreach($carrierCodes as $key => $code){
+            foreach($ratecode as $loc_code => $rateId){
+                if (strpos($rateId, $code) !== false) {
+                    $carrierName[$loc_code] = Functions::getCarrierName($code) ?? '';
+                    $carrierType[$loc_code] = Functions::isSmallCarrier($code) ? 'small' : 'ltl';
+                }
+            }
+        }
+
+        $lineItems = json_decode($dbData['lineitems'])->lineItemData ?? [];  
+        $origins = $lineItems->origin;
+        $items = $lineItems->items;
+
+        foreach($orderWidget as $key => $owrate){
+            foreach($owrate['accessories'] as $data){
+                $accessorials[$data] = true;
+            }
+
+            foreach($origins as $or => $origin){
+                if($origin->locationId == $key){
+                    $orderMeta['plugin_type'] = $carrierType[$key] ?? '';
+                    $orderMeta['plugin_name'] = $carrierName[$key] ?? '';
+                    $orderMeta['accessorials'] = $accessorials ?? [];
+                    $orderMeta['items'][] = $items->$or ?? []; 
+                    $orderMeta['address'] = $origin ?? [];
+                    $orderMeta['receiver_address'] = $lineItems->destination ?? [];
+                    $rate['locationtype'] = $owrate['locationtype'] ?? '';
+                    $rate['label'] = $owrate['shipping_method'] ?? '';
+                    $rate['cost'] = $owrate['shipping_rate'] ?? null;
+                    $orderMeta['rate'] = $rate ?? [];
+                    
+                }
+            }
+
+            $orders[] = [
+                'orderId'    => $OrderData['id'] ?? null,
+                'carrierName' =>  $carrierName[$key] ?? '',
+                'serviceId' => $serviceId ?? 0,
+                'shipmentType' => $isMulti ? 'multiple' : 'single',
+                'serviceName' => '', // service description 
+                'serviceCharge' => $owrate['shipping_rate'] ?? null,
+                'orderCreatedDate' => $OrderData['date_created'] ?? '',
+
+                'orderMeta'    => base64_encode(json_encode($orderMeta)), // json data encoded with base 64
+            ];
+            unset($orderMeta, $accessorials);
+            $serviceId++;
+
+        }  
+        
+        $data =[
+            'serverName' => $request['store_name'] ?? '',
+            'licenseKey' => 'V1T9Z7QY-X357RURI-01MMZZ3W-O0TOJAQG',
+            'platform' => 'bigcommerce',
+            'currencyUnit' => $OrderData['currency_code'] ?? '',
+
+            'orders' => $orders ?? [],
+        ];
+
+        return $data;
     }
 
 }
