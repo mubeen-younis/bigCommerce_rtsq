@@ -1105,7 +1105,6 @@ class OrderController extends Controller
                         $request['order_id'] = $toRequest['order_id'];
                         $this->getOrderWidget($request, true);
                     }
-                    // RequestTempData::where('cart_id', $cartId)->delete();
                 }
             }
         }
