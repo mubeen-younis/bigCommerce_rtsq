@@ -41,7 +41,8 @@ class Functions
     public static $appointmentDelResiLabel = ' w/ residential & appointment delivery';
     public static $twoManAptDelResiLabel = ' w/ residential & two man & appointment delivery';
     public static $defaultMaxWeightSmall = 150;
-    public static $reportDataUrl = "https://ws001.eniture-qa.com/order-meta/index.php";
+    public static $QAreportDataUrl = "https://ws001.eniture-qa.com/order-meta/index.php";
+    public static $reportDataUrl = "https://analytic-data.eniture.com/index.php";
 
     public static function hasInsureCarrier($code)
     {
