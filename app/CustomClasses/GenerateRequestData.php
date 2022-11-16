@@ -2908,12 +2908,15 @@ class GenerateRequestData
                 break;
         }
         
+        $itemsCubicVolumeArr = Functions::calculateCubicVolume($items);
+        
         if (!empty($itemsCubicVolumeArr) && isset($itemsCubicVolumeArr['volume']) && isset($itemsCubicVolumeArr['weight'])) {
             $itemMinVolume = min(array_values($itemsCubicVolumeArr['volume']));
             $itemMinWeight = min(array_values($itemsCubicVolumeArr['weight']));
         }
 
         foreach ($boxes as $box) {
+            if (!empty($itemsCubicVolumeArr) && isset($itemMinVolume) && isset($itemMinWeight)) {
                 $dimensions = array($box->width, $box->height, $box->length);
                 $maxWeight = $box->max_weight == 0 ? Functions::$defaultMaxWeightSmall : $box->max_weight;
                 $boxWeight = $maxWeight - $box->box_weight;
@@ -2941,6 +2944,7 @@ class GenerateRequestData
                 'ext_height' => $box->ext_height ?? 0
                 /*END*/
             );
+        }
 
         $hits = count($items);
         if ((count($items) && count($boxBins)) || count($itemsAlone)) {
