@@ -1822,9 +1822,9 @@ class GenerateRequestData
         $hubIdindicia = isset($connSettings['creds']['hub_id']) ? explode('(', $connSettings['creds']['hub_id']) : '';
         $hubId = isset($hubIdindicia[0]) ? trim($hubIdindicia[0]) : '';
         $indicia = 'PARCEL_SELECT'; //trim(explode(')',$hubIdindicia[1])[0]);
-        
         $premiumTypeServices = $connSettings['quote_settings']['carrier_services'];
-        $premiumType = ($premiumTypeServices['fedex_date_certain_home_delivery'] ? 'DATE_CERTAIN' : '') . ($premiumTypeServices['fedex_evening_home_delivery'] ? ',EVENING' : '') . ($premiumTypeServices['fedex_appointment_home_delivery'] ? ',APPOINTMENT' : '');
+        
+        $premiumType = (isset($premiumTypeServices['fedex_date_certain_home_delivery']) && $premiumTypeServices['fedex_date_certain_home_delivery'] ? 'DATE_CERTAIN' : '') . (isset($premiumTypeServices['fedex_evening_home_delivery']) && $premiumTypeServices['fedex_evening_home_delivery'] ? ',EVENING' : '') . (isset($premiumTypeServices['fedex_appointment_home_delivery']) && $premiumTypeServices['fedex_appointment_home_delivery'] ? ',APPOINTMENT' : '');
         $premiumType = ltrim($premiumType, ',');
 
         foreach($Origins as $origin){
