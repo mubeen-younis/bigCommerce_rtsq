@@ -14,6 +14,7 @@ use App\CustomClasses\UspsSmall\PackagingRequest as UspsSmallPackagingRequest;
 use Illuminate\Support\Facades\Log;
 use App\CustomClasses\DayLightLtl\QuotesResults as dayLightQuotesResults;
 use App\Models\BoxSize;
+use App\CustomClasses\DayRossLTL\QuotesResults;
 
 /**
  * class that generated request data
@@ -46,6 +47,7 @@ class GenerateRequestData
     public $carriers = [];
     public $isPoBOX = false;
     public $simpleRate = false;
+    public $homeDeliveryServices = false;
 
     /**
      * constructor of class that accepts request object
@@ -247,14 +249,15 @@ class GenerateRequestData
 
     public function wweLtlEnitArr($connSettings, $destination)
     {
-         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+        $this->returnRates = false;
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
-         }
+        }
 
         return [
 
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
@@ -267,6 +270,7 @@ class GenerateRequestData
 
     public function odflLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
@@ -274,7 +278,7 @@ class GenerateRequestData
         return [
 
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0',
@@ -291,7 +295,7 @@ class GenerateRequestData
         $api = $this->getApiInfoArrGTZLtl($connSettings, $destination, $carName);
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
@@ -306,9 +310,14 @@ class GenerateRequestData
 
     public function wweSmallEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'licenseKey' => '',
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'small', // ltl / small
             'version' => '2.0.4',
@@ -321,7 +330,7 @@ class GenerateRequestData
     {
         return [
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'small', // ltl / small
             'version' => '1.0',
@@ -331,13 +340,14 @@ class GenerateRequestData
 
     public function upsLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
 
         return [
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'], 
+            'serverName' => Functions::getServerName($this->storeData), 
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
@@ -355,7 +365,7 @@ class GenerateRequestData
 
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'small', // ltl / small
             'version' => '1.0.0',
@@ -364,28 +374,34 @@ class GenerateRequestData
         ];
     }
 
-    public function fedexSmallEnitArr($connSettings, $destination)
+    public function fedexSmallEnitArr($connSettings, $destination, $enitOrigin)
     {
+        $this->returnRates = false;
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'licenseKey' => '',
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'small', // ltl / small
             'version' => '1.0.0',
-            'api' => $this->getApiInfoArrFedexSmall($connSettings, $destination),
+            'api' => $this->getApiInfoArrFedexSmall($connSettings, $destination, $enitOrigin),
             'getDistance' => 0,
         ];
     }
 
     public function fedexLtlEnitArr($connSettings, $destination, $enitOrigin)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
 
         return [
             'licenseKey' => '', 
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
@@ -397,13 +413,14 @@ class GenerateRequestData
 
     public function xpoLtlEnitArr($connSettings, $destination, $enitOrigin)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
          }
 
         return [
             'licenseKey' => '', 
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
@@ -428,7 +445,7 @@ class GenerateRequestData
 
         return [
             'licenseKey' => '', 
-            'serverName' => "https://" . $this->storeData['store']['name'], 
+            'serverName' => Functions::getServerName($this->storeData), 
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
@@ -442,7 +459,7 @@ class GenerateRequestData
     {
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'small', // ltl / small
             'version' => '1.0.0',
@@ -453,13 +470,14 @@ class GenerateRequestData
 
     public function estesltlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
 
         return [
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', 
             'version' => '1.0.0',
@@ -473,13 +491,14 @@ class GenerateRequestData
 
     public function yrcLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
 
         return [
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
@@ -491,9 +510,14 @@ class GenerateRequestData
 
     public function tqlLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl',
             'version' => '1.0.0',
@@ -505,13 +529,14 @@ class GenerateRequestData
 
     public function freightQuoteLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
 
         return [
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl',
             'version' => '1.0.0',
@@ -523,9 +548,14 @@ class GenerateRequestData
 
     public function rossdayLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'licenseKey' =>'',
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl',
             'version' => '1.0.0',
@@ -537,13 +567,14 @@ class GenerateRequestData
 
     private function saiaLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
 
         return [
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl',
             'version' => '1.0',
@@ -554,13 +585,14 @@ class GenerateRequestData
 
     public function abfLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
 
         return [
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl',
             'version' => '1.0',
@@ -571,13 +603,14 @@ class GenerateRequestData
 
     public function SouthEasternEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
         }
 
         return [
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
@@ -591,7 +624,7 @@ class GenerateRequestData
     {
         return [
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'small',
             'version' => '1.0',
@@ -602,9 +635,14 @@ class GenerateRequestData
 
     private function echoLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+        
         return [
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'licenseKey' => '',
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl',
             'version' => '1.0',
@@ -615,10 +653,15 @@ class GenerateRequestData
 
     private function dayLightLtlEnityArr($connSettings, $destination): array
     {
+        $this->returnRates = false;
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
             'licenseKey' => '',
             'platform' => 'bigcommerce',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl',
             'version' => '1.0',
@@ -630,9 +673,14 @@ class GenerateRequestData
 
     public function freightQuoteChrLtlEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
             'licenseKey' => '',
-            'serverName' => "https://" . $this->storeData['store']['name'],
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl',
             'version' => '1.0.0',
@@ -673,13 +721,37 @@ class GenerateRequestData
             $liftGateWithAuto = '1';
         }
         $binReponse = $boxBins = [];
-        //
+
+        // Pallet packaging request
+        $palletResp = $palletBins = [];
+        $palletPkgResp = $carriersOriginAddress = [];
+        $palletPkg = new PalletPackaging($itemsArr, $this->storeData, $cartInfo);
+       
+        if ($palletPkg->isAddonEnabled()) {
+            $ltlCarriers = $palletPkg->ltlCarriers ?? [];
+            if (!empty($ltlCarriers)) {
+                foreach ($ltlCarriers as $carrName) {
+                        if (isset($carriers[$carrName])) {
+                            $carriersOriginAddress = $carriers[$carrName]['originAddress'];
+                            break;
+                        }
+                    }
+            }
+
+            $palletPkgResp = $palletPkg->setAndGetPackagingResp($carriers);
+            if (!empty($palletPkgResp)) {
+                $palletResp = $palletPkgResp['palletResponse'] ?? [];
+                $palletBins = $palletPkgResp['palletBins'] ?? [];
+
+                $carriers = $palletPkg->setLtlCarriersOrgAddresss($carriers, $palletPkgResp['originAddress'], $carriersOriginAddress);
+            }
+        }
 
         if (isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs']) {
             $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? $carriers['usps']['originAddress'] ?? $carriers['purolator']['originAddress'] ?? [];
             $this->itemsArr = $itemsArr;
             $this->carriers = $carriers;
-
+       
             $hasSmall = isset($carriers['wweSmall'])
                 || isset($carriers['upsSmall'])
                 || isset($carriers['fedexSmall'])
@@ -916,6 +988,22 @@ class GenerateRequestData
                 }
             }
         }
+
+        // adding pallet packaging updated items with previous commodity items
+        if (!empty($palletPkgResp)) {
+            if (isset($palletPkgResp['items']) && !empty($palletPkgResp['items'])) {
+                $itemsArr = $itemsArr + $palletPkgResp['items'];
+            }
+            
+            if (isset($palletPkgResp['packedItemsOrgIds']) && !empty($palletPkgResp['packedItemsOrgIds'])) {
+                foreach ($palletPkgResp['packedItemsOrgIds'] as $orgId) {
+                    if (isset($itemsArr[$orgId])) {
+                        unset($itemsArr[$orgId]);
+                    }
+                }
+            }
+        }
+
         $requestArr = [
             'apiVersion' => '2.0',
             'platform' => 'bigcommerce',
@@ -928,6 +1016,7 @@ class GenerateRequestData
             'receiverAddress' => $receiverAddress,
             'commdityDetails' => $itemsArr,
         ];
+
         if (isset($carriers['fedexSmall'])) {
             if ($this->smartPost) {
                 $requestArr['FedexSmartPostPricing'] = 1;
@@ -940,8 +1029,13 @@ class GenerateRequestData
                 $requestArr['FedexOneRatePricing'] = 1;
                 $requestArr['one_rate_commdityDetails'] = $commdityDetails['one_rate_commdityDetails'];
             }
+            if ($this->homeDeliveryServices) {
+                $requestArr['FedexHomeDeliveryPremiumPricing'] = 1;
+            }
         }
-        $resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse, 'boxBins' => $boxBins];
+
+        $resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse, 'boxBins' => $boxBins, 'palletResponse' => $palletResp,  'palletBins' => $palletBins];
+ 
         return $resp;
     }
 
@@ -993,7 +1087,11 @@ class GenerateRequestData
             if (!$this->ground && $service && in_array($key, $ground)) {
                 $this->ground = true;
             }
-
+            // CHecking if we have any home delivery service active
+            $homeDelivery = ['fedex_appointment_home_delivery', 'fedex_evening_home_delivery', 'fedex_date_certain_home_delivery'];
+            if (!$this->homeDeliveryServices && $service && in_array($key, $homeDelivery)) {
+                $this->homeDeliveryServices = true;
+            }
             // CHecking if we have any fedex box
             if (DB::table('box_sizes')->where('store_id', $this->storeData['store']->id)
                 ->where('is_available', 1)->where('box_type', 2)->count()
@@ -1805,6 +1903,8 @@ class GenerateRequestData
 
         $this->resiCarrier['wweSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['wweSmall'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['wweSmall'] = $this->returnRates;
+
         $apiArray = [
             'speed_ship_username' => $connSettings['creds']['username'],
             'speed_ship_password' => $connSettings['creds']['password'],
@@ -1912,7 +2012,7 @@ class GenerateRequestData
         return $apiArray;
     }
 
-    function getApiInfoArrFedexSmall($connSettings, $destination)
+    function getApiInfoArrFedexSmall($connSettings, $destination, $Origins)
     {
         $residential = 'N';
         $alwaysResi = false;
@@ -1931,9 +2031,21 @@ class GenerateRequestData
         $this->setIsSmartPost($connSettings);
         $this->resiCarrier['fedexSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['fedexSmall'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['fedexSmall'] = $this->returnRates;
+
         $hubIdindicia = isset($connSettings['creds']['hub_id']) ? explode('(', $connSettings['creds']['hub_id']) : '';
         $hubId = isset($hubIdindicia[0]) ? trim($hubIdindicia[0]) : '';
         $indicia = 'PARCEL_SELECT'; //trim(explode(')',$hubIdindicia[1])[0]);
+        
+        $premiumTypeServices = $connSettings['quote_settings']['carrier_services'];
+        $premiumType = ($premiumTypeServices['fedex_date_certain_home_delivery'] ? 'DATE_CERTAIN' : '') . ($premiumTypeServices['fedex_evening_home_delivery'] ? ',EVENING' : '') . ($premiumTypeServices['fedex_appointment_home_delivery'] ? ',APPOINTMENT' : '');
+        $premiumType = ltrim($premiumType, ',');
+
+        foreach($Origins as $origin){
+            $phoneNumber = !empty($origin['phone']) ? $origin['phone'] : '1234567820';
+            break;
+        }
+
         $apiArray = [
 
             'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
@@ -1951,7 +2063,9 @@ class GenerateRequestData
             'prefferedCurrency' => 'USD',
             'includeDeclaredValue' => '1', //insurance active with sbs active 0 or 1
             'pkgType' => '00',
-            'saturdayDelivery' => 'on'
+            'saturdayDelivery' => 'on',
+            'recipientPhoneNumber' => $phoneNumber,
+            'homeDeliveryPremiumType' => $premiumType,
         ];
         if ($this->smartPost) {
             $apiArray['smartPostData'] = [
@@ -2153,6 +2267,7 @@ class GenerateRequestData
 
         $this->resiCarrier['tqlLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['tqlLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['tqlLtl'] = $this->returnRates;
 
         $accessorial = [];
         if ($liftGate == 'Y') {
@@ -2185,8 +2300,9 @@ class GenerateRequestData
          * **/
         $residential = 'N';
         $alwaysResi = false;
+        $isSameDayApi = $connSettings['creds']['api_type'] == 'sameday' ? true : false;
 
-        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])) && !$isSameDayApi) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -2204,6 +2320,7 @@ class GenerateRequestData
 
         $this->resiCarrier['dayrossLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['dayrossLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['dayrossLtl'] = $this->returnRates;
 
         $accessorial = [];
         if ($alwaysResi || $residential != 'N') {
@@ -2213,15 +2330,33 @@ class GenerateRequestData
             $accessorial['TLGDEL'] = 'Tailgate Delivery';
         }
 
+        if ($isSameDayApi) {
+            // 2-Man delivery
+            if (QuotesResults::isTwoManDeliveryEnabled($connSettings)) {
+                $accessorial['2-MAN'] = '2-Man Delivery';
+            }
+
+            // Appointment delivery
+            if (QuotesResults::isAppointmentManDeliveryEnabled($connSettings)) {
+                $accessorial['APPT'] = 'Delivery Appointment';
+            }
+        }
+        
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
+        $holdAtTerminal = (isset($connSettings['quote_settings']['hold_at_terminal']) && $connSettings['quote_settings']['hold_at_terminal'] && $connSettings['quote_settings']['hold_at_terminal'] == true) ? '1' : '0';
 
         $apiArray = [
+            // Sameday Api settings
+            'sameDayDivision' => $isSameDayApi ? '1' : '0',
+            'premiumFreightService' => $isSameDayApi ? QuotesResults::getEnabledPremiumFreightService($connSettings['quote_settings']) : '',
+
             'emailAddress' => $connSettings['creds']['email'],
             'password' => $connSettings['creds']['password'],
             'billToAccountNumber' => $connSettings['creds']['billing_account_number'],
 
             'prefferedCurrency' => 'USD',
             'thresholdWeightLimit' => $weightThreshold,
+            'holdAtTerminal' => $isSameDayApi ? '0' : $holdAtTerminal,
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
             /* Accessorial array */
@@ -2423,6 +2558,7 @@ class GenerateRequestData
 
         $this->resiCarrier['echoLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['echoLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['echoLtl'] = $this->returnRates;
 
         $accessorial = [];
         if ($alwaysResi || $residential != 'N') {
@@ -2453,6 +2589,7 @@ class GenerateRequestData
         $resp = $this->verifyRADStatus($connSettings, $destination);
         $this->resiCarrier['dayLightLtl'] = $resp['residential'];
         $this->resiCarrier['alwaysResi']['dayLightLtl'] = $resp['alwaysResi'];
+        $this->resiCarrier['returnRates']['dayLightLtl'] = $this->returnRates;
         $dayLightQuotes = new dayLightQuotesResults();
         $apiArray = $dayLightQuotes->getApiArr($connSettings, $resp);
 
@@ -2487,6 +2624,7 @@ class GenerateRequestData
 
         $this->resiCarrier['freightQuoteChrLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['freightQuoteChrLtl'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['freightQuoteChrLtl'] = $this->returnRates;
 
         $accessorial = [];
         if ($liftGate == 'Y') {
@@ -2496,6 +2634,9 @@ class GenerateRequestData
             array_push($accessorial, 'RESDEL');
         }
 
+        $TLEquipmentType = (isset($connSettings['quote_settings']['tl_equipment_type']) && $connSettings['quote_settings']['tl_equipment_type'] == 1) ? 'Van' : (isset($connSettings['quote_settings']['tl_equipment_type']) && ($connSettings['quote_settings']['tl_equipment_type'] == 2) ? 'Reefer' : 'Flatbed');
+        $quoteLTLAboveThreshold = (isset($connSettings['quote_settings']['quoteltl_and_truckload']) && $connSettings['quote_settings']['quoteltl_and_truckload']) ? '1' : '0';
+        $TLWeightThreshold = $connSettings['quote_settings']['truckload_weight_threshold'] ?? '0';
         $weightThreshold= $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $apiArray = [
             'b2bApiVersion' => '2.0',
@@ -2510,6 +2651,9 @@ class GenerateRequestData
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
             
             'accessorial' => $accessorial,
+            'quoteLTLAboveThreshold' => $quoteLTLAboveThreshold,
+            'TLWeightThreshold' => $TLWeightThreshold,
+            'TLEquipmentType' => $TLEquipmentType,
         ];
 
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
@@ -2763,8 +2907,23 @@ class GenerateRequestData
                 $boxes = BoxSize::getUpsSmallAvailableBoxes($storeId);
                 break;
         }
+        
+        if (!empty($itemsCubicVolumeArr) && isset($itemsCubicVolumeArr['volume']) && isset($itemsCubicVolumeArr['weight'])) {
+            $itemMinVolume = min(array_values($itemsCubicVolumeArr['volume']));
+            $itemMinWeight = min(array_values($itemsCubicVolumeArr['weight']));
+        }
 
         foreach ($boxes as $box) {
+                $dimensions = array($box->width, $box->height, $box->length);
+                $maxWeight = $box->max_weight == 0 ? Functions::$defaultMaxWeightSmall : $box->max_weight;
+                $boxWeight = $maxWeight - $box->box_weight;
+                $boxVolume = array_product($dimensions);
+
+                if (($itemMinVolume > $boxVolume) || ($itemMinWeight > $boxWeight)) {
+                    continue;
+                }
+            }
+
             $boxBins[$box->id] = array(
                 'nickname' => $box->nickname,
                 'name' => $box->box_name,
@@ -2787,7 +2946,8 @@ class GenerateRequestData
         $hits = count($items);
         if ((count($items) && count($boxBins)) || count($itemsAlone)) {
             $Bin3D = new Bin3D();
-            $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment);
+            $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment, false);
+           
             if (count($binResponse)) {
                 foreach ($itemsAlone as $key => $itemAlone) {
                     foreach ($itemAlone as $alone) {

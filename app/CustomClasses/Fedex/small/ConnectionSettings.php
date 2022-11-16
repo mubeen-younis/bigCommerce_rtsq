@@ -4,6 +4,7 @@ namespace App\CustomClasses\Fedex\small;
 
 use App\CustomClasses\CarriersConnectionSettings;
 use App\CustomClasses\CurlRequest;
+use App\Endpoints\Endpoints;
 
 class ConnectionSettings extends CarriersConnectionSettings
 {
@@ -19,7 +20,7 @@ class ConnectionSettings extends CarriersConnectionSettings
             'error' => true,
             'message' => 'Something went wrong!',
         ];
-        $url = $this->testConnectionUrl;
+        $url = Endpoints::fedexSmallTestEndpoint();
         $params = Array(
             'dont_auth' => '1',
             // -------------Carrier Credentials------------- //

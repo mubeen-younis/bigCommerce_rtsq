@@ -192,6 +192,11 @@ class Shipping
             $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes, false);
         }
 
+        $palletBins = $requestArr['palletBins'] ?? [];
+        if (isset($requestArr['palletResponse']) && !empty($requestArr['palletResponse'])) {
+            $quotes = (new PalletPackaging())->addPalletResponseToQuotes($requestArr['palletResponse'], $quotes);
+        }
+
         $freeRNL = false;
         if (isset($requestArr['requestArr']['carriers']['rnl']['freeShipment']) && $requestArr['requestArr']['carriers']['rnl']['freeShipment']) {
             unset($requestArr['requestArr']['carriers']['rnl']['freeShipment']);
@@ -790,9 +795,10 @@ class Shipping
         if (!empty(array_filter($quotes))) {
             $resp['quote_id'] = (string)rand(1, 9); // need to change
             $resp['messages'] = []; // need to change
-            $quotes = $this->freeShippingTitle($quotes);
-            $quotes = $this->formatCheapestFinalQuotes($quotes);
+            
             if (!$onlyDbscEnabled) {
+                $quotes = $this->freeShippingTitle($quotes);
+                $quotes = $this->formatCheapestFinalQuotes($quotes);
                 $quotes = $this->addDbscRates($quotes);
             }
 
@@ -818,6 +824,9 @@ class Shipping
     public function freeShippingTitle($finalQuotes)
     {
         foreach($finalQuotes as $key => $quote){
+            if(isset($quote['code']) && ($quote['code'] == 'INSP' || $quote['code'] == 'LOCDEL')){
+                continue;
+            }
             if(empty($quote['rate']) || $quote['rate'] == '0.00'){
                 $finalQuotes[$key]['title'] = Functions::$freeShipping;
             }
