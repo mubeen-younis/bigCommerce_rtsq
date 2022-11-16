@@ -2941,7 +2941,6 @@ class GenerateRequestData
                 'ext_height' => $box->ext_height ?? 0
                 /*END*/
             );
-        }
 
         $hits = count($items);
         if ((count($items) && count($boxBins)) || count($itemsAlone)) {
