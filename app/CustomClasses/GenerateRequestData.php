@@ -13,6 +13,8 @@ use App\CustomClasses\UspsSmall\PackagingRequest as UspsSmallPackagingRequest;
 use Illuminate\Support\Facades\Log;
 use App\CustomClasses\DayLightLtl\QuotesResults as dayLightQuotesResults;
 use App\CustomClasses\DayRossLTL\QuotesResults;
+use App\Models\Store;
+use Illuminate\Http\Request;
 
 /**
  * class that generated request data
@@ -45,6 +47,7 @@ class GenerateRequestData
     public $carriers = [];
     public $isPoBOX = false;
     public $homeDeliveryServices = false;
+    public $storeDateTime;
 
     /**
      * constructor of class that accepts request object
@@ -73,6 +76,9 @@ class GenerateRequestData
         $this->destinationIsPOBox($destination);
         $carriersArr['carriers'] = [];
         $enitOrigin = $this->getEnitOrigin($origin);
+
+        $this->storeDateTime = $this->getBCStoreDateTime();
+        Log::info('Store Time' . $this->storeDateTime);
 
         foreach ($this->connectionSettings as $key => $con1) {
             switch ($key) {
@@ -1765,7 +1771,7 @@ class GenerateRequestData
             'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
             'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
             'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
-            'storeDateTime' => date("Y-m-d H:i:s"), //2020-10-22 14:00:00
+            'storeDateTime' => $this->storeDateTime, 
             'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
 
             'ups_small_pkg_resid_delivery' => ($alwaysResi ? 'Y' : $residential == 'Y') ? 'yes' : 'no',
@@ -1837,7 +1843,7 @@ class GenerateRequestData
             'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
             'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
             'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
-            'storeDateTime' => date("Y-m-d H:i:s"), //2020-10-22 14:00:00
+            'storeDateTime' => $this->storeDateTime, 
             'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
 
             'residentialDelivery' => ($alwaysResi ? 'Y' : $residential == 'Y') ? 'on' : 'off',
@@ -1895,7 +1901,7 @@ class GenerateRequestData
             'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
             'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
             'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
-            'storeDateTime' => date("Y-m-d H:i:s"), //2020-10-22 14:00:00
+            'storeDateTime' => $this->storeDateTime, 
             'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
 
             'prefferedCurrency' => 'USD',
@@ -2949,7 +2955,7 @@ class GenerateRequestData
             'modifyShipmentDateTime' => $modifyShipmentDateTime,
             'OrderCutoffTime' => $orderCutOffTime,
             'shipmentOffsetDays' => $fulfillmentOffsetDays,
-            'storeDateTime' => $this->getStoreDateTime(), //2020-10-22 14:00:00
+            'storeDateTime' => $this->getStoreDateTime(), 
             'shipmentWeekDays' => $shipmentWeekDays,
         ];
     }
@@ -2962,6 +2968,43 @@ class GenerateRequestData
 
     public function getStoreDateTime()
     {
-        return date("Y-m-d H:i:s");
+        return $this->storeDateTime;
+    }
+
+    public function getBCStoreDateTime()
+    {
+        try {
+            $storeHash = $this->storeData['store']['hash'] ?? '';            
+
+            $storeDetails = BigCommerceFunctions::getStoreSettings($storeHash);
+            $storeDetails = (new CurlRequest())->enSingleCurlRequest($storeDetails['endpoint'], $storeDetails['request'], $storeDetails['headers'], $storeDetails['method'], false);
+
+            $response = json_decode($storeDetails['response'], true);
+            /**
+             * System's date (Our server's date)
+             */
+            $systemTime = date('Y-m-d H:i:s');
+
+            $datetime = new \DateTime($systemTime);
+            
+            /**
+             * Store timezone and time
+             */
+            $storeTimezone = $response['timezone']['name'];
+            $storeTime = new \DateTimeZone($storeTimezone);
+            /** 
+             * Set our system timezone to store's timezone.
+             */
+            $datetime->setTimezone($storeTime);
+            // Convert time to date format
+            $formattedTime = $datetime->format('Y-m-d H:i:s');
+
+            return $formattedTime;
+        } catch (\Exception $exception) {
+            Log::info('Exception on getting date and time of store ' . json_encode($exception->getMessage()));
+
+            return null;
+        }
+
     }
 }
