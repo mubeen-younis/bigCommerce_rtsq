@@ -78,6 +78,7 @@ class GenerateRequestData
         $enitOrigin = $this->getEnitOrigin($origin);
 
         $this->storeDateTime = $this->getBCStoreDateTime();
+        Log::info('Store Time', $this->storeDateTime);
 
         foreach ($this->connectionSettings as $key => $con1) {
             switch ($key) {
