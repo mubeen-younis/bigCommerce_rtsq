@@ -1771,7 +1771,7 @@ class GenerateRequestData
             'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
             'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
             'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
-            'storeDateTime' => $this->storeDateTime, //2020-10-22 14:00:00
+            'storeDateTime' => $this->storeDateTime, 
             'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
 
             'ups_small_pkg_resid_delivery' => ($alwaysResi ? 'Y' : $residential == 'Y') ? 'yes' : 'no',
@@ -1843,7 +1843,7 @@ class GenerateRequestData
             'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
             'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
             'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
-            'storeDateTime' => $this->storeDateTime, //2020-10-22 14:00:00
+            'storeDateTime' => $this->storeDateTime, 
             'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
 
             'residentialDelivery' => ($alwaysResi ? 'Y' : $residential == 'Y') ? 'on' : 'off',
@@ -1901,7 +1901,7 @@ class GenerateRequestData
             'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
             'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
             'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
-            'storeDateTime' => $this->storeDateTime, //2020-10-22 14:00:00
+            'storeDateTime' => $this->storeDateTime, 
             'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
 
             'prefferedCurrency' => 'USD',
@@ -2955,7 +2955,7 @@ class GenerateRequestData
             'modifyShipmentDateTime' => $modifyShipmentDateTime,
             'OrderCutoffTime' => $orderCutOffTime,
             'shipmentOffsetDays' => $fulfillmentOffsetDays,
-            'storeDateTime' => $this->getStoreDateTime(), //2020-10-22 14:00:00
+            'storeDateTime' => $this->getStoreDateTime(), 
             'shipmentWeekDays' => $shipmentWeekDays,
         ];
     }
