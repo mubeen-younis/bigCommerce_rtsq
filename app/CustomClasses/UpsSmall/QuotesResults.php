@@ -163,6 +163,7 @@ class QuotesResults
                     if(isset($quote['ups_services'][$key])){
                         $serviceName = $quote['ups_services'][$key];
                         $service = str_replace(' ', '_', strtolower($serviceName));
+                        $service = str_replace('.', '', strtolower($service));
                         $isServiceEnabled = $this->quoteSettings['carrier_services'][$service];
                         if(!$isServiceEnabled){
                             continue;
