@@ -528,6 +528,11 @@ class Shipping
                             }
 
                             if (isset($q['fedexAirServices']['q'])) {
+
+                                if(isset($q['fedexAirServices']['q']['severity']) && $q['fedexAirServices']['q']['severity'] == "ERROR"){
+                                    continue;
+                                }
+
                                 foreach ($q['fedexAirServices']['q'] as $key => $qs) {
                                     $fee = $this->getBoxFeeAccordingToService($qs['serviceType'], $fedexBoxesFee, $boxFee, $locId);
                                     if (isset($qs['totalNetCharge']['Amount'])) {

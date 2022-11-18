@@ -893,6 +893,7 @@ class GenerateRequestData
 
                     $sbsResponse['binResponse'] = $binReponse;
                 } else {
+                    $simpleItems = $itemsArr;
                     $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
                     $itemsArr = $sbsResponse['items'] ?? $itemsArr;
 
@@ -926,7 +927,7 @@ class GenerateRequestData
                         
                         if ($this->simpleRate) {
                             $this->fedexType = 'simple-rate';
-                            $sbsSimpleRateResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
+                            $sbsSimpleRateResponse = $this->getStoreBoxes($this->storeData['store']->id, $simpleItems, $carriersoriginAddress, $cartInfo, $isMultishipment);
 
                             // checking for own packaging items
                             $this->allPacked($sbsSimpleRateResponse);
