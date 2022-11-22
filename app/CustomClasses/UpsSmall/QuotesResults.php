@@ -112,7 +112,6 @@ class QuotesResults
         $this->quoteSettings = [];
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
         $this->quoteSettings = $connectionSettings['ups-small']['quote_settings'] ?? '';
-
         $numberOfShipments = 0;
         foreach ($shipments as $ship) {
             if(isset($ship['tnt']['faultstring'])){
@@ -201,9 +200,9 @@ class QuotesResults
                         }
                     }
 
-                    if ($data['serviceType'] == '03' && !strpos($access2, '+gd') && !strpos($data['serviceType'], 'SR_')) {
+                    if ($data['serviceType'] == '03' && strpos($access2, '+gd') === false && strpos($data['serviceType'], 'SR_') === false) {
                         $access2 = $access2 . '+gd'; 
-                    } else if (strpos($data['serviceType'], 'SR_') != false && !strpos($access2, '+sr')) {
+                    } else if ((strpos($data['serviceType'], 'SR_') !== false) && strpos($access2, '+sr') === false) {
                         $access2 = $access2 . '+sr'; 
                     } 
 

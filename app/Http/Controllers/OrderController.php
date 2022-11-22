@@ -205,7 +205,7 @@ class OrderController extends Controller
         $isOneRate = strpos($rateId, '+or');
         $isGround = strpos($rateId, '+gd');
         $isAir = strpos($rateId, '+as');
-        $isSimpleRate = strpos($rateId, 'SR_') || strpos($rateId, '+sr');
+        $isSimpleRate = strpos($rateId, 'sr_') || strpos($rateId, '+sr');
 
         /*
         * Shipment Packaging */
@@ -232,7 +232,8 @@ class OrderController extends Controller
                             $sbsData = $ws->binPackagingData->response->oneRate->bins_packed ?? [];
                         }
                          else if ($isSimpleRate) {
-                            $sbsData = $ws->binPackagingData->response->simpleRate->bins_packed ?? [];
+                            $sbsData = $ws->binPackagingData->response->bins_packed ??
+                            $ws->binPackagingData->response->simpleRate->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? [];
                         } else {
                             $sbsData = $ws->binPackagingData->response->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->oneRate->bins_packed ?? [];
                         }
