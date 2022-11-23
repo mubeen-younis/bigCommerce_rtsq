@@ -28,7 +28,7 @@ class BoxSize extends Model
 
     public static function getUpsSmallAvailableBoxes($storeId)
     {
-        return self::where('store_id', $storeId)->where([['box_type', 1], ['is_available', 1]])->orWhere([['box_type', 5], ['is_available', 1]])->get();
+        return self::where('store_id', $storeId)->where([['box_type', 5], ['is_available', 1]])->get();
     }
 
     public static function getPallets($storeId)

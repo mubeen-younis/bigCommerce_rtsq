@@ -893,7 +893,6 @@ class GenerateRequestData
 
                     $sbsResponse['binResponse'] = $binReponse;
                 } else {
-                    Log::info('else' . json_encode($carriersOriginAddress));
                     $simpleItems = $itemsArr;
                     $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
                     $itemsArr = $sbsResponse['items'] ?? $itemsArr;
@@ -929,7 +928,6 @@ class GenerateRequestData
                         if ($this->simpleRate) {
                             $this->fedexType = 'simple-rate';
                             $sbsSimpleRateResponse = $this->getStoreBoxes($this->storeData['store']->id, $simpleItems, $carriersoriginAddress, $cartInfo, $isMultishipment);
-                            Log::info('simple rate sbs response: ' . json_encode($sbsSimpleRateResponse));
 
                             // checking for own packaging items
                             $this->allPacked($sbsSimpleRateResponse);
