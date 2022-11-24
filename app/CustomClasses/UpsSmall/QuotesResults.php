@@ -108,7 +108,6 @@ class QuotesResults
 
     public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment)
     {
-
         $shipments = $this->formateQuoteBeforeCompile($shipments);
         $this->quoteSettings = [];
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
@@ -266,12 +265,15 @@ class QuotesResults
     private function formateQuoteBeforeCompile($shipments)
     {
         $servicesDesc = [];
+        $shipments = $this->getSaturdayDelieryServices($shipments);
+
         foreach ($shipments as $quote) {
             if (isset($quote['ups_services'])) {
                 $servicesDesc = $quote['ups_services'];
                 break;
             }
         }
+        
         foreach ($shipments as $shipment => $quotes) {
             $temp = [];
             if (!isset($quotes['q'])) {
@@ -316,6 +318,83 @@ class QuotesResults
             }
         }
         return $resp;
+    }
+
+    public function isSaturdayDeliveryEnabled($connSettings)
+    {
+        if (blank($connSettings)) {
+            return false;    
+        }   
+        
+        $isEnabled = false;
+
+        if (isset($connSettings['quote_settings']['saturday_delivery']) && $connSettings['quote_settings']['saturday_delivery']) {
+            $isEnabled = true;
+        }
+
+        return $isEnabled;
+    }
+
+    public function getSaturdayDelieryServices($shipments)
+    {
+        if (blank($shipments)) {
+            return [];
+        }
+
+        foreach ($shipments as $key => $quote) {
+            if (isset($quote['ups_services'])) {
+                $servicesDesc = $quote['ups_services'];
+
+                if (isset($quote['q']) && !empty($quote['q'])) {
+                    $updatedServicesDesc = $this->setAndGetSaturdayDeliveryServices($quote['q'], $servicesDesc);
+                    $shipments[$key]['ups_services'] = $updatedServicesDesc;
+                }
+
+                break;
+            }
+        }
+
+        return $shipments;
+    }
+
+    public function setAndGetSaturdayDeliveryServices($quotes, $servicesDesc)
+    {
+        foreach ($quotes as $key => $q) {
+            $saturdayServiceCode = $key . 'S';
+            $normalServiceCode = isset($servicesDesc[$key]) ? $servicesDesc[$key] : '';
+
+            if (isset($quotes[$saturdayServiceCode]) && strpos($key, 'S') === false) {
+                $servicesDesc[$saturdayServiceCode] = $this->getSaturdayDelieryServiceTitle($saturdayServiceCode, $normalServiceCode) . ' Saturday';
+            }
+        }
+
+        return $servicesDesc;
+    }
+
+    public function getSaturdayDelieryServiceTitle($serviceCode, $title)
+    {
+        $serviceTitle = '';
+
+        switch($serviceCode) {
+            case '12S':
+            case '03S':
+            case '59S':
+            case '01S':
+            case '13S':
+            case '14S':
+            case '11S':
+            case '07S':
+            case '54S':
+            case '08S':
+            case '65S':
+                $serviceTitle = $title;
+                break;
+            default:
+                $serviceTitle = '';
+                break;
+        }
+
+        return $serviceTitle;
     }
 
 }
