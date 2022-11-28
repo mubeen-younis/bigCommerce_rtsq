@@ -64,11 +64,10 @@ class GetRatesController extends Controller
         if (!$this->storePlanStatus($storeData['store']['id'])) {
             return [];
         }
-
+        
         $cartInfo['cartId'] = $request->base_options['request_context']['reference_values'][0]['value'] ?? 0;
         $cartInfo['store_id'] = $storeData['installed_carriers'][0]['store_id'] ?? 0;
 // Getting installed carriers there quote settings and services
-
         $this->getCarrierSettings($storeData['installed_carriers']);
 
         $formatReq = $this->formatRequest($request->all(), $storeData);
@@ -196,7 +195,9 @@ class GetRatesController extends Controller
                     'shipping_group' => $product_settings['shipping_group'] ?? null,
                     'shipping_class' => $product_settings['shipping_class'] ?? null,
                     'exclude_packaging' => 0,
-                    'quote_as_local' => $product_settings['quote_as_local'] ?? false
+                    'quote_as_local' => $product_settings['quote_as_local'] ?? false,
+                    'pallet_vertical_rotation' => isset($product_settings['pallet_vertical_rotation']) && $product_settings['pallet_vertical_rotation'] ? '1' : '0',
+                    'own_pallet' => isset($product_settings['own_pallet']) && $product_settings['own_pallet'] ? '1' : '0',
                 ];
 
                 if (!$details['items'][$key]['shipMultiplePackage']) {
@@ -306,7 +307,7 @@ class GetRatesController extends Controller
     public function getProductSetting($productId, $variantId, $storeId)
     {
         $settings = [];
-        $productSetting = ProductSetting::select('settings', 'id', 'dropship_enabled', 'dropship_location', 'shipping_group', 'shipping_class', 'ship_multiple_package')
+        $productSetting = ProductSetting::select('settings', 'id', 'dropship_enabled', 'dropship_location', 'shipping_group', 'shipping_class', 'ship_multiple_package', 'pallet_vertical_rotation', 'own_pallet')
             ->where(['source_product_id' => $productId, 'variant_id' => $variantId, 'store_id' => $storeId])
             ->first();
         if (!empty($productSetting)) {
@@ -318,6 +319,8 @@ class GetRatesController extends Controller
             $settings['ship_multiple_package'] = $productSetting['ship_multiple_package'];
             $settings['shipping_group'] = $productSetting['shipping_group'];
             $settings['shipping_class'] = ($productSetting['shipping_class'] == 0 || $productSetting['shipping_class'] == null) ? null : $productSetting['shipping_class'];
+            $settings['pallet_vertical_rotation'] = $productSetting['pallet_vertical_rotation'] ?? 0;
+            $settings['own_pallet'] = $productSetting['own_pallet'] ?? 0;
         }
         return $settings;
     }
@@ -400,6 +403,27 @@ class GetRatesController extends Controller
                     $enabledAddonRad = true;
                 }
             }
+
+            // Pallet Packaging Addon
+            $installedAddonPallet = InstalledAddon::join('addons', 'addons.id', 'installed_addons.addon_id')
+                ->where(['installed_addons.store_id' => $store->id,
+                    'installed_addons.is_enabled' => 1,
+                    'addons.short_code' => 'PLT',
+                ])
+                ->exists();
+            $enabledAddonPallet = false;
+            if ($installedAddonPallet) {
+                $addonPallet = PackageSubscription::leftJoin('packages as p', 'package_subscriptions.package_id', '=', 'p.id')
+                    ->where('store_id', $store->id)
+                    ->where('addon_type', 'PLT')
+                    ->where('package_subscriptions.status', '!=', 3)
+                    ->select('package_subscriptions.id', 'package_subscriptions.status', 'package_subscriptions.created_at')
+                    ->latest()->first();
+                if (!blank($addonPallet)) {
+                    $enabledAddonPallet = true;
+                }
+            }
+
             if (!empty($installedCarriers) && count($installedCarriers)) {
                 return [
                     'installed_carriers' => $installedCarriers,
@@ -407,8 +431,10 @@ class GetRatesController extends Controller
                     'store' => $store,
                     'installed_addon_sbs' => $installedAddonSbs,
                     'installed_addon_rad' => $installedAddonRad,
+                    'installed_addon_pallet' => $installedAddonPallet,
                     'enabled_addon_sbs' => $enabledAddonSbs,
-                    'enabled_addon_rad' => $enabledAddonRad
+                    'enabled_addon_rad' => $enabledAddonRad,
+                    'enabled_addon_pallet' => $enabledAddonPallet,
                 ];
             }
         }

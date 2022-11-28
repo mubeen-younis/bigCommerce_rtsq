@@ -33,6 +33,12 @@ class CarrierController extends Controller
 
     }
 
+    public function getCarriersByType($type = '')
+    {
+        $carriers = optional(Carrier::where('carrier_type', $type)->get()->pluck('slug'))->toArray() ?? [];
+        return $carriers;
+    }
+
     public function getAllCarriers(Request $request)
     {
         $response = [

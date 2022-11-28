@@ -5,6 +5,7 @@ namespace App\Console;
 use App\Console\Commands\ExpireTrials;
 use App\Console\Commands\UpdateOrderWebhookStatus;
 use App\Console\Commands\WsGraphCron;
+use App\Console\Commands\LogsRemovalCron;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -18,7 +19,8 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         ExpireTrials::class,
         WsGraphCron::class,
-        UpdateOrderWebhookStatus::class
+        UpdateOrderWebhookStatus::class,
+        LogsRemovalCron::class
     ];
 
     /**
@@ -32,6 +34,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('expire:trials')->daily();
         $schedule->command('wsgraph:cron')->daily();
         $schedule->command('orderWebhook:cron')->daily();
+        $schedule->command('removeLogs:cron')->hourly();
     }
 
     /**

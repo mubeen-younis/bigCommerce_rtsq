@@ -15,9 +15,6 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
 Route::get('delete_coupon_store', [\App\Http\Controllers\FDOController::class, 'deleteCoupon']);
 
 Route::post('webhooks', [MainController::class, 'addAndUpdateProductFromWebHook']);

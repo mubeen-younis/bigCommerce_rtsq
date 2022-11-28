@@ -14,4 +14,10 @@ class ShippingClass extends Model
         'slug',
         'description',
     ];
+
+    public static function getSlug($className)
+    {
+        $slug = preg_replace('/[^A-Za-z0-9-]+/', '_', $className) . uniqid();
+        return $slug;
+    }
 }
