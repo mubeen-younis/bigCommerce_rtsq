@@ -306,10 +306,6 @@ class QuotesResults
                 continue;
             }
 
-            if (isset($quotes['ups_services'])) {
-                $servicesDesc = $quotes['ups_services'];
-            }
-
             if(isset($shipments['ground'])){
                 $shipments[$shipment]['binPackagingData']['response'] = $shipments['ground']['binPackagingData']['response'][$shipment] ?? [];
             }
@@ -335,6 +331,7 @@ class QuotesResults
                 }
             }
         }
+
         return $shipments;
     }
 
