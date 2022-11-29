@@ -418,13 +418,16 @@ class Shipping
         $uspsBoxesFee = [];
         foreach ($quotes as $carrierName => $quote) {
             if ($this->isSmallCarrier($carrierName)) {
-                if ($carrierName == 'fedexSmall' && !$uspsRes) {
+                if (($carrierName == 'fedexSmall') && !$uspsRes) {
                     foreach ($binReponse as $serviceType => $response) {
                         foreach ($response as $locationId => $bin) {
                             $quotes[$carrierName][$locationId]['binPackagingData']['response'][$serviceType] = $bin;
                             $fee = $this->getCumulativeBoxFee($bin);
                             $boxFee[$locationId] = $fee;
-                            $fedexBoxesFee[$locationId][$serviceType] = $fee;
+                            
+                            if ($carrierName == 'fedexSmall') {
+                                $fedexBoxesFee[$locationId][$serviceType] = $fee;
+                            }
                         }
                     }
                 } else if ($carrierName == 'usps' && $uspsRes) {
@@ -442,9 +445,19 @@ class Shipping
                         }
                     }
                 } else if ($carrierName !== 'fedexSmall' && $carrierName !== 'usps' && ($uspsRes === null || !$uspsRes)) {
-                    foreach ($binReponse as $locationId => $bin) {
-                        $quotes[$carrierName][$locationId]['binPackagingData']['response'] = $bin;
-                        $boxFee[$locationId] = $this->getCumulativeBoxFee($bin);
+                    if (isset($binReponse['ground']) && !empty($binReponse['ground']) && isset($binReponse['simpleRate']) && !empty($binReponse['simpleRate'])) {
+                        foreach ($binReponse as $serviceType => $response) {
+                            foreach ($response as $locationId => $bin) {
+                                $quotes[$carrierName][$locationId]['binPackagingData']['response'][$serviceType] = $bin;
+                                $fee = $this->getCumulativeBoxFee($bin);
+                                $boxFee[$locationId] = $fee;
+                            }
+                        }
+                    } else {
+                        foreach ($binReponse as $locationId => $bin) {
+                            $quotes[$carrierName][$locationId]['binPackagingData']['response'] = $bin;
+                            $boxFee[$locationId] = $this->getCumulativeBoxFee($bin);
+                        }
                     }
                 }
             }
@@ -525,6 +538,11 @@ class Shipping
                             }
 
                             if (isset($q['fedexAirServices']['q'])) {
+
+                                if(isset($q['fedexAirServices']['q']['severity']) && $q['fedexAirServices']['q']['severity'] == "ERROR"){
+                                    continue;
+                                }
+
                                 foreach ($q['fedexAirServices']['q'] as $key => $qs) {
                                     $fee = $this->getBoxFeeAccordingToService($qs['serviceType'], $fedexBoxesFee, $boxFee, $locId);
                                     if (isset($qs['totalNetCharge']['Amount'])) {

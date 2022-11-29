@@ -205,9 +205,10 @@ class OrderController extends Controller
         $isOneRate = strpos($rateId, '+or');
         $isGround = strpos($rateId, '+gd');
         $isAir = strpos($rateId, '+as');
+        $isSimpleRate = strpos($rateId, 'sr_') || strpos($rateId, '+sr');
+
         /*
         * Shipment Packaging */
-
         $sbsItems = [];
         foreach ($responseFromWS as $carrrierName => $WsResp) {
             foreach ($WsResp as $zip => $ws) {
@@ -229,6 +230,10 @@ class OrderController extends Controller
                             $sbsData = $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->bins_packed ?? [];
                         } else if ($isOneRate) {
                             $sbsData = $ws->binPackagingData->response->oneRate->bins_packed ?? [];
+                        }
+                         else if ($isSimpleRate) {
+                            $sbsData = $ws->binPackagingData->response->simpleRate->bins_packed ??
+                            $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->bins_packed ?? [];
                         } else {
                             $sbsData = $ws->binPackagingData->response->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->oneRate->bins_packed ?? [];
                         }
@@ -352,7 +357,7 @@ class OrderController extends Controller
             $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
             $sRate = $order['shipping_rate'];
-
+            
             if ($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement) {
                 if ($isHAT) {
                     $sRate = $multiShipmentresponse->$index->hat->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;

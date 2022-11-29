@@ -1423,6 +1423,12 @@ class CompileQuotes
 
     public function compileUpsSmallQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
+        $returnRates = $this->residential['returnRates']['upsSmall'] ?? false;
+
+        if($returnRates){
+            return [];
+        }
+
         $this->upsSmallQuotesResults = new upsSmallQuotesResults();
         if ($residential['upsSmall'] == 'Y') {
             $this->isResi = true;
