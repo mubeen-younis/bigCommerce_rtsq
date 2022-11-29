@@ -370,7 +370,7 @@ class GenerateRequestData
         }
 
         return [
-            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'small', // ltl / small
@@ -1120,112 +1120,6 @@ class GenerateRequestData
                 $this->simpleRate = true;
             }
         }
-    }
-
-    public function simpleRateMultishipment($carriers = [])
-    {
-        $binRequest = [];
-        
-        foreach ($carriers as $key => $value) {
-            //TODO: add multi curl for multi-shipment packaging
-            $binRequest[$key] = $value;
-        }
-
-        $endpoint = $this->endURL;
-        // create array for curl handles
-        $chs = [];
-        // create array for responses
-        $responses = [];
-        $this->responseDeco = [];
-        // init curl multi handle
-        $mh = curl_multi_init();
-        // create running flag
-        $running = null;
-        // cycle through requests and set up
-        foreach ($binRequest as $key => $request) {
-            $prepared_query = 'query=' . json_encode($request);
-            // init individual curl handle
-            $chs[$key] = curl_init();
-            // set url
-            curl_setopt($chs[$key], CURLOPT_URL, $this->endURL);
-            // check for post data and handle if present
-            curl_setopt($chs[$key], CURLOPT_POST, 1);
-            curl_setopt($chs[$key], CURLOPT_POSTFIELDS, $prepared_query);
-            curl_setopt($chs[$key], CURLOPT_RETURNTRANSFER, 1);
-            curl_setopt($chs[$key], CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($chs[$key], CURLOPT_SSL_VERIFYHOST, 0);
-            /*
-             * execute Curl Reqeusst
-             */
-            curl_multi_add_handle($mh, $chs[$key]);
-        }
-
-        do {
-            // execute curl requests
-            curl_multi_exec($mh, $running);
-            // block to avoid needless cycling until change in status
-            // curl_multi_select($mh);
-            // check flag to see if we're done
-        } while ($running > 0);
-        // cycle through requests
-        foreach ($chs as $key => $ch) {
-            $binResponse = curl_multi_getcontent($ch);
-            $responses[$key] = $binResponse;
-            $this->responseDeco[$key] = json_decode($binResponse);
-            // close individual handle
-            curl_multi_remove_handle($mh, $ch);
-        }
-        // close multi handle
-        curl_multi_close($mh);
-
-        $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
-        $itemsArrGround = $sbsResponse['items'] ?? $itemsArr;
-        unset($carriers['upsSmall']['originAddress']);
-        foreach ($sbsResponse['originAddress'] as $key => $origin) {
-            $carriers['upsSmall']['originAddress'][$key] = $origin;
-        }
-        
-        if (isset($carriers['upsSmall'])) {
-            unset($carriers['upsSmall']['originAddress']);
-
-            foreach ($sbsResponse['originAddress'] as $key => $origin) {
-                $carriers['upsSmall']['originAddress'][$key] = $origin;
-            }
-        }
-
-        if (isset($carriers['wweSmall'])) {
-            unset($carriers['wweSmall']['originAddress']);
-
-            foreach ($sbsResponse['originAddress'] as $key => $origin) {
-                $carriers['wweSmall']['originAddress'][$key] = $origin;
-            }
-        }
-
-        if (isset($carriers['unishippersSmall'])) {
-            unset($carriers['unishippersSmall']['originAddress']);
-
-            foreach ($sbsResponse['originAddress'] as $key => $origin) {
-                $carriers['unishippersSmall']['originAddress'][$key] = $origin;
-            }
-        }
-
-        if (isset($carriers['purolator'])) {
-            unset($carriers['purolator']['originAddress']);
-
-            foreach ($sbsResponse['originAddress'] as $key => $origin) {
-                $carriers['purolator']['originAddress'][$key] = $origin;
-            }
-        }
-
-        if (isset($carriers['usps'])) {
-            unset($carriers['usps']['originAddress']);
-
-            foreach ($sbsResponse['originAddress'] as $key => $origin) {
-                $carriers['usps']['originAddress'][$key] = $origin;
-            }
-        }
-
-        // $binReponse['ground'] = $sbsResponse['binResponse'];
     }
 
     /**
