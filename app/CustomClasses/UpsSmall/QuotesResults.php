@@ -134,7 +134,7 @@ class QuotesResults
         $shipmentCount = 0;
         $count = 0;
         $access2 = $access;
-
+        
         unset($shipments['air'],$shipments['ground']);
         foreach ($shipments as $origin => $quote) {
 
@@ -163,7 +163,7 @@ class QuotesResults
                         $serviceName = $quote['ups_services'][$key];
                         $service = str_replace(' ', '_', strtolower($serviceName));
                         $service = str_replace('.', '', strtolower($service));
-                        $isServiceEnabled = $this->quoteSettings['carrier_services'][$service];
+                        $isServiceEnabled = $this->quoteSettings['carrier_services'][$service] ?? strpos($key, 'S') ? true : false;
                         if(!$isServiceEnabled){
                             continue;
                         }
@@ -405,6 +405,7 @@ class QuotesResults
             case '03S':
             case '59S':
             case '01S':
+            case '02S':
             case '13S':
             case '14S':
             case '11S':
@@ -412,6 +413,11 @@ class QuotesResults
             case '54S':
             case '08S':
             case '65S':
+            case '92S':
+            case '93S':
+            case '94S':
+            case '95S':
+            case 'GFPS':
                 $serviceTitle = $title;
                 break;
             default:
