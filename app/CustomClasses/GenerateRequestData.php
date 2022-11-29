@@ -463,10 +463,6 @@ class GenerateRequestData
 
     public function unishippersSmallEnitArr($connSettings, $destination)
     {
-        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
-            $this->returnRates = true;
-        }
-
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -2106,7 +2102,6 @@ class GenerateRequestData
 
         $this->resiCarrier['unishippersSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['unishippersSmall'] = $alwaysResi;
-        $this->resiCarrier['returnRates']['unishippersSmall'] = $this->returnRates;
         $accessorial = ($alwaysResi ? 'Y' : $residential == 'Y') ? ['REP'] : [];
 
         $apiArray = [

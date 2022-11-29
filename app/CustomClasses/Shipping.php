@@ -446,7 +446,6 @@ class Shipping
                     }
                 } else if ($carrierName !== 'fedexSmall' && $carrierName !== 'usps' && ($uspsRes === null || !$uspsRes)) {
                     if (isset($binReponse['ground']) && !empty($binReponse['ground']) && isset($binReponse['simpleRate']) && !empty($binReponse['simpleRate'])) {
-                        // if ($carrierName == 'upsSmall') {
                         foreach ($binReponse as $serviceType => $response) {
                             foreach ($response as $locationId => $bin) {
                                 $quotes[$carrierName][$locationId]['binPackagingData']['response'][$serviceType] = $bin;
@@ -454,13 +453,6 @@ class Shipping
                                 $boxFee[$locationId] = $fee;
                             }
                         }
-                        // } 
-                        // else {
-                        //     foreach ($binReponse['ground'] as $locationId => $bin) {
-                        //         $quotes[$carrierName][$locationId]['binPackagingData']['response'] = $bin;
-                        //         $boxFee[$locationId] = $this->getCumulativeBoxFee($bin);
-                        //     }
-                        // }
                     } else {
                         foreach ($binReponse as $locationId => $bin) {
                             $quotes[$carrierName][$locationId]['binPackagingData']['response'] = $bin;
