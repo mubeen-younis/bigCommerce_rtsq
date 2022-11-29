@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 use App\CustomClasses\DayLightLtl\QuotesResults as dayLightQuotesResults;
 use App\Models\BoxSize;
 use App\CustomClasses\DayRossLTL\QuotesResults;
+use App\CustomClasses\UpsSmall\QuotesResults as UpsSmallQuotesResults;
 use App\Models\Store;
 use Illuminate\Http\Request;
 
@@ -1870,6 +1871,8 @@ class GenerateRequestData
         $this->resiCarrier['upsSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['upsSmall'] = $alwaysResi;
         $this->resiCarrier['returnRates']['upsSmall'] = $this->returnRates;
+        $upsSmall = new UpsSmallQuotesResults();
+        $saturdayDelivery = $upsSmall->isSaturdayDeliveryEnabled($connSettings) ? '1' : '0';
 
         $apiArray = [
             'ups_small_pkg_username' => $connSettings['creds']['username'],
@@ -1882,6 +1885,7 @@ class GenerateRequestData
             'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
             'storeDateTime' => $this->storeDateTime, 
             'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
+            'saturdayDeliveryFlag' => $saturdayDelivery,
 
             'ups_small_pkg_resid_delivery' => ($alwaysResi ? 'Y' : $residential == 'Y') ? 'yes' : 'no',
             'prefferedCurrency' => 'USD',
