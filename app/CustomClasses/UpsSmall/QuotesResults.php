@@ -152,6 +152,11 @@ class QuotesResults
             $quote['ups_services']['SR_03']  = 'Simple Rate UPS Ground';
             $quote['ups_services']['SR_12']  = 'Simple Rate Ups 3 Day Select';
             $quote['ups_services']['SR_13']  = 'Simple Rate Ups Next Day Air Saver';
+            $quote['ups_services']['SR_02S'] = 'UPS Simple Rate 2nd Day Air Saturday';
+            $quote['ups_services']['SR_03S'] = 'UPS Simple Rate Ground Saturday';
+            $quote['ups_services']['SR_12S'] = 'UPS Simple Rate 3 Day Select Saturday';
+            $quote['ups_services']['SR_13S'] = 'UPS Simple Rate Next Day Air Saver Saturday';
+
 
             if (isset($quote['q'])) {
                 foreach ($quote['q'] as $key => $data) {
@@ -293,6 +298,10 @@ class QuotesResults
                 $quote['ups_services']['SR_03'] = 'UPS Simple Rate Ground';
                 $quote['ups_services']['SR_12'] = 'UPS Simple Rate 3 Day Select';
                 $quote['ups_services']['SR_13'] = 'UPS Simple Rate Next Day Air Saver';
+                $quote['ups_services']['SR_02S'] = 'UPS Simple Rate 2nd Day Air Saturday';
+                $quote['ups_services']['SR_03S'] = 'UPS Simple Rate Ground Saturday';
+                $quote['ups_services']['SR_12S'] = 'UPS Simple Rate 3 Day Select Saturday';
+                $quote['ups_services']['SR_13S'] = 'UPS Simple Rate Next Day Air Saver Saturday';
 
                 $servicesDesc = $quote['ups_services'];
                 break;
