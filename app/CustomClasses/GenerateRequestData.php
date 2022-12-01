@@ -639,6 +639,10 @@ class GenerateRequestData
 
     private function uspsSmallEnitArr($connSettings, $destination, $enitOrigin, $lineItems)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -2603,6 +2607,7 @@ class GenerateRequestData
 
         $this->resiCarrier['uspsSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['uspsSmall'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['uspsSmall'] = $this->returnRates;
 
         $resp = [
             'residential' => $residential,
