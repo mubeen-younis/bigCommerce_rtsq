@@ -2813,6 +2813,12 @@ class CompileQuotes
 
     private function compileUnishippersSmallQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
+        $returnRates = $this->residential['returnRates']['unishippersSmall'] ?? false;
+
+        if($returnRates){
+            return [];
+        }
+
         $this->unishippersSmallQuotesResults = new unishippersSmallQuotesResults();
         if ($residential['unishippersSmall'] == 'Y') {
             $this->isResi = true;
