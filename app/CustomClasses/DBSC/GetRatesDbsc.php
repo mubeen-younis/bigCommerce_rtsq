@@ -60,7 +60,7 @@ class GetRatesDbsc
         /*Will group items according to there profile*/
         $this->groupedItemsProfile = $this->setGroupItemsProfile();
         if (blank($this->groupedItemsProfile)) {
-            Log::info('No groupedItemsProfile ' . $this->groupedItemsProfile);
+            Log::info('No groupedItemsProfile ' . json_encode($this->groupedItemsProfile));
             return [];
         }
 
@@ -81,7 +81,7 @@ class GetRatesDbsc
             $widgetInfo['isMultiShipment'] = $this->isMultiShipment;
             return ['rates' => $this->rates, 'ord_wid' => $widgetInfo];
         }
-        Log::info('No Rates ' . $this->rates);
+        Log::info('No Rates ' . json_encode($this->rates));
 
         return [];
     }
@@ -178,7 +178,7 @@ class GetRatesDbsc
 
             $shipmentRates = $this->getShipmentRates($profileRates, $items);
             if (blank($shipmentRates)) {
-                Log::info('No shipmentRates found ' . $shipmentRates);
+                Log::info('No shipmentRates found ' . json_encode($shipmentRates));
                 return [];
             }
 

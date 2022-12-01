@@ -25,8 +25,24 @@ class Functions
     public static $freeShipping = 'Free Shipping';
     public static $resiPickupTitle = '+pu';
     public static $lgPickupTitle = '+lfgpu';
+    public static $palletPkgUrl = 'https://us-east.api.3dbinpacking.com/packer/palletPack';
+    public static $imageCompleteUrl = 'https://us-east.api.3dbinpacking.com/images/70785010926d0cc360921e4541811a53/20181106/4c114cebfa2d61a0c8153b3170ab6663/1541503329-2408-1523608.png';
+    public static $imageSeparatedUrl = 'https://us-east.api.3dbinpacking.com/images/70785010926d0cc360921e4541811a53/20181106/4c114cebfa2d61a0c8153b3170ab6663/1541503329-2391-8709331.png';
+    public static $imageSbsUrl = 'https://us-east.api.3dbinpacking.com/images/70785010926d0cc360921e4541811a53/20181106/4c114cebfa2d61a0c8153b3170ab6663/1541503329-24-8612722.png';
     public static $limitedAccesDelLabel = ' w/ limited access delivery';
     public static $limitedAccessLGDelLable = ' w/ lift gate & limited access delivery';
+    public static $twoManDeliveryLabel = ' w/ two man delivery';
+    public static $appointmentDeliveryLabel = ' w/ appointment delivery';
+    public static $twoManAppDelLabel = ' w/ two man & appointment delivery';
+    public static $twoManDelAccess = '+TMD';
+    public static $appointmentDelAccess = '+APD';
+    public static $twoManAptDelAccess = '+TMD+APD';
+    public static $twoManDelResiLabel = ' w/ residential & two man delivery';
+    public static $appointmentDelResiLabel = ' w/ residential & appointment delivery';
+    public static $twoManAptDelResiLabel = ' w/ residential & two man & appointment delivery';
+    public static $defaultMaxWeightSmall = 150;
+    public static $QAreportDataUrl = "https://ws001.eniture-qa.com/order-meta/index.php";
+    public static $reportDataUrl = "https://analytic-data.eniture.com/index.php";
 
     public static function hasInsureCarrier($code)
     {
@@ -66,10 +82,27 @@ class Functions
     {
         $carrierCodesWithName = ['wweltl' => 'Worldwide Express LTL', 'upsltl' => 'UPS LTL', 'rnlltl' => 'R&L Carriers', 'xpoltl' => 'XPO Logistics',
             'fedexltl' => 'FedEx LTL', 'gtzltl' => 'GlobalTranz LTL', 'cltl' => 'Cerasis Ltl',
-            'parcel_12wwe' => 'Worldwide Express Small', 'parcel_12ups' => 'UPS Small', 'parcel_12fd' => 'FedEx Small', 'parcel_12uniship' => 'Unishippers Small'];
+            'parcel_12wwe' => 'Worldwide Express Small', 'parcel_12ups' => 'UPS Small', 'parcel_12fd' => 'FedEx Small', 'parcel_12uniship' => 'Unishippers Small', 
+            'fqltl' => 'Freight Quote', 'fqchrltl' => 'C.H. Robinson', 'parcel_12Purolator' => 'Purolator Small', 'parcel_12usps' => 'United State Postal Service', 
+            'tqlltl' => 'Total Quality Logistics', 'yrcltl' => 'YRC Freight', 'odflltl' => 'Old Dominion Freight Lines', 'dayrossltl' => 'Day & Ross Ltl', 
+            'estesltl' => 'Estes Express Ltl', 'echoltl' => 'Echo Global Logistics', 'saialtl' => 'SAIA LTL Freight', 'abfltl' => 'ABF Freight', 'daylightltl' => 'DayLight LTL Freight', 
+            'SouthEastern' => 'Southeastern LTL Freight'];
         return $carrierCodesWithName[$carrierCode] ?? null;
 
 
+    }
+
+    public static function getCarrierName($carrierCode): ?string
+    {
+        $carrierCodesWithName = ['wweltl' => 'wwe', 'upsltl' => 'ups', 'rnlltl' => 'rnl', 'xpoltl' => 'xpoLogistics',
+            'fedexltl' => 'fedex', 'gtzltl' => 'globaltranz', 'cltl' => 'cerasis',
+            'parcel_12wwe' => 'wwe_small_packages_quotes', 'parcel_12ups' => 'ups_small', 'parcel_12fd' => 'fedex_small', 'parcel_12uniship' => 'unishippers_small', 
+            'fqltl' => 'freightquote', 'fqchrltl' => 'freightquotechr', 'parcel_12Purolator' => 'purolator_small', 'parcel_12usps' => 'usps_small', 
+            'tqlltl' => 'tql', 'yrcltl' => 'yrc', 'odflltl' => 'odfl4me', 'dayrossltl' => 'dayross', 
+            'estesltl' => 'estes', 'echoltl' => 'echoLogistics', 'saialtl' => 'saia', 'abfltl' => 'abf', 'daylightltl' => 'daylight', 
+            'SouthEastern' => 'southeastern'];
+
+        return $carrierCodesWithName[$carrierCode] ?? null;
     }
 
     public static function getLiftResidentialStatus($rateId)
@@ -278,7 +311,7 @@ class Functions
     }
 
     public static function getHATTitle($title = '', $address = [], $hatDistance = '', $phoneNumber = ''){
-        $distance = $hatDistance ?? '0 mi';
+        $distance = !empty($hatDistance) ? $hatDistance : '0 mi';
 
         return $title . ' | Hold At Terminal | ' . $distance . ' | ' . $address['city'] . ', ' . $address['state'] . ', ' . $address['zipCode'] . ' | ' . $phoneNumber;
     }
@@ -298,6 +331,9 @@ class Functions
 
     public static function quotesLtlTruckLoad($allQuotes, $shipments){
        
+        if(empty($allQuotes)){
+            return [];
+        }
         foreach($shipments as $key => $shipment){
             $index[] = $key;
         }
@@ -310,5 +346,74 @@ class Functions
     
         return [$allQuotes, $multiShipmentQuotes];
 
+    }
+
+    public static function getSimpleRateBox($items, $bins)
+    {
+        $binData = $bins[0]->bin_data ?? [];
+
+        if (empty($binData)) {
+            return [];
+        }
+
+        $box = [
+            'length' => $binData->d,
+            'width' => $binData->w,
+            'height' => $binData->h,
+        ];
+
+        foreach ($items as $item) {
+            $box['weight'] = $item['lineItemWeight'];
+            $box['price'] = $item['lineItemPrice'];
+        }
+
+        return $box;
+    }
+    
+    public static function getServerName($storeData)
+    {
+        $serverName = $storeData['store']['name'];
+        
+        if (isset($storeData['store']['store_domain']) && !empty($storeData['store']['store_domain'])) {
+            $serverName = $storeData['store']['store_domain'];
+        } 
+
+        return $serverName;
+    }
+
+     private function calculateCartInfo(array $item)
+    {
+        $itemVolume = ($item['product_length'] * $item['product_widht'] * $item['product_height']);
+        $itemWeight = $item['product_weight'];
+        $this->cubicVolumeArray[$this->requestKey]['volume'][$item['variant_id']] = $itemVolume;
+        $this->cubicVolumeArray[$this->requestKey]['weight'][$item['variant_id']] = $itemWeight;
+        $cartInfo = [
+            'total_volume' => $this->cartInfo[$this->requestKey]['total_volume'] + ($itemVolume * $item['quantity']),
+            'total_weight' => $this->cartInfo[$this->requestKey]['total_weight'] + ($itemWeight * $item['quantity'])
+        ];
+        
+        return $cartInfo;
+    }
+
+    public static function calculateCubicVolume($pkgItems = [])
+    {
+        if (empty($pkgItems)) {
+            return [];
+        }
+
+        $cubicVolumeArr = [];
+
+        foreach ($pkgItems as $items) {
+            foreach ($items as $item) {
+                $dimensions = array($item['w'], $item['h'], $item['d']);
+                $itemVolume = array_product($dimensions);
+                $itemWeight = $item['wg'];
+                
+                $cubicVolumeArr['volume'][] = $itemVolume;
+                $cubicVolumeArr['weight'][] = $itemWeight;
+            }
+        }
+
+        return $cubicVolumeArr;
     }
 }

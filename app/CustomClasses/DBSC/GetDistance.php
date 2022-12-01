@@ -29,7 +29,7 @@ class GetDistance
             // IF the nearest warehouse has already fetched so the route distance is also the nearest
             // So we can use that as well
             if (isset($origin['distance_m']) && !blank($origin['distance_m'])) {
-                Log::info('inside if condition ' . $origin);
+                Log::info('inside if condition ' . json_encode($origin));
                 return $origin;
             }
             $distance = $this->findRouteDistances($origin, $destination);
@@ -130,7 +130,7 @@ class GetDistance
         if ($originUrl != '') {
             $distanceObj = (new self)->getDistanceFromGoogleApi($originUrl, $destinationUrl, $this->googleDistanceApiKey);
             if ($distanceObj == 'server_error') {
-                Log::info('Server error' . $distanceObj);
+                Log::info('Server error' . json_encode($distanceObj));
                 return ['error' => 'Server error'];
             } else {
                 // to change the array to object recursively
