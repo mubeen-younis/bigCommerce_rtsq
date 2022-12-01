@@ -19,6 +19,7 @@ use function GuzzleHttp\Promise\all;
 class PackageSubscriptionController extends Controller
 {
     public static $addonTypeSBS = 'SBS';
+    public static $addonTypePLT = 'PLT';
     public static $addonTypeRAD = 'RAD';
     public static $trialSBS = 1;
     public static $dynamicTrial = '';
@@ -28,6 +29,7 @@ class PackageSubscriptionController extends Controller
     public static $updateFullSubscription = 2;
     public static $updateToBeChargeonly = 1;
     public static $minSbsPaidPackage = 2;
+    public static $palletPkgDynamicTrial = 15;
 
     public function __construct()
     {
@@ -46,6 +48,9 @@ class PackageSubscriptionController extends Controller
             $data = $this->getPkgDetails($addonType);
         } elseif ($addonType == self::$addonTypeRAD) {
             self::$dynamicTrial = 7;
+            $data = $this->getPkgDetails($addonType);
+        } elseif ($addonType == self::$addonTypePLT) {
+            self::$dynamicTrial = self::$palletPkgDynamicTrial;
             $data = $this->getPkgDetails($addonType);
         } else {
             $error = true;
@@ -121,7 +126,7 @@ class PackageSubscriptionController extends Controller
         } else {
             $addonPackages = Package::where('addon_type', $addonType)->where('id', '!=', self::$dynamicTrial)->orderBy('sort_by', 'ASC')->get();
         }
-        $addonPkgParam = 'allSbsPackages';
+        $addonPkgParam = $addonType == self::$addonTypeSBS ? 'allSbsPackages' : 'allPalletPackages';
         if ($addonType == self::$addonTypeRAD) {
             $addonPackages->where('name', 'Extreme')->first()->htis = 'Unlimited';
             $addonPkgParam = 'allRadPackages';
@@ -148,6 +153,9 @@ class PackageSubscriptionController extends Controller
             self::$dynamicTrial = 7;
             $responce = $this->subscribeToAddonPackage($data, $addonType);
             //Do Nothing Yet
+        }  elseif ($addonType == self::$addonTypePLT) {
+            self::$dynamicTrial = self::$palletPkgDynamicTrial;
+            $responce = $this->subscribeToAddonPackage($data, $addonType);
         } else {
             $responce = [
                 'error' => true,
@@ -318,7 +326,6 @@ class PackageSubscriptionController extends Controller
     //***********************************
     public function createStripeChargeForPackage($package, $mainSubscription, $addonType)
     {
-
         $stripeCustomerId = $mainSubscription->stripe_customer_id;
         try {
             $chargeData = [
@@ -360,6 +367,9 @@ class PackageSubscriptionController extends Controller
             $responce = $this->consumeAddonHits($data, $addonType);
         } elseif ($addonType == self::$addonTypeRAD) {
             self::$dynamicTrial = 7;
+            $responce = $this->consumeAddonHits($data, $addonType);
+        } elseif ($addonType == self::$addonTypePLT) {
+            self::$dynamicTrial = self::$palletPkgDynamicTrial;
             $responce = $this->consumeAddonHits($data, $addonType);
         } else {
             $responce = [
@@ -537,6 +547,9 @@ class PackageSubscriptionController extends Controller
         } elseif ($addonType == self::$addonTypeRAD) {
             self::$dynamicTrial = 7;
             $responce = $this->suspendUsage($data, $addonType);
+        } elseif ($addonType == self::$addonTypePLT) {
+            self::$dynamicTrial = self::$palletPkgDynamicTrial;
+            $responce = $this->suspendUsage($data, $addonType);
         } else {
             $responce = [
                 'error' => true,
@@ -559,7 +572,7 @@ class PackageSubscriptionController extends Controller
             ->latest()->first();
         $currentPackageSub->status = $data['suspend'];
         $currentPackageSub->save();
-        $addonName = $addonType === 'SBS' ? 'Standard Box Sizes' : 'Residential Address Detection';
+        $addonName = $addonType === self::$addonTypeSBS ? 'Standard Box Sizes' : ($addonType === self::$addonTypePLT ? 'Pallet Packaging' : 'Residential Address Detection');
         return [
             'error' => false,
             'data' => $this->getPkgDetails($addonType),

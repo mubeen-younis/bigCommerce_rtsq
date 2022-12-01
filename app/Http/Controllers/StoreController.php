@@ -35,6 +35,12 @@ class StoreController extends Controller
             $storeDetails = (new CurlRequest())->enSingleCurlRequest($storeDetails['endpoint'],
                 $storeDetails['request'], $storeDetails['headers'], $storeDetails['method'], false);
             $response = json_decode($storeDetails['response'], true);
+            
+            if (empty($store['store_domain']) || $store['store_domain'] == null) {
+                $store['store_domain'] = $response['domain'];
+                $store->save();
+            }
+
             return response()->json(['error' => false,
                 'data' => $response,
             ], 200);

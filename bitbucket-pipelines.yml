@@ -15,22 +15,22 @@ pipelines:
           script:
             - pipe: atlassian/ssh-run:0.2.2
               variables:
-                SSH_USER: 'eniture'
-                SERVER: '3.210.152.102'
+                SSH_USER: 'apx-bc-01'
+                SERVER: '54.165.5.4'
                 MODE: 'command'
-                COMMAND: '/home/eniture/public_html/bigcommerce/backend/remote-script.sh'
+                COMMAND: '/home/apx-bc-01/html/bc/remote-script.sh'
 
-    staging:
+    staging-new:
       - step:
           caches:
             - composer
           script:
             - pipe: atlassian/ssh-run:0.2.2
               variables:
-                SSH_USER: 'ec2-user'
-                SERVER: '34.197.112.152'
+                SSH_USER: 'apx-bc-01'
+                SERVER: '54.165.5.4'
                 MODE: 'command'
-                COMMAND: '/var/www/html/bigcommerce/bc/remote-script.sh'
+                COMMAND: '/home/apx-bc-01/html/bc/remote-script.sh'
 
     master:
 
@@ -44,15 +44,3 @@ pipelines:
               SERVER: '34.197.112.152'
               MODE: 'command'
               COMMAND: '/var/www/html/bigcommerce/bc/remote-script.sh'
-
-    ws-elb:
-      - step:
-          caches:
-            - composer
-          script:
-            - pipe: atlassian/ssh-run:0.2.2
-              variables:
-                SSH_USER: 'ec2-user'
-                SERVER: '54.159.170.144'
-                MODE: 'command'
-                COMMAND: '/var/www/html/ws/carriers/cerasis/remote-script.sh'
