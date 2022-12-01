@@ -335,6 +335,10 @@ class GenerateRequestData
 
     public function purolatorSmallEnitArr($connSettings, $destination)
     {
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -1845,6 +1849,8 @@ class GenerateRequestData
         $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
         $this->resiCarrier['purolatorSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['purolatorSmall'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['purolatorSmall'] = $this->returnRates;
+
         $apiArray = [
             'productionKey' => $connSettings['creds']['productionKey'],
             'productionPass' => $connSettings['creds']['productionPass'],
