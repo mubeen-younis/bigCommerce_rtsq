@@ -335,7 +335,7 @@ class GenerateRequestData
 
     public function purolatorSmallEnitArr($connSettings, $destination)
     {
-        $this->returnRates = true;
+        $this->returnRates = false;
 
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
@@ -641,7 +641,7 @@ class GenerateRequestData
 
     private function uspsSmallEnitArr($connSettings, $destination, $enitOrigin, $lineItems)
     {
-        $this->returnRates = true;
+        $this->returnRates = false;
 
         if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
             $this->returnRates = true;
