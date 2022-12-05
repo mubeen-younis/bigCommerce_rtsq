@@ -114,6 +114,8 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/rad/change_status', [RADController::class, 'changeStatus']);
     Route::post('/rad/changeDefaultAddress', [RADController::class, 'setDefaultAddress']);
     Route::get('/rad/getAddonAdressSettings', [RADController::class, 'getDefaultAddress']);
+    Route::post('/saveResidentialSettings', [RADController::class, 'saveSettings']);
+    Route::get('/getResidentialSettings', [RADController::class, 'getSettings']);
 
     /* SBS routes */
     Route::get('/sbs/get_plans', [SBSController::class, 'getPlans']);

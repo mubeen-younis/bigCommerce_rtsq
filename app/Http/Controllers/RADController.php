@@ -8,6 +8,7 @@ use App\Models\AddonSettings;
 use App\Models\Connection;
 use App\Models\InstalledCarrier;
 use Illuminate\Http\Request;
+use App\Models\ResidentialSetting;
 
 class RADController extends Controller
 {
@@ -183,6 +184,58 @@ class RADController extends Controller
             'status' => 200,
             'error' => true,
         ];
+    }
+    public function saveSettings(Request $request)
+    {
+        if (empty($request->store_id)) {
+            return response()->json([
+                'error' => true,
+                'data' => [],
+                'message' => 'Empty Store Id',
+            ], 200);
+        }
+
+        $resi_settings = ResidentialSetting::firstOrNew(['store_id' => $request->store_id]);
+
+        if ($resi_settings) {
+            $resi_settings->store_id = $request->store_id;
+            $resi_settings->settings = json_encode($request->settings);
+            $resi_settings->save();
+
+            return response()->json(["error" => false, 'message' => "Residential Settings has been saved.", "data" => $resi_settings]);
+
+        } else {
+            return response()->json([
+                'error' => true,
+                'data' => [],
+                'message' => 'Invalid store Id',
+            ], 404);
+        }
+    }
+
+    public function getSettings(Request $request)
+    {
+        if (empty($request->store_id)) {
+            return response()->json([
+                'error' => true,
+                'data' => [],
+                'message' => 'Empty Store Id',
+            ], 200);
+        }
+
+        $resi_settings = ResidentialSetting::where(['store_id' => $request->store_id])->first();
+
+        if (!empty($resi_settings)) {
+
+            return response()->json(["error" => false, "data" => $resi_settings]);
+
+        } else {
+            return response()->json([
+                'error' => true,
+                'data' => [],
+                'message' => 'Invalid store Id',
+            ], 404);
+        }
     }
 
 }
