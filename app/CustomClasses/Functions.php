@@ -4,6 +4,7 @@ namespace App\CustomClasses;
 
 use App\Models\BoxSize;
 use Illuminate\Support\Facades\Log;
+use App\Models\ResidentialSetting;
 
 class Functions
 {
@@ -415,5 +416,30 @@ class Functions
         }
 
         return $cubicVolumeArr;
+    }
+
+    public static function getRADsettings($store_id)
+    { 
+        $Rad_settings = [];
+        if (empty($store_id)) {
+            return $Rad_settings;
+        }
+
+        $resi_settings = ResidentialSetting::where(['store_id' => $store_id])->first();
+
+        if (!empty($resi_settings)) {
+
+            $settings =  json_decode($resi_settings['settings']);
+
+            return $Rad_settings = [
+                'autoDetectedResidentialAddresses' => $settings->residential_delivery_auto_detect ?? false,
+                'alwaysResidentialDelivery' => $settings->always_quote_residential_delivery ?? false,
+                'returRates' => $settings->return_rates ?? false,
+                'unconfirmed_address_type' => $settings->unconfirmed_address_type,
+            ];
+
+        } else {
+            return $Rad_settings;
+        }
     }
 }

@@ -1201,10 +1201,12 @@ class GenerateRequestData
         /*
          * Check if rad hit not consumed and residential is enables
          * **/
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
-        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+        if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -1216,7 +1218,7 @@ class GenerateRequestData
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
         } else {
-            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
         $this->resiCarrier['wweLtl'] = $residential;
@@ -3094,9 +3096,19 @@ class GenerateRequestData
     }
 
 
-    public function checkIsALwaysQuoteResDel($connSettings): bool
+    public function checkIsALwaysQuoteResDel1($connSettings): bool
     {
         return isset($connSettings['quote_settings']['alwaysResidentialDelivery']) && $connSettings['quote_settings']['alwaysResidentialDelivery'];
+    }
+
+    public function checkIsALwaysQuoteResDel($radSettings): bool
+    {
+        return isset($radSettings['alwaysResidentialDelivery']) && $radSettings['alwaysResidentialDelivery'];
+    }
+
+    public function checkIsAutoDetectedResDel($radSettings): bool
+    {
+        return $this->storeData['installed_addon_rad'] && ((isset($radSettings['autoDetectedResidentialAddresses']) && $radSettings['autoDetectedResidentialAddresses']));
     }
 
     public function getStoreDateTime()
