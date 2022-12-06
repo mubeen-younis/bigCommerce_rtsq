@@ -147,7 +147,7 @@ class QuotesResults
                 unset($quote['InstorPickupLocalDelivery']);
             }
             $lowestAmount = 0;
-
+            
             $quote['ups_services']['SR_02']  = 'Simple Rate Ups 2nd Day Air';
             $quote['ups_services']['SR_03']  = 'Simple Rate UPS Ground';
             $quote['ups_services']['SR_12']  = 'Simple Rate Ups 3 Day Select';
@@ -188,8 +188,13 @@ class QuotesResults
                         }
                     }
 
+                    $description = $data['serviceDesc'] ?? '';
+                    if (!empty($description) && strpos($description, ' Saturday')) {
+                        $description = str_replace(' Saturday', '', $description);
+                    }
+
                     // Adding Markup in services if enabled
-                    $price = $this->getServiceRate($data, $data['serviceDesc'], $this->quoteSettings);
+                    $price = $this->getServiceRate($data, $description, $this->quoteSettings);
                     $quoteSettings = $this->quoteSettings;
 
                     $price = $this->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup'] ?? 0);
@@ -307,7 +312,6 @@ class QuotesResults
             }
         }
   
-
         foreach ($shipments as $shipment => $quotes) {
             $temp = [];
             if (!isset($quotes['q'])) {
