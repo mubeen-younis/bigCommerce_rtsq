@@ -21,7 +21,7 @@ class QuotesResults
 
         $numberOfShipments = 0;
         foreach ($shipments as $key => $ship) {
-            if (!isset($ship['severity']) && !in_array($key, ['air', 'ground', 'oneRate'])) {
+            if (!isset($ship['severity']) && !in_array($key, ['air', 'ground', 'oneRate', 'simpleRate'])) {
                 $numberOfShipments++;
             }
         }
@@ -58,32 +58,10 @@ class QuotesResults
                         continue;
                     }
 
-                    //  Check for Usps ground transit days
-                    $skipService = $this->checkGroundTransit($data, $srvcType);
-                    if ($skipService) {
-                        continue;
-                    }
-
-                    //  Checks for only quote ground service if hazardous
-                    if ($this->onylQuoteGroundServices($isHazmat, $srvcType)) {
-                        continue;
-                    }
-
                     // Getting markup values form quote settings
                     $price = $this->getServiceRate($data);
                     // Adding markup values if available
                     $price = $this->addHandlingMarkupOfHazmat($price);
-
-                    // Checking hazmat and adding hazmat amounts in services
-                    if ($isHazmat) {
-                        if ($isMultiShipment) {
-                            if ($hazmatAllItems[$origin] == 'Y') {
-                                $price = $this->addHazmatAmountsInServices($price, $srvcType);
-                            }
-                        } else {
-                            $price = $this->addHazmatAmountsInServices($price, $srvcType);
-                        }
-                    }
 
                     // Get service title
                     $title = $this->getServiceTitle($data, $srvcType, $this->quoteSettings, $residential);

@@ -641,12 +641,6 @@ class GenerateRequestData
 
     private function uspsSmallEnitArr($connSettings, $destination, $enitOrigin, $lineItems)
     {
-        $this->returnRates = false;
-
-        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
-            $this->returnRates = true;
-        }
-
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -2425,7 +2419,7 @@ class GenerateRequestData
             'rateTier' => $connSettings['quote_settings']['rate_tier'] ?? 'retail',
             'includeDeclaredValue' => '1',
             'activeServices' => $uspsSmallQuotesResutls->getUspsActiveServices($carrierServices),
-            'residential_delivery' => $radResp['alwaysResi'] == 'Y' ? 'yes' : 'no',
+            'residential_delivery' => 'no',
             'sbsPackaging' => $sbsEnabled ? '1' : '0',
         ];
 
