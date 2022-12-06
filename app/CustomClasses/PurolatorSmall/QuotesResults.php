@@ -274,18 +274,19 @@ class QuotesResults
             if (isset($quote['severity'])) {
                 continue;
             }
-            
-            foreach ($quote['q'] as $key => $value) {
-                foreach($carrier_services as $service => $checked){
-                   $serviceLetter =str_replace('_',' ',$service);
-                   $capitalServiceLetter = ucwords($serviceLetter); 
-                   $serviceType =str_replace('  ',':',$capitalServiceLetter);
-                   $serviceType =str_replace(' ','',$serviceType);
-                   if($serviceType == $value['serviceType'] && $service == $checked){
-                           $checkedshipment[$shipkey]['q'][] = $value;        
+            if(isset($quote['q'])){
+                foreach ($quote['q'] as $key => $value) {
+                    foreach($carrier_services as $service => $checked){
+                        $serviceLetter =str_replace('_',' ',$service);
+                        $capitalServiceLetter = ucwords($serviceLetter); 
+                        $serviceType =str_replace('  ',':',$capitalServiceLetter);
+                        $serviceType =str_replace(' ','',$serviceType);
+                        if($serviceType == $value['serviceType'] && $service == $checked){
+                            $checkedshipment[$shipkey]['q'][] = $value;        
+                        }
                     }
-                }
-            } 
+                } 
+            }  
         }
 
         $servicesDesc = [];
