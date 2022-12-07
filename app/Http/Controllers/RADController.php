@@ -9,6 +9,7 @@ use App\Models\Connection;
 use App\Models\InstalledCarrier;
 use Illuminate\Http\Request;
 use App\Models\ResidentialSetting;
+use App\Models\InstalledAddon;
 
 class RADController extends Controller
 {
@@ -113,7 +114,13 @@ class RADController extends Controller
 
     public function setDefaultAddress(Request $request)
     {
-        if (empty($request->addon_id)) {
+        $installed_addon = InstalledAddon::join('addons', 'addons.id', 'installed_addons.addon_id')
+                ->where(['installed_addons.store_id' => $request->store_id,
+                    'installed_addons.is_enabled' => 1,
+                    'addons.short_code' => 'RAD',
+                ])->first();
+
+        if (empty($installed_addon->id)) {
             return response()->json([
                 'error' => true,
                 'data' => [],
@@ -121,11 +128,12 @@ class RADController extends Controller
             ], 200);
         }
 
-        $installed_addon_settings = AddonSettings::firstOrNew(['installed_addon_id' => $request->addon_id]);
+        $address = ['unconfirmed_default' => $request->settings['unconfirmed_address_type']];
+        $installed_addon_settings = AddonSettings::firstOrNew(['installed_addon_id' => $installed_addon->id]);
 
         if ($installed_addon_settings) {
-            $installed_addon_settings->value = json_encode($request->address);
-            $installed_addon_settings->installed_addon_id = $request->addon_id;
+            $installed_addon_settings->value = json_encode($address);
+            $installed_addon_settings->installed_addon_id = $installed_addon->id;
             $installed_addon_settings->save();
 
             return response()->json(["error" => false, 'message' => "Default Unconfirmed Address has been updated.", "data" => $installed_addon_settings]);
@@ -201,8 +209,9 @@ class RADController extends Controller
             $resi_settings->store_id = $request->store_id;
             $resi_settings->settings = json_encode($request->settings);
             $resi_settings->save();
+            $this->setDefaultAddress($request);
 
-            return response()->json(["error" => false, 'message' => "Residential Settings has been saved.", "data" => $resi_settings]);
+            return response()->json(["error" => false, 'message' => "Address type settings saved successfully.", "data" => $resi_settings]);
 
         } else {
             return response()->json([

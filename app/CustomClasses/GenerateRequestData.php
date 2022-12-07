@@ -82,6 +82,11 @@ class GenerateRequestData
         $carriersArr['carriers'] = [];
         $enitOrigin = $this->getEnitOrigin($origin);
 
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+        if (Functions::isPOBoxAddress($rad_settings, $this->isPoBOX)) {
+            return [];
+        }
+
         $this->storeDateTime = $this->getBCStoreDateTime();
         Log::info('Store Time' . $this->storeDateTime);
 
@@ -256,11 +261,6 @@ class GenerateRequestData
 
     public function wweLtlEnitArr($connSettings, $destination)
     {
-        $this->returnRates = false;
-        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
-            $this->returnRates = true;
-        }
-
         return [
 
             'licenseKey' => '',
@@ -277,11 +277,6 @@ class GenerateRequestData
 
     public function odflLtlEnitArr($connSettings, $destination)
     {
-        $this->returnRates = false;
-        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
-            $this->returnRates = true;
-        }
-
         return [
 
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
@@ -317,11 +312,6 @@ class GenerateRequestData
 
     public function wweSmallEnitArr($connSettings, $destination)
     {
-        $this->returnRates = false;
-        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
-            $this->returnRates = true;
-        }
-
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -347,11 +337,6 @@ class GenerateRequestData
 
     public function upsLtlEnitArr($connSettings, $destination)
     {
-        $this->returnRates = false;
-        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
-            $this->returnRates = true;
-        }
-
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData), 
@@ -366,10 +351,6 @@ class GenerateRequestData
 
     public function upsSmallEnitArr($connSettings, $destination)
     {
-        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
-            $this->returnRates = true;
-        }
-
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -383,11 +364,6 @@ class GenerateRequestData
 
     public function fedexSmallEnitArr($connSettings, $destination, $enitOrigin)
     {
-        $this->returnRates = false;
-        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
-            $this->returnRates = true;
-        }
-
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -401,11 +377,6 @@ class GenerateRequestData
 
     public function fedexLtlEnitArr($connSettings, $destination, $enitOrigin)
     {
-        $this->returnRates = false;
-        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
-            $this->returnRates = true;
-        }
-
         return [
             'licenseKey' => '', 
             'serverName' => Functions::getServerName($this->storeData),
@@ -420,11 +391,6 @@ class GenerateRequestData
 
     public function xpoLtlEnitArr($connSettings, $destination, $enitOrigin)
     {
-        $this->returnRates = false;
-        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
-            $this->returnRates = true;
-         }
-
         return [
             'licenseKey' => '', 
             'serverName' => Functions::getServerName($this->storeData),
@@ -439,10 +405,6 @@ class GenerateRequestData
 
     function rnlLtlEnitArr($connSettings, $destination, $enitOrigin, $lineItems)
     {
-        if (isset($connSettings['quote_settings']['return_rates']) && $connSettings['quote_settings']['return_rates'] && $this->isPoBOX) {
-            return [];
-        }
-        
         $shipmentPrice = $this->calculatePrice($lineItems);
         if (isset($connSettings['quote_settings']['free_shipping_on_orders']) && $connSettings['quote_settings']['free_shipping_on_orders'] < $shipmentPrice) {
             return [
@@ -464,12 +426,6 @@ class GenerateRequestData
 
     public function unishippersSmallEnitArr($connSettings, $destination)
     {
-        $this->returnRates = false;
-        
-        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
-            $this->returnRates = true;
-        }
-
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -483,11 +439,6 @@ class GenerateRequestData
 
     public function estesltlEnitArr($connSettings, $destination)
     {
-        $this->returnRates = false;
-        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
-            $this->returnRates = true;
-        }
-
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -504,11 +455,6 @@ class GenerateRequestData
 
     public function yrcLtlEnitArr($connSettings, $destination)
     {
-        $this->returnRates = false;
-        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
-            $this->returnRates = true;
-        }
-
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -523,11 +469,6 @@ class GenerateRequestData
 
     public function tqlLtlEnitArr($connSettings, $destination)
     {
-        $this->returnRates = false;
-        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
-            $this->returnRates = true;
-        }
-
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -542,11 +483,6 @@ class GenerateRequestData
 
     public function freightQuoteLtlEnitArr($connSettings, $destination)
     {
-        $this->returnRates = false;
-        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
-            $this->returnRates = true;
-        }
-
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -561,11 +497,6 @@ class GenerateRequestData
 
     public function rossdayLtlEnitArr($connSettings, $destination)
     {
-        $this->returnRates = false;
-        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
-            $this->returnRates = true;
-        }
-
         return [
             'licenseKey' =>'',
             'serverName' => Functions::getServerName($this->storeData),
@@ -580,11 +511,6 @@ class GenerateRequestData
 
     private function saiaLtlEnitArr($connSettings, $destination)
     {
-        $this->returnRates = false;
-        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
-            $this->returnRates = true;
-        }
-
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -598,11 +524,6 @@ class GenerateRequestData
 
     public function abfLtlEnitArr($connSettings, $destination)
     {
-        $this->returnRates = false;
-        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
-            $this->returnRates = true;
-        }
-
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -616,11 +537,6 @@ class GenerateRequestData
 
     public function SouthEasternEnitArr($connSettings, $destination)
     {
-        $this->returnRates = false;
-        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
-            $this->returnRates = true;
-        }
-
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -648,11 +564,6 @@ class GenerateRequestData
 
     private function echoLtlEnitArr($connSettings, $destination)
     {
-        $this->returnRates = false;
-        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
-            $this->returnRates = true;
-        }
-        
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -666,11 +577,6 @@ class GenerateRequestData
 
     private function dayLightLtlEnityArr($connSettings, $destination): array
     {
-        $this->returnRates = false;
-        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
-            $this->returnRates = true;
-        }
-
         return [
             'licenseKey' => '',
             'platform' => 'bigcommerce',
@@ -686,11 +592,6 @@ class GenerateRequestData
 
     public function freightQuoteChrLtlEnitArr($connSettings, $destination)
     {
-        $this->returnRates = false;
-        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
-            $this->returnRates = true;
-        }
-
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -1223,7 +1124,6 @@ class GenerateRequestData
 
         $this->resiCarrier['wweLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['wweLtl'] = $alwaysResi;
-        $this->resiCarrier['returnRates']['wweLtl'] = $this->returnRates;
 
         $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
 
@@ -1266,6 +1166,9 @@ class GenerateRequestData
 
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+        
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+
         /*
          * Check if rad hit not consumed and residential is enables
          * **/
@@ -1273,7 +1176,7 @@ class GenerateRequestData
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
-        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+        if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -1285,12 +1188,11 @@ class GenerateRequestData
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
         } else {
-            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
         $this->resiCarrier['estesLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['estesLtl'] = $alwaysResi;
-        $this->resiCarrier['returnRates']['estesLtl'] = $this->returnRates;
 
         $holdAtTerminal = (isset($connSettings['quote_settings']['hold_at_terminal']) && $connSettings['quote_settings']['hold_at_terminal'] && $connSettings['quote_settings']['hold_at_terminal'] == true) ? '1' : '0';
 
@@ -1337,13 +1239,16 @@ class GenerateRequestData
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+        
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+
         /*
          * Check if rad hit not consumed and residential is enables
          * **/
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
-        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+        if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -1355,12 +1260,11 @@ class GenerateRequestData
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
         } else {
-            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
         $this->resiCarrier['odflLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['odflLtl'] = $alwaysResi;
-        $this->resiCarrier['returnRates']['odflLtl'] = $this->returnRates;
 
         $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
 
@@ -1394,6 +1298,9 @@ class GenerateRequestData
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+        
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+
         /*
          * Check if rad hit not consumed and residential is enables
          * **/
@@ -1401,7 +1308,7 @@ class GenerateRequestData
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
 
-        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+        if ($this->checkIsAutoDetectedResDel($rad_settings)) {
 
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
@@ -1414,7 +1321,7 @@ class GenerateRequestData
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
         } else {
-            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
 
@@ -1509,13 +1416,16 @@ class GenerateRequestData
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+        
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+
         /*
          * Check if rad hit not consumed and residential is enables
          * **/
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
-        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+        if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -1527,13 +1437,12 @@ class GenerateRequestData
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
         } else {
-            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
 
         $this->resiCarrier['fedexLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['fedexLtl'] = $alwaysResi;
-        $this->resiCarrier['returnRates']['fedexLtl'] = $this->returnRates;
         $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
 
         $holdAtTerminal = (isset($connSettings['quote_settings']['hold_at_terminal']) && $connSettings['quote_settings']['hold_at_terminal'] && $connSettings['quote_settings']['hold_at_terminal'] == true) ? '1' : '0';
@@ -1609,13 +1518,16 @@ class GenerateRequestData
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+        
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+
         /*
          * Check if rad hit not consumed and residential is enables
          * **/
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
-        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+        if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -1627,13 +1539,13 @@ class GenerateRequestData
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
         } else {
-            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
 
         $this->resiCarrier['xpoLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['xpoLtl'] = $alwaysResi;
-        $this->resiCarrier['returnRates']['xpoLtl'] = $this->returnRates;
+
         $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
 
         $accessorial = [];
@@ -1673,13 +1585,16 @@ class GenerateRequestData
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+        
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+
         /*
          * Check if rad hit not consumed and residential is enables
          * **/
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
-        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+        if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -1691,7 +1606,7 @@ class GenerateRequestData
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
         } else {
-            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
         $insideDelivery = (isset($connSettings['quote_settings']['insideDelivery']) && $connSettings['quote_settings']['insideDelivery'] && $connSettings['quote_settings']['insideDelivery'] == true) ? 1 : 0;
 
@@ -1729,13 +1644,16 @@ class GenerateRequestData
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+        
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+
         /*
          * Check if rad hit not consumed and residential is enables
          * **/
         $residential = 'N';
         $alwaysResi = false;
 
-        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+        if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -1748,12 +1666,11 @@ class GenerateRequestData
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
         } else {
-            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
         $this->resiCarrier['freightQuoteLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['freightQuoteLtl'] = $alwaysResi;
-        $this->resiCarrier['returnRates']['freightQuoteLtl'] = $this->returnRates;
 
         $accessorial = [];
         if ($liftGate == 'Y') {
@@ -1796,10 +1713,12 @@ class GenerateRequestData
 
     public function getApiInfoArrWweSmall($connSettings, $destination)
     {
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
-        if ($this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])) {
+        if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -1808,12 +1727,11 @@ class GenerateRequestData
                 $residential = $this->residential;
             }
         } else {
-            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
         $this->resiCarrier['wweSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['wweSmall'] = $alwaysResi;
-        $this->resiCarrier['returnRates']['wweSmall'] = $this->returnRates;
 
         $apiArray = [
             'speed_ship_username' => $connSettings['creds']['username'],
@@ -1829,10 +1747,12 @@ class GenerateRequestData
 
     public function getApiInfoArrpurolatorSmall($connSettings, $destination)
     {
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
-        if ($this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])) {
+        if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -1841,7 +1761,7 @@ class GenerateRequestData
                 $residential = $this->residential;
             }
         } else {
-            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
         $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
@@ -1861,10 +1781,12 @@ class GenerateRequestData
 
     public function getApiInfoArrUpsSmall($connSettings, $destination)
     {
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
-        if ($this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])) {
+        if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -1873,12 +1795,12 @@ class GenerateRequestData
                 $residential = $this->residential;
             }
         } else {
-            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
         $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
         $this->resiCarrier['upsSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['upsSmall'] = $alwaysResi;
-        $this->resiCarrier['returnRates']['upsSmall'] = $this->returnRates;
+
         $upsSmall = new UpsSmallQuotesResults();
         $saturdayDelivery = $upsSmall->isSaturdayDeliveryEnabled($connSettings) ? '1' : '0';
 
@@ -1927,10 +1849,12 @@ class GenerateRequestData
 
     function getApiInfoArrFedexSmall($connSettings, $destination, $Origins)
     {
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
-        if ($this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])) {
+        if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -1939,12 +1863,11 @@ class GenerateRequestData
                 $residential = $this->residential;
             }
         } else {
-            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
         $this->setIsSmartPost($connSettings);
         $this->resiCarrier['fedexSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['fedexSmall'] = $alwaysResi;
-        $this->resiCarrier['returnRates']['fedexSmall'] = $this->returnRates;
 
         $hubIdindicia = isset($connSettings['creds']['hub_id']) ? explode('(', $connSettings['creds']['hub_id']) : '';
         $hubId = isset($hubIdindicia[0]) ? trim($hubIdindicia[0]) : '';
@@ -1991,10 +1914,12 @@ class GenerateRequestData
 
     public function getApiInfoArrUnishippersSmall($connSettings, $destination)
     {
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+
         $residential = 'N';
         $alwaysResi = false;
 
-        if ($this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])) {
+        if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -2003,12 +1928,11 @@ class GenerateRequestData
                 $residential = $this->residential;
             }
         } else {
-            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
         $this->resiCarrier['unishippersSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['unishippersSmall'] = $alwaysResi;
-        $this->resiCarrier['returnRates']['unishippersSmall'] = $this->returnRates;
 
         $accessorial = ($alwaysResi ? 'Y' : $residential == 'Y') ? ['REP'] : [];
 
@@ -2045,10 +1969,13 @@ class GenerateRequestData
         $residential = 'N';
         $alwaysResi = false;
         $limitedAccess = false;
+        
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+
         /*
             * Check if rad hit not consumed and residential is enables
         * **/
-        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+        if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -2060,7 +1987,7 @@ class GenerateRequestData
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
         } else {
-            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
             
         }
         
@@ -2070,7 +1997,6 @@ class GenerateRequestData
 
         $this->resiCarrier['yrcLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['yrcLtl'] = $alwaysResi;
-        $this->resiCarrier['returnRates']['yrcLtl'] = $this->returnRates;
 
         $accessorial = [];
         if ($alwaysResi || $residential == 'Y') {
@@ -2110,11 +2036,14 @@ class GenerateRequestData
 
         $residential = 'N';
         $alwaysResi = false;
+        
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+
         /*
             * Check if rad hit not consumed and residential is enables
         * **/
 
-        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+        if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -2126,12 +2055,11 @@ class GenerateRequestData
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
         } else {
-            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
         $this->resiCarrier['abfLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['abfLtl'] = $alwaysResi;
-        $this->resiCarrier['returnRates']['abfLtl'] = $this->returnRates;
 
         $accessorial = [];
         if ($alwaysResi || $residential == 'Y') {
@@ -2162,10 +2090,13 @@ class GenerateRequestData
 
         $residential = 'N';
         $alwaysResi = false;
+        
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+
         /*
             * Check if rad hit not consumed and residential is enables
         * **/
-        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+        if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -2177,12 +2108,11 @@ class GenerateRequestData
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
         } else {
-            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
         $this->resiCarrier['tqlLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['tqlLtl'] = $alwaysResi;
-        $this->resiCarrier['returnRates']['tqlLtl'] = $this->returnRates;
 
         $accessorial = [];
         if ($liftGate == 'Y') {
@@ -2210,6 +2140,9 @@ class GenerateRequestData
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+        
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+
         /*
          * Check if rad hit not consumed and residential is enables
          * **/
@@ -2217,7 +2150,7 @@ class GenerateRequestData
         $alwaysResi = false;
         $isSameDayApi = $connSettings['creds']['api_type'] == 'sameday' ? true : false;
 
-        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])) && !$isSameDayApi) {
+        if ($this->checkIsAutoDetectedResDel($rad_settings) && !$isSameDayApi) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -2230,12 +2163,11 @@ class GenerateRequestData
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
         } else {
-            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
         $this->resiCarrier['dayrossLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['dayrossLtl'] = $alwaysResi;
-        $this->resiCarrier['returnRates']['dayrossLtl'] = $this->returnRates;
 
         $accessorial = [];
         if ($alwaysResi || $residential != 'N') {
@@ -2285,13 +2217,16 @@ class GenerateRequestData
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+        
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+
         /*
             * Check if rad hit not consumed and residential is enables
             * **/
         $residential = 'N';
         $alwaysResi = false;
 
-        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+        if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -2304,12 +2239,11 @@ class GenerateRequestData
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
         } else {
-            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
         $this->resiCarrier['saiaLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['saiaLtl'] = $alwaysResi;
-        $this->resiCarrier['returnRates']['saiaLtl'] = $this->returnRates;
 
         $accessorial = [];
         if ($alwaysResi || $residential != 'N') {
@@ -2346,10 +2280,13 @@ class GenerateRequestData
 
         $residential = 'N';
         $alwaysResi = false;
+        
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+
         /*
             * Check if rad hit not consumed and residential is enables
         * **/
-        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+        if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -2361,12 +2298,11 @@ class GenerateRequestData
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
         } else {
-            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
         $this->resiCarrier['SouthEastern'] = $residential;
         $this->resiCarrier['alwaysResi']['SouthEastern'] = $alwaysResi;
-        $this->resiCarrier['returnRates']['SouthEastern'] = $this->returnRates;
 
         $accessorial = [];
         if ($alwaysResi || $residential == 'Y') {
@@ -2449,13 +2385,16 @@ class GenerateRequestData
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+        
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+
         /*
          * Check if rad hit not consumed and residential is enables
          * **/
         $residential = 'N';
         $alwaysResi = false;
 
-        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+        if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -2468,12 +2407,11 @@ class GenerateRequestData
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
         } else {
-            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
         $this->resiCarrier['echoLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['echoLtl'] = $alwaysResi;
-        $this->resiCarrier['returnRates']['echoLtl'] = $this->returnRates;
 
         $accessorial = [];
         if ($alwaysResi || $residential != 'N') {
@@ -2504,7 +2442,7 @@ class GenerateRequestData
         $resp = $this->verifyRADStatus($connSettings, $destination);
         $this->resiCarrier['dayLightLtl'] = $resp['residential'];
         $this->resiCarrier['alwaysResi']['dayLightLtl'] = $resp['alwaysResi'];
-        $this->resiCarrier['returnRates']['dayLightLtl'] = $this->returnRates;
+
         $dayLightQuotes = new dayLightQuotesResults();
         $apiArray = $dayLightQuotes->getApiArr($connSettings, $resp);
 
@@ -2515,13 +2453,16 @@ class GenerateRequestData
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
         (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+        
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+
         /*
          * Check if rad hit not consumed and residential is enables
          * **/
         $residential = 'N';
         $alwaysResi = false;
 
-        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+        if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -2534,12 +2475,11 @@ class GenerateRequestData
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
         } else {
-            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
         $this->resiCarrier['freightQuoteChrLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['freightQuoteChrLtl'] = $alwaysResi;
-        $this->resiCarrier['returnRates']['freightQuoteChrLtl'] = $this->returnRates;
 
         $accessorial = [];
         if ($liftGate == 'Y') {
@@ -2579,12 +2519,14 @@ class GenerateRequestData
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
 
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+
         $storeId = $this->storeData['store']['id'] ?? null;
         $residential = 'N';
         $alwaysResi = false;
         $resp = [];
 
-        if ($this->storeData['installed_addon_rad'] && (isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses'])) {
+        if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($storeId, $destination);
@@ -2594,7 +2536,7 @@ class GenerateRequestData
                 $residential = $this->residential;
             }
         } else {
-            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
         $this->resiCarrier['uspsSmall'] = $residential;
@@ -2644,13 +2586,15 @@ class GenerateRequestData
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+        
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
         /*
          * Check if rad hit not consumed and residential is enables
          */
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
-        if ($this->storeData['installed_addon_rad'] && ((isset($connSettings['quote_settings']['autoDetectedResidentialAddresses']) && $connSettings['quote_settings']['autoDetectedResidentialAddresses']))) {
+        if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
@@ -2662,7 +2606,7 @@ class GenerateRequestData
                 $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
             }
         } else {
-            $alwaysResi = $this->checkIsALwaysQuoteResDel($connSettings);
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
 
@@ -2673,7 +2617,6 @@ class GenerateRequestData
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $this->resiCarrier['upsLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['upsLtl'] = $alwaysResi;
-        $this->resiCarrier['returnRates']['upsLtl'] = $this->returnRates;
 
         $paymentType = isset($connSettings['quote_settings']['shipper_relationship']) && $connSettings['quote_settings']['shipper_relationship'] === 'third_party' ? 'ThirdParty' : 'shipper';
         $apiArray = [

@@ -252,9 +252,9 @@ class Functions
         return preg_replace("/[^0-9.]/", "", $word);
     }
 
-    public static function isPOBoxAddress($connSettings, $isPoBox): bool
+    public static function isPOBoxAddress($rad_settings, $isPoBox): bool
     {
-        return isset($connSettings['quote_settings']['return_rates']) && $connSettings['quote_settings']['return_rates'] && $isPoBox;
+        return isset($rad_settings['returRates']) && $rad_settings['returRates'] && $isPoBox;
     }
 
     public static function arrangeHATFreight($finalQuotes, $HAT, $lableAs = '')

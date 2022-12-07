@@ -919,11 +919,6 @@ class CompileQuotes
 
     public function compileWweLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
-        $returnRates = $this->residential['returnRates']['wweLtl'] ?? false;
-
-        if($returnRates){
-            return [];
-        }
         if ($this->residential['wweLtl'] == 'Y') {
             $this->isResi = true;
             $this->residentialDlvry = 1;
@@ -963,8 +958,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery']) ||
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
                 if (!$lgQuotes) {
-                    $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
-                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                    $lgQuotes = (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->isResi;
                 }
                 $resiPickup = isset($this->quoteSettings['residentialPickup']) && $this->quoteSettings['residentialPickup'] ? '+pu' : '';
                 $insideDelivery = (isset($this->quoteSettings['insideDelivery']) && $this->quoteSettings['insideDelivery']);
@@ -1074,12 +1068,6 @@ class CompileQuotes
 // For ODFL LTL Quotes
     public function compileOdflLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
-        $returnRates = $this->residential['returnRates']['odflLtl'] ?? false;
-
-        if($returnRates){
-            return [];
-        }
-        
         $this->isResi = $this->residential['odflLtl'] == 'Y';
         $this->residentialDlvry = $this->residential['odflLtl'] == 'Y' ? 1 : 0;
         $this->alwaysResi = $this->residential['alwaysResi']['odflLtl'] ?? false;
@@ -1118,7 +1106,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
 
                 if (!$lgQuotes) {
-                    $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) && (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                    $lgQuotes = (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->isResi;
                 }
             }
 
@@ -1202,10 +1190,6 @@ class CompileQuotes
 
     public function compileTqlLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
-        $returnRates = $this->residential['returnRates']['tqlLtl'] ?? false;
-        if($returnRates){
-            return [];
-        }
 
         if ($this->residential['tqlLtl'] == 'Y') {
             $this->isResi = true;
@@ -1247,8 +1231,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery']) ||
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
                 if (!$lgQuotes) {
-                    $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
-                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                    $lgQuotes = (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->isResi;
                 }
                 $resiPickup = isset($this->quoteSettings['residentialPickup']) && $this->quoteSettings['residentialPickup'] ? '+pu' : '';
             }
@@ -1423,12 +1406,6 @@ class CompileQuotes
 
     public function compileUpsSmallQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
-        $returnRates = $this->residential['returnRates']['upsSmall'] ?? false;
-
-        if($returnRates){
-            return [];
-        }
-
         $this->upsSmallQuotesResults = new upsSmallQuotesResults();
         if ($residential['upsSmall'] == 'Y') {
             $this->isResi = true;
@@ -1470,11 +1447,6 @@ class CompileQuotes
 
     public function compileEstesltlQuotes($shipments, $connectionSettings, $allOrigins)
     {
-        $returnRates = $this->residential['returnRates']['estesLtl'] ?? false;
-
-        if($returnRates){
-            return [];
-        }
         $estesLtl = new estesLtlQuotesResults();
         
         $this->isResi = $this->residential['estesLtl'] == 'Y';
@@ -1519,8 +1491,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery']) ||
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
                 if (!$lgQuotes) {
-                    $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
-                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                    $lgQuotes = (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->isResi;
                 }
                 $resiPickup = isset($this->quoteSettings['residentialPickup']) && $this->quoteSettings['residentialPickup'] ? '+pu' : '';
             }
@@ -1637,12 +1608,6 @@ class CompileQuotes
 
     public function compileFedexSmallQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $destination)
     {
-        $returnRates = $this->residential['returnRates']['fedexSmall'] ?? false;
-
-        if($returnRates){
-            return [];
-        }
-
         $this->fedexSmallQuotesResults = new fedexSmallQuotesResults();
         if ($residential['fedexSmall'] == 'Y') {
             $this->isResi = true;
@@ -1713,8 +1678,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery']) ||
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
                 if (!$lgQuotes) {
-                    $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
-                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                    $lgQuotes = (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->isResi;
                 }
 
                 $notify = (isset($this->quoteSettings['always_quote_notify']) && $this->quoteSettings['always_quote_notify']) ||
@@ -1909,8 +1873,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery']) ||
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
                 if (!$lgQuotes) {
-                    $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
-                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                    $lgQuotes = (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->isResi;
                 }
                 if ($isShippingFinalMile) {
                     $lgQuotes = $this->alwaysResi = $this->isResi = $isResi = false;
@@ -2004,11 +1967,6 @@ class CompileQuotes
     public function compileFedexLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
         $fedexLtl = new fedexLtlQuotesResults();
-        
-        $returnRates = $this->residential['returnRates']['fedexLtl'] ?? false;
-        if($returnRates){
-            return [];
-        }
 
         if ($residential['fedexLtl'] == 'Y') {
             $this->isResi = true;
@@ -2066,8 +2024,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery']) ||
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
                 if (!$lgQuotes) {
-                    $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
-                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                    $lgQuotes = (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->isResi;
                 }
             }
             $originQuotes = [];
@@ -2197,11 +2154,6 @@ class CompileQuotes
 
     public function compileXPOLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
-        $returnRates = $this->residential['returnRates']['xpoLtl'] ?? false;
-        if($returnRates){
-            return [];
-        }
-
         $xpoLtl = new xpoLtlQuotesResults();
         if ($residential['xpoLtl'] == 'Y') {
             $this->isResi = true;
@@ -2243,8 +2195,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery']) ||
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
                 if (!$lgQuotes) {
-                    $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
-                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                    $lgQuotes = (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->isResi;
                 }
             }
             $originQuotes = [];
@@ -2402,8 +2353,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery']) ||
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
                 if (!$lgQuotes) {
-                    $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
-                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                    $lgQuotes = (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->isResi;
                 }
                 $insideDelivery = (isset($this->quoteSettings['insideDelivery']) && $this->quoteSettings['insideDelivery']);
             }
@@ -2538,13 +2488,7 @@ class CompileQuotes
     }
 
     public function compileWweSmallQuotes($shipments, $connectionSettings, $allOrigins, $isHazmat, $smalLtlHazmat, $hazmatAllItems)
-    {
-        $doNotReturnRates = $this->residential['returnRates']['wweSmall'] ?? false;
-
-        if($doNotReturnRates){
-            return [];
-        }
-        
+    {   
         if ($this->residential['wweSmall'] == 'Y') {
             $this->isResi = true;
             $this->residentialDlvry = 1;
@@ -2686,12 +2630,6 @@ class CompileQuotes
 
     private function compileUpsLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
-        $returnRates = $this->residential['returnRates']['upsLtl'] ?? false;
-
-        if($returnRates){
-            return [];
-        }
-        
         if ($this->residential['upsLtl'] == 'Y') {
             $this->isResi = true;
             $this->residentialDlvry = 1;
@@ -2730,8 +2668,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery']) ||
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
                 if (!$lgQuotes) {
-                    $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
-                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                    $lgQuotes = (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->isResi;
                 }
             }
             $originQuotes = [];
@@ -2813,12 +2750,6 @@ class CompileQuotes
 
     private function compileUnishippersSmallQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
-        $returnRates = $this->residential['returnRates']['unishippersSmall'] ?? false;
-
-        if($returnRates){
-            return [];
-        }
-
         $this->unishippersSmallQuotesResults = new unishippersSmallQuotesResults();
         if ($residential['unishippersSmall'] == 'Y') {
             $this->isResi = true;
@@ -2840,12 +2771,6 @@ class CompileQuotes
 
     private function compileDayRossLtlQuotes($shipments, $connectionSettings, $allOrigins, $hazmatAllItems, $residential)
     {
-        $returnRates = $this->residential['returnRates']['dayrossLtl'] ?? false;
-
-        if($returnRates){
-            return [];
-        }
-
         $this->isSameDayApi = $connectionSettings['dayross-ltl']['creds']['api_type'] == 'sameday' ? true : false;
         $dayRossLtl = new dayRossLtlQuotesResults();
 
@@ -3062,12 +2987,6 @@ class CompileQuotes
 
     private function compileYRCLtlQuotes($shipments, $connectionSettings, $allOrigins, $residential)
     {
-        $returnRates = $this->residential['returnRates']['yrcLtl'] ?? false;
-
-        if($returnRates){
-            return [];
-        }
-
         $yrcLtl = new yrcLtlQuotesResults();
 
         if ($residential['yrcLtl'] == 'Y') {
@@ -3114,8 +3033,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
 
                 if (!$lgQuotes) {
-                    $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
-                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                    $lgQuotes = (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->isResi;
                 }
                 if(!$laccess){
                     $laccess = !($this->isResi || $this->alwaysResi) && (isset($this->quoteSettings['offer_limited_access_delivery']) && $this->quoteSettings['offer_limited_access_delivery']);
@@ -3238,12 +3156,6 @@ class CompileQuotes
 
     private function compileFreightQuoteLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
-        $returnRates = $this->residential['returnRates']['freightQuoteLtl'] ?? false;
-
-        if($returnRates){
-            return [];
-        }
-        
         $freightQuote = new FQQuotesResults();
         $this->isFQ = true;
 
@@ -3287,8 +3199,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery']) ||
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
                 if (!$lgQuotes) {
-                    $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
-                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                    $lgQuotes = (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->isResi;
                 }
                 $resiPickup = isset($this->quoteSettings['residentialPickup']) && $this->quoteSettings['residentialPickup'] ? '+pu' : '';
                 $isTlQuotes = isset($this->quoteSettings['truckload_weight_threshold']) && $this->quoteSettings['truckload_weight_threshold'] ?? null;
@@ -3400,12 +3311,6 @@ class CompileQuotes
 
     private function compileSaiaLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
-        $returnRates = $this->residential['returnRates']['saiaLtl'] ?? false;
-
-        if($returnRates){
-            return [];
-        }
-        
         $saiaLtl = new saiaLtlQuotesResults();
 
         $this->isResi = $residential['saiaLtl'] == 'Y';
@@ -3522,12 +3427,6 @@ class CompileQuotes
 
     private function compileABFLtlQuotes($shipments, $connectionSettings, $allOrigins, $residential)
     {
-        $returnRates = $this->residential['returnRates']['abfLtl'] ?? false;
-
-        if($returnRates){
-            return [];
-        }
-
         $abfLtl = new abfLtlQuotesResults();
 
         if ($residential['abfLtl'] == 'Y') {
@@ -3576,8 +3475,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
 
                 if (!$lgQuotes) {
-                    $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
-                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                    $lgQuotes = (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->isResi;
                 }
             }
 
@@ -3699,12 +3597,6 @@ class CompileQuotes
 
     private function compileSouthEasternQuotes($shipments, $connectionSettings, $allOrigins, $residential)
     {
-        $returnRates = $this->residential['returnRates']['SouthEastern'] ?? false;
-
-        if($returnRates){
-            return [];
-        }
-        
         $SouthEastern = new SouthEasternQuotesResults();
 
         if ($residential['SouthEastern'] == 'Y') {
@@ -3751,8 +3643,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']);
 
                 if (!$lgQuotes) {
-                    $lgQuotes = ((isset($this->quoteSettings['autoDetectedResidentialAddresses']) && $this->quoteSettings['autoDetectedResidentialAddresses']) &&
-                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) && $this->isResi;
+                    $lgQuotes = (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->isResi;
                 }
             }
 
@@ -3864,12 +3755,6 @@ class CompileQuotes
 
     private function compileEchoLogisticsLtlQuotes($shipments, $connectionSettings, $allOrigins, $hazmatAllItems, $residential)
     {
-        $returnRates = $residential['returnRates']['echoLtl'] ?? false;
-
-        if($returnRates){
-            return [];
-        }
-
         $this->EchoLogistics = true;
         $this->isResi = $residential['echoLtl'] == 'Y';
         $this->residentialDlvry = $residential['echoLtl'] == 'Y' ? 1 : 0;
@@ -3997,12 +3882,6 @@ class CompileQuotes
 
     private function compileDayLightLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
-        $returnRates = $this->residential['returnRates']['dayLightLtl'] ?? false;
-
-        if($returnRates){
-            return [];
-        }
-
         $dayLightQuotes = new dayLightLtlQuotesResults();
 
         $this->isResi = $residential['dayLightLtl'] == 'Y';
@@ -4111,12 +3990,6 @@ class CompileQuotes
     
     private function compileFreightQuoteChrLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
-        $returnRates = $this->residential['returnRates']['freightQuoteChrLtl'] ?? false;
-
-        if($returnRates){
-            return [];
-        }
-        
         $fqChrQuotes = new FQChrQuotesResults();
 
         $this->isFQChr = true;

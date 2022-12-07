@@ -204,8 +204,7 @@ class QuotesResults
 
     public function isRADEnabled($quoteSettings, $isResi): bool
     {
-        $isRAD = ((isset($quoteSettings['autoDetectedResidentialAddresses']) && $quoteSettings['autoDetectedResidentialAddresses']) &&
-            (isset($quoteSettings['autoDetectedResidentialAddressesLfg']) && $quoteSettings['autoDetectedResidentialAddressesLfg'])) && $isResi;
+        $isRAD = (isset($quoteSettings['autoDetectedResidentialAddressesLfg']) && $quoteSettings['autoDetectedResidentialAddressesLfg']) && $isResi;
 
         return $isRAD;
     }
