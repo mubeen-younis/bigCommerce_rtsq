@@ -137,7 +137,7 @@ class QuotesResults
         $count = 0;
         foreach ($shipments as $origin => $quote) {
 
-            if ((isset($quote['severity']) || !isset($ship['q']) || (isset($ship['q']) && empty($ship['q'])))) {
+            if ((isset($quote['severity']) || !isset($quote['q']) || (isset($quote['q']) && empty($quote['q'])))) {
                 return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);                
             }
             if ($count == 0) { //To be checked only once
@@ -286,7 +286,10 @@ class QuotesResults
                         }
                     }
                 } 
-            }  
+            } 
+            if(isset($quote['InstorPickupLocalDelivery']) && !empty(($quote['InstorPickupLocalDelivery']))){
+                $checkedshipment[$shipkey]['InstorPickupLocalDelivery'] = $quote['InstorPickupLocalDelivery'];
+            } 
         }
 
         $servicesDesc = [];
