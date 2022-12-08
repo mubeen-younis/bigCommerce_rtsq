@@ -240,10 +240,10 @@ class RADController extends Controller
 
         } else {
             return response()->json([
-                'error' => true,
+                'error' => false,
                 'data' => [],
                 'message' => 'Invalid store Id',
-            ], 404);
+            ], 200);
         }
     }
 
