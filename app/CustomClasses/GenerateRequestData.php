@@ -335,6 +335,12 @@ class GenerateRequestData
 
     public function purolatorSmallEnitArr($connSettings, $destination)
     {
+        $this->returnRates = false;
+
+        if (Functions::isPOBoxAddress($connSettings, $this->isPoBOX)) {
+            $this->returnRates = true;
+        }
+
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -1845,6 +1851,8 @@ class GenerateRequestData
         $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
         $this->resiCarrier['purolatorSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['purolatorSmall'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['purolatorSmall'] = $this->returnRates;
+
         $apiArray = [
             'productionKey' => $connSettings['creds']['productionKey'],
             'productionPass' => $connSettings['creds']['productionPass'],
@@ -2411,7 +2419,7 @@ class GenerateRequestData
             'rateTier' => $connSettings['quote_settings']['rate_tier'] ?? 'retail',
             'includeDeclaredValue' => '1',
             'activeServices' => $uspsSmallQuotesResutls->getUspsActiveServices($carrierServices),
-            'residential_delivery' => $radResp['alwaysResi'] == 'Y' ? 'yes' : 'no',
+            'residential_delivery' => 'no',
             'sbsPackaging' => $sbsEnabled ? '1' : '0',
         ];
 
@@ -2597,6 +2605,7 @@ class GenerateRequestData
 
         $this->resiCarrier['uspsSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['uspsSmall'] = $alwaysResi;
+        $this->resiCarrier['returnRates']['uspsSmall'] = $this->returnRates;
 
         $resp = [
             'residential' => $residential,

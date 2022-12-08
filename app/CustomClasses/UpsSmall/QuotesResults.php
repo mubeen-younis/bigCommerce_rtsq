@@ -42,7 +42,7 @@ class QuotesResults
     public function addHazmatAmountsInServices($amount, $serviceCode, $quoteSettings)
     {
         // Adding hazmat fee to Ground Service
-        if ($serviceCode == "03" || $serviceCode = 'SR_03' || $serviceCode == "03S") {
+        if ($serviceCode == "03" || $serviceCode = 'SR_03' || $serviceCode == "03S" || $serviceCode == 'SR_03S') {
             if (isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
                 $amount = $amount + $quoteSettings['ground_hazardous_material_fee'];
             }
@@ -152,6 +152,10 @@ class QuotesResults
             $quote['ups_services']['SR_03']  = 'Simple Rate UPS Ground';
             $quote['ups_services']['SR_12']  = 'Simple Rate Ups 3 Day Select';
             $quote['ups_services']['SR_13']  = 'Simple Rate Ups Next Day Air Saver';
+            $quote['ups_services']['SR_02S'] = 'UPS Simple Rate 2nd Day Air Saturday';
+            $quote['ups_services']['SR_03S'] = 'UPS Simple Rate Ground Saturday';
+            $quote['ups_services']['SR_12S'] = 'UPS Simple Rate 3 Day Select Saturday';
+            $quote['ups_services']['SR_13S'] = 'UPS Simple Rate Next Day Air Saver Saturday';
 
             if (isset($quote['q'])) {
                 foreach ($quote['q'] as $key => $data) {
@@ -163,13 +167,13 @@ class QuotesResults
                         $serviceName = $quote['ups_services'][$key];
                         $service = str_replace(' ', '_', strtolower($serviceName));
                         $service = str_replace('.', '', strtolower($service));
-                        $isServiceEnabled = $this->quoteSettings['carrier_services'][$service] ?? strpos($key, 'S') ? true : false;
+                        $isServiceEnabled = $this->quoteSettings['carrier_services'][$service] ?? (strpos($key, 'SR_') && strpos($key, 'S')) || strpos($key, 'S') !== false ? true : false;
                         if(!$isServiceEnabled){
                             continue;
                         }
                     }
                     //  CHeck FOr Ups ground transit days
-                    if ($data['serviceType'] == "03" || $data['serviceType'] == "SR_03" || $data['serviceType'] == "03S") {
+                    if ($data['serviceType'] == "03" || $data['serviceType'] == "SR_03" || $data['serviceType'] == "03S" || $data['serviceType'] == "SR_03S") {
                         if (isset($this->quoteSettings['number_of_transit_days']) && $this->quoteSettings['number_of_transit_days'] != null && isset($this->quoteSettings['ground_metric']) && $this->quoteSettings['ground_metric'] != null) {
                             $islimited = $this->checkGroundTransit($data, $this->quoteSettings);
                             if ($islimited) {
@@ -179,7 +183,7 @@ class QuotesResults
                     }
                     //  CHecks FOr Only quote ground service if hazardous
                     if ($isHazmat && isset($this->quoteSettings['ground_service_for_hazardous_material']) && $this->quoteSettings['ground_service_for_hazardous_material']) {
-                        if ($data['serviceType'] != "03" && $data['serviceType'] != "SR_03" && $data['serviceType'] != "03S") {
+                        if ($data['serviceType'] != "03" && $data['serviceType'] != "SR_03" && $data['serviceType'] != "03S" && $data['serviceType'] != "SR_03S") {
                             continue;
                         }
                     }
@@ -298,6 +302,10 @@ class QuotesResults
                 $quote['ups_services']['SR_03'] = 'UPS Simple Rate Ground';
                 $quote['ups_services']['SR_12'] = 'UPS Simple Rate 3 Day Select';
                 $quote['ups_services']['SR_13'] = 'UPS Simple Rate Next Day Air Saver';
+                $quote['ups_services']['SR_02S'] = 'UPS Simple Rate 2nd Day Air Saturday';
+                $quote['ups_services']['SR_03S'] = 'UPS Simple Rate Ground Saturday';
+                $quote['ups_services']['SR_12S'] = 'UPS Simple Rate 3 Day Select Saturday';
+                $quote['ups_services']['SR_13S'] = 'UPS Simple Rate Next Day Air Saver Saturday';
 
                 $servicesDesc = $quote['ups_services'];
                 break;
@@ -422,6 +430,10 @@ class QuotesResults
             case '94S':
             case '95S':
             case 'GFPS':
+            case 'SR_02S':
+            case 'SR_03S':
+            case 'SR_12S':
+            case 'SR_13S':
                 $serviceTitle = $title;
                 break;
             default:
