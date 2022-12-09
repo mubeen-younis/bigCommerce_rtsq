@@ -1426,12 +1426,6 @@ class CompileQuotes
     }
     public function compilePurolatorSmallQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
-        $returnRates = $this->residential['returnRates']['purolatorSmall'] ?? false;
-
-        if($returnRates){
-            return [];
-        }
-
         $this->purolatorSmallQuotesResults = new purolatorSmallQuotesResults();
         if ($residential['purolatorSmall'] == 'Y') {
             $this->isResi = true;
