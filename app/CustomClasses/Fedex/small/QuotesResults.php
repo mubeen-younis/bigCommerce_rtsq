@@ -456,13 +456,13 @@ class QuotesResults
     {
         $ship = [];
 
-        if(isset($serviceTypes['homeDeliveryAppointment']) && !isset($serviceTypes['homeDeliveryAppointment']['severity'])){
+        if(isset($serviceTypes['homeDeliveryAppointment']['q']['GROUND_HOME_DELIVERY']) && !isset($serviceTypes['homeDeliveryAppointment']['severity'])){
             $ship['FEDEX_APPOINTMENT_HOME_DELIVERY'] = $serviceTypes['homeDeliveryAppointment']['q']['GROUND_HOME_DELIVERY'];
         }
-        if(isset($serviceTypes['homeDeliveryDateCertain']) && !isset($serviceTypes['homeDeliveryDateCertain']['severity'])){
+        if(isset($serviceTypes['homeDeliveryDateCertain']['q']['GROUND_HOME_DELIVERY']) && !isset($serviceTypes['homeDeliveryDateCertain']['severity'])){
             $ship['FEDEX_DATE_CERTAIN_HOME_DELIVERY'] = $serviceTypes['homeDeliveryDateCertain']['q']['GROUND_HOME_DELIVERY'];
         }
-        if(isset($serviceTypes['homeDeliveryEvening']) && !isset($serviceTypes['homeDeliveryEvening']['severity'])){
+        if(isset($serviceTypes['homeDeliveryEvening']['q']['GROUND_HOME_DELIVERY']) && !isset($serviceTypes['homeDeliveryEvening']['severity'])){
             $ship['FEDEX_EVENING_HOME_DELIVERY'] = $serviceTypes['homeDeliveryEvening']['q']['GROUND_HOME_DELIVERY'];    
         }
         

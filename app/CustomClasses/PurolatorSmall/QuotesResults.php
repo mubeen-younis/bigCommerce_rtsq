@@ -137,7 +137,7 @@ class QuotesResults
         $count = 0;
         foreach ($shipments as $origin => $quote) {
 
-            if ((isset($quote['severity']) || !isset($ship['q']) || (isset($ship['q']) && empty($ship['q'])))) {
+            if ((isset($quote['severity']) || !isset($quote['q']) || (isset($quote['q']) && empty($quote['q'])))) {
                 return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);                
             }
             if ($count == 0) { //To be checked only once
@@ -274,17 +274,21 @@ class QuotesResults
             if (isset($quote['severity'])) {
                 continue;
             }
-            
-            foreach ($quote['q'] as $key => $value) {
-                foreach($carrier_services as $service => $checked){
-                   $serviceLetter =str_replace('_',' ',$service);
-                   $capitalServiceLetter = ucwords($serviceLetter); 
-                   $serviceType =str_replace('  ',':',$capitalServiceLetter);
-                   $serviceType =str_replace(' ','',$serviceType);
-                   if($serviceType == $value['serviceType'] && $service == $checked){
-                           $checkedshipment[$shipkey]['q'][] = $value;        
+            if(isset($quote['q'])){
+                foreach ($quote['q'] as $key => $value) {
+                    foreach($carrier_services as $service => $checked){
+                        $serviceLetter =str_replace('_',' ',$service);
+                        $capitalServiceLetter = ucwords($serviceLetter); 
+                        $serviceType =str_replace('  ',':',$capitalServiceLetter);
+                        $serviceType =str_replace(' ','',$serviceType);
+                        if($serviceType == $value['serviceType'] && $service == $checked){
+                            $checkedshipment[$shipkey]['q'][] = $value;        
+                        }
                     }
-                }
+                } 
+            } 
+            if(isset($quote['InstorPickupLocalDelivery']) && !empty(($quote['InstorPickupLocalDelivery']))){
+                $checkedshipment[$shipkey]['InstorPickupLocalDelivery'] = $quote['InstorPickupLocalDelivery'];
             } 
         }
 
