@@ -436,6 +436,7 @@ class Functions
                 'alwaysResidentialDelivery' => $settings->always_quote_residential_delivery ?? false,
                 'returRates' => $settings->return_rates ?? false,
                 'unconfirmed_address_type' => $settings->unconfirmed_address_type,
+                'residentialPickup' => $settings->always_residential_pickup_delivery,
             ];
 
         } else {

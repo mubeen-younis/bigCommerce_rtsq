@@ -1125,7 +1125,8 @@ class GenerateRequestData
         $this->resiCarrier['wweLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['wweLtl'] = $alwaysResi;
 
-        $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
+        $residentialPickup = (isset($rad_settings['residentialPickup']) && $rad_settings['residentialPickup'] && $rad_settings['residentialPickup'] == true) ? 'Y' : 'N';
+        $this->resiCarrier['residentialPickup'] = $residentialPickup;
 
         $liftGatePickup = (isset($connSettings['quote_settings']['liftGatePickup']) && $connSettings['quote_settings']['liftGatePickup'] && $connSettings['quote_settings']['liftGatePickup'] == true) ? 'Y' : 'N';
         $insideDelivery = (isset($connSettings['quote_settings']['insideDelivery']) && $connSettings['quote_settings']['insideDelivery'] && $connSettings['quote_settings']['insideDelivery'] == true) ? 'Y' : 'N';
@@ -2612,7 +2613,8 @@ class GenerateRequestData
 
         //$this->resiCarrier['wweLtl'] = $residential;
 
-        $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
+        $residentialPickup = (isset($rad_settings['residentialPickup']) && $rad_settings['residentialPickup'] && $rad_settings['residentialPickup'] == true) ? 'Y' : 'N';
+        $this->resiCarrier['residentialPickup'] = $residentialPickup;
 
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $this->resiCarrier['upsLtl'] = $residential;

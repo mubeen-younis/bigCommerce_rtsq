@@ -960,7 +960,7 @@ class CompileQuotes
                 if (!$lgQuotes) {
                     $lgQuotes = (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->isResi;
                 }
-                $resiPickup = isset($this->quoteSettings['residentialPickup']) && $this->quoteSettings['residentialPickup'] ? '+pu' : '';
+                $resiPickup = isset($this->residential['residentialPickup']) && $this->residential['residentialPickup'] == "Y" ? '+pu' : '';
                 $insideDelivery = (isset($this->quoteSettings['insideDelivery']) && $this->quoteSettings['insideDelivery']);
                 $lgPickup = isset($this->quoteSettings['liftGatePickup']) && $this->quoteSettings['liftGatePickup'] ? '+lfgpu' : '';
             }
@@ -2837,12 +2837,18 @@ class CompileQuotes
                 foreach ($quotesArr as $key => $data) {
                     $srvcType = $data['serviceType'] ?? '';
                     if (isset($srvcType)) {
-                        $access = $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
                         $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : 'Freight';
 
                         if ($this->isSameDayApi) {
                             $this->quoteSettings['label_as'] = '';
+                            if(isset($data['serviceType']) && ($data['ServiceLevelCode'] == "H1" || $data['ServiceLevelCode'] == "H2")){
+                                $access = $this->getAccessorialCode();
+                            }else{
+                                $access = '';
+                            }
+                        }else{
+                            $access = $this->getAccessorialCode();
                         }
 
                         $days = $data['totalTransitTimeInDays'] ?? null;
