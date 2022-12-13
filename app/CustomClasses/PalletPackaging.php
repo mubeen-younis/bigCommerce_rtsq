@@ -660,7 +660,7 @@ class PalletPackaging
                 $quotesWithFee[$carName][$locId]['q']['totalNetCharge'] = $q['q']['totalNetCharge'] + $palletFee[$locId];
             } elseif ($carName == 'estes') {
                 foreach ($q['q'] as $key => $value) {
-                    $quotesWithFee[$carName][$locId]['q'][$key]['totalNetCharge'] = $value['totalNetCharge'] + $palletFee[$locId];
+                    $quotesWithFee[$carName][$locId]['q'][$key]['totalNetCharge'] = $value['ratpricing']['rattotalPrice'] + $palletFee[$locId];
                 }
             } elseif ($carName == 'odfl4me') {
                 $quotesWithFee[$carName][$locId]['q']['rateEstimate']['netFreightCharge'] = $q['q']['rateEstimate']['netFreightCharge'] + $palletFee[$locId];
