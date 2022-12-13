@@ -102,6 +102,10 @@ class QuotesResults
                     $formattedShipments[$shipment]['q']['holdAtTerminalResponse'] = $hatCompiledQuotes;
                 }
             }
+
+            if(isset($quotes['InstorPickupLocalDelivery']) && !empty($quotes['InstorPickupLocalDelivery'])){
+                $formattedShipments[$shipment]['q']['InstorPickupLocalDelivery'] = $quotes['InstorPickupLocalDelivery'];
+            }
         }
 
         return $formattedShipments;
