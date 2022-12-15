@@ -4317,7 +4317,8 @@ class CompileQuotes
     public function getAccessorialCode($lgOption = false, $insideDel = false, $resiPickup = '', $lgPickup = '', $laccess = false, $twoManDel = false, $appDel = false)
     {
         $access = '';
-        if ($this->residentialDlvry == '1' || $this->isResi || $this->alwaysResi) {
+        $isAlwaysResi = isset($this->isSameDayApi) && $this->isSameDayApi && $lgOption ? false : $this->alwaysResi;
+        if ($this->residentialDlvry == '1' || $this->isResi || $isAlwaysResi) {
             $access .= '+R';
         }
         if (($lgOption || (isset($this->liftGate) && $this->liftGate == '1')) || (isset($this->RADforLiftgate) && $this->RADforLiftgate && $this->isResi)) {
