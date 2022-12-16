@@ -133,7 +133,6 @@ class RADController extends Controller
 
         if ($installed_addon_settings) {
             $installed_addon_settings->value = json_encode($address);
-            $installed_addon_settings->installed_addon_id = $installed_addon->id;
             $installed_addon_settings->save();
 
             return response()->json(["error" => false, 'message' => "Default Unconfirmed Address has been updated.", "data" => $installed_addon_settings]);
