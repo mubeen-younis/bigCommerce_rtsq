@@ -406,7 +406,7 @@ class QuotesResults
 
             $ship = $this->formateQuoteHomeDelivery($serviceTypes);
             unset($shipments[$shipment]['homeDeliveryAppointment'], $shipments[$shipment]['homeDeliveryDateCertain'], $shipments[$shipment]['homeDeliveryEvening']);
-            $serviceTypes['fedexServices']['q'] = array_merge($serviceTypes['fedexServices']['q'],$ship);
+            $serviceTypes['fedexServices']['q'] = array_merge(isset($serviceTypes['fedexServices']['q']) ? $serviceTypes['fedexServices']['q'] : [],$ship);
 
             $inStoreLocal = [];
             foreach ($serviceTypes as $serviceName => $quotes) {
