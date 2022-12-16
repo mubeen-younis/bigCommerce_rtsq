@@ -118,14 +118,10 @@ class RADController extends Controller
                 ->where(['installed_addons.store_id' => $request->store_id,
                     'installed_addons.is_enabled' => 1,
                     'addons.short_code' => 'RAD',
-                ])->first();
+                ])->select('installed_addons.id')->first();
 
         if (empty($installed_addon->id)) {
-            return response()->json([
-                'error' => true,
-                'data' => [],
-                'message' => 'Empty Addon Id',
-            ], 200);
+            return false;
         }
 
         $address = ['unconfirmed_default' => $request->settings['unconfirmed_address_type']];
@@ -133,6 +129,7 @@ class RADController extends Controller
 
         if ($installed_addon_settings) {
             $installed_addon_settings->value = json_encode($address);
+            $installed_addon_settings->installed_addon_id = $installed_addon->id;
             $installed_addon_settings->save();
 
             return response()->json(["error" => false, 'message' => "Default Unconfirmed Address has been updated.", "data" => $installed_addon_settings]);
@@ -208,7 +205,16 @@ class RADController extends Controller
             $resi_settings->store_id = $request->store_id;
             $resi_settings->settings = json_encode($request->settings);
             $resi_settings->save();
-            $this->setDefaultAddress($request);
+            if($request->settings['residential_delivery_auto_detect']){
+                $resp = $this->setDefaultAddress($request);
+                if(!$resp){
+                    return response()->json([
+                        'error' => true,
+                        'data' => [],
+                        'message' => 'No Add-on is Installed/Enabled',
+                    ], 200);
+                }
+            }
 
             return response()->json(["error" => false, 'message' => "Address type settings saved successfully.", "data" => $resi_settings]);
 
