@@ -3467,7 +3467,7 @@ class CompileQuotes
         $hatShipments = [];
 
         foreach ($shipments as $origin => $quote) {
-            if (isset($quote['severity'])) {
+            if ((isset($quote['severity']) || !isset($quote['q']) || (isset($quote['q']) && empty($quote['q'])))) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
