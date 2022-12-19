@@ -4492,7 +4492,7 @@ class CompileQuotes
             if ($this->quoteSettings['alwaysLiftGateDelivery'] == '1') {
                 $accessTitle = $accessTitle ? $accessTitle . ' & inside delivery' : $this->insideDel;
             } else {
-                $accessTitle = $this->isResi ? $this->resiLgLabel . ' & inside delivery' : $this->lgLabel . ' & inside delivery';    
+                $accessTitle = $this->isResi ? Funtions::$insideDelLiftGateResiLable : Funtions::$insideDelLiftGateLable;    
             }
         } else if ($insideDel) {
             $accessTitle = $accessTitle ? $accessTitle . ' & inside delivery' : $this->insideDel;

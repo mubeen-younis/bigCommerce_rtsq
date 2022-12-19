@@ -429,10 +429,10 @@ class OrderController extends Controller
             $sName = str_replace(Functions::$twoManDelResiLabel, '', $sName);
             $sName = str_replace(Functions::$appointmentDelResiLabel, '', $sName);
             $sName = str_replace(Functions::$twoManAptDelResiLabel, '', $sName);
-            $sName = str_replace(Functions::$insideDelLable, '', $sName);
-            $sName = str_replace(Functions::$insideDelResiLable, '', $sName);
-            $sName = str_replace(Functions::$insideDelLiftGateLable, '', $sName);
             $sName = str_replace(Functions::$insideDelLiftGateResiLable, '', $sName);
+            $sName = str_replace(Functions::$insideDelLiftGateLable, '', $sName);
+            $sName = str_replace(Functions::$insideDelResiLable, '', $sName);
+            $sName = str_replace(Functions::$insideDelLable, '', $sName);
             $sName = str_replace(Functions::$limitedAccesDelLabel, '', $sName);
             $sName = str_replace(Functions::$limitedAccessLGDelLable, '', $sName);
             $sMethod = isset($shipping_name[1]) ? '(' . $shipping_name[1] : '';

@@ -21,8 +21,8 @@ class Functions
     public static $dbscSlug = 'dbsc';
     public static $insideDelLable = ' w/ inside delivery';
     public static $insideDelResiLable = ' w/ residential & inside delivery';
-    public static $insideDelLiftGateLable = ' w/ lift gate delivery & inside delivery';
-    public static $insideDelLiftGateResiLable = ' w/ residential, lift gate delivery & inside delivery';
+    public static $insideDelLiftGateLable = ' w/ lift gate & inside delivery';
+    public static $insideDelLiftGateResiLable = ' w/ residential, lift gate & inside delivery';
     public static $freeShipping = 'Free Shipping';
     public static $resiPickupTitle = '+pu';
     public static $lgPickupTitle = '+lfgpu';
