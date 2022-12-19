@@ -211,7 +211,7 @@ class QuotesResults
         $count = 0;
         foreach ($shipments as $origin => $quote) {
             if ((isset($quote['severity']) || empty($quote) || !isset($quote['q']))) {
-                return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);
+                return ['resp' => $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins)];
             }
             if ($count == 0) { //To be checked only once
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
@@ -423,7 +423,7 @@ class QuotesResults
                 if ($serviceName == 'fedexAirServices') {
                     $isAir = true;
                 }
-                if (isset($quotes['q'])) {
+                if (isset($quotes['q']) && !empty($quotes['q'])) {
                     foreach ($quotes['q'] as $key => $quote) {
                         if (isset($quote['serviceType'])) {
                             if ($isAir) {

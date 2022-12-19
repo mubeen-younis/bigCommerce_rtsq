@@ -4129,7 +4129,7 @@ class CompileQuotes
     
     public function getInsPicAndLocDelQuotes($quote, $allOrigins): array
     {
-        $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? $quote['q']['InstorPickupLocalDelivery'] ?? [];
+        $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? $quote['q']['InstorPickupLocalDelivery'] ?? $quote['fedexServices']['InstorPickupLocalDelivery'] ?? [];
         if (!$this->isMultiShipment && !blank($inStoreLdData)) {
             return $this->inStoreLocalDeliveryQuotes([], $inStoreLdData, $allOrigins);
         }
