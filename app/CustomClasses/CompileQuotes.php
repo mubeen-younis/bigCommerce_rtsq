@@ -988,6 +988,15 @@ class CompileQuotes
                         $originQuotes[$key]['simple']['code'] = 'wweltl' . $data['serviceType'] . $access;
                         $originQuotes[$key]['simple']['rate'] = $price;
                         $originQuotes[$key]['simple']['title'] = $title;
+                        if ($insideDelivery && $lgQuotes) {
+                            $access = $this->getAccessorialCode(true, true, $resiPickup, $lgPickup);
+                            $price = $this->calculatePrice($data, true, false, false, true);
+                            $title = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays'], [], $dateAndDays, true);
+                            $arraySorting['insideLiftGateDelivery'][$key] = $price;
+                            $originQuotes[$key]['insideLiftGateDelivery']['code'] = "wweltl" . $data['serviceType'] . $access;
+                            $originQuotes[$key]['insideLiftGateDelivery']['rate'] = $price;
+                            $originQuotes[$key]['insideLiftGateDelivery']['title'] = $title;
+                        }
                         if ($lgQuotes) {
                             $lgAccess = 'wweltl' . $this->getAccessorialCode(true, false, $resiPickup, $lgPickup);
                             $lgPrice = $this->calculatePrice($data, true);
@@ -1005,16 +1014,7 @@ class CompileQuotes
                             $originQuotes[$key]['insideDelivery']['code'] = "wweltl" . $data['serviceType'] . $access;
                             $originQuotes[$key]['insideDelivery']['rate'] = $price;
                             $originQuotes[$key]['insideDelivery']['title'] = $title;
-                        }
-                        if ($insideDelivery && $lgQuotes) {
-                            $access = $this->getAccessorialCode(true, true, $resiPickup, $lgPickup);
-                            $price = $this->calculatePrice($data, true, false, false, true);
-                            $title = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays'], [], $dateAndDays, true);
-                            $arraySorting['insideLiftGateDelivery'][$key] = $price;
-                            $originQuotes[$key]['insideLiftGateDelivery']['code'] = "wweltl" . $data['serviceType'] . $access;
-                            $originQuotes[$key]['insideLiftGateDelivery']['rate'] = $price;
-                            $originQuotes[$key]['insideLiftGateDelivery']['title'] = $title;
-                        }
+                        }                 
                     }
                 }
             }
@@ -4495,7 +4495,7 @@ class CompileQuotes
                 $accessTitle = $this->isResi ? Functions::$insideDelLiftGateResiLable : Functions::$insideDelLiftGateLable;    
             }
         } else if ($insideDel) {
-            $accessTitle = $accessTitle ? $accessTitle . ' & inside delivery' : $this->insideDel;
+            $accessTitle = $accessTitle ? Functions::$insideDelResiLable : $this->insideDel;
         }
 
         if($laccess && $lgOption || $laccessLG){
