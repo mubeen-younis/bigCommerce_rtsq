@@ -198,6 +198,7 @@ class GetRatesController extends Controller
                     'quote_as_local' => $product_settings['quote_as_local'] ?? false,
                     'pallet_vertical_rotation' => isset($product_settings['pallet_vertical_rotation']) && $product_settings['pallet_vertical_rotation'] ? '1' : '0',
                     'own_pallet' => isset($product_settings['own_pallet']) && $product_settings['own_pallet'] ? '1' : '0',
+                    'lineItemNMFC' => isset($product_settings['nmfc']) && !empty($product_settings['nmfc']) ? $product_settings['nmfc'] : '',
                 ];
 
                 if (!$details['items'][$key]['shipMultiplePackage']) {
