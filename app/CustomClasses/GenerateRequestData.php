@@ -916,6 +916,7 @@ class GenerateRequestData
                     }
                 }
             }
+            $itemsArr = $palletPkg->setNmfcNull($palletPkgResp, $itemsArr);
         }
 
         $requestArr = [
