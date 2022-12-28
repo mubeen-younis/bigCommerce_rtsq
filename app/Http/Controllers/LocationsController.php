@@ -208,6 +208,7 @@ class LocationsController extends Controller
             $location->country = $request->country;
             $location->default_location_id = $request->default_location_id ?? '';
             $location->xpo_account_number = $request->xpo_account_number ?? '';
+            $location->origin_markup = $request->origin_markup ?? '';
 
 
             $additionals = [

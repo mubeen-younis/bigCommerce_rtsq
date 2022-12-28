@@ -198,6 +198,7 @@ class GetRatesController extends Controller
                     'quote_as_local' => $product_settings['quote_as_local'] ?? false,
                     'pallet_vertical_rotation' => isset($product_settings['pallet_vertical_rotation']) && $product_settings['pallet_vertical_rotation'] ? '1' : '0',
                     'own_pallet' => isset($product_settings['own_pallet']) && $product_settings['own_pallet'] ? '1' : '0',
+                    'product_markup' => isset($product_settings['product_markup']) && !empty($product_settings['product_markup']) ? $product_settings['product_markup'] : '',
                 ];
 
                 if (!$details['items'][$key]['shipMultiplePackage']) {
@@ -307,7 +308,7 @@ class GetRatesController extends Controller
     public function getProductSetting($productId, $variantId, $storeId)
     {
         $settings = [];
-        $productSetting = ProductSetting::select('settings', 'id', 'dropship_enabled', 'dropship_location', 'shipping_group', 'shipping_class', 'ship_multiple_package', 'pallet_vertical_rotation', 'own_pallet')
+        $productSetting = ProductSetting::select('settings', 'id', 'dropship_enabled', 'dropship_location', 'shipping_group', 'shipping_class', 'ship_multiple_package', 'pallet_vertical_rotation', 'own_pallet', 'product_markup')
             ->where(['source_product_id' => $productId, 'variant_id' => $variantId, 'store_id' => $storeId])
             ->first();
         if (!empty($productSetting)) {
@@ -321,6 +322,7 @@ class GetRatesController extends Controller
             $settings['shipping_class'] = ($productSetting['shipping_class'] == 0 || $productSetting['shipping_class'] == null) ? null : $productSetting['shipping_class'];
             $settings['pallet_vertical_rotation'] = $productSetting['pallet_vertical_rotation'] ?? 0;
             $settings['own_pallet'] = $productSetting['own_pallet'] ?? 0;
+            $settings['product_markup'] = $productSetting['product_markup'] ?? 0;
         }
         return $settings;
     }
