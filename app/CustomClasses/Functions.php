@@ -443,4 +443,44 @@ class Functions
             return $Rad_settings;
         }
     }
+
+    public static function addProductMarkupFee($cost, $shipmentKey, $items, $allOrigins)
+    {  
+        $variantKeys = [];
+        $productFeeMarkup = 0;
+        $totalFeeMarkup = 0;
+        $symbolicHandlingFee = '';
+
+        if(!empty($allOrigins)){
+            foreach($allOrigins as $key => $origin){
+                if($origin['locationId'] == $shipmentKey){
+                    $variantKeys[] = $key;
+                }
+            }
+        }
+
+        if (!empty($items) && !empty($variantKeys)) {
+            foreach($items as $item){
+                foreach($variantKeys as $variantId){
+                    if($variantId == $item['variant_id']){
+                        if (isset($item['product_markup'])) {
+                            $productFeeMarkup = (float)$item['product_markup'] ?? 0;
+                            $symbolicHandlingFee = strpos($item['product_markup'], '%') ? '%' : '';
+                        }
+
+                        if (strlen($productFeeMarkup) > 0) {
+                            if ($symbolicHandlingFee === '%') {
+                                $percentVal = $productFeeMarkup / 100 * $cost;
+                                $totalFeeMarkup += $percentVal;
+                            } else {
+                                $totalFeeMarkup += $productFeeMarkup;
+                            }
+                        }
+                    } 
+                }
+            } 
+            $grandTotal = $totalFeeMarkup + $cost;
+        }      
+        return $grandTotal;
+    }
 }

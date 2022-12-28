@@ -657,9 +657,11 @@ class CompileQuotes
      * @info: This function will compile all quotes according to the origin.
      * After getting from quotes almost all type of compilation happened in this function
      */
-    public function newGetQuotesResults($quotes, $connectionSettings, $allOrigins, $isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination)
+    public function newGetQuotesResults($quotes, $connectionSettings, $allOrigins, $isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $items)
     {
         $this->residential = $residential;
+        $this->items = $items;
+        $this->allOrigins = $allOrigins;
         if ($quotes == null) {
             return [];
         }
@@ -976,6 +978,7 @@ class CompileQuotes
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) && isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y') {
                         $access = $this->getAccessorialCode(false, false, $resiPickup, $lgPickup);
                         $price = $this->calculatePrice($data);
+                        $price = Functions::addProductMarkupFee($price, $origin, $this->items, $this->allOrigins);
                         /*
                          * Date 01-07-22
                          * Adding Functionality of Delivery Estimate Options
@@ -1000,6 +1003,7 @@ class CompileQuotes
                         if ($lgQuotes) {
                             $lgAccess = 'wweltl' . $this->getAccessorialCode(true, false, $resiPickup, $lgPickup);
                             $lgPrice = $this->calculatePrice($data, true);
+                            $lgPrice = Functions::addProductMarkupFee($lgPrice, $origin, $this->items, $this->allOrigins);
                             $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
                             $arraySorting['liftgate'][$key] = $lgPrice;
                             $originQuotes[$key]['liftgate']['code'] = $data['serviceType'] . $lgAccess;
@@ -1121,6 +1125,7 @@ class CompileQuotes
                 $data = $quote['q'];
                 $access = $this->getAccessorialCode();
                 $price = $this->calculateOdflPrice($data);
+                $price = Functions::addProductMarkupFee($price, $origin, $this->items, $this->allOrigins);
                 $date = $data['deliveryDate'] ?? null;
                 $days = $data['totalTransitTimeInDays'] ?? null;
                 $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
@@ -1134,6 +1139,7 @@ class CompileQuotes
                 if ($lgQuotes) {
                     $lgAccess = $this->getAccessorialCode(true);
                     $lgPrice = $this->calculateOdflPrice($data, $lgOption = 1);
+                    $lgPrice = Functions::addProductMarkupFee($lgPrice, $origin, $this->items, $this->allOrigins);
                     $lgTitle = $this->getTitle($lableAs, true, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
                     $arraySorting['liftgate'][$origin] = $lgPrice;
                     $originQuotes[$origin]['liftgate']['code'] = 'odflltl' . $lgAccess;
@@ -1298,6 +1304,7 @@ class CompileQuotes
                             }
                         }
                         $price = $this->calculatePrice($data);
+                        $price = Functions::addProductMarkupFee($price, $origin, $this->items, $this->allOrigins);
 
                         $date = $data['deliveryTimestamp'] ?? null;
                         $days = $data['totalCalenderDaysInTransit'] ?? null;
@@ -1312,6 +1319,7 @@ class CompileQuotes
                         if ($lgQuotes) {
                             $lgAccess = 'tqlltl' . $this->getAccessorialCode(true) . $resiPickup;
                             $lgPrice = $this->calculatePrice($data, true);
+                            $lgPrice = Functions::addProductMarkupFee($lgPrice, $origin, $this->items, $this->allOrigins);
                             $lgTitle = $this->getTitle($data['carrier'], true, false, $data['totalCalenderDaysInTransit'], [], $dateAndDays);
                             $arraySorting['liftgate'][$key] = $lgPrice ?? [];
                             $originQuotes[$key]['liftgate']['code'] = $lgAccess;
@@ -1522,6 +1530,7 @@ class CompileQuotes
                         }
                         $access = $this->getAccessorialCode() . $resiPickup;
                         $price = $this->calculateEstesPrice($data);
+                        $price = Functions::addProductMarkupFee($price, $origin, $this->items, $this->allOrigins);
 
                         /*
                          * Date 01-07-22
@@ -1538,6 +1547,7 @@ class CompileQuotes
                         if ($lgQuotes) {
                             $lgAccess = 'estesltl' . $this->getAccessorialCode(true) . $resiPickup;
                             $lgPrice = $this->calculateEstesPrice($data, true);
+                            $lgPrice = Functions::addProductMarkupFee($lgPrice, $origin, $this->items, $this->allOrigins);
                             $lgTitle = $this->getTitle($labelAs, true, false, $data['ratdelivery']['totalTransitTimeInDays'], [], $dateAndDays);
                             $arraySorting['liftgate'][$key] = $lgPrice;
                             $originQuotes[$key]['liftgate']['code'] = $data['ratquoteNumber'] . $lgAccess;
@@ -1698,6 +1708,7 @@ class CompileQuotes
                         //$data['totalTransitTimeInDays'] = $data['LtlServiceDays'] ?? 0;
                         $access = $preCode . $this->GTZLtlQuotesResults->getAccessorialCode($isResi);
                         $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings);
+                        $price = Functions::addProductMarkupFee($price, $origin, $this->items, $this->allOrigins);
                         /*
                          * Date 01-07-22
                          * Adding Functionality of Delivery Estimate Options
@@ -1718,6 +1729,7 @@ class CompileQuotes
 
                             $access = $preCode . $this->GTZLtlQuotesResults->getAccessorialCode($isResi, true);
                             $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings, true);
+                            $price = Functions::addProductMarkupFee($price, $origin, $this->items, $this->allOrigins);
                             $title = $this->getGTitle($data['serviceDesc'], true, false, false, false, $data['totalTransitTimeInDays'], $this->quoteSettings, false, $dateAndDays);
                             $titleQuickest = $this->getGTitle($data['serviceDesc'], true, false, false, false, $data['totalTransitTimeInDays'], $this->quoteSettings, true, $dateAndDays);
                             $arraySorting['liftgate'][$key] = $price;
@@ -1893,6 +1905,7 @@ class CompileQuotes
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) /*&& isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y' */) {
                         $access = $preCode . $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
+                        $price = Functions::addProductMarkupFee($price, $origin, $this->items, $this->allOrigins);
                         /*
                          * Date 01-07-22
                          * Adding Functionality of Delivery Estimate Options
@@ -1912,6 +1925,7 @@ class CompileQuotes
                         if ($lgQuotes) {
                             $access = $preCode . $this->getAccessorialCode(true);
                             $price = $this->calculatePrice($data, true);
+                            $price = Functions::addProductMarkupFee($price, $origin, $this->items, $this->allOrigins);
                             $title = $this->getTitle($data['serviceDesc'], true, false, $data['transitTime'], [], $dateAndDays);
                             $arraySorting['liftgate'][$key] = $price;
                             $originQuotes[$key]['liftgate']['code'] = $data['serviceType'] . $access;
@@ -2047,6 +2061,7 @@ class CompileQuotes
 
                         $access = $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
+                        $price = Functions::addProductMarkupFee($price, $origin, $this->items, $this->allOrigins);
                         if (isset($data['serviceType']) && $data['serviceType'] === 'FEDEX_FREIGHT_ECONOMY') {
                             $this->quoteSettings['label_as'] = !blank($freightEconomyLableAs) ? $freightEconomyLableAs : 'LTL Freight Economy';
                         }
@@ -2079,6 +2094,7 @@ class CompileQuotes
                         if ($lgQuotes) {
                             $lgAccess = $this->getAccessorialCode(true);
                             $lgPrice = $this->calculatePrice($data, true);
+                            $lgPrice = Functions::addProductMarkupFee($lgPrice, $origin, $this->items, $this->allOrigins);
                             $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['transitTime'], [], $dateAndDays);
                             $arraySorting['liftgate'][$key] = $lgPrice;
                             $originQuotes[$key]['liftgate']['code'] = 'fedexltl' . $lgAccess;
@@ -2214,6 +2230,7 @@ class CompileQuotes
 
                     $access = $this->getAccessorialCode();
                     $price = $this->calculatePrice($data);
+                    $price = Functions::addProductMarkupFee($price, $origin, $this->items, $this->allOrigins);
                     /*
                      * Date 01-07-22
                      * Adding Functionality of Delivery Estimate Options
@@ -2230,6 +2247,7 @@ class CompileQuotes
                     if ($lgQuotes) {
                         $lgAccess = $this->getAccessorialCode(true);
                         $lgPrice = $this->calculatePrice($data, true);
+                        $lgPrice = Functions::addProductMarkupFee($lgPrice, $origin, $this->items, $this->allOrigins);
                         $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
                         $arraySorting['liftgate'][$key] = $lgPrice;
                         $originQuotes[$key]['liftgate']['code'] = 'xpoltl' . $lgAccess;
@@ -2375,6 +2393,7 @@ class CompileQuotes
                         continue;
                     }
                     $price = $this->calculatePrice($data);
+                    $price = Functions::addProductMarkupFee($price, $origin, $this->items, $this->allOrigins);
                     $this->quoteSettings['label_as'] = (!empty($lableAs) ? $lableAs . ' ' : '') . $data['serviceDesc'];
                     $date = $data['deliveryDate'] ?? null;
                     $days = $data['totalTransitTimeInDays'] ?? null;
@@ -2389,6 +2408,7 @@ class CompileQuotes
                     if ($lgQuotes && !$isHat) {
                         $lgAccess = $this->getAccessorialCode(true);
                         $lgPrice = $this->calculatePrice($data, true);
+                        $lgPrice = Functions::addProductMarkupFee($lgPrice, $origin, $this->items, $this->allOrigins);
                         $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
                         $arraySorting['liftgate'][$key] = $lgPrice;
                         $originQuotes[$key]['liftgate']['code'] = $preAccess . $lgAccess;
@@ -2681,6 +2701,7 @@ class CompileQuotes
 
                 $access = $this->getAccessorialCode();
                 $price = $this->calculatePrice($data, false, false, true);
+                $price = Functions::addProductMarkupFee($price, $origin, $this->items, $this->allOrigins);
                 /*
                  * Date 01-07-22
                  * Adding Functionality of Delivery Estimate Options
@@ -2697,6 +2718,7 @@ class CompileQuotes
                 if ($lgQuotes) {
                     $lgAccess = $this->getAccessorialCode(true);
                     $lgPrice = $this->calculatePrice($data, false);
+                    $lgPrice = Functions::addProductMarkupFee($lgPrice, $origin, $this->items, $this->allOrigins);
                     $lgTitle = $this->getTitle($lableAs, true, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
                     $arraySorting['liftgate'][$key] = $lgPrice;
                     $originQuotes[$key]['liftgate']['code'] = 'upsltl' . $lgAccess;
@@ -2838,6 +2860,7 @@ class CompileQuotes
                     $srvcType = $data['serviceType'] ?? '';
                     if (isset($srvcType)) {
                         $price = $this->calculatePrice($data);
+                        $price = Functions::addProductMarkupFee($price, $origin, $this->items, $this->allOrigins);
                         $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : 'Freight';
 
                         if ($this->isSameDayApi) {
@@ -2863,6 +2886,7 @@ class CompileQuotes
                         if ($lgQuotes) {
                             $lgAccess = $this->getAccessorialCode(true);
                             $lgPrice = $this->calculatePrice($data, true);
+                            $lgPrice = Functions::addProductMarkupFee($lgPrice, $origin, $this->items, $this->allOrigins);
                             $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $days, [], $dateAndDays);
                             $arraySorting['liftgate'][$key] = $lgPrice;
                             $originQuotes[$key]['liftgate']['code'] = 'dayrossltl' . $lgAccess;
@@ -2878,6 +2902,7 @@ class CompileQuotes
                             if ($twoManQuotes && !$lgQuotes) {
                                 $tmAccess = $this->getAccessorialCode(false, false, '', '', false, true, false);
                                 $tmPrice = $this->calculatePrice($data, false, false, false, false, false, true, false);
+                                $tmPrice = Functions::addProductMarkupFee($tmPrice, $origin, $this->items, $this->allOrigins);
                                 $tmTitle = $this->getTitle($data['serviceDesc'], false, false, $days, [], $dateAndDays, false, false, false, false, $offerTwoManDelAsOpt, false);
 
                                 $arraySorting['twoManDel'][$key] = $tmPrice;
@@ -2889,6 +2914,7 @@ class CompileQuotes
                             if ($appointmentQuotes && !$lgQuotes) {
                                 $aptAccess = $this->getAccessorialCode(false, false, '', '', false, false, true);
                                 $aptPrice = $this->calculatePrice($data, false, false, false, false, false, false, true);
+                                $aptPrice = Functions::addProductMarkupFee($aptPrice, $origin, $this->items, $this->allOrigins);
                                 $tmTitle = $this->getTitle($data['serviceDesc'], false, false, $days, [], $dateAndDays, false, false, false, false, false, $offerAppDelAsOpt);
 
                                 $arraySorting['aptDel'][$key] = $aptPrice;
@@ -2900,6 +2926,7 @@ class CompileQuotes
                             if ($twoManQuotes &&  $appointmentQuotes && !$lgQuotes) {
                                 $aptAccess = $this->getAccessorialCode(false, false, '', '', false, true, true);
                                 $aptPrice = $this->calculatePrice($data, false, false, false, false, false, true, true);
+                                $aptPrice = Functions::addProductMarkupFee($aptPrice, $origin, $this->items, $this->allOrigins);
                                 $tmTitle = $this->getTitle($data['serviceDesc'], false, false, $days, [], $dateAndDays, false, false, false, false, $offerTwoManDelAsOpt, $offerAppDelAsOpt);
                                 
                                 $arraySorting['twoManAptDel'][$key] = $aptPrice;
@@ -3065,6 +3092,7 @@ class CompileQuotes
                     if (isset($srvcType)) {
                         $access = $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
+                        $price = Functions::addProductMarkupFee($price, $origin, $this->items, $this->allOrigins);
                         $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : 'Freight';
                         $date = $quote['q']['deliveryDate'] ?? null;
                         $days = $quote['q']['totalTransitTimeInDays'] ?? null;
@@ -3079,6 +3107,7 @@ class CompileQuotes
                         if ($lgQuotes) {
                             $lgAccess = $this->getAccessorialCode(true);
                             $lgPrice = $this->calculatePrice($data, true);
+                            $lgPrice = Functions::addProductMarkupFee($lgPrice, $origin, $this->items, $this->allOrigins);
                             $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $days, [], $dateAndDays);
                             $arraySorting['liftgate'][$origin] = $lgPrice;
                             $originQuotes[$origin]['liftgate']['code'] = 'yrcltl' . $lgAccess;
@@ -3231,6 +3260,7 @@ class CompileQuotes
                             'surcharges' => $data['surcharges'],
                         );
                         $price = $this->calculatePrice($charges);
+                        $price = Functions::addProductMarkupFee($price, $origin, $this->items, $this->allOrigins);
                         /*
                          * Adding Functionality of Delivery Estimate Options
                          * */
@@ -3247,6 +3277,7 @@ class CompileQuotes
                         if ($lgQuotes) {
                             $lgAccess = 'fqltl' . $this->getAccessorialCode(true) . $resiPickup;
                             $lgPrice = $this->calculatePrice($charges, true);
+                            $lgPrice = Functions::addProductMarkupFee($lgPrice, $origin, $this->items, $this->allOrigins);
                             $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
                             $arraySorting['liftgate'][$key] = $lgPrice;
                             $originQuotes[$key]['liftgate']['code'] = $data['serviceType'] . $lgAccess;
@@ -3360,6 +3391,7 @@ class CompileQuotes
                     if (isset($srvcType)) {
                         $access = $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
+                        $price = Functions::addProductMarkupFee($price, $origin, $this->items, $this->allOrigins);
                         $this->quoteSettings['label_as'] = $labelAs;
 
                         $days = $data['totalTransitTimeInDays'] ?? null;
@@ -3374,6 +3406,7 @@ class CompileQuotes
                         if ($lgQuotes) {
                             $lgAccess = $this->getAccessorialCode(true);
                             $lgPrice = $this->calculatePrice($data, true);
+                            $lgPrice = Functions::addProductMarkupFee($lgPrice, $origin, $this->items, $this->allOrigins);
                             $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $days, [], $dateAndDays);
                             $arraySorting['liftgate'][$origin] = $lgPrice;
                             $originQuotes[$origin]['liftgate']['code'] = 'saialtl' . $lgAccess;
@@ -3509,6 +3542,7 @@ class CompileQuotes
                     if (isset($srvcType)) {
                         $access = $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
+                        $price = Functions::addProductMarkupFee($price, $origin, $this->items, $this->allOrigins);
                         $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : 'Freight';
                         /*
                          * Date 01-07-22
@@ -3527,6 +3561,7 @@ class CompileQuotes
                         if ($lgQuotes) {
                             $lgAccess = $this->getAccessorialCode(true);
                             $lgPrice = $this->calculatePrice($data, true);
+                            $lgPrice = Functions::addProductMarkupFee($lgPrice, $origin, $this->items, $this->allOrigins);
                             $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $days, [], $dateAndDays);
                             $arraySorting['liftgate'][$origin] = $lgPrice;
                             $originQuotes[$origin]['liftgate']['code'] = 'abfltl' . $lgAccess;
@@ -3672,6 +3707,7 @@ class CompileQuotes
                     if (isset($srvcType)) {
                         $access = $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
+                        $price = Functions::addProductMarkupFee($price, $origin, $this->items, $this->allOrigins);
                         $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : 'Freight';
                         $date = $quote['q']['deliveryDate'] ?? null;
                         $days = $quote['q']['totalTransitTimeInDays'] ?? null;
@@ -3686,6 +3722,7 @@ class CompileQuotes
                         if ($lgQuotes) {
                             $lgAccess = $this->getAccessorialCode(true);
                             $lgPrice = $this->calculatePrice($data, true);
+                            $lgPrice = Functions::addProductMarkupFee($lgPrice, $origin, $this->items, $this->allOrigins);
                             $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $days, [], $dateAndDays);
                             $arraySorting['liftgate'][$origin] = $lgPrice;
                             $originQuotes[$origin]['liftgate']['code'] = 'SouthEastern' . $lgAccess;
@@ -3818,6 +3855,7 @@ class CompileQuotes
                         $data['totalNetCharge']['Amount'] = $data['TotalCharge'] ?? 0;
                         $data['surcharges']['liftgateFee'] = $echoLtl->getLGFee($data['Accessorials'] ?? []) ?? 0;
                         $price = $this->calculatePrice($data);
+                        $price = Functions::addProductMarkupFee($price, $origin, $this->items, $this->allOrigins);
                         $days = $data['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = $echoLtl->getShipmentDateAndDays($data);
                         $title = $this->getTitle($data['CarrierName'], false, false, $days, [], $dateAndDays);
@@ -3830,6 +3868,7 @@ class CompileQuotes
                         if ($lgQuotes) {
                             $lgAccess = $this->getAccessorialCode(true);
                             $lgPrice = $this->calculatePrice($data, true);
+                            $lgPrice = Functions::addProductMarkupFee($lgPrice, $origin, $this->items, $this->allOrigins);
                             $lgTitle = $this->getTitle($data['CarrierName'], true, false, $days, [], $dateAndDays);
                             $arraySorting['liftgate'][$key] = $lgPrice;
                             $originQuotes[$key]['liftgate']['code'] = 'echoltl' . $lgAccess . $srvcType;
@@ -3926,6 +3965,7 @@ class CompileQuotes
                 foreach ($quotesArr as $key => $data) {                    
                     $access = $this->getAccessorialCode();
                     $price = $this->calculatePrice($data);
+                    $price = Functions::addProductMarkupFee($price, $origin, $this->items, $this->allOrigins);
                     $this->quoteSettings['label_as'] = $labelAs ;
 
                     $dateAndDays = $dayLightQuotes->getShipmentDateAndDays($data);
@@ -3939,6 +3979,7 @@ class CompileQuotes
                     if ($lgQuotes) {
                         $lgAccess = $this->getAccessorialCode(true);
                         $lgPrice = $this->calculatePrice($data, true);
+                        $lgPrice = Functions::addProductMarkupFee($lgPrice, $origin, $this->items, $this->allOrigins);
                         $lgTitle = $this->getTitle($data['serviceDesc'], true, false, '', [], $dateAndDays);
                         $arraySorting['liftgate'][$origin] = $lgPrice;
                         $originQuotes[$origin]['liftgate']['code'] = 'daylightltl' . $lgAccess;
@@ -4046,6 +4087,7 @@ class CompileQuotes
                         );
 
                         $price = $this->calculatePrice($charges);
+                        $price = Functions::addProductMarkupFee($price, $origin, $this->items, $this->allOrigins);
                         $dateAndDays = $fqChrQuotes->getShipmentDateAndDays($data);
                         $title = $this->getTitle($data['serviceDesc'], false, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
                         
@@ -4057,6 +4099,7 @@ class CompileQuotes
                         if ($lgQuotes) {
                             $lgAccess = 'fqchrltl' . $this->getAccessorialCode(true);
                             $lgPrice = $this->calculatePrice($charges, true);
+                            $lgPrice = Functions::addProductMarkupFee($lgPrice, $origin, $this->items, $this->allOrigins);
                             $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
                          
                             $arraySorting['liftgate'][$key] = $lgPrice;
