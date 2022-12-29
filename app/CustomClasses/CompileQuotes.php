@@ -1540,7 +1540,7 @@ class CompileQuotes
                         }
                         $access = $this->getAccessorialCode() . $resiPickup;
                         $price = $this->calculateEstesPrice($data);
-                        $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $this->items, $this->allOrigins);
+                        $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge'], $origin, $this->items, $this->allOrigins);
                         $price = $price + $productOriginMarkupFee;
 
                         /*
