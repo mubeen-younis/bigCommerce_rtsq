@@ -444,21 +444,43 @@ class Functions
         }
     }
 
-    public static function addProductMarkupFee($cost, $shipmentKey, $items, $allOrigins)
+    public static function calProductOriginMarkupFee($cost, $shipmentKey, $items, $allOrigins)
     {  
         $variantKeys = [];
         $productFeeMarkup = 0;
         $totalFeeMarkup = 0;
         $symbolicHandlingFee = '';
+        $count = 0;
+        $originFeeMarkup = 0;
 
+        // Calculate Origins markup fee
         if(!empty($allOrigins)){
             foreach($allOrigins as $key => $origin){
                 if($origin['locationId'] == $shipmentKey){
                     $variantKeys[] = $key;
+                    if($count > 0){
+                        continue;
+                    }
+
+                    if (isset($origin['origin_markup'])) {
+                        $originFeeMarkup = (float)$origin['origin_markup'] ?? 0;
+                        $symbolicHandlingFee = strpos($origin['origin_markup'], '%') ? '%' : '';
+                    }
+
+                    if (strlen($originFeeMarkup) > 0) {
+                        if ($symbolicHandlingFee === '%') {
+                            $percentVal = $originFeeMarkup / 100 * $cost;
+                            $totalFeeMarkup += $percentVal;
+                        } else {
+                            $totalFeeMarkup += $originFeeMarkup;
+                        }
+                    }
+                    $count++;
                 }
             }
+            $symbolicHandlingFee = '';
         }
-
+        // Calculate Products markup fee
         if (!empty($items) && !empty($variantKeys)) {
             foreach($items as $item){
                 foreach($variantKeys as $variantId){
@@ -479,8 +501,7 @@ class Functions
                     } 
                 }
             } 
-            $grandTotal = $totalFeeMarkup + $cost;
-        }      
-        return $grandTotal;
+        }
+        return $totalFeeMarkup;
     }
 }

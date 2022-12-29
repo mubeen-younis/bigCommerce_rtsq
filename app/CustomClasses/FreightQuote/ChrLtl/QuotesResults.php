@@ -16,7 +16,7 @@ class QuotesResults
 
     }
 
-    public function truckLoadQuotes($quote, $allConfigServices, $quoteSettings = []){
+    public function truckLoadQuotes($quote, $quoteSettings = [], $origin, $items, $allOrigins){
         $originQuotes = [];
         $arraySorting = [];
         if(isset($quote['Truckload']) && !(isset($quote['Truckload']['severity']) && $quote['Truckload']['severity']  === "ERROR")){
@@ -30,6 +30,8 @@ class QuotesResults
                         )
                     );
                     $price = $this->CompileQuotes->calculatePrice($charges);
+                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge'], $origin, $items, $allOrigins);
+                    $price = $price + $productOriginMarkupFee;
                     /*
                      * Adding Functionality of Delivery Estimate Options
                      * */
