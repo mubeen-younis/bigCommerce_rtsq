@@ -467,10 +467,9 @@ class Functions
                                         unset($itemsArr[$key]);
                                     } elseif($carriersErrorSettings[$carr] == 1){
                                         unset($carriersArray['carriers'][$carr]['originAddress'][$key]);
-                                        unset($itemsArr[$key]);
-                                        $count--;    
+                                        unset($itemsArr[$key]);    
                                     }
-                                }
+                                }$count--;
                             }        
                         }
                     }
