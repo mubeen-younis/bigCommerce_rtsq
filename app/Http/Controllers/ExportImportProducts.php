@@ -83,7 +83,7 @@ class ExportImportProducts extends Controller
                 $folderNamePath[] = $filename;
                 $fp = fopen($filename, "w");
                 if (true) {
-                    $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (in), Width (in), Height (in), Quote Method, Freight Class, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Ships Alone, Vertical Rotation';
+                    $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (in), Width (in), Height (in), NMFC, Markup, Quote Method, Freight Class, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Ships Alone, Vertical Rotation';
                     $line .= "\n";
                     fputs($fp, $line);
                 }
@@ -97,6 +97,8 @@ class ExportImportProducts extends Controller
                     $productLine[] = $product->length ?? '';
                     $productLine[] = $product->width ?? '';
                     $productLine[] = $product->height ?? '';
+                    $productLine[] = $product->nmfc ?? '';
+                    $productLine[] = $product->product_markup ?? '';
 
                     $settings = json_decode($product->settings);
                     $quoteMethod = '';
@@ -371,6 +373,20 @@ class ExportImportProducts extends Controller
             $data = (float)$product["$key"];
             if ($data >= 0) {
                 $update['height'] = (float)$product["$key"];
+            }
+        }
+        if (isset($indexes['nmfc']) && $indexes['nmfc']) {
+            $key = $indexes['nmfc'];
+            $data = (float)$product["$key"];
+            if ($data >= 0) {
+                $update['nmfc'] = (float)$product["$key"];
+            }
+        }
+        if (isset($indexes['product_markup']) && $indexes['product_markup']) {
+            $key = $indexes['product_markup'];
+            $data = (float)$product["$key"];
+            if ($data >= 0) {
+                $update['product_markup'] = (float)$product["$key"];
             }
         }
 
