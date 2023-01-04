@@ -1540,7 +1540,7 @@ class CompileQuotes
                         }
                         $access = $this->getAccessorialCode() . $resiPickup;
                         $price = $this->calculateEstesPrice($data);
-                        $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge'], $origin, $this->items, $this->allOrigins);
+                        $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['ratpricing']['rattotalPrice'], $origin, $this->items, $this->allOrigins);
                         $price = $price + $productOriginMarkupFee;
 
                         /*
@@ -1558,7 +1558,7 @@ class CompileQuotes
                         if ($lgQuotes) {
                             $lgAccess = 'estesltl' . $this->getAccessorialCode(true) . $resiPickup;
                             $lgPrice = $this->calculateEstesPrice($data, true);
-                            $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $this->items, $this->allOrigins);
+                            $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['ratpricing']['rattotalPrice'], $origin, $this->items, $this->allOrigins);
                             $lgPrice = $lgPrice + $productOriginMarkupFee;
                             $lgTitle = $this->getTitle($labelAs, true, false, $data['ratdelivery']['totalTransitTimeInDays'], [], $dateAndDays);
                             $arraySorting['liftgate'][$key] = $lgPrice;
