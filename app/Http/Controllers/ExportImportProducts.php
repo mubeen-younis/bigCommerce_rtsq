@@ -83,7 +83,7 @@ class ExportImportProducts extends Controller
                 $folderNamePath[] = $filename;
                 $fp = fopen($filename, "w");
                 if (true) {
-                    $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (in), Width (in), Height (in), NMFC, Markup, Quote Method, Freight Class, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Ships Alone, Vertical Rotation';
+                    $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (in), Width (in), Height (in), NMFC, Markup, Quote Method, Freight Class, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Ships Alone, Vertical Rotation, Ships Multiple Package, Ships Own Pallet, Pallet Vertical Rotation';
                     $line .= "\n";
                     fputs($fp, $line);
                 }
@@ -134,6 +134,9 @@ class ExportImportProducts extends Controller
                     $productLine[] = $country;
                     $productLine[] = isset($settings->ship_own_package) && $settings->ship_own_package ? 1 : 0;
                     $productLine[] = isset($settings->allow_vertical) && $settings->allow_vertical ? 1 : 0;
+                    $productLine[] = isset($product->ship_multiple_package) && $settings->ship_multiple_package ? 1 : 0;
+                    $productLine[] = isset($settings->own_pallet) && $settings->own_pallet ? 1 : 0;
+                    $productLine[] = isset($settings->pallet_vertical_rotation) && $settings->pallet_vertical_rotation ? 1 : 0;
                     fputcsv($fp, $productLine);
                 }
             });
@@ -386,7 +389,28 @@ class ExportImportProducts extends Controller
             $key = $indexes['product_markup'];
             $data = (float)$product["$key"];
             if ($data >= 0) {
-                $update['product_markup'] = (float)$product["$key"];
+                $update['product_markup'] = (string)$product["$key"];
+            }
+        }
+        if (isset($indexes['own_pallet']) && $indexes['own_pallet']) {
+            $key = $indexes['own_pallet'];
+            $data = (float)$product["$key"];
+            if ($data >= 0) {
+                $update['own_pallet'] = (float)$product["$key"];
+            }
+        }
+        if (isset($indexes['pallet_vertical_rotation']) && $indexes['pallet_vertical_rotation']) {
+            $key = $indexes['pallet_vertical_rotation'];
+            $data = (float)$product["$key"];
+            if ($data >= 0) {
+                $update['pallet_vertical_rotation'] = (float)$product["$key"];
+            }
+        }
+        if (isset($indexes['ship_multiple_package']) && $indexes['ship_multiple_package']) {
+            $key = $indexes['ship_multiple_package'];
+            $data = (float)$product["$key"];
+            if ($data >= 0) {
+                $update['ship_multiple_package'] = (float)$product["$key"];
             }
         }
 
@@ -479,11 +503,35 @@ class ExportImportProducts extends Controller
                 $settings->allow_vertical = ($product["$key"] == 1) ? true : false;;
             }
         }
+        if (isset($indexes['nmfc']) && $indexes['nmfc']) {
+            $key = $indexes['nmfc'];
+            if (array_key_exists($key, $product)) {
+                $settings->nmfc = (string)$product["$key"];
+            }
+        }
 
         $allowVert = optional($settings)->allow_vertical ?? false;
         $shipOwn = optional($settings)->ship_own_package ?? false;
         if ($allowVert && $shipOwn) {
             $settings->ship_own_package = false;
+        }
+        if (isset($indexes['own_pallet']) && $indexes['own_pallet']) {
+            $key = $indexes['own_pallet'];
+            if (array_key_exists($key, $product)) {
+                $settings->own_pallet = ($product["$key"] == 1) ? true : false;
+            }
+        }
+        if (isset($indexes['pallet_vertical_rotation']) && $indexes['pallet_vertical_rotation']) {
+            $key = $indexes['pallet_vertical_rotation'];
+            if (array_key_exists($key, $product)) {
+                $settings->pallet_vertical_rotation = ($product["$key"] == 1) ? true : false;;
+            }
+        }
+
+        $palletVerticalRotation = optional($settings)->pallet_vertical_rotation ?? false;
+        $ownPallet = optional($settings)->own_pallet ?? false;
+        if ($palletVerticalRotation && $ownPallet) {
+            $settings->own_pallet = false;
         }
         if (isset($indexes['insurance']) && $indexes['insurance']) {
             $key = $indexes['insurance'];
