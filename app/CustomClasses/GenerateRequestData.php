@@ -95,32 +95,38 @@ class GenerateRequestData
                     $wweLtlArr = $this->wweLtlEnitArr($con1, $destination);
                     $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['wweLTL'] = $wweLtlArr;
+                    $errorManagment['wweLTL'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case "small-package":
                     $wweLtlArr = $this->wweSmallEnitArr($con1, $destination);
                     $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['wweSmall'] = $wweLtlArr;
+                    $errorManagment['wweSmall'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case "ups-ltl":
                     $wweLtlArr = $this->upsLtlEnitArr($con1, $destination);
                     $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['upsLTL'] = $wweLtlArr;
+                    $errorManagment['upsLTL'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case "ups-small":
                     $wweLtlArr = $this->upsSmallEnitArr($con1, $destination);
                     $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['upsSmall'] = $wweLtlArr;
+                    $errorManagment['upsSmall'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case "fedex-ltl":
                     $wweLtlArr = $this->fedexLtlEnitArr($con1, $destination, $enitOrigin);
                     $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['fedexLTL'] = $wweLtlArr;
+                    $errorManagment['fedexLTL'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
 
                 case "fedex-small":
                     $wweLtlArr = $this->fedexSmallEnitArr($con1, $destination, $enitOrigin);
                     $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['fedexSmall'] = $wweLtlArr;
+                    $errorManagment['fedexSmall'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case "gtz-ltl":
                     $carName = isset($con1['creds']['api_type']) && $con1['creds']['api_type'] === 'CRS' ? 'cerasis' : 'globalTranz';
@@ -129,99 +135,116 @@ class GenerateRequestData
                     $wweLtlArr['originAddress'] = $enitOrigin;
 
                     $carriersArr['carriers'][$carName] = $wweLtlArr;
-
+                    $errorManagment[$carName] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case "xpo-ltl":
                     $wweLtlArr = $this->xpoLtlEnitArr($con1, $destination, $enitOrigin);
                     $enitOrigin = XPOCompileQuotes::originAssociatedAccNum($enitOrigin, $wweLtlArr);
                     $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['xpoLogistics'] = $wweLtlArr;
+                    $errorManagment['xpoLogistics'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case "rl-ltl":
                     $wweLtlArr = $this->rnlLtlEnitArr($con1, $destination, $enitOrigin, $lineItems);
                     if (!empty($wweLtlArr)) {
                         $wweLtlArr['originAddress'] = $enitOrigin;
                         $carriersArr['carriers']['rnl'] = $wweLtlArr;
+                        $errorManagment['rnl'] = $con1['quote_settings']['error_managment'] ?? 1;
                     }
                     break;
                 case 'unishippers-small':
                     $wweLtlArr = $this->unishippersSmallEnitArr($con1, $destination);
                     $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['unishippersSmall'] = $wweLtlArr;
+                    $errorManagment['unishippersSmall'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case 'odfl-ltl':
                     $odflLtlArr = $this->odflLtlEnitArr($con1, $destination);
                     $odflLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['odfl4me'] = $odflLtlArr;
+                    $errorManagment['odfl4me'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case 'estes-ltl':
                     $wweLtlArr = $this->estesltlEnitArr($con1, $destination);
                     $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['estes'] = $wweLtlArr;
+                    $errorManagment['estes'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case 'freightquote-ltl':
                     $fqLtlArr = $this->freightQuoteLtlEnitArr($con1, $destination);
                     $fqLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['freightQuote'] = $fqLtlArr;
+                    $errorManagment['freightQuote'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case 'yrc-ltl':
                     $yrcLtlArr = $this->yrcLtlEnitArr($con1, $destination);
                     $yrcLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['yrc'] = $yrcLtlArr;
+                    $errorManagment['yrc'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case 'dayross-ltl':
                     $wweLtlArr = $this->rossdayLtlEnitArr($con1, $destination);
                     $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['dayross'] = $wweLtlArr;
+                    $errorManagment['dayross'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case 'saia-ltl':
                     $saiaLtlArr = $this->saiaLtlEnitArr($con1, $destination);
                     $saiaLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['saia'] = $saiaLtlArr;
+                    $errorManagment['saia'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case 'abf-ltl':
                     $abfLtlArr = $this->abfLtlEnitArr($con1, $destination);
                     $abfLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['abf'] = $abfLtlArr;
+                    $errorManagment['abf'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case 'southeastern-ltl':
                     $yrcLtlArr = $this->SouthEasternEnitArr($con1, $destination);
                     $yrcLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['southeastern'] = $yrcLtlArr;
+                    $errorManagment['southeastern'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case 'usps-small':
                     $uspsSmallArr = $this->uspsSmallEnitArr($con1, $destination, $enitOrigin, $lineItems);
                     $uspsSmallArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['usps'] = $uspsSmallArr;
+                    $errorManagment['usps'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case 'tql-ltl':
                     $tqlLtlArr = $this->tqlLtlEnitArr($con1, $destination);
                     $tqlLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['tql'] = $tqlLtlArr;
+                    $errorManagment['tql'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case 'echo-ltl':
                     $echoLtlArr = $this->echoLtlEnitArr($con1, $destination);
                     $echoLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['echoLogistics'] = $echoLtlArr;
+                    $errorManagment['echoLogistics'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case "purolator-small":
                     $purolatorSmallArr = $this->purolatorSmallEnitArr($con1, $destination);
                     $purolatorSmallArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['purolator'] = $purolatorSmallArr;
+                    $errorManagment['purolator'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case 'daylight-ltl':
                     $dayLightLtlArr = $this->dayLightLtlEnityArr($con1, $destination);
                     $dayLightLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['daylight'] = $dayLightLtlArr;
+                    $errorManagment['daylight'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case 'freightquote-chr-ltl':
                     $fqLtlArr = $this->freightQuoteChrLtlEnitArr($con1, $destination);
                     $fqLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['chr'] = $fqLtlArr;
+                    $errorManagment['chr'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
             }
         }
-        return ['carriersArr' => $carriersArr, 'residential' => $this->resiCarrier];
+        return ['carriersArr' => $carriersArr, 'residential' => $this->resiCarrier, 'errorManagment' => $errorManagment];
     }
 
     function destinationIsPOBox($destination)
@@ -620,8 +643,16 @@ class GenerateRequestData
      * @param $itemsArr
      * @return array|bool
      */
-    public function generateRequestArray($request, $carriersArray, $itemsArr, $cartInfo)
+    public function generateRequestArray($request, $carriersArray, $itemsArr, $cartInfo, $carriersErrorSettings)
     {
+        $errorManagmentResp = Functions::productErrorManagment($carriersErrorSettings, $carriersArray, $itemsArr);
+        if(isset($errorManagmentResp['carriersArray']['carriers']) && empty($errorManagmentResp['carriersArray']['carriers'])){
+            return [];
+        }else{
+            $carriersArray = $errorManagmentResp['carriersArray'];
+            $itemsArr = $errorManagmentResp['itemsArr'];
+        }
+        
         $carriers = $carriersArray['carriers'];
         $receiverAddress = $this->getReceiverData($request);
 
