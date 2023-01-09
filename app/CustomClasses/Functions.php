@@ -509,34 +509,20 @@ class Functions
     
     public static function productErrorManagment($carriersErrorSettings, $carriersArray, $itemsArr)
     {
-        $variantId = [];
-        foreach($carriersArray['carriers'] as $carr => $carrier){
-            foreach($carrier['originAddress'] as $ori => $originAddress){
-                $variantId[$originAddress['locationId']][] = $ori;
-            }
-            break;
-        }
-
-        if(!empty($variantId)){
-            foreach($variantId as $var => $products){
-                $count = count($products);
-                if(!empty($itemsArr)){
-                    foreach($itemsArr as $key => $item){
-                        if(in_array($key, $products)){
-                            if(empty($item['lineItemLength']) || empty($item['lineItemWidth']) || empty($item['lineItemHeight']) || $item['lineItemWeight'] == 0){
-                                foreach($carriersArray['carriers'] as $carr => $carrier){
-                                    if($carriersErrorSettings[$carr] == 2 || $count == 1){
-                                        unset($carriersArray['carriers'][$carr]);
-                                        unset($itemsArr[$key]);
-                                    } elseif($carriersErrorSettings[$carr] == 1){
-                                        unset($carriersArray['carriers'][$carr]['originAddress'][$key]);
-                                        unset($itemsArr[$key]);    
-                                    }
-                                }$count--;
-                            }        
+        if(!empty($itemsArr)){
+            $count = count($itemsArr);
+            foreach($itemsArr as $key => $item){
+                if(empty($item['lineItemLength']) || empty($item['lineItemWidth']) || empty($item['lineItemHeight']) || $item['lineItemWeight'] == 0){
+                    foreach($carriersArray['carriers'] as $carr => $carrier){
+                        if($carriersErrorSettings[$carr] == 2 || $count == 1){
+                            unset($carriersArray['carriers'][$carr]);
+                            unset($itemsArr[$key]);
+                        } elseif($carriersErrorSettings[$carr] == 1){
+                            unset($carriersArray['carriers'][$carr]['originAddress'][$key]);
+                            unset($itemsArr[$key]);    
                         }
-                    }
-                }    
+                    }$count--;
+                }        
             }
         }
 
