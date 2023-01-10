@@ -4,6 +4,7 @@ namespace App\CustomClasses;
 
 use App\Constants\Constant;
 use App\CustomClasses\XPO\ltl\XPOCompileQuotes;
+use App\CustomClasses\OdflLTL\ODFLCompileQuotes;
 use App\Helpers\Helpers;
 use App\Http\Controllers\BoxSizeController;
 use Illuminate\Support\Facades\DB;
@@ -151,6 +152,7 @@ class GenerateRequestData
                     break;
                 case 'odfl-ltl':
                     $odflLtlArr = $this->odflLtlEnitArr($con1, $destination);
+                    $enitOrigin = ODFLCompileQuotes::originAssociatedAccNum($enitOrigin, $wweLtlArr);
                     $odflLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['odfl4me'] = $odflLtlArr;
                     break;
