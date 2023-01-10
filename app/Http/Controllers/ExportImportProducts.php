@@ -134,7 +134,7 @@ class ExportImportProducts extends Controller
                     $productLine[] = $country;
                     $productLine[] = isset($settings->ship_own_package) && $settings->ship_own_package ? 1 : 0;
                     $productLine[] = isset($settings->allow_vertical) && $settings->allow_vertical ? 1 : 0;
-                    $productLine[] = isset($product->ship_multiple_package) && $settings->ship_multiple_package ? 1 : 0;
+                    $productLine[] = isset($product->ship_multiple_package) && $product->ship_multiple_package ? 1 : 0;
                     $productLine[] = isset($settings->own_pallet) && $settings->own_pallet ? 1 : 0;
                     $productLine[] = isset($settings->pallet_vertical_rotation) && $settings->pallet_vertical_rotation ? 1 : 0;
                     fputcsv($fp, $productLine);
