@@ -512,7 +512,10 @@ class Functions
         if(!empty($itemsArr)){
             $count = count($itemsArr);
             foreach($itemsArr as $key => $item){
-                if(empty($item['lineItemLength']) || empty($item['lineItemWidth']) || empty($item['lineItemHeight']) || $item['lineItemWeight'] == 0){
+                if(empty($item['lineItemLength']) || ($item['lineItemLength'] == 0) ||
+                   empty($item['lineItemWidth'])  || ($item['lineItemWidth'] == 0)  || 
+                   empty($item['lineItemHeight']) || ($item['lineItemHeight'] == 0) ||
+                   empty($item['lineItemWeight']) || $item['lineItemWeight'] == 0){
                     foreach($carriersArray['carriers'] as $carr => $carrier){
                         if($carriersErrorSettings[$carr] == 2 || $count == 1){
                             unset($carriersArray['carriers'][$carr]);
