@@ -503,6 +503,12 @@ class ExportImportProducts extends Controller
                 $settings->allow_vertical = ($product["$key"] == 1) ? true : false;;
             }
         }
+        if (isset($indexes['ship_multiple_package']) && $indexes['ship_multiple_package']) {
+            $key = $indexes['ship_multiple_package'];
+            if (array_key_exists($key, $product)) {
+                $shipMulti = ($product["$key"] == 1) ? true : false;;
+            }
+        }
         if (isset($indexes['nmfc']) && $indexes['nmfc']) {
             $key = $indexes['nmfc'];
             if (array_key_exists($key, $product)) {
@@ -514,6 +520,10 @@ class ExportImportProducts extends Controller
         $shipOwn = optional($settings)->ship_own_package ?? false;
         if ($allowVert && $shipOwn) {
             $settings->ship_own_package = false;
+        }
+        if (($allowVert || $shipOwn) && $shipMulti) {
+            $settings->ship_own_package = false;
+            $settings->allow_vertical = false;
         }
         if (isset($indexes['own_pallet']) && $indexes['own_pallet']) {
             $key = $indexes['own_pallet'];
