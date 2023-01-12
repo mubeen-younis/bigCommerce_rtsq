@@ -46,13 +46,21 @@ class ConnectionSettings
 
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
+        $resp = $output;
         $output = json_decode($output['response'], true);
-        if ($output['severity'] === 'ERROR') {
+        if (isset($output['severity']) && $output['severity'] === 'ERROR') {
             $response = [
                 'error' => true,
                 'message' => $output['Message'],
             ];
-        }if ($output['severity'] === 'SUCCESS') {
+        }
+        if(isset($resp['status']) && $resp['status'] == false){
+            $response = [
+                'error' => true,
+                'message' => $resp['response'],
+            ];
+        }
+        if (isset($output['severity']) && $output['severity'] === 'SUCCESS') {
             $response = [
                     'error' => false,
                     'message' => 'Test connection successful.',
