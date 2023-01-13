@@ -520,6 +520,9 @@ class Functions
                      !(empty($item['lineItemClass']) || $item['lineItemClass'] == 0)){
                         continue;
                     }
+                    if(!(empty($item['lineItemWeight']) || $item['lineItemWeight'] == 0) && ($item['freightClass'] != 'ltl')){
+                        continue;
+                    }
 
                     foreach($carriersArray['carriers'] as $carr => $carrier){
                         if($carriersErrorSettings[$carr] == 2 || $count == 1){
