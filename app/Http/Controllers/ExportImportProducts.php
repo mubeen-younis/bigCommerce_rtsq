@@ -135,8 +135,8 @@ class ExportImportProducts extends Controller
                     $productLine[] = isset($settings->ship_own_package) && $settings->ship_own_package ? 1 : 0;
                     $productLine[] = isset($settings->allow_vertical) && $settings->allow_vertical ? 1 : 0;
                     $productLine[] = isset($product->ship_multiple_package) && $product->ship_multiple_package ? 1 : 0;
-                    $productLine[] = isset($settings->own_pallet) && $settings->own_pallet ? 1 : 0;
-                    $productLine[] = isset($settings->pallet_vertical_rotation) && $settings->pallet_vertical_rotation ? 1 : 0;
+                    $productLine[] = isset($product->own_pallet) && $product->own_pallet ? 1 : 0;
+                    $productLine[] = isset($product->pallet_vertical_rotation) && $product->pallet_vertical_rotation ? 1 : 0;
                     fputcsv($fp, $productLine);
                 }
             });
@@ -535,11 +535,6 @@ class ExportImportProducts extends Controller
             }
         }
 
-        $palletVerticalRotation = optional($settings)->pallet_vertical_rotation ?? false;
-        $ownPallet = optional($settings)->own_pallet ?? false;
-        if ($palletVerticalRotation && $ownPallet) {
-            $settings->own_pallet = false;
-        }
         if (isset($indexes['insurance']) && $indexes['insurance']) {
             $key = $indexes['insurance'];
             if (array_key_exists($key, $product)) {
