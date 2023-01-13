@@ -516,6 +516,11 @@ class Functions
                    empty($item['lineItemWidth'])  || ($item['lineItemWidth'] == 0)  || 
                    empty($item['lineItemHeight']) || ($item['lineItemHeight'] == 0) ||
                    empty($item['lineItemWeight']) || $item['lineItemWeight'] == 0){
+                    if(!(empty($item['lineItemWeight']) || $item['lineItemWeight'] == 0) &&
+                     !(empty($item['lineItemClass']) || $item['lineItemClass'] == 0)){
+                        continue;
+                    }
+
                     foreach($carriersArray['carriers'] as $carr => $carrier){
                         if($carriersErrorSettings[$carr] == 2 || $count == 1){
                             unset($carriersArray['carriers'][$carr]);
