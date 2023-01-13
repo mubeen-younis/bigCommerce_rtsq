@@ -387,10 +387,7 @@ class ExportImportProducts extends Controller
         }
         if (isset($indexes['product_markup']) && $indexes['product_markup']) {
             $key = $indexes['product_markup'];
-            $data = (float)$product["$key"];
-            if ($data >= 0) {
-                $update['product_markup'] = (string)$product["$key"];
-            }
+            $update['product_markup'] = (string)$product["$key"];
         }
         if (isset($indexes['own_pallet']) && $indexes['own_pallet']) {
             $key = $indexes['own_pallet'];
