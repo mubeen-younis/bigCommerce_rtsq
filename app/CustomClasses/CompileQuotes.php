@@ -2788,7 +2788,7 @@ class CompileQuotes
 
     private function compileDayRossLtlQuotes($shipments, $connectionSettings, $allOrigins, $hazmatAllItems, $residential)
     {
-        $this->isSameDayApi = $connectionSettings['dayross-ltl']['creds']['api_type'] == 'sameday' ? true : false;
+        $this->isSameDayApi = isset($connectionSettings['dayross-ltl']['creds']['api_type']) && $connectionSettings['dayross-ltl']['creds']['api_type'] == 'sameday' ? true : false;
         $dayRossLtl = new dayRossLtlQuotesResults();
 
         if (!$this->isSameDayApi) {
