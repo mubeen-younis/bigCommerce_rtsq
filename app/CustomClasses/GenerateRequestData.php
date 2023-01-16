@@ -2181,7 +2181,7 @@ class GenerateRequestData
          * **/
         $residential = 'N';
         $alwaysResi = false;
-        $isSameDayApi = $connSettings['creds']['api_type'] == 'sameday' ? true : false;
+        $isSameDayApi = isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] == 'sameday' ? true : false;
 
         if ($this->checkIsAutoDetectedResDel($rad_settings) && !$isSameDayApi) {
             if ($this->radHitConsumed == 0) {
