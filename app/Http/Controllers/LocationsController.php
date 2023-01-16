@@ -72,6 +72,24 @@ class LocationsController extends Controller
         if (isset($request->xpo_account_number)) {
             $rules['xpo_account_number'] = 'max:49';
         }
+        if (isset($request->odfl_account_number)) {
+            $rules['odfl_account_number'] = 'max:49';
+        }
+        if (isset($request->ups_account_number)) {
+            $rules['ups_account_number'] = 'max:49';
+        }
+        if (isset($request->sefl_account_number)) {
+            $rules['sefl_account_number'] = 'max:49';
+        }
+        if (isset($request->saia_account_number)) {
+            $rules['saia_account_number'] = 'max:49';
+        }
+        if (isset($request->fedex_account_number)) {
+            $rules['fedex_account_number'] = 'max:49';
+        }
+        if (isset($request->purolator_account_number)) {
+            $rules['purolator_account_number'] = 'max:49';
+        }
 
         $validator = Validator::make($request->all(), $rules);
 
@@ -208,6 +226,12 @@ class LocationsController extends Controller
             $location->country = $request->country;
             $location->default_location_id = $request->default_location_id ?? '';
             $location->xpo_account_number = $request->xpo_account_number ?? '';
+            $location->odfl_account_number = $request->odfl_account_number ?? '';
+            $location->ups_account_number = $request->ups_account_number ?? '';
+            $location->sefl_account_number = $request->sefl_account_number ?? '';
+            $location->saia_account_number = $request->saia_account_number ?? '';
+            $location->fedex_account_number = $request->fedex_account_number ?? '';
+            $location->purolator_account_number = $request->purolator_account_number ?? '';
 
 
             $additionals = [

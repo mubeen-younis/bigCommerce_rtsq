@@ -3,8 +3,6 @@
 namespace App\CustomClasses;
 
 use App\Constants\Constant;
-use App\CustomClasses\XPO\ltl\XPOCompileQuotes;
-use App\CustomClasses\OdflLTL\ODFLCompileQuotes;
 use App\Helpers\Helpers;
 use App\Http\Controllers\BoxSizeController;
 use Illuminate\Support\Facades\DB;
@@ -104,7 +102,8 @@ class GenerateRequestData
                     break;
                 case "ups-ltl":
                     $wweLtlArr = $this->upsLtlEnitArr($con1, $destination);
-                    $wweLtlArr['originAddress'] = $enitOrigin;
+                    $upsOrigin = Functions::originAssociatedAccNum($enitOrigin, $wweLtlArr, $key);
+                    $wweLtlArr['originAddress'] = $upsOrigin;
                     $carriersArr['carriers']['upsLTL'] = $wweLtlArr;
                     break;
                 case "ups-small":
@@ -114,7 +113,8 @@ class GenerateRequestData
                     break;
                 case "fedex-ltl":
                     $wweLtlArr = $this->fedexLtlEnitArr($con1, $destination, $enitOrigin);
-                    $wweLtlArr['originAddress'] = $enitOrigin;
+                    $fedexOrigin = Functions::originAssociatedAccNum($enitOrigin, $wweLtlArr, $key);
+                    $wweLtlArr['originAddress'] = $fedexOrigin;
                     $carriersArr['carriers']['fedexLTL'] = $wweLtlArr;
                     break;
 
@@ -134,8 +134,8 @@ class GenerateRequestData
                     break;
                 case "xpo-ltl":
                     $wweLtlArr = $this->xpoLtlEnitArr($con1, $destination, $enitOrigin);
-                    $enitOrigin = XPOCompileQuotes::originAssociatedAccNum($enitOrigin, $wweLtlArr);
-                    $wweLtlArr['originAddress'] = $enitOrigin;
+                    $xpoOrigin = Functions::originAssociatedAccNum($enitOrigin, $wweLtlArr, $key);
+                    $wweLtlArr['originAddress'] = $xpoOrigin;
                     $carriersArr['carriers']['xpoLogistics'] = $wweLtlArr;
                     break;
                 case "rl-ltl":
@@ -151,9 +151,9 @@ class GenerateRequestData
                     $carriersArr['carriers']['unishippersSmall'] = $wweLtlArr;
                     break;
                 case 'odfl-ltl':
-                    $odflLtlArr = $this->odflLtlEnitArr($con1, $destination);
-                    $enitOrigin = ODFLCompileQuotes::originAssociatedAccNum($enitOrigin, $wweLtlArr);
-                    $odflLtlArr['originAddress'] = $enitOrigin;
+                    $odflLtlArr = $this->odflLtlEnitArr($con1, $destination, );
+                    $odflOrigin = Functions::originAssociatedAccNum($enitOrigin, $odflLtlArr, $key);
+                    $odflLtlArr['originAddress'] = $odflOrigin;
                     $carriersArr['carriers']['odfl4me'] = $odflLtlArr;
                     break;
                 case 'estes-ltl':
@@ -178,7 +178,8 @@ class GenerateRequestData
                     break;
                 case 'saia-ltl':
                     $saiaLtlArr = $this->saiaLtlEnitArr($con1, $destination);
-                    $saiaLtlArr['originAddress'] = $enitOrigin;
+                    $saiaOrigin = Functions::originAssociatedAccNum($enitOrigin, $saiaLtlArr, $key);
+                    $saiaLtlArr['originAddress'] = $saiaOrigin;
                     $carriersArr['carriers']['saia'] = $saiaLtlArr;
                     break;
                 case 'abf-ltl':
@@ -188,7 +189,8 @@ class GenerateRequestData
                     break;
                 case 'southeastern-ltl':
                     $yrcLtlArr = $this->SouthEasternEnitArr($con1, $destination);
-                    $yrcLtlArr['originAddress'] = $enitOrigin;
+                    $seflOrigin = Functions::originAssociatedAccNum($enitOrigin, $yrcLtlArr, $key);
+                    $yrcLtlArr['originAddress'] = $seflOrigin;
                     $carriersArr['carriers']['southeastern'] = $yrcLtlArr;
                     break;
                 case 'usps-small':
@@ -208,7 +210,8 @@ class GenerateRequestData
                     break;
                 case "purolator-small":
                     $purolatorSmallArr = $this->purolatorSmallEnitArr($con1, $destination);
-                    $purolatorSmallArr['originAddress'] = $enitOrigin;
+                    $purolatorOrigin = Functions::originAssociatedAccNum($enitOrigin, $con1['creds'], $key);
+                    $purolatorSmallArr['originAddress'] = $purolatorOrigin;
                     $carriersArr['carriers']['purolator'] = $purolatorSmallArr;
                     break;
                 case 'daylight-ltl':

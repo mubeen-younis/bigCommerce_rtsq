@@ -5,6 +5,7 @@ namespace App\CustomClasses;
 use App\Models\BoxSize;
 use Illuminate\Support\Facades\Log;
 use App\Models\ResidentialSetting;
+use App\Models\Locations;
 
 class Functions
 {
@@ -442,5 +443,78 @@ class Functions
         } else {
             return $Rad_settings;
         }
+    }
+
+    public static function originAssociatedAccNum($origins, $apiInfo, $carrier)
+    {
+        $locationsDet = [];
+        $connPostCode = $apiInfo['api']['physicalZipCode'] ?? $apiInfo['api']['physicalPostalCode'] ?? 
+                        $apiInfo['api']['senderZip'] ?? $apiInfo['senderZip'] ?? $apiInfo['api']['originPostalCode'] ?? 
+                        $apiInfo['api']['customerZip'] ?? '' ;
+        foreach ($origins as $key => $origin) {
+            $senderZip = $origin['senderZip'];
+            if ($senderZip == $connPostCode) {
+                continue;
+            }
+            $locationId = $origin['locationId'];
+            if (array_key_exists($locationId, $locationsDet)) {
+                $locationInfo = $locationsDet[$locationId];
+            } else {
+                $locationInfo = $locationsDet[$locationId] = Locations::getlocationDetail($locationId);
+            }
+
+            if ($carrier == 'xpo-ltl'){
+                $xpoAccountNumber = $locationInfo['xpo_account_number'] ?? null;
+                if (blank($xpoAccountNumber)) {
+                    continue;
+                }
+                $origins[$key]['accountNumber'] = $xpoAccountNumber;
+
+            } else if ($carrier == 'odfl-ltl'){
+                $odflAccountNumber = $locationInfo['odfl_account_number'] ?? null;
+                if (blank($odflAccountNumber)) {
+                    continue;
+                }
+                $origins[$key]['accountNumber'] = $odflAccountNumber;
+
+            } else if ($carrier == 'saia-ltl'){
+                $saiaAccountNumber = $locationInfo['saia_account_number'] ?? null;
+                if (blank($saiaAccountNumber)) {
+                    continue;
+                }
+                $origins[$key]['accountNumber'] = $saiaAccountNumber;
+
+            } else if ($carrier == 'southeastern-ltl'){
+                $seflAccountNumber = $locationInfo['sefl_account_number'] ?? null;
+                if (blank($seflAccountNumber)) {
+                    continue;
+                }
+                $origins[$key]['accountNumber'] = $seflAccountNumber;
+
+            } else if ($carrier == 'purolator-small'){
+                $purolatorAccountNumber = $locationInfo['purolator_account_number'] ?? null;
+                if (blank($purolatorAccountNumber)) {
+                    continue;
+                }
+                $origins[$key]['accountNumber'] = $purolatorAccountNumber;
+
+            } else if ($carrier == 'fedex-ltl'){
+                $fedexAccountNumber = $locationInfo['fedex_account_number'] ?? null;
+                if (blank($fedexAccountNumber)) {
+                    continue;
+                }
+                $origins[$key]['accountNumber'] = $fedexAccountNumber;
+
+            } else if ($carrier == 'ups-ltl'){
+                $upsAccountNumber = $locationInfo['ups_account_number'] ?? null;
+                if (blank($upsAccountNumber)) {
+                    continue;
+                }
+                $origins[$key]['accountNumber'] = $upsAccountNumber;
+            }
+            
+        }
+
+        return $origins;
     }
 }
