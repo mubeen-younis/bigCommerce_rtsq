@@ -6,6 +6,7 @@ namespace App\CustomClasses\GTZ\ltl;
 
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
+use App\CustomClasses\Functions;
 
 class QuotesResults
 {
@@ -53,14 +54,16 @@ class QuotesResults
         return $shipments;
     }
 
-    public function calculatePrice($data, $uoteSettings, $lgOption = false, $notify = false, $laccess = false)
+    public function calculatePrice($data, $uoteSettings, $lgOption = false, $notify = false, $laccess = false, $originKey = '', $items = [], $allOrigins = [])
     {
         $lgCost = $lgOption ? 0 : $data['surcharges']['liftgateFee'] ?? 0;
         $nCost = $notify ? 0 : $data['surcharges']['notifyDeliveryFee'] ?? 0;
         $laCost = $laccess ? 0 : $data['surcharges']['limitedAccessDeliveryFee'] ?? 0;
         $basePrice = (float)$data['totalNetCharge']['Amount'];
         $basePrice = $basePrice - $lgCost - $nCost - $laCost;
+        $productOriginMarkupFee = Functions::calProductOriginMarkupFee($basePrice, $originKey, $items, $allOrigins);
         $basePrice = $this->CompileQuotes->calculateHandlingFee($basePrice, $uoteSettings);
+        $basePrice = $basePrice + $productOriginMarkupFee;
         return $basePrice;
     }
 
