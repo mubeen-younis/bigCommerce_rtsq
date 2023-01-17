@@ -352,35 +352,40 @@ class ExportImportProducts extends Controller
         }
         if (isset($indexes['weight']) && $indexes['weight']) {
             $key = $indexes['weight'];
-            $data = (float)$product["$key"];
+            $data = (string)$product["$key"];
+            $data = $data != '' ? (float)$product["$key"] : '';
             if ($data >= 0) {
                 $update['weight'] = (float)$product["$key"];
             }
         }
         if (isset($indexes['length']) && $indexes['length']) {
             $key = $indexes['length'];
-            $data = (float)$product["$key"];
+            $data = (string)$product["$key"];
+            $data = $data != '' ? (float)$product["$key"] : '';
             if ($data >= 0) {
                 $update['length'] = (float)$product["$key"];
             }
         }
         if (isset($indexes['width']) && $indexes['width']) {
             $key = $indexes['width'];
-            $data = (float)$product["$key"];
+            $data = (string)$product["$key"];
+            $data = $data != '' ? (float)$product["$key"] : '';
             if ($data >= 0) {
                 $update['width'] = (float)$product["$key"];
             }
         }
         if (isset($indexes['height']) && $indexes['height']) {
             $key = $indexes['height'];
-            $data = (float)$product["$key"];
+            $data = (string)$product["$key"];
+            $data = $data != '' ? (float)$product["$key"] : '';
             if ($data >= 0) {
                 $update['height'] = (float)$product["$key"];
             }
         }
         if (isset($indexes['nmfc']) && $indexes['nmfc']) {
             $key = $indexes['nmfc'];
-            $data = (float)$product["$key"];
+            $data = (string)$product["$key"];
+            $data = $data != '' ? (float)$product["$key"] : '';
             if ($data >= 0) {
                 $update['nmfc'] = (float)$product["$key"];
             }
@@ -391,21 +396,24 @@ class ExportImportProducts extends Controller
         }
         if (isset($indexes['own_pallet']) && $indexes['own_pallet']) {
             $key = $indexes['own_pallet'];
-            $data = (float)$product["$key"];
+            $data = (string)$product["$key"];
+            $data = $data != '' ? (float)$product["$key"] : '';
             if ($data >= 0) {
                 $update['own_pallet'] = (float)$product["$key"];
             }
         }
         if (isset($indexes['pallet_vertical_rotation']) && $indexes['pallet_vertical_rotation']) {
             $key = $indexes['pallet_vertical_rotation'];
-            $data = (float)$product["$key"];
+            $data = (string)$product["$key"];
+            $data = $data != '' ? (float)$product["$key"] : '';
             if ($data >= 0) {
                 $update['pallet_vertical_rotation'] = (float)$product["$key"];
             }
         }
         if (isset($indexes['ship_multiple_package']) && $indexes['ship_multiple_package']) {
             $key = $indexes['ship_multiple_package'];
-            $data = (float)$product["$key"];
+            $data = (string)$product["$key"];
+            $data = $data != '' ? (float)$product["$key"] : '';
             if ($data >= 0) {
                 $update['ship_multiple_package'] = (float)$product["$key"];
             }
