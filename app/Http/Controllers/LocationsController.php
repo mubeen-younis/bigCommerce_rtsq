@@ -75,9 +75,6 @@ class LocationsController extends Controller
         if (isset($request->odfl_account_number)) {
             $rules['odfl_account_number'] = 'max:49';
         }
-        if (isset($request->ups_account_number)) {
-            $rules['ups_account_number'] = 'max:49';
-        }
         if (isset($request->sefl_account_number)) {
             $rules['sefl_account_number'] = 'max:49';
         }
@@ -227,7 +224,6 @@ class LocationsController extends Controller
             $location->default_location_id = $request->default_location_id ?? '';
             $location->xpo_account_number = $request->xpo_account_number ?? '';
             $location->odfl_account_number = $request->odfl_account_number ?? '';
-            $location->ups_account_number = $request->ups_account_number ?? '';
             $location->sefl_account_number = $request->sefl_account_number ?? '';
             $location->saia_account_number = $request->saia_account_number ?? '';
             $location->fedex_account_number = $request->fedex_account_number ?? '';

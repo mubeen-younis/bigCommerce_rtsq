@@ -505,12 +505,6 @@ class Functions
                 }
                 $origins[$key]['accountNumber'] = $fedexAccountNumber;
 
-            } else if ($carrier == 'ups-ltl'){
-                $upsAccountNumber = $locationInfo['ups_account_number'] ?? null;
-                if (blank($upsAccountNumber)) {
-                    continue;
-                }
-                $origins[$key]['accountNumber'] = $upsAccountNumber;
             }
             
         }

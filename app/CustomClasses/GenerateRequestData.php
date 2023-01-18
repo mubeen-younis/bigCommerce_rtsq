@@ -102,8 +102,7 @@ class GenerateRequestData
                     break;
                 case "ups-ltl":
                     $wweLtlArr = $this->upsLtlEnitArr($con1, $destination);
-                    $upsOrigin = Functions::originAssociatedAccNum($enitOrigin, $wweLtlArr, $key);
-                    $wweLtlArr['originAddress'] = $upsOrigin;
+                    $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['upsLTL'] = $wweLtlArr;
                     break;
                 case "ups-small":
