@@ -347,28 +347,32 @@ class ExportImportProducts extends Controller
         }
         if (isset($indexes['weight']) && $indexes['weight']) {
             $key = $indexes['weight'];
-            $data = (float)$product["$key"];
+            $data = (string)$product["$key"];
+            $data = $data != '' ? (float)$product["$key"] : '';
             if ($data >= 0) {
                 $update['weight'] = (float)$product["$key"];
             }
         }
         if (isset($indexes['length']) && $indexes['length']) {
             $key = $indexes['length'];
-            $data = (float)$product["$key"];
+            $data = (string)$product["$key"];
+            $data = $data != '' ? (float)$product["$key"] : '';
             if ($data >= 0) {
                 $update['length'] = (float)$product["$key"];
             }
         }
         if (isset($indexes['width']) && $indexes['width']) {
             $key = $indexes['width'];
-            $data = (float)$product["$key"];
+            $data = (string)$product["$key"];
+            $data = $data != '' ? (float)$product["$key"] : '';
             if ($data >= 0) {
                 $update['width'] = (float)$product["$key"];
             }
         }
         if (isset($indexes['height']) && $indexes['height']) {
             $key = $indexes['height'];
-            $data = (float)$product["$key"];
+            $data = (string)$product["$key"];
+            $data = $data != '' ? (float)$product["$key"] : '';
             if ($data >= 0) {
                 $update['height'] = (float)$product["$key"];
             }
