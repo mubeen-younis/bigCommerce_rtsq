@@ -94,6 +94,9 @@ class QuotesResults
                 continue;
             }
             foreach ($quotes['q'] as $key => $quote){
+                if(!isset($quote['CarrierScac'])){
+                    continue;
+                }
                 $key = $quote['CarrierScac'];
                 $shipments[$shipment]['q'][$key] = $quote;
             }
