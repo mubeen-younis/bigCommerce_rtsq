@@ -38,6 +38,8 @@ class QuoteSettingsController extends Controller
     public function getThresholdSettings(Request $request)
     {
         $WeightThresholdSettings = WeightThresholdSettings::where('store_id', $request->store_id)->first();
+        $parcel = ['parcel_rates' => 1];
+        $WeightThresholdSettings = empty($WeightThresholdSettings) ? $parcel : $WeightThresholdSettings;
         return response()->json(['error' => false, 'data' => $WeightThresholdSettings, 'debug' => $request->all()], 200);
     }
 
