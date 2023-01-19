@@ -5,6 +5,7 @@ namespace App\CustomClasses;
 use App\Models\BoxSize;
 use Illuminate\Support\Facades\Log;
 use App\Models\ResidentialSetting;
+use App\Models\WeightThresholdSettings;
 
 class Functions
 {
@@ -538,5 +539,41 @@ class Functions
         }
 
         return ['carriersArray' => $carriersArray, 'itemsArr' => $itemsArr];
+    }
+
+    public static function suppressParcelRates($carriers, $items, $storeId)
+    {
+        $totalWeight = self::calculatItemseWeight($items);
+        if($totalWeight != null || $totalWeight != 0){
+            if(!empty($carriers)){
+                foreach($carriers as $key => $carrier){
+                    $carrierWeightThreshold = isset($carrier['api']['thresholdWeightLimit']) ? $carrier['api']['thresholdWeightLimit'] : null;
+                    if($carrierWeightThreshold === null){
+                        continue;
+                    }
+                    if($totalWeight >= $carrierWeightThreshold){
+                        $ThresholdSettings = WeightThresholdSettings::where('store_id', $storeId)->first();
+                        if($ThresholdSettings['parcel_rates'] == 2){
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+    
+    public static function calculatItemseWeight($items)
+    {
+        $totalWeight = 0;
+        if(!empty($items)){
+            foreach($items as $item){
+                $weight = isset($item['lineItemWeight']) ? $item['lineItemWeight'] : 0;
+                $quantity = isset($item['piecesOfLineItem']) ? $item['piecesOfLineItem'] : 0;
+                $totalWeight += $weight * $quantity;
+            }
+        }
+        return $totalWeight;
+
     }
 }
