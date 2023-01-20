@@ -272,7 +272,6 @@ class ExportImportProducts extends Controller
     public function importProductsCsv(Request $request)
     {
         $chunks = $this->splitCcvInChunks($request);
-        //$this->importProductCsvJob($request);
         $delay = 2;
 
         $data['filename'] = $request['filename'];
@@ -286,7 +285,6 @@ class ExportImportProducts extends Controller
             $data['path'] = $path;
             $delay = ($key + 1) * 10;
             ImportProductsJob::dispatch($data)->delay(Carbon::now()->addSeconds($delay));
-            //$this->importProductCsvJob($request);
         }
         ImportProductsNotification::dispatch($data['importEmailAddress'])->delay(Carbon::now()->addSeconds($delay + 10));
         // start running queue
