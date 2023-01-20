@@ -940,14 +940,7 @@ class GenerateRequestData
             if (isset($palletPkgResp['items']) && !empty($palletPkgResp['items'])) {
                 $itemsArr = $itemsArr + $palletPkgResp['items'];
             }
-            
-            if (isset($palletPkgResp['packedItemsOrgIds']) && !empty($palletPkgResp['packedItemsOrgIds'])) {
-                foreach ($palletPkgResp['packedItemsOrgIds'] as $orgId) {
-                    if (isset($itemsArr[$orgId])) {
-                        unset($itemsArr[$orgId]);
-                    }
-                }
-            }
+
             $itemsArr = $palletPkg->setNmfcNull($palletPkgResp, $itemsArr);
         }
 
