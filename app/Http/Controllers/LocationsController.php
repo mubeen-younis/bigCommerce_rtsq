@@ -7,6 +7,7 @@ use App\Models\Locations;
 use App\Models\ProductSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use App\Models\LocSpecificAccountNo;
 
 class LocationsController extends Controller
 {
@@ -254,6 +255,7 @@ class LocationsController extends Controller
             ];
             $location->additionals = json_encode($additionals);
             $location->save();
+            $locAccNo = LocSpecificAccountNo::saveLocAccNo($request, $location);
 
             $callBy = $method == 'added' ? 'New ' . lcfirst($callBy) : ucfirst($callBy);
 
