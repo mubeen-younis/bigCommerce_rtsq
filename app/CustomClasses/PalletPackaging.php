@@ -396,8 +396,14 @@ class PalletPackaging
                 }
 
                 $origin = $pallet->pallet_data->variant_id;
-                if (!in_array($origin, $packedItemsOrgIds)) {
-                    array_push($packedItemsOrgIds, $origin);
+                if(count($pallet->items) > 1){
+                    foreach($pallet->items as $item){
+                        array_push($packedItemsOrgIds, $item->id);
+                    }
+                }else{
+                    if (!in_array($origin, $packedItemsOrgIds)) {
+                        array_push($packedItemsOrgIds, $origin);
+                    }
                 }
 
                 $newkey = str_shuffle($origin . $key . rand(10, 100));
@@ -795,5 +801,30 @@ class PalletPackaging
     {
         $nickname = BoxSize::getBoxNicknameAndFee($palletId);
         return $nickname->nickname ?? null;
+    }
+
+    public function setNmfcNull($palletPkgResp, $itemsArr){
+        
+        if(isset($palletPkgResp['palletResponse']) && !empty($palletPkgResp['palletResponse'])){
+            foreach($palletPkgResp['palletResponse'] as $pallets){
+                if(isset($pallets->pallets_packed) && !empty($pallets->pallets_packed)){
+                    foreach($pallets->pallets_packed as $palletPacked){
+                        if(isset($palletPacked->items) && count($palletPacked->items) > 1){
+                            foreach($palletPacked->items as $palletPkgItem){
+                                foreach($itemsArr as $key => $packedItem){
+                                    if($packedItem['variant_id'] == $palletPkgItem->id){
+                                        if(isset($packedItem['lineItemNMFC'])){
+                                            $itemsArr[$key]['lineItemNMFC'] = null;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return $itemsArr;
     }
 }

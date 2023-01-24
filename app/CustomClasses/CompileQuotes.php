@@ -657,9 +657,11 @@ class CompileQuotes
      * @info: This function will compile all quotes according to the origin.
      * After getting from quotes almost all type of compilation happened in this function
      */
-    public function newGetQuotesResults($quotes, $connectionSettings, $allOrigins, $isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination)
+    public function newGetQuotesResults($quotes, $connectionSettings, $allOrigins, $isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $items)
     {
         $this->residential = $residential;
+        $this->items = $items;
+        $this->allOrigins = $allOrigins;
         if ($quotes == null) {
             return [];
         }
@@ -944,6 +946,7 @@ class CompileQuotes
         }
 
         foreach ($shipments as $origin => $quote) {
+            $this->originKey = $origin;
             if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -976,6 +979,7 @@ class CompileQuotes
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) && isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y') {
                         $access = $this->getAccessorialCode(false, false, $resiPickup, $lgPickup);
                         $price = $this->calculatePrice($data);
+                                               
                         /*
                          * Date 01-07-22
                          * Adding Functionality of Delivery Estimate Options
@@ -1093,6 +1097,7 @@ class CompileQuotes
         $key = 1;
 
         foreach ($shipments as $origin => $quote) {
+            $this->originKey = $origin;
             if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -1121,6 +1126,7 @@ class CompileQuotes
                 $data = $quote['q'];
                 $access = $this->getAccessorialCode();
                 $price = $this->calculateOdflPrice($data);
+
                 $date = $data['deliveryDate'] ?? null;
                 $days = $data['totalTransitTimeInDays'] ?? null;
                 $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
@@ -1218,6 +1224,7 @@ class CompileQuotes
             $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
         foreach ($shipments as $origin => $quote) {
+            $this->originKey = $origin;
             if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -1417,7 +1424,7 @@ class CompileQuotes
         $this->alwaysResi = $this->residential['alwaysResi']['upsSmall'] ?? false;
         $access = $this->getAccessorialCodeSmall();
 
-        $res = $this->upsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment);
+        $res = $this->upsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items);
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = $res['isMultiShipment'] ?? false;
         }
@@ -1437,7 +1444,7 @@ class CompileQuotes
         $this->alwaysResi = $this->residential['alwaysResi']['purolatorSmall'] ?? false;
         $access = $this->getAccessorialCodeSmall();
 
-        $res = $this->purolatorSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment);
+        $res = $this->purolatorSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items);
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = $res['isMultiShipment'];
         }
@@ -1475,7 +1482,7 @@ class CompileQuotes
         }
 
         foreach ($shipments as $origin => $quote) {
-
+            $this->originKey = $origin;
             $hatShipments[] = $estesLtl->HatQuoteCompile($quote,$this->quoteSettings);
             
             if (isset($quote['severity'])) {
@@ -1618,7 +1625,7 @@ class CompileQuotes
         }
         $this->alwaysResi = $this->residential['alwaysResi']['fedexSmall'] ?? false;
         $access = $this->getAccessorialCodeSmall();
-        $res = $this->fedexSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $destination);
+        $res = $this->fedexSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $destination, $this->items);
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = $res['isMultiShipment'] ?? false;
         }
@@ -1664,7 +1671,7 @@ class CompileQuotes
             $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
         foreach ($shipments as $origin => $quote) {
-
+            $this->originKey = $origin;
             if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -1697,7 +1704,8 @@ class CompileQuotes
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) /*&& isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y' */) {
                         //$data['totalTransitTimeInDays'] = $data['LtlServiceDays'] ?? 0;
                         $access = $preCode . $this->GTZLtlQuotesResults->getAccessorialCode($isResi);
-                        $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings);
+                        $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings, false, false, false, $this->originKey, $this->items, $this->allOrigins);
+
                         /*
                          * Date 01-07-22
                          * Adding Functionality of Delivery Estimate Options
@@ -1717,7 +1725,7 @@ class CompileQuotes
                         if ($lgQuotes) {
 
                             $access = $preCode . $this->GTZLtlQuotesResults->getAccessorialCode($isResi, true);
-                            $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings, true);
+                            $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings, true, fasle, false, $this->originKey, $this->items, $this->allOrigins);
                             $title = $this->getGTitle($data['serviceDesc'], true, false, false, false, $data['totalTransitTimeInDays'], $this->quoteSettings, false, $dateAndDays);
                             $titleQuickest = $this->getGTitle($data['serviceDesc'], true, false, false, false, $data['totalTransitTimeInDays'], $this->quoteSettings, true, $dateAndDays);
                             $arraySorting['liftgate'][$key] = $price;
@@ -1859,7 +1867,7 @@ class CompileQuotes
             $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
         foreach ($shipments as $origin => $quote) {
-
+            $this->originKey = $origin;
             if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -1893,6 +1901,7 @@ class CompileQuotes
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) /*&& isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y' */) {
                         $access = $preCode . $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
+
                         /*
                          * Date 01-07-22
                          * Adding Functionality of Delivery Estimate Options
@@ -2012,6 +2021,7 @@ class CompileQuotes
         $hatArraySorting = [];
 
         foreach ($shipments as $origin => $quote) {
+            $this->originKey = $origin;
             if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -2047,6 +2057,7 @@ class CompileQuotes
 
                         $access = $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
+
                         if (isset($data['serviceType']) && $data['serviceType'] === 'FEDEX_FREIGHT_ECONOMY') {
                             $this->quoteSettings['label_as'] = !blank($freightEconomyLableAs) ? $freightEconomyLableAs : 'LTL Freight Economy';
                         }
@@ -2182,7 +2193,7 @@ class CompileQuotes
         $hatShipments = [];
 
         foreach ($shipments as $origin => $quote) {
-
+            $this->originKey = $origin;
             if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -2214,6 +2225,7 @@ class CompileQuotes
 
                     $access = $this->getAccessorialCode();
                     $price = $this->calculatePrice($data);
+
                     /*
                      * Date 01-07-22
                      * Adding Functionality of Delivery Estimate Options
@@ -2342,6 +2354,7 @@ class CompileQuotes
         $preAccess = 'rnlltl';
         $HAT = [];
         foreach ($shipments as $origin => $quote) {
+            $this->originKey = $origin;
             if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -2375,6 +2388,7 @@ class CompileQuotes
                         continue;
                     }
                     $price = $this->calculatePrice($data);
+
                     $this->quoteSettings['label_as'] = (!empty($lableAs) ? $lableAs . ' ' : '') . $data['serviceDesc'];
                     $date = $data['deliveryDate'] ?? null;
                     $days = $data['totalTransitTimeInDays'] ?? null;
@@ -2523,6 +2537,7 @@ class CompileQuotes
         $shipmentCount = 0;
         $count = 0;
         foreach ($shipments as $origin => $quote) {
+            $this->originKey = $origin;
             if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -2575,7 +2590,8 @@ class CompileQuotes
                     $days = $data['totalTransitTimeInDays'] ?? null;
                     $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
                     $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $dateAndDays, $data['serviceType'], $this->quoteSettings, $this->isResi);
-
+                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $this->originKey, $this->items, $this->allOrigins);
+                    $price = $price + $productOriginMarkupFee;
                     $price = (float)str_replace(',', '', $price);
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12wwe' . $data['serviceType'] . $access;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
@@ -2656,6 +2672,7 @@ class CompileQuotes
         $lableAs = $this->quoteSettings['label_as'] ?? 'Freight';
         $key = 1;
         foreach ($shipments as $origin => $quote) {
+            $this->originKey = $origin;
             if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -2681,6 +2698,7 @@ class CompileQuotes
 
                 $access = $this->getAccessorialCode();
                 $price = $this->calculatePrice($data, false, false, true);
+
                 /*
                  * Date 01-07-22
                  * Adding Functionality of Delivery Estimate Options
@@ -2760,7 +2778,7 @@ class CompileQuotes
         }
         $this->alwaysResi = $this->residential['alwaysResi']['unishippersSmall'] ?? false;
         $access = $this->getAccessorialCodeSmall();
-        $res = $this->unishippersSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment);
+        $res = $this->unishippersSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items);
 
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = $res['isMultiShipment'] ?? false;
@@ -2771,7 +2789,7 @@ class CompileQuotes
 
     private function compileDayRossLtlQuotes($shipments, $connectionSettings, $allOrigins, $hazmatAllItems, $residential)
     {
-        $this->isSameDayApi = $connectionSettings['dayross-ltl']['creds']['api_type'] == 'sameday' ? true : false;
+        $this->isSameDayApi = isset($connectionSettings['dayross-ltl']['creds']['api_type']) && $connectionSettings['dayross-ltl']['creds']['api_type'] == 'sameday' ? true : false;
         $dayRossLtl = new dayRossLtlQuotesResults();
 
         if (!$this->isSameDayApi) {
@@ -2801,6 +2819,7 @@ class CompileQuotes
 
         /* Quotes compilation */
         foreach ($shipments as $origin => $quote) {
+            $this->originKey = $origin;
             $isError = isset($quote['severity']) || isset($quote['error']) || isset($quote['q']['soapBody']['soapFault']);
             if ($isError) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
@@ -2838,6 +2857,7 @@ class CompileQuotes
                     $srvcType = $data['serviceType'] ?? '';
                     if (isset($srvcType)) {
                         $price = $this->calculatePrice($data);
+
                         $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : 'Freight';
 
                         if ($this->isSameDayApi) {
@@ -3025,6 +3045,7 @@ class CompileQuotes
         $labelAs = $this->quoteSettings['label_as'] ?? '';
         
         foreach ($shipments as $origin => $quote) {
+            $this->originKey = $origin;
             if (isset($quote['severity']) || (isset($quote['q']) && isset($quote['q']['error']))) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -3065,6 +3086,7 @@ class CompileQuotes
                     if (isset($srvcType)) {
                         $access = $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
+
                         $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : 'Freight';
                         $date = $quote['q']['deliveryDate'] ?? null;
                         $days = $quote['q']['totalTransitTimeInDays'] ?? null;
@@ -3193,6 +3215,7 @@ class CompileQuotes
         }
 
         foreach ($shipments as $origin => $quote) {
+            $this->originKey = $origin;
             if (isset($quote['q']['severity']) || isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -3213,7 +3236,7 @@ class CompileQuotes
 
             $originQuotes = [];
             $arraySorting = [];
-            $TLquotes = $freightQuote->truckLoadQuotes($quote, $allConfigServices, $this->quoteSettings);
+            $TLquotes = $freightQuote->truckLoadQuotes($quote, $allConfigServices, $this->quoteSettings, $origin, $this->items, $allOrigins);
             $TLquotes = $this->getCompiledQuotes($TLquotes[0], $TLquotes[1], false);
 
             if (isset($quote['q'])) {
@@ -3231,6 +3254,7 @@ class CompileQuotes
                             'surcharges' => $data['surcharges'],
                         );
                         $price = $this->calculatePrice($charges);
+
                         /*
                          * Adding Functionality of Delivery Estimate Options
                          * */
@@ -3338,6 +3362,7 @@ class CompileQuotes
 
         /* Quotes compilation */
         foreach ($shipments as $origin => $quote) {
+            $this->originKey = $origin;
             $isError = isset($quote['severity']);
             if ($isError) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
@@ -3360,6 +3385,7 @@ class CompileQuotes
                     if (isset($srvcType)) {
                         $access = $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
+
                         $this->quoteSettings['label_as'] = $labelAs;
 
                         $days = $data['totalTransitTimeInDays'] ?? null;
@@ -3467,6 +3493,8 @@ class CompileQuotes
         $hatShipments = [];
 
         foreach ($shipments as $origin => $quote) {
+            $this->originKey = $origin;
+
             if ((isset($quote['severity']) || !isset($quote['q']) || (isset($quote['q']) && empty($quote['q'])))) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -3509,6 +3537,7 @@ class CompileQuotes
                     if (isset($srvcType)) {
                         $access = $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
+                        
                         $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : 'Freight';
                         /*
                          * Date 01-07-22
@@ -3635,6 +3664,7 @@ class CompileQuotes
 
         $labelAs = $this->quoteSettings['label_as'] ?? '';
         foreach ($shipments as $origin => $quote) {
+            $this->originKey = $origin;
             if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -3672,6 +3702,7 @@ class CompileQuotes
                     if (isset($srvcType)) {
                         $access = $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
+
                         $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : 'Freight';
                         $date = $quote['q']['deliveryDate'] ?? null;
                         $days = $quote['q']['totalTransitTimeInDays'] ?? null;
@@ -3750,7 +3781,7 @@ class CompileQuotes
         $this->alwaysResi = false;
 
         $access = $this->getAccessorialCodeSmall();
-        $res = $uspsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment);
+        $res = $uspsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items);
 
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = $res['isMultiShipment'] ?? false;
@@ -3785,6 +3816,7 @@ class CompileQuotes
 
         /* Quotes compilation */
         foreach ($shipments as $origin => $quote) {
+            $this->originKey = $origin;
             if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -3818,6 +3850,7 @@ class CompileQuotes
                         $data['totalNetCharge']['Amount'] = $data['TotalCharge'] ?? 0;
                         $data['surcharges']['liftgateFee'] = $echoLtl->getLGFee($data['Accessorials'] ?? []) ?? 0;
                         $price = $this->calculatePrice($data);
+
                         $days = $data['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = $echoLtl->getShipmentDateAndDays($data);
                         $title = $this->getTitle($data['CarrierName'], false, false, $days, [], $dateAndDays);
@@ -3909,6 +3942,7 @@ class CompileQuotes
 
         /* Quotes compilation */
         foreach ($shipments as $origin => $quote) {
+            $this->originKey = $origin;
             if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -3926,6 +3960,7 @@ class CompileQuotes
                 foreach ($quotesArr as $key => $data) {                    
                     $access = $this->getAccessorialCode();
                     $price = $this->calculatePrice($data);
+
                     $this->quoteSettings['label_as'] = $labelAs ;
 
                     $dateAndDays = $dayLightQuotes->getShipmentDateAndDays($data);
@@ -4015,6 +4050,7 @@ class CompileQuotes
         }
 
         foreach ($shipments as $origin => $quote) {
+            $this->originKey = $origin;
             if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -4027,7 +4063,7 @@ class CompileQuotes
 
             $originQuotes = [];
             $arraySorting = [];
-            $TLquotes = $fqChrQuotes->truckLoadQuotes($quote, $allConfigServices, $this->quoteSettings);
+            $TLquotes = $fqChrQuotes->truckLoadQuotes($quote, $this->quoteSettings, $origin, $this->items, $this->allOrigins);
             $TLquotes = $this->getCompiledQuotes($TLquotes[0], $TLquotes[1], false);
 
             if (isset($quote['q'])) {
@@ -4046,6 +4082,7 @@ class CompileQuotes
                         );
 
                         $price = $this->calculatePrice($charges);
+
                         $dateAndDays = $fqChrQuotes->getShipmentDateAndDays($data);
                         $title = $this->getTitle($data['serviceDesc'], false, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
                         
@@ -4367,7 +4404,9 @@ class CompileQuotes
         $basePrice = str_replace(',', '', $data['totalNetCharge']['Amount']);
         $basePrice = (float)$basePrice;
         $basePrice = $basePrice - $lgCost - $LADCost - $IDCost - $TMDCost - $APDCost;
+        $productOriginMarkupFee = Functions::calProductOriginMarkupFee($basePrice, $this->originKey, $this->items, $this->allOrigins);
         $basePrice = $this->calculateHandlingFee($basePrice);
+        $basePrice = $basePrice + $productOriginMarkupFee;
         return $basePrice;
     }
 
@@ -4376,7 +4415,9 @@ class CompileQuotes
         $lgCost = $lgOption ? 0 : $this->getLiftGateCost($data, $getCost);
         $basePrice = (float)$data['rateEstimate']['netFreightCharge'];
         $basePrice = $basePrice - $lgCost;
+        $productOriginMarkupFee = Functions::calProductOriginMarkupFee($basePrice, $this->originKey, $this->items, $this->allOrigins);
         $basePrice = $this->calculateHandlingFee($basePrice);
+        $basePrice = $basePrice + $productOriginMarkupFee;
         return $basePrice;
     }
 
@@ -4385,7 +4426,9 @@ class CompileQuotes
         $lgCost = $lgOption ? 0 : $this->getLiftGateCost($data, $getCost, $isUpsLtl);
         $basePrice = (float)$data['ratpricing']['rattotalPrice'];
         $basePrice = $basePrice - $lgCost;
+        $productOriginMarkupFee = Functions::calProductOriginMarkupFee($basePrice, $this->originKey, $this->items, $this->allOrigins);
         $basePrice = $this->calculateHandlingFee($basePrice);
+        $basePrice = $basePrice + $productOriginMarkupFee;
         return $basePrice;
     }
 

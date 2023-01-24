@@ -128,6 +128,7 @@ class Shipping
         }
         $residential = $resp['residential'];
         $carriersArray = $resp['carriersArr'];
+        $carriersErrorSettings = $resp['errorManagment'];
 
         $this->multiOrigins = $this->checkIsMultiShipment($carriersArray['carriers']);
         /*Check for MUlti shipment and product marked as instore or local delivery*/
@@ -164,9 +165,9 @@ class Shipping
         }
 
         // Genearting final request Array
-        $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo);
+        $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo, $carriersErrorSettings);
         if (empty($requestArr)) {
-            return false;
+            return [];
         }
 
         $url = Constant::QUOTES_URL;
@@ -209,7 +210,7 @@ class Shipping
         Log::info('after addBinResponseToQuotes ' . json_encode($quotes));
 
         $quotesFromWs = $quotes ?? [];
-        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination);
+        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $package['items']);
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];

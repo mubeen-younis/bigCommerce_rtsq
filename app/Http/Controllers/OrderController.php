@@ -341,6 +341,9 @@ class OrderController extends Controller
             if (blank($item)) {
                 continue;
             }
+            $isOriginMarkup = isset($origin->origin_markup) && !empty($origin->origin_markup);
+            $isProductMarkup = isset($item->product_markup) && !empty($item->product_markup);
+
             $zip = $origin->locationId != '' ? $origin->locationId : $origin->senderZip;
             $city = $origin->senderCity ? $origin->senderCity . ',' : '';
             $state = $origin->senderState ?? '';
@@ -530,6 +533,9 @@ class OrderController extends Controller
             }
 
             $isHAT ? array_push($orderWidget[$zip]['accessories'], 'Hold At Terminal') : '';
+            $isProductMarkup ? array_push($orderWidget[$zip]['accessories'], 'Product Markup') : '';
+            $isOriginMarkup ? array_push($orderWidget[$zip]['accessories'], 'Origin Markup') : '';
+
             if (!$isSmall) {
                 $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Pickup') : '';
                 $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Delivery') : '';

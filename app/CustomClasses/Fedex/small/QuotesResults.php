@@ -136,7 +136,7 @@ class QuotesResults
     }
 
 
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $destination)
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $destination, $items)
     {
         $this->allOrigins = $this->originIndexToShipment($allOrigins);
         $this->destination = $destination;
@@ -254,6 +254,8 @@ class QuotesResults
                     $quoteSettings = $this->quoteSettings;
 
                     $price = $this->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup'] ?? 0);
+                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
+                    $price = $price + $productOriginMarkupFee;
                     // Checking hazmat and adding hazmat amounts in services
                     if ($isHazmat) {
                         if ($this->isMultiShipment) {

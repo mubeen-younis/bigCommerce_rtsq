@@ -83,7 +83,7 @@ class ExportImportProducts extends Controller
                 $folderNamePath[] = $filename;
                 $fp = fopen($filename, "w");
                 if (true) {
-                    $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (in), Width (in), Height (in), Quote Method, Freight Class, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Ships Alone, Vertical Rotation';
+                    $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (in), Width (in), Height (in), NMFC, Markup, Quote Method, Freight Class, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Ships Alone, Vertical Rotation, Ships Multiple Package, Ships Own Pallet, Pallet Vertical Rotation';
                     $line .= "\n";
                     fputs($fp, $line);
                 }
@@ -97,6 +97,8 @@ class ExportImportProducts extends Controller
                     $productLine[] = $product->length ?? '';
                     $productLine[] = $product->width ?? '';
                     $productLine[] = $product->height ?? '';
+                    $productLine[] = $product->nmfc ?? '';
+                    $productLine[] = $product->product_markup ?? '';
 
                     $settings = json_decode($product->settings);
                     $quoteMethod = '';
@@ -132,6 +134,9 @@ class ExportImportProducts extends Controller
                     $productLine[] = $country;
                     $productLine[] = isset($settings->ship_own_package) && $settings->ship_own_package ? 1 : 0;
                     $productLine[] = isset($settings->allow_vertical) && $settings->allow_vertical ? 1 : 0;
+                    $productLine[] = isset($product->ship_multiple_package) && $product->ship_multiple_package ? 1 : 0;
+                    $productLine[] = isset($product->own_pallet) && $product->own_pallet ? 1 : 0;
+                    $productLine[] = isset($product->pallet_vertical_rotation) && $product->pallet_vertical_rotation ? 1 : 0;
                     fputcsv($fp, $productLine);
                 }
             });
@@ -267,8 +272,7 @@ class ExportImportProducts extends Controller
     public function importProductsCsv(Request $request)
     {
         $chunks = $this->splitCcvInChunks($request);
-        //$this->importProductCsvJob($request);
-        $delay = 10;
+        $delay = 2;
 
         $data['filename'] = $request['filename'];
         $data['firstHeader'] = $request['firstHeader'];
@@ -280,10 +284,9 @@ class ExportImportProducts extends Controller
         foreach ($chunks as $key => $path) {
             $data['path'] = $path;
             $delay = ($key + 1) * 10;
-            ImportProductsJob::dispatch($data)->delay(Carbon::now()->addSecond($delay));
-            //$this->importProductCsvJob($request);
+            ImportProductsJob::dispatch($data)->delay(Carbon::now()->addSeconds($delay));
         }
-        ImportProductsNotification::dispatch($data['importEmailAddress'])->delay(Carbon::now()->addSecond($delay + 10));
+        ImportProductsNotification::dispatch($data['importEmailAddress'])->delay(Carbon::now()->addSeconds($delay + 10));
         // start running queue
         \Artisan::call('queue:work');
         return response()->json([
@@ -347,30 +350,70 @@ class ExportImportProducts extends Controller
         }
         if (isset($indexes['weight']) && $indexes['weight']) {
             $key = $indexes['weight'];
-            $data = (float)$product["$key"];
+            $data = (string)$product["$key"];
+            $data = $data != '' ? (float)$product["$key"] : '';
             if ($data >= 0) {
                 $update['weight'] = (float)$product["$key"];
             }
         }
         if (isset($indexes['length']) && $indexes['length']) {
             $key = $indexes['length'];
-            $data = (float)$product["$key"];
+            $data = (string)$product["$key"];
+            $data = $data != '' ? (float)$product["$key"] : '';
             if ($data >= 0) {
                 $update['length'] = (float)$product["$key"];
             }
         }
         if (isset($indexes['width']) && $indexes['width']) {
             $key = $indexes['width'];
-            $data = (float)$product["$key"];
+            $data = (string)$product["$key"];
+            $data = $data != '' ? (float)$product["$key"] : '';
             if ($data >= 0) {
                 $update['width'] = (float)$product["$key"];
             }
         }
         if (isset($indexes['height']) && $indexes['height']) {
             $key = $indexes['height'];
-            $data = (float)$product["$key"];
+            $data = (string)$product["$key"];
+            $data = $data != '' ? (float)$product["$key"] : '';
             if ($data >= 0) {
                 $update['height'] = (float)$product["$key"];
+            }
+        }
+        if (isset($indexes['nmfc']) && $indexes['nmfc']) {
+            $key = $indexes['nmfc'];
+            $data = (string)$product["$key"];
+            $data = $data != '' ? (float)$product["$key"] : '';
+            if ($data >= 0) {
+                $update['nmfc'] = (float)$product["$key"];
+            }
+        }
+        if (isset($indexes['product_markup']) && $indexes['product_markup']) {
+            $key = $indexes['product_markup'];
+            $update['product_markup'] = (string)$product["$key"];
+        }
+        if (isset($indexes['own_pallet']) && $indexes['own_pallet']) {
+            $key = $indexes['own_pallet'];
+            $data = (string)$product["$key"];
+            $data = $data != '' ? (float)$product["$key"] : '';
+            if ($data >= 0) {
+                $update['own_pallet'] = (float)$product["$key"];
+            }
+        }
+        if (isset($indexes['pallet_vertical_rotation']) && $indexes['pallet_vertical_rotation']) {
+            $key = $indexes['pallet_vertical_rotation'];
+            $data = (string)$product["$key"];
+            $data = $data != '' ? (float)$product["$key"] : '';
+            if ($data >= 0) {
+                $update['pallet_vertical_rotation'] = (float)$product["$key"];
+            }
+        }
+        if (isset($indexes['ship_multiple_package']) && $indexes['ship_multiple_package']) {
+            $key = $indexes['ship_multiple_package'];
+            $data = (string)$product["$key"];
+            $data = $data != '' ? (float)$product["$key"] : '';
+            if ($data >= 0) {
+                $update['ship_multiple_package'] = (float)$product["$key"];
             }
         }
 
@@ -463,12 +506,41 @@ class ExportImportProducts extends Controller
                 $settings->allow_vertical = ($product["$key"] == 1) ? true : false;;
             }
         }
+        if (isset($indexes['ship_multiple_package']) && $indexes['ship_multiple_package']) {
+            $key = $indexes['ship_multiple_package'];
+            if (array_key_exists($key, $product)) {
+                $shipMulti = ($product["$key"] == 1) ? true : false;;
+            }
+        }
+        if (isset($indexes['nmfc']) && $indexes['nmfc']) {
+            $key = $indexes['nmfc'];
+            if (array_key_exists($key, $product)) {
+                $settings->nmfc = (string)$product["$key"];
+            }
+        }
 
         $allowVert = optional($settings)->allow_vertical ?? false;
         $shipOwn = optional($settings)->ship_own_package ?? false;
         if ($allowVert && $shipOwn) {
             $settings->ship_own_package = false;
         }
+        if (($allowVert || $shipOwn) && $shipMulti) {
+            $settings->ship_own_package = false;
+            $settings->allow_vertical = false;
+        }
+        if (isset($indexes['own_pallet']) && $indexes['own_pallet']) {
+            $key = $indexes['own_pallet'];
+            if (array_key_exists($key, $product)) {
+                $settings->own_pallet = ($product["$key"] == 1) ? true : false;
+            }
+        }
+        if (isset($indexes['pallet_vertical_rotation']) && $indexes['pallet_vertical_rotation']) {
+            $key = $indexes['pallet_vertical_rotation'];
+            if (array_key_exists($key, $product)) {
+                $settings->pallet_vertical_rotation = ($product["$key"] == 1) ? true : false;;
+            }
+        }
+
         if (isset($indexes['insurance']) && $indexes['insurance']) {
             $key = $indexes['insurance'];
             if (array_key_exists($key, $product)) {

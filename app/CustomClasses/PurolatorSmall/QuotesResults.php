@@ -107,7 +107,7 @@ class QuotesResults
     }
 
 
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment)
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items)
     {
         $shipments = $this->formateQuoteBeforeCompile($shipments,$connectionSettings);
         $this->quoteSettings = [];
@@ -169,6 +169,8 @@ class QuotesResults
                     // Adding Markup in services if enabled
                     $price = $this->getServiceRate($data, $data['serviceType'], $this->quoteSettings);
                     $quoteSettings = $this->quoteSettings;
+                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
+                    $price = $price + $productOriginMarkupFee;
 
                     // Checking hazmat and adding hazmat amounts in services
                     if ($isHazmat) {

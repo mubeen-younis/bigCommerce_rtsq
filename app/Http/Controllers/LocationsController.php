@@ -228,6 +228,7 @@ class LocationsController extends Controller
             $location->saia_account_number = $request->saia_account_number ?? '';
             $location->fedex_account_number = $request->fedex_account_number ?? '';
             $location->purolator_account_number = $request->purolator_account_number ?? '';
+            $location->origin_markup = $request->origin_markup ?? '';
 
 
             $additionals = [

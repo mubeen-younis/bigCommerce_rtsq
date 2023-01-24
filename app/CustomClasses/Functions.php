@@ -511,4 +511,100 @@ class Functions
 
         return $origins;
     }
+
+    public static function calProductOriginMarkupFee($cost, $shipmentKey, $items, $allOrigins)
+    {  
+        $variantKeys = [];
+        $productFeeMarkup = 0;
+        $totalFeeMarkup = 0;
+        $symbolicHandlingFee = '';
+        $count = 0;
+        $originFeeMarkup = 0;
+
+        // Calculate Origins markup fee
+        if(!empty($allOrigins)){
+            foreach($allOrigins as $key => $origin){
+                if($origin['locationId'] == $shipmentKey){
+                    $variantKeys[] = $key;
+                    if($count > 0){
+                        continue;
+                    }
+
+                    if (isset($origin['origin_markup'])) {
+                        $originFeeMarkup = (float)$origin['origin_markup'] ?? 0;
+                        $symbolicHandlingFee = strpos($origin['origin_markup'], '%') ? '%' : '';
+                    }
+
+                    if (strlen($originFeeMarkup) > 0) {
+                        if ($symbolicHandlingFee === '%') {
+                            $percentVal = $originFeeMarkup / 100 * $cost;
+                            $totalFeeMarkup += $percentVal;
+                        } else {
+                            $totalFeeMarkup += $originFeeMarkup;
+                        }
+                    }
+                    $count++;
+                }
+            }
+            $symbolicHandlingFee = '';
+        }
+        // Calculate Products markup fee
+        if (!empty($items) && !empty($variantKeys)) {
+            foreach($items as $item){
+                $prodQuantity = ($item['piecesOfLineItem'] ?? 0);
+                foreach($variantKeys as $variantId){
+                    if($variantId == $item['variant_id']){
+                        if (isset($item['product_markup'])) {
+                            $productFeeMarkup = (float)$item['product_markup'] ?? 0;
+                            $symbolicHandlingFee = strpos($item['product_markup'], '%') ? '%' : '';
+                        }
+                        $prodcost = $prodQuantity * ($item['lineItemPrice'] ?? 0);
+
+                        if (strlen($productFeeMarkup) > 0) {
+                            if ($symbolicHandlingFee === '%') {
+                                $percentVal = $productFeeMarkup / 100 * $prodcost;
+                                $totalFeeMarkup += $percentVal;
+                            } else {
+                                $totalFeeMarkup += $productFeeMarkup * $prodQuantity;
+                            }
+                        }
+                    } 
+                }
+            } 
+        }
+        return $totalFeeMarkup;
+    }
+    
+    public static function productErrorManagment($carriersErrorSettings, $carriersArray, $itemsArr)
+    {
+        if(!empty($itemsArr)){
+            $count = count($itemsArr);
+            foreach($itemsArr as $key => $item){
+                if(empty($item['lineItemLength']) || ($item['lineItemLength'] == 0) ||
+                   empty($item['lineItemWidth'])  || ($item['lineItemWidth'] == 0)  || 
+                   empty($item['lineItemHeight']) || ($item['lineItemHeight'] == 0) ||
+                   empty($item['lineItemWeight']) || $item['lineItemWeight'] == 0){
+                    if(!(empty($item['lineItemWeight']) || $item['lineItemWeight'] == 0) &&
+                     !(empty($item['lineItemClass']) || $item['lineItemClass'] == 0)){
+                        continue;
+                    }
+                    if(!(empty($item['lineItemWeight']) || $item['lineItemWeight'] == 0) && ($item['freightClass'] != 'ltl')){
+                        continue;
+                    }
+
+                    foreach($carriersArray['carriers'] as $carr => $carrier){
+                        if($carriersErrorSettings[$carr] == 2 || $count == 1){
+                            unset($carriersArray['carriers'][$carr]);
+                            unset($itemsArr[$key]);
+                        } elseif($carriersErrorSettings[$carr] == 1){
+                            unset($carriersArray['carriers'][$carr]['originAddress'][$key]);
+                            unset($itemsArr[$key]);    
+                        }
+                    }$count--;
+                }        
+            }
+        }
+
+        return ['carriersArray' => $carriersArray, 'itemsArr' => $itemsArr];
+    }
 }

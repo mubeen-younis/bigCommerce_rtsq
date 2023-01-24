@@ -121,6 +121,7 @@ class WweLTLShipmentPackage
             $formattedOrigins[$key]['zip'] = isset($ori->zip_code) ? str_replace(' ', '', $ori->zip_code) : '';
             $formattedOrigins[$key]['country'] = $ori->country ?? '';
             $formattedOrigins[$key]['additionals'] = $ori->additionals ?? [];
+            $formattedOrigins[$key]['origin_markup'] = $ori->origin_markup ?? '';
         }
         return $formattedOrigins;
     }
@@ -171,6 +172,7 @@ class WweLTLShipmentPackage
             $state = $origin['state'] ?? '';
             $address = $origin['address'] ?? '';
             $phone = $origin['phone'] ?? '';
+            $originMarkup = $origin['origin_markup'] ?? '';
             $country = ($origin['country'] == "United State") ? "US" : $origin['country'];
             $location = isset($origin['type']) && $origin['type'] == 1 ? 'warehouse' : 'dropship';
             $locationId = $shortOrigin['warehouse_id'] ?? $shortOrigin['id'] ?? time();
@@ -183,6 +185,7 @@ class WweLTLShipmentPackage
                 'senderState' => $state,
                 'senderCountryCode' => $country,
                 'phone' => $phone,
+                'origin_markup' => $originMarkup,
                 'InstorPickupLocalDelivery' => $this->instorePickupLdData($origin, $receiverZipCode),
             ];
             $origin = reset($origin);
