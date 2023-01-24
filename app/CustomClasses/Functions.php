@@ -543,15 +543,34 @@ class Functions
 
     public static function suppressParcelRates($carriers, $items, $storeId)
     {
-        $totalWeight = self::calculatItemseWeight($items);
-        if($totalWeight != null || $totalWeight != 0){
+        $proKeyW = $proKeyD = [];
+        $warehouseWeight = $dropshipWeight = 0;
             if(!empty($carriers)){
                 foreach($carriers as $key => $carrier){
                     $carrierWeightThreshold = isset($carrier['api']['thresholdWeightLimit']) ? $carrier['api']['thresholdWeightLimit'] : null;
                     if($carrierWeightThreshold === null){
                         continue;
                     }
-                    if($totalWeight >= $carrierWeightThreshold){
+                    foreach($carrier['originAddress'] as $ori => $origin){
+                        if(isset($origin['location']) && $origin['location'] === 'warehouse'){
+                            if(!in_array($ori, $proKeyW)){
+                                $proKeyW[] = $ori;
+                            }
+                        }elseif(isset($origin['location']) && $origin['location'] === 'dropship'){
+                            if(!in_array($ori,$proKeyD)){
+                                $proKeyD[] = $ori;
+                            }
+                        }
+                    }
+                    if(!empty($proKeyW)){
+                        $warehouseWeight = self::calculatItemseWeight($items, $proKeyW);
+                        
+                    }
+                    if(!empty($proKeyD)){
+                        $dropshipWeight = self::calculatItemseWeight($items, $proKeyD);
+                    }
+                    
+                    if($warehouseWeight > $carrierWeightThreshold || $dropshipWeight > $carrierWeightThreshold){
                         $ThresholdSettings = WeightThresholdSettings::where('store_id', $storeId)->first();
                         if($ThresholdSettings['parcel_rates'] == 2){
                             return true;
@@ -559,18 +578,21 @@ class Functions
                     }
                 }
             }
-        }
         return false;
     }
     
-    public static function calculatItemseWeight($items)
+    public static function calculatItemseWeight($items, $proKeys)
     {
         $totalWeight = 0;
-        if(!empty($items)){
-            foreach($items as $item){
-                $weight = isset($item['lineItemWeight']) ? $item['lineItemWeight'] : 0;
-                $quantity = isset($item['piecesOfLineItem']) ? $item['piecesOfLineItem'] : 0;
-                $totalWeight += $weight * $quantity;
+        if(!empty($items) && !empty($proKeys)){
+            foreach($proKeys as $key => $proKey){
+                foreach($items as $item){
+                    if($item['variant_id'] == $proKey){
+                        $weight = isset($item['lineItemWeight']) ? $item['lineItemWeight'] : 0;
+                        $quantity = isset($item['piecesOfLineItem']) ? $item['piecesOfLineItem'] : 0;
+                        $totalWeight += $weight * $quantity;   
+                    }
+                }
             }
         }
         return $totalWeight;
