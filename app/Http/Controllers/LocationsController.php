@@ -7,7 +7,7 @@ use App\Models\Locations;
 use App\Models\ProductSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use App\Models\LocSpecificAccountNo;
+use App\Models\LocAssociatedAccountNo;
 
 class LocationsController extends Controller
 {
@@ -223,12 +223,6 @@ class LocationsController extends Controller
             $location->state = $request->state;
             $location->country = $request->country;
             $location->default_location_id = $request->default_location_id ?? '';
-            $location->xpo_account_number = $request->xpo_account_number ?? '';
-            $location->odfl_account_number = $request->odfl_account_number ?? '';
-            $location->sefl_account_number = $request->sefl_account_number ?? '';
-            $location->saia_account_number = $request->saia_account_number ?? '';
-            $location->fedex_account_number = $request->fedex_account_number ?? '';
-            $location->purolator_account_number = $request->purolator_account_number ?? '';
             $location->origin_markup = $request->origin_markup ?? '';
 
 
@@ -255,7 +249,7 @@ class LocationsController extends Controller
             ];
             $location->additionals = json_encode($additionals);
             $location->save();
-            $locAccNo = LocSpecificAccountNo::saveLocAccNo($request, $location);
+            $locAccNo = LocAssociatedAccountNo::saveLocAssociatedAccNo($request, $location->id);
 
             $callBy = $method == 'added' ? 'New ' . lcfirst($callBy) : ucfirst($callBy);
 
@@ -289,6 +283,9 @@ class LocationsController extends Controller
         }
         $location = Locations::where('id', $request->location_id)
             ->first();
+        $locAssociatedAccNo = LocAssociatedAccountNo::getlocAssociatedAccNo($request->location_id);
+        $location->loc_associated_acc_no = json_encode($locAssociatedAccNo);
+        
         if ($location === null) {
             return response()->json(['error' => true,
                 'data' => [],

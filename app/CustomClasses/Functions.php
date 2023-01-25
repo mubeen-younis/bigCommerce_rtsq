@@ -6,6 +6,7 @@ use App\Models\BoxSize;
 use Illuminate\Support\Facades\Log;
 use App\Models\ResidentialSetting;
 use App\Models\Locations;
+use App\Models\LocAssociatedAccountNo;
 
 class Functions
 {
@@ -460,46 +461,46 @@ class Functions
             if (array_key_exists($locationId, $locationsDet)) {
                 $locationInfo = $locationsDet[$locationId];
             } else {
-                $locationInfo = $locationsDet[$locationId] = Locations::getlocationDetail($locationId);
+                $locationInfo = $locationsDet[$locationId] = LocAssociatedAccountNo::getlocAssociatedAccNo($locationId);
             }
 
             if ($carrier == 'xpo-ltl'){
-                $xpoAccountNumber = $locationInfo['xpo_account_number'] ?? null;
+                $xpoAccountNumber = $locationInfo['xpo-ltl'] ?? null;
                 if (blank($xpoAccountNumber)) {
                     continue;
                 }
                 $origins[$key]['accountNumber'] = $xpoAccountNumber;
 
             } else if ($carrier == 'odfl-ltl'){
-                $odflAccountNumber = $locationInfo['odfl_account_number'] ?? null;
+                $odflAccountNumber = $locationInfo['odfl-ltl'] ?? null;
                 if (blank($odflAccountNumber)) {
                     continue;
                 }
                 $origins[$key]['accountNumber'] = $odflAccountNumber;
 
             } else if ($carrier == 'saia-ltl'){
-                $saiaAccountNumber = $locationInfo['saia_account_number'] ?? null;
+                $saiaAccountNumber = $locationInfo['saia-ltl'] ?? null;
                 if (blank($saiaAccountNumber)) {
                     continue;
                 }
                 $origins[$key]['accountNumber'] = $saiaAccountNumber;
 
             } else if ($carrier == 'southeastern-ltl'){
-                $seflAccountNumber = $locationInfo['sefl_account_number'] ?? null;
+                $seflAccountNumber = $locationInfo['southeastern-ltl'] ?? null;
                 if (blank($seflAccountNumber)) {
                     continue;
                 }
                 $origins[$key]['accountNumber'] = $seflAccountNumber;
 
             } else if ($carrier == 'purolator-small'){
-                $purolatorAccountNumber = $locationInfo['purolator_account_number'] ?? null;
+                $purolatorAccountNumber = $locationInfo['purolator-small'] ?? null;
                 if (blank($purolatorAccountNumber)) {
                     continue;
                 }
                 $origins[$key]['accountNumber'] = $purolatorAccountNumber;
 
             } else if ($carrier == 'fedex-ltl'){
-                $fedexAccountNumber = $locationInfo['fedex_account_number'] ?? null;
+                $fedexAccountNumber = $locationInfo['fedex-ltl'] ?? null;
                 if (blank($fedexAccountNumber)) {
                     continue;
                 }
