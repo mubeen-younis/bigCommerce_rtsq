@@ -438,7 +438,7 @@ class Bin3D
         $itemPackage->bin_data->weight = $itemPropertiesArr['wg'];
         $itemPackage->bin_data->used_weight = $itemPropertiesArr['wg'];
         $itemPackage->bin_data->order_id = 'unknown';
-        $itemPackage->image_complete = 'http://us-east.api.3dbinpacking.com/images/cb0549790cbc9e08eeb636779afa3280/20181207/d4fad4107306d71b188c4b82ff167d16/1544164000-3488-1952286.png';
+        $itemPackage->image_complete = 'https://eniture.com/ws/addon/en_images/d549b90ece00d180c5b69a51b6354842/20221207/cd59328e85619fe6b0dc52aa4db034c7/1670418636-7316-1129122.png';
         $itemPackage->images_generation_time = '0.00279';
         $itemPackage->packing_time = '0.00537';
         $itemPackage->items = array();

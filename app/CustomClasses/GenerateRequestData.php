@@ -659,9 +659,9 @@ class GenerateRequestData
         
         $carriers = $carriersArray['carriers'];
         $receiverAddress = $this->getReceiverData($request);
+        $IsSuppressParcelRates = Functions::suppressParcelRates($carriers, $itemsArr, $this->storeData['store']->id);
 
         $autoResidential = $liftGateWithAuto = '0';
-        //$isRAD = isset($this->storeData['installed_addons']) && isset($this->storeData['installed_addons'][0]->is_enabled) && isset($this->storeData['installed_addons'][0]->is_enabled) && $this->storeData['installed_addons'][0]->is_enabled == 1 && isset($this->storeData['installed_addons'][0]->is_suspend) && $this->storeData['installed_addons'][0]->is_suspend == 0;
         $isRAD = isset($this->storeData['enabled_addon_rad']) && $this->storeData['enabled_addon_rad'];
 
         if ($isRAD) {
@@ -943,14 +943,7 @@ class GenerateRequestData
             if (isset($palletPkgResp['items']) && !empty($palletPkgResp['items'])) {
                 $itemsArr = $itemsArr + $palletPkgResp['items'];
             }
-            
-            if (isset($palletPkgResp['packedItemsOrgIds']) && !empty($palletPkgResp['packedItemsOrgIds'])) {
-                foreach ($palletPkgResp['packedItemsOrgIds'] as $orgId) {
-                    if (isset($itemsArr[$orgId])) {
-                        unset($itemsArr[$orgId]);
-                    }
-                }
-            }
+
             $itemsArr = $palletPkg->setNmfcNull($palletPkgResp, $itemsArr);
         }
 
@@ -984,7 +977,7 @@ class GenerateRequestData
             }
         }
 
-        $resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse, 'boxBins' => $boxBins, 'palletResponse' => $palletResp,  'palletBins' => $palletBins];
+        $resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse, 'boxBins' => $boxBins, 'palletResponse' => $palletResp,  'palletBins' => $palletBins, 'SuppressParcelRates' => $IsSuppressParcelRates];
  
         return $resp;
     }

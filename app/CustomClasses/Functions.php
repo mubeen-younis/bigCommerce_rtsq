@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\ResidentialSetting;
 use App\Models\Locations;
 use App\Models\LocAssociatedAccountNo;
+use App\Models\WeightThresholdSettings;
 
 class Functions
 {
@@ -29,7 +30,7 @@ class Functions
     public static $resiPickupTitle = '+pu';
     public static $lgPickupTitle = '+lfgpu';
     public static $palletPkgUrl = 'https://us-east.api.3dbinpacking.com/packer/palletPack';
-    public static $imageCompleteUrl = 'https://us-east.api.3dbinpacking.com/images/70785010926d0cc360921e4541811a53/20181106/4c114cebfa2d61a0c8153b3170ab6663/1541503329-2408-1523608.png';
+    public static $imageCompleteUrl = 'https://eniture.com/ws/addon/en_images/d549b90ece00d180c5b69a51b6354842/20221207/cd59328e85619fe6b0dc52aa4db034c7/1670418636-7316-1129122.png';
     public static $imageSeparatedUrl = 'https://us-east.api.3dbinpacking.com/images/70785010926d0cc360921e4541811a53/20181106/4c114cebfa2d61a0c8153b3170ab6663/1541503329-2391-8709331.png';
     public static $imageSbsUrl = 'https://us-east.api.3dbinpacking.com/images/70785010926d0cc360921e4541811a53/20181106/4c114cebfa2d61a0c8153b3170ab6663/1541503329-24-8612722.png';
     public static $limitedAccesDelLabel = ' w/ limited access delivery';
@@ -607,5 +608,63 @@ class Functions
         }
 
         return ['carriersArray' => $carriersArray, 'itemsArr' => $itemsArr];
+    }
+
+    public static function suppressParcelRates($carriers, $items, $storeId)
+    {
+        $proKeyW = $proKeyD = [];
+        $warehouseWeight = $dropshipWeight = 0;
+            if(!empty($carriers)){
+                foreach($carriers as $key => $carrier){
+                    $carrierWeightThreshold = isset($carrier['api']['thresholdWeightLimit']) ? $carrier['api']['thresholdWeightLimit'] : null;
+                    if($carrierWeightThreshold === null){
+                        continue;
+                    }
+                    foreach($carrier['originAddress'] as $ori => $origin){
+                        if(isset($origin['location']) && $origin['location'] === 'warehouse'){
+                            if(!in_array($ori, $proKeyW)){
+                                $proKeyW[] = $ori;
+                            }
+                        }elseif(isset($origin['location']) && $origin['location'] === 'dropship'){
+                            if(!in_array($ori,$proKeyD)){
+                                $proKeyD[] = $ori;
+                            }
+                        }
+                    }
+                    if(!empty($proKeyW)){
+                        $warehouseWeight = self::calculatItemseWeight($items, $proKeyW);
+                        
+                    }
+                    if(!empty($proKeyD)){
+                        $dropshipWeight = self::calculatItemseWeight($items, $proKeyD);
+                    }
+                    
+                    if($warehouseWeight > $carrierWeightThreshold || $dropshipWeight > $carrierWeightThreshold){
+                        $ThresholdSettings = WeightThresholdSettings::where('store_id', $storeId)->first();
+                        if($ThresholdSettings['parcel_rates'] == 2){
+                            return true;
+                        }
+                    }
+                }
+            }
+        return false;
+    }
+    
+    public static function calculatItemseWeight($items, $proKeys)
+    {
+        $totalWeight = 0;
+        if(!empty($items) && !empty($proKeys)){
+            foreach($proKeys as $key => $proKey){
+                foreach($items as $item){
+                    if($item['variant_id'] == $proKey){
+                        $weight = isset($item['lineItemWeight']) ? $item['lineItemWeight'] : 0;
+                        $quantity = isset($item['piecesOfLineItem']) ? $item['piecesOfLineItem'] : 0;
+                        $totalWeight += $weight * $quantity;   
+                    }
+                }
+            }
+        }
+        return $totalWeight;
+
     }
 }

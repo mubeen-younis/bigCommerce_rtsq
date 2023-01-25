@@ -246,6 +246,9 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     // Dbsc Other Settings
     Route::get('/get_dbsc_other_settings', [OtherSettingsController::class, 'index']);
     Route::post('/save_dbsc_other_settings', [OtherSettingsController::class, 'store']);
+
+    Route::get('/get_threshold_settings', [QuoteSettingsController::class, 'getThresholdSettings']);
+    Route::post('/submit_threshold_settings', [QuoteSettingsController::class, 'saveThresholdSettings']);
 });
 //Webhook
 Route::post('/bc-subscription-update', [SubscriptionController::class, 'paymentByStripeWebHook']);
