@@ -658,7 +658,6 @@ class GenerateRequestData
         $IsSuppressParcelRates = Functions::suppressParcelRates($carriers, $itemsArr, $this->storeData['store']->id);
 
         $autoResidential = $liftGateWithAuto = '0';
-        //$isRAD = isset($this->storeData['installed_addons']) && isset($this->storeData['installed_addons'][0]->is_enabled) && isset($this->storeData['installed_addons'][0]->is_enabled) && $this->storeData['installed_addons'][0]->is_enabled == 1 && isset($this->storeData['installed_addons'][0]->is_suspend) && $this->storeData['installed_addons'][0]->is_suspend == 0;
         $isRAD = isset($this->storeData['enabled_addon_rad']) && $this->storeData['enabled_addon_rad'];
 
         if ($isRAD) {
