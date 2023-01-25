@@ -272,8 +272,7 @@ class ExportImportProducts extends Controller
     public function importProductsCsv(Request $request)
     {
         $chunks = $this->splitCcvInChunks($request);
-        //$this->importProductCsvJob($request);
-        $delay = 10;
+        $delay = 2;
 
         $data['filename'] = $request['filename'];
         $data['firstHeader'] = $request['firstHeader'];
@@ -285,10 +284,9 @@ class ExportImportProducts extends Controller
         foreach ($chunks as $key => $path) {
             $data['path'] = $path;
             $delay = ($key + 1) * 10;
-            ImportProductsJob::dispatch($data)->delay(Carbon::now()->addSecond($delay));
-            //$this->importProductCsvJob($request);
+            ImportProductsJob::dispatch($data)->delay(Carbon::now()->addSeconds($delay));
         }
-        ImportProductsNotification::dispatch($data['importEmailAddress'])->delay(Carbon::now()->addSecond($delay + 10));
+        ImportProductsNotification::dispatch($data['importEmailAddress'])->delay(Carbon::now()->addSeconds($delay + 10));
         // start running queue
         \Artisan::call('queue:work');
         return response()->json([
