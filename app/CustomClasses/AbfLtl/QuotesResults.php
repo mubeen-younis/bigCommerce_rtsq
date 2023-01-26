@@ -86,6 +86,10 @@ class QuotesResults
                     $formattedShipments[$shipment]['q']['surcharges']['liftgateFee'] = $quotes['q']['INCLUDEDCHARGES']['LIFTGATEGROUNDDELIVERY'] ?? 0;        
                 }  
 
+                if(isset($quotes['q']['INCLUDEDCHARGES']['ARRIVALNOTIFICATION']) && !empty($quotes['q']['INCLUDEDCHARGES']['ARRIVALNOTIFICATION'])){
+                    $formattedShipments[$shipment]['q']['surcharges']['notifyDeliveryFee'] = $quotes['q']['INCLUDEDCHARGES']['ARRIVALNOTIFICATION'] ?? 0;
+                }
+
             }else{
 
                 $formattedShipments = [];
@@ -205,5 +209,15 @@ class QuotesResults
         $resp = array_intersect_key($services, $sliced);
 
         return $resp;
+    }
+
+    public function compileNotifyDeliveryQuotes($access, $price, $title, $index)
+    {
+        $originQuotes = [];
+        $originQuotes[$index]['code'] = 'abfltl' . $access;
+        $originQuotes[$index]['rate'] = $price;
+        $originQuotes[$index]['title'] = $title;
+
+        return $originQuotes;
     }
 }

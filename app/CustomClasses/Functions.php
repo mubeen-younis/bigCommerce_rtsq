@@ -44,6 +44,10 @@ class Functions
     public static $defaultMaxWeightSmall = 150;
     public static $QAreportDataUrl = "https://ws001.eniture-qa.com/order-meta/index.php";
     public static $reportDataUrl = "https://analytic-data.eniture.com/index.php";
+    public static $notifyBeforeDelLable = ' w/ notify before delivery';
+    public static $notifyBeforeDelResiLable = ' w/ residential & notify before delivery';
+    public static $notifyBoforeDelLiftGateLable = ' w/ lift gate & notify before delivery';
+    public static $notifyBeforeDelLiftGateResiLable = ' w/ residential, lift gate & notify before delivery';
 
     public static function hasInsureCarrier($code)
     {
