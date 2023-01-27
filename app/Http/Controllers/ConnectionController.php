@@ -106,19 +106,6 @@ class ConnectionController extends Controller
      */
     public function store(Request $request)
     {
-        /* $rules = [
-        'billing_account_no' => 'required',
-        'meter_number' => 'required',
-        'password' => 'required',
-        'auth_key' => 'required',
-        'shipper_account_no' => 'required',
-        'billing_address' => 'required',
-        ]; */
-
-        //        $validator = Validator::make($request->all(), $rules);
-        //        if ($validator->fails()) {
-        //            return response()->json($validator->errors(), 400);
-        //        }
 
         $checkCarrierType = DB::table('carriers')->select('slug', 'stores.name', 'stores.store_domain', 'stores.hash')
             ->leftJoin('installed_carriers', 'carriers.id', 'installed_carriers.carrier_id')
