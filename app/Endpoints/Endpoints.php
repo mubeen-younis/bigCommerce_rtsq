@@ -151,7 +151,7 @@ class Endpoints
 
     public static function getUnpackedBoxUrl()
     {
-        return "http://eu.api.3dbinpacking.com/images/29283f1d530b350d166b6ddc31fa2bfa/20171206/86407cf14c6c451d191d2e0b555eb9f5/1512573750-1033-8129432.png";
+        return "https://images.eniture.com/d549b90ece00d180c5b69a51b6354842/20221207/cd59328e85619fe6b0dc52aa4db034c7/1670418636-7316-1129122.png";
     }
 
     public static function fedexSmallTestEndpoint()
