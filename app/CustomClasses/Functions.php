@@ -577,7 +577,7 @@ class Functions
                     }
 
                     if ($warehouseWeight > $carrierWeightThreshold || $dropshipWeight > $carrierWeightThreshold) {
-                        $ThresholdSettings = WeightThresholdSettings::where('store_id', $storeId)->first();
+                        $ThresholdSettings = optional(WeightThresholdSettings::where('store_id', $storeId)->first())->toArray() ?? [];
                         if (isset($ThresholdSettings['parcel_rates']) && $ThresholdSettings['parcel_rates'] == 2) {
                             return true;
                         }
