@@ -586,6 +586,7 @@ class Functions
             }
             return false;
         } catch (\Exception $exception) {
+            Log::info('Exception on suppress rates ' . json_encode($exception));
             return false;
         }
     }
