@@ -135,9 +135,9 @@ class OrderController extends Controller
 
     public function createOrderWidget($request, $order, $reportingFlag)
     {
-        $rateId = $order['rate_id'] ?? null;
-        $cartId = $order['cart_id'] ?? null;
-        $data = optional(RequestData::where('rate_id', $rateId)
+        $rateId = 'multi+R+LG+NBDidx+31675069040';
+        $cartId = 'b627df98-48d8-4f1e-ae5e-f352a7fcb985';
+        $data = optional(RequestTempData::where('rate_id', $rateId)
                 ->where('cart_id', $cartId)
                 ->where('store_id', $request['store_id'])
                 ->first())->toArray() ?? null;
@@ -169,6 +169,7 @@ class OrderController extends Controller
         $isSmallLtlrate = substr($rateId, 0, 5) == 'multi' ? true : false;
         $isHAT = strpos(strtolower($rateId), '+hat');
         $insideDelivery = strpos($rateId, '+ID') ? 'Y' : 'n';
+        $notifyBeforeDelivery = strpos($rateId, '+NBD') ? 'Y' : 'n';
         $LimitedAccessDel = strpos($rateId, '+LAD') ? 'Y' : 'n';
         $isTruckLoad = strpos($rateId, '+TL') ? 'Y' : 'n';
         $isFreightTruckLoad = strpos($rateId, '+FLGTL') ? 'Y' : 'n';
@@ -369,6 +370,10 @@ class OrderController extends Controller
                     $sRate = $multiShipmentresponse->$index->insideLiftGateDelivery->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->insideLiftGateDelivery->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
                     $code = $multiShipmentresponse->$index->insideLiftGateDelivery->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
+                } else if ($isLG && $notifyBeforeDelivery == 'Y') {
+                    $sRate = $multiShipmentresponse->$index->lgnotifydelivery->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
+                    $order['shipping_name'] = $multiShipmentresponse->$index->lgnotifydelivery->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
+                    $code = $multiShipmentresponse->$index->lgnotifydelivery->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
                 } else if ($LimitedAccessDel == 'Y' && $isLG) {
                     $sRate = $multiShipmentresponse->$index->limitedaccessLG->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->limitedaccessLG->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
@@ -389,6 +394,10 @@ class OrderController extends Controller
                     $sRate = $multiShipmentresponse->$index->insideDelivery->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->insideDelivery->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
                     $code = $multiShipmentresponse->$index->insideDelivery->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
+                } else if ($notifyBeforeDelivery == 'Y') {
+                    $sRate = $multiShipmentresponse->$index->notifydelivery->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
+                    $order['shipping_name'] = $multiShipmentresponse->$index->notifydelivery->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
+                    $code = $multiShipmentresponse->$index->notifydelivery->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
                 } else if ($LimitedAccessDel == 'Y') {
                     $sRate = $multiShipmentresponse->$index->limitedaccess->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->limitedaccess->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
@@ -438,6 +447,10 @@ class OrderController extends Controller
             $sName = str_replace(Functions::$insideDelLable, '', $sName);
             $sName = str_replace(Functions::$limitedAccesDelLabel, '', $sName);
             $sName = str_replace(Functions::$limitedAccessLGDelLable, '', $sName);
+            $sName = str_replace(Functions::$notifyBeforeDelLiftGateResiLable, '', $sName);
+            $sName = str_replace(Functions::$notifyBoforeDelLiftGateLable, '', $sName);
+            $sName = str_replace(Functions::$notifyBeforeDelResiLable, '', $sName);
+            $sName = str_replace(Functions::$notifyBeforeDelLable, '', $sName);
             $sMethod = isset($shipping_name[1]) ? '(' . $shipping_name[1] : '';
 
             $orderWidget[$zip]['shipping_method'] = $sName . $sMethod;
@@ -547,6 +560,7 @@ class OrderController extends Controller
                 $isFreightTruckLoad != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Truck Load Delivery') : '';
                 $isTwoManDel != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Two Man Delivery') : '';
                 $isAppointmentDel != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Appointment Delivery') : '';
+                $notifyBeforeDelivery != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Notify Before Delivery') : '';
             }
             $orderWidget[$zip]['accessories'] = array_values(array_unique($orderWidget[$zip]['accessories']));
             $count++;
@@ -1177,6 +1191,14 @@ class OrderController extends Controller
                             $ratecode[$loc] = $code->code;
                         }
                     } else if(strpos($rateId, 'HAT') !== false && $key === 'hat'){
+                        foreach($quote as $loc =>  $code){
+                            $ratecode[$loc] = $code->code;
+                        }
+                    } else if(strpos($rateId, 'NBD') !== false && $key === 'notifydelivery'){
+                        foreach($quote as $loc =>  $code){
+                            $ratecode[$loc] = $code->code;
+                        }
+                    } else if(strpos($rateId, 'LGNBD') !== false && $key === 'lgnotifydelivery'){
                         foreach($quote as $loc =>  $code){
                             $ratecode[$loc] = $code->code;
                         }
