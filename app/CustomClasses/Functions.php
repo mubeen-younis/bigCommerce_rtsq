@@ -47,6 +47,8 @@ class Functions
     public static $defaultMaxWeightSmall = 150;
     public static $QAreportDataUrl = "https://ws001.eniture-qa.com/order-meta/index.php";
     public static $reportDataUrl = "https://analytic-data.eniture.com/index.php";
+    public static $replace3dUrl = 'http://images-us-east.api.3dbinpacking.com';
+    public static $repplaceWith3dUrl = 'https://images.eniture.com';
 
     public static function hasInsureCarrier($code)
     {
@@ -666,5 +668,10 @@ class Functions
         }
         return $totalWeight;
 
+    }
+
+    public static function replace3DBinUrl($url)
+    {
+        return str_replace(self::$replace3dUrl, self::$repplaceWith3dUrl, $url) ?? $url;
     }
 }

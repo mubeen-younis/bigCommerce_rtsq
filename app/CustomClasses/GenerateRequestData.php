@@ -2856,6 +2856,7 @@ class GenerateRequestData
 
                 foreach ($binResponse as $locationId => $bins) {
                     foreach ($bins->bins_packed as $key => $binPacked) {
+                        $binPacked->image_complete = Functions::replace3DBinUrl($binPacked->image_complete);
                         $bin = $binPacked;
                         $counting++;
                         $origin = $bin->bin_data->variant_id;

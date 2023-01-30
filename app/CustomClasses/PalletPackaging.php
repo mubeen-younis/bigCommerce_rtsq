@@ -395,6 +395,8 @@ class PalletPackaging
                     continue;
                 }
 
+                $palletPacked->image_complete = Functions::replace3DBinUrl($palletPacked->image_complete);
+
                 $origin = $pallet->pallet_data->variant_id;
                 if(count($pallet->items) > 1){
                     foreach($pallet->items as $item){
