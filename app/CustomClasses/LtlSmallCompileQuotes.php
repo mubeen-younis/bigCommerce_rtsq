@@ -235,7 +235,11 @@ class LtlSmallCompileQuotes
                     $quote['isResi'] = isset($residential['abfLtl']) && $residential['abfLtl'] == 'Y';
                     $quote['alwaysLG'] = isset($connectionSettings['abf-ltl']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['abf-ltl']['quote_settings']['alwaysLiftGateDelivery'];
 
-                    if (strpos($quote['code'], '+LG') !== false) {
+                    if (strpos($quote['code'], '+LG+NBD') !== false) {
+                        $quotesCarrier['ltl']['abf']['LGNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+NBD') !== false) {
+                        $quotesCarrier['ltl']['abf']['NBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG') !== false) {
                         $quotesCarrier['ltl']['abf']['LG'][] = $quote;
                     } else if (strpos($quote['code'], '+HAT') !== false) {
                         $quotesCarrier['ltl']['abf']['HAT'][] = $quote;
@@ -409,6 +413,22 @@ class LtlSmallCompileQuotes
                         'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
                         'title' => 'Freight' . $rtitle
                     ];
+                } else if ($simpleLg == 'LGNBD'){
+                    $rtitle = ($parcel['isResi'] ?? $ltlQuot['isResi']) ? Functions::$notifyBeforeDelLiftGateResiLable : Functions::$notifyBoforeDelLiftGateLable;
+
+                    $newQuotes[] = [
+                        'code' => 'multi' . $rCode . Functions::$notifyDelLgAccess,
+                        'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
+                        'title' => 'Freight' . $rtitle
+                    ];
+                }  else if ($simpleLg == 'NBD'){
+                    $rtitle = ($parcel['isResi'] ?? $ltlQuot['isResi']) ? Functions::$notifyBeforeDelResiLable : Functions::$notifyBeforeDelLable;
+
+                    $newQuotes[] = [
+                        'code' => 'multi' . $rCode . Functions::$notifyDelAccess,
+                        'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
+                        'title' => 'Freight' . $rtitle
+                    ];
                 } else {
                     $title = explode('|', $ltlQuot['title']);
                     unset($title[0]);
@@ -505,6 +525,18 @@ class LtlSmallCompileQuotes
             if (isset($quotes['TMDAPD'][0])) {
                 $multiShipments[$count]['twoManAptDelivery'][$indexes['ltl'][0]] = $quotes['TMDAPD'][0];
                 $multiShipments[$count]['twoManAptDelivery'][$indexes['small'][0]] = $parcel;
+                $count++;
+            }
+
+            if (isset($quotes['NBD'][0])) {
+                $multiShipments[$count]['notifydelivery'][$indexes['ltl'][0]] = $quotes['NBD'][0];
+                $multiShipments[$count]['notifydelivery'][$indexes['small'][0]] = $parcel;
+                $count++;
+            }
+
+            if (isset($quotes['LGNBD'][0])) {
+                $multiShipments[$count]['lgnotifydelivery'][$indexes['ltl'][0]] = $quotes['LGNBD'][0];
+                $multiShipments[$count]['lgnotifydelivery'][$indexes['small'][0]] = $parcel;
                 $count++;
             }
         }

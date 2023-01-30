@@ -48,6 +48,8 @@ class Functions
     public static $notifyBeforeDelResiLable = ' w/ residential & notify before delivery';
     public static $notifyBoforeDelLiftGateLable = ' w/ lift gate & notify before delivery';
     public static $notifyBeforeDelLiftGateResiLable = ' w/ residential, lift gate & notify before delivery';
+    public static $notifyDelLgAccess = '+LG+NBD';
+    public static $notifyDelAccess = '+NBD';
 
     public static function hasInsureCarrier($code)
     {
