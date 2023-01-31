@@ -249,6 +249,8 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
 
     Route::get('/get_threshold_settings', [QuoteSettingsController::class, 'getThresholdSettings']);
     Route::post('/submit_threshold_settings', [QuoteSettingsController::class, 'saveThresholdSettings']);
+
+    Route::get('/get_carrs_conn_settings', [ConnectionController::class, 'getConnSettings']);
 });
 //Webhook
 Route::post('/bc-subscription-update', [SubscriptionController::class, 'paymentByStripeWebHook']);

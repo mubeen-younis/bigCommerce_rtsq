@@ -312,6 +312,21 @@ class ConnectionController extends Controller
         return response()->json($response);
     }
 
+    public function getConnSettings(Request $request)
+    {
+        $carrConnZip = [];
+        $insCarriers = json_decode($request->carriersIds);
+        foreach($insCarriers as $key => $insCarrId){
+            
+            $con = Connection::where('installed_carrier_id', $insCarrId)->first();
+            $carrConnZip[$key] = isset($con['value']) && !empty($con['value']) ? json_decode($con['value'])->senderZip ?? json_decode($con['value'])->billing_postal_Code ??
+                                 json_decode($con['value'])->physical_zip ?? json_decode($con['value'])->original_postal_code ??
+                                 json_decode($con['value'])->customer_zip_code ?? json_decode($con['value'])->delivery_postal_code ?? '' : '';
+        }
+        
+        return response()->json(["error" => false, "data" => $carrConnZip]);
+    }
+
     /**
      * Display the specified resource.
      *
