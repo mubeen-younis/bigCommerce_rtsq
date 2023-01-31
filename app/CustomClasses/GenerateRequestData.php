@@ -794,7 +794,11 @@ class GenerateRequestData
                             unset($carriers['purolator']['originAddress']);
 
                             foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
-                                $carriers['purolator']['originAddress'][$key] = $origin;
+                                foreach($this->carriers['purolator']['originAddress'] as $oldkey => $ori){
+                                    if($ori['senderZip'] === $origin['senderZip']){
+                                        $carriers['purolator']['originAddress'][$key] = $ori;
+                                    }
+                                }
                             }
                         }
 
@@ -863,7 +867,14 @@ class GenerateRequestData
                     }
 
                     if (isset($carriers['purolator'])) {
-                        $carriers['purolator']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
+                        unset($carriers['purolator']['originAddress']);
+                        foreach ($sbsResponse['originAddress'] as $key => $origin) {
+                            foreach($this->carriers['purolator']['originAddress'] as $oldkey => $ori){
+                                if($ori['senderZip'] === $origin['senderZip']){
+                                    $carriers['purolator']['originAddress'][$key] = $ori ?? $origin ?? $carriersoriginAddress;
+                                }
+                            }
+                        }
                     }
 
                     if (isset($carriers['upsSmall'])) {
