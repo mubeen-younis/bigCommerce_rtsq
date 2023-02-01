@@ -1501,6 +1501,10 @@ class CompileQuotes
                     $lgQuotes = (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->isResi;
                 }
                 $resiPickup = isset($this->quoteSettings['residentialPickup']) && $this->quoteSettings['residentialPickup'] ? '+pu' : '';
+
+                $notifyDelivery =
+                    (isset($this->quoteSettings['always_quote_notify']) && $this->quoteSettings['always_quote_notify']) ||
+                    (isset($this->quoteSettings['offer_notify_as_option']) && $this->quoteSettings['offer_notify_as_option']) && !($this->alwaysResi || $this->isResi);
             }
             $originQuotes = [];
             $arraySorting = [];
@@ -1521,6 +1525,9 @@ class CompileQuotes
                                 foreach ($rateEstes as $rateEstesfecth) {
                                     if (isset($rateEstesfecth['ratcode']) && $rateEstesfecth['ratcode'] == "LGATE") {
                                         $data['surcharges']['liftgateFee'] = $rateEstesfecth['ratcharge'];
+                                    }
+                                    if (isset($rateEstesfecth['ratcode']) && $rateEstesfecth['ratcode'] == "NCM") {
+                                        $data['surcharges']['notifyDeliveryFee'] = $rateEstesfecth['ratcharge'];
                                     }
 
                                 }
@@ -1551,6 +1558,21 @@ class CompileQuotes
                             $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
                             $originQuotes[$key]['liftgate']['title'] = $lgTitle;
                         }
+                        
+                        if($notifyDelivery){
+                            $ndAccess = $this->getAccessorialCode(false, false, '', '', false, false, false, true) . $resiPickup;
+                            $ndPrice = $this->calculateEstesPrice($data, false, false, false, true);
+                            $ndTitle = $this->getTitle($labelAs, false, false, $data['ratdelivery']['totalTransitTimeInDays'], [], $dateAndDays, false, false, false, false, false, false, false, true);
+                            $arraySorting['notifydelivery'][$key] = $ndPrice;
+                            $originQuotes[$key] =$originQuotes[$key] + $estesLtl->compileNotifyDeliveryQuotes($data, $ndAccess, $ndPrice, $ndTitle, 'notifydelivery');
+                        }
+                        if($notifyDelivery && $lgQuotes){
+                            $ndAccess = $this->getAccessorialCode(true, false, '', '', false, false, false, true) . $resiPickup;
+                            $ndPrice = $this->calculateEstesPrice($data, true, false, false, true);
+                            $ndTitle = $this->getTitle($labelAs, true, false, $data['ratdelivery']['totalTransitTimeInDays'], [], $dateAndDays, false, false, false, false, false, false, false, true);
+                            $arraySorting['lgnotifydelivery'][$key] = $ndPrice;
+                            $originQuotes[$key] =$originQuotes[$key] + $estesLtl->compileNotifyDeliveryQuotes($data, $ndAccess, $ndPrice, $ndTitle, 'lgnotifydelivery');
+                        }
                     }
                 }
             }
@@ -1564,6 +1586,10 @@ class CompileQuotes
                         $multiShipmentQuotes['simple'][$origin] = $service['simple'];
                         $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
                         $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
+                        $notifyDelivery ? $allQuotes['notifydelivery'][] = $service['notifydelivery'] : null;
+                        $notifyDelivery ? $multiShipmentQuotes['notifydelivery'][$origin] = $service['notifydelivery'] : null;
+                        $notifyDelivery && $lgQuotes ? $allQuotes['lgnotifydelivery'][] = $service['lgnotifydelivery'] : null;
+                        $notifyDelivery && $lgQuotes ? $multiShipmentQuotes['lgnotifydelivery'][$origin] = $service['lgnotifydelivery'] : null;
                     }
                 } else {
                     $service = reset($compiledQuotes);
@@ -1571,6 +1597,11 @@ class CompileQuotes
                     $multiShipmentQuotes['simple'][$origin] = $service['simple'] ?? '';
                     $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
                     $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
+                    $notifyDelivery ? $allQuotes['notifydelivery'][] = $service['notifydelivery'] : null;
+                    $notifyDelivery ? $multiShipmentQuotes['notifydelivery'][$origin] = $service['notifydelivery'] : null;
+                    $notifyDelivery && $lgQuotes ? $allQuotes['lgnotifydelivery'][] = $service['lgnotifydelivery'] : null;
+                    $notifyDelivery && $lgQuotes ? $multiShipmentQuotes['lgnotifydelivery'][$origin] = $service['lgnotifydelivery'] : null;
+                    
                 }
             }
 
@@ -3582,7 +3613,7 @@ class CompileQuotes
                             $ndAccess = $this->getAccessorialCode(true, false, '', '', false, false, false, true);
                             $ndPrice = $this->calculatePrice($data, true, false, false, false, false, false, false, true);
                             $ndTitle = $this->getTitle($data['serviceDesc'], true, false, $days, [], $dateAndDays, false, false, false, false, false, false, false, true);
-                            $arraySorting['notifydelivery'][$origin] = $ndPrice;
+                            $arraySorting['lgnotifydelivery'][$origin] = $ndPrice;
                             $originQuotes[$origin] =$originQuotes[$origin] + $abfLtl->compileNotifyDeliveryQuotes($ndAccess, $ndPrice, $ndTitle, 'lgnotifydelivery');
                         }
                     }
@@ -4303,7 +4334,12 @@ class CompileQuotes
             } else {
                 return array_merge($quotes['simple'] ?? [], $quotes['insideDelivery'] ?? [], $quotes['limitedaccess'] ?? [], $quotes['Truckload'] ?? [], $quotes['twoManDel'] ?? [], $quotes['aptDel'] ?? [], $quotes['twoManAptDel'] ?? [], $quotes['notifydelivery'] ?? []);
             }
-        } elseif ($TMD_and_APD) {
+        } elseif ($lfg && $alwaysNotifyDel) {
+            /**
+             * Condition for Always lift gate, notify before delivery and lift gate for residential (Single Shipment)
+             * */
+            return array_merge($quotes['insideLiftGateDelivery'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['Truckload'] ?? [], $quotes['lgnotifydelivery'] ?? []) ?? $quotes['simple'];
+        } elseif ($TMD_and_APD || $alwaysNotifyDel) {
             /**
              * Condition for Always two man and appointment delivery (Multi Shipment)
              * */
@@ -4473,11 +4509,12 @@ class CompileQuotes
         return $basePrice;
     }
 
-    public function calculateEstesPrice($data, $lgOption = false, $getCost = false, $isUpsLtl = false)
+    public function calculateEstesPrice($data, $lgOption = false, $getCost = false, $isUpsLtl = false, $notifyDelivery = false)
     {
         $lgCost = $lgOption ? 0 : $this->getLiftGateCost($data, $getCost, $isUpsLtl);
         $basePrice = (float)$data['ratpricing']['rattotalPrice'];
-        $basePrice = $basePrice - $lgCost;
+        $NBDCost = $notifyDelivery ? 0 : $this->getNotifyDeliveryCost($data);
+        $basePrice = $basePrice - $lgCost - $NBDCost;
         $productOriginMarkupFee = Functions::calProductOriginMarkupFee($basePrice, $this->originKey, $this->items, $this->allOrigins);
         $basePrice = $this->calculateHandlingFee($basePrice);
         $basePrice = $basePrice + $productOriginMarkupFee;
@@ -4675,9 +4712,9 @@ class CompileQuotes
          */
         $deliveryEstimates = "";
         if (isset($this->quoteSettings['delivery_estimate_options']) && $this->quoteSettings['delivery_estimate_options'] == 2) {
-            $deliveryEstimates = !blank($days) ? " (Estimated number of days until delivery is " . $days . ")" : "";
+            $deliveryEstimates = !blank($days) ? " (Intransit days: " . $days . ")" : "";
         } elseif (isset($this->quoteSettings['delivery_estimate_options']) && $this->quoteSettings['delivery_estimate_options'] == 3) {
-            $deliveryEstimates = !blank($date) ? " (Estimated delivery date is " . date('m-d-Y', strtotime($date)) . ")" : "";
+            $deliveryEstimates = !blank($date) ? " (Expected delivery by " . date('m-d-Y', strtotime($date)) . ")" : "";
         }
 
         return $deliveryEstimates;
