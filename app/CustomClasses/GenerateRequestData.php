@@ -1225,6 +1225,7 @@ class GenerateRequestData
 
         $this->resiCarrier['estesLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['estesLtl'] = $alwaysResi;
+        $notify = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']);
 
         $holdAtTerminal = (isset($connSettings['quote_settings']['hold_at_terminal']) && $connSettings['quote_settings']['hold_at_terminal'] && $connSettings['quote_settings']['hold_at_terminal'] == true) ? '1' : '0';
 
@@ -1234,6 +1235,9 @@ class GenerateRequestData
         }
         if ($liftGate == 'Y') {
             array_push($accessorial, 'LGATE');
+        }
+        if ($notify) {
+            array_push($accessorial, 'NCM');
         }
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
 
