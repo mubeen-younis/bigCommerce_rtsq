@@ -471,49 +471,7 @@ class Functions
                 $locationInfo = $locationsDet[$locationId] = LocAssociatedAccountNo::getlocAssociatedAccNo($locationId);
             }
 
-            if ($carrier == 'xpo-ltl'){
-                $xpoAccountNumber = $locationInfo['xpo-ltl'] ?? null;
-                if (blank($xpoAccountNumber)) {
-                    continue;
-                }
-                $origins[$key]['accountNumber'] = $xpoAccountNumber;
-
-            } else if ($carrier == 'odfl-ltl'){
-                $odflAccountNumber = $locationInfo['odfl-ltl'] ?? null;
-                if (blank($odflAccountNumber)) {
-                    continue;
-                }
-                $origins[$key]['accountNumber'] = $odflAccountNumber;
-
-            } else if ($carrier == 'saia-ltl'){
-                $saiaAccountNumber = $locationInfo['saia-ltl'] ?? null;
-                if (blank($saiaAccountNumber)) {
-                    continue;
-                }
-                $origins[$key]['accountNumber'] = $saiaAccountNumber;
-
-            } else if ($carrier == 'southeastern-ltl'){
-                $seflAccountNumber = $locationInfo['southeastern-ltl'] ?? null;
-                if (blank($seflAccountNumber)) {
-                    continue;
-                }
-                $origins[$key]['accountNumber'] = $seflAccountNumber;
-
-            } else if ($carrier == 'purolator-small'){
-                $purolatorAccountNumber = $locationInfo['purolator-small'] ?? null;
-                if (blank($purolatorAccountNumber)) {
-                    continue;
-                }
-                $origins[$key]['accountNumber'] = $purolatorAccountNumber;
-
-            } else if ($carrier == 'fedex-ltl'){
-                $fedexAccountNumber = $locationInfo['fedex-ltl'] ?? null;
-                if (blank($fedexAccountNumber)) {
-                    continue;
-                }
-                $origins[$key]['accountNumber'] = $fedexAccountNumber;
-
-            }
+            !empty($locationInfo[$carrier]) ? $origins[$key]['accountNumber'] = $locationInfo[$carrier] ?? '' : '';
             
         }
 

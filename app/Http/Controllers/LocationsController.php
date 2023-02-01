@@ -68,26 +68,14 @@ class LocationsController extends Controller
             'state' => 'required',
             'zip_code' => 'required',
             'country' => 'required',
-            'location_type' => 'required'
+            'location_type' => 'required',
+            'xpo_account_number' => 'max:49',
+            'odfl_account_number' => 'max:49',
+            'sefl_account_number' => 'max:49',
+            'saia_account_number' => 'max:49',
+            'fedex_account_number' => 'max:49',
+            'purolator_account_number' => 'max:49',
         ];
-        if (isset($request->xpo_account_number)) {
-            $rules['xpo_account_number'] = 'max:49';
-        }
-        if (isset($request->odfl_account_number)) {
-            $rules['odfl_account_number'] = 'max:49';
-        }
-        if (isset($request->sefl_account_number)) {
-            $rules['sefl_account_number'] = 'max:49';
-        }
-        if (isset($request->saia_account_number)) {
-            $rules['saia_account_number'] = 'max:49';
-        }
-        if (isset($request->fedex_account_number)) {
-            $rules['fedex_account_number'] = 'max:49';
-        }
-        if (isset($request->purolator_account_number)) {
-            $rules['purolator_account_number'] = 'max:49';
-        }
 
         $validator = Validator::make($request->all(), $rules);
 

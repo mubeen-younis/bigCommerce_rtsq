@@ -17,25 +17,31 @@ class LocAssociatedAccountNo extends Model
 
     public static function saveLocAssociatedAccNo($request, $locationId)
     {
+        $carrAccountNumbers = [
+            'xpo_id' => $request->xpo_account_number ?? '',
+            'odfl_id' => $request->odfl_account_number ?? '',
+            'sefl_id' => $request->sefl_account_number ?? '',
+            'saia_id' => $request->saia_account_number ?? '',
+            'fedex_id' => $request->fedex_account_number ?? '',
+            'purolator_id' => $request->purolator_account_number ?? '',
+
+        ];
+
         foreach($request->ids as $key => $carrier_id){
-            if(!empty($carrier_id)){
+
+            if (!empty($carrier_id)){
                 $locAssociatedAccNumber = self::firstOrNew(['location_id' => $locationId, 'carrier_id' => $carrier_id]);
                 $locAssociatedAccNumber->location_id = $locationId;
                 $locAssociatedAccNumber->carrier_id = $carrier_id;
-                if($key == 'xpo_id'){
-                    $locAssociatedAccNumber->carrier_acc_number = $request->xpo_account_number ?? '';
-                } elseif($key == 'odfl_id'){
-                    $locAssociatedAccNumber->carrier_acc_number = $request->odfl_account_number ?? '';
-                } elseif($key == 'sefl_id'){
-                    $locAssociatedAccNumber->carrier_acc_number = $request->sefl_account_number ?? '';
-                } elseif($key == 'saia_id'){
-                    $locAssociatedAccNumber->carrier_acc_number = $request->saia_account_number ?? '';
-                } elseif($key == 'fedex_id'){
-                    $locAssociatedAccNumber->carrier_acc_number = $request->fedex_account_number ?? '';
-                } elseif($key == 'purolator_id'){
-                    $locAssociatedAccNumber->carrier_acc_number = $request->purolator_account_number ?? '';
-                }
-                $locAssociatedAccNumber->save();
+
+                foreach ($carrAccountNumbers as $carrId => $carrAccountNo){
+
+                    if($key == $carrId){
+                        $locAssociatedAccNumber->carrier_acc_number = $carrAccountNo ?? '';
+                        $locAssociatedAccNumber->save();
+                        break;
+                    }    
+                }       
             }            
         }
     }
