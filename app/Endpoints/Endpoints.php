@@ -2,11 +2,11 @@
 
 namespace App\Endpoints;
 
+use App\Constants\Constant;
+
 class Endpoints
 {
-    public static $qaUrl = "https://ws001.eniture-qa.com/";
 
-    public static $prodUrl = "https://eniture.com/";
 
     public static function getBCComEndpoint()
     {
@@ -16,177 +16,127 @@ class Endpoints
 
     public static function testConnectionEndpoint()
     {
-        if (env('APP_ENV') == 'staging') {
-            return self::$qaUrl . "index.php";
-        }
-        return self::$prodUrl . "ws/index.php";
+        return Constant::BASEURL . "/index.php";
     }
 
     public static function wweSmallTestEndpoint()
     {
-        if (env('APP_ENV') == 'staging') {
-            return self::$qaUrl . "carriers/wwe-small/speedshipTest.php";
-        }
-        return self::$prodUrl . "ws/carriers/wwe-small/speedshipTest.php";
+        return Constant::BASEURL . "/carriers/wwe-small/speedshipTest.php";
     }
 
     public static function wweLtlTestEndpoint()
     {
-        if (env('APP_ENV') == 'staging') {
-            return self::$qaUrl . "carriers/wwe-freight/speedfreightTest.php";
-        }
-        return self::$prodUrl . "ws/carriers/wwe-freight/speedfreightTest.php";
+        return Constant::BASEURL . "/carriers/wwe-freight/speedfreightTest.php";
     }
 
     public static function upsSmallTestEndpoint()
     {
-        if (env('APP_ENV') == 'staging') {
-            return self::$qaUrl . "s/ups/auth.php";
-        }
-        return self::$prodUrl . "ws/s/ups/auth.php";
+        return Constant::BASEURL . "/s/ups/auth.php";
     }
 
     public static function getFDOCouponEndpoint()
     {
-        if (env('APP_ENV') == 'staging') {
-            return "https://freightdesk.eniture-qa.com/use_coupon?shop=";
 
-        }
-        return "https://freightdesk.online/use_coupon?shop=";
+        return Constant::FDO_BASE_URL . "/use_coupon?shop=";
     }
 
     public static function applyPromoCodeFdoEndpoint()
     {
-        if (env('APP_ENV') == 'staging') {
-            return "https://freightdesk.eniture-qa.com/apply_promo_code?";
 
-        }
-        return "https://freightdesk.online/apply_promo_code?";
+        return Constant::FDO_BASE_URL . "/apply_promo_code?";
     }
 
     public static function updateProviderFDOEndpoint()
     {
 
-        if (env('APP_ENV') == 'staging') {
-            return "https://freightdesk.eniture-qa.com/change_promo_code_status?";
-        }
-        return "https://freightdesk.online/change_promo_code_status?";
+
+        return Constant::FDO_BASE_URL . "/change_promo_code_status?";
 
     }
 
     public static function getFDORegisterUrl()
     {
 
-        if (env('APP_ENV') == 'staging') {
-            return "https://freightdesk.eniture-qa.com/register";
-        }
-        return "https://freightdesk.online/register";
+        return Constant::FDO_BASE_URL . "/register";
 
     }
 
 
     public static function verifyFdoCompDetEndpoint()
     {
-        if (env('APP_ENV') == 'staging') {
-            return "https://freightdesk.eniture-qa.com/validate-bc-company";
-        }
-        return "https://freightdesk.online/validate-bc-company";
+
+        return Constant::FDO_BASE_URL . "/validate-bc-company";
 
     }
 
 
     public static function fdoCredsEndpoint()
     {
-        if (env('APP_ENV') == 'staging') {
-            return "https://freightdesk.eniture-qa.com/fdo-bc-connection";
-        }
-        return "https://freightdesk.online/fdo-bc-connection";
+
+        return Constant::FDO_BASE_URL . "/fdo-bc-connection";
 
     }
 
     public static function getFDOLoginUrl()
     {
 
-        if (env('APP_ENV') == 'staging') {
-            return "https://freightdesk.eniture-qa.com/login";
-        }
-        return "https://freightdesk.online/login";
+        return Constant::FDO_BASE_URL . "/login";
 
     }
 
     public static function verifyAvCompDetEndpoint()
     {
-        if (env('APP_ENV') == 'staging') {
-            return "https://address-validation.eniture-qa.com/validateCompany";
-        }
-        return "https://validate-addresses.com/validateCompany";
+
+        return Constant::AV_BASE_URL . "/validateCompany";
 
     }
 
     public static function avCredsEndpoint()
     {
-        if (env('APP_ENV') == 'staging') {
-            return "https://address-validation.eniture-qa.com/connectionFromBC";
-        }
-        return "https://validate-addresses.com/connectionFromBC";
+
+        return Constant::AV_BASE_URL . "/connectionFromBC";
 
     }
 
 
     public static function disconnectVACompDetEndpoint()
     {
-        if (env('APP_ENV') == 'staging') {
-            return "https://address-validation.eniture-qa.com/disconnectConnectionBC";
-        }
-        return "https://validate-addresses.com/disconnectConnectionBC";
+
+        return Constant::AV_BASE_URL . "/disconnectConnectionBC";
 
     }
 
 
     public static function getAvCouponEndpoint()
     {
-        if (env('APP_ENV') == 'staging') {
-            return "https://address-validation.eniture-qa.com/use_coupon?shop=";
-        }
-        return "https://validate-addresses.com/use_coupon?shop=";
+
+        return Constant::AV_BASE_URL . "/use_coupon?shop=";
     }
 
 
     public static function getAvRegisterUrl()
     {
 
-        if (env('APP_ENV') == 'staging') {
-            return "https://address-validation.eniture-qa.com/register";
-        }
-        return "https://validate-addresses.com/register";
+        return Constant::AV_BASE_URL . "/register";
 
     }
 
     public static function getAvLoginUrl()
     {
 
-        if (env('APP_ENV') == 'staging') {
-            return "https://address-validation.eniture-qa.com/login";
-        }
-        return "https://validate-addresses.com/login";
+        return Constant::AV_BASE_URL . "/login";
 
     }
 
     public static function applyPromoCodeAVEndpoint()
     {
-        if (env('APP_ENV') == 'staging') {
-            return "https://address-validation.eniture-qa.com/apply_promo_code?";
-        }
-        return "https://validate-addresses.com/apply_promo_code?";
+        return Constant::AV_BASE_URL . "/apply_promo_code?";
     }
 
     public static function updateProviderAvEndpoint()
     {
 
-        if (env('APP_ENV') == 'staging') {
-            return "https://address-validation.eniture-qa.com/change_promo_code_status?";
-        }
-        return "https://validate-addresses.com/change_promo_code_status?";
+        return Constant::AV_BASE_URL . "/change_promo_code_status?";
 
     }
 
@@ -201,14 +151,11 @@ class Endpoints
 
     public static function getUnpackedBoxUrl()
     {
-        return "http://eu.api.3dbinpacking.com/images/29283f1d530b350d166b6ddc31fa2bfa/20171206/86407cf14c6c451d191d2e0b555eb9f5/1512573750-1033-8129432.png";
+        return "https://images.eniture.com/d549b90ece00d180c5b69a51b6354842/20221207/cd59328e85619fe6b0dc52aa4db034c7/1670418636-7316-1129122.png";
     }
 
     public static function fedexSmallTestEndpoint()
     {
-        if (env('APP_ENV') == 'staging') {
-            return self::$qaUrl . "s/fedex/fedex_shipment_rates_test.php";
-        }
-        return "https://ws026.eniture.com/s/fedex/fedex_shipment_rates_test.php";
+        return Constant::BASEURL . "/s/fedex/fedex_shipment_rates_test.php";
     }
 }

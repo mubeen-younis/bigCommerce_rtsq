@@ -88,10 +88,10 @@ class Functions
     {
         $carrierCodesWithName = ['wweltl' => 'Worldwide Express LTL', 'upsltl' => 'UPS LTL', 'rnlltl' => 'R&L Carriers', 'xpoltl' => 'XPO Logistics',
             'fedexltl' => 'FedEx LTL', 'gtzltl' => 'GlobalTranz LTL', 'cltl' => 'Cerasis Ltl',
-            'parcel_12wwe' => 'Worldwide Express Small', 'parcel_12ups' => 'UPS Small', 'parcel_12fd' => 'FedEx Small', 'parcel_12uniship' => 'Unishippers Small', 
-            'fqltl' => 'Freight Quote', 'fqchrltl' => 'C.H. Robinson', 'parcel_12Purolator' => 'Purolator Small', 'parcel_12usps' => 'United State Postal Service', 
-            'tqlltl' => 'Total Quality Logistics', 'yrcltl' => 'YRC Freight', 'odflltl' => 'Old Dominion Freight Lines', 'dayrossltl' => 'Day & Ross Ltl', 
-            'estesltl' => 'Estes Express Ltl', 'echoltl' => 'Echo Global Logistics', 'saialtl' => 'SAIA LTL Freight', 'abfltl' => 'ABF Freight', 'daylightltl' => 'DayLight LTL Freight', 
+            'parcel_12wwe' => 'Worldwide Express Small', 'parcel_12ups' => 'UPS Small', 'parcel_12fd' => 'FedEx Small', 'parcel_12uniship' => 'Unishippers Small',
+            'fqltl' => 'Freight Quote', 'fqchrltl' => 'C.H. Robinson', 'parcel_12Purolator' => 'Purolator Small', 'parcel_12usps' => 'United State Postal Service',
+            'tqlltl' => 'Total Quality Logistics', 'yrcltl' => 'YRC Freight', 'odflltl' => 'Old Dominion Freight Lines', 'dayrossltl' => 'Day & Ross Ltl',
+            'estesltl' => 'Estes Express Ltl', 'echoltl' => 'Echo Global Logistics', 'saialtl' => 'SAIA LTL Freight', 'abfltl' => 'ABF Freight', 'daylightltl' => 'DayLight LTL Freight',
             'SouthEastern' => 'Southeastern LTL Freight'];
         return $carrierCodesWithName[$carrierCode] ?? null;
 
@@ -102,10 +102,10 @@ class Functions
     {
         $carrierCodesWithName = ['wweltl' => 'wwe', 'upsltl' => 'ups', 'rnlltl' => 'rnl', 'xpoltl' => 'xpoLogistics',
             'fedexltl' => 'fedex', 'gtzltl' => 'globaltranz', 'cltl' => 'cerasis',
-            'parcel_12wwe' => 'wwe_small_packages_quotes', 'parcel_12ups' => 'ups_small', 'parcel_12fd' => 'fedex_small', 'parcel_12uniship' => 'unishippers_small', 
-            'fqltl' => 'freightquote', 'fqchrltl' => 'freightquotechr', 'parcel_12Purolator' => 'purolator_small', 'parcel_12usps' => 'usps_small', 
-            'tqlltl' => 'tql', 'yrcltl' => 'yrc', 'odflltl' => 'odfl4me', 'dayrossltl' => 'dayross', 
-            'estesltl' => 'estes', 'echoltl' => 'echoLogistics', 'saialtl' => 'saia', 'abfltl' => 'abf', 'daylightltl' => 'daylight', 
+            'parcel_12wwe' => 'wwe_small_packages_quotes', 'parcel_12ups' => 'ups_small', 'parcel_12fd' => 'fedex_small', 'parcel_12uniship' => 'unishippers_small',
+            'fqltl' => 'freightquote', 'fqchrltl' => 'freightquotechr', 'parcel_12Purolator' => 'purolator_small', 'parcel_12usps' => 'usps_small',
+            'tqlltl' => 'tql', 'yrcltl' => 'yrc', 'odflltl' => 'odfl4me', 'dayrossltl' => 'dayross',
+            'estesltl' => 'estes', 'echoltl' => 'echoLogistics', 'saialtl' => 'saia', 'abfltl' => 'abf', 'daylightltl' => 'daylight',
             'SouthEastern' => 'southeastern'];
 
         return $carrierCodesWithName[$carrierCode] ?? null;
@@ -267,12 +267,12 @@ class Functions
         if (empty($HAT)) {
             return $finalQuotes;
         }
-        
+
         $amount = 0;
         foreach ($HAT as $data) {
             $amount += $data['totalNetCharge']['Amount'];
         }
-        
+
         $hatQuotes[] = [
             'code' => $HAT[0]['serviceType'],
             'title' => $lableAs,
@@ -292,19 +292,20 @@ class Functions
                 'rate' => $HAT[$count]['totalNetCharge']['Amount'] ?? '',
                 'title' => $HAT[$count]['serviceDesc'] ?? '',
             ];
-     
+
             $mulishipment['hat'][$shipmentId] = $newQuote;
             $count++;
         }
-     
+
         return $mulishipment;
     }
 
-    public static function getHATPrice($price, $hatPrice){
-        if((strlen($hatPrice) > 0)) {
+    public static function getHATPrice($price, $hatPrice)
+    {
+        if ((strlen($hatPrice) > 0)) {
             $symbolicHATFee = strpos($hatPrice, '%') ? '%' : '';
             $hatPrice = (float)$hatPrice ?? 0;
-            
+
             if ($symbolicHATFee === '%') {
                 $hatPrice = $hatPrice / 100 * $price;
                 $price = $price + $hatPrice;
@@ -312,19 +313,21 @@ class Functions
                 $price = $price + $hatPrice;
             }
         }
-        
+
         return $price;
     }
 
-    public static function getHATTitle($title = '', $address = [], $hatDistance = '', $phoneNumber = ''){
+    public static function getHATTitle($title = '', $address = [], $hatDistance = '', $phoneNumber = '')
+    {
         $distance = !empty($hatDistance) ? $hatDistance : '0 mi';
 
         return $title . ' | Hold At Terminal | ' . $distance . ' | ' . $address['city'] . ', ' . $address['state'] . ', ' . $address['zipCode'] . ' | ' . $phoneNumber;
     }
 
-    public static function addQuotesLtlTruckLoad($quotes){
-       
-        if(isset($quotes['simple']) && !empty($quotes['simple']) && isset($quotes['Truckload']) && !empty($quotes['Truckload'])){
+    public static function addQuotesLtlTruckLoad($quotes)
+    {
+
+        if (isset($quotes['simple']) && !empty($quotes['simple']) && isset($quotes['Truckload']) && !empty($quotes['Truckload'])) {
             $key = count($quotes['simple']);
             $quotes['simple'][$key] = $quotes['Truckload'][0];
             $quotes['Truckload'][0]['code'] = 'fqltl+FLGTL';
@@ -335,21 +338,22 @@ class Functions
         return $quotes;
     }
 
-    public static function quotesLtlTruckLoad($allQuotes, $shipments){
-       
-        if(empty($allQuotes)){
+    public static function quotesLtlTruckLoad($allQuotes, $shipments)
+    {
+
+        if (empty($allQuotes)) {
             return [];
         }
-        foreach($shipments as $key => $shipment){
+        foreach ($shipments as $key => $shipment) {
             $index[] = $key;
         }
         $allQuotes = self::addQuotesLtlTruckLoad($allQuotes);
-        foreach($allQuotes as $key1 => $quotes){
-            foreach($quotes as $key2 => $quote){
+        foreach ($allQuotes as $key1 => $quotes) {
+            foreach ($quotes as $key2 => $quote) {
                 $multiShipmentQuotes[$key1][$index[$key2]] = $quote;
             }
         }
-    
+
         return [$allQuotes, $multiShipmentQuotes];
 
     }
@@ -375,19 +379,19 @@ class Functions
 
         return $box;
     }
-    
+
     public static function getServerName($storeData)
     {
         $serverName = $storeData['store']['name'];
-        
+
         if (isset($storeData['store']['store_domain']) && !empty($storeData['store']['store_domain'])) {
             $serverName = $storeData['store']['store_domain'];
-        } 
+        }
 
         return $serverName;
     }
 
-     private function calculateCartInfo(array $item)
+    private function calculateCartInfo(array $item)
     {
         $itemVolume = ($item['product_length'] * $item['product_widht'] * $item['product_height']);
         $itemWeight = $item['product_weight'];
@@ -397,7 +401,7 @@ class Functions
             'total_volume' => $this->cartInfo[$this->requestKey]['total_volume'] + ($itemVolume * $item['quantity']),
             'total_weight' => $this->cartInfo[$this->requestKey]['total_weight'] + ($itemWeight * $item['quantity'])
         ];
-        
+
         return $cartInfo;
     }
 
@@ -414,7 +418,7 @@ class Functions
                 $dimensions = array($item['w'], $item['h'], $item['d']);
                 $itemVolume = array_product($dimensions);
                 $itemWeight = $item['wg'];
-                
+
                 $cubicVolumeArr['volume'][] = $itemVolume;
                 $cubicVolumeArr['weight'][] = $itemWeight;
             }
@@ -424,7 +428,7 @@ class Functions
     }
 
     public static function getRADsettings($store_id)
-    { 
+    {
         $Rad_settings = [];
         if (empty($store_id)) {
             return $Rad_settings;
@@ -434,7 +438,7 @@ class Functions
 
         if (!empty($resi_settings)) {
 
-            $settings =  json_decode($resi_settings['settings']);
+            $settings = json_decode($resi_settings['settings']);
 
             return $Rad_settings = [
                 'autoDetectedResidentialAddresses' => $settings->residential_delivery_auto_detect ?? false,
@@ -517,7 +521,7 @@ class Functions
     }
 
     public static function calProductOriginMarkupFee($cost, $shipmentKey, $items, $allOrigins)
-    {  
+    {
         $variantKeys = [];
         $productFeeMarkup = 0;
         $totalFeeMarkup = 0;
@@ -526,11 +530,11 @@ class Functions
         $originFeeMarkup = 0;
 
         // Calculate Origins markup fee
-        if(!empty($allOrigins)){
-            foreach($allOrigins as $key => $origin){
-                if($origin['locationId'] == $shipmentKey){
+        if (!empty($allOrigins)) {
+            foreach ($allOrigins as $key => $origin) {
+                if ($origin['locationId'] == $shipmentKey) {
                     $variantKeys[] = $key;
-                    if($count > 0){
+                    if ($count > 0) {
                         continue;
                     }
 
@@ -554,10 +558,10 @@ class Functions
         }
         // Calculate Products markup fee
         if (!empty($items) && !empty($variantKeys)) {
-            foreach($items as $item){
+            foreach ($items as $item) {
                 $prodQuantity = ($item['piecesOfLineItem'] ?? 0);
-                foreach($variantKeys as $variantId){
-                    if($variantId == $item['variant_id']){
+                foreach ($variantKeys as $variantId) {
+                    if ($variantId == $item['variant_id']) {
                         if (isset($item['product_markup'])) {
                             $productFeeMarkup = (float)$item['product_markup'] ?? 0;
                             $symbolicHandlingFee = strpos($item['product_markup'], '%') ? '%' : '';
@@ -572,40 +576,41 @@ class Functions
                                 $totalFeeMarkup += $productFeeMarkup * $prodQuantity;
                             }
                         }
-                    } 
+                    }
                 }
-            } 
+            }
         }
         return $totalFeeMarkup;
     }
-    
+
     public static function productErrorManagment($carriersErrorSettings, $carriersArray, $itemsArr)
     {
-        if(!empty($itemsArr)){
+        if (!empty($itemsArr)) {
             $count = count($itemsArr);
-            foreach($itemsArr as $key => $item){
-                if(empty($item['lineItemLength']) || ($item['lineItemLength'] == 0) ||
-                   empty($item['lineItemWidth'])  || ($item['lineItemWidth'] == 0)  || 
-                   empty($item['lineItemHeight']) || ($item['lineItemHeight'] == 0) ||
-                   empty($item['lineItemWeight']) || $item['lineItemWeight'] == 0){
-                    if(!(empty($item['lineItemWeight']) || $item['lineItemWeight'] == 0) &&
-                     !(empty($item['lineItemClass']) || $item['lineItemClass'] == 0)){
+            foreach ($itemsArr as $key => $item) {
+                if (empty($item['lineItemLength']) || ($item['lineItemLength'] == 0) ||
+                    empty($item['lineItemWidth']) || ($item['lineItemWidth'] == 0) ||
+                    empty($item['lineItemHeight']) || ($item['lineItemHeight'] == 0) ||
+                    empty($item['lineItemWeight']) || $item['lineItemWeight'] == 0) {
+                    if (!(empty($item['lineItemWeight']) || $item['lineItemWeight'] == 0) &&
+                        !(empty($item['lineItemClass']) || $item['lineItemClass'] == 0)) {
                         continue;
                     }
-                    if(!(empty($item['lineItemWeight']) || $item['lineItemWeight'] == 0) && ($item['freightClass'] != 'ltl')){
+                    if (!(empty($item['lineItemWeight']) || $item['lineItemWeight'] == 0) && ($item['freightClass'] != 'ltl')) {
                         continue;
                     }
 
-                    foreach($carriersArray['carriers'] as $carr => $carrier){
-                        if($carriersErrorSettings[$carr] == 2 || $count == 1){
+                    foreach ($carriersArray['carriers'] as $carr => $carrier) {
+                        if ($carriersErrorSettings[$carr] == 2 || $count == 1) {
                             unset($carriersArray['carriers'][$carr]);
                             unset($itemsArr[$key]);
-                        } elseif($carriersErrorSettings[$carr] == 1){
+                        } elseif ($carriersErrorSettings[$carr] == 1) {
                             unset($carriersArray['carriers'][$carr]['originAddress'][$key]);
-                            unset($itemsArr[$key]);    
+                            unset($itemsArr[$key]);
                         }
-                    }$count--;
-                }        
+                    }
+                    $count--;
+                }
             }
         }
 
@@ -614,54 +619,59 @@ class Functions
 
     public static function suppressParcelRates($carriers, $items, $storeId)
     {
-        $proKeyW = $proKeyD = [];
-        $warehouseWeight = $dropshipWeight = 0;
-            if(!empty($carriers)){
-                foreach($carriers as $key => $carrier){
+        try {
+            $proKeyW = $proKeyD = [];
+            $warehouseWeight = $dropshipWeight = 0;
+            if (!empty($carriers)) {
+                foreach ($carriers as $key => $carrier) {
                     $carrierWeightThreshold = isset($carrier['api']['thresholdWeightLimit']) ? $carrier['api']['thresholdWeightLimit'] : null;
-                    if($carrierWeightThreshold === null){
+                    if ($carrierWeightThreshold === null) {
                         continue;
                     }
-                    foreach($carrier['originAddress'] as $ori => $origin){
-                        if(isset($origin['location']) && $origin['location'] === 'warehouse'){
-                            if(!in_array($ori, $proKeyW)){
+                    foreach ($carrier['originAddress'] as $ori => $origin) {
+                        if (isset($origin['location']) && $origin['location'] === 'warehouse') {
+                            if (!in_array($ori, $proKeyW)) {
                                 $proKeyW[] = $ori;
                             }
-                        }elseif(isset($origin['location']) && $origin['location'] === 'dropship'){
-                            if(!in_array($ori,$proKeyD)){
+                        } elseif (isset($origin['location']) && $origin['location'] === 'dropship') {
+                            if (!in_array($ori, $proKeyD)) {
                                 $proKeyD[] = $ori;
                             }
                         }
                     }
-                    if(!empty($proKeyW)){
+                    if (!empty($proKeyW)) {
                         $warehouseWeight = self::calculatItemseWeight($items, $proKeyW);
-                        
+
                     }
-                    if(!empty($proKeyD)){
+                    if (!empty($proKeyD)) {
                         $dropshipWeight = self::calculatItemseWeight($items, $proKeyD);
                     }
-                    
-                    if($warehouseWeight > $carrierWeightThreshold || $dropshipWeight > $carrierWeightThreshold){
-                        $ThresholdSettings = WeightThresholdSettings::where('store_id', $storeId)->first();
-                        if($ThresholdSettings['parcel_rates'] == 2){
+
+                    if ($warehouseWeight > $carrierWeightThreshold || $dropshipWeight > $carrierWeightThreshold) {
+                        $ThresholdSettings = optional(WeightThresholdSettings::where('store_id', $storeId)->first())->toArray() ?? [];
+                        if (isset($ThresholdSettings['parcel_rates']) && $ThresholdSettings['parcel_rates'] == 2) {
                             return true;
                         }
                     }
                 }
             }
-        return false;
+            return false;
+        } catch (\Exception $exception) {
+            Log::info('Exception on suppress rates ' . json_encode($exception));
+            return false;
+        }
     }
-    
+
     public static function calculatItemseWeight($items, $proKeys)
     {
         $totalWeight = 0;
-        if(!empty($items) && !empty($proKeys)){
-            foreach($proKeys as $key => $proKey){
-                foreach($items as $item){
-                    if($item['variant_id'] == $proKey){
+        if (!empty($items) && !empty($proKeys)) {
+            foreach ($proKeys as $key => $proKey) {
+                foreach ($items as $item) {
+                    if ($item['variant_id'] == $proKey) {
                         $weight = isset($item['lineItemWeight']) ? $item['lineItemWeight'] : 0;
                         $quantity = isset($item['piecesOfLineItem']) ? $item['piecesOfLineItem'] : 0;
-                        $totalWeight += $weight * $quantity;   
+                        $totalWeight += $weight * $quantity;
                     }
                 }
             }

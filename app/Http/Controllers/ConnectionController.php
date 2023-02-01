@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\CurlRequest;
+use App\CustomClasses\BigCommerceFunctions;
 use App\CustomClasses\Fedex\ltl\ConnectionSettings as FedexLtlConnectionSettings;
 use App\CustomClasses\Fedex\small\ConnectionSettings as FedexSmallConnectionSettings;
 use App\CustomClasses\Functions;
@@ -105,21 +106,8 @@ class ConnectionController extends Controller
      */
     public function store(Request $request)
     {
-        /* $rules = [
-        'billing_account_no' => 'required',
-        'meter_number' => 'required',
-        'password' => 'required',
-        'auth_key' => 'required',
-        'shipper_account_no' => 'required',
-        'billing_address' => 'required',
-        ]; */
 
-        //        $validator = Validator::make($request->all(), $rules);
-        //        if ($validator->fails()) {
-        //            return response()->json($validator->errors(), 400);
-        //        }
-
-        $checkCarrierType = DB::table('carriers')->select('slug', 'stores.name')
+        $checkCarrierType = DB::table('carriers')->select('slug', 'stores.name', 'stores.store_domain', 'stores.hash')
             ->leftJoin('installed_carriers', 'carriers.id', 'installed_carriers.carrier_id')
             ->leftJoin('stores', 'stores.id', '=', 'installed_carriers.store_id')
             ->where('installed_carriers.id', $request->carrierId)
@@ -132,80 +120,90 @@ class ConnectionController extends Controller
             ]);
         }
 
+
+        $storeName = $checkCarrierType->store_domain;
+        if (blank($storeName)) {
+            $storeDetails = BigCommerceFunctions::getStoreSettings($checkCarrierType->hash);
+            $storeDetails = (new CurlRequest())->enSingleCurlRequest($storeDetails['endpoint'],
+                $storeDetails['request'], $storeDetails['headers'], $storeDetails['method'], false);
+            $response = json_decode($storeDetails['response'], true);
+            $storeName = !empty($response['domain']) ? $response['domain'] : $checkCarrierType->name;
+        }
+
         if (!empty($request->testType)) {
 
             switch ($checkCarrierType->slug) {
                 case "ltl-quotes":
-                    $response = $this->wweLtlTestCon->testLtlConnection($request, $checkCarrierType->name);
+                    $response = $this->wweLtlTestCon->testLtlConnection($request, $storeName);
                     return response()->json($response);
                 case "small-package":
-                    $response = $this->wweSmallTestCon->testSmallConnection($request, $checkCarrierType->name);
+                    $response = $this->wweSmallTestCon->testSmallConnection($request, $storeName);
                     return response()->json($response);
                 case 'ups-ltl':
-                    $response = $this->upsLtlTestCon->testUpsLtlConnection($request, $checkCarrierType->name);
+                    $response = $this->upsLtlTestCon->testUpsLtlConnection($request, $storeName);
                     return response()->json($response);
                 case 'ups-small':
-                    $response = $this->upsSmallTestCon->testUpsLtlConnection($request, $checkCarrierType->name);
+                    $response = $this->upsSmallTestCon->testUpsLtlConnection($request, $storeName);
                     return response()->json($response);
                 case 'fedex-ltl':
-                    $response = $this->fedexLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    $response = $this->fedexLtlTestCon->testConnection($request, $storeName);
                     return response()->json($response);
                 case 'fedex-small':
-                    $response = $this->fedexSmallTestCon->testConnection($request, $checkCarrierType->name);
+                    $response = $this->fedexSmallTestCon->testConnection($request, $storeName);
                     return response()->json($response);
                 case 'gtz-ltl':
-                    $response = $this->gtzLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    $response = $this->gtzLtlTestCon->testConnection($request, $storeName);
                     return response()->json($response);
                 case 'xpo-ltl':
-                    $response = $this->xpoLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    $response = $this->xpoLtlTestCon->testConnection($request, $storeName);
                     return response()->json($response);
                 case 'rl-ltl':
-                    $response = $this->rnlLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    $response = $this->rnlLtlTestCon->testConnection($request, $storeName);
                     return response()->json($response);
                 case 'unishippers-small':
-                    $response = $this->unishippersSmallTestCon->testConnection($request, $checkCarrierType->name);
+                    $response = $this->unishippersSmallTestCon->testConnection($request, $storeName);
                     return response()->json($response);
                 case 'yrc-ltl':
-                    $response = $this->yrcLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    $response = $this->yrcLtlTestCon->testConnection($request, $storeName);
                     return response()->json($response);
                 case 'freightquote-ltl':
-                    $response = $this->freightQuoteLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    $response = $this->freightQuoteLtlTestCon->testConnection($request, $storeName);
                     return response()->json($response);
                 case 'estes-ltl':
-                    $response = $this->estesLTLConL->testConnection($request, $checkCarrierType->name);
+                    $response = $this->estesLTLConL->testConnection($request, $storeName);
                     return response()->json($response);
                 case 'dayross-ltl':
-                    $response = $this->dayRossLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    $response = $this->dayRossLtlTestCon->testConnection($request, $storeName);
                     return response()->json($response);
                 case 'odfl-ltl':
-                    $response = $this->odflLTLConL->testConnection($request, $checkCarrierType->name);
+                    $response = $this->odflLTLConL->testConnection($request, $storeName);
                     return response()->json($response);
                 case 'saia-ltl':
-                    $response = $this->saiaLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    $response = $this->saiaLtlTestCon->testConnection($request, $storeName);
                     return response()->json($response);
                 case 'abf-ltl':
-                    $response = $this->AbfLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    $response = $this->AbfLtlTestCon->testConnection($request, $storeName);
                     return response()->json($response);
                 case 'southeastern-ltl':
-                    $response = $this->southEasternLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    $response = $this->southEasternLtlTestCon->testConnection($request, $storeName);
                     return response()->json($response);
                 case 'usps-small':
-                    $response = $this->uspsSmallTestCon->testConnection($request, $checkCarrierType->name);
+                    $response = $this->uspsSmallTestCon->testConnection($request, $storeName);
                     return response()->json();
                 case 'tql-ltl':
-                    $response = $this->tqlLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    $response = $this->tqlLtlTestCon->testConnection($request, $storeName);
                     return response()->json($response);
                 case 'echo-ltl':
-                    $response = $this->echoLogisticsLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    $response = $this->echoLogisticsLtlTestCon->testConnection($request, $storeName);
                     return response()->json($response);
                 case "purolator-small":
-                    $response = $this->PurolatorSmallTestCon->testSmallConnection($request, $checkCarrierType->name);
+                    $response = $this->PurolatorSmallTestCon->testSmallConnection($request, $storeName);
                     return response()->json($response);
                 case 'daylight-ltl':
-                    $response = $this->dayLightLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    $response = $this->dayLightLtlTestCon->testConnection($request, $storeName);
                     return response()->json($response);
                 case 'freightquote-chr-ltl':
-                    $response = $this->freightQuoteChrLtlTestCon->testConnection($request, $checkCarrierType->name);
+                    $response = $this->freightQuoteChrLtlTestCon->testConnection($request, $storeName);
                     return response()->json($response);
                 default:
                     return response()->json([
