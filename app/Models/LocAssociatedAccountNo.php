@@ -20,7 +20,7 @@ class LocAssociatedAccountNo extends Model
         $carrAccountNumbers = [
             'xpo_id' => $request->xpo_account_number ?? '',
             'odfl_id' => $request->odfl_account_number ?? '',
-            'sefl_id' => $request->sefl_account_number ?? '',
+            'southeastern_id' => $request->sefl_account_number ?? '',
             'saia_id' => $request->saia_account_number ?? '',
             'fedex_id' => $request->fedex_account_number ?? '',
             'purolator_id' => $request->purolator_account_number ?? '',
