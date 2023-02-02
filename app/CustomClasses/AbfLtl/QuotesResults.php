@@ -211,13 +211,4 @@ class QuotesResults
         return $resp;
     }
 
-    public function compileNotifyDeliveryQuotes($access, $price, $title, $index)
-    {
-        $originQuotes = [];
-        $originQuotes[$index]['code'] = 'abfltl' . $access;
-        $originQuotes[$index]['rate'] = $price;
-        $originQuotes[$index]['title'] = $title;
-
-        return $originQuotes;
-    }
 }

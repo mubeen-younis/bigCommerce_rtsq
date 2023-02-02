@@ -545,4 +545,15 @@ class Functions
 
         return ['carriersArray' => $carriersArray, 'itemsArr' => $itemsArr];
     }
+
+    public static function compileNotifyDeliveryQuotes($data = '', $access, $price, $title, $index, $carrName)
+    {
+        $serviceName = isset($data['ratquoteNumber']) && !empty($data['ratquoteNumber']) ? $data['ratquoteNumber'] : '';
+        $originQuotes = [];
+        $originQuotes[$index]['code'] = $carrName . $serviceName . $access;
+        $originQuotes[$index]['rate'] = $price;
+        $originQuotes[$index]['title'] = $title;
+
+        return $originQuotes;
+    }
 }

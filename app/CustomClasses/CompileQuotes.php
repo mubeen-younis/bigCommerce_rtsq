@@ -1504,7 +1504,7 @@ class CompileQuotes
 
                 $notifyDelivery =
                     (isset($this->quoteSettings['always_quote_notify']) && $this->quoteSettings['always_quote_notify']) ||
-                    (isset($this->quoteSettings['offer_notify_as_option']) && $this->quoteSettings['offer_notify_as_option']) && !($this->alwaysResi || $this->isResi);
+                    (isset($this->quoteSettings['offer_notify_as_option']) && $this->quoteSettings['offer_notify_as_option']);
             }
             $originQuotes = [];
             $arraySorting = [];
@@ -1526,7 +1526,7 @@ class CompileQuotes
                                     if (isset($rateEstesfecth['ratcode']) && $rateEstesfecth['ratcode'] == "LGATE") {
                                         $data['surcharges']['liftgateFee'] = $rateEstesfecth['ratcharge'];
                                     }
-                                    if (isset($rateEstesfecth['ratcode']) && $rateEstesfecth['ratcode'] == "NCM") {
+                                    if (isset($rateEstesfecth['ratcode']) && $rateEstesfecth['ratcode'] == "NCM" || isset($rateEstesfecth['ratcode']) && $rateEstesfecth['ratcode'] == "HDSIG") {
                                         $data['surcharges']['notifyDeliveryFee'] = $rateEstesfecth['ratcharge'];
                                     }
 
@@ -1564,14 +1564,14 @@ class CompileQuotes
                             $ndPrice = $this->calculateEstesPrice($data, false, false, false, true);
                             $ndTitle = $this->getTitle($labelAs, false, false, $data['ratdelivery']['totalTransitTimeInDays'], [], $dateAndDays, false, false, false, false, false, false, false, true);
                             $arraySorting['notifydelivery'][$key] = $ndPrice;
-                            $originQuotes[$key] =$originQuotes[$key] + $estesLtl->compileNotifyDeliveryQuotes($data, $ndAccess, $ndPrice, $ndTitle, 'notifydelivery');
+                            $originQuotes[$key] =$originQuotes[$key] + Functions::compileNotifyDeliveryQuotes($data, $ndAccess, $ndPrice, $ndTitle, 'notifydelivery', 'estesltl');
                         }
                         if($notifyDelivery && $lgQuotes){
                             $ndAccess = $this->getAccessorialCode(true, false, '', '', false, false, false, true) . $resiPickup;
                             $ndPrice = $this->calculateEstesPrice($data, true, false, false, true);
                             $ndTitle = $this->getTitle($labelAs, true, false, $data['ratdelivery']['totalTransitTimeInDays'], [], $dateAndDays, false, false, false, false, false, false, false, true);
                             $arraySorting['lgnotifydelivery'][$key] = $ndPrice;
-                            $originQuotes[$key] =$originQuotes[$key] + $estesLtl->compileNotifyDeliveryQuotes($data, $ndAccess, $ndPrice, $ndTitle, 'lgnotifydelivery');
+                            $originQuotes[$key] =$originQuotes[$key] + Functions::compileNotifyDeliveryQuotes($data, $ndAccess, $ndPrice, $ndTitle, 'lgnotifydelivery', 'estesltl');
                         }
                     }
                 }
@@ -3607,14 +3607,14 @@ class CompileQuotes
                             $ndPrice = $this->calculatePrice($data, false, false, false, false, false, false, false, true);
                             $ndTitle = $this->getTitle($data['serviceDesc'], false, false, $days, [], $dateAndDays, false, false, false, false, false, false, false, true);
                             $arraySorting['notifydelivery'][$origin] = $ndPrice;
-                            $originQuotes[$origin] =$originQuotes[$origin] + $abfLtl->compileNotifyDeliveryQuotes($ndAccess, $ndPrice, $ndTitle, 'notifydelivery');
+                            $originQuotes[$origin] =$originQuotes[$origin] + Functions::compileNotifyDeliveryQuotes($data, $ndAccess, $ndPrice, $ndTitle, 'notifydelivery', 'abfltl');
                         }
                         if($notifyDelivery && $lgQuotes){
                             $ndAccess = $this->getAccessorialCode(true, false, '', '', false, false, false, true);
                             $ndPrice = $this->calculatePrice($data, true, false, false, false, false, false, false, true);
                             $ndTitle = $this->getTitle($data['serviceDesc'], true, false, $days, [], $dateAndDays, false, false, false, false, false, false, false, true);
                             $arraySorting['lgnotifydelivery'][$origin] = $ndPrice;
-                            $originQuotes[$origin] =$originQuotes[$origin] + $abfLtl->compileNotifyDeliveryQuotes($ndAccess, $ndPrice, $ndTitle, 'lgnotifydelivery');
+                            $originQuotes[$origin] =$originQuotes[$origin] + Functions::compileNotifyDeliveryQuotes($data, $ndAccess, $ndPrice, $ndTitle, 'lgnotifydelivery', 'abfltl');
                         }
                     }
                 }
@@ -4338,12 +4338,17 @@ class CompileQuotes
             /**
              * Condition for Always lift gate, notify before delivery and lift gate for residential (Single Shipment)
              * */
-            return array_merge($quotes['insideLiftGateDelivery'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['Truckload'] ?? [], $quotes['lgnotifydelivery'] ?? []) ?? $quotes['simple'];
-        } elseif ($TMD_and_APD || $alwaysNotifyDel) {
+            unset($quotes['simple'], $quotes['insideDelivery'], $quotes['limitedaccess'],$quotes['twoManDel'], $quotes['aptDel'], $quotes['notifydelivery'], $quotes['liftgate']);
+        } elseif ($TMD_and_APD) {
             /**
              * Condition for Always two man and appointment delivery (Multi Shipment)
              * */
             unset($quotes['simple'], $quotes['insideDelivery'], $quotes['limitedaccess'],$quotes['twoManDel'], $quotes['aptDel']);
+        }elseif ($alwaysNotifyDel) {
+            /**
+             * Condition for Always two man and appointment delivery (Multi Shipment)
+             * */
+            unset($quotes['simple'], $quotes['liftgate'], $quotes['insideDelivery'], $quotes['limitedaccess'],$quotes['twoManDel'], $quotes['aptDel']);
         } elseif ($lfg || $TMD_or_APD) {
             /**
              * Condition for always lift gate and lift gate for residential (Multi Shipment)

@@ -243,14 +243,4 @@ class QuotesResults
         return $access;
     }
 
-    public function compileNotifyDeliveryQuotes($data, $access, $price, $title, $index)
-    {
-        $originQuotes = [];
-        $originQuotes[$index]['code'] = 'estesltl' . $data['ratquoteNumber'] . $access;
-        $originQuotes[$index]['rate'] = $price;
-        $originQuotes[$index]['title'] = $title;
-
-        return $originQuotes;
-    }
-
 }
