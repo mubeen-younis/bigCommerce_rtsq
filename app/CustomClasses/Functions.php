@@ -5,7 +5,7 @@ namespace App\CustomClasses;
 use App\Models\BoxSize;
 use Illuminate\Support\Facades\Log;
 use App\Models\ResidentialSetting;
-
+use App\CustomClasses\CompileQuotes;
 class Functions
 {
     protected static $daysAfterExpiry = 4;
@@ -555,5 +555,19 @@ class Functions
         $originQuotes[$index]['title'] = $title;
 
         return $originQuotes;
+    }
+
+    public static function compileNotifyDeliveryQuotes_new($index, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi)
+    {
+        $CompileQuotes = new CompileQuotes();
+        
+        $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, false, '', '', false, false, false, true, $isResi, $isAlwaysResi);
+        $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, false, false, false, false, false, true, $originKey, $items, $allOrigins);
+        $ndTitle = $CompileQuotes->getTitle($data['serviceDesc'], $lgQuotes, false, $days, $quoteSettings, $dateAndDays, false, false, false, false, false, false, false, true, false, $isResi);
+        $originQuotes[$origin][$index]['code'] = $carrName . $ndAccess;
+        $originQuotes[$origin][$index]['rate'] = $ndPrice;
+        $originQuotes[$origin][$index]['title'] = $ndTitle;
+        
+        return ['originQuotes' => $originQuotes, 'ndPrice' => $ndPrice];
     }
 }
