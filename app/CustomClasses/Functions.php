@@ -5,9 +5,9 @@ namespace App\CustomClasses;
 use App\Models\BoxSize;
 use Illuminate\Support\Facades\Log;
 use App\Models\ResidentialSetting;
-use App\Models\Locations;
 use App\Models\LocAssociatedAccountNo;
 use App\Models\WeightThresholdSettings;
+use App\CustomClasses\CompileQuotes;
 
 class Functions
 {
@@ -49,6 +49,12 @@ class Functions
     public static $reportDataUrl = "https://analytic-data.eniture.com/index.php";
     public static $replace3dUrl = 'http://images-us-east.api.3dbinpacking.com';
     public static $repplaceWith3dUrl = 'https://images.eniture.com';
+    public static $notifyBeforeDelLable = ' w/ notify before delivery';
+    public static $notifyBeforeDelResiLable = ' w/ residential & notify before delivery';
+    public static $notifyBoforeDelLiftGateLable = ' w/ lift gate & notify before delivery';
+    public static $notifyBeforeDelLiftGateResiLable = ' w/ residential, lift gate & notify before delivery';
+    public static $notifyDelLgAccess = '+LG+NBD';
+    public static $notifyDelAccess = '+NBD';
 
     public static function hasInsureCarrier($code)
     {
@@ -641,5 +647,20 @@ class Functions
     public static function replace3DBinUrl($url)
     {
         return str_replace(self::$replace3dUrl, self::$repplaceWith3dUrl, $url) ?? $url;
+    }
+
+    public static function compileOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi)
+    {
+        $CompileQuotes = new CompileQuotes();
+        $serviceCode = isset($data['ratquoteNumber']) && !empty($data['ratquoteNumber']) ? $data['ratquoteNumber'] : '';
+
+        $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, false, '', '', false, false, false, true, $isResi, $isAlwaysResi);
+        $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, false, false, false, false, false, true, $originKey, $items, $allOrigins);
+        $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, false, false, false, false, false, false, false, true, false, $isResi);
+        $originQuotes[$origin][$index]['code'] = $carrName . $serviceCode . $ndAccess;
+        $originQuotes[$origin][$index]['rate'] = $ndPrice;
+        $originQuotes[$origin][$index]['title'] = $ndTitle;
+        
+        return ['originQuotes' => $originQuotes, 'ndPrice' => $ndPrice];
     }
 }

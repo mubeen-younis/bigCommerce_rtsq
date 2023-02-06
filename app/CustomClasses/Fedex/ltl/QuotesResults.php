@@ -252,10 +252,14 @@ class QuotesResults
                 if (isset($quote['serviceType'])) {
                     $shipments[$shipment]['q'][$key]['serviceDesc'] = $quote['serviceType'] === 'FEDEX_FREIGHT_PRIORITY' ? 'Freight Priority' : 'Freight Economy';
                     if (isset($quote['surcharges'])) {
-                        foreach ($quote['surcharges'] as $surcharge) {
+                        $surcharges = $quote['surcharges'];
+                        unset($shipments[$shipment]['q'][$key]['surcharges']);
+                        foreach ($surcharges as $surcharge) {
                             if (isset($surcharge['SurchargeType']) && $surcharge['SurchargeType'] === 'LIFTGATE_DELIVERY') {
-                                unset($shipments[$shipment]['q'][$key]['surcharges']);
                                 $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $surcharge['Amount']['Amount'] ?? 0;
+                            }
+                            if (isset($surcharge['SurchargeType']) && $surcharge['SurchargeType'] === 'APPOINTMENT_DELIVERY') {
+                                $shipments[$shipment]['q'][$key]['surcharges']['notifyDeliveryFee'] = $surcharge['Amount']['Amount'] ?? 0;
                             }
 
                         }

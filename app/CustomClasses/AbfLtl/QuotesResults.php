@@ -86,6 +86,10 @@ class QuotesResults
                     $formattedShipments[$shipment]['q']['surcharges']['liftgateFee'] = $quotes['q']['INCLUDEDCHARGES']['LIFTGATEGROUNDDELIVERY'] ?? 0;        
                 }  
 
+                if(isset($quotes['q']['INCLUDEDCHARGES']['ARRIVALNOTIFICATION']) && !empty($quotes['q']['INCLUDEDCHARGES']['ARRIVALNOTIFICATION'])){
+                    $formattedShipments[$shipment]['q']['surcharges']['notifyDeliveryFee'] = $quotes['q']['INCLUDEDCHARGES']['ARRIVALNOTIFICATION'] ?? 0;
+                }
+
             }else{
 
                 $formattedShipments = [];
@@ -206,4 +210,5 @@ class QuotesResults
 
         return $resp;
     }
+
 }
