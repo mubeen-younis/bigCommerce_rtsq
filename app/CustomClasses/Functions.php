@@ -546,25 +546,15 @@ class Functions
         return ['carriersArray' => $carriersArray, 'itemsArr' => $itemsArr];
     }
 
-    public static function compileNotifyDeliveryQuotes($data = '', $access, $price, $title, $index, $carrName)
-    {
-        $serviceName = isset($data['ratquoteNumber']) && !empty($data['ratquoteNumber']) ? $data['ratquoteNumber'] : '';
-        $originQuotes = [];
-        $originQuotes[$index]['code'] = $carrName . $serviceName . $access;
-        $originQuotes[$index]['rate'] = $price;
-        $originQuotes[$index]['title'] = $title;
-
-        return $originQuotes;
-    }
-
-    public static function compileNotifyDeliveryQuotes_new($index, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi)
+    public static function compileOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi)
     {
         $CompileQuotes = new CompileQuotes();
-        
+        $serviceCode = isset($data['ratquoteNumber']) && !empty($data['ratquoteNumber']) ? $data['ratquoteNumber'] : '';
+
         $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, false, '', '', false, false, false, true, $isResi, $isAlwaysResi);
         $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, false, false, false, false, false, true, $originKey, $items, $allOrigins);
-        $ndTitle = $CompileQuotes->getTitle($data['serviceDesc'], $lgQuotes, false, $days, $quoteSettings, $dateAndDays, false, false, false, false, false, false, false, true, false, $isResi);
-        $originQuotes[$origin][$index]['code'] = $carrName . $ndAccess;
+        $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, false, false, false, false, false, false, false, true, false, $isResi);
+        $originQuotes[$origin][$index]['code'] = $carrName . $serviceCode . $ndAccess;
         $originQuotes[$origin][$index]['rate'] = $ndPrice;
         $originQuotes[$origin][$index]['title'] = $ndTitle;
         
