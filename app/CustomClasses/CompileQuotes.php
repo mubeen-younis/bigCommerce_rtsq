@@ -1113,6 +1113,9 @@ class CompileQuotes
                 if (!$lgQuotes) {
                     $lgQuotes = (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->isResi;
                 }
+                $notifyDelivery =
+                    (isset($this->quoteSettings['always_quote_notify']) && $this->quoteSettings['always_quote_notify']) ||
+                    (isset($this->quoteSettings['offer_notify_as_option']) && $this->quoteSettings['offer_notify_as_option']);
             }
 
             $originQuotes = [];
@@ -1124,8 +1127,24 @@ class CompileQuotes
                 }
 
                 $data = $quote['q'];
+                
+                if(isset($data['rateEstimate']['netFreightCharge'])){
+                    $data['totalNetCharge']['Amount'] = (float)$data['rateEstimate']['netFreightCharge'] ?? 0;
+                }
+                
+                if(isset($data['rateEstimate']['accessorialCharges']) && !empty($data['rateEstimate']['accessorialCharges'])){
+                    $accessorialCharges = $data['rateEstimate']['accessorialCharges'];
+                    foreach($accessorialCharges as $accessorialCharge){
+                        if(isset($accessorialCharge['description']) && $accessorialCharge['description'] == 'Notification Prior to Delivery' ||
+                           isset($accessorialCharges['description']) && $accessorialCharges['description'] == 'Notification Prior to Delivery'){
+                            
+                            $data['surcharges']['notifyDeliveryFee'] = isset($accessorialCharge['amount']) ? (float)$accessorialCharge['amount'] : (float)$accessorialCharges['amount'] ?? 0;
+                        }
+                    }
+                }
+
                 $access = $this->getAccessorialCode();
-                $price = $this->calculateOdflPrice($data);
+                $price = $this->calculatePrice($data);
 
                 $date = $data['deliveryDate'] ?? null;
                 $days = $data['totalTransitTimeInDays'] ?? null;
@@ -1139,12 +1158,26 @@ class CompileQuotes
 
                 if ($lgQuotes) {
                     $lgAccess = $this->getAccessorialCode(true);
-                    $lgPrice = $this->calculateOdflPrice($data, $lgOption = 1);
+                    $lgPrice = $this->calculatePrice($data, true);
                     $lgTitle = $this->getTitle($lableAs, true, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
                     $arraySorting['liftgate'][$origin] = $lgPrice;
                     $originQuotes[$origin]['liftgate']['code'] = 'odflltl' . $lgAccess;
                     $originQuotes[$origin]['liftgate']['rate'] = $lgPrice;
                     $originQuotes[$origin]['liftgate']['title'] = $lgTitle;
+                }
+                if($notifyDelivery){
+                    $compileNotifyDeliveryQuotes = Functions::compileOriginQuotes('notifydelivery', $lableAs, $originQuotes, $data, $origin, $data['totalTransitTimeInDays'], 
+                    $dateAndDays, false, 'odflltl', $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi);
+
+                    $arraySorting['notifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
+                    $originQuotes = $compileNotifyDeliveryQuotes['originQuotes'];
+                }
+                if($notifyDelivery && $lgQuotes){
+                    $compileNotifyDeliveryQuotes = Functions::compileOriginQuotes('lgnotifydelivery', $lableAs, $originQuotes, $data, $origin, $data['totalTransitTimeInDays'], 
+                    $dateAndDays, true, 'odflltl', $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi);
+
+                    $arraySorting['lgnotifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
+                    $originQuotes = $compileNotifyDeliveryQuotes['originQuotes'];
                 }
 
                 $key++;
@@ -1159,6 +1192,10 @@ class CompileQuotes
                         $multiShipmentQuotes['simple'][$origin] = $service['simple'];
                         $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
                         $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
+                        $notifyDelivery ? $allQuotes['notifydelivery'][] = $service['notifydelivery'] : null;
+                        $notifyDelivery ? $multiShipmentQuotes['notifydelivery'][$origin] = $service['notifydelivery'] : null;
+                        $notifyDelivery && $lgQuotes ? $allQuotes['lgnotifydelivery'][] = $service['lgnotifydelivery'] : null;
+                        $notifyDelivery && $lgQuotes ? $multiShipmentQuotes['lgnotifydelivery'][$origin] = $service['lgnotifydelivery'] : null;
                     }
                 } else {
                     $service = reset($compiledQuotes);
@@ -1166,6 +1203,10 @@ class CompileQuotes
                     $multiShipmentQuotes['simple'][$origin] = $service['simple'] ?? '';
                     $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
                     $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
+                    $notifyDelivery ? $allQuotes['notifydelivery'][] = $service['notifydelivery'] : null;
+                    $notifyDelivery ? $multiShipmentQuotes['notifydelivery'][$origin] = $service['notifydelivery'] : null;
+                    $notifyDelivery && $lgQuotes ? $allQuotes['lgnotifydelivery'][] = $service['lgnotifydelivery'] : null;
+                    $notifyDelivery && $lgQuotes ? $multiShipmentQuotes['lgnotifydelivery'][$origin] = $service['lgnotifydelivery'] : null;
                 }
             }
 
@@ -4526,17 +4567,6 @@ class CompileQuotes
         $basePrice = (float)$basePrice;
         $basePrice = $basePrice - $lgCost - $LADCost - $IDCost - $TMDCost - $APDCost - $NBDCost;
         $productOriginMarkupFee = Functions::calProductOriginMarkupFee($basePrice, $this->originKey ?? $originKey, $this->items ?? $items, $this->allOrigins ?? $allOrigins);
-        $basePrice = $this->calculateHandlingFee($basePrice);
-        $basePrice = $basePrice + $productOriginMarkupFee;
-        return $basePrice;
-    }
-
-    public function calculateOdflPrice($data, $lgOption = false, $getCost = false)
-    {
-        $lgCost = $lgOption ? 0 : $this->getLiftGateCost($data, $getCost);
-        $basePrice = (float)$data['rateEstimate']['netFreightCharge'];
-        $basePrice = $basePrice - $lgCost;
-        $productOriginMarkupFee = Functions::calProductOriginMarkupFee($basePrice, $this->originKey, $this->items, $this->allOrigins);
         $basePrice = $this->calculateHandlingFee($basePrice);
         $basePrice = $basePrice + $productOriginMarkupFee;
         return $basePrice;
