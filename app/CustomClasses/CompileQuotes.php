@@ -1542,7 +1542,7 @@ class CompileQuotes
                             }
                         }
                         if(isset($data['ratpricing'])){
-                            $data['totalNetCharge']['Amount'] = $data['ratpricing']['rattotalPrice'] ?? 0;
+                            $data['totalNetCharge']['Amount'] = (float)$data['ratpricing']['rattotalPrice'] ?? 0;
                         }
                         $access = $this->getAccessorialCode() . $resiPickup;
                         $price = $this->calculatePrice($data);
