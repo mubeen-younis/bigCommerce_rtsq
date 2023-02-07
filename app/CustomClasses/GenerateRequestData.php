@@ -1662,6 +1662,7 @@ class GenerateRequestData
             $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
         $insideDelivery = (isset($connSettings['quote_settings']['insideDelivery']) && $connSettings['quote_settings']['insideDelivery'] && $connSettings['quote_settings']['insideDelivery'] == true) ? 1 : 0;
+        $notify = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']);
 
         $this->resiCarrier['rnlLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['rnlLtl'] = $alwaysResi;
@@ -1674,6 +1675,7 @@ class GenerateRequestData
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
             'liftgateDelivery' => $liftGate,
+            'notifyBeforeDelivery' => $notify ? 'Y' : 'N',
             'residentialDelivery' => $alwaysResi ? 'Y' : $residential,
             'insideDelAsAnOption' => $insideDelivery,
 

@@ -6,6 +6,7 @@ use App\Models\BoxSize;
 use Illuminate\Support\Facades\Log;
 use App\Models\ResidentialSetting;
 use App\CustomClasses\CompileQuotes;
+use App\Constant;
 class Functions
 {
     protected static $daysAfterExpiry = 4;
@@ -48,6 +49,8 @@ class Functions
     public static $notifyBeforeDelResiLable = ' w/ residential & notify before delivery';
     public static $notifyBoforeDelLiftGateLable = ' w/ lift gate & notify before delivery';
     public static $notifyBeforeDelLiftGateResiLable = ' w/ residential, lift gate & notify before delivery';
+    public static $notifyBeforeInsideDelResiLable = ' w/ residential, inside & notify before delivery';
+    public static $notifyBeforeInsideDelLable = ' w/ inside & notify before delivery';
     public static $notifyDelLgAccess = '+LG+NBD';
     public static $notifyDelAccess = '+NBD';
 
@@ -546,18 +549,94 @@ class Functions
         return ['carriersArray' => $carriersArray, 'itemsArr' => $itemsArr];
     }
 
-    public static function compileOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi)
+    // Create Origin Quotes Array
+    public static function getOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi, $insideDelivery = false)
     {
         $CompileQuotes = new CompileQuotes();
         $serviceCode = isset($data['ratquoteNumber']) && !empty($data['ratquoteNumber']) ? $data['ratquoteNumber'] : '';
 
-        $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, false, '', '', false, false, false, true, $isResi, $isAlwaysResi);
-        $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, false, false, false, false, false, true, $originKey, $items, $allOrigins);
-        $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, false, false, false, false, false, false, false, true, false, $isResi);
+        $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, $insideDelivery, '', '', false, false, false, true, $isResi, $isAlwaysResi);
+        $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, false, $insideDelivery, false, false, false, true, $originKey, $items, $allOrigins, $quoteSettings);
+        $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, $insideDelivery, false, false, false, false, false, false, true, false, $isResi);
         $originQuotes[$origin][$index]['code'] = $carrName . $serviceCode . $ndAccess;
         $originQuotes[$origin][$index]['rate'] = $ndPrice;
         $originQuotes[$origin][$index]['title'] = $ndTitle;
         
         return ['originQuotes' => $originQuotes, 'ndPrice' => $ndPrice];
+    }
+
+    // Create Single or Multi-Shipments Quotes Array
+    public static function getQuotesArray($service, $allQuotes, $multiShipmentQuotes, $origin, $key){
+
+        isset($service[$key]) ? $allQuotes[$key][] = $service[$key][0] ?? $service[$key] : null;
+        isset($service[$key]) ? $multiShipmentQuotes[$key][$origin] = $service[$key][0] ?? $service[$key] : null;
+
+        return ['allQuotes' => $allQuotes, 'multiShipmentQuotes' => $multiShipmentQuotes];
+
+    }
+
+    // Make Notify Before Delivery Access Title
+    public static function getNBFAccessTitle($accessTitle, $quoteSettings, $notifyDelivery, $isResi, $lgOption, $isLgnotifydelivery, $insideDel){
+        
+        if($notifyDelivery){
+            if(isset($quoteSettings['always_quote_notify']) && $quoteSettings['always_quote_notify'] == '0'){
+                $accessTitle = $isResi ? self::$notifyBeforeDelResiLable : self::$notifyBeforeDelLable;
+            }else{
+                $accessTitle = $isResi ? Constant::RESI_LABEL : '';
+            }
+
+            if($insideDel && $notifyDelivery && $lgOption){
+                if(isset($quoteSettings['always_quote_notify']) && $quoteSettings['always_quote_notify'] == '0'){
+                    if(isset($quoteSettings['alwaysLiftGateDelivery']) && $quoteSettings['alwaysLiftGateDelivery'] == '0'){
+                        $accessTitle = $isResi ? self::$notifyBeforeDelLiftGateResiLable : self::$notifyBoforeDelLiftGateLable;
+                    }else{
+                        $accessTitle = $isResi ? self::$notifyBeforeDelResiLable : self::$notifyBeforeDelLable;   
+                    }
+                    
+                }else{
+                    if(isset($quoteSettings['alwaysLiftGateDelivery']) && $quoteSettings['alwaysLiftGateDelivery'] == '0'){
+                        $accessTitle = $isResi ? Constant::RESI_LIFT_LABEL : Constant::LIFT_LABEL;
+                    }else{
+                        $accessTitle = $isResi ? Constant::RESI_LABEL : '';   
+                    }
+                }
+            } else if($lgOption && $notifyDelivery || $isLgnotifydelivery){
+                if(isset($quoteSettings['always_quote_notify']) && $quoteSettings['always_quote_notify'] == '0'){
+                    if(isset($quoteSettings['alwaysLiftGateDelivery']) && $quoteSettings['alwaysLiftGateDelivery'] == '0'){
+                        $accessTitle = $isResi ? self::$notifyBeforeDelLiftGateResiLable : self::$notifyBoforeDelLiftGateLable;
+                    }else{
+                        $accessTitle = $isResi ? self::$notifyBeforeDelResiLable : self::$notifyBeforeDelLable;   
+                    }
+                    
+                }else{
+                    if(isset($quoteSettings['alwaysLiftGateDelivery']) && $quoteSettings['alwaysLiftGateDelivery'] == '0'){
+                        $accessTitle = $isResi ? Constant::RESI_LIFT_LABEL : Constant::LIFT_LABEL;
+                    }else{
+                        $accessTitle = $isResi ? Constant::RESI_LABEL : '';   
+                    }
+                }
+            } else if($insideDel && $notifyDelivery){
+            
+                if(isset($quoteSettings['always_quote_notify']) && $quoteSettings['always_quote_notify'] == '0'){
+                    if(isset($quoteSettings['insideDelivery']) && $quoteSettings['insideDelivery']){
+                        $accessTitle = $isResi ? self::$notifyBeforeInsideDelResiLable : self::$notifyBeforeInsideDelLable;
+                    }else{
+                        $accessTitle = $isResi ? self::$notifyBeforeDelResiLable : self::$notifyBeforeDelLable;   
+                    }
+                    
+                }else{
+                    if(isset($quoteSettings['insideDelivery']) && $quoteSettings['insideDelivery']){
+                        $accessTitle = $isResi ? self::$insideDelResiLable : self::$insideDelLable;
+                    }else{
+                        $accessTitle = $isResi ? Constant::RESI_LABEL : '';   
+                    }
+                }
+            }
+
+            return $accessTitle;
+
+        }
+
+        return $accessTitle;
     }
 }
