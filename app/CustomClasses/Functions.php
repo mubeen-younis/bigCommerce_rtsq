@@ -51,6 +51,7 @@ class Functions
     public static $notifyBeforeDelLiftGateResiLable = ' w/ residential, lift gate & notify before delivery';
     public static $notifyBeforeInsideDelResiLable = ' w/ residential, inside & notify before delivery';
     public static $notifyBeforeInsideDelLable = ' w/ inside & notify before delivery';
+    public static $notifyBeforeLgInsideDelLable = ' w/ inside, lift gate & notify before delivery';
     public static $notifyDelLgAccess = '+LG+NBD';
     public static $notifyDelAccess = '+NBD';
 
@@ -577,64 +578,49 @@ class Functions
 
     // Make Notify Before Delivery Access Title
     public static function getNBFAccessTitle($accessTitle, $quoteSettings, $notifyDelivery, $isResi, $lgOption, $isLgnotifydelivery, $insideDel){
+        // Check Enable Features and Offer Delivery as an Option with Notify Before Delivery as an Option
+        $isNotifyInsideLiftgateEnabled = isset($quoteSettings['offerLiftGateDelivery']) && $quoteSettings['offerLiftGateDelivery'] &&
+                                         isset($quoteSettings['insideDelivery']) && $quoteSettings['insideDelivery'] && $notifyDelivery && $lgOption && $insideDel; 
+
+        $isNotifyLiftgateEnabled = isset($quoteSettings['offerLiftGateDelivery']) && $quoteSettings['offerLiftGateDelivery'] && ($notifyDelivery && $lgOption || $isLgnotifydelivery);
+
+        $isNotifyInsideEnabled = isset($quoteSettings['insideDelivery']) && $quoteSettings['insideDelivery'] && $notifyDelivery && $insideDel; 
+
+        $isNotifyEnabled = isset($quoteSettings['offer_notify_as_option']) && $quoteSettings['offer_notify_as_option'] && $notifyDelivery;
         
-        if($notifyDelivery){
-            if(isset($quoteSettings['always_quote_notify']) && $quoteSettings['always_quote_notify'] == '0'){
-                $accessTitle = $isResi ? self::$notifyBeforeDelResiLable : self::$notifyBeforeDelLable;
-            }else{
-                $accessTitle = $isResi ? Constant::RESI_LABEL : '';
+        // Make Enabled Features Combinations Array
+        $featuresCombinations = [
+            $isNotifyInsideLiftgateEnabled,
+            $isNotifyLiftgateEnabled,
+            $isNotifyInsideEnabled,
+            $isNotifyEnabled,
+        ];
+        // Geting Access Title According to Combinations
+        foreach($featuresCombinations as $key => $feature){
+            if($feature){
+                $accessTitle = self::getAccessTitle($isResi, $key);
+                return !$isNotifyEnabled ? $accessTitle = str_replace('& notify before delivery', 'delivery', $accessTitle) : $accessTitle;
             }
+        }
+        
+        return $accessTitle;
+    }
+    // Access Title Function
+    public static function getAccessTitle($isResi, $key){
 
-            if($insideDel && $notifyDelivery && $lgOption){
-                if(isset($quoteSettings['always_quote_notify']) && $quoteSettings['always_quote_notify'] == '0'){
-                    if(isset($quoteSettings['alwaysLiftGateDelivery']) && $quoteSettings['alwaysLiftGateDelivery'] == '0'){
-                        $accessTitle = $isResi ? self::$notifyBeforeDelLiftGateResiLable : self::$notifyBoforeDelLiftGateLable;
-                    }else{
-                        $accessTitle = $isResi ? self::$notifyBeforeDelResiLable : self::$notifyBeforeDelLable;   
-                    }
-                    
-                }else{
-                    if(isset($quoteSettings['alwaysLiftGateDelivery']) && $quoteSettings['alwaysLiftGateDelivery'] == '0'){
-                        $accessTitle = $isResi ? Constant::RESI_LIFT_LABEL : Constant::LIFT_LABEL;
-                    }else{
-                        $accessTitle = $isResi ? Constant::RESI_LABEL : '';   
-                    }
-                }
-            } else if($lgOption && $notifyDelivery || $isLgnotifydelivery){
-                if(isset($quoteSettings['always_quote_notify']) && $quoteSettings['always_quote_notify'] == '0'){
-                    if(isset($quoteSettings['alwaysLiftGateDelivery']) && $quoteSettings['alwaysLiftGateDelivery'] == '0'){
-                        $accessTitle = $isResi ? self::$notifyBeforeDelLiftGateResiLable : self::$notifyBoforeDelLiftGateLable;
-                    }else{
-                        $accessTitle = $isResi ? self::$notifyBeforeDelResiLable : self::$notifyBeforeDelLable;   
-                    }
-                    
-                }else{
-                    if(isset($quoteSettings['alwaysLiftGateDelivery']) && $quoteSettings['alwaysLiftGateDelivery'] == '0'){
-                        $accessTitle = $isResi ? Constant::RESI_LIFT_LABEL : Constant::LIFT_LABEL;
-                    }else{
-                        $accessTitle = $isResi ? Constant::RESI_LABEL : '';   
-                    }
-                }
-            } else if($insideDel && $notifyDelivery){
-            
-                if(isset($quoteSettings['always_quote_notify']) && $quoteSettings['always_quote_notify'] == '0'){
-                    if(isset($quoteSettings['insideDelivery']) && $quoteSettings['insideDelivery']){
-                        $accessTitle = $isResi ? self::$notifyBeforeInsideDelResiLable : self::$notifyBeforeInsideDelLable;
-                    }else{
-                        $accessTitle = $isResi ? self::$notifyBeforeDelResiLable : self::$notifyBeforeDelLable;   
-                    }
-                    
-                }else{
-                    if(isset($quoteSettings['insideDelivery']) && $quoteSettings['insideDelivery']){
-                        $accessTitle = $isResi ? self::$insideDelResiLable : self::$insideDelLable;
-                    }else{
-                        $accessTitle = $isResi ? Constant::RESI_LABEL : '';   
-                    }
-                }
-            }
-
-            return $accessTitle;
-
+        // Access Titles Array
+        $accessTitles = [
+            self::$notifyBeforeLgInsideDelLable,
+            self::$notifyBoforeDelLiftGateLable,
+            self::$notifyBeforeInsideDelLable,
+            self::$notifyBeforeDelLable,
+        ];
+        // Making Access Title
+        $accessTitle = $accessTitles[$key];
+        
+        if($isResi){
+            $expolodAccess = explode('w/' , $accessTitle);
+            $accessTitle = $isResi && $key == 3 ? ' w/ residential &' . $expolodAccess[1] : ' w/ residential,' . $expolodAccess[1];
         }
 
         return $accessTitle;
