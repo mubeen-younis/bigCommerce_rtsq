@@ -229,38 +229,27 @@ class RADController extends Controller
     }
 
     public function getSettings(Request $request)
-    {Log::info('1 getSettings' . json_encode($request->all()));
-        try {
-            if (empty($request->store_id)) {
-                return response()->json([
-                    'error' => true,
-                    'data' => [],
-                    'message' => 'Empty Store Id',
-                ], 200);
-            }
-    
-            $resi_settings = ResidentialSetting::where(['store_id' => $request->store_id])->first();
-            Log::info('2 getSettings' . json_encode($resi_settings));
-            if (!empty($resi_settings)) {
-    
-                return response()->json(["error" => false, "data" => $resi_settings]);
-    
-            } else {
-                return response()->json([
-                    'error' => false,
-                    'data' => [],
-                    'message' => 'Invalid store Id',
-                ], 200);
-            }
-        } catch (\Exception $error) {
-            Log::info(' 3 getSettings'.json_encode($error->getMessage()));
+    {
+        if (empty($request->store_id)) {
             return response()->json([
-                'error' => false,
-                'data' => $error,
-                'message' => $error->getMessage(),
+                'error' => true,
+                'data' => [],
+                'message' => 'Empty Store Id',
             ], 200);
         }
-        
+
+        $resi_settings = ResidentialSetting::where(['store_id' => $request->store_id])->first();
+        if (!empty($resi_settings)) {
+
+            return response()->json(["error" => false, "data" => $resi_settings]);
+
+        } else {
+            return response()->json([
+                'error' => false,
+                'data' => [],
+                'message' => 'Invalid store Id',
+            ], 200);
+        }
     }
 
 }
