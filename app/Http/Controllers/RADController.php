@@ -10,6 +10,7 @@ use App\Models\InstalledCarrier;
 use Illuminate\Http\Request;
 use App\Models\ResidentialSetting;
 use App\Models\InstalledAddon;
+use Illuminate\Support\Facades\Log;
 
 class RADController extends Controller
 {
@@ -228,7 +229,7 @@ class RADController extends Controller
     }
 
     public function getSettings(Request $request)
-    {
+    {Log::info('1 getSettings' . json_encode($request->all()));
         try {
             if (empty($request->store_id)) {
                 return response()->json([
@@ -239,7 +240,7 @@ class RADController extends Controller
             }
     
             $resi_settings = ResidentialSetting::where(['store_id' => $request->store_id])->first();
-    
+            Log::info('2 getSettings' . json_encode($resi_settings));
             if (!empty($resi_settings)) {
     
                 return response()->json(["error" => false, "data" => $resi_settings]);
@@ -252,6 +253,7 @@ class RADController extends Controller
                 ], 200);
             }
         } catch (\Exception $error) {
+            Log::info(' 3 getSettings'.json_encode($error->getMessage()));
             return response()->json([
                 'error' => false,
                 'data' => $error,
