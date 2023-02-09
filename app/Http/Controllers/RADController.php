@@ -229,27 +229,36 @@ class RADController extends Controller
 
     public function getSettings(Request $request)
     {
-        if (empty($request->store_id)) {
-            return response()->json([
-                'error' => true,
-                'data' => [],
-                'message' => 'Empty Store Id',
-            ], 200);
-        }
-
-        $resi_settings = ResidentialSetting::where(['store_id' => $request->store_id])->first();
-
-        if (!empty($resi_settings)) {
-
-            return response()->json(["error" => false, "data" => $resi_settings]);
-
-        } else {
+        try {
+            if (empty($request->store_id)) {
+                return response()->json([
+                    'error' => true,
+                    'data' => [],
+                    'message' => 'Empty Store Id',
+                ], 200);
+            }
+    
+            $resi_settings = ResidentialSetting::where(['store_id' => $request->store_id])->first();
+    
+            if (!empty($resi_settings)) {
+    
+                return response()->json(["error" => false, "data" => $resi_settings]);
+    
+            } else {
+                return response()->json([
+                    'error' => false,
+                    'data' => [],
+                    'message' => 'Invalid store Id',
+                ], 200);
+            }
+        } catch (\Exception $error) {
             return response()->json([
                 'error' => false,
-                'data' => [],
-                'message' => 'Invalid store Id',
+                'data' => $error,
+                'message' => $error->getMessage(),
             ], 200);
         }
+        
     }
 
 }
