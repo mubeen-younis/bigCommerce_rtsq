@@ -6,7 +6,7 @@ use App\Models\BoxSize;
 use Illuminate\Support\Facades\Log;
 use App\Models\ResidentialSetting;
 use App\CustomClasses\CompileQuotes;
-use App\Constant;
+use App\Constants\Constant;
 class Functions
 {
     protected static $daysAfterExpiry = 4;
@@ -53,6 +53,7 @@ class Functions
     public static $notifyBeforeInsideDelLable = ' w/ inside & notify before delivery';
     public static $notifyBeforeLgInsideDelLable = ' w/ inside, lift gate & notify before delivery';
     public static $notifyDelLgAccess = '+LG+NBD';
+    public static $insideNotifyDelAccess = '+ID+NBD';
     public static $notifyDelAccess = '+NBD';
 
     public static function hasInsureCarrier($code)
@@ -577,18 +578,18 @@ class Functions
     }
 
     // Make Notify Before Delivery Access Title
-    public static function getNBFAccessTitle($accessTitle, $quoteSettings, $notifyDelivery, $isResi, $lgOption, $isLgnotifydelivery, $insideDel){
+    public static function getNBFAccessTitle($accessTitle, $quoteSettings, $notifyDelivery, $isResi, $lgOption, $isLgnotifydelivery, $insideDel, $isLginsidenotifydelivery, $isInsideLiftGateDelivery, $isInsidenotifydelivery){
         // Check Enable Features and Offer Delivery as an Option with Notify Before Delivery as an Option
         $isNotifyInsideLiftgateEnabled = isset($quoteSettings['offerLiftGateDelivery']) && $quoteSettings['offerLiftGateDelivery'] &&
-                                         isset($quoteSettings['insideDelivery']) && $quoteSettings['insideDelivery'] && $notifyDelivery && $lgOption && $insideDel; 
+                                         isset($quoteSettings['offer_inside_delivery']) && $quoteSettings['offer_inside_delivery'] && ($notifyDelivery && $lgOption && $insideDel || $isLginsidenotifydelivery); 
 
-        $isNotifyLiftgateEnabled = isset($quoteSettings['offerLiftGateDelivery']) && $quoteSettings['offerLiftGateDelivery'] && ($notifyDelivery && $lgOption || $isLgnotifydelivery);
+        $isNotifyLiftgateEnabled = isset($quoteSettings['offerLiftGateDelivery']) && $quoteSettings['offerLiftGateDelivery'] && ($notifyDelivery && $lgOption || $isLgnotifydelivery || $isLginsidenotifydelivery);
 
-        $isNotifyInsideEnabled = isset($quoteSettings['insideDelivery']) && $quoteSettings['insideDelivery'] && $notifyDelivery && $insideDel; 
+        $isNotifyInsideEnabled = isset($quoteSettings['offer_inside_delivery']) && $quoteSettings['offer_inside_delivery'] && ($notifyDelivery && $insideDel || $isLginsidenotifydelivery || $isInsidenotifydelivery); 
 
-        $isNotifyEnabled = isset($quoteSettings['offer_notify_as_option']) && $quoteSettings['offer_notify_as_option'] && $notifyDelivery;
+        $isNotifyEnabled = isset($quoteSettings['offer_notify_as_option']) && $quoteSettings['offer_notify_as_option'] && ($notifyDelivery || $isLginsidenotifydelivery || $isLgnotifydelivery || $isInsidenotifydelivery);
         
-        // Make Enabled Features Combinations Array
+        // Make Enabled Features Combinations Array in Descending Order
         $featuresCombinations = [
             $isNotifyInsideLiftgateEnabled,
             $isNotifyLiftgateEnabled,
@@ -601,6 +602,10 @@ class Functions
                 $accessTitle = self::getAccessTitle($isResi, $key);
                 return !$isNotifyEnabled ? $accessTitle = str_replace('& notify before delivery', 'delivery', $accessTitle) : $accessTitle;
             }
+            if(!$isNotifyEnabled && $notifyDelivery){
+                $accessTitle = $isResi ? Constant::RESI_LABEL : $accessTitle;
+            }
+
         }
         
         return $accessTitle;
@@ -608,7 +613,7 @@ class Functions
     // Access Title Function
     public static function getAccessTitle($isResi, $key){
 
-        // Access Titles Array
+        // Access Titles Array in Descending Order
         $accessTitles = [
             self::$notifyBeforeLgInsideDelLable,
             self::$notifyBoforeDelLiftGateLable,

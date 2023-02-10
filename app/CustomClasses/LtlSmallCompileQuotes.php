@@ -150,9 +150,14 @@ class LtlSmallCompileQuotes
                     $quote['isResi'] = isset($residential['rnlLtl']) && $residential['rnlLtl'] == 'Y';
                     $quote['alwaysLG'] = isset($connectionSettings['rl-ltl']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['rl-ltl']['quote_settings']['alwaysLiftGateDelivery'];
                     $quote['alwaysNBD'] = isset($connectionSettings['rl-ltl']['quote_settings']['always_quote_notify']) && $connectionSettings['rl-ltl']['quote_settings']['always_quote_notify'];
+                    $quote['alwaysID'] = isset($connectionSettings['rl-ltl']['quote_settings']['always_inside_delivery']) && $connectionSettings['rl-ltl']['quote_settings']['always_inside_delivery'];
 
-                    if (strpos($quote['code'], '+LG+NBD') !== false) {
+                    if (strpos($quote['code'], '+LG+ID+NBD') !== false) {
+                        $quotesCarrier['ltl']['rnl']['LGIDNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+NBD') !== false) {
                         $quotesCarrier['ltl']['rnl']['LGNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+ID+NBD') !== false) {
+                        $quotesCarrier['ltl']['rnl']['IDNBD'][] = $quote;
                     } else if (strpos($quote['code'], '+NBD') !== false) {
                         $quotesCarrier['ltl']['rnl']['NBD'][] = $quote;
                     } else if (strpos($quote['code'], '+LG+ID') !== false) {
@@ -443,6 +448,28 @@ class LtlSmallCompileQuotes
 
                     $newQuotes[] = [
                         'code' => 'multi' . $rCode . Functions::$twoManAptDelAccess,
+                        'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
+                        'title' => 'Freight' . $rtitle
+                    ];
+                } else if ($simpleLg == 'IDNBD'){
+                    // Create Multi Quotes Array of Inside and Notify before Delivery, When Small and Ltl Products
+                    if (isset($ltlQuot['alwaysNBD']) && $ltlQuot['alwaysNBD']) {
+                        if(isset($ltlQuot['alwaysID']) && $ltlQuot['alwaysID']){
+                            $rtitle = ($parcel['isResi'] ?? $ltlQuot['isResi']) ? Constant::RESI_LABEL : '';    
+                        }else{
+                            $rtitle = ($parcel['isResi'] ?? $ltlQuot['isResi']) ? Functions::$insideDelResiLable : Functions::$insideDelLable;    
+                        }
+                
+                    } else {
+                        if(isset($ltlQuot['alwaysID']) && $ltlQuot['alwaysID']){
+                            $rtitle = ($parcel['isResi'] ?? $ltlQuot['isResi']) ? Functions::$notifyBeforeDelResiLable : Functions::$notifyBeforeDelLable;    
+                        }else{
+                            $rtitle = ($parcel['isResi'] ?? $ltlQuot['isResi']) ? Functions::$notifyBeforeInsideDelResiLable : Functions::$notifyBeforeInsideDelLable;    
+                        }
+                    }
+
+                    $newQuotes[] = [
+                        'code' => 'multi' . $rCode . Functions::$insideNotifyDelAccess,
                         'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
                         'title' => 'Freight' . $rtitle
                     ];
