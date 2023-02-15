@@ -4845,7 +4845,7 @@ class CompileQuotes
                 $accessTitle = empty($accessTitle) ? Functions::$appointmentDeliveryLabel : $accessTitle . ' & appointment delivery';
             }
         }
-
+         $isResi = $isResi ? $isResi : $this->isResi;
         // Get Notify Before Delivery Access Title
         $accessTitle = Functions::getNBFAccessTitle($accessTitle, $this->quoteSettings, $notifyDelivery, $isResi, $lgOption, $isLgnotifydelivery, $insideDel, $isLginsidenotifydelivery, $isInsideLiftGateDelivery, $isInsidenotifydelivery);
 
