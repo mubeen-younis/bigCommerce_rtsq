@@ -54,6 +54,7 @@ class Functions
     public static $notifyBeforeLgInsideDelLable = ' w/ inside, lift gate & notify before delivery';
     public static $notifyDelLgAccess = '+LG+NBD';
     public static $insideNotifyDelAccess = '+ID+NBD';
+    public static $lginsideNotifyDelAccess = '+LG+ID+NBD';
     public static $notifyDelAccess = '+NBD';
 
     public static function hasInsureCarrier($code)
@@ -551,7 +552,7 @@ class Functions
         return ['carriersArray' => $carriersArray, 'itemsArr' => $itemsArr];
     }
 
-    // Create Origin Quotes Array
+    // Create Origin Quotes Array in case of notify before delivery enable
     public static function getOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi, $insideDelivery = false)
     {
         $CompileQuotes = new CompileQuotes();
@@ -559,7 +560,7 @@ class Functions
 
         $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, $insideDelivery, '', '', false, false, false, true, $isResi, $isAlwaysResi);
         $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, false, $insideDelivery, false, false, false, true, $originKey, $items, $allOrigins, $quoteSettings);
-        $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, $insideDelivery, false, false, false, false, false, false, true, false, $isResi);
+        $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, $insideDelivery, false, false, false, false, false, true, $isResi);
         $originQuotes[$origin][$index]['code'] = $carrName . $serviceCode . $ndAccess;
         $originQuotes[$origin][$index]['rate'] = $ndPrice;
         $originQuotes[$origin][$index]['title'] = $ndTitle;
@@ -577,17 +578,18 @@ class Functions
 
     }
 
-    // Make Notify Before Delivery Access Title
-    public static function getNBFAccessTitle($accessTitle, $quoteSettings, $notifyDelivery, $isResi, $lgOption, $isLgnotifydelivery, $insideDel, $isLginsidenotifydelivery, $isInsideLiftGateDelivery, $isInsidenotifydelivery){
+    // Make Access Title for Offer as an Option Delivery Features
+    public static function getAccessTitle($quoteSettings = [], $isResi = false, $lgOption = false, $insideDel = false, $notifyDelivery = false){
        
+        $accessTitles = '';
+        $accessLabel = '';
+        
         $offerFeaturesAsOption = [
             'offerLiftGateDelivery' => [$lgOption, 'lifgate,'],
             'offer_inside_delivery' => [$insideDel,'inside,'],
             'offer_notify_as_option' => [$notifyDelivery,'notify before,'],
         ];
-        //dd($offerFeaturesAsOption);
-        $accessTitles = '';
-        $accessLabel = '';
+        
         foreach($offerFeaturesAsOption as $key => $index){
             if(isset($quoteSettings[$key]) && $quoteSettings[$key] && $index[0]){
                 $accessTitles = $accessTitles . $index[1];  
@@ -613,67 +615,15 @@ class Functions
             
         }
         
-        // $accessLabel = $isResi && empty($accessLabel) ? Constant::RESI_LABEL : $accessLabel;
-        // dd($accessLabel);
         if($isResi && !empty($accessLabel)){
             $expolodAccess = explode('w/' , $accessLabel);
             $accessLabel = $isResi && $count <= 2 ? ' w/ residential &' . $expolodAccess[1] : ' w/ residential,' . $expolodAccess[1];
         }
 
-       //dump($accessLabel, $accessTitle);
-       return empty($accessLabel) ? $accessTitle : $accessLabel;
-       
-       
-       
-        // // Check Enable Features and Offer Delivery as an Option with Notify Before Delivery as an Option
-        // $isNotifyInsideLiftgateEnabled = isset($quoteSettings['offerLiftGateDelivery']) && $quoteSettings['offerLiftGateDelivery'] &&
-        //                                  isset($quoteSettings['offer_inside_delivery']) && $quoteSettings['offer_inside_delivery'] && ($notifyDelivery && $lgOption && $insideDel || $isLginsidenotifydelivery); 
+        $accessLabel = $isResi && empty($accessLabel) ? Constant::RESI_LABEL : $accessLabel;
 
-        // $isNotifyLiftgateEnabled = isset($quoteSettings['offerLiftGateDelivery']) && $quoteSettings['offerLiftGateDelivery'] && ($notifyDelivery && $lgOption || $isLgnotifydelivery || $isLginsidenotifydelivery);
-
-        // $isNotifyInsideEnabled = isset($quoteSettings['offer_inside_delivery']) && $quoteSettings['offer_inside_delivery'] && ($notifyDelivery && $insideDel || $isLginsidenotifydelivery || $isInsidenotifydelivery); 
-
-        // $isNotifyEnabled = isset($quoteSettings['offer_notify_as_option']) && $quoteSettings['offer_notify_as_option'] && ($notifyDelivery || $isLginsidenotifydelivery || $isLgnotifydelivery || $isInsidenotifydelivery);
-        
-        // // Make Enabled Features Combinations Array in Descending Order
-        // $featuresCombinations = [
-        //     $isNotifyInsideLiftgateEnabled,
-        //     $isNotifyLiftgateEnabled,
-        //     $isNotifyInsideEnabled,
-        //     $isNotifyEnabled,
-        // ];
-        // // Geting Access Title According to Combinations
-        // foreach($featuresCombinations as $key => $feature){
-        //     if($feature){
-        //         $accessTitle = self::getAccessTitle($isResi, $key);
-        //         return !$isNotifyEnabled ? $accessTitle = str_replace('& notify before delivery', 'delivery', $accessTitle) : $accessTitle;
-        //     }
-        //     if(!$isNotifyEnabled && $notifyDelivery){
-        //         $accessTitle = $isResi ? Constant::RESI_LABEL : $accessTitle;
-        //     }
-
-        // }
-        
-        // return $accessTitle;
+       return  $accessLabel;
+    
     }
-    // Access Title Function
-    public static function getAccessTitle($isResi, $key){
-
-        // Access Titles Array in Descending Order
-        $accessTitles = [
-            self::$notifyBeforeLgInsideDelLable,
-            self::$notifyBoforeDelLiftGateLable,
-            self::$notifyBeforeInsideDelLable,
-            self::$notifyBeforeDelLable,
-        ];
-        // Making Access Title
-        $accessTitle = $accessTitles[$key];
-        
-        if($isResi){
-            $expolodAccess = explode('w/' , $accessTitle);
-            $accessTitle = $isResi && $key == 3 ? ' w/ residential &' . $expolodAccess[1] : ' w/ residential,' . $expolodAccess[1];
-        }
-
-        return $accessTitle;
-    }
+    
 }
