@@ -1233,7 +1233,7 @@ class CompileQuotes
 
     public function compileTqlLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
-
+        $this->TQL = true;
         if ($this->residential['tqlLtl'] == 'Y') {
             $this->isResi = true;
             $this->residentialDlvry = 1;
@@ -1278,6 +1278,10 @@ class CompileQuotes
                     $lgQuotes = (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->isResi;
                 }
                 $resiPickup = isset($this->quoteSettings['residentialPickup']) && $this->quoteSettings['residentialPickup'] ? '+pu' : '';
+
+                $notifyDelivery =
+                    (isset($this->quoteSettings['always_quote_notify']) && $this->quoteSettings['always_quote_notify']) ||
+                    (isset($this->quoteSettings['offer_notify_as_option']) && $this->quoteSettings['offer_notify_as_option']);
             }
             $originQuotes = [];
             $arraySorting = [];
@@ -1317,9 +1321,9 @@ class CompileQuotes
                 } elseif ($ratingMethod == 6) {
                     $options = (int)$this->quoteSettings['number_of_options'];
                     $standardSort = collect($standardQuotes)->sortBy('customerRate')->toArray();
-                    $standardPrice = $this->averageRattingMethodTQL($standardSort, $options, $lgQuotes);
+                    $standardPrice = $this->averageRattingMethodTQL($standardSort, $options, $lgQuotes, $notifyDelivery);
                     $guaranteedSort = collect($guaranteedQuotes)->sortBy('customerRate')->toArray();
-                    $guaranteedPrice = $this->averageRattingMethodTQL($guaranteedSort, $options, $lgQuotes);
+                    $guaranteedPrice = $this->averageRattingMethodTQL($guaranteedSort, $options, $lgQuotes, $notifyDelivery);
                     $quote['q'] = $originQuotes = array_merge($standardPrice, $guaranteedPrice);
                 }
             }
@@ -1339,6 +1343,9 @@ class CompileQuotes
                             }
                             if (isset($value['description'])) {
                                 $hazShipmentArr[$origin] = $value['description'] == "Hazardous Materials" ? 'Y' : 'N';
+                            }
+                            if ($value['description'] == "Delivery Call Ahead") {
+                                $data['surcharges']['notifyDeliveryFee'] = $value['amount'] ?? 0;
                             }
                         }
                         $price = $this->calculatePrice($data);
@@ -1362,29 +1369,46 @@ class CompileQuotes
                             $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
                             $originQuotes[$key]['liftgate']['title'] = $lgTitle;
                         }
+                        // Get Notify Before Delivery Origin Quotes
+                        if($notifyDelivery){
+                            $compileNotifyDeliveryQuotes = Functions::getOriginQuotes('notifydelivery', $data['carrier'], $originQuotes, $data, $key, $data['totalCalenderDaysInTransit'], 
+                            $dateAndDays, false, 'tqlltl', $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi);
+
+                            $arraySorting['notifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
+                            $originQuotes = $compileNotifyDeliveryQuotes['originQuotes'];
+                        }
+                        if($notifyDelivery && $lgQuotes){
+                            $compileNotifyDeliveryQuotes = Functions::getOriginQuotes('lgnotifydelivery', $data['carrier'], $originQuotes, $data, $key, $data['totalCalenderDaysInTransit'], 
+                            $dateAndDays, true, 'tqlltl', $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi);
+
+                            $arraySorting['lgnotifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
+                            $originQuotes = $compileNotifyDeliveryQuotes['originQuotes'];
+                        }
                     }
 
                 }
             }
             if ($ratingMethod == 1 || $ratingMethod == 2 || $ratingMethod == 3) {
-                $compiledQuotes = $this->getCompiledQuotesTQL($originQuotes, $arraySorting, $lgQuotes);
+                $compiledQuotes = $this->getCompiledQuotesTQL($originQuotes, $arraySorting, $lgQuotes, $notifyDelivery);
             } else {
                 $compiledQuotes = $originQuotes;
             }
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
                 if (count($compiledQuotes) > 1) {
                     foreach ($compiledQuotes as $k => $service) {
-                        $allQuotes['simple'][] = $service['simple'];
-                        $multiShipmentQuotes['simple'][$origin] = $service['simple'];
-                        $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
-                        $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
+                        foreach($service as $serKey => $ser){
+                            $quotes = Functions::getQuotesArray($service, $allQuotes, $multiShipmentQuotes, $origin, $serKey);
+                            $allQuotes = $quotes['allQuotes'];
+                            $multiShipmentQuotes = $quotes['multiShipmentQuotes']; 
+                        }
                     }
                 } else {
                     $service = reset($compiledQuotes);
-                    $allQuotes['simple'][] = $service['simple'] ?? '';
-                    $multiShipmentQuotes['simple'][$origin] = $service['simple'] ?? '';
-                    $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
-                    $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
+                    foreach($service as $serKey => $ser){
+                        $quotes = Functions::getQuotesArray($service, $allQuotes, $multiShipmentQuotes, $origin, $serKey);
+                        $allQuotes = $quotes['allQuotes'];
+                        $multiShipmentQuotes = $quotes['multiShipmentQuotes']; 
+                    }
                 }
             }
 
@@ -5369,7 +5393,7 @@ class CompileQuotes
         return $resp;
     }
 
-    public function getCompiledQuotesTQL($services, $arraySorting, $lgQuotes)
+    public function getCompiledQuotesTQL($services, $arraySorting, $lgQuotes, $notifyDelivery)
     {
         if (empty($arraySorting) || empty($services)) {
             return [];
@@ -5387,7 +5411,7 @@ class CompileQuotes
         $sliced = array_slice($arraySorting['simple'], 0, $options, true);
 
         if ($this->quoteSettings['method'] == 3) {
-            return $this->averageRattingMethod($arraySorting, $options, $lgQuotes);
+            return $this->averageRattingMethod($arraySorting, $options, $lgQuotes, '', '', false, $notifyDelivery);
         }
 
         $resp = array_intersect_key($services, $sliced);
@@ -5400,7 +5424,7 @@ class CompileQuotes
      * @param $lgQuotes
      * @return array
      */
-    public function averageRattingMethod($ratesArray, $options, $lgQuotes, $resiPickup = '', $lgPickup = '', $insideDelivery = false)
+    public function averageRattingMethod($ratesArray, $options, $lgQuotes, $resiPickup = '', $lgPickup = '', $insideDelivery = false, $notifyDelivery = false)
     {
         $sliced = array_slice($ratesArray['simple'], 0, $options, true);
         $simplePrice = $this->getAveragePrice($sliced, $options);
@@ -5408,6 +5432,7 @@ class CompileQuotes
         $prefix = isset($this->isFQ) && $this->isFQ ? 'AVGfqltl' : $prefix;
         $prefix = isset($this->isFQChr) && $this->isFQChr ? 'AVGfqchrltl' : $prefix;
         $prefix = isset($this->EchoLogistics) && $this->EchoLogistics ? 'AVGecholtl' : $prefix;
+        $prefix = isset($this->TQL) && $this->TQL ? 'AVGTqlltl' : $prefix;
         $serviceName = $this->customLabel(Functions::$simpleLTLTitle);
         $averageRateService[0]['simple'] = [
             'title' => $this->getTitle($serviceName, false), //$serviceName,
@@ -5421,6 +5446,26 @@ class CompileQuotes
             $averageRateService[0]['liftgate'] = [
                 'title' => $this->getTitle($serviceName, $lgQuotes),
                 'code' => $prefix . $this->getAccessorialCode($lgQuotes, false, $resiPickup, $lgPickup),
+                'rate' => $lfgPrice,
+            ];
+        }
+        if ($notifyDelivery) {
+            asort($ratesArray['notifydelivery']);
+            $sliced = array_slice($ratesArray['notifydelivery'], 0, $options, true);
+            $lfgPrice = $this->getAveragePrice($sliced, $options);
+            $averageRateService[0]['notifydelivery'] = [
+                'title' => $this->getTitle($serviceName, false, false, '', [], [], false, false, false, false, false, false, $notifyDelivery),
+                'code' => $prefix . $this->getAccessorialCode(false, false, $resiPickup, $lgPickup, false, false, false, $notifyDelivery),
+                'rate' => $lfgPrice,
+            ];
+        }
+        if ($notifyDelivery && $lgQuotes) {
+            asort($ratesArray['lgnotifydelivery']);
+            $sliced = array_slice($ratesArray['lgnotifydelivery'], 0, $options, true);
+            $lfgPrice = $this->getAveragePrice($sliced, $options);
+            $averageRateService[0]['lgnotifydelivery'] = [
+                'title' => $this->getTitle($serviceName, $lgQuotes, false, '', [], [], false, false, false, false, false, false, $notifyDelivery),
+                'code' => $prefix . $this->getAccessorialCode($lgQuotes, false, $resiPickup, $lgPickup, false, false, false, $notifyDelivery),
                 'rate' => $lfgPrice,
             ];
         }
@@ -5447,7 +5492,7 @@ class CompileQuotes
         return $averageRateService;
     }
 
-    public function averageRattingMethodTQL($ratesArray, $options, $lgQuotes)
+    public function averageRattingMethodTQL($ratesArray, $options, $lgQuotes, $notifyDelivery)
     {
         if (empty($ratesArray)) {
             return [];
@@ -5467,6 +5512,7 @@ class CompileQuotes
         $simplePrice = $this->getAveragePriceTQL($ratesArray, $options);
         $prefix = $this->isGTZCerasis ? 'AVG' : 'AVGtqlltl';
         $prefix = isset($this->isFQ) && $this->isFQ ? 'AVGfqltl' : $prefix;
+        $prefix = isset($this->TQL) && $this->TQL ? 'AVGTqlltl' : $prefix;
         $serviceName = $ratesArray[$key]['carrier'] ?? 'Freight';
         $averageRateService[0]['simple'] = [
             'title' => $this->getTitle($serviceName, false), //$serviceName,
@@ -5479,6 +5525,24 @@ class CompileQuotes
             $averageRateService[0]['liftgate'] = [
                 'title' => $this->getTitle($serviceName, $lgQuotes),
                 'code' => $prefix . $this->getAccessorialCode($lgQuotes),
+                'rate' => $lfgPrice,
+            ];
+        }
+        if ($notifyDelivery) {
+            asort($ratesArray);
+            $lfgPrice = $this->getAveragePriceTQL($ratesArray, $options);
+            $averageRateService[0]['notifydelivery'] = [
+                'title' => $this->getTitle($serviceName, false, false, '', [], [], false, false, false, false, false, false, $notifyDelivery),
+                'code' => $prefix . $this->getAccessorialCode(false, false, '', '', false, false, false, $notifyDelivery),
+                'rate' => $lfgPrice,
+            ];
+        }
+        if ($notifyDelivery && $lgQuotes) {
+            asort($ratesArray);
+            $lfgPrice = $this->getAveragePriceTQL($ratesArray, $options);
+            $averageRateService[0]['lgnotifydelivery'] = [
+                'title' => $this->getTitle($serviceName, $lgQuotes, false, '', [], [], false, false, false, false, false, false, $notifyDelivery),
+                'code' => $prefix . $this->getAccessorialCode($lgQuotes, false, '', '', false, false, false, $notifyDelivery),
                 'rate' => $lfgPrice,
             ];
         }
@@ -5496,7 +5560,7 @@ class CompileQuotes
         if (!empty($standardSliced)) {
             $numOfIndexes = count($standardSliced);
             $divider = ($numOfIndexes == $options) ? $options : $numOfIndexes;
-            return $sum / $divider;
+            return round($sum / $divider, 2);
         } else {
             return [];
         }
