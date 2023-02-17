@@ -1161,6 +1161,7 @@ class GenerateRequestData
 
         $liftGatePickup = (isset($connSettings['quote_settings']['liftGatePickup']) && $connSettings['quote_settings']['liftGatePickup'] && $connSettings['quote_settings']['liftGatePickup'] == true) ? 'Y' : 'N';
         $insideDelivery = (isset($connSettings['quote_settings']['always_inside_delivery']) && $connSettings['quote_settings']['always_inside_delivery'] == true)  || (isset($connSettings['quote_settings']['offer_inside_delivery']) && $connSettings['quote_settings']['offer_inside_delivery'] == true) ? 'Y' : 'N';
+        $notifyDelivery = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']) ? 'Y' : 'N';
 
         $insurance = [
             'code' => '',
@@ -1184,6 +1185,7 @@ class GenerateRequestData
             'speed_freight_residential_pickup' => $residentialPickup,
             'speed_freight_lift_gate_pickup' => $liftGatePickup,
             'speed_freight_lift_inside_delivery' => $insideDelivery,
+            'speed_freight_notify_before_delivery' => $notifyDelivery,
             'insureShipment' => 0,
             'insuranceCategory' => $insurance,
             'thresholdWeightLimit' => $weightThreshold,
@@ -2704,6 +2706,8 @@ class GenerateRequestData
         $this->resiCarrier['upsLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['upsLtl'] = $alwaysResi;
 
+        $notifyDelivery = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']) ? 'Y' : 'N';
+
         $paymentType = isset($connSettings['quote_settings']['shipper_relationship']) && $connSettings['quote_settings']['shipper_relationship'] === 'third_party' ? 'ThirdParty' : 'shipper';
         $apiArray = [
             'accessLevel' => $connSettings['creds']['access_level'],
@@ -2724,6 +2728,7 @@ class GenerateRequestData
             'accessorial' => [
                 'liftgateDelivery' => $liftGate,
                 'residentialDelivery' => $alwaysResi ? 'Y' : $residential,
+                'notifyBeforeDelivery' => $notifyDelivery,
             ],
             'payerAddress' => [
                 'payerName' => 'name',

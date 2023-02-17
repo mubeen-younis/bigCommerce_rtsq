@@ -557,9 +557,13 @@ class Functions
     {
         $CompileQuotes = new CompileQuotes();
         $serviceCode = isset($data['ratquoteNumber']) && !empty($data['ratquoteNumber']) ? $data['ratquoteNumber'] : '';
+        $isUpsLtl = false;
+        if($carrName === 'upsltl'){
+            $isUpsLtl = true;
+        }
 
         $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, $insideDelivery, '', '', false, false, false, true, $isResi, $isAlwaysResi);
-        $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, false, $insideDelivery, false, false, false, true, $originKey, $items, $allOrigins, $quoteSettings);
+        $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, $isUpsLtl, $insideDelivery, false, false, false, true, $originKey, $items, $allOrigins, $quoteSettings);
         $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, $insideDelivery, false, false, false, false, false, true, $isResi);
         $originQuotes[$origin][$index]['code'] = $carrName . $serviceCode . $ndAccess;
         $originQuotes[$origin][$index]['rate'] = $ndPrice;
