@@ -556,7 +556,7 @@ class Functions
     public static function getOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi, $insideDelivery = false)
     {
         $CompileQuotes = new CompileQuotes();
-        $serviceCode =  $data['ratquoteNumber'] ?? $data['serviceType'] ?? '';
+        $serviceCode =  $data['ratquoteNumber'] ?? $data['serviceType'] ?? $data['CarrierSCAC']?? '';
         $isUpsLtl = false;
         if($carrName === 'upsltl'){
             $isUpsLtl = true;
