@@ -128,4 +128,21 @@ class QuotesResults
 
         return $lgFee;
     }
+
+    public function getNBDFee($accessorials)
+    {
+        $nbdFee = 0;
+        if (isset($accessorials) && !empty($accessorials)) {
+            $lgAccessType = 'NOTIFYPRIORTODELIVERY';
+
+            foreach ($accessorials as $acc) {
+                if (isset($acc['Type']) && $acc['Type'] == $lgAccessType) {
+                    $nbdFee = number_format($acc['Charge'], 2, '.', '');
+                    break;
+                }
+            }
+        }
+
+        return $nbdFee;
+    }
 }
