@@ -335,8 +335,20 @@ class LtlSmallCompileQuotes
                     $alwaysResi = (isset($requestArr['carriers']['wweLTL']['api']['speed_freight_residential_delivery']) && $requestArr['carriers']['wweLTL']['api']['speed_freight_residential_delivery'] == 'Y');
                     $quote['alwaysResi'] = $alwaysResi;
                     $quote['isResi'] = isset($residential['wweLtl']) && $residential['wweLtl'] == 'Y';
-                    $quote['alwaysLG'] = isset($connectionSettings['ltl-quotes']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['ltl-quotes']['quote_settings']['alwaysLiftGateDelivery'];
-                    if (strpos($quote['code'], '+LG+ID') !== false) {
+                    $quote['isLG'] = isset($connectionSettings['ltl-quotes']['quote_settings']['offerLiftGateDelivery']) && $connectionSettings['ltl-quotes']['quote_settings']['offerLiftGateDelivery'];
+                    $quote['isNBD'] = isset($connectionSettings['ltl-quotes']['quote_settings']['offer_notify_as_option']) && $connectionSettings['ltl-quotes']['quote_settings']['offer_notify_as_option'];
+                    $quote['isID'] = isset($connectionSettings['ltl-quotes']['quote_settings']['offer_inside_delivery']) && $connectionSettings['ltl-quotes']['quote_settings']['offer_inside_delivery'];
+                    $quoteSettings = isset($connectionSettings['ltl-quotes']['quote_settings']) ? $connectionSettings['ltl-quotes']['quote_settings'] : [];
+
+                    if (strpos($quote['code'], '+LG+ID+NBD') !== false) {
+                        $quotesCarrier['ltl']['wwe']['LGIDNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+NBD') !== false) {
+                        $quotesCarrier['ltl']['wwe']['LGNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+ID+NBD') !== false) {
+                        $quotesCarrier['ltl']['wwe']['IDNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+NBD') !== false) {
+                        $quotesCarrier['ltl']['wwe']['NBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+ID') !== false) {
                         $quotesCarrier['ltl']['wwe']['LGID'][] = $quote;
                     } else if (strpos($quote['code'], '+LG') !== false) {
                         $quotesCarrier['ltl']['wwe']['LG'][] = $quote;

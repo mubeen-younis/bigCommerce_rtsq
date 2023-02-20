@@ -966,6 +966,10 @@ class CompileQuotes
                 $insideDelivery = (isset($this->quoteSettings['offer_inside_delivery']) && $this->quoteSettings['offer_inside_delivery']) ||
                                   (isset($this->quoteSettings['always_inside_delivery']) && $this->quoteSettings['always_inside_delivery']);
                 $lgPickup = isset($this->quoteSettings['liftGatePickup']) && $this->quoteSettings['liftGatePickup'] ? '+lfgpu' : '';
+
+                $notifyDelivery =
+                    (isset($this->quoteSettings['always_quote_notify']) && $this->quoteSettings['always_quote_notify']) ||
+                    (isset($this->quoteSettings['offer_notify_as_option']) && $this->quoteSettings['offer_notify_as_option']);
             }
             $originQuotes = [];
             $arraySorting = [];
@@ -1018,34 +1022,56 @@ class CompileQuotes
                             $originQuotes[$key]['insideDelivery']['code'] = "wweltl" . $data['serviceType'] . $access;
                             $originQuotes[$key]['insideDelivery']['rate'] = $price;
                             $originQuotes[$key]['insideDelivery']['title'] = $title;
+                        }
+                        if($notifyDelivery){
+                            $compileNotifyDeliveryQuotes = Functions::getOriginQuotes('notifydelivery', $data['serviceDesc'], $originQuotes, $data, $key, $data['totalTransitTimeInDays'], 
+                            $dateAndDays, false, "wweltl", $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi);
+    
+                            $arraySorting['notifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
+                            $originQuotes = $compileNotifyDeliveryQuotes['originQuotes'];
+                        }
+                        if($notifyDelivery && $lgQuotes){
+                            $compileNotifyDeliveryQuotes = Functions::getOriginQuotes('lgnotifydelivery', $data['serviceDesc'], $originQuotes, $data, $key, $data['totalTransitTimeInDays'], 
+                            $dateAndDays, true, "wweltl", $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi);
+    
+                            $arraySorting['lgnotifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
+                            $originQuotes = $compileNotifyDeliveryQuotes['originQuotes'];
+                        }
+                        if($notifyDelivery && $insideDelivery){
+                            $compileNotifyDeliveryQuotes = Functions::getOriginQuotes('insidenotifydelivery', $data['serviceDesc'], $originQuotes, $data, $key, $data['totalTransitTimeInDays'], 
+                            $dateAndDays, false, "wweltl", $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi, $insideDelivery);
+    
+                            $arraySorting['insidenotifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
+                            $originQuotes = $compileNotifyDeliveryQuotes['originQuotes'];
+                        }
+                        if($notifyDelivery && $insideDelivery && $lgQuotes){
+                            $compileNotifyDeliveryQuotes = Functions::getOriginQuotes('lginsidenotifydelivery', $data['serviceDesc'], $originQuotes, $data, $key, $data['totalTransitTimeInDays'], 
+                            $dateAndDays, true, "wweltl", $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi, $insideDelivery);
+    
+                            $arraySorting['lginsidenotifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
+                            $originQuotes = $compileNotifyDeliveryQuotes['originQuotes'];
                         }                 
                     }
                 }
             }
 
-            $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes, $resiPickup, $lgPickup, $insideDelivery);
+            $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes, $resiPickup, $lgPickup, $insideDelivery, $notifyDelivery);
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
                 if (count($compiledQuotes) > 1) {
                     foreach ($compiledQuotes as $k => $service) {
-                        $allQuotes['simple'][] = $service['simple'];
-                        $multiShipmentQuotes['simple'][$origin] = $service['simple'];
-                        $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
-                        $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
-                        $insideDelivery ? $allQuotes['insideDelivery'][] = $service['insideDelivery'] : null;
-                        $insideDelivery ? $multiShipmentQuotes['insideDelivery'][$origin] = $service['insideDelivery'] : null;
-                        $insideDelivery && $lgQuotes ? $allQuotes['insideLiftGateDelivery'][] = $service['insideLiftGateDelivery'] : null;
-                        $insideDelivery && $lgQuotes ? $multiShipmentQuotes['insideLiftGateDelivery'][$origin] = $service['insideLiftGateDelivery'] : null;
+                        foreach($service as $serKey => $ser){
+                            $quotes = Functions::getQuotesArray($service, $allQuotes, $multiShipmentQuotes, $origin, $serKey);
+                            $allQuotes = $quotes['allQuotes'];
+                            $multiShipmentQuotes = $quotes['multiShipmentQuotes']; 
+                        }
                     }
                 } else {
                     $service = reset($compiledQuotes);
-                    $allQuotes['simple'][] = $service['simple'] ?? '';
-                    $multiShipmentQuotes['simple'][$origin] = $service['simple'] ?? '';
-                    $lgQuotes ? $allQuotes['liftgate'][] = $service['liftgate'] : null;
-                    $lgQuotes ? $multiShipmentQuotes['liftgate'][$origin] = $service['liftgate'] : null;
-                    $insideDelivery ? $allQuotes['insideDelivery'][] = $service['insideDelivery'] : null;
-                    $insideDelivery ? $multiShipmentQuotes['insideDelivery'][$origin] = $service['insideDelivery'] : null;
-                    $insideDelivery && $lgQuotes ? $allQuotes['insideLiftGateDelivery'][] = $service['insideLiftGateDelivery'] : null;
-                    $insideDelivery && $lgQuotes ? $multiShipmentQuotes['insideLiftGateDelivery'][$origin] = $service['insideLiftGateDelivery'] : null;
+                    foreach($service as $serKey => $ser){
+                        $quotes = Functions::getQuotesArray($service, $allQuotes, $multiShipmentQuotes, $origin, $serKey);
+                        $allQuotes = $quotes['allQuotes'];
+                        $multiShipmentQuotes = $quotes['multiShipmentQuotes']; 
+                    }
                 }
             }
 
@@ -5384,7 +5410,7 @@ class CompileQuotes
         return $resp;
     }
 
-    public function getCompiledQuotes($services, $arraySorting, $lgQuotes, $resiPickup = '', $lgPickup = '', $insideDelivery = false)
+    public function getCompiledQuotes($services, $arraySorting, $lgQuotes, $resiPickup = '', $lgPickup = '', $insideDelivery = false, $notifyDelivery = false)
     {
 
         if (empty($arraySorting) || empty($services)) {
@@ -5419,7 +5445,7 @@ class CompileQuotes
                 return $averageRateService;
             }
 
-            return $this->averageRattingMethod($arraySorting, $options, $lgQuotes, $resiPickup, $lgPickup, $insideDelivery);
+            return $this->averageRattingMethod($arraySorting, $options, $lgQuotes, $resiPickup, $lgPickup, $insideDelivery, $notifyDelivery);
         }
 
         $resp = array_intersect_key($services, $sliced);
@@ -5459,69 +5485,31 @@ class CompileQuotes
      */
     public function averageRattingMethod($ratesArray, $options, $lgQuotes, $resiPickup = '', $lgPickup = '', $insideDelivery = false, $notifyDelivery = false)
     {
-        $sliced = array_slice($ratesArray['simple'], 0, $options, true);
-        $simplePrice = $this->getAveragePrice($sliced, $options);
+        $averageRateService = [];
         $prefix = $this->isGTZCerasis ? 'AVG' : 'AVGwweltl';
         $prefix = isset($this->isFQ) && $this->isFQ ? 'AVGfqltl' : $prefix;
         $prefix = isset($this->isFQChr) && $this->isFQChr ? 'AVGfqchrltl' : $prefix;
         $prefix = isset($this->EchoLogistics) && $this->EchoLogistics ? 'AVGecholtl' : $prefix;
         $prefix = isset($this->TQL) && $this->TQL ? 'AVGTqlltl' : $prefix;
         $serviceName = $this->customLabel(Functions::$simpleLTLTitle);
-        $averageRateService[0]['simple'] = [
-            'title' => $this->getTitle($serviceName, false), //$serviceName,
-            'code' => $prefix . $this->getAccessorialCode(false, false, $resiPickup, $lgPickup),
-            'rate' => $simplePrice,
-        ];
-        if ($lgQuotes) {
-            asort($ratesArray['liftgate']);
-            $sliced = array_slice($ratesArray['liftgate'], 0, $options, true);
-            $lfgPrice = $this->getAveragePrice($sliced, $options);
-            $averageRateService[0]['liftgate'] = [
-                'title' => $this->getTitle($serviceName, $lgQuotes),
-                'code' => $prefix . $this->getAccessorialCode($lgQuotes, false, $resiPickup, $lgPickup),
-                'rate' => $lfgPrice,
-            ];
+
+        foreach($ratesArray as $key => $rates){
+            $lgQuotes = $key == 'liftgate' || $key == 'insideLiftGateDelivery' || $key == 'lgnotifydelivery' || $key == 'lginsidenotifydelivery' ?? false;
+            $insideDelivery = $key == 'insideDelivery' || $key == 'insideLiftGateDelivery' || $key == 'insidenotifydelivery' || $key == 'lginsidenotifydelivery' ?? false;
+            $notifyDelivery = $key == 'notifydelivery' || $key == 'lgnotifydelivery' || $key == 'insidenotifydelivery' || $key == 'lginsidenotifydelivery' ?? false;
+ 
+            if(!empty($rates)){
+                asort($ratesArray[$key]);
+                $sliced = array_slice($ratesArray[$key], 0, $options, true);
+                $price = $this->getAveragePrice($sliced, $options);
+                $averageRateService[0][$key] = [
+                    'title' => $this->getTitle($serviceName, $lgQuotes, false, '', [], [], $insideDelivery, false, false, false, false, false, $notifyDelivery),
+                    'code' => $prefix . $this->getAccessorialCode($lgQuotes, $insideDelivery, $resiPickup, $lgPickup, false, false, false, $notifyDelivery),
+                    'rate' => $price,
+                ];
+            }
         }
-        if ($notifyDelivery) {
-            asort($ratesArray['notifydelivery']);
-            $sliced = array_slice($ratesArray['notifydelivery'], 0, $options, true);
-            $lfgPrice = $this->getAveragePrice($sliced, $options);
-            $averageRateService[0]['notifydelivery'] = [
-                'title' => $this->getTitle($serviceName, false, false, '', [], [], false, false, false, false, false, false, $notifyDelivery),
-                'code' => $prefix . $this->getAccessorialCode(false, false, $resiPickup, $lgPickup, false, false, false, $notifyDelivery),
-                'rate' => $lfgPrice,
-            ];
-        }
-        if ($notifyDelivery && $lgQuotes) {
-            asort($ratesArray['lgnotifydelivery']);
-            $sliced = array_slice($ratesArray['lgnotifydelivery'], 0, $options, true);
-            $lfgPrice = $this->getAveragePrice($sliced, $options);
-            $averageRateService[0]['lgnotifydelivery'] = [
-                'title' => $this->getTitle($serviceName, $lgQuotes, false, '', [], [], false, false, false, false, false, false, $notifyDelivery),
-                'code' => $prefix . $this->getAccessorialCode($lgQuotes, false, $resiPickup, $lgPickup, false, false, false, $notifyDelivery),
-                'rate' => $lfgPrice,
-            ];
-        }
-        if ($insideDelivery) {
-            asort($ratesArray['insideDelivery']);
-            $sliced = array_slice($ratesArray['insideDelivery'], 0, $options, true);
-            $insideDelPrice = $this->getAveragePrice($sliced, $options);
-            $averageRateService[0]['insideDelivery'] = [
-                'title' => $this->getTitle($serviceName, false, false, '', [], [], $insideDelivery),
-                'code' => $prefix . $this->getAccessorialCode(false, $insideDelivery, $resiPickup, $lgPickup),
-                'rate' => $insideDelPrice,
-            ];
-        }
-        if ($insideDelivery && $lgQuotes) {
-            asort($ratesArray['insideLiftGateDelivery']);
-            $sliced = array_slice($ratesArray['insideLiftGateDelivery'], 0, $options, true);
-            $insideDelLiftGatePrice = $this->getAveragePrice($sliced, $options);
-            $averageRateService[0]['insideLiftGateDelivery'] = [
-                'title' => $this->getTitle($serviceName, $lgQuotes, false, '', [], [], $insideDelivery),
-                'code' => $prefix . $this->getAccessorialCode($lgQuotes, $insideDelivery, $resiPickup, $lgPickup),
-                'rate' => $insideDelLiftGatePrice,
-            ];
-        }
+
         return $averageRateService;
     }
 
@@ -5603,7 +5591,7 @@ class CompileQuotes
     {
         $numOfIndexes = count($arraySorting);
         $divider = ($numOfIndexes == $options) ? $options : $numOfIndexes;
-        return array_sum($arraySorting) / $divider;
+        return round(array_sum($arraySorting) / $divider, 2);
     }
 
     public function customLabel($serviceName, $quoteSettings = [])
