@@ -561,13 +561,19 @@ class Functions
         if($carrName === 'upsltl'){
             $isUpsLtl = true;
         }
+        $isQuickestSer = isset($quoteSettings['quickest_service']) && $quoteSettings['quickest_service'];
+        $quickLabelAs = isset($quoteSettings['quickest_service_label']) && !empty($quoteSettings['quickest_service_label']) ? $quoteSettings['quickest_service_label'] : self::$simpleLTLTitle;
 
         $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, $insideDelivery, '', '', false, false, false, true, $isResi, $isAlwaysResi);
         $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, $isUpsLtl, $insideDelivery, false, false, false, true, $originKey, $items, $allOrigins, $quoteSettings);
         $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, $insideDelivery, false, false, false, false, false, true, $isResi);
+        $explodTitle = explode('w/' , $ndTitle)[1];
+        $titleQuickest = $quickLabelAs . ' w/'. $explodTitle;
+                
         $originQuotes[$origin][$index]['code'] = $carrName . $serviceCode . $ndAccess;
         $originQuotes[$origin][$index]['rate'] = $ndPrice;
         $originQuotes[$origin][$index]['title'] = $ndTitle;
+        $isQuickestSer ? $originQuotes[$origin][$index]['titleQuickest'] = $titleQuickest : null;
         
         return ['originQuotes' => $originQuotes, 'ndPrice' => $ndPrice];
     }

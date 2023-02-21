@@ -1396,7 +1396,7 @@ class GenerateRequestData
                 $accessorial['LGD'] = 12;
             }
             if ($notify) {
-                $accessorial['ND'] = 104;
+                $accessorial['ND'] = 17;
             }
             if ($limitedAccess) {
                 $accessorial['LAD'] = 139;

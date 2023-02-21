@@ -40,7 +40,7 @@ class QuotesResults
                             $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = 0;
                         }
                         if(isset($surcharge['AccessorialID']) && $surcharge['AccessorialID'] == 17){
-                            $shipments[$shipment]['q'][$key]['surcharges']['notifyDeliveryFee'] = $surcharge['Charge'] ?? 0;
+                            $shipments[$shipment]['q'][$key]['surcharges']['notifyBeforeDeliveryFee'] = $surcharge['Charge'] ?? 0;
                             unset($shipments[$shipment]['q'][$key]['Charges']);
                         }
                         if(isset($surcharge['AccessorialID']) && $surcharge['AccessorialID'] == 139){
@@ -57,7 +57,7 @@ class QuotesResults
     public function calculatePrice($data, $uoteSettings, $lgOption = false, $notify = false, $laccess = false, $originKey = '', $items = [], $allOrigins = [])
     {
         $lgCost = $lgOption ? 0 : $data['surcharges']['liftgateFee'] ?? 0;
-        $nCost = $notify ? 0 : $data['surcharges']['notifyDeliveryFee'] ?? 0;
+        $nCost = $notify ? 0 : $data['surcharges']['notifyBeforeDeliveryFee'] ?? 0;
         $laCost = $laccess ? 0 : $data['surcharges']['limitedAccessDeliveryFee'] ?? 0;
         $basePrice = (float)$data['totalNetCharge']['Amount'];
         $basePrice = $basePrice - $lgCost - $nCost - $laCost;
