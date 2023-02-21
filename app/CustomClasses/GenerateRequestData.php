@@ -2822,9 +2822,6 @@ class GenerateRequestData
                 $boxWeight = $maxWeight - $box->box_weight;
                 $boxVolume = array_product($dimensions);
 
-                if (($itemMinVolume > $boxVolume) || ($itemMinWeight > $boxWeight)) {
-                    continue;
-                }
             }
 
             $boxBins[$box->id] = array(
