@@ -83,7 +83,7 @@ class OrderController extends Controller
             return response()->json(['error' => true,
                 'data' => [$exception->getMessage(),$exception->getFile(),$exception->getLine()],
                 'message' => 'No Order Widget Found',
-            ], 404);
+            ], 200);
         }
     }
 
