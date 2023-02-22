@@ -119,8 +119,20 @@ class LtlSmallCompileQuotes
                 } else if (strpos($quote['code'], 'yrcltl') !== false) {
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
                     $quote['isResi'] = $residential['yrcLtl'] == 'Y';
-                    $quote['alwaysLG'] = isset($connectionSettings['yrc-ltl']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['yrc-ltl']['quote_settings']['alwaysLiftGateDelivery'];
-                    if (strpos($quote['code'], '+LG+LAD') !== false) {
+                    $quote['isLG'] = isset($connectionSettings['yrc-ltl']['quote_settings']['offerLiftGateDelivery']) && $connectionSettings['yrc-ltl']['quote_settings']['offerLiftGateDelivery'];
+                    $quote['isNBD'] = isset($connectionSettings['yrc-ltl']['quote_settings']['offer_notify_as_option']) && $connectionSettings['yrc-ltl']['quote_settings']['offer_notify_as_option'];
+                    $quote['isLAD'] = isset($connectionSettings['yrc-ltl']['quote_settings']['offer_limited_access_delivery']) && $connectionSettings['yrc-ltl']['quote_settings']['offer_limited_access_delivery'];
+                    $quoteSettings = isset($connectionSettings['yrc-ltl']['quote_settings']) ? $connectionSettings['yrc-ltl']['quote_settings'] : [];
+
+                    if (strpos($quote['code'], '+LG+LAD+NBD') !== false) {
+                        $quotesCarrier['ltl']['yrc']['LGLADNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+NBD') !== false) {
+                        $quotesCarrier['ltl']['yrc']['LGNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LAD+NBD') !== false) {
+                        $quotesCarrier['ltl']['yrc']['LADNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+NBD') !== false) {
+                        $quotesCarrier['ltl']['yrc']['NBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+LAD') !== false) {
                         $quotesCarrier['ltl']['yrc']['LGLAD'][] = $quote;
                     } else if (strpos($quote['code'], '+LG') !== false) {
                         $quotesCarrier['ltl']['yrc']['LG'][] = $quote;
@@ -450,7 +462,8 @@ class LtlSmallCompileQuotes
                         'title' => 'Freight' . $rtitle
                     ];
                 } else if ($simpleLg === 'LAD') {                    
-                    $rtitle = ($parcel['isResi'] ?? $ltlQuot['isResi']) ? '' : Functions::$limitedAccesDelLabel;
+                    // Create Multi Quotes Array of Limited Access Delivery, When Small and Ltl Products
+                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, false, false, false, $ltlQuot['isLAD']);
                     
                     $newQuotes[] = [
                         'code' => 'multi' . $rCode . '+LAD',
@@ -458,11 +471,8 @@ class LtlSmallCompileQuotes
                         'title' => 'Freight' . $rtitle
                     ];
                 } else if ($simpleLg === 'LGLAD') {
-                    if (isset($ltlQuot['alwaysLG']) && $ltlQuot['alwaysLG']) {
-                        $rtitle = ($parcel['isResi'] ?? $ltlQuot['isResi']) ? '' : Functions::$limitedAccesDelLabel;
-                    } else {
-                        $rtitle = ($parcel['isResi'] ?? $ltlQuot['isResi']) ? '' : Functions::$limitedAccessLGDelLable;
-                    }
+                    // Create Multi Quotes Array of liftgate and Limited Access Delivery, When Small and Ltl Products
+                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, $ltlQuot['isLG'], false, false, $ltlQuot['isLAD']);
                     
                     $newQuotes[] = [
                         'code' => 'multi' . $rCode . '+LG+LAD',
@@ -533,6 +543,24 @@ class LtlSmallCompileQuotes
 
                     $newQuotes[] = [
                         'code' => 'multi' . $rCode . Functions::$notifyDelAccess,
+                        'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
+                        'title' => 'Freight' . $rtitle
+                    ];
+                } else if ($simpleLg == 'LADNBD'){
+                    // Create Multi Quotes Array of Limited Access and  Notify before Delivery, When Small and Ltl Products
+                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, false, false, $ltlQuot['isNBD'], $ltlQuot['isLAD']);
+                   
+                    $newQuotes[] = [
+                        'code' => 'multi' . $rCode . Functions::$laccessNotifyDelAccess,
+                        'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
+                        'title' => 'Freight' . $rtitle
+                    ];
+                } else if ($simpleLg == 'LGLADNBD'){
+                    // Create Multi Quotes Array of liftgate, Limited Access and  Notify before Delivery, When Small and Ltl Products
+                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, $ltlQuot['isLG'], false, $ltlQuot['isNBD'], $ltlQuot['isLAD']);
+                   
+                    $newQuotes[] = [
+                        'code' => 'multi' . $rCode . Functions::$lglaccesseNotifyDelAccess,
                         'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
                         'title' => 'Freight' . $rtitle
                     ];

@@ -54,6 +54,8 @@ class Functions
     public static $notifyBeforeLgInsideDelLable = ' w/ inside, lift gate & notify before delivery';
     public static $notifyDelLgAccess = '+LG+NBD';
     public static $insideNotifyDelAccess = '+ID+NBD';
+    public static $laccessNotifyDelAccess = '+LAD+NBD';
+    public static $lglaccesseNotifyDelAccess = '+LG+LAD+NBD';
     public static $lginsideNotifyDelAccess = '+LG+ID+NBD';
     public static $notifyDelAccess = '+NBD';
 
@@ -553,10 +555,11 @@ class Functions
     }
 
     // Create Origin Quotes Array in case of notify before delivery enable
-    public static function getOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi, $insideDelivery = false)
+    public static function getOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi, $insideDelivery = false, $laccess = false)
     {
         $CompileQuotes = new CompileQuotes();
         $serviceCode =  $data['ratquoteNumber'] ?? $data['serviceType'] ?? $data['CarrierSCAC']?? '';
+        $laccess ? $serviceCode = '' : $serviceCode;
         $isUpsLtl = false;
         if($carrName === 'upsltl'){
             $isUpsLtl = true;
@@ -564,16 +567,18 @@ class Functions
         $isQuickestSer = isset($quoteSettings['quickest_service']) && $quoteSettings['quickest_service'];
         $quickLabelAs = isset($quoteSettings['quickest_service_label']) && !empty($quoteSettings['quickest_service_label']) ? $quoteSettings['quickest_service_label'] : self::$simpleLTLTitle;
 
-        $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, $insideDelivery, '', '', false, false, false, true, $isResi, $isAlwaysResi);
-        $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, $isUpsLtl, $insideDelivery, false, false, false, true, $originKey, $items, $allOrigins, $quoteSettings);
-        $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, $insideDelivery, false, false, false, false, false, true, $isResi);
-        $explodTitle = explode('w/' , $ndTitle)[1];
-        $titleQuickest = $quickLabelAs . ' w/'. $explodTitle;
-                
+        $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, $insideDelivery, '', '', $laccess, false, false, true, $isResi, $isAlwaysResi);
+        $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, $isUpsLtl, $insideDelivery, $laccess, false, false, true, $originKey, $items, $allOrigins, $quoteSettings);
+        $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, $insideDelivery, $laccess, false, false, false, false, true, $isResi);
+        
+        if($isQuickestSer){
+            $explodTitle = explode('w/' , $ndTitle)[1];
+            $titleQuickest = $quickLabelAs . ' w/'. $explodTitle;
+            $originQuotes[$origin][$index]['titleQuickest'] = $titleQuickest ?? '';
+        }
         $originQuotes[$origin][$index]['code'] = $carrName . $serviceCode . $ndAccess;
         $originQuotes[$origin][$index]['rate'] = $ndPrice;
         $originQuotes[$origin][$index]['title'] = $ndTitle;
-        $isQuickestSer ? $originQuotes[$origin][$index]['titleQuickest'] = $titleQuickest : null;
         
         return ['originQuotes' => $originQuotes, 'ndPrice' => $ndPrice];
     }
@@ -589,7 +594,7 @@ class Functions
     }
 
     // Make Access Title for Offer as an Option Delivery Features
-    public static function getAccessTitle($quoteSettings = [], $isResi = false, $lgOption = false, $insideDel = false, $notifyDelivery = false){
+    public static function getAccessTitle($quoteSettings = [], $isResi = false, $lgOption = false, $insideDel = false, $notifyDelivery = false, $laccess = false){
        
         $accessTitles = '';
         $accessLabel = '';
@@ -597,6 +602,7 @@ class Functions
         $offerFeaturesAsOption = [
             'offerLiftGateDelivery' => [$lgOption, 'lifgate,'],
             'offer_inside_delivery' => [$insideDel,'inside,'],
+            'offer_limited_access_delivery' => [$laccess,'limited access,'],
             'offer_notify_as_option' => [$notifyDelivery,'notify before,'],
         ];
         
