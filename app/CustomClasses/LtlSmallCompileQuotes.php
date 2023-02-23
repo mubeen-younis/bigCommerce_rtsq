@@ -144,13 +144,19 @@ class LtlSmallCompileQuotes
                 } else if (strpos($quote['code'], 'cltl') !== false) {
                     $quote['alwaysResi'] = false;
                     $quote['isResi'] = false;
-                    $quote['alwaysLG'] = false;
                     if (isset($connectionSettings['gtz-ltl']['quote_settings']['shipping_service']) && $connectionSettings['gtz-ltl']['quote_settings']['shipping_service'] == 'standard_ltl') {
                         $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
                         $quote['isResi'] = $residential['gtzLtl'] == 'Y';
-                        $quote['alwaysLG'] = isset($connectionSettings['gtz-ltl']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['gtz-ltl']['quote_settings']['alwaysLiftGateDelivery'];
+                        $quote['isLG'] = isset($connectionSettings['gtz-ltl']['quote_settings']['offerLiftGateDelivery']) && $connectionSettings['gtz-ltl']['quote_settings']['offerLiftGateDelivery'];
+                        $quote['isNBD'] = isset($connectionSettings['gtz-ltl']['quote_settings']['offer_notify_as_option']) && $connectionSettings['gtz-ltl']['quote_settings']['offer_notify_as_option'];
+                        $quoteSettings = isset($connectionSettings['gtz-ltl']['quote_settings']) ? $connectionSettings['gtz-ltl']['quote_settings'] : [];
                     }
-                    if (strpos($quote['code'], '+LG') !== false) {
+
+                    if (strpos($quote['code'], '+LG+NBD') !== false) {
+                        $quotesCarrier['ltl']['cerasis']['LGNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+NBD') !== false) {
+                        $quotesCarrier['ltl']['cerasis']['NBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG') !== false) {
                         $quotesCarrier['ltl']['cerasis']['LG'][] = $quote;
                     } else {
                         $quotesCarrier['ltl']['cerasis']['simple'][] = $quote;
