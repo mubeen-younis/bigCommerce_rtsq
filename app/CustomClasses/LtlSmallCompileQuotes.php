@@ -222,7 +222,8 @@ class LtlSmallCompileQuotes
                 } else if (strpos($quote['code'], 'dayrossltl') !== false) {
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
                     $quote['isResi'] = isset($residential['dayrossLtl']) && $residential['dayrossLtl'] == 'Y';
-                    $quote['alwaysLG'] = isset($connectionSettings['dayross-ltl']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['dayross-ltl']['quote_settings']['alwaysLiftGateDelivery'];
+                    $quote['isLG'] = isset($connectionSettings['dayross-ltl']['quote_settings']['offerLiftGateDelivery']) && $connectionSettings['dayross-ltl']['quote_settings']['offerLiftGateDelivery'];
+                    $quoteSettings = isset($connectionSettings['dayross-ltl']['quote_settings']) ? $connectionSettings['dayross-ltl']['quote_settings'] : [];
 
                     if (strpos($quote['code'], '+LG') !== false) {
                         $quotesCarrier['ltl']['dayross']['LG'][] = $quote;
@@ -240,7 +241,8 @@ class LtlSmallCompileQuotes
                 } else if (strpos($quote['code'], 'fqltl') !== false) {
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
                     $quote['isResi'] = isset($residential['freightQuoteLtl']) && $residential['freightQuoteLtl'] == 'Y';
-                    $quote['alwaysLG'] = isset($connectionSettings['freightquote-ltl']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['freightquote-ltl']['quote_settings']['alwaysLiftGateDelivery'];
+                    $quote['isLG'] = isset($connectionSettings['freightquote-ltl']['quote_settings']['offerLiftGateDelivery']) && $connectionSettings['freightquote-ltl']['quote_settings']['offerLiftGateDelivery'];
+                    $quoteSettings = isset($connectionSettings['freightquote-ltl']['quote_settings']) ? $connectionSettings['freightquote-ltl']['quote_settings'] : [];
                     if (strpos($quote['code'], '+LG') !== false) {
                         $quotesCarrier['ltl']['fq']['LG'][] = $quote;
                     } else if (strpos($quote['code'], '+HAT') !== false) {
@@ -254,7 +256,8 @@ class LtlSmallCompileQuotes
                 else if(strpos($quote['code'], 'fqchrltl') !== false){
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
                     $quote['isResi'] = isset($residential['freightQuoteChrLtl']) && $residential['freightQuoteChrLtl'] == 'Y';
-                    $quote['alwaysLG'] = isset($connectionSettings['freightquote-chr-ltl']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['freightquote-chr-ltl']['quote_settings']['alwaysLiftGateDelivery'];
+                    $quote['isLG'] = isset($connectionSettings['freightquote-chr-ltl']['quote_settings']['offerLiftGateDelivery']) && $connectionSettings['freightquote-chr-ltl']['quote_settings']['offerLiftGateDelivery'];
+                    $quoteSettings = isset($connectionSettings['freightquote-chr-ltl']['quote_settings']) ? $connectionSettings['freightquote-chr-ltl']['quote_settings'] : [];
                     if (strpos($quote['code'], '+LG') !== false) {
                         $quotesCarrier['ltl']['fqchr']['LG'][] = $quote;
                     } else if(strpos($quote['code'], '+HAT') !== false){
@@ -342,7 +345,8 @@ class LtlSmallCompileQuotes
                 else if(strpos($quote['code'], 'daylightltl') !== false){
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
                     $quote['isResi'] = isset($residential['dayLightLtl']) && $residential['dayLightLtl'] == 'Y';
-                    $quote['alwaysLG'] = isset($connectionSettings['daylight-ltl']['quote_settings']['alwaysLiftGateDelivery']) && $connectionSettings['daylight-ltl']['quote_settings']['alwaysLiftGateDelivery'];
+                    $quote['isLG'] = isset($connectionSettings['daylight-ltl']['quote_settings']['offerLiftGateDelivery']) && $connectionSettings['daylight-ltl']['quote_settings']['offerLiftGateDelivery'];
+                    $quoteSettings = isset($connectionSettings['daylight-ltl']['quote_settings']) ? $connectionSettings['daylight-ltl']['quote_settings'] : [];
                     if (strpos($quote['code'], '+LG') !== false) {
                         $quotesCarrier['ltl']['daylight']['LG'][] = $quote;
                     } else if(strpos($quote['code'], '+HAT') !== false){

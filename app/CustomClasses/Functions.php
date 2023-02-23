@@ -594,22 +594,27 @@ class Functions
     }
 
     // Make Access Title for Offer as an Option Delivery Features
-    public static function getAccessTitle($quoteSettings = [], $isResi = false, $lgOption = false, $insideDel = false, $notifyDelivery = false, $laccess = false){
+    public static function getAccessTitle($quoteSettings = [], $isResi = false, $lgOption = false, $insideDel = false, $notifyDelivery = false, $laccess = false, $twoManDel = false, $appDel = false){
        
         $accessTitles = '';
         $accessLabel = '';
+        $autoResiAdrrLfg = isset($quoteSettings['autoDetectedResidentialAddressesLfg']) ? $quoteSettings['autoDetectedResidentialAddressesLfg'] : false;
         
         $offerFeaturesAsOption = [
             'offerLiftGateDelivery' => [$lgOption, 'lifgate,'],
             'offer_inside_delivery' => [$insideDel,'inside,'],
             'offer_limited_access_delivery' => [$laccess,'limited access,'],
+            'offer_two_man_delivery' => [$twoManDel,'two man,'],
+            'offer_appointment_delivery' => [$appDel,'appointment,'],
             'offer_notify_as_option' => [$notifyDelivery,'notify before,'],
         ];
         
         foreach($offerFeaturesAsOption as $key => $index){
             if(isset($quoteSettings[$key]) && $quoteSettings[$key] && $index[0]){
                 $accessTitles = $accessTitles . $index[1];  
-            } 
+            } else if($autoResiAdrrLfg && $isResi){
+                $accessTitles = $accessTitles . $index[1];
+            }
         }
        
        $accessTitleArray = explode(',', $accessTitles);
