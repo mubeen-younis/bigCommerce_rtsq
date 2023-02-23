@@ -22,8 +22,8 @@ class Functions
     public static $dbscSlug = 'dbsc';
     public static $insideDelLable = ' w/ inside delivery';
     public static $insideDelResiLable = ' w/ residential & inside delivery';
-    public static $insideDelLiftGateLable = ' w/ lift gate & inside delivery';
-    public static $insideDelLiftGateResiLable = ' w/ residential, lift gate & inside delivery';
+    public static $insideDelLiftGateLable = ' w/ liftgate & inside delivery';
+    public static $insideDelLiftGateResiLable = ' w/ residential, liftgate & inside delivery';
     public static $freeShipping = 'Free Shipping';
     public static $resiPickupTitle = '+pu';
     public static $lgPickupTitle = '+lfgpu';
@@ -32,7 +32,7 @@ class Functions
     public static $imageSeparatedUrl = 'https://us-east.api.3dbinpacking.com/images/70785010926d0cc360921e4541811a53/20181106/4c114cebfa2d61a0c8153b3170ab6663/1541503329-2391-8709331.png';
     public static $imageSbsUrl = 'https://us-east.api.3dbinpacking.com/images/70785010926d0cc360921e4541811a53/20181106/4c114cebfa2d61a0c8153b3170ab6663/1541503329-24-8612722.png';
     public static $limitedAccesDelLabel = ' w/ limited access delivery';
-    public static $limitedAccessLGDelLable = ' w/ lift gate & limited access delivery';
+    public static $limitedAccessLGDelLable = ' w/ liftgate & limited access delivery';
     public static $twoManDeliveryLabel = ' w/ two man delivery';
     public static $appointmentDeliveryLabel = ' w/ appointment delivery';
     public static $twoManAppDelLabel = ' w/ two man & appointment delivery';
@@ -47,11 +47,11 @@ class Functions
     public static $reportDataUrl = "https://analytic-data.eniture.com/index.php";
     public static $notifyBeforeDelLable = ' w/ notify before delivery';
     public static $notifyBeforeDelResiLable = ' w/ residential & notify before delivery';
-    public static $notifyBoforeDelLiftGateLable = ' w/ lift gate & notify before delivery';
-    public static $notifyBeforeDelLiftGateResiLable = ' w/ residential, lift gate & notify before delivery';
+    public static $notifyBoforeDelLiftGateLable = ' w/ liftgate & notify before delivery';
+    public static $notifyBeforeDelLiftGateResiLable = ' w/ residential, liftgate & notify before delivery';
     public static $notifyBeforeInsideDelResiLable = ' w/ residential, inside & notify before delivery';
     public static $notifyBeforeInsideDelLable = ' w/ inside & notify before delivery';
-    public static $notifyBeforeLgInsideDelLable = ' w/ inside, lift gate & notify before delivery';
+    public static $notifyBeforeLgInsideDelLable = ' w/ inside, liftgate & notify before delivery';
     public static $notifyDelLgAccess = '+LG+NBD';
     public static $insideNotifyDelAccess = '+ID+NBD';
     public static $laccessNotifyDelAccess = '+LAD+NBD';
@@ -559,7 +559,7 @@ class Functions
     {
         $CompileQuotes = new CompileQuotes();
         $serviceCode =  $data['ratquoteNumber'] ?? $data['serviceType'] ?? $data['CarrierSCAC']?? '';
-        $laccess ? $serviceCode = '' : $serviceCode;
+        $laccess ||  $data['serviceDesc'] == 'YRC' ? $serviceCode = '' : $serviceCode;
         $isUpsLtl = false;
         if($carrName === 'upsltl'){
             $isUpsLtl = true;

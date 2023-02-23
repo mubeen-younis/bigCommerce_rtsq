@@ -2050,7 +2050,7 @@ class GenerateRequestData
         }
         
         if($residential == 'N' && !$alwaysResi){
-            $limitedAccess = $connSettings['quote_settings']['offer_limited_access_delivery'] ?? false;
+            $limitedAccess = (isset($connSettings['quote_settings']['always_limited_access_delivery']) && $connSettings['quote_settings']['always_limited_access_delivery']) || (isset($connSettings['quote_settings']['offer_limited_access_delivery']) && $connSettings['quote_settings']['offer_limited_access_delivery']) ?? false;
         }
 
         $this->resiCarrier['yrcLtl'] = $residential;
