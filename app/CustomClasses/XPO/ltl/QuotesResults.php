@@ -73,6 +73,9 @@ class QuotesResults
 
         $compiledQuotes = [];
         foreach ($hatQuotes as $quote) {
+            if(isset($quote['severity']) && $quote['severity'] == "ERROR"){
+                return [];
+            }
             $compiledQuotes['serviceType'] = 'xpoltl+HAT+';
             $title = $srvcTitle ?? $quote['Title'] ?? '';
             $address['city'] = $quote['address']['cityName'] ?? '';
