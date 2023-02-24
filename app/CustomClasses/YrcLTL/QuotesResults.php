@@ -82,7 +82,7 @@ class QuotesResults
             } else {
                 $items = $quotesArr['LineItem'] ?? [];
                 $lineItems = [];
-                $isLG = false;
+                $isLG = $isNOTIFY = false;
 
                 foreach ($items as $key => $value) {
                     if ($value['@attributes']['Type'] == 'Commodity') {
@@ -100,15 +100,19 @@ class QuotesResults
                     }
 
                     if (isset($value['Description']) && $value['Description'] == 'NOTIFY BEFORE DELIVERY' && isset($value['Code']) && $value['Code'] == 'NTFY') {
+                        $isNOTIFY = true;
                         $notifyBeforeDeliveryFee = number_format($value['Charges'] / 100, 2) ?? 0;
                     }
                 }
 
                 $formattedShipments[$shipment]['q'] = $this->formatShipments($quotesArr,
-                    $quotesArr['Delivery']['RequestedServiceType'], 'YRC', $lineItems, $lgStatus, $radStatus, $quotesArr['RatedCharges']['TotalCharges'], $limitedAccessDeliveryFee ?? 0, $notifyBeforeDeliveryFee);
+                    $quotesArr['Delivery']['RequestedServiceType'], 'YRC', $lineItems, $lgStatus, $radStatus, $quotesArr['RatedCharges']['TotalCharges'], $limitedAccessDeliveryFee ?? 0);
 
                 if (isset($lgStatus) && $lgStatus != 'n' && $isLG) {
                     $formattedShipments[$shipment]['q']['surcharges']['liftgateFee'] = $lgFee;
+                }
+                if ($isNOTIFY) {
+                    $formattedShipments[$shipment]['q']['surcharges']['notifyBeforeDeliveryFee'] = $notifyBeforeDeliveryFee;
                 }
             }
 
@@ -130,7 +134,6 @@ class QuotesResults
             'totalTransitTimeInDays' => $quotesArr['totalTransitTimeInDays'] ?? 0,
             'totalNetCharge' => array('Amount' => number_format($charges / 100, 2) ?? 0),
             'limitedAccessDeliveryFee' => $limitedAccessDeliveryFee ?? 0,
-            'notifyBeforeDeliveryFee' => $notifyBeforeDeliveryFee ?? 0,
         );
     }
 

@@ -9,6 +9,7 @@ use App\Models\LocAssociatedAccountNo;
 use App\Models\WeightThresholdSettings;
 use App\CustomClasses\CompileQuotes;
 
+use App\Constants\Constant;
 class Functions
 {
     protected static $daysAfterExpiry = 4;
@@ -24,8 +25,8 @@ class Functions
     public static $dbscSlug = 'dbsc';
     public static $insideDelLable = ' w/ inside delivery';
     public static $insideDelResiLable = ' w/ residential & inside delivery';
-    public static $insideDelLiftGateLable = ' w/ lift gate & inside delivery';
-    public static $insideDelLiftGateResiLable = ' w/ residential, lift gate & inside delivery';
+    public static $insideDelLiftGateLable = ' w/ liftgate & inside delivery';
+    public static $insideDelLiftGateResiLable = ' w/ residential, liftgate & inside delivery';
     public static $freeShipping = 'Free Shipping';
     public static $resiPickupTitle = '+pu';
     public static $lgPickupTitle = '+lfgpu';
@@ -34,7 +35,7 @@ class Functions
     public static $imageSeparatedUrl = 'https://us-east.api.3dbinpacking.com/images/70785010926d0cc360921e4541811a53/20181106/4c114cebfa2d61a0c8153b3170ab6663/1541503329-2391-8709331.png';
     public static $imageSbsUrl = 'https://us-east.api.3dbinpacking.com/images/70785010926d0cc360921e4541811a53/20181106/4c114cebfa2d61a0c8153b3170ab6663/1541503329-24-8612722.png';
     public static $limitedAccesDelLabel = ' w/ limited access delivery';
-    public static $limitedAccessLGDelLable = ' w/ lift gate & limited access delivery';
+    public static $limitedAccessLGDelLable = ' w/ liftgate & limited access delivery';
     public static $twoManDeliveryLabel = ' w/ two man delivery';
     public static $appointmentDeliveryLabel = ' w/ appointment delivery';
     public static $twoManAppDelLabel = ' w/ two man & appointment delivery';
@@ -51,9 +52,16 @@ class Functions
     public static $repplaceWith3dUrl = 'https://images.eniture.com';
     public static $notifyBeforeDelLable = ' w/ notify before delivery';
     public static $notifyBeforeDelResiLable = ' w/ residential & notify before delivery';
-    public static $notifyBoforeDelLiftGateLable = ' w/ lift gate & notify before delivery';
-    public static $notifyBeforeDelLiftGateResiLable = ' w/ residential, lift gate & notify before delivery';
+    public static $notifyBoforeDelLiftGateLable = ' w/ liftgate & notify before delivery';
+    public static $notifyBeforeDelLiftGateResiLable = ' w/ residential, liftgate & notify before delivery';
+    public static $notifyBeforeInsideDelResiLable = ' w/ residential, inside & notify before delivery';
+    public static $notifyBeforeInsideDelLable = ' w/ inside & notify before delivery';
+    public static $notifyBeforeLgInsideDelLable = ' w/ inside, liftgate & notify before delivery';
     public static $notifyDelLgAccess = '+LG+NBD';
+    public static $insideNotifyDelAccess = '+ID+NBD';
+    public static $laccessNotifyDelAccess = '+LAD+NBD';
+    public static $lglaccesseNotifyDelAccess = '+LG+LAD+NBD';
+    public static $lginsideNotifyDelAccess = '+LG+ID+NBD';
     public static $notifyDelAccess = '+NBD';
 
     public static function hasInsureCarrier($code)
@@ -649,18 +657,97 @@ class Functions
         return str_replace(self::$replace3dUrl, self::$repplaceWith3dUrl, $url) ?? $url;
     }
 
-    public static function compileOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi)
+    // Create Origin Quotes Array in case of notify before delivery enable
+    public static function getOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi, $insideDelivery = false, $laccess = false)
     {
         $CompileQuotes = new CompileQuotes();
-        $serviceCode = isset($data['ratquoteNumber']) && !empty($data['ratquoteNumber']) ? $data['ratquoteNumber'] : '';
+        $serviceCode =  $data['ratquoteNumber'] ?? $carrName == 'wweltl' ? $data['serviceType'] : '' ?? $data['CarrierSCAC'] ?? '';
 
-        $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, false, '', '', false, false, false, true, $isResi, $isAlwaysResi);
-        $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, false, false, false, false, false, true, $originKey, $items, $allOrigins);
-        $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, false, false, false, false, false, false, false, true, false, $isResi);
+        $isUpsLtl = false;
+        if($carrName === 'upsltl'){
+            $isUpsLtl = true;
+        }
+        $isQuickestSer = isset($quoteSettings['quickest_service']) && $quoteSettings['quickest_service'];
+        $quickLabelAs = isset($quoteSettings['quickest_service_label']) && !empty($quoteSettings['quickest_service_label']) ? $quoteSettings['quickest_service_label'] : self::$simpleLTLTitle;
+
+        $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, $insideDelivery, '', '', $laccess, false, false, true, $isResi, $isAlwaysResi);
+        $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, $isUpsLtl, $insideDelivery, $laccess, false, false, true, $originKey, $items, $allOrigins, $quoteSettings);
+        $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, $insideDelivery, $laccess, false, false, false, false, true, $isResi);
+        
+        if($isQuickestSer){
+            $explodTitle = explode('w/' , $ndTitle)[1];
+            $titleQuickest = $quickLabelAs . ' w/'. $explodTitle;
+            $originQuotes[$origin][$index]['titleQuickest'] = $titleQuickest ?? '';
+        }
         $originQuotes[$origin][$index]['code'] = $carrName . $serviceCode . $ndAccess;
         $originQuotes[$origin][$index]['rate'] = $ndPrice;
         $originQuotes[$origin][$index]['title'] = $ndTitle;
         
         return ['originQuotes' => $originQuotes, 'ndPrice' => $ndPrice];
     }
+
+    // Create Single or Multi-Shipments Quotes Array
+    public static function getQuotesArray($service, $allQuotes, $multiShipmentQuotes, $origin, $key){
+
+        isset($service[$key]) ? $allQuotes[$key][] = $service[$key][0] ?? $service[$key] : null;
+        isset($service[$key]) ? $multiShipmentQuotes[$key][$origin] = $service[$key][0] ?? $service[$key] : null;
+
+        return ['allQuotes' => $allQuotes, 'multiShipmentQuotes' => $multiShipmentQuotes];
+
+    }
+
+    // Make Access Title for Offer as an Option Delivery Features
+    public static function getAccessTitle($quoteSettings = [], $isResi = false, $lgOption = false, $insideDel = false, $notifyDelivery = false, $laccess = false, $twoManDel = false, $appDel = false)
+    {   
+        $accessTitles = '';
+        $accessLabel = '';
+        $autoResiAdrrLfg = isset($quoteSettings['autoDetectedResidentialAddressesLfg']) ? $quoteSettings['autoDetectedResidentialAddressesLfg'] : false;
+        
+        $offerFeaturesAsOption = [
+            'offerLiftGateDelivery' => [$lgOption, 'lifgate,'],
+            'offer_inside_delivery' => [$insideDel,'inside,'],
+            'offer_limited_access_delivery' => [$laccess,'limited access,'],
+            'offer_two_man_delivery' => [$twoManDel,'two man,'],
+            'offer_appointment_delivery' => [$appDel,'appointment,'],
+            'offer_notify_as_option' => [$notifyDelivery,'notify before,'],
+        ];
+        
+        foreach($offerFeaturesAsOption as $key => $index){
+            if(isset($quoteSettings[$key]) && $quoteSettings[$key] && $index[0]){
+                $accessTitles = $accessTitles . $index[1];  
+            } else if($autoResiAdrrLfg && $isResi){
+                $accessTitles = $accessTitles . $index[1];
+            }
+        }
+       
+       $accessTitleArray = explode(',', $accessTitles);
+       $count = count($accessTitleArray);
+       
+        if($count >= 2){
+            foreach($accessTitleArray as $key => $title){
+                if($accessTitleArray[$key+1] == ''){
+                    $len = !empty($accessLabel) ? strlen($accessLabel)-2 : 0;
+                    $accessLabel[$len] = '_';
+                    $accessLabel = str_replace("_" , '', $accessLabel);
+                    $accessLabel = $count == 2 ? $accessLabel . $title . ' delivery' : $accessLabel . '& ' . $title . ' delivery';
+                    break;
+                }else{
+                    $accessLabel = $accessLabel . $title . ', ';
+                }
+            }
+            $accessLabel = ' w/ ' . $accessLabel;
+            
+        }
+        
+        if($isResi && !empty($accessLabel)){
+            $expolodAccess = explode('w/' , $accessLabel);
+            $accessLabel = $isResi && $count <= 2 ? ' w/ residential &' . $expolodAccess[1] : ' w/ residential,' . $expolodAccess[1];
+        }
+
+        $accessLabel = $isResi && empty($accessLabel) ? Constant::RESI_LABEL : $accessLabel;
+
+       return  $accessLabel;
+    
+    }
+    
 }

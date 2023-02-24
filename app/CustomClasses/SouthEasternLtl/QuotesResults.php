@@ -69,10 +69,21 @@ class QuotesResults
                 $lineItems = [];
                 $formattedShipments[$shipment]['q'] = $this->formatShipments($quotesArr,
                 'Standard', 'SouthEastern', $lineItems, $lgStatus, $radStatus, $quotesArr['rateQuote']);
-
+                if(isset($quotes['q']['details']['description']) && !empty($quotes['q']['details']['description'])){
+                    foreach($quotes['q']['details']['description'] as $key => $description){
+                        if(!empty($description) && str_contains($description, 'LIFTGATE DELIVERY')){
+                            $lgFee = (float)$quotes['q']['details']['charges'][$key];
+                        }
+                        if(!empty($description) && str_contains($description, 'ARRIVAL NTC')){
+                            if($quotes['q']['details']['charges'][$key] === []){
+                                continue;
+                            }
+                            $formattedShipments[$shipment]['q']['surcharges']['notifyDeliveryFee'] = (float)$quotes['q']['details']['charges'][$key] ?? 0;
+                        }
+                    }
+                }
                 if (isset($lgStatus) && $lgStatus != 'n') {
-                
-                    $formattedShipments[$shipment]['q']['surcharges']['liftgateFee'] = 134 ?? 0;        
+                    $formattedShipments[$shipment]['q']['surcharges']['liftgateFee'] = $lgFee ?? 0;        
                 }  
 
             }else{

@@ -1168,7 +1168,8 @@ class GenerateRequestData
         $this->resiCarrier['residentialPickup'] = $residentialPickup;
 
         $liftGatePickup = (isset($connSettings['quote_settings']['liftGatePickup']) && $connSettings['quote_settings']['liftGatePickup'] && $connSettings['quote_settings']['liftGatePickup'] == true) ? 'Y' : 'N';
-        $insideDelivery = (isset($connSettings['quote_settings']['insideDelivery']) && $connSettings['quote_settings']['insideDelivery'] && $connSettings['quote_settings']['insideDelivery'] == true) ? 'Y' : 'N';
+        $insideDelivery = (isset($connSettings['quote_settings']['always_inside_delivery']) && $connSettings['quote_settings']['always_inside_delivery'] == true)  || (isset($connSettings['quote_settings']['offer_inside_delivery']) && $connSettings['quote_settings']['offer_inside_delivery'] == true) ? 'Y' : 'N';
+        $notifyDelivery = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']) ? 'Y' : 'N';
 
         $insurance = [
             'code' => '',
@@ -1192,6 +1193,7 @@ class GenerateRequestData
             'speed_freight_residential_pickup' => $residentialPickup,
             'speed_freight_lift_gate_pickup' => $liftGatePickup,
             'speed_freight_lift_inside_delivery' => $insideDelivery,
+            'speed_freight_notify_before_delivery' => $notifyDelivery,
             'insureShipment' => 0,
             'insuranceCategory' => $insurance,
             'thresholdWeightLimit' => $weightThreshold,
@@ -1402,7 +1404,7 @@ class GenerateRequestData
                 $accessorial['LGD'] = 12;
             }
             if ($notify) {
-                $accessorial['ND'] = 104;
+                $accessorial['ND'] = 17;
             }
             if ($limitedAccess) {
                 $accessorial['LAD'] = 139;
@@ -1424,7 +1426,7 @@ class GenerateRequestData
                 'guaranteedRates' => $guaranteedService
             ];
         } else { // for cerasis
-            $notify = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']);
+            $notify = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']);
             
             if ($residential === 'Y' || $alwaysResi) {
                 $accessorial['RESDEL'] = 'RESDEL';
@@ -1669,7 +1671,8 @@ class GenerateRequestData
         } else {
             $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
-        $insideDelivery = (isset($connSettings['quote_settings']['insideDelivery']) && $connSettings['quote_settings']['insideDelivery'] && $connSettings['quote_settings']['insideDelivery'] == true) ? 1 : 0;
+        $insideDelivery = (isset($connSettings['quote_settings']['always_inside_delivery']) && $connSettings['quote_settings']['always_inside_delivery'] == true)  || (isset($connSettings['quote_settings']['offer_inside_delivery']) && $connSettings['quote_settings']['offer_inside_delivery'] == true) ? 1 : 0;
+        $notify = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']);
 
         $this->resiCarrier['rnlLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['rnlLtl'] = $alwaysResi;
@@ -1682,6 +1685,7 @@ class GenerateRequestData
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
             'liftgateDelivery' => $liftGate,
+            'notifyBeforeDelivery' => $notify ? 'Y' : 'N',
             'residentialDelivery' => $alwaysResi ? 'Y' : $residential,
             'insideDelAsAnOption' => $insideDelivery,
 
@@ -2054,7 +2058,7 @@ class GenerateRequestData
         }
         
         if($residential == 'N' && !$alwaysResi){
-            $limitedAccess = $connSettings['quote_settings']['offer_limited_access_delivery'] ?? false;
+            $limitedAccess = (isset($connSettings['quote_settings']['always_limited_access_delivery']) && $connSettings['quote_settings']['always_limited_access_delivery']) || (isset($connSettings['quote_settings']['offer_limited_access_delivery']) && $connSettings['quote_settings']['offer_limited_access_delivery']) ?? false;
         }
 
         $this->resiCarrier['yrcLtl'] = $residential;
@@ -2710,6 +2714,8 @@ class GenerateRequestData
         $this->resiCarrier['upsLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['upsLtl'] = $alwaysResi;
 
+        $notifyDelivery = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option'] && !($alwaysResi || $residential == 'Y')) ? 'Y' : 'N';
+
         $paymentType = isset($connSettings['quote_settings']['shipper_relationship']) && $connSettings['quote_settings']['shipper_relationship'] === 'third_party' ? 'ThirdParty' : 'shipper';
         $apiArray = [
             'accessLevel' => $connSettings['creds']['access_level'],
@@ -2730,6 +2736,7 @@ class GenerateRequestData
             'accessorial' => [
                 'liftgateDelivery' => $liftGate,
                 'residentialDelivery' => $alwaysResi ? 'Y' : $residential,
+                'notifyBeforeDelivery' => $notifyDelivery,
             ],
             'payerAddress' => [
                 'payerName' => 'name',
