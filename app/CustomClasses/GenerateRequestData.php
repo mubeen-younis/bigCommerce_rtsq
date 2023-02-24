@@ -2822,6 +2822,10 @@ class GenerateRequestData
                 $boxWeight = $maxWeight - $box->box_weight;
                 $boxVolume = array_product($dimensions);
 
+                if (($itemMinVolume > $boxVolume) || ($itemMinWeight > $boxWeight)) {
+                    continue;
+                }
+
             }
 
             $boxBins[$box->id] = array(
@@ -2841,6 +2845,18 @@ class GenerateRequestData
                 'ext_height' => $box->ext_height ?? 0
                 /*END*/
             );
+        }
+        /* 
+            when product volume is exceeds then boxbins volume and no box selected and items array have products then products will be mark ship as own packaging. 
+        */
+        if(empty($boxBins) && !empty($items)){
+            
+            foreach($items as $origin => $itemsArray){
+                foreach($itemsArray as $key => $item){
+                    $itemsAlone[$origin][] = $item;
+                    unset($items[$origin]);
+                }
+            }
         }
 
         $hits = count($items);
