@@ -1375,6 +1375,8 @@ class CompileQuotes
                                 $data['surcharges']['notifyDeliveryFee'] = $value['amount'] ?? 0;
                             }
                         }
+                        $isLgSurcharges = isset($data['surcharges']['liftgateFee']) && $data['surcharges']['liftgateFee'];
+                        $isNbdSurcharges = isset($data['surcharges']['notifyDeliveryFee']) && $data['surcharges']['notifyDeliveryFee'];
                         $price = $this->calculatePrice($data);
 
                         $date = $data['deliveryTimestamp'] ?? null;
@@ -1387,7 +1389,7 @@ class CompileQuotes
                         $originQuotes[$key]['simple']['code'] = 'tqlltl' . $access;
                         $originQuotes[$key]['simple']['rate'] = $price;
                         $originQuotes[$key]['simple']['title'] = $title;
-                        if ($lgQuotes) {
+                        if ($lgQuotes && $isLgSurcharges) {
                             $lgAccess = 'tqlltl' . $this->getAccessorialCode(true) . $resiPickup;
                             $lgPrice = $this->calculatePrice($data, true);
                             $lgTitle = $this->getTitle($data['carrier'], true, false, $data['totalCalenderDaysInTransit'], [], $dateAndDays);
@@ -1397,14 +1399,14 @@ class CompileQuotes
                             $originQuotes[$key]['liftgate']['title'] = $lgTitle;
                         }
                         // Get Notify Before Delivery Origin Quotes
-                        if($notifyDelivery){
+                        if($notifyDelivery && $isNbdSurcharges){
                             $compileNotifyDeliveryQuotes = Functions::getOriginQuotes('notifydelivery', $data['carrier'], $originQuotes, $data, $key, $data['totalCalenderDaysInTransit'], 
                             $dateAndDays, false, 'tqlltl', $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi);
 
                             $arraySorting['notifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
                             $originQuotes = $compileNotifyDeliveryQuotes['originQuotes'];
                         }
-                        if($notifyDelivery && $lgQuotes){
+                        if($notifyDelivery && $lgQuotes && $isNbdSurcharges && $isLgSurcharges){
                             $compileNotifyDeliveryQuotes = Functions::getOriginQuotes('lgnotifydelivery', $data['carrier'], $originQuotes, $data, $key, $data['totalCalenderDaysInTransit'], 
                             $dateAndDays, true, 'tqlltl', $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi);
 
@@ -4012,6 +4014,7 @@ class CompileQuotes
                     if (isset($srvcType)) {
                         $access = $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
+                        $isNbdSurcharges = isset($data['surcharges']['notifyDeliveryFee']);
 
                         $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : 'Freight';
                         $date = $quote['q']['deliveryDate'] ?? null;
@@ -4034,14 +4037,14 @@ class CompileQuotes
                             $originQuotes[$origin]['liftgate']['title'] = $lgTitle;
                         }
                         // Get Notify Before Delivery Origin Quotes
-                        if($notifyDelivery){
+                        if($notifyDelivery && $isNbdSurcharges){
                             $compileNotifyDeliveryQuotes = Functions::getOriginQuotes('notifydelivery', $data['serviceDesc'], $originQuotes, $data, $origin, $days, 
                             $dateAndDays, false, 'SouthEastern', $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi);
 
                             $arraySorting['notifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
                             $originQuotes = $compileNotifyDeliveryQuotes['originQuotes'];
                         }
-                        if($notifyDelivery && $lgQuotes){
+                        if($notifyDelivery && $lgQuotes && $isNbdSurcharges){
                             $compileNotifyDeliveryQuotes = Functions::getOriginQuotes('lgnotifydelivery', $data['serviceDesc'], $originQuotes, $data, $origin, $days, 
                             $dateAndDays, true, 'SouthEastern', $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi);
 

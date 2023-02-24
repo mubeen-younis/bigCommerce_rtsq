@@ -75,6 +75,9 @@ class QuotesResults
                             $lgFee = (float)$quotes['q']['details']['charges'][$key];
                         }
                         if(!empty($description) && str_contains($description, 'ARRIVAL NTC')){
+                            if($quotes['q']['details']['charges'][$key] === []){
+                                continue;
+                            }
                             $formattedShipments[$shipment]['q']['surcharges']['notifyDeliveryFee'] = (float)$quotes['q']['details']['charges'][$key] ?? 0;
                         }
                     }
