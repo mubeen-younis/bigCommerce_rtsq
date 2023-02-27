@@ -63,6 +63,7 @@ class ProductSettingController extends Controller
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
         $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
+        Log::info('bigcommerce product resp' . json_encode($response));
         if (isset($response['status']) && $response['status'] == false) {
             return response()->json(['error' => true,
                 'data' => [],
@@ -70,7 +71,6 @@ class ProductSettingController extends Controller
             ]);
         }
         $response = json_decode($response['response'], true);
-        Log::info('bigcommerce product resp' . json_encode($response));
         if (isset($response['data']) && count($response['data'])) {
             foreach ($response['data'] as $product) {
 
