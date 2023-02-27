@@ -70,6 +70,7 @@ class ProductSettingController extends Controller
             ]);
         }
         $response = json_decode($response['response'], true);
+        Log::info('bigcommerce product resp' . json_encode($response));
         if (isset($response['data']) && count($response['data'])) {
             foreach ($response['data'] as $product) {
 
