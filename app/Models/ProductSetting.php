@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use stdClass;
+use App\CustomClasses\BigCommerceFunctions;
+use Illuminate\Support\Facades\Log;
 
 class ProductSetting extends Model
 {
@@ -45,6 +47,8 @@ class ProductSetting extends Model
                 ->where('store_id', $storeId)->first();
         } else {
             $saveProduct = new ProductSetting();
+            $resp = $this->getStoreSettings($storeId);
+            Log::info('store settings 12321 ' . $resp);
             /*Start - Added FOr Default Quoting Method*/
             $productSettings = new stdClass();
             if (!empty($product['weight']) && $product['weight'] > 150) {
@@ -70,5 +74,29 @@ class ProductSetting extends Model
         $saveProduct->price = $product['price'];
         $saveProduct->store_id = $storeId;
         $saveProduct->save();
+    }
+
+    public function getStoreSettings($storeId)
+    {
+
+        try {
+            $store = Store::where('id', $storeId)->first();
+            if (empty($store)) {
+                return [];
+            }
+            $storeDetails = BigCommerceFunctions::getStoreSettings($store['hash']);
+            $storeDetails = (new CurlRequest())->enSingleCurlRequest($storeDetails['endpoint'],
+                $storeDetails['request'], $storeDetails['headers'], $storeDetails['method'], false);
+            $response = json_decode($storeDetails['response'], true);
+
+            return response()->json(['error' => false,
+                'data' => $response,
+            ], 200);
+
+        } catch (\Exception $exception) {
+            Log::info('Exception on getting Store Details ' . $exception->getMessage());
+            return [];
+        }
+
     }
 }
