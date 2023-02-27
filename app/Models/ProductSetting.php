@@ -49,7 +49,7 @@ class ProductSetting extends Model
         } else {
             $saveProduct = new ProductSetting();
             $resp = $this->getStoreSettings($storeId);
-            Log::info('store settings 12321 ' . $resp);
+            Log::info('store settings 12321 ' . json_encode($resp));
             /*Start - Added FOr Default Quoting Method*/
             $productSettings = new stdClass();
             if (!empty($product['weight']) && $product['weight'] > 150) {
