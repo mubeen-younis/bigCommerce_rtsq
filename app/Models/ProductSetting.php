@@ -49,7 +49,7 @@ class ProductSetting extends Model
         } else {
             $saveProduct = new ProductSetting();
             $resp = $this->getStoreSettings($storeId);
-            Log::info('store settings 12321 ' . json_encode($resp['data']['weight_units']));
+            Log::info('store settings 12321 ' . $resp);
             /*Start - Added FOr Default Quoting Method*/
             $productSettings = new stdClass();
             if (!empty($product['weight']) && $product['weight'] > 150) {
@@ -90,9 +90,7 @@ class ProductSetting extends Model
                 $storeDetails['request'], $storeDetails['headers'], $storeDetails['method'], false);
             $response = json_decode($storeDetails['response'], true);
 
-            return response()->json(['error' => false,
-                'data' => $response,
-            ], 200);
+            return $response;
 
         } catch (\Exception $exception) {
             Log::info('Exception on getting Store Details ' . $exception->getMessage());
