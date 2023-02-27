@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Log;
 use stdClass;
 
 class ProductSetting extends Model
@@ -37,7 +36,7 @@ class ProductSetting extends Model
     }
 
     public function saveProduct($product, $storeId)
-    {Log::info('Product details 12'.json_encode($product));
+    {
         if (ProductSetting::where('source_product_id', $product['id'])
             ->where('variant_id', $product['base_variant_id'])
             ->where('store_id', $storeId)->exists()) {

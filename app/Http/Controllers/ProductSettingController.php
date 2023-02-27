@@ -28,7 +28,7 @@ class ProductSettingController extends Controller
     }
 
     public function importProducts(Request $request)
-    {Log::info('import reques123' . json_encode($request->all()));
+    {
         set_time_limit(0);
         $isSyncinProgress = ImportProductsModel::where('store_id', $request['store_id'])->where('status', '=', 1)->where('created_at', '>', Carbon::now()->subDay(1)->toDateTimeString())->exists();
         if (!$isSyncinProgress) {
@@ -63,7 +63,7 @@ class ProductSettingController extends Controller
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
         $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
-        Log::info('bigcommerce product resp' . json_encode($response));
+        
         if (isset($response['status']) && $response['status'] == false) {
             return response()->json(['error' => true,
                 'data' => [],
