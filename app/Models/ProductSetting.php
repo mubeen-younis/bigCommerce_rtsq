@@ -48,11 +48,13 @@ class ProductSetting extends Model
                 ->where('store_id', $storeId)->first();
         } else {
             $saveProduct = new ProductSetting();
-            $resp = $this->getStoreSettings($storeId);
-            Log::info('store settings 12321 ' . $resp['data']['weight_units']);
+
+            $storeSettings = $this->getStoreSettings($storeId);
+            $prodWeight = $this->convertWeight(isset($product['weight']) ? $product['weight'] : '', isset($storeSettings['weight_units']) ? strtolower($storeSettings['weight_units']) : 'lbs') ?? 0;
+            
             /*Start - Added FOr Default Quoting Method*/
             $productSettings = new stdClass();
-            if (!empty($product['weight']) && $product['weight'] > 150) {
+            if (!empty($product['weight']) && $prodWeight > 150) {
                 $productSettings->freight_enabled = true;
                 $productSettings->parcel_enabled = false;
             } else {
@@ -90,14 +92,28 @@ class ProductSetting extends Model
                 $storeDetails['request'], $storeDetails['headers'], $storeDetails['method'], false);
             $response = json_decode($storeDetails['response'], true);
 
-            return response()->json(['error' => false,
-                'data' => $response,
-            ], 200);
+            return $response;
 
         } catch (\Exception $exception) {
             Log::info('Exception on getting Store Details ' . $exception->getMessage());
             return [];
         }
 
+    }
+
+    public function convertWeight($value, $unit)
+    {
+        switch ($unit) {
+            case 'ounces' :
+                return $value / 16;
+            case 'kgs':
+                return $value / 0.45359237;
+            case 'grams':
+                return $value / 453.59237;
+            case 'tonnes':
+                return $value / 0.00045359237;
+            default:
+                return $value;
+        }
     }
 }
