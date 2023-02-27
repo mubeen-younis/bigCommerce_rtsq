@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use stdClass;
 use App\CustomClasses\BigCommerceFunctions;
 use Illuminate\Support\Facades\Log;
+use App\CurlRequest;
 
 class ProductSetting extends Model
 {
