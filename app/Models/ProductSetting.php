@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use stdClass;
 use App\CustomClasses\BigCommerceFunctions;
 use Illuminate\Support\Facades\Log;
+use App\CurlRequest;
 
 class ProductSetting extends Model
 {
@@ -48,7 +49,7 @@ class ProductSetting extends Model
         } else {
             $saveProduct = new ProductSetting();
             $resp = $this->getStoreSettings($storeId);
-            Log::info('store settings 12321 ' . $resp);
+            Log::info('store settings 12321 ' . $resp['data']['weight_units']);
             /*Start - Added FOr Default Quoting Method*/
             $productSettings = new stdClass();
             if (!empty($product['weight']) && $product['weight'] > 150) {
