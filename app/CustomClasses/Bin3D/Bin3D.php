@@ -13,6 +13,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use ReflectionFunctionAbstract;
+use App\Models\Store;
 
 class Bin3D
 {
@@ -30,6 +31,11 @@ class Bin3D
      */
     private $endURL = Constant::BIN_URL;
     private $isPalletPkgReq = false;
+    /**
+     *  Bin Number Stores
+     * @var  array
+     */    
+    public $binNumberStores = ['1q33wq48os'];
 
     public function getBinResponse($storeId, $bins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment, $palletPkgReq = false)
     {
@@ -45,7 +51,7 @@ class Bin3D
 
         if (count($items) && count($itemsAlone)) {
             foreach ($items as $key => $item) {
-                $binRequest[$key] = $this->generateBinRequest($bins, $item);
+                $binRequest[$key] = $this->generateBinRequest($bins, $item, [], $storeId);
             }
             $responseFromSBS = $this->binRequest($binRequest, $storeId, $hits, $cartInfo);
             
@@ -70,7 +76,7 @@ class Bin3D
             }
         } else if (count($items)) {
             foreach ($items as $key => $item) {
-                $binRequest[$key] = $this->generateBinRequest($bins, $item, $items);
+                $binRequest[$key] = $this->generateBinRequest($bins, $item, $items, $storeId);
             }
 
             $responseFromSBS = $this->binRequest($binRequest, $storeId, $hits, $cartInfo);
@@ -251,10 +257,11 @@ class Bin3D
      * $bins -> available boxes in db for any store
      * $items -> items with dimensions to be packed in boxes
      */
-    private function generateBinRequest($bins, $item, $items = [])
+    private function generateBinRequest($bins, $item, $items = [], $storeId)
     {
+        $store = Store::getStoreDetailsFromStoreId($storeId);  
         //bins_utilization or bin_number
-        $optimizationMode = "bins_utilization";
+        $optimizationMode = isset($store['hash']) && !empty($store['hash']) && in_array($store['hash'] , $this->binNumberStores) ? "bins_number" : "bins_utilization";
         $params = [
             'images_background_color' => '255,255,255',
             'images_bin_border_color' => '59,59,59',
