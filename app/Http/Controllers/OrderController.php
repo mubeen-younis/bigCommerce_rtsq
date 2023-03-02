@@ -132,24 +132,43 @@ class OrderController extends Controller
         return $newOrigin;
     }
 
-    public function createOrderWidget($request, $order, $reportingFlag)
+    public function getRequestDataFromDB($tableName, $request, $rateId, $cartId, $order)
     {
-        $rateId = $order['rate_id'] ?? null;
-        $cartId = $order['cart_id'] ?? null;
-        $data = optional(RequestData::where('rate_id', $rateId)
+        $modelName = $tableName === 'RequestData' ? new RequestData() : new RequestTempData();
+        
+        $data = optional($modelName::where('rate_id', $rateId)
                 ->where('cart_id', $cartId)
                 ->where('store_id', $request['store_id'])
                 ->first())->toArray() ?? null;
         if (blank($data) && !blank($order['full_rate_id'])) {
-            $data = optional(RequestData::where('rate_id', $order['full_rate_id'])
+            $data = optional($modelName::where('rate_id', $order['full_rate_id'])
                     ->where('cart_id', $cartId)
                     ->where('store_id', $request['store_id'])
                     ->first())->toArray() ?? null;
             $rateId = $order['full_rate_id'] ?? null;
         }
+
+        return $data;
+    }
+
+    public function createOrderWidget($request, $order, $reportingFlag)
+    {
+        $rateId = $order['rate_id'] ?? null;
+        $cartId = $order['cart_id'] ?? null;
+        
+        $data = $this->getRequestDataFromDB('RequestData', $request, $rateId, $cartId, $order);
+
         if (blank($data)) {
-            return [];
-        }        
+            $data = $this->getRequestDataFromDB('RequestTempData', $request, $rateId, $cartId, $order);
+
+            if (!blank($data)) {
+                unset($data['id']);
+                RequestData::insert($data);
+
+            } else {
+                return [];
+            }
+        }       
         $carrierHasInsurance = $this->hasInsureCarrier($rateId);
         $index = explode('idx+', $rateId);
         if (is_string($index[0]) && $index[0] == "shippingGroup") {
