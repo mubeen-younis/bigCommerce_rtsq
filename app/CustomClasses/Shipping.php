@@ -36,6 +36,7 @@ class Shipping
     private $dbscRates;
     private $dbscOrdWid;
 
+
     public function __construct()
     {
         $this->shipmentPkg = new WweLTLShipmentPackage();
@@ -47,6 +48,7 @@ class Shipping
         $this->multiOrigins = false;
         $this->dbscRates = [];
         $this->dbscOrdWid = [];
+
     }
 
 
@@ -81,7 +83,7 @@ class Shipping
         $store_id = $storeData['store']['id'];
         $destination = $request['lineItemData']['destination'];
         $items = $request['lineItemData']['items'];
-        
+
         try {
             if ($isDbscInstalled) {
                 $getDbscDetails = (new GetRatesDbsc($store_id, $destination, $items, [], [], false, [], []))->getDbscRates($request, $storeData);
@@ -122,8 +124,8 @@ class Shipping
         // Generating carrier creds and origin array
         $destination = $request['lineItemData']['destination'] ?? [];
         $resp = $generateReqData->generateEnitureArray($originAddress, $destination, $package['items']);
-        
-        if(empty($resp)){
+
+        if (empty($resp)) {
             return [];
         }
         $residential = $resp['residential'];
@@ -166,6 +168,9 @@ class Shipping
 
         // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo, $carriersErrorSettings);
+        // Added customization for eniture packaging disabled stores
+        $requestArr = (new Customizations())->eniturePackagingCustomization($requestArr, $storeData['store']['hash']);
+
         if (empty($requestArr)) {
             return [];
         }
@@ -331,8 +336,7 @@ class Shipping
         return $origins;
     }
 
-    public
-    function getOriginsAccShipGroup($items, $origins)
+    public function getOriginsAccShipGroup($items, $origins)
     {
         $formOrigins = [];
         foreach ($origins as $originKey => $origin) {
@@ -346,8 +350,7 @@ class Shipping
     }
 
 
-    protected
-    function setShippingGroupsResponse($shippingGroupItems)
+    protected function setShippingGroupsResponse($shippingGroupItems)
     {
         $this->shippingGroupResponse = ShippingGroup::setShippingGroup($shippingGroupItems);
     }
@@ -356,8 +359,7 @@ class Shipping
     /**
      * @return array
      */
-    protected
-    function formattedShippingGroupResponse(): array
+    protected function formattedShippingGroupResponse(): array
     {
         $finalQuotes = $this->addRateId($this->shippingGroupResponse);
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
@@ -431,7 +433,7 @@ class Shipping
                             $quotes[$carrierName][$locationId]['binPackagingData']['response'][$serviceType] = $bin;
                             $fee = $this->getCumulativeBoxFee($bin);
                             $boxFee[$locationId] = $fee;
-                            
+
                             if ($carrierName == 'fedexSmall') {
                                 $fedexBoxesFee[$locationId][$serviceType] = $fee;
                             }
@@ -546,7 +548,7 @@ class Shipping
 
                             if (isset($q['fedexAirServices']['q'])) {
 
-                                if(isset($q['fedexAirServices']['q']['severity']) && $q['fedexAirServices']['q']['severity'] == "ERROR"){
+                                if (isset($q['fedexAirServices']['q']['severity']) && $q['fedexAirServices']['q']['severity'] == "ERROR") {
                                     continue;
                                 }
 
@@ -685,7 +687,7 @@ class Shipping
             $RequestTempData->cart_id = $cartInfo['cartId'];
             $RequestTempData->box_bins = json_encode($boxbins);
             $RequestTempData->shipping_group_resp = !blank($this->shippingGroupResponse) ? json_encode($this->shippingGroupResponse) : null;
-            $RequestTempData->dbsc_resp = !blank($this->dbscOrdWid) ? json_encode($this->dbscOrdWid): null;
+            $RequestTempData->dbsc_resp = !blank($this->dbscOrdWid) ? json_encode($this->dbscOrdWid) : null;
             $RequestTempData->save();
         }
     }
@@ -817,7 +819,7 @@ class Shipping
         if (!empty(array_filter($quotes))) {
             $resp['quote_id'] = (string)rand(1, 9); // need to change
             $resp['messages'] = []; // need to change
-            
+
             if (!$onlyDbscEnabled) {
                 $quotes = $this->freeShippingTitle($quotes);
                 $quotes = $this->formatCheapestFinalQuotes($quotes);
@@ -845,18 +847,18 @@ class Shipping
 
     public function freeShippingTitle($finalQuotes)
     {
-        foreach($finalQuotes as $key => $quote){
-            if(isset($quote['code']) && ($quote['code'] == 'INSP' || $quote['code'] == 'LOCDEL')){
+        foreach ($finalQuotes as $key => $quote) {
+            if (isset($quote['code']) && ($quote['code'] == 'INSP' || $quote['code'] == 'LOCDEL')) {
                 continue;
             }
-            if(empty($quote['rate']) || $quote['rate'] == '0.00'){
+            if (empty($quote['rate']) || $quote['rate'] == '0.00') {
                 $finalQuotes[$key]['title'] = Functions::$freeShipping;
             }
         }
 
         return $finalQuotes;
     }
-    
+
     private function formatCheapestFinalQuotes($quotes): array
     {
         $finalCheapestQuotes = $quotes ?? [];
@@ -869,7 +871,7 @@ class Shipping
         $freeShippingTitle = Functions::$freeShipping;
 
         // Filter single shipment same titles quotes array
-        if(!$this->multiOrigins){
+        if (!$this->multiOrigins) {
             return $this->filterSameTitleCheapestQuotes($finalCheapestQuotes);
         }
 
@@ -890,7 +892,7 @@ class Shipping
         if (!empty($freightQuotesArr)) {
             $freightCheapest = $this->filterSameTitleCheapestQuotes($freightQuotesArr) ?? [];
             if (!empty($freeShippingCheapest)) {
-               $freightCheapest = array_merge($freightCheapest, $freeShippingCheapest);
+                $freightCheapest = array_merge($freightCheapest, $freeShippingCheapest);
             }
         }
         if (!empty($shippingQuotesArr)) {
@@ -946,7 +948,7 @@ class Shipping
     private function getSameTitleQuotes($title, $finalCheapestQuotes)
     {
         $SingleQuotesArr = collect($finalCheapestQuotes)->filter(function ($quote) use ($title) {
-            $sameTitle = strcmp($quote['title'],$title) == 0;
+            $sameTitle = strcmp($quote['title'], $title) == 0;
 
             return $sameTitle;
         })->toArray() ?? [];
@@ -977,7 +979,7 @@ class Shipping
         }
 
         $updatedRates = array_merge($quotes, $this->dbscRates);
-       
+
         return $updatedRates;
     }
 
