@@ -12,7 +12,7 @@ class Customizations
 
     public function __construct()
     {
-        $this->eniturePackagingDisabledStores = ['uann2u', '2apcgz5zer'];
+        $this->eniturePackagingDisabledStores = ['2apcgz5zer'];
     }
 
     /**
