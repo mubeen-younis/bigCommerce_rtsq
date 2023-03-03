@@ -159,7 +159,7 @@ class GenerateRequestData
                     $errorManagment['unishippersSmall'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case 'odfl-ltl':
-                    $odflLtlArr = $this->odflLtlEnitArr($con1, $destination,);
+                    $odflLtlArr = $this->odflLtlEnitArr($con1, $destination);
                     $odflOrigin = Functions::originAssociatedAccNum($enitOrigin, $odflLtlArr, $key);
                     $odflLtlArr['originAddress'] = $odflOrigin;
                     $carriersArr['carriers']['odfl4me'] = $odflLtlArr;
