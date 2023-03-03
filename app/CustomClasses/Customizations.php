@@ -26,6 +26,7 @@ class Customizations
         if (in_array($hash, $this->eniturePackagingDisabledStores) && !empty($request['requestArr']['commdityDetails'])) {
             foreach ($request['requestArr']['commdityDetails'] as $key => $commodity) {
                 $request['requestArr']['commdityDetails'][$key]['shipBinAlone'] = 1;
+                $request['requestArr']['commdityDetails'][$key]['shipItemAlone'] = 1;
             }
         }
         return $request;

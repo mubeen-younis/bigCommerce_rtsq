@@ -159,7 +159,7 @@ class GenerateRequestData
                     $errorManagment['unishippersSmall'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case 'odfl-ltl':
-                    $odflLtlArr = $this->odflLtlEnitArr($con1, $destination, );
+                    $odflLtlArr = $this->odflLtlEnitArr($con1, $destination,);
                     $odflOrigin = Functions::originAssociatedAccNum($enitOrigin, $odflLtlArr, $key);
                     $odflLtlArr['originAddress'] = $odflOrigin;
                     $carriersArr['carriers']['odfl4me'] = $odflLtlArr;
@@ -524,7 +524,7 @@ class GenerateRequestData
     public function rossdayLtlEnitArr($connSettings, $destination)
     {
         return [
-            'licenseKey' =>'',
+            'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl',
@@ -650,9 +650,9 @@ class GenerateRequestData
     public function generateRequestArray($request, $carriersArray, $itemsArr, $cartInfo, $carriersErrorSettings)
     {
         $errorManagmentResp = Functions::productErrorManagment($carriersErrorSettings, $carriersArray, $itemsArr);
-        if(isset($errorManagmentResp['carriersArray']['carriers']) && empty($errorManagmentResp['carriersArray']['carriers'])){
+        if (isset($errorManagmentResp['carriersArray']['carriers']) && empty($errorManagmentResp['carriersArray']['carriers'])) {
             return [];
-        }else{
+        } else {
             $carriersArray = $errorManagmentResp['carriersArray'];
             $itemsArr = $errorManagmentResp['itemsArr'];
         }
@@ -679,11 +679,11 @@ class GenerateRequestData
             $ltlCarriers = $palletPkg->ltlCarriers ?? [];
             if (!empty($ltlCarriers)) {
                 foreach ($ltlCarriers as $carrName) {
-                        if (isset($carriers[$carrName])) {
-                            $carriersOriginAddress = $carriers[$carrName]['originAddress'];
-                            break;
-                        }
+                    if (isset($carriers[$carrName])) {
+                        $carriersOriginAddress = $carriers[$carrName]['originAddress'];
+                        break;
                     }
+                }
             }
 
             $palletPkgResp = $palletPkg->setAndGetPackagingResp($carriers);
@@ -794,8 +794,8 @@ class GenerateRequestData
                             unset($carriers['purolator']['originAddress']);
 
                             foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
-                                foreach($this->carriers['purolator']['originAddress'] as $oldkey => $ori){
-                                    if($ori['senderZip'] === $origin['senderZip']){
+                                foreach ($this->carriers['purolator']['originAddress'] as $oldkey => $ori) {
+                                    if ($ori['senderZip'] === $origin['senderZip']) {
                                         $carriers['purolator']['originAddress'][$key] = $ori;
                                     }
                                 }
@@ -869,8 +869,8 @@ class GenerateRequestData
                     if (isset($carriers['purolator'])) {
                         unset($carriers['purolator']['originAddress']);
                         foreach ($sbsResponse['originAddress'] as $key => $origin) {
-                            foreach($this->carriers['purolator']['originAddress'] as $oldkey => $ori){
-                                if($ori['senderZip'] === $origin['senderZip']){
+                            foreach ($this->carriers['purolator']['originAddress'] as $oldkey => $ori) {
+                                if ($ori['senderZip'] === $origin['senderZip']) {
                                     $carriers['purolator']['originAddress'][$key] = $ori ?? $origin ?? $carriersoriginAddress;
                                 }
                             }
@@ -988,7 +988,7 @@ class GenerateRequestData
             }
         }
 
-        $resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse, 'boxBins' => $boxBins, 'palletResponse' => $palletResp,  'palletBins' => $palletBins, 'SuppressParcelRates' => $IsSuppressParcelRates];
+        $resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse, 'boxBins' => $boxBins, 'palletResponse' => $palletResp, 'palletBins' => $palletBins, 'SuppressParcelRates' => $IsSuppressParcelRates];
 
         return $resp;
     }
@@ -1918,7 +1918,7 @@ class GenerateRequestData
         $premiumType = (isset($premiumTypeServices['fedex_date_certain_home_delivery']) && $premiumTypeServices['fedex_date_certain_home_delivery'] ? 'DATE_CERTAIN' : '') . (isset($premiumTypeServices['fedex_evening_home_delivery']) && $premiumTypeServices['fedex_evening_home_delivery'] ? ',EVENING' : '') . (isset($premiumTypeServices['fedex_appointment_home_delivery']) && $premiumTypeServices['fedex_appointment_home_delivery'] ? ',APPOINTMENT' : '');
         $premiumType = ltrim($premiumType, ',');
 
-        foreach($Origins as $origin){
+        foreach ($Origins as $origin) {
             $phoneNumber = !empty($origin['phone']) ? $origin['phone'] : '1234567820';
             break;
         }
@@ -2032,7 +2032,7 @@ class GenerateRequestData
 
         }
 
-        if($residential == 'N' && !$alwaysResi){
+        if ($residential == 'N' && !$alwaysResi) {
             $limitedAccess = $connSettings['quote_settings']['offer_limited_access_delivery'] ?? false;
         }
 
@@ -2493,7 +2493,7 @@ class GenerateRequestData
     function getApiInfoArrFreightQuoteChrLtl($connSettings, $destination)
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
-        (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+            (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
 
         $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
 
@@ -2533,7 +2533,7 @@ class GenerateRequestData
         $TLEquipmentType = (isset($connSettings['quote_settings']['tl_equipment_type']) && $connSettings['quote_settings']['tl_equipment_type'] == 1) ? 'Van' : (isset($connSettings['quote_settings']['tl_equipment_type']) && ($connSettings['quote_settings']['tl_equipment_type'] == 2) ? 'Reefer' : 'Flatbed');
         $quoteLTLAboveThreshold = (isset($connSettings['quote_settings']['quoteltl_and_truckload']) && $connSettings['quote_settings']['quoteltl_and_truckload']) ? '1' : '0';
         $TLWeightThreshold = $connSettings['quote_settings']['truckload_weight_threshold'] ?? '0';
-        $weightThreshold= $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
+        $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $apiArray = [
             'b2bApiVersion' => '2.0',
             'customer_code' => $connSettings['creds']['customer_code'] ?? '',
@@ -2541,7 +2541,7 @@ class GenerateRequestData
             'HazardousMaterialContactName' => 'test',
             'HazardousMaterialContactPhone' => '4545464875',
             'residentialDelivery' => $alwaysResi ? 'Y' : $residential,
-            'thresholdWeightLimit'=>$weightThreshold,
+            'thresholdWeightLimit' => $weightThreshold,
 
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
@@ -2849,10 +2849,10 @@ class GenerateRequestData
         /*
             when product volume is exceeds then boxbins volume and no box selected and items array have products then products will be mark ship as own packaging.
         */
-        if(empty($boxBins) && !empty($items)){
+        if (empty($boxBins) && !empty($items)) {
 
-            foreach($items as $origin => $itemsArray){
-                foreach($itemsArray as $key => $item){
+            foreach ($items as $origin => $itemsArray) {
+                foreach ($itemsArray as $key => $item) {
                     $itemsAlone[$origin][] = $item;
                     unset($items[$origin]);
                 }
@@ -2882,8 +2882,8 @@ class GenerateRequestData
                     foreach ($bins->bins_packed as $key => $binPacked) {
                         $binPacked->image_complete = Functions::replace3DBinUrl($binPacked->image_complete);
 
-                        if(!empty($binPacked->items)){
-                            foreach($binPacked->items as $item){
+                        if (!empty($binPacked->items)) {
+                            foreach ($binPacked->items as $item) {
                                 $item->image_separated = Functions::replace3DBinUrl($item->image_separated);
                                 $item->image_sbs = Functions::replace3DBinUrl($item->image_sbs);
                             }
