@@ -48,7 +48,6 @@ class ProductSetting extends Model
                 ->where('store_id', $storeId)->first();
         } else {
             $saveProduct = new ProductSetting();
-
         }
         
         $storeSettings = $this->getStoreSettings($storeId);
@@ -78,7 +77,6 @@ class ProductSetting extends Model
         $saveProduct->height = $product['height'];
         $saveProduct->price = $product['price'];
         $saveProduct->store_id = $storeId;
-        Log::info('1 update product details' . json_encode($saveProduct));
         $saveProduct->save();
     }
 
