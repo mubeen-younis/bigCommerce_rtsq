@@ -49,21 +49,23 @@ class ProductSetting extends Model
         } else {
             $saveProduct = new ProductSetting();
 
-            $storeSettings = $this->getStoreSettings($storeId);
-            $prodWeight = $this->convertWeight(isset($product['weight']) ? $product['weight'] : '', isset($storeSettings['weight_units']) ? strtolower($storeSettings['weight_units']) : 'lbs') ?? 0;
-            
-            /*Start - Added FOr Default Quoting Method*/
-            $productSettings = new stdClass();
-            if (!empty($product['weight']) && $prodWeight > 150) {
-                $productSettings->freight_enabled = true;
-                $productSettings->parcel_enabled = false;
-            } else {
-                $productSettings->freight_enabled = false;
-                $productSettings->parcel_enabled = true;
-            }
-            $saveProduct->settings = json_encode($productSettings);
-            /*END*/
         }
+        
+        $storeSettings = $this->getStoreSettings($storeId);
+        $prodWeight = $this->convertWeight(isset($product['weight']) ? $product['weight'] : '', isset($storeSettings['weight_units']) ? strtolower($storeSettings['weight_units']) : 'lbs') ?? 0;
+        
+        /*Start - Added FOr Default Quoting Method*/
+        $productSettings = new stdClass();
+        if (!empty($product['weight']) && $prodWeight > 150) {
+            $productSettings->freight_enabled = true;
+            $productSettings->parcel_enabled = false;
+        } else {
+            $productSettings->freight_enabled = false;
+            $productSettings->parcel_enabled = true;
+        }
+        $saveProduct->settings = json_encode($productSettings);
+        /*END*/
+
         $saveProduct->name = $product['name'];
         $saveProduct->source_product_id = $product['id'];
         $saveProduct->variant_id = $product['base_variant_id'];
@@ -76,6 +78,7 @@ class ProductSetting extends Model
         $saveProduct->height = $product['height'];
         $saveProduct->price = $product['price'];
         $saveProduct->store_id = $storeId;
+        Log::info('1 update product details' . json_encode($saveProduct));
         $saveProduct->save();
     }
 

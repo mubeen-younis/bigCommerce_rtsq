@@ -367,7 +367,7 @@ class ProductSettingController extends Controller
     }
 
     public function updateProductDetail(Request $request)
-    {Log::info('1 update product details' . json_encode($request->all()));
+    {
 
         foreach ($request->products as $prd) {
             $product = ProductSetting::where('source_product_id', $prd['source_product_id'])
@@ -407,7 +407,6 @@ class ProductSettingController extends Controller
             }
 
             $product->settings = json_encode($this->getSetting($prd));
-            Log::info('2 product settings' . $product->settings);
             /*json_encode($prd->only(['dropship_enabled', 'dropship_location', 'freight_class',
                 'hazardous_enabled', 'freight_enabled', 'parcel_enabled', 'insurance']));*/
             $product->update();
