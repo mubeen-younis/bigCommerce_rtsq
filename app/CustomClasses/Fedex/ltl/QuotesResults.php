@@ -260,6 +260,9 @@ class QuotesResults
                             }
                             if (isset($surcharge['SurchargeType']) && $surcharge['SurchargeType'] === 'APPOINTMENT_DELIVERY') {
                                 $shipments[$shipment]['q'][$key]['surcharges']['notifyDeliveryFee'] = $surcharge['Amount']['Amount'] ?? 0;
+                                if (isset($quote['holdAtTerminalResponse']) && !empty($quote['holdAtTerminalResponse'])) {
+                                    $quote['holdAtTerminalResponse']['surcharges']['notifyDeliveryFee'] = $surcharge['Amount']['Amount'] ?? 0;
+                                }
                             }
 
                         }
@@ -312,6 +315,7 @@ class QuotesResults
             $compiledQuotes['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
             $compiledQuotes['totalTransitTimeInDays'] = $quote['totalTransitTimeInDays'] ?? '';
             $compiledQuotes['transitTime'] = $quote['transitTime'] ?? '';
+            isset($quote['surcharges']) && !empty($quote['surcharges']) ? $compiledQuotes['surcharges'] = $quote['surcharges'] ?? 0 : null;
         }
 
         return $compiledQuotes;

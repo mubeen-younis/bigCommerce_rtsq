@@ -2224,8 +2224,9 @@ class CompileQuotes
                     $isHatSrvc = isset($data['serviceType']) && strpos($data['serviceType'], 'HAT+') !== false;
                     if (isset($data['serviceType']) && isset($data['serviceDesc']) && in_array($data['serviceType'] , $allConfigServices)) {
                         if ($isHatSrvc) {
+                            $data['totalNetCharge']['Amount'] = $this->calculatePrice($data);
                             $hatShipments[$key] = $data;
-                             $hatArraySorting['simple'][$key] = $data['totalNetCharge']['Amount'];
+                            $hatArraySorting['simple'][$key] = $data['totalNetCharge']['Amount'];
                             continue;
                         }
 
