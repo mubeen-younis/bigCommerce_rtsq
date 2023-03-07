@@ -12,7 +12,9 @@ class Customizations
 
     public function __construct()
     {
-        $this->eniturePackagingDisabledStores = ['2apcgz5zer'];
+        /*Initially we have aadded customization for disabling eniture packageing for centennial store
+        Now we have removed it*/
+        $this->eniturePackagingDisabledStores = [];
     }
 
     /**
