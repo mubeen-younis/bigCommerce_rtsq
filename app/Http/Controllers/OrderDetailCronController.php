@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\CustomClasses\CurlRequest;
 use App\Models\Store;
 use App\Models\StoreOrderCronCount;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -14,6 +15,8 @@ class OrderDetailCronController extends Controller
 
     public $perPage = 250;
 
+    public $minDateCreated;
+
     public $storeDetails;
     public $orderController;
 
@@ -21,8 +24,14 @@ class OrderDetailCronController extends Controller
     {
         $this->curlRequest = new CurlRequest();
         $this->orderController = new OrderController();
+        $this->setMinDateCreated();
         $this->storeDetails = [];
 
+    }
+
+    public function setMinDateCreated()
+    {
+        $this->minDateCreated = Carbon::now()->subDays(15)->toISOString();
     }
 
     /**
@@ -64,10 +73,25 @@ class OrderDetailCronController extends Controller
     public function processStoreCron()
     {
         if (empty($this->storeDetails['store_order_cron_count'])) {
-            $this->importOrdersAsNew();
+            $this->importOrdersSinceDate();
         } else {
             $this->importOrdersSinceID();
         }
+    }
+
+    /**
+     * Import Orders since date
+     * @return void|null
+     */
+    public function importOrdersSinceDate()
+    {
+        $orderEndpoint = 'https://api.bigcommerce.com/stores/' . $this->storeDetails['hash'] . '/v2/orders?min_date_created=' . $this->minDateCreated . '&limit=' . $this->perPage;
+        $orders = $this->getOrdersFromBC($orderEndpoint);
+        if (blank($orders)) {
+            return null;
+        }
+        $this->processOrders($orders);
+
     }
 
     /**
@@ -84,7 +108,36 @@ class OrderDetailCronController extends Controller
 
     }
 
+    /**
+     * Execute after the specific order ID
+     * Which will optimize the process of imports
+     * @return void|null
+     */
+    public function importOrdersSinceID()
+    {
+        $orderEndpoint = 'https://api.bigcommerce.com/stores/' . $this->storeDetails['hash'] . '/v2/orders?min_id=' . $this->storeDetails['store_order_cron_count']['min_order'];
+        $orders = $this->getOrdersFromBC($orderEndpoint);
+        if (blank($orders)) {
+            return null;
+        }
+        $this->processOrders($orders);
+    }
 
+
+    /**
+     * Gets Orders response from bigcommerce
+     * @param $orderEndpoint
+     * @return mixed|null
+     */
+    public function getOrdersFromBC($orderEndpoint)
+    {
+        $orders = $this->curlRequest->enSingleCurlRequest($orderEndpoint, [], $this->getRequestHeaders(), 'GET', true);
+        if (isset($orders['status']) && $orders['status'] == false) {
+            return null;
+        }
+        return json_decode($orders['response'], true) ?? null;
+
+    }
 
 
     /**
@@ -140,7 +193,41 @@ class OrderDetailCronController extends Controller
     }
 
 
+    /**
+     * Process Orders Array
+     * @param $orders
+     * @return void
+     */
+    public function processOrders($orders)
+    {
+        foreach ($orders as $order) {
+            $orderID = $order['id'] ?? null;
+            if (blank($orderID)) {
+                continue;
+            }
+            $orderWebhookSample = $this->getWebhookSampleData($orderID);
+            $this->orderController->orderWebhookProcess([], $orderWebhookSample);
+            // Updates order count in stores table, so we process since id orders after first import
+            StoreOrderCronCount::addOrUpdate($this->storeDetails['id'], $orderID);
+        }
+    }
 
+    /**
+     * Returns webhook sample data
+     * @param $id
+     * @return array
+     */
+    public function getWebhookSampleData($id)
+    {
+        $sampleData['producer'] = "stores/" . $this->storeDetails['hash'];
+        $sampleData['hash'] = "aeeeaa952cee00eab08c6b1968a87e49452a50cb";
+        $sampleData['created_at'] = "1676904417";
+        $sampleData['store_id'] = "";
+        $sampleData['scope'] = "store/order/created";
+        $sampleData['data']['type'] = "order";
+        $sampleData['data']['id'] = $id;
+        return $sampleData;
+    }
 
 
     /**
