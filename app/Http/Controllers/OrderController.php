@@ -137,6 +137,7 @@ class OrderController extends Controller
     {
         $rateId = $order['rate_id'] ?? null;
         $cartId = $order['cart_id'] ?? null;
+
         $data = optional(RequestData::where('rate_id', $rateId)
                 ->where('cart_id', $cartId)
                 ->where('store_id', $request['store_id'])
@@ -432,25 +433,7 @@ class OrderController extends Controller
 
             $shipping_name = explode('(', $order['shipping_name']);
             $sName = $shipping_name[0] ?? '';
-            $sName = str_replace(Constant::RESI_LABEL, '', $sName);
-            $sName = str_replace(Constant::LIFT_LABEL, '', $sName);
-            $sName = str_replace(Constant::RESI_LIFT_LABEL, '', $sName);
-            $sName = str_replace(Functions::$twoManDeliveryLabel, '', $sName);
-            $sName = str_replace(Functions::$appointmentDeliveryLabel, '', $sName);
-            $sName = str_replace(Functions::$twoManAppDelLabel, '', $sName);
-            $sName = str_replace(Functions::$twoManDelResiLabel, '', $sName);
-            $sName = str_replace(Functions::$appointmentDelResiLabel, '', $sName);
-            $sName = str_replace(Functions::$twoManAptDelResiLabel, '', $sName);
-            $sName = str_replace(Functions::$insideDelLiftGateResiLable, '', $sName);
-            $sName = str_replace(Functions::$insideDelLiftGateLable, '', $sName);
-            $sName = str_replace(Functions::$insideDelResiLable, '', $sName);
-            $sName = str_replace(Functions::$insideDelLable, '', $sName);
-            $sName = str_replace(Functions::$limitedAccesDelLabel, '', $sName);
-            $sName = str_replace(Functions::$limitedAccessLGDelLable, '', $sName);
-            $sName = str_replace(Functions::$notifyBeforeDelLiftGateResiLable, '', $sName);
-            $sName = str_replace(Functions::$notifyBoforeDelLiftGateLable, '', $sName);
-            $sName = str_replace(Functions::$notifyBeforeDelResiLable, '', $sName);
-            $sName = str_replace(Functions::$notifyBeforeDelLable, '', $sName);
+            $sName = explode('w/', $sName)[0] ?? '';
             $sMethod = isset($shipping_name[1]) ? '(' . $shipping_name[1] : '';
 
             $orderWidget[$zip]['shipping_method'] = $sName . $sMethod;
