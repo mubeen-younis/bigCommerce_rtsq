@@ -12,8 +12,9 @@ class Customizations
 
     public function __construct()
     {
-        /*Initially we have aadded customization for disabling eniture packageing for centennial store
-        Now we have removed it*/
+        /*Initially we have aadded customization for disabling eniture packaging for centennial store
+        Now we have removed it 07-03-2023
+        Ticket# 1471685770*/
         $this->eniturePackagingDisabledStores = [];
     }
 
