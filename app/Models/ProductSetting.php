@@ -92,7 +92,7 @@ class ProductSetting extends Model
             $storeDetails = (new CurlRequest())->enSingleCurlRequest($storeDetails['endpoint'],
                 $storeDetails['request'], $storeDetails['headers'], $storeDetails['method'], false);
             $response = json_decode($storeDetails['response'], true);
-            Log::info('132423425' . json_encode($response));
+            
             return $response;
 
         } catch (\Exception $exception) {
