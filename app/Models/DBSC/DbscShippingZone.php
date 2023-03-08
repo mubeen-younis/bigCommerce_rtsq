@@ -19,7 +19,7 @@ class DbscShippingZone extends Model
 
 
     public static function getZoneIdFromDestinationAndProfile($destination, $profileId)
-    {Log::info('get zone 1 ' . json_encode($destination) , $profileId);
+    {Log::info('get zone 1 ' . json_encode($destination) . " profileID " . $profileId);
         $profileZones = optional(self::where('profile_id', $profileId)->get())->toArray() ?? [];
         Log::info('profileZones 2 ' . json_encode($profileZones));
         if (blank($profileZones)) {
