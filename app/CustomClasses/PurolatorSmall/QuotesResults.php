@@ -138,7 +138,7 @@ class QuotesResults
         foreach ($shipments as $origin => $quote) {
 
             if ((isset($quote['severity']) || !isset($quote['q']) || (isset($quote['q']) && empty($quote['q'])))) {
-                return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);                
+                return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
             if ($count == 0) { //To be checked only once
                 // $this->getAutoResidentialTitle('');
@@ -270,9 +270,9 @@ class QuotesResults
     {
         $checkedshipment = [];
         $carrier_services = $connectionSettings['purolator-small']['quote_settings']['carrier_services'];
-       
+
         foreach ($shipments as $shipkey => $quote) {
-            
+
             if (isset($quote['severity'])) {
                 continue;
             }
@@ -280,18 +280,18 @@ class QuotesResults
                 foreach ($quote['q'] as $key => $value) {
                     foreach($carrier_services as $service => $checked){
                         $serviceLetter =str_replace('_',' ',$service);
-                        $capitalServiceLetter = ucwords($serviceLetter); 
+                        $capitalServiceLetter = ucwords($serviceLetter);
                         $serviceType =str_replace('  ',':',$capitalServiceLetter);
                         $serviceType =str_replace(' ','',$serviceType);
                         if($serviceType == $value['serviceType'] && $service == $checked){
-                            $checkedshipment[$shipkey]['q'][] = $value;        
+                            $checkedshipment[$shipkey]['q'][] = $value;
                         }
                     }
-                } 
-            } 
+                }
+            }
             if(isset($quote['InstorPickupLocalDelivery']) && !empty(($quote['InstorPickupLocalDelivery']))){
                 $checkedshipment[$shipkey]['InstorPickupLocalDelivery'] = $quote['InstorPickupLocalDelivery'];
-            } 
+            }
         }
 
         $servicesDesc = [];

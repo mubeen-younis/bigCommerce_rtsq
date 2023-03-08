@@ -16,10 +16,11 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('delete_coupon_store', [\App\Http\Controllers\FDOController::class, 'deleteCoupon']);
+Route::get('create_order_detail_cron', [\App\Http\Controllers\OrderDetailCronController::class, 'createOrderDetailData']);
 
 Route::post('webhooks', [MainController::class, 'addAndUpdateProductFromWebHook']);
 Route::get('uninstall1', function () {
-    $arr = ['R', 'L','N', 'A'];
+    $arr = ['R', 'L', 'N', 'A'];
     $string = '';
     if (count($arr) == 4) {
         $string .= '(' . $arr[0] . ')    ';

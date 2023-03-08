@@ -64,7 +64,6 @@ class GetRatesController extends Controller
         if (!$this->storePlanStatus($storeData['store']['id'])) {
             return [];
         }
-        
         $cartInfo['cartId'] = $request->base_options['request_context']['reference_values'][0]['value'] ?? 0;
         $cartInfo['store_id'] = $storeData['installed_carriers'][0]['store_id'] ?? 0;
 // Getting installed carriers there quote settings and services
@@ -193,7 +192,7 @@ class GetRatesController extends Controller
                     'dropship_enabled' => isset($product_settings['dropship_enabled']) && $product_settings['dropship_enabled'] ? 'Y' : 'N',
                     'dropship' => $product_settings['dropship'] ?? '',
                     'product_insurance_active' => isset($product_settings['insurance']) && $product_settings['insurance'] ? 1 : 0,
-                    'freightClass' => $this->isLTL($weight, $ltlCheck) ? 'ltl' : '', 
+                    'freightClass' => $this->isLTL($weight, $ltlCheck) ? 'ltl' : '',
                     'lineItemClass' => isset($product_settings['freight_class']) ? $this->getLineItemClass($product_settings['freight_class']) : '',
                     'shipping_group' => $product_settings['shipping_group'] ?? null,
                     'shipping_class' => $product_settings['shipping_class'] ?? null,
