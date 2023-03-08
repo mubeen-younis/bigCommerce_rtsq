@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use stdClass;
+use App\CustomClasses\BigCommerceFunctions;
+use Illuminate\Support\Facades\Log;
+use App\CurlRequest;
 
 class ProductSetting extends Model
 {
@@ -45,18 +48,23 @@ class ProductSetting extends Model
                 ->where('store_id', $storeId)->first();
         } else {
             $saveProduct = new ProductSetting();
-            /*Start - Added FOr Default Quoting Method*/
-            $productSettings = new stdClass();
-            if (!empty($product['weight']) && $product['weight'] > 150) {
-                $productSettings->freight_enabled = true;
-                $productSettings->parcel_enabled = false;
-            } else {
-                $productSettings->freight_enabled = false;
-                $productSettings->parcel_enabled = true;
-            }
-            $saveProduct->settings = json_encode($productSettings);
-            /*END*/
         }
+        
+        $storeSettings = $this->getStoreSettings($storeId);
+        $prodWeight = $this->convertWeight(isset($product['weight']) ? $product['weight'] : '', isset($storeSettings['weight_units']) ? strtolower($storeSettings['weight_units']) : 'lbs') ?? 0;
+        
+        /*Start - Added FOr Default Quoting Method*/
+        $productSettings = new stdClass();
+        if (!empty($product['weight']) && $prodWeight > 150) {
+            $productSettings->freight_enabled = true;
+            $productSettings->parcel_enabled = false;
+        } else {
+            $productSettings->freight_enabled = false;
+            $productSettings->parcel_enabled = true;
+        }
+        $saveProduct->settings = json_encode($productSettings);
+        /*END*/
+
         $saveProduct->name = $product['name'];
         $saveProduct->source_product_id = $product['id'];
         $saveProduct->variant_id = $product['base_variant_id'];
@@ -70,5 +78,43 @@ class ProductSetting extends Model
         $saveProduct->price = $product['price'];
         $saveProduct->store_id = $storeId;
         $saveProduct->save();
+    }
+
+    public function getStoreSettings($storeId)
+    {
+
+        try {
+            $store = Store::where('id', $storeId)->first();
+            if (empty($store)) {
+                return [];
+            }
+            $storeDetails = BigCommerceFunctions::getStoreSettings($store['hash']);
+            $storeDetails = (new CurlRequest())->enSingleCurlRequest($storeDetails['endpoint'],
+                $storeDetails['request'], $storeDetails['headers'], $storeDetails['method'], false);
+            $response = json_decode($storeDetails['response'], true);
+            
+            return $response;
+
+        } catch (\Exception $exception) {
+            Log::info('Exception on getting Store Details ' . $exception->getMessage());
+            return [];
+        }
+
+    }
+
+    public function convertWeight($value, $unit)
+    {
+        switch ($unit) {
+            case 'ounces' :
+                return $value / 16;
+            case 'kgs':
+                return $value / 0.45359237;
+            case 'grams':
+                return $value / 453.59237;
+            case 'tonnes':
+                return $value / 0.00045359237;
+            default:
+                return $value;
+        }
     }
 }
