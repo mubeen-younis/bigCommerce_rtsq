@@ -25,7 +25,8 @@ class DbscShippingZone extends Model
             return [];
         }
         foreach ($profileZones as $profileZone) {
-            $selectedZones = json_decode($profileZone['selected_region'], true);
+            $selectedRegion = preg_replace('/\\\"/',"\"", $profileZone['selected_region']);
+            $selectedZones = json_decode($selectedRegion, true);
             $zonesDetail = BcZones::getZonesDetail($selectedZones);
             if (blank($zonesDetail)) {
                 continue;
