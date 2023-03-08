@@ -166,7 +166,7 @@ class GetRatesDbsc
         foreach ($this->groupedItemsProfile as $profileId => $items) {
             $zoneId = DbscShippingZone::getZoneIdFromDestinationAndProfile($this->destination, $profileId);
             if (blank($zoneId)) {
-                Log::info('No zone found ' . 'storeID ' . $this->storeId . '& zoneID ' . $zoneId);
+                Log::info('No zone found ' . 'storeID ' . $this->storeId . ' & zoneID ' . json_encode($zoneId));
                 return [];
             }
 
