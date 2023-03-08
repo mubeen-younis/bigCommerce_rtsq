@@ -79,7 +79,7 @@ class GenerateRequestData
         $this->destinationIsPOBox($destination);
         $carriersArr['carriers'] = [];
         $enitOrigin = $this->getEnitOrigin($origin);
-
+        $errorManagment = [];
         $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
         if (Functions::isPOBoxAddress($rad_settings, $this->isPoBOX)) {
             return [];
@@ -649,12 +649,14 @@ class GenerateRequestData
      */
     public function generateRequestArray($request, $carriersArray, $itemsArr, $cartInfo, $carriersErrorSettings)
     {
-        $errorManagmentResp = Functions::productErrorManagment($carriersErrorSettings, $carriersArray, $itemsArr);
-        if (isset($errorManagmentResp['carriersArray']['carriers']) && empty($errorManagmentResp['carriersArray']['carriers'])) {
-            return [];
-        } else {
-            $carriersArray = $errorManagmentResp['carriersArray'];
-            $itemsArr = $errorManagmentResp['itemsArr'];
+        if(!empty($carriersArray['carriers'])){
+            $errorManagmentResp = Functions::productErrorManagment($carriersErrorSettings, $carriersArray, $itemsArr);
+            if(isset($errorManagmentResp['carriersArray']['carriers']) && empty($errorManagmentResp['carriersArray']['carriers'])){
+                return [];
+            }else{
+                $carriersArray = $errorManagmentResp['carriersArray'];
+                $itemsArr = $errorManagmentResp['itemsArr'];
+            }
         }
 
         $carriers = $carriersArray['carriers'];
