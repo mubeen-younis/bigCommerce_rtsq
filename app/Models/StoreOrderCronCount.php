@@ -19,7 +19,7 @@ class StoreOrderCronCount extends Model
      */
     public static function addOrUpdate($storeID, $orderID)
     {
-        $order = self::where('id', $storeID)->first();
+        $order = self::where('store_id', $storeID)->first();
         if (blank($order)) {
             $order = new self();
         }
