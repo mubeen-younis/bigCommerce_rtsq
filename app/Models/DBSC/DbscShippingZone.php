@@ -4,7 +4,7 @@ namespace App\Models\DBSC;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
+use Illuminate\Support\Facades\Log;
 class DbscShippingZone extends Model
 {
     use HasFactory;
@@ -19,15 +19,18 @@ class DbscShippingZone extends Model
 
 
     public static function getZoneIdFromDestinationAndProfile($destination, $profileId)
-    {
+    {Log::info('get zone 1' . json_encode($destination) . ' profileID ' . $profileId);
         $profileZones = optional(self::where('profile_id', $profileId)->get())->toArray() ?? [];
+        Log::info('get profile zone 2' . json_encode($profileZones));
         if (blank($profileZones)) {
             return [];
         }
         foreach ($profileZones as $profileZone) {
             $selectedRegion = preg_replace('/\\\"/',"\"", $profileZone['selected_region']);
             $selectedZones = json_decode($selectedRegion, true);
+            Log::info('get selected region 3' . ($selectedRegion));
             $zonesDetail = BcZones::getZonesDetail($selectedZones);
+            Log::info('get zones details 4' . json_encode($zonesDetail));
             if (blank($zonesDetail)) {
                 continue;
             }
