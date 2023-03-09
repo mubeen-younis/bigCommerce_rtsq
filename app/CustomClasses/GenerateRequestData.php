@@ -317,6 +317,7 @@ class GenerateRequestData
     function gtzLtlEnitArr($connSettings, $destination, $enitOrigin, $carName)
     {
         $api = $this->getApiInfoArrGTZLtl($connSettings, $destination, $carName);
+        $notify = (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']) ? 1 : 0;
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -325,6 +326,7 @@ class GenerateRequestData
             'version' => '1.0.0',
             'returnQuotesOnExceedWeight' => 1,
             'liftGateAsAnOption' => isset($api['accessorial']['LFTGATDEST']) ? 1 : 0,
+            'notifyAsAnOption' => $notify,
             'api' => $api,
             'getDistance' => 0,
         ];
@@ -1418,7 +1420,7 @@ class GenerateRequestData
                 'guaranteedRates' => $guaranteedService
             ];
         } else { // for cerasis
-            $notify = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']);
+            $notify = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']);
             
             if ($residential === 'Y' || $alwaysResi) {
                 $accessorial['RESDEL'] = 'RESDEL';
