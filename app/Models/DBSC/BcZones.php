@@ -20,7 +20,7 @@ class BcZones extends Model
     public static function getZonesDetail($zonesArr)
     {
         return optional(self::leftjoin('zones_details', 'zones.id', 'zones_details.zone_id')
-            ->whereIn('zones.id', $zonesArr)
+            ->whereIn('zones.bc_zone_id', $zonesArr)
             ->get())->toArray() ?? [];
     }
 }
