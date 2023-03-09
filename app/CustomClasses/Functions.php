@@ -456,9 +456,9 @@ class Functions
     public static function originAssociatedAccNum($origins, $apiInfo, $carrier)
     {
         $locationsDet = [];
-        $connPostCode = $apiInfo['api']['physicalZipCode'] ?? $apiInfo['api']['physicalPostalCode'] ?? 
-                        $apiInfo['api']['senderZip'] ?? $apiInfo['senderZip'] ?? $apiInfo['api']['originPostalCode'] ?? 
-                        $apiInfo['api']['customerZip'] ?? '' ;
+        $connPostCode = $apiInfo['api']['physicalZipCode'] ?? $apiInfo['api']['physicalPostalCode'] ??
+            $apiInfo['api']['senderZip'] ?? $apiInfo['senderZip'] ?? $apiInfo['api']['originPostalCode'] ??
+            $apiInfo['api']['customerZip'] ?? '';
         foreach ($origins as $key => $origin) {
             $senderZip = $origin['senderZip'];
             if ($senderZip == $connPostCode) {
@@ -472,7 +472,7 @@ class Functions
             }
 
             !empty($locationInfo[$carrier]) ? $origins[$key]['accountNumber'] = $locationInfo[$carrier] ?? '' : '';
-            
+
         }
 
         return $origins;

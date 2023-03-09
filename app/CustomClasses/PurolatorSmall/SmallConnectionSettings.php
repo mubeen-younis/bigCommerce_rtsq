@@ -10,7 +10,7 @@ use App\Models\Connection;
 
 class SmallConnectionSettings extends CarriersConnectionSettings
 {
-    
+
 
     public function __construct()
     {
@@ -25,13 +25,13 @@ class SmallConnectionSettings extends CarriersConnectionSettings
             'message' => 'Something went wrong!',
         ];
 
-        $url = $this->testConnectionUrl; 
+        $url = $this->testConnectionUrl;
         $params = [
             'license_key' => '',
             'server_name' => $storeName ?? '',
-            
+
             'carrierName' => 'purolator',
-            'carrier_mode' => 'test', 
+            'carrier_mode' => 'test',
             'apiVersion' => '1.0',
             'platform' => 'bigcommerce',
 
@@ -47,7 +47,7 @@ class SmallConnectionSettings extends CarriersConnectionSettings
         ];
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
-        
+
         if (isset($output['status']) && $output['status'] == false) {
             $response = [
                 'error' => true,

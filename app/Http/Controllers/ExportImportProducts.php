@@ -56,7 +56,9 @@ class ExportImportProducts extends Controller
     {
         $locations = Locations::where('store_id', $request['store_id'])->where('type', 2)->get()->toArray();
         $storeHash = $request['store_hash'] ?? null;
-        $weightUnit = $this->getWeightUnitOfStore($storeHash);
+        $weightDimensionUnits = $this->getweightDimensionUnits($storeHash);
+        $weightUnit = isset($weightDimensionUnits['weight_units']) && !blank($weightDimensionUnits['weight_units']) ? strtolower($weightDimensionUnits['weight_units']) : 'lbs' ?? 'lbs';
+        $dimensionsUnit = isset($weightDimensionUnits['dimension_units']) && $weightDimensionUnits['dimension_units'] === 'Centimeters' ? 'cm' : 'in' ?? 'in'; 
         $dropShips = [];
         foreach ($locations as $location) {
             $dropShips[$location['id']] = $location;
@@ -83,7 +85,7 @@ class ExportImportProducts extends Controller
                 $folderNamePath[] = $filename;
                 $fp = fopen($filename, "w");
                 if (true) {
-                    $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (in), Width (in), Height (in), NMFC, Markup, Quote Method, Freight Class, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Ships Alone, Vertical Rotation, Ships Multiple Package, Ships Own Pallet, Pallet Vertical Rotation';
+                    $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (' . $dimensionsUnit . '), Width (' . $dimensionsUnit . '), Height (' . $dimensionsUnit . '), NMFC, Markup, Quote Method, Freight Class, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Ships Alone, Vertical Rotation, Ships Multiple Package, Ships Own Pallet, Pallet Vertical Rotation';
                     $line .= "\n";
                     fputs($fp, $line);
                 }
@@ -155,20 +157,17 @@ class ExportImportProducts extends Controller
         }
     }
 
-    public function getWeightUnitOfStore($storeHash)
+    public function getweightDimensionUnits($storeHash)
     {
         if (blank($storeHash)) {
-            return 'lbs';
+            return '';
         }
         $storeDetails = BigCommerceFunctions::getStoreSettings($storeHash);
         $storeDetails = (new CurlRequest())->enSingleCurlRequest($storeDetails['endpoint'],
             $storeDetails['request'], $storeDetails['headers'], $storeDetails['method'], false);
         $response = json_decode($storeDetails['response'], true);
-        $weightUnit = $response['weight_units'] ?? null;
-        if (!blank($weightUnit)) {
-            return strtolower($weightUnit);
-        }
-        return 'lbs';
+
+        return $response;
     }
 
     public function makeDirectory($path, $mode = 0777, $recursive = false, $force = false)

@@ -169,9 +169,6 @@ class MainController extends BaseController
             // BC installation failure page for this app
             if ($request->has('external_install')) {
                 return redirect('https://login.bigcommerce.com/app/' . $this->getAppClientId() . '/install/failed');
-            } else {
-                dd($errorMessage);
-                //return redirect()->action([MainController::class, 'error'])->with('error_message', $errorMessage);
             }
         }
     }

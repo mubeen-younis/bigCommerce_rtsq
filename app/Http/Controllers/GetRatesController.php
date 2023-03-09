@@ -64,7 +64,6 @@ class GetRatesController extends Controller
         if (!$this->storePlanStatus($storeData['store']['id'])) {
             return [];
         }
-        
         $cartInfo['cartId'] = $request->base_options['request_context']['reference_values'][0]['value'] ?? 0;
         $cartInfo['store_id'] = $storeData['installed_carriers'][0]['store_id'] ?? 0;
 // Getting installed carriers there quote settings and services
@@ -141,6 +140,9 @@ class GetRatesController extends Controller
                 $product_settings = $this->getProductSetting($product['product_id'], $product['variant_id'], $storeId);
                 $product_price = $this->getProductPrice($product['product_id'], $product['variant_id']);
                 $weight = (isset($product['weight']['value']) && isset($product['weight']['units'])) ? $this->convertWeight($product['weight']['value'], strtolower($product['weight']['units'])) : 0;
+                $length = (isset($product['length']['value']) && isset($product['length']['units'])) ? $this->convertDimensionUnit($product['length']['value'], strtolower($product['length']['units'])) : 0;
+                $width = (isset($product['width']['value']) && isset($product['width']['units'])) ? $this->convertDimensionUnit($product['width']['value'], strtolower($product['width']['units'])) : 0;
+                $height = (isset($product['height']['value']) && isset($product['height']['units'])) ? $this->convertDimensionUnit($product['height']['value'], strtolower($product['height']['units'])) : 0;
                 $ltlCheck = $product_settings['freight_enabled'] ?? false;
                 $shipBinAlone = (isset($product_settings['ship_multiple_package']) && $product_settings['ship_multiple_package'])
                 || (isset($product_settings['ship_own_package']) && $product_settings['ship_own_package']) ? 1 : 0;
@@ -179,9 +181,9 @@ class GetRatesController extends Controller
                     'lineItemId' => $product['product_id'] ?? '',
                     'lineItemPrice' => $product_price ?? 0,
                     'lineItemName' => $product['name'] ?? '',
-                    'lineItemLength' => $product['length']['value'] ? number_format($product['length']['value'], 2, '.', '') : '',
-                    'lineItemWidth' => $product['width']['value'] ? number_format($product['width']['value'], 2, '.', '') : '',
-                    'lineItemHeight' => $product['height']['value'] ? number_format($product['height']['value'], 2, '.', '') : '',
+                    'lineItemLength' => number_format($length, 2, '.', ''),
+                    'lineItemWidth' => number_format($width, 2, '.', ''),
+                    'lineItemHeight' => number_format($height, 2, '.', ''),
                     'lineItemWeight' => number_format($weight, 2, '.', ''),
                     'freight_enabled' => isset($product_settings['freight_enabled']) && $product_settings['freight_enabled'] ? 'Y' : 'N',
 
@@ -190,7 +192,7 @@ class GetRatesController extends Controller
                     'dropship_enabled' => isset($product_settings['dropship_enabled']) && $product_settings['dropship_enabled'] ? 'Y' : 'N',
                     'dropship' => $product_settings['dropship'] ?? '',
                     'product_insurance_active' => isset($product_settings['insurance']) && $product_settings['insurance'] ? 1 : 0,
-                    'freightClass' => $this->isLTL($weight, $ltlCheck) ? 'ltl' : '', 
+                    'freightClass' => $this->isLTL($weight, $ltlCheck) ? 'ltl' : '',
                     'lineItemClass' => isset($product_settings['freight_class']) ? $this->getLineItemClass($product_settings['freight_class']) : '',
                     'shipping_group' => $product_settings['shipping_group'] ?? null,
                     'shipping_class' => $product_settings['shipping_class'] ?? null,
@@ -345,6 +347,16 @@ class GetRatesController extends Controller
                 return $value / 453.59237;
             case 't':
                 return $value / 0.00045359237;
+            default:
+                return $value;
+        }
+    }
+
+    public function convertDimensionUnit($value, $unit)
+    {
+        switch ($unit) {
+            case 'cm' :
+                return $value / 2.54;
             default:
                 return $value;
         }

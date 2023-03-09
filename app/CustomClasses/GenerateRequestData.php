@@ -159,7 +159,7 @@ class GenerateRequestData
                     $errorManagment['unishippersSmall'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case 'odfl-ltl':
-                    $odflLtlArr = $this->odflLtlEnitArr($con1, $destination, );
+                    $odflLtlArr = $this->odflLtlEnitArr($con1, $destination);
                     $odflOrigin = Functions::originAssociatedAccNum($enitOrigin, $odflLtlArr, $key);
                     $odflLtlArr['originAddress'] = $odflOrigin;
                     $carriersArr['carriers']['odfl4me'] = $odflLtlArr;
@@ -365,7 +365,7 @@ class GenerateRequestData
     {
         return [
             'licenseKey' => '',
-            'serverName' => Functions::getServerName($this->storeData), 
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
@@ -404,7 +404,7 @@ class GenerateRequestData
     public function fedexLtlEnitArr($connSettings, $destination, $enitOrigin)
     {
         return [
-            'licenseKey' => '', 
+            'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
@@ -418,7 +418,7 @@ class GenerateRequestData
     public function xpoLtlEnitArr($connSettings, $destination, $enitOrigin)
     {
         return [
-            'licenseKey' => '', 
+            'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
@@ -439,8 +439,8 @@ class GenerateRequestData
         }
 
         return [
-            'licenseKey' => '', 
-            'serverName' => Functions::getServerName($this->storeData), 
+            'licenseKey' => '',
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl', // ltl / small
             'version' => '1.0.0',
@@ -469,7 +469,7 @@ class GenerateRequestData
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
-            'quotestType' => 'ltl', 
+            'quotestType' => 'ltl',
             'version' => '1.0.0',
             'returnQuotesOnExceedWeight' => 1,
             'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
@@ -524,7 +524,7 @@ class GenerateRequestData
     public function rossdayLtlEnitArr($connSettings, $destination)
     {
         return [
-            'licenseKey' =>'',
+            'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl',
@@ -650,13 +650,13 @@ class GenerateRequestData
     public function generateRequestArray($request, $carriersArray, $itemsArr, $cartInfo, $carriersErrorSettings)
     {
         $errorManagmentResp = Functions::productErrorManagment($carriersErrorSettings, $carriersArray, $itemsArr);
-        if(isset($errorManagmentResp['carriersArray']['carriers']) && empty($errorManagmentResp['carriersArray']['carriers'])){
+        if (isset($errorManagmentResp['carriersArray']['carriers']) && empty($errorManagmentResp['carriersArray']['carriers'])) {
             return [];
-        }else{
+        } else {
             $carriersArray = $errorManagmentResp['carriersArray'];
             $itemsArr = $errorManagmentResp['itemsArr'];
         }
-        
+
         $carriers = $carriersArray['carriers'];
         $receiverAddress = $this->getReceiverData($request);
         $IsSuppressParcelRates = Functions::suppressParcelRates($carriers, $itemsArr, $this->storeData['store']->id);
@@ -674,16 +674,16 @@ class GenerateRequestData
         $palletResp = $palletBins = [];
         $palletPkgResp = $carriersOriginAddress = [];
         $palletPkg = new PalletPackaging($itemsArr, $this->storeData, $cartInfo);
-       
+
         if ($palletPkg->isAddonEnabled()) {
             $ltlCarriers = $palletPkg->ltlCarriers ?? [];
             if (!empty($ltlCarriers)) {
                 foreach ($ltlCarriers as $carrName) {
-                        if (isset($carriers[$carrName])) {
-                            $carriersOriginAddress = $carriers[$carrName]['originAddress'];
-                            break;
-                        }
+                    if (isset($carriers[$carrName])) {
+                        $carriersOriginAddress = $carriers[$carrName]['originAddress'];
+                        break;
                     }
+                }
             }
 
             $palletPkgResp = $palletPkg->setAndGetPackagingResp($carriers);
@@ -699,7 +699,7 @@ class GenerateRequestData
             $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? $carriers['usps']['originAddress'] ?? $carriers['purolator']['originAddress'] ?? [];
             $this->itemsArr = $itemsArr;
             $this->carriers = $carriers;
-       
+
             $hasSmall = isset($carriers['wweSmall'])
                 || isset($carriers['upsSmall'])
                 || isset($carriers['fedexSmall'])
@@ -747,10 +747,10 @@ class GenerateRequestData
                                 // simple rate packaging request
                                 $this->fedexType = 'simple-rate';
                                 $sbsSimpleRateResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
-                                
+
                                 // checks for items with own packaging
                                 $this->allPacked($sbsSimpleRateResponse);
-                                
+
                                 if (empty($sbsSimpleRateResponse['binResponse']) || !$this->simpleRate) {
                                     $this->simpleRate = false;
                                 } else {
@@ -794,8 +794,8 @@ class GenerateRequestData
                             unset($carriers['purolator']['originAddress']);
 
                             foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
-                                foreach($this->carriers['purolator']['originAddress'] as $oldkey => $ori){
-                                    if($ori['senderZip'] === $origin['senderZip']){
+                                foreach ($this->carriers['purolator']['originAddress'] as $oldkey => $ori) {
+                                    if ($ori['senderZip'] === $origin['senderZip']) {
                                         $carriers['purolator']['originAddress'][$key] = $ori;
                                     }
                                 }
@@ -812,7 +812,7 @@ class GenerateRequestData
                         ///////////////////////////////////////////
                         $binReponse['ground'] = $sbsResponseGround['binResponse'];
                     }
-                    
+
                     if ($this->oneRate) {
                         $this->fedexType = 'fedex'; // one rate services
                         $sbsResponseOneRate = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
@@ -869,8 +869,8 @@ class GenerateRequestData
                     if (isset($carriers['purolator'])) {
                         unset($carriers['purolator']['originAddress']);
                         foreach ($sbsResponse['originAddress'] as $key => $origin) {
-                            foreach($this->carriers['purolator']['originAddress'] as $oldkey => $ori){
-                                if($ori['senderZip'] === $origin['senderZip']){
+                            foreach ($this->carriers['purolator']['originAddress'] as $oldkey => $ori) {
+                                if ($ori['senderZip'] === $origin['senderZip']) {
                                     $carriers['purolator']['originAddress'][$key] = $ori ?? $origin ?? $carriersoriginAddress;
                                 }
                             }
@@ -883,7 +883,7 @@ class GenerateRequestData
 
                         // checks for ups simple rate enabled services
                         $this->checkUpsServiceEnabled();
-                        
+
                         if ($this->simpleRate) {
                             $this->fedexType = 'simple-rate';
                             $sbsSimpleRateResponse = $this->getStoreBoxes($this->storeData['store']->id, $simpleItems, $carriersoriginAddress, $cartInfo, $isMultishipment);
@@ -988,8 +988,8 @@ class GenerateRequestData
             }
         }
 
-        $resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse, 'boxBins' => $boxBins, 'palletResponse' => $palletResp,  'palletBins' => $palletBins, 'SuppressParcelRates' => $IsSuppressParcelRates];
- 
+        $resp = ['requestArr' => $requestArr, 'binReponse' => $binReponse, 'boxBins' => $boxBins, 'palletResponse' => $palletResp, 'palletBins' => $palletBins, 'SuppressParcelRates' => $IsSuppressParcelRates];
+
         return $resp;
     }
 
@@ -1206,7 +1206,7 @@ class GenerateRequestData
 
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
-        
+
         $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
 
         /*
@@ -1279,7 +1279,7 @@ class GenerateRequestData
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
-        
+
         $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
 
         /*
@@ -1338,7 +1338,7 @@ class GenerateRequestData
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
-        
+
         $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
 
         /*
@@ -1456,7 +1456,7 @@ class GenerateRequestData
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
-        
+
         $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
 
         /*
@@ -1558,7 +1558,7 @@ class GenerateRequestData
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
-        
+
         $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
 
         /*
@@ -1625,7 +1625,7 @@ class GenerateRequestData
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
-        
+
         $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
 
         /*
@@ -1684,7 +1684,7 @@ class GenerateRequestData
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
-        
+
         $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
 
         /*
@@ -1854,7 +1854,7 @@ class GenerateRequestData
             'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
             'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
             'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
-            'storeDateTime' => $this->storeDateTime, 
+            'storeDateTime' => $this->storeDateTime,
             'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
             'saturdayDeliveryFlag' => $saturdayDelivery,
 
@@ -1914,11 +1914,11 @@ class GenerateRequestData
         $hubId = isset($hubIdindicia[0]) ? trim($hubIdindicia[0]) : '';
         $indicia = 'PARCEL_SELECT'; //trim(explode(')',$hubIdindicia[1])[0]);
         $premiumTypeServices = $connSettings['quote_settings']['carrier_services'];
-        
+
         $premiumType = (isset($premiumTypeServices['fedex_date_certain_home_delivery']) && $premiumTypeServices['fedex_date_certain_home_delivery'] ? 'DATE_CERTAIN' : '') . (isset($premiumTypeServices['fedex_evening_home_delivery']) && $premiumTypeServices['fedex_evening_home_delivery'] ? ',EVENING' : '') . (isset($premiumTypeServices['fedex_appointment_home_delivery']) && $premiumTypeServices['fedex_appointment_home_delivery'] ? ',APPOINTMENT' : '');
         $premiumType = ltrim($premiumType, ',');
 
-        foreach($Origins as $origin){
+        foreach ($Origins as $origin) {
             $phoneNumber = !empty($origin['phone']) ? $origin['phone'] : '1234567820';
             break;
         }
@@ -1928,7 +1928,7 @@ class GenerateRequestData
             'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
             'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
             'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
-            'storeDateTime' => $this->storeDateTime, 
+            'storeDateTime' => $this->storeDateTime,
             'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
 
             'residentialDelivery' => ($alwaysResi ? 'Y' : $residential == 'Y') ? 'on' : 'off',
@@ -1989,7 +1989,7 @@ class GenerateRequestData
             'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
             'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
             'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
-            'storeDateTime' => $this->storeDateTime, 
+            'storeDateTime' => $this->storeDateTime,
             'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
 
             'prefferedCurrency' => 'USD',
@@ -2010,7 +2010,7 @@ class GenerateRequestData
         $residential = 'N';
         $alwaysResi = false;
         $limitedAccess = false;
-        
+
         $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
 
         /*
@@ -2029,10 +2029,10 @@ class GenerateRequestData
             }
         } else {
             $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
-            
+
         }
-        
-        if($residential == 'N' && !$alwaysResi){
+
+        if ($residential == 'N' && !$alwaysResi) {
             $limitedAccess = $connSettings['quote_settings']['offer_limited_access_delivery'] ?? false;
         }
 
@@ -2077,7 +2077,7 @@ class GenerateRequestData
 
         $residential = 'N';
         $alwaysResi = false;
-        
+
         $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
 
         /*
@@ -2131,7 +2131,7 @@ class GenerateRequestData
 
         $residential = 'N';
         $alwaysResi = false;
-        
+
         $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
 
         /*
@@ -2181,7 +2181,7 @@ class GenerateRequestData
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
-        
+
         $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
 
         /*
@@ -2229,7 +2229,7 @@ class GenerateRequestData
                 $accessorial['APPT'] = 'Delivery Appointment';
             }
         }
-        
+
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $holdAtTerminal = (isset($connSettings['quote_settings']['hold_at_terminal']) && $connSettings['quote_settings']['hold_at_terminal'] && $connSettings['quote_settings']['hold_at_terminal'] == true) ? '1' : '0';
 
@@ -2258,7 +2258,7 @@ class GenerateRequestData
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
-        
+
         $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
 
         /*
@@ -2321,7 +2321,7 @@ class GenerateRequestData
 
         $residential = 'N';
         $alwaysResi = false;
-        
+
         $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
 
         /*
@@ -2426,7 +2426,7 @@ class GenerateRequestData
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
-        
+
         $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
 
         /*
@@ -2493,8 +2493,8 @@ class GenerateRequestData
     function getApiInfoArrFreightQuoteChrLtl($connSettings, $destination)
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
-        (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
-        
+            (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+
         $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
 
         /*
@@ -2533,7 +2533,7 @@ class GenerateRequestData
         $TLEquipmentType = (isset($connSettings['quote_settings']['tl_equipment_type']) && $connSettings['quote_settings']['tl_equipment_type'] == 1) ? 'Van' : (isset($connSettings['quote_settings']['tl_equipment_type']) && ($connSettings['quote_settings']['tl_equipment_type'] == 2) ? 'Reefer' : 'Flatbed');
         $quoteLTLAboveThreshold = (isset($connSettings['quote_settings']['quoteltl_and_truckload']) && $connSettings['quote_settings']['quoteltl_and_truckload']) ? '1' : '0';
         $TLWeightThreshold = $connSettings['quote_settings']['truckload_weight_threshold'] ?? '0';
-        $weightThreshold= $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
+        $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $apiArray = [
             'b2bApiVersion' => '2.0',
             'customer_code' => $connSettings['creds']['customer_code'] ?? '',
@@ -2541,11 +2541,11 @@ class GenerateRequestData
             'HazardousMaterialContactName' => 'test',
             'HazardousMaterialContactPhone' => '4545464875',
             'residentialDelivery' => $alwaysResi ? 'Y' : $residential,
-            'thresholdWeightLimit'=>$weightThreshold,
-            
+            'thresholdWeightLimit' => $weightThreshold,
+
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
-            
+
             'accessorial' => $accessorial,
             'quoteLTLAboveThreshold' => $quoteLTLAboveThreshold,
             'TLWeightThreshold' => $TLWeightThreshold,
@@ -2627,7 +2627,7 @@ class GenerateRequestData
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
-        
+
         $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
         /*
          * Check if rad hit not consumed and residential is enables
@@ -2807,9 +2807,9 @@ class GenerateRequestData
                 $boxes = BoxSize::getUpsSmallAvailableBoxes($storeId);
                 break;
         }
-        
+
         $itemsCubicVolumeArr = Functions::calculateCubicVolume($items);
-        
+
         if (!empty($itemsCubicVolumeArr) && isset($itemsCubicVolumeArr['volume']) && isset($itemsCubicVolumeArr['weight'])) {
             $itemMinVolume = min(array_values($itemsCubicVolumeArr['volume']));
             $itemMinWeight = min(array_values($itemsCubicVolumeArr['weight']));
@@ -2846,13 +2846,13 @@ class GenerateRequestData
                 /*END*/
             );
         }
-        /* 
-            when product volume is exceeds then boxbins volume and no box selected and items array have products then products will be mark ship as own packaging. 
+        /*
+            when product volume is exceeds then boxbins volume and no box selected and items array have products then products will be mark ship as own packaging.
         */
-        if(empty($boxBins) && !empty($items)){
-            
-            foreach($items as $origin => $itemsArray){
-                foreach($itemsArray as $key => $item){
+        if (empty($boxBins) && !empty($items)) {
+
+            foreach ($items as $origin => $itemsArray) {
+                foreach ($itemsArray as $key => $item) {
                     $itemsAlone[$origin][] = $item;
                     unset($items[$origin]);
                 }
@@ -2863,7 +2863,7 @@ class GenerateRequestData
         if ((count($items) && count($boxBins)) || count($itemsAlone)) {
             $Bin3D = new Bin3D();
             $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment, false);
-           
+
             if (count($binResponse)) {
                 foreach ($itemsAlone as $key => $itemAlone) {
                     foreach ($itemAlone as $alone) {
@@ -2882,13 +2882,13 @@ class GenerateRequestData
                     foreach ($bins->bins_packed as $key => $binPacked) {
                         $binPacked->image_complete = Functions::replace3DBinUrl($binPacked->image_complete);
 
-                        if(!empty($binPacked->items)){
-                            foreach($binPacked->items as $item){
+                        if (!empty($binPacked->items)) {
+                            foreach ($binPacked->items as $item) {
                                 $item->image_separated = Functions::replace3DBinUrl($item->image_separated);
                                 $item->image_sbs = Functions::replace3DBinUrl($item->image_sbs);
                             }
                         }
-                        
+
                         $bin = $binPacked;
                         $counting++;
                         $origin = $bin->bin_data->variant_id;
@@ -3097,7 +3097,7 @@ class GenerateRequestData
             'modifyShipmentDateTime' => $modifyShipmentDateTime,
             'OrderCutoffTime' => $orderCutOffTime,
             'shipmentOffsetDays' => $fulfillmentOffsetDays,
-            'storeDateTime' => $this->getStoreDateTime(), 
+            'storeDateTime' => $this->getStoreDateTime(),
             'shipmentWeekDays' => $shipmentWeekDays,
         ];
     }
@@ -3126,7 +3126,7 @@ class GenerateRequestData
     public function getBCStoreDateTime()
     {
         try {
-            $storeHash = $this->storeData['store']['hash'] ?? '';            
+            $storeHash = $this->storeData['store']['hash'] ?? '';
 
             $storeDetails = BigCommerceFunctions::getStoreSettings($storeHash);
             $storeDetails = (new CurlRequest())->enSingleCurlRequest($storeDetails['endpoint'], $storeDetails['request'], $storeDetails['headers'], $storeDetails['method'], false);
@@ -3138,13 +3138,13 @@ class GenerateRequestData
             $systemTime = date('Y-m-d H:i:s');
 
             $datetime = new \DateTime($systemTime);
-            
+
             /**
              * Store timezone and time
              */
             $storeTimezone = $response['timezone']['name'];
             $storeTime = new \DateTimeZone($storeTimezone);
-            /** 
+            /**
              * Set our system timezone to store's timezone.
              */
             $datetime->setTimezone($storeTime);

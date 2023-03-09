@@ -14,6 +14,7 @@ use App\Models\RequestData;
 use App\Models\RequestTempData;
 use App\Models\ShippingGroup;
 use App\Models\Store;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -136,16 +137,16 @@ class OrderController extends Controller
     public function getRequestDataFromDB($tableName, $request, $rateId, $cartId, $order)
     {
         $modelName = $tableName === 'RequestData' ? new RequestData() : new RequestTempData();
-        
+
         $data = optional($modelName::where('rate_id', $rateId)
+            ->where('cart_id', $cartId)
+            ->where('store_id', $request['store_id'])
+            ->first())->toArray() ?? null;
+        if (blank($data) && !blank($order['full_rate_id'])) {
+            $data = optional($modelName::where('rate_id', $order['full_rate_id'])
                 ->where('cart_id', $cartId)
                 ->where('store_id', $request['store_id'])
                 ->first())->toArray() ?? null;
-        if (blank($data) && !blank($order['full_rate_id'])) {
-            $data = optional($modelName::where('rate_id', $order['full_rate_id'])
-                    ->where('cart_id', $cartId)
-                    ->where('store_id', $request['store_id'])
-                    ->first())->toArray() ?? null;
             $rateId = $order['full_rate_id'] ?? null;
         }
 
@@ -156,7 +157,7 @@ class OrderController extends Controller
     {
         $rateId = $order['rate_id'] ?? null;
         $cartId = $order['cart_id'] ?? null;
-        
+
         $data = $this->getRequestDataFromDB('RequestData', $request, $rateId, $cartId, $order);
 
         if (blank($data)) {
@@ -169,7 +170,7 @@ class OrderController extends Controller
             } else {
                 return [];
             }
-        }       
+        }
         $carrierHasInsurance = $this->hasInsureCarrier($rateId);
         $index = explode('idx+', $rateId);
         if (is_string($index[0]) && $index[0] == "shippingGroup") {
@@ -249,10 +250,9 @@ class OrderController extends Controller
                             $sbsData = $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->bins_packed ?? [];
                         } else if ($isOneRate) {
                             $sbsData = $ws->binPackagingData->response->oneRate->bins_packed ?? [];
-                        }
-                         else if ($isSimpleRate) {
+                        } else if ($isSimpleRate) {
                             $sbsData = $ws->binPackagingData->response->simpleRate->bins_packed ??
-                            $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->bins_packed ?? [];
+                                $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->bins_packed ?? [];
                         } else {
                             $sbsData = $ws->binPackagingData->response->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->oneRate->bins_packed ?? [];
                         }
@@ -331,10 +331,10 @@ class OrderController extends Controller
                     // Pallet packaging order widget
                     if (isset($ws->palletPackagingData) && !empty($ws->palletPackagingData) && $isLtlRate) {
                         $palletPkgResp = (new PalletPackaging())->formatOrderWidget($responseFromWS, $lineItem);
-                        
+
                         if (!empty($palletPkgResp)) {
                             if (empty($orderWidget)) {
-                                $orderWidget =  $palletPkgResp;
+                                $orderWidget = $palletPkgResp;
                             } else {
                                 $orderWidget[$zip]['pallet'] = $palletPkgResp[$zip]['pallet'];
                             }
@@ -379,7 +379,7 @@ class OrderController extends Controller
             $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
             $sRate = $order['shipping_rate'];
-            
+
             if ($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement) {
                 if ($isHAT) {
                     $sRate = $multiShipmentresponse->$index->hat->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
@@ -571,15 +571,15 @@ class OrderController extends Controller
             $count++;
 
         }
-        
-        if($reportingFlag){
-            $reportData = $this->bcReportingData($request, $order,$data, $isMulti, $orderWidget, $zip);
-            Log::info('Reporting Data Request'.json_encode($reportData));
+
+        if ($reportingFlag) {
+            $reportData = $this->bcReportingData($request, $order, $data, $isMulti, $orderWidget, $zip);
+            Log::info('Reporting Data Request' . json_encode($reportData));
             $reportDataResp = $this->curlRequest->reportingDataCurlRequest($reportData);
-            Log::info('Reporting Data Response'.json_encode($reportDataResp));
+            Log::info('Reporting Data Response' . json_encode($reportDataResp));
         }
-        
-        
+
+
         /*
          * Added For Catering items that ship as SHippping Group*/
         $itemsWithShipGroup = collect($items)->where('shipping_group', '!=', null)->all();
@@ -643,7 +643,7 @@ class OrderController extends Controller
     function getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate, $rateId)
     {
         $response = ['resi' => 'n', 'liftG' => 'n', 'resiPickup' => 'n', 'lgPickup' => 'n'];
-        
+
         $response['resi'] = strpos($rateId, '+r') ? 'Y' : 'n';
         $response['liftG'] = strpos($rateId, '+lg') ? 'Y' : 'n';
         $response['resiPickup'] = strpos($rateId, '+pu') ? 'Y' : 'n';
@@ -969,36 +969,46 @@ class OrderController extends Controller
         //
     }
 
-    public
-    function orderFromWebhook(Request $request)
+    public function orderFromWebhook(Request $request)
     {
         try {
             $postData = file_get_contents("php://input");
             $postData = json_decode($postData, true);
-            $storeHash = explode('/', $postData['producer']);
-            $storeHash = $storeHash[1];
-            Log::info('Order Webhook Data From BigCommerce ' . json_encode($postData));
-            $orderId = $postData['data']['id'] ?? $postData['data']['order_id'];
-            // Update,delete,create from  webhook
-            $scope = $postData['scope'];
-            $store = Store::where('hash', $storeHash)->first();
-            //allow only create/update orders actions
-            $onlyScopes = ['store/order/created', 'store/order/updated'];
-            if (empty($store) || !in_array($scope, $onlyScopes)) {
-                return null;
-            }
-            $toRequest['store_id'] = $store->id;
-            $toRequest['store_name'] = $store->name;
-            $toRequest['store_hash'] = $storeHash;
-            $toRequest['order_id'] = $orderId;
-            $this->accessToken = $store->access_token;
-            $this->storeHash = $storeHash;
-            $this->moveQuotesTempToReq($toRequest, $request);
-            return response()->json(true, 200);
+            return $this->orderWebhookProcess($request, $postData);
         } catch (\Exception $exception) {
             Log::info('Exception On Moving Quotes ' . json_encode($exception->getTraceAsString()));
             return response()->json(true, 200);
         }
+    }
+
+    /**
+     * Executes Order process for moving data from request_temp table to request
+     * @param $request
+     * @param $postData
+     * @return JsonResponse|null
+     */
+    public function orderWebhookProcess($request, $postData)
+    {
+        $storeHash = explode('/', $postData['producer']);
+        $storeHash = $storeHash[1];
+        Log::info('Order Webhook Data From BigCommerce ' . json_encode($postData));
+        $orderId = $postData['data']['id'] ?? $postData['data']['order_id'];
+        // Update,delete,create from  webhook
+        $scope = $postData['scope'];
+        $store = Store::where('hash', $storeHash)->first();
+        //allow only create/update orders actions
+        $onlyScopes = ['store/order/created', 'store/order/updated'];
+        if (empty($store) || !in_array($scope, $onlyScopes)) {
+            return null;
+        }
+        $toRequest['store_id'] = $store->id;
+        $toRequest['store_name'] = $store->name;
+        $toRequest['store_hash'] = $storeHash;
+        $toRequest['order_id'] = $orderId;
+        $this->accessToken = $store->access_token;
+        $this->storeHash = $storeHash;
+        $this->moveQuotesTempToReq($toRequest, $request);
+        return response()->json(true, 200);
     }
 
     public
@@ -1100,8 +1110,7 @@ class OrderController extends Controller
      * Move row from request_temp to request table after order placing
      * delete all rows from request_temp relevant to cart_id
      */
-    public
-    function moveQuotesTempToReq($toRequest, Request $request)
+    public function moveQuotesTempToReq($toRequest, $request)
     {
         $headers[] = 'X-Auth-Token: ' . $this->accessToken;
         $headers[] = 'Content-Type: application/json';
@@ -1134,20 +1143,19 @@ class OrderController extends Controller
                     if (!blank($reqData)) {
                         unset($reqData['id']);
                         RequestData::insert($reqData);
-                        
-                        $request['store_name'] = $toRequest['store_name'];
-                        $request['store_id'] = $toRequest['store_id'];
-                        $request['store_hash'] = $toRequest['store_hash'];
-                        $request['order_id'] = $toRequest['order_id'];
-                        $this->getOrderWidget($request, true);
+                        // TODO :  Need to check why we are doing this
+//                        $request['store_name'] = $toRequest['store_name'];
+//                        $request['store_id'] = $toRequest['store_id'];
+//                        $request['store_hash'] = $toRequest['store_hash'];
+//                        $request['order_id'] = $toRequest['order_id'];
+//                        $this->getOrderWidget($request, true);
                     }
                 }
             }
         }
     }
 
-    private
-    function isSmallQuote($quote)
+    private function isSmallQuote($quote)
     {
         $quote = explode('(', $quote)[0];
         $quote = trim($quote);
@@ -1184,43 +1192,43 @@ class OrderController extends Controller
     private function bcReportingData($request, $OrderData, $dbData, $isMulti, $orderWidget, $zip)
     {
         $multiShipmentresponse = json_decode($dbData['multiShipmentresponse']) ?? [];
-        $rateId =  $OrderData['rate_id'] ?? '';
+        $rateId = $OrderData['rate_id'] ?? '';
         $ratecode = [];
 
-        if($isMulti){
-            foreach($multiShipmentresponse as $mul => $shipment){
-                foreach($shipment as $key => $quote){
-                    if (strpos($rateId, 'LG') !== false && $key === 'liftgate'){
-                        foreach($quote as $loc => $code){
-                            
+        if ($isMulti) {
+            foreach ($multiShipmentresponse as $mul => $shipment) {
+                foreach ($shipment as $key => $quote) {
+                    if (strpos($rateId, 'LG') !== false && $key === 'liftgate') {
+                        foreach ($quote as $loc => $code) {
+
                             $ratecode[$loc] = $code->code;
                         }
-                    } else if(strpos($rateId, 'HAT') !== false && $key === 'hat'){
-                        foreach($quote as $loc =>  $code){
+                    } else if (strpos($rateId, 'HAT') !== false && $key === 'hat') {
+                        foreach ($quote as $loc => $code) {
                             $ratecode[$loc] = $code->code;
                         }
-                    } else if(strpos($rateId, 'ID') !== false && $key === 'insideDelivery'){
-                        foreach($quote as $loc =>  $code){
+                    } else if (strpos($rateId, 'ID') !== false && $key === 'insideDelivery') {
+                        foreach ($quote as $loc => $code) {
                             $ratecode[$loc] = $code->code;
                         }
-                    } else if(strpos($rateId, 'LGID') !== false && $key === 'insideLiftGateDelivery'){
-                        foreach($quote as $loc =>  $code){
+                    } else if (strpos($rateId, 'LGID') !== false && $key === 'insideLiftGateDelivery') {
+                        foreach ($quote as $loc => $code) {
                             $ratecode[$loc] = $code->code;
                         }
-                    } else if(strpos($rateId, 'LAD') !== false && $key === 'limitedaccess'){
-                        foreach($quote as $loc =>  $code){
+                    } else if (strpos($rateId, 'LAD') !== false && $key === 'limitedaccess') {
+                        foreach ($quote as $loc => $code) {
                             $ratecode[$loc] = $code->code;
                         }
-                    } else if(strpos($rateId, 'LGLAD') !== false && $key === 'limitedaccessLG'){
-                        foreach($quote as $loc =>  $code){
+                    } else if (strpos($rateId, 'LGLAD') !== false && $key === 'limitedaccessLG') {
+                        foreach ($quote as $loc => $code) {
                             $ratecode[$loc] = $code->code;
                         }
-                    } else if(strpos($rateId, 'TL') !== false && $key === 'Truckload'){
-                        foreach($quote as $loc =>  $code){
+                    } else if (strpos($rateId, 'TL') !== false && $key === 'Truckload') {
+                        foreach ($quote as $loc => $code) {
                             $ratecode[$loc] = $code->code;
                         }
                     } else {
-                        foreach($quote as $loc =>  $code){
+                        foreach ($quote as $loc => $code) {
                             $ratecode[$loc] = $code->code;
                         }
                     }
@@ -1230,15 +1238,15 @@ class OrderController extends Controller
             }
         }
 
-        if(empty($ratecode)){
+        if (empty($ratecode)) {
             $ratecode[$zip] = $rateId ?? '';
         }
-        
+
         $carrierCodes = ['wweltl', 'rnlltl', 'xpoltl', 'fedexltl', 'gtzltl', 'cltl', 'upsltl', 'fqltl', 'tqlltl', 'yrcltl', 'odflltl', 'dayrossltl', 'fqchrltl', 'estesltl', 'echoltl', 'saialtl', 'abfltl', 'daylightltl', 'SouthEastern', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship', 'parcel_12Purolator', 'parcel_12usps'];
         $orderMeta = [];
         $serviceId = 0;
-        foreach($carrierCodes as $key => $code){
-            foreach($ratecode as $loc_code => $rateId){
+        foreach ($carrierCodes as $key => $code) {
+            foreach ($ratecode as $loc_code => $rateId) {
                 if (strpos($rateId, $code) !== false) {
                     $carrierName[$loc_code] = Functions::getCarrierName($code) ?? '';
                     $carrierType[$loc_code] = Functions::isSmallCarrier($code) ? 'small' : 'ltl';
@@ -1246,48 +1254,48 @@ class OrderController extends Controller
             }
         }
 
-        $lineItems = json_decode($dbData['lineitems'])->lineItemData ?? [];  
+        $lineItems = json_decode($dbData['lineitems'])->lineItemData ?? [];
         $origins = $lineItems->origin;
         $items = $lineItems->items;
 
-        foreach($orderWidget as $key => $owrate){
-            foreach($owrate['accessories'] as $data){
+        foreach ($orderWidget as $key => $owrate) {
+            foreach ($owrate['accessories'] as $data) {
                 $accessorials[$data] = true;
             }
 
-            foreach($origins as $or => $origin){
-                if($origin->locationId == $key){
+            foreach ($origins as $or => $origin) {
+                if ($origin->locationId == $key) {
                     $orderMeta['plugin_type'] = $carrierType[$key] ?? '';
                     $orderMeta['plugin_name'] = $carrierName[$key] ?? '';
                     $orderMeta['accessorials'] = $accessorials ?? [];
-                    $orderMeta['items'][] = $items->$or ?? []; 
+                    $orderMeta['items'][] = $items->$or ?? [];
                     $orderMeta['address'] = $origin ?? [];
                     $orderMeta['receiver_address'] = $lineItems->destination ?? [];
                     $rate['locationtype'] = $owrate['locationtype'] ?? '';
                     $rate['label'] = $owrate['shipping_method'] ?? '';
                     $rate['cost'] = $owrate['shipping_rate'] ?? null;
                     $orderMeta['rate'] = $rate ?? [];
-                    
+
                 }
             }
 
             $orders[] = [
-                'orderId'    => $OrderData['id'] ?? null,
-                'carrierName' =>  $carrierName[$key] ?? '',
+                'orderId' => $OrderData['id'] ?? null,
+                'carrierName' => $carrierName[$key] ?? '',
                 'serviceId' => $serviceId ?? 0,
                 'shipmentType' => $isMulti ? 'multiple' : 'single',
-                'serviceName' => '', // service description 
+                'serviceName' => '', // service description
                 'serviceCharge' => $owrate['shipping_rate'] ?? null,
                 'orderCreatedDate' => $OrderData['date_created'] ?? '',
 
-                'orderMeta'    => base64_encode(json_encode($orderMeta)), // json data encoded with base 64
+                'orderMeta' => base64_encode(json_encode($orderMeta)), // json data encoded with base 64
             ];
             unset($orderMeta, $accessorials);
             $serviceId++;
 
-        }  
-        
-        $data =[
+        }
+
+        $data = [
             'serverName' => $request['store_name'] ?? '',
             'licenseKey' => 'V1T9Z7QY-X357RURI-01MMZZ3W-O0TOJAQG',
             'platform' => 'bigcommerce',

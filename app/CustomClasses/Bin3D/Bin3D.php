@@ -35,7 +35,7 @@ class Bin3D
      *  Bin Number Stores
      * @var  array
      */    
-    public $binNumberStores = ['1q33wq48os'];
+    public $binNumberStores = ['1q33wq48os', 'hg1dde3qyy'];
 
     public function getBinResponse($storeId, $bins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment, $palletPkgReq = false)
     {

@@ -17,6 +17,12 @@ class Store extends Model
         'av_company_id'
     ];
 
+
+    public function storeOrderCronCount()
+    {
+        return $this->hasOne(StoreOrderCronCount::class, 'store_id');
+    }
+
     public function installedCarriers()
     {
         return $this->hasMany(InstalledCarrier::class);
@@ -49,9 +55,13 @@ class Store extends Model
 
     }
 
+    /**
+     * Returns active stores
+     * @return mixed
+     */
     public static function getActiveStores()
     {
-        return optional(self::where('app_status', 1)->select('id','url','hash','access_token')->get())->toArray();
+        return optional(self::where('app_status', 1)->select('id', 'url', 'hash', 'access_token')->with('storeOrderCronCount')->get())->toArray();
     }
 
 
