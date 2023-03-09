@@ -662,7 +662,7 @@ class Functions
     {
         $CompileQuotes = new CompileQuotes();
         $serviceCode =  $data['ratquoteNumber'] ?? $data['CarrierSCAC'] ?? '';
-        $serviceCode = (isset($data['serviceType']) && $carrName == 'wweltl') ? $data['serviceType'] : $serviceCode ?? '';
+        $serviceCode = (isset($data['serviceType']) && ($carrName == 'wweltl' || $carrName == 'cltl')) ? $data['serviceType'] : $serviceCode ?? '';
         $isUpsLtl = false;
         if($carrName === 'upsltl'){
             $isUpsLtl = true;

@@ -89,6 +89,8 @@ class QuotesResults
         foreach ($shipments as $shipment => $quotes){
             unset($shipments[$shipment]['q']);
             unset($shipments[$shipment]['quotesWithLiftGate']);
+            unset($shipments[$shipment]['quotesWithNotify']);
+            unset($shipments[$shipment]['quotesWithLiftgateNotify']);
             unset($shipments[$shipment]['debug']);
             if(!isset($quotes['q'])){
                 continue;
@@ -106,6 +108,12 @@ class QuotesResults
                     $shipments[$shipment]['quotesWithLiftGate'][$key] = $quote;
                 }
             }
+            if(isset($quotes['quotesWithNotify'])) {
+                foreach ($quotes['quotesWithNotify'] as $key => $quote){
+                    $key = $quote['CarrierScac'];
+                    $shipments[$shipment]['quotesWithNotify'][$key] = $quote;
+                }
+            }
 
         }
         
@@ -119,12 +127,18 @@ class QuotesResults
                 $shipments[$shipment]['q'][$key]['serviceDesc'] = $quote['CarrierName'] ?? '';
                 $shipments[$shipment]['q'][$key]['transitTime'] = $quote['TransitDays'] ?? '';
                 $shipments[$shipment]['q'][$key]['totalTransitTimeInDays'] = $quote['totalTransitTimeInDays'] ?? '';
-                $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = $quotes['quotesWithLiftGate'][$key]['ShipmentRate'] ?? $quote['ShipmentRate'] ?? 0;
+                $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = $quote['ShipmentRate'] ?? 0;
                 if(isset($quotes['quotesWithLiftGate'][$key]['ShipmentRate'])) {
-                    $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] - $quote['ShipmentRate'];
+                    $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $quotes['quotesWithLiftGate'][$key]['ShipmentRate'] - $quote['ShipmentRate'];
+                    $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] += $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] ?? 0;
+                }
+                if(isset($quotes['quotesWithNotify'][$key]['ShipmentRate'])) {
+                    $shipments[$shipment]['q'][$key]['surcharges']['notifyBeforeDeliveryFee'] = $quotes['quotesWithNotify'][$key]['ShipmentRate'] - $quote['ShipmentRate'];
+                    $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] += $shipments[$shipment]['q'][$key]['surcharges']['notifyBeforeDeliveryFee'];
                 }
             }
             unset($shipments[$shipment]['quotesWithLiftGate']);
+            unset($shipments[$shipment]['quotesWithNotify']);
             unset($shipments[$shipment]['debug']);
         }
 
