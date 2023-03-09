@@ -4690,6 +4690,11 @@ class CompileQuotes
                  * Condition for Always lift gate and lift gate for residential (Single Shipment)
                  * */
                 return array_merge($quotes['liftgate'] ?? [], $quotes['insideLiftGateDelivery'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['Truckload'] ?? [], $quotes['lgnotifydelivery'] ?? [], $quotes['lginsidenotifydelivery'] ?? [], $quotes['lglaccessnotifydelivery'] ?? []) ?? $quotes['simple'];
+            } elseif ($alwaysLimitedDel) {
+                /**
+                 * Condition for Always lift gate and lift gate for residential (Single Shipment)
+                 * */
+                return array_merge($quotes['insidenotifydelivery'] ?? [], $quotes['lginsidenotifydelivery'] ?? [], $quotes['Truckload'] ?? [], $quotes['limitedaccess'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['laccessnotifydelivery'] ?? [], $quotes['lglaccessnotifydelivery'] ?? []) ?? $quotes['simple'];
             } elseif ($TMD_and_APD) {
                 /**
                  * Condition for Always two man and appointment delivery (Single Shipment)
