@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use ReflectionFunctionAbstract;
 use App\Models\Store;
+use App\Models\AddonSettings;
 
 class Bin3D
 {
@@ -261,7 +262,9 @@ class Bin3D
     {
         $store = Store::getStoreDetailsFromStoreId($storeId);  
         //bins_utilization or bin_number
-        $optimizationMode = isset($store['hash']) && !empty($store['hash']) && in_array($store['hash'] , $this->binNumberStores) ? "bins_number" : "bins_utilization";
+        $installedAddonId = Functions::getSBSInstalledAddon($store);
+        $getSBSAddonSettings = AddonSettings::where('installed_addon_id', $installedAddonId)->first();
+        $optimizationMode = isset($getSBSAddonSettings->bins_pack_mode) && $getSBSAddonSettings->bins_pack_mode == 1 ? "bins_number" : "bins_utilization" ?? "bins_utilization";
         $params = [
             'images_background_color' => '255,255,255',
             'images_bin_border_color' => '59,59,59',

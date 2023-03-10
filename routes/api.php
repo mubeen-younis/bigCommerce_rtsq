@@ -192,6 +192,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::get('/consume-hits', [PackageSubscriptionController::class, 'consumeHits']);
     Route::get('/get-addon-details', [PackageSubscriptionController::class, 'getAddonPackageDetails']);
     Route::post('/suspend-use-addon', [PackageSubscriptionController::class, 'suspendAddonUse']);
+    Route::post('/bins-package-mode', [PackageSubscriptionController::class, 'binsPackagingMode']);
     //END: SBS Routes
 
 

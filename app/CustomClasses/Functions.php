@@ -8,6 +8,7 @@ use App\Models\ResidentialSetting;
 use App\Models\Locations;
 use App\Models\LocAssociatedAccountNo;
 use App\Models\WeightThresholdSettings;
+use App\Models\InstalledAddon;
 
 class Functions
 {
@@ -641,5 +642,16 @@ class Functions
     public static function replace3DBinUrl($url)
     {
         return str_replace(self::$replace3dUrl, self::$repplaceWith3dUrl, $url) ?? $url;
+    }
+
+    public static function getSBSInstalledAddon($request){
+
+        $installed_addon = InstalledAddon::join('addons', 'addons.id', 'installed_addons.addon_id')
+            ->where(['installed_addons.store_id' => $request->store_id ?? $request['id'],
+                'installed_addons.is_enabled' => 1,
+                'addons.short_code' => $request->addon_type ?? 'SBS',
+            ])->select('installed_addons.id')->first();
+
+        return $installed_addon->id;
     }
 }
