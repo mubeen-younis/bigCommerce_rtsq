@@ -676,8 +676,14 @@ class Functions
         $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, $insideDelivery, $laccess, false, false, false, false, true, $isResi);
         
         if($isQuickestSer){
-            $explodTitle = explode('w/' , $ndTitle)[1];
-            $titleQuickest = $quickLabelAs . ' w/'. $explodTitle;
+            $explodTitle = explode('w/' , $ndTitle);
+            if(!isset($explodTitle[1])){
+                $explodTitle = explode('(' , $ndTitle)[1];
+                $titleQuickest = $quickLabelAs . ' ('. $explodTitle;
+            }else {
+                $explodTitle = $explodTitle[1];
+                $titleQuickest = $quickLabelAs . ' w/'. $explodTitle;
+            }
             $originQuotes[$origin][$index]['titleQuickest'] = $titleQuickest ?? '';
         }
         $originQuotes[$origin][$index]['code'] = $carrName . $serviceCode . $ndAccess;
