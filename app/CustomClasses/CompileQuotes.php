@@ -4677,6 +4677,11 @@ class CompileQuotes
                  * Condition for Always inside and notify before delivery (Single Shipment)
                  * */
                 return array_merge($quotes['insidenotifydelivery'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['Truckload'] ?? []) ?? $quotes['simple'];
+            } elseif($alwaysNotifyDel && $alwaysLimitedDel){
+                /**
+                 * Condition for Always limited access and notify before delivery (Single Shipment)
+                 * */
+                return array_merge($quotes['laccessnotifydelivery'] ?? [], $quotes['lglaccessnotifydelivery'] ?? [], $quotes['Truckload'] ?? []);             
             } elseif ($alwaysNotifyDel) {
                 /**
                  * Condition for Always notify before delivery and lift gate for residential (Single Shipment)
