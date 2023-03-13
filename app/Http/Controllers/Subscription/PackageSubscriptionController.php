@@ -15,6 +15,9 @@ use Illuminate\Support\Facades\Mail;
 use Stripe\Charge;
 use Stripe\Stripe;
 use function GuzzleHttp\Promise\all;
+use App\Models\InstalledAddon;
+use App\Models\AddonSettings;
+use App\CustomClasses\Functions;
 
 class PackageSubscriptionController extends Controller
 {
@@ -46,6 +49,7 @@ class PackageSubscriptionController extends Controller
         if ($addonType == self::$addonTypeSBS) {
             self::$dynamicTrial = 1;
             $data = $this->getPkgDetails($addonType);
+            $data['binPackMode'] = $this->getBinMode($request);
         } elseif ($addonType == self::$addonTypeRAD) {
             self::$dynamicTrial = 7;
             $data = $this->getPkgDetails($addonType);
@@ -149,6 +153,7 @@ class PackageSubscriptionController extends Controller
         if ($addonType == self::$addonTypeSBS) {
             self::$dynamicTrial = 1;
             $responce = $this->subscribeToAddonPackage($data, $addonType);
+            $responce['data']['binPackMode'] = $this->getBinMode($request);
         } elseif ($addonType == self::$addonTypeRAD) {
             self::$dynamicTrial = 7;
             $responce = $this->subscribeToAddonPackage($data, $addonType);
@@ -544,6 +549,7 @@ class PackageSubscriptionController extends Controller
         if ($addonType == self::$addonTypeSBS) {
             self::$dynamicTrial = 1;
             $responce = $this->suspendUsage($data, $addonType);
+            $responce['data']['binPackMode'] = $this->getBinMode($request);
         } elseif ($addonType == self::$addonTypeRAD) {
             self::$dynamicTrial = 7;
             $responce = $this->suspendUsage($data, $addonType);
@@ -578,5 +584,39 @@ class PackageSubscriptionController extends Controller
             'data' => $this->getPkgDetails($addonType),
             'message' => ($data['suspend'] == 3) ? 'The ' . $addonName . ' add-on has been suspended' : 'The ' . $addonName . ' add-on has been reactivated',
         ];
+    }
+
+    public function binsPackagingMode(Request $request){
+
+        $installedAddonId =  Functions::getSBSInstalledAddon($request);
+        if (empty($installedAddonId)) {
+            return [
+                "error" => true,
+                "data" => $installedAddonId,
+                'message' => "Add-on Id is missing", 
+            ];
+        }
+
+        $binsPackMode = isset($request->bin_pack_mode) && !empty($request->bin_pack_mode) ? $request->bin_pack_mode : 0;
+
+        $installed_addon_settings = AddonSettings::firstOrNew(['installed_addon_id' => $installedAddonId]);
+
+        $installed_addon_settings->bins_pack_mode = $binsPackMode;
+        $installed_addon_settings->installed_addon_id = $installedAddonId;
+        $installed_addon_settings->save();
+
+        return [
+            "error" => false,
+            "data" => $installed_addon_settings->bins_pack_mode,
+            "message" => "Box Packaging Mode has been updated", 
+        ];
+
+    }
+
+    public function getBinMode($request){
+        $installedAddonId = Functions::getSBSInstalledAddon($request);
+        $getSBSAddonSettings = AddonSettings::where('installed_addon_id', $installedAddonId)->first();
+
+        return isset($getSBSAddonSettings->bins_pack_mode) ? $getSBSAddonSettings->bins_pack_mode : 0;
     }
 }
