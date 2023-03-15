@@ -615,6 +615,13 @@ class PackageSubscriptionController extends Controller
 
     public function getBinMode($request){
         $installedAddonId = Functions::getSBSInstalledAddon($request);
+        if (empty($installedAddonId)) {
+            return [
+                "error" => true,
+                "data" => $installedAddonId,
+                'message' => "Add-on Id is missing.", 
+            ];
+        }
         $getSBSAddonSettings = AddonSettings::where('installed_addon_id', $installedAddonId)->first();
 
         return isset($getSBSAddonSettings->bins_pack_mode) ? $getSBSAddonSettings->bins_pack_mode : 0;
