@@ -58,7 +58,7 @@ class ExportImportProducts extends Controller
         $storeHash = $request['store_hash'] ?? null;
         $weightDimensionUnits = $this->getweightDimensionUnits($storeHash);
         $weightUnit = isset($weightDimensionUnits['weight_units']) && !blank($weightDimensionUnits['weight_units']) ? strtolower($weightDimensionUnits['weight_units']) : 'lbs' ?? 'lbs';
-        $dimensionsUnit = isset($weightDimensionUnits['dimension_units']) && $weightDimensionUnits['dimension_units'] === 'Centimeters' ? 'cm' : 'in' ?? 'in'; 
+        $dimensionsUnit = isset($weightDimensionUnits['dimension_units']) && $weightDimensionUnits['dimension_units'] === 'Centimeters' ? 'cm' : 'in' ?? 'in';
         $dropShips = [];
         foreach ($locations as $location) {
             $dropShips[$location['id']] = $location;
@@ -79,7 +79,7 @@ class ExportImportProducts extends Controller
         $folderName = $request['folderName'];
         $folderNamePath = [];
         try {
-            $productsChunk->chunk(2500, function ($products, $chunkCount = 0) use ($comma, $folderName, $dropShips, $weightUnit) {
+            $productsChunk->chunk(2500, function ($products, $chunkCount = 0) use ($comma, $folderName, $dropShips, $weightUnit, $dimensionsUnit) {
                 $fileName = $chunkCount++ . '-export.csv';
                 $filename = $folderName . '/' . $fileName;
                 $folderNamePath[] = $filename;
