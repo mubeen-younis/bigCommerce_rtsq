@@ -767,6 +767,6 @@ class Functions
                 'addons.short_code' => $request->addon_type ?? 'SBS',
             ])->select('installed_addons.id')->first();
 
-        return $installed_addon->id;
+        return isset($installed_addon->id) ? $installed_addon->id : [];
     }
 }
