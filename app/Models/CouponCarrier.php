@@ -45,7 +45,7 @@ class CouponCarrier extends Model
         $carrier->coupon_code_id = $id;
         $carrier->carrier_name = $slug;
         $carrier->carrier_code = $code ?? null;
-        $carrier->is_enabled = 1;
+        $carrier->is_enabled = $response['promo']['status'];
         $carrier->start_date = $response['promo']['start_date'];
         $carrier->end_date = $response['promo']['end_date'];
         $carrier->save();
