@@ -593,7 +593,7 @@ class PackageSubscriptionController extends Controller
             return [
                 "error" => true,
                 "data" => $installedAddonId,
-                'message' => "Add-on Id is missing", 
+                'message' => "Add-on Id is missing.", 
             ];
         }
 
@@ -608,7 +608,7 @@ class PackageSubscriptionController extends Controller
         return [
             "error" => false,
             "data" => $installed_addon_settings->bins_pack_mode,
-            "message" => "Box Packaging Mode has been updated", 
+            "message" => "Box Packaging Mode has been updated.", 
         ];
 
     }
