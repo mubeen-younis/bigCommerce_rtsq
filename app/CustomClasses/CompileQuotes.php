@@ -3686,9 +3686,7 @@ class CompileQuotes
             }
 
             if ($count == 0) {
-                $inStoreLdData = $SouthEastern->isSuppressedRatesShipment($shipments) ? $quote['InstorPickupLocalDelivery'] : $quote['q']['InstorPickupLocalDelivery'] ?? false;
-                unset($quote['InstorPickupLocalDelivery']);
-                unset($quote['q']['InstorPickupLocalDelivery']);
+                $inStoreLdData =  $quote['InstorPickupLocalDelivery'] ?? $quote['q']['InstorPickupLocalDelivery'] ?? false;
 
                 $lgQuotes =
                     (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery']) ||
