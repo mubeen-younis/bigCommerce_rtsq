@@ -574,8 +574,9 @@ class Functions
         if($isQuickestSer){
             $explodTitle = explode('w/' , $ndTitle);
             if(!isset($explodTitle[1])){
-                $explodTitle = explode('(' , $ndTitle)[1];
-                $titleQuickest = $quickLabelAs . ' ('. $explodTitle;
+                $explodTitle = explode('(' , $ndTitle)[1] ?? '';
+                $explodTitle = empty($explodTitle) ? '' : ' ('. $explodTitle;
+                $titleQuickest = $quickLabelAs . $explodTitle;
             }else {
                 $explodTitle = $explodTitle[1];
                 $titleQuickest = $quickLabelAs . ' w/'. $explodTitle;
