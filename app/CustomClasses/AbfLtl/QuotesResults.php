@@ -87,11 +87,7 @@ class QuotesResults
                 }  
 
                 if(isset($quotes['q']['INCLUDEDCHARGES']['ARRIVALNOTIFICATION']) && !empty($quotes['q']['INCLUDEDCHARGES']['ARRIVALNOTIFICATION'])){
-                    /**
-                     *  ABF quotes api return notify charges 0 but in accessorail array it returns some charges 
-                     * and not include those charges in the total quotes charges, therefore we are passing static 0 charge for notify before delivery.
-                    */
-                    $formattedShipments[$shipment]['q']['surcharges']['notifyDeliveryFee'] = 0;
+                    $formattedShipments[$shipment]['q']['surcharges']['notifyDeliveryFee'] = $quotes['q']['INCLUDEDCHARGES']['ARRIVALNOTIFICATION'] ?? 0;
                 }
 
             }else{
