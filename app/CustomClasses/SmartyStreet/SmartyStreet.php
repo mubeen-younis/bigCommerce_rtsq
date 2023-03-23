@@ -97,11 +97,11 @@ class SmartyStreet
         $data = json_decode($response, true);
         //when address valid API return Address detail array
         if (!empty($data)) {
-            if ($data[0]['metadata']['rdi'] == 'Commercial') {
+            if (isset( $data[0]['metadata']['rdi']) && $data[0]['metadata']['rdi'] == 'Commercial') {
 
                 $res = 'c';     //Address is Commercial
 
-            } elseif ($data[0]['metadata']['rdi'] == 'Residential' && $data[0]['analysis']['dpv_match_code'] == 'Y' && $data[0]['analysis']['active'] == 'Y') {
+            } elseif ((isset($data[0]['metadata']['rdi']) && $data[0]['metadata']['rdi'] == 'Residential') && (isset($data[0]['analysis']['dpv_match_code']) && $data[0]['analysis']['dpv_match_code'] == 'Y') && (isset($data[0]['analysis']['active']) && $data[0]['analysis']['active'] == 'Y')) {
 
                 $res = 'r';     //Address is Residential
             } else {
