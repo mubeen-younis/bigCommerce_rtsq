@@ -546,7 +546,6 @@ class OrderController extends Controller
                 $autoResidentialsStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Delivery') : '';
             }
 
-            $isHAT ? array_push($orderWidget[$zip]['accessories'], 'Hold At Terminal') : '';
             $isProductMarkup ? array_push($orderWidget[$zip]['accessories'], 'Product Markup') : '';
             $isOriginMarkup ? array_push($orderWidget[$zip]['accessories'], 'Origin Markup') : '';
 
