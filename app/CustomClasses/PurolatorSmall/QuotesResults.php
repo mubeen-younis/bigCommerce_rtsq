@@ -138,7 +138,8 @@ class QuotesResults
         foreach ($shipments as $origin => $quote) {
 
             if ((isset($quote['severity']) || !isset($quote['q']) || (isset($quote['q']) && empty($quote['q'])))) {
-                return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);
+                $res['resp']  = $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);
+                return $res;
             }
             if ($count == 0) { //To be checked only once
                 // $this->getAutoResidentialTitle('');

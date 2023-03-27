@@ -91,6 +91,9 @@ class QuotesResults
                 $formattedShipments = [];
                 
             }
+            if(isset($quotes['InstorPickupLocalDelivery']) && !empty($quotes['InstorPickupLocalDelivery'])){
+                $formattedShipments[$shipment]['InstorPickupLocalDelivery'] = $quotes['InstorPickupLocalDelivery'] ?? $quotes['q']['InstorPickupLocalDelivery'] ?? [];
+            }
 
         }
 
