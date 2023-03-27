@@ -4972,15 +4972,15 @@ class CompileQuotes
 
     public function getNotifyDeliveryCost($quotes, $isUpsLtl)
     {
-        $ndCost = 0;
-        if (!(isset($this->quoteSettings['always_quote_notify']) && $this->quoteSettings['always_quote_notify'])) {
-            if (isset($quotes['surcharges']) && isset($quotes['surcharges']['notifyDeliveryFee'])) {
-                $ndCost = (float)$quotes['surcharges']['notifyDeliveryFee'];
-            }
-            if (isset($quotes['surcharges']) && isset($quotes['surcharges']['notifyBeforeDeliveryFee'])) {
-                $ndCost = (float)$quotes['surcharges']['notifyBeforeDeliveryFee'];
-            }
+        $ndCost = 0;        
+        if (isset($quotes['surcharges']) && isset($quotes['surcharges']['notifyDeliveryFee'])) {
+            $ndCost = (float)$quotes['surcharges']['notifyDeliveryFee'];
         }
+        if (isset($quotes['surcharges']) && isset($quotes['surcharges']['notifyBeforeDeliveryFee'])) {
+            $ndCost = (float)$quotes['surcharges']['notifyBeforeDeliveryFee'];
+        }
+        
+
 
         if ($isUpsLtl) {
 
@@ -5585,6 +5585,7 @@ class CompileQuotes
         if (empty($arraySorting) || empty($services)) {
             return [];
         }
+        $sliced = [];
         asort($arraySorting['simple']);
         $this->quoteSettings['method'] = $this->quoteSettings['method'] ?? 1;
         if ($this->quoteSettings['method'] == 2 && $this->isMultiShipment == false) { //Cheapest method
@@ -5594,8 +5595,11 @@ class CompileQuotes
         } else {
             $options = 1;
         }
+        
+        foreach($arraySorting as $key => $value){
+            $sliced = $sliced + array_slice($arraySorting[$key], 0, $options, true);    
+        }
 
-        $sliced = array_slice($arraySorting['simple'], 0, $options, true);
 
         if ($this->quoteSettings['method'] == 3) {
             return $this->averageRattingMethod($arraySorting, $options, $lgQuotes, '', '', false, $notifyDelivery);
