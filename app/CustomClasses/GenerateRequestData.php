@@ -17,7 +17,7 @@ use App\CustomClasses\DayRossLTL\QuotesResults;
 use App\CustomClasses\UpsSmall\QuotesResults as UpsSmallQuotesResults;
 use App\Models\Store;
 use Illuminate\Http\Request;
-
+use App\Models\DestinationAddresses;
 /**
  * class that generated request data
  */
@@ -1747,8 +1747,14 @@ class GenerateRequestData
 
     private function checkRadStatus($storeId, $address)
     {
+        $hits = 1;
         $smarty = new SmartyStreet();
-        return $smarty->getSmartyResponse($storeId, $address);
+        $completeAddress = $smarty->set_address($address);
+        $isSameDestination = DestinationAddresses::isSameDestinatonAddress($completeAddress, $storeId) ?? [];
+        if(!empty($isSameDestination) ){
+            $hits = 0;
+        }
+        return $smarty->getSmartyResponse($storeId, $address, $hits);
     }
 
     public function getApiInfoArrWweSmall($connSettings, $destination)

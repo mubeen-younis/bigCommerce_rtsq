@@ -8,7 +8,7 @@ use App\Models\AdditionalCarrierTabSetting;
 use App\Models\BinRequestLog;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-
+use App\Models\DestinationAddresses;
 class SmartyStreet
 {
     private $authId = Constant::SMARTY_AUTH_ID;
@@ -25,8 +25,8 @@ class SmartyStreet
      */
     private $endURL = Constant::SMARTY_URL;
 
-    public function getSmartyResponse($storeId, $address){
-        $radStatus = $this->consumeHits($storeId);
+    public function getSmartyResponse($storeId, $address, $hits){
+        $radStatus = $this->consumeHits($storeId, $hits);
         if(!$radStatus['status']){
             return "N";
         }
@@ -46,17 +46,23 @@ class SmartyStreet
             }
         }
         $addressStatus = $addressStatus == 'r' ? 'Y' : 'N';
+
+        if($storeId != null){
+            $completeAddress = $this->set_address($address);
+            DestinationAddresses::saveDestination($completeAddress, $storeId, $addressStatus);
+        }
+
         return $addressStatus;
     }
 
-    private function consumeHits($storeId){
+    private function consumeHits($storeId, $hits){
         $PackageSubscriptionController = new PackageSubscriptionController();
-        $param = ['store_id' => $storeId, 'hits'=>1, 'addon_type'=>'RAD'];
+        $param = ['store_id' => $storeId, 'hits'=> $hits, 'addon_type'=>'RAD'];
         $resp = $PackageSubscriptionController->consumeHits($param);
         return $resp;
     }
 
-    private function set_address($address)
+    public function set_address($address)
     {
         $street = $address['street_1'] ?? '';
         $city = $address['city'] ?? '';
