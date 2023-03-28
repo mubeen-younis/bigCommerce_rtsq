@@ -654,4 +654,22 @@ class Functions
 
         return isset($installed_addon->id) ? $installed_addon->id : [];
     }
+
+    public static function setEmptyHATQuotesArray($allOrigins, $inStoreLdData, $hatShipments)
+    {
+        $CompileQuotes = new CompileQuotes();
+        foreach($allOrigins as $array){
+            $warehouseData = $CompileQuotes->getWarehouseData($array);
+            if (isset($warehouseData['suppress_other']) && $warehouseData['suppress_other']) {
+                if (
+                    (isset($inStoreLdData['inStorePickup']['status']) && $inStoreLdData['inStorePickup']['status'] == 1) ||
+                    (isset($inStoreLdData['localDelivery']['status']) && $inStoreLdData['localDelivery']['status'] == 1)
+                ) {
+                    return [];
+                }
+            }
+            break;
+        }
+        return $hatShipments;
+    }
 }
