@@ -41,6 +41,20 @@ class Bin3D
     public function getBinResponse($storeId, $bins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment, $palletPkgReq = false)
     {
         $this->isPalletPkgReq = $palletPkgReq;
+
+        if (count($items)) {
+            foreach ($items as $key => $item) {
+                $binRequest[$key] = $this->generateBinRequest($bins, $item, [], $storeId);
+            }
+            $requestHash = $this->get_encrypted_params(json_encode($binRequest)); 
+            /*
+            * Check hash if available same request in last 24 hours then no need consume hits
+            * **/
+            if (BinRequestLog::where('request_hash', '=', $requestHash)->where('created_at', '>', Carbon::now()->subDay(1))->exists()) {
+                $hits = 0;    
+            }
+        }
+
         //loop for each bin request
         if ($hits != 0) {
             $addonType = $this->isPalletPkgReq ? 'PLT' : 'SBS';
