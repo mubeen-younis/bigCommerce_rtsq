@@ -25,12 +25,17 @@ class SmartyStreet
      */
     private $endURL = Constant::SMARTY_URL;
 
-    public function getSmartyResponse($storeId, $address, $hits){
+    public function getSmartyResponse($storeId, $address, $hits, $addressStatus){
         $radStatus = $this->consumeHits($storeId, $hits);
         if(!$radStatus['status']){
             return "N";
         }
-        $addressStatus = $this->address_validated($address);
+        $addressStatus = empty($addressStatus) ? $this->address_validated($address) : $addressStatus;
+        if($storeId != null){
+            $completeAddress = $this->set_address($address);
+            DestinationAddresses::saveDestination($completeAddress, $storeId, $addressStatus);
+        }
+
         if($addressStatus == "n"){
             $addonSettings = DB::table('addon_settings')->select('addon_settings.value')
                 ->join('installed_addons', 'installed_addons.id', '=', 'addon_settings.installed_addon_id')
@@ -46,11 +51,6 @@ class SmartyStreet
             }
         }
         $addressStatus = $addressStatus == 'r' ? 'Y' : 'N';
-
-        if($storeId != null){
-            $completeAddress = $this->set_address($address);
-            DestinationAddresses::saveDestination($completeAddress, $storeId, $addressStatus);
-        }
 
         return $addressStatus;
     }

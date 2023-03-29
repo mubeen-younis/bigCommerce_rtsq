@@ -1749,12 +1749,14 @@ class GenerateRequestData
     {
         $hits = 1;
         $smarty = new SmartyStreet();
+        $addressStatus = '';
         $completeAddress = $smarty->set_address($address);
         $isSameDestination = DestinationAddresses::isSameDestinatonAddress($completeAddress, $storeId) ?? [];
         if(!empty($isSameDestination) ){
             $hits = 0;
+            $addressStatus = $isSameDestination['status'] == 1 ? 'r' : 'n';
         }
-        return $smarty->getSmartyResponse($storeId, $address, $hits);
+        return $smarty->getSmartyResponse($storeId, $address, $hits, $addressStatus);
     }
 
     public function getApiInfoArrWweSmall($connSettings, $destination)
