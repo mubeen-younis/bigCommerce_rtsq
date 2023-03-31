@@ -984,7 +984,9 @@ class CompileQuotes
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) && isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y') {
                         $access = $this->getAccessorialCode(false, false, $resiPickup, $lgPickup);
                         $price = $this->calculatePrice($data);
-                                               
+                        if(($insideDelivery || $lgQuotes || $notifyDelivery) && !isset($data['surcharges'])){
+                            continue;
+                        }                                               
                         /*
                          * Date 01-07-22
                          * Adding Functionality of Delivery Estimate Options
@@ -4696,7 +4698,7 @@ class CompileQuotes
                 /**
                  * Condition for Always inside before delivery (Single Shipment)
                  * */
-                return array_merge($quotes['insideDelivery'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['Truckload'] ?? [], $quotes['notifydelivery'] ?? []) ?? $quotes['simple'];
+                return array_merge($quotes['insideDelivery'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['Truckload'] ?? [], $quotes['insidenotifydelivery'] ?? []) ?? $quotes['simple'];
             } elseif ($lfg) {
                 /**
                  * Condition for Always lift gate and lift gate for residential (Single Shipment)
