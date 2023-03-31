@@ -1379,6 +1379,9 @@ class CompileQuotes
                                 $data['surcharges']['notifyDeliveryFee'] = $value['amount'] ?? 0;
                             }
                         }
+                        if(($lgQuotes || $notifyDelivery) && !isset($data['surcharges'])){
+                            continue;
+                        }
                         $isLgSurcharges = isset($data['surcharges']['liftgateFee']) && $data['surcharges']['liftgateFee'];
                         $isNbdSurcharges = isset($data['surcharges']['notifyDeliveryFee']) && $data['surcharges']['notifyDeliveryFee'];
                         $price = $this->calculatePrice($data);
