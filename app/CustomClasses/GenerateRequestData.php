@@ -2928,8 +2928,6 @@ class GenerateRequestData
         }
 
         $hits = count($items);
-        Log::info('hits before sbs ' . json_encode($hits));
-        Log::info('items before sbs ' . json_encode($items));
         if ((count($items) && count($boxBins)) || count($itemsAlone)) {
             $Bin3D = new Bin3D();
             $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment, false);

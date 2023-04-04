@@ -11,6 +11,7 @@ use App\Models\Subscription\Subscription;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Stripe\Charge;
 use Stripe\Stripe;
@@ -158,7 +159,7 @@ class PackageSubscriptionController extends Controller
             self::$dynamicTrial = 7;
             $responce = $this->subscribeToAddonPackage($data, $addonType);
             //Do Nothing Yet
-        }  elseif ($addonType == self::$addonTypePLT) {
+        } elseif ($addonType == self::$addonTypePLT) {
             self::$dynamicTrial = self::$palletPkgDynamicTrial;
             $responce = $this->subscribeToAddonPackage($data, $addonType);
         } else {
@@ -365,9 +366,11 @@ class PackageSubscriptionController extends Controller
     {
         self::$storeId = $data['store_id'] = $request['store_id'];
         $data['hits'] = $request['hits'];
+        Log::info('hits to consume ' . json_encode($data['hits']));
 
         $addonType = $request['addon_type'];
         if ($addonType == self::$addonTypeSBS) {
+            Log::info('Enter in SBS');
             self::$dynamicTrial = 1;
             $responce = $this->consumeAddonHits($data, $addonType);
         } elseif ($addonType == self::$addonTypeRAD) {
@@ -393,6 +396,7 @@ class PackageSubscriptionController extends Controller
         $updateSubscription = 0;
         $previousPkgRemainingHits = 0;
         $histToBeConsumed = $data['hits'];
+        Log::info('hitsTo', $histToBeConsumed);
         $currentPackageSub = DB::table('package_subscriptions as ps')
             ->leftjoin('package_sub_to_be_charge as pstbc', 'pstbc.subscription_id', '=', 'ps.id')
             ->leftjoin('packages as p', 'ps.package_id', '=', 'p.id')
@@ -403,6 +407,7 @@ class PackageSubscriptionController extends Controller
                 'status' => false,
             ];
         }
+        Log::info('Current package subscription detail ' . json_encode($currentPackageSub));
         /*if ($currentPackageSub->status == 2){ //If the Charge has been failed
             return [
                 'error' => true,
@@ -417,6 +422,8 @@ class PackageSubscriptionController extends Controller
                 ->where('store_id', self::$storeId)->where('addon_type', $addonType)
                 ->select('package_subscriptions.id', 'package_subscriptions.created_at', 'package_subscriptions.package_id', 'package_subscriptions.payment_method_id', 'package_subscriptions.status', 'package_subscriptions.subscription_time', 'package_subscriptions.update_time', 'package_subscriptions.expiry_time', 'package_subscriptions.total_count', 'package_subscriptions.stripe_charge_id', 'package_subscriptions.charge_cost')
                 ->latest()->first();
+            Log::info('package subscription detail ' . json_encode($packageSub));
+
             $packageSub->increment('total_count', $histToBeConsumed);
             $packageSub->update([
                 'update_time' => Carbon::now()
@@ -426,9 +433,12 @@ class PackageSubscriptionController extends Controller
             ];
         } elseif (!is_null($currentPackageSub) && ($currentPackageSub->package_to_to_charge_status == 1 && Carbon::parse($currentPackageSub->expiry_time) < Carbon::now())) {
             //If current subscription expired
+            Log::info('current package subscription expired case');
             $updateSubscription = self::$updateFullSubscription;
         } elseif (!is_null($currentPackageSub) && ($currentPackageSub->package_to_to_charge_status == 1 && ($currentPackageSub->consumed_hits + $histToBeConsumed) > $currentPackageSub->total_hits)) {
             //If current subscription hits becomes less to use
+            Log::info('current subscription hits becomes less to use');
+
             $updateSubscription = self::$updateFullSubscription;
             $previousPkgRemainingHits = $currentPackageSub->total_hits - $currentPackageSub->consumed_hits;
         } elseif (!is_null($currentPackageSub) && ($currentPackageSub->package_to_to_charge_status == 0 && ($currentPackageSub->consumed_hits + $histToBeConsumed) > $currentPackageSub->total_hits)) {
@@ -437,6 +447,8 @@ class PackageSubscriptionController extends Controller
                 'status' => false,
             ];
         }
+
+        Log::info('All checks clear case');
 
         if (!is_null($currentPackageSub) && $currentPackageSub->status == 1 && (($currentPackageSub->consumed_hits + $histToBeConsumed) >= $currentPackageSub->total_hits)) {
             //$packageSub = PackageSubscription::where('store_id',self::$storeId)->latest()->first();
@@ -495,7 +507,7 @@ class PackageSubscriptionController extends Controller
             ->select('package_subscriptions.id', 'package_subscriptions.created_at', 'package_subscriptions.package_id', 'package_subscriptions.update_time', 'package_subscriptions.total_count')
             ->where('store_id', self::$storeId)->where('addon_type', $addonType)
             ->latest()->first();
-
+        Log::info('Comes on doubtful case ');
         $packageSub->increment('total_count', $histToBeConsumed);
         $packageSub->update([
             'update_time' => Carbon::now()
@@ -586,9 +598,10 @@ class PackageSubscriptionController extends Controller
         ];
     }
 
-    public function binsPackagingMode(Request $request){
+    public function binsPackagingMode(Request $request)
+    {
 
-        $installedAddonId =  Functions::getSBSInstalledAddon($request);
+        $installedAddonId = Functions::getSBSInstalledAddon($request);
         if (empty($installedAddonId)) {
             return [
                 "error" => true,
@@ -613,7 +626,8 @@ class PackageSubscriptionController extends Controller
 
     }
 
-    public function getBinMode($request){
+    public function getBinMode($request)
+    {
         $installedAddonId = Functions::getSBSInstalledAddon($request);
         if (empty($installedAddonId)) {
             return [
