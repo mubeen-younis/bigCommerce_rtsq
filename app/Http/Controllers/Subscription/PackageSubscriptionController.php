@@ -417,10 +417,9 @@ class PackageSubscriptionController extends Controller
                 ->where('store_id', self::$storeId)->where('addon_type', $addonType)
                 ->select('package_subscriptions.id', 'package_subscriptions.created_at', 'package_subscriptions.package_id', 'package_subscriptions.payment_method_id', 'package_subscriptions.status', 'package_subscriptions.subscription_time', 'package_subscriptions.update_time', 'package_subscriptions.expiry_time', 'package_subscriptions.total_count', 'package_subscriptions.stripe_charge_id', 'package_subscriptions.charge_cost')
                 ->latest()->first();
-           // $packageSub->increment('total_count', $histToBeConsumed);
+            $packageSub->increment('total_count', $histToBeConsumed);
             $packageSub->update([
-                'update_time' => Carbon::now(),
-                'total_count'=>$currentPackageSub->consumed_hits + $histToBeConsumed
+                'update_time' => Carbon::now()
             ]);
             return [
                 'status' => true,
