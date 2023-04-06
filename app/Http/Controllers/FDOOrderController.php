@@ -134,7 +134,6 @@ class FDOOrderController extends Controller
 
         $shippingGroupResp = !blank($data['shipping_group_resp']) ? json_decode($data['shipping_group_resp']) : [];
         $requestToWS = json_decode($data['request']);
-
         $lineItem->items = $this->formatItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
         $lineItem->origin = $this->formatOrigins($requestToWS->requestArr->carriers);
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
@@ -331,6 +330,7 @@ class FDOOrderController extends Controller
             $variant_id = $item->variant_id;
             $oldItems->$variant_id = $item;
             $oldItems->$key = $item;
+            $oldItems->$key->lineItemDescription = $item->lineItemName ?? "";
         };
         return $oldItems;
     }
