@@ -98,22 +98,23 @@ class FDOOrderController extends Controller
         $rateId = $order['rate_id'] ?? null;
 
         $data = optional(RequestData::where('rate_id', $rateId)
-                ->where('cart_id', $order['cart_id'])
-                ->where('store_id', $storeId)
-                ->first())->toArray() ?? null;
+            ->where('cart_id', $order['cart_id'])
+            ->where('store_id', $storeId)
+            ->first())->toArray() ?? null;
 
         if (blank($data) && !blank($order['full_rate_id'])) {
             $rateId = $order['full_rate_id'] ?? null;
             $data = optional(RequestData::where('rate_id', $order['full_rate_id'])
-                    ->where('cart_id', $order['cart_id'])
-                    ->where('store_id', $storeId)
-                    ->first())->toArray() ?? null;
+                ->where('cart_id', $order['cart_id'])
+                ->where('store_id', $storeId)
+                ->first())->toArray() ?? null;
         }
         if (blank($data)) {
             return [];
         }
         $carrierHasInsurance = Functions::hasInsureCarrier($rateId);
         $carrierName = Functions::getCarrierNameOrCode($rateId);
+
         $isSmall = Functions::isSmallCarrier($rateId);
         $wsCarrierCode = Functions::getCarrierNameOrCode($rateId, 1);
 
@@ -128,9 +129,12 @@ class FDOOrderController extends Controller
         $isLG = strpos($rateId, '+lg');
         $isOwnArrangement = strpos($rateId, 'own_arrangement') === 0 || strpos($rateId, 'freernlltl') === 0 ? true : false;
         $lineItem = json_decode($data['lineitems'])->lineItemData;
+
         $responseFromWS = json_decode($data['quotes']);
+
         $shippingGroupResp = !blank($data['shipping_group_resp']) ? json_decode($data['shipping_group_resp']) : [];
         $requestToWS = json_decode($data['request']);
+
         $lineItem->items = $this->formatItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
         $lineItem->origin = $this->formatOrigins($requestToWS->requestArr->carriers);
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
