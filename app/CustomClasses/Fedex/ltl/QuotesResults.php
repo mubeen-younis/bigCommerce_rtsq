@@ -244,6 +244,11 @@ class QuotesResults
     }
 
     public function formateQuoteBeforeCompile($shipments = [], $quoteSettings){
+
+        if ($this->isSuppressedRatesShipment($shipments)) {
+            return $shipments;
+        }
+
         foreach ($shipments as $shipment => $quotes){
             if(!isset($quotes['q']) || isset($quotes['q']['severity'])){
                 continue;
@@ -292,6 +297,27 @@ class QuotesResults
         }
 
         return $shipments;
+    }
+
+    public function isSuppressedRatesShipment($shipments)
+    {
+        $isSuppressedRates = false;
+
+        foreach ($shipments as $origin => $quote) {
+            if (isset($quote['severity']) && isset($quote['q']['error'])) {
+                continue;
+            }
+
+            $insPickupAndLocDel = $quote['InstorPickupLocalDelivery'] ?? [];
+            if (isset($insPickupAndLocDel) && !blank($insPickupAndLocDel)) {
+                if (isset($insPickupAndLocDel['suppress']) && $insPickupAndLocDel['suppress'] == 1) {
+                    $isSuppressedRates = true;
+                    break;
+                }
+            }
+        }
+
+        return $isSuppressedRates;
     }
 
     private function formatHATQuotes($hatQuotes = [], $srvcTitle = '', $quoteSettings, $postFix = '')
