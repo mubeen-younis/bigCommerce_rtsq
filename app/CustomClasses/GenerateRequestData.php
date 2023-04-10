@@ -18,6 +18,7 @@ use App\CustomClasses\UpsSmall\QuotesResults as UpsSmallQuotesResults;
 use App\Models\Store;
 use Illuminate\Http\Request;
 use App\Models\DestinationAddresses;
+
 /**
  * class that generated request data
  */
@@ -651,11 +652,11 @@ class GenerateRequestData
      */
     public function generateRequestArray($request, $carriersArray, $itemsArr, $cartInfo, $carriersErrorSettings)
     {
-        if(!empty($carriersArray['carriers'])){
+        if (!empty($carriersArray['carriers'])) {
             $errorManagmentResp = Functions::productErrorManagment($carriersErrorSettings, $carriersArray, $itemsArr);
-            if(isset($errorManagmentResp['carriersArray']['carriers']) && empty($errorManagmentResp['carriersArray']['carriers'])){
+            if (isset($errorManagmentResp['carriersArray']['carriers']) && empty($errorManagmentResp['carriersArray']['carriers'])) {
                 return [];
-            }else{
+            } else {
                 $carriersArray = $errorManagmentResp['carriersArray'];
                 $itemsArr = $errorManagmentResp['itemsArr'];
             }
@@ -1172,7 +1173,7 @@ class GenerateRequestData
         $this->resiCarrier['residentialPickup'] = $residentialPickup;
 
         $liftGatePickup = (isset($connSettings['quote_settings']['liftGatePickup']) && $connSettings['quote_settings']['liftGatePickup'] && $connSettings['quote_settings']['liftGatePickup'] == true) ? 'Y' : 'N';
-        $insideDelivery = (isset($connSettings['quote_settings']['always_inside_delivery']) && $connSettings['quote_settings']['always_inside_delivery'] == true)  || (isset($connSettings['quote_settings']['offer_inside_delivery']) && $connSettings['quote_settings']['offer_inside_delivery'] == true) ? 'Y' : 'N';
+        $insideDelivery = (isset($connSettings['quote_settings']['always_inside_delivery']) && $connSettings['quote_settings']['always_inside_delivery'] == true) || (isset($connSettings['quote_settings']['offer_inside_delivery']) && $connSettings['quote_settings']['offer_inside_delivery'] == true) ? 'Y' : 'N';
         $notifyDelivery = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']) ? 'Y' : 'N';
 
         $insurance = [
@@ -1431,7 +1432,7 @@ class GenerateRequestData
             ];
         } else { // for cerasis
             $notify = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']);
-            
+
             if ($residential === 'Y' || $alwaysResi) {
                 $accessorial['RESDEL'] = 'RESDEL';
             }
@@ -1675,7 +1676,7 @@ class GenerateRequestData
         } else {
             $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
-        $insideDelivery = (isset($connSettings['quote_settings']['always_inside_delivery']) && $connSettings['quote_settings']['always_inside_delivery'] == true)  || (isset($connSettings['quote_settings']['offer_inside_delivery']) && $connSettings['quote_settings']['offer_inside_delivery'] == true) ? 1 : 0;
+        $insideDelivery = (isset($connSettings['quote_settings']['always_inside_delivery']) && $connSettings['quote_settings']['always_inside_delivery'] == true) || (isset($connSettings['quote_settings']['offer_inside_delivery']) && $connSettings['quote_settings']['offer_inside_delivery'] == true) ? 1 : 0;
         $notify = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']);
 
         $this->resiCarrier['rnlLtl'] = $residential;
@@ -1781,7 +1782,7 @@ class GenerateRequestData
         $addressStatus = '';
         $completeAddress = $smarty->set_address($address);
         $isSameDestination = DestinationAddresses::isSameDestinatonAddress($completeAddress, $storeId) ?? [];
-        if(!empty($isSameDestination) ){
+        if (!empty($isSameDestination)) {
             $hits = 0;
             $addressStatus = $isSameDestination['status'] == 1 ? 'r' : 'n';
         }
@@ -2068,9 +2069,9 @@ class GenerateRequestData
             $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
 
         }
-        
+
         $limitedAccess = (isset($connSettings['quote_settings']['always_limited_access_delivery']) && $connSettings['quote_settings']['always_limited_access_delivery']) || (isset($connSettings['quote_settings']['offer_limited_access_delivery']) && $connSettings['quote_settings']['offer_limited_access_delivery']) ?? false;
-        
+
         $this->resiCarrier['yrcLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['yrcLtl'] = $alwaysResi;
         $notify = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']);
@@ -2115,7 +2116,7 @@ class GenerateRequestData
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
 
         $notify = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']);
-   
+
         $residential = 'N';
         $alwaysResi = false;
 

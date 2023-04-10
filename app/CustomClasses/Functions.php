@@ -11,6 +11,7 @@ use App\CustomClasses\CompileQuotes;
 use App\Models\InstalledAddon;
 
 use App\Constants\Constant;
+
 class Functions
 {
     protected static $daysAfterExpiry = 4;
@@ -78,7 +79,8 @@ class Functions
 
     public static function getCarrierNameOrCode($code, $getWsCode = 0): ?string
     {
-        $carrierCodes = ['wweltl', 'rnlltl', 'xpoltl', 'fedexltl', 'gtzltl', 'cltl', 'upsltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship'];
+        $carrierCodes = ['wweltl', 'rnlltl', 'xpoltl', 'fedexltl', 'gtzltl', 'yrcltl', 'cltl', 'upsltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship',
+            'fqltl', 'estesltl', 'dayrossltl', 'odflltl', 'saialtl', 'parcel_12Purolator', 'abfltl', 'SouthEastern', 'parcel_12usps', 'tqlltl', 'echoltl', 'daylightltl', 'fqchrltl'];
         foreach ($carrierCodes as $carrierCode) {
             if (strpos($code, $carrierCode) !== false) {
                 if ($getWsCode == 0) {
@@ -94,8 +96,10 @@ class Functions
     public static function getCarrierCodeWs($carrierCode): ?string
     {
         $carrierCodesWithName = ['wweltl' => 'wweLTL', 'rnlltl' => 'rnl', 'xpoltl' => 'xpoLogistics', 'upsltl' => 'upsLTL',
-            'fedexltl' => 'fedexLTL', 'gtzltl' => 'globalTranz', 'cltl' => 'cerasis',
-            'parcel_12wwe' => 'wweSmall', 'parcel_12ups' => 'upsSmall', 'parcel_12fd' => 'fedexSmall', 'parcel_12uniship' => 'unishippersSmall'];
+            'fedexltl' => 'fedexLTL', 'yrcltl' => 'yrc', 'gtzltl' => 'globalTranz', 'cltl' => 'cerasis',
+            'parcel_12wwe' => 'wweSmall', 'parcel_12ups' => 'upsSmall', 'parcel_12fd' => 'fedexSmall', 'parcel_12uniship' => 'unishippersSmall',
+            'fqltl' => 'freightQuote', 'estesltl' => 'estesLtl', 'dayrossltl' => 'dayross', 'odflltl' => 'OdflLTL', 'saialtl' => 'saia', 'parcel_12Purolator' => 'purolator', 'abfltl' => 'abf',
+            'SouthEastern' => 'southeastern', 'parcel_12usps' => 'usps', 'tqlltl' => 'tql', 'echoltl' => 'echoLogistics', 'daylightltl' => 'daylight', 'chr' => 'chr'];
         return $carrierCodesWithName[$carrierCode] ?? null;
     }
 
@@ -662,10 +666,10 @@ class Functions
     public static function getOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi, $insideDelivery = false, $laccess = false)
     {
         $CompileQuotes = new CompileQuotes();
-        $serviceCode =  $data['ratquoteNumber'] ?? $data['CarrierSCAC'] ?? '';
+        $serviceCode = $data['ratquoteNumber'] ?? $data['CarrierSCAC'] ?? '';
         $serviceCode = (isset($data['serviceType']) && ($carrName == 'wweltl' || $carrName == 'cltl')) ? $data['serviceType'] : $serviceCode ?? '';
         $isUpsLtl = false;
-        if($carrName === 'upsltl'){
+        if ($carrName === 'upsltl') {
             $isUpsLtl = true;
         }
         $isQuickestSer = isset($quoteSettings['quickest_service']) && $quoteSettings['quickest_service'];
@@ -674,28 +678,29 @@ class Functions
         $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, $insideDelivery, '', '', $laccess, false, false, true, $isResi, $isAlwaysResi);
         $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, $isUpsLtl, $insideDelivery, $laccess, false, false, true, $originKey, $items, $allOrigins, $quoteSettings);
         $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, $insideDelivery, $laccess, false, false, false, false, true, $isResi);
-        
-        if($isQuickestSer){
-            $explodTitle = explode('w/' , $ndTitle);
-            if(!isset($explodTitle[1])){
-                $explodTitle = explode('(' , $ndTitle)[1] ?? '';
-                $explodTitle = empty($explodTitle) ? '' : ' ('. $explodTitle;
+
+        if ($isQuickestSer) {
+            $explodTitle = explode('w/', $ndTitle);
+            if (!isset($explodTitle[1])) {
+                $explodTitle = explode('(', $ndTitle)[1] ?? '';
+                $explodTitle = empty($explodTitle) ? '' : ' (' . $explodTitle;
                 $titleQuickest = $quickLabelAs . $explodTitle;
-            }else {
+            } else {
                 $explodTitle = $explodTitle[1];
-                $titleQuickest = $quickLabelAs . ' w/'. $explodTitle;
+                $titleQuickest = $quickLabelAs . ' w/' . $explodTitle;
             }
             $originQuotes[$origin][$index]['titleQuickest'] = $titleQuickest ?? '';
         }
         $originQuotes[$origin][$index]['code'] = $carrName . $serviceCode . $ndAccess;
         $originQuotes[$origin][$index]['rate'] = $ndPrice;
         $originQuotes[$origin][$index]['title'] = $ndTitle;
-        
+
         return ['originQuotes' => $originQuotes, 'ndPrice' => $ndPrice];
     }
 
     // Create Single or Multi-Shipments Quotes Array
-    public static function getQuotesArray($service, $allQuotes, $multiShipmentQuotes, $origin, $key){
+    public static function getQuotesArray($service, $allQuotes, $multiShipmentQuotes, $origin, $key)
+    {
 
         isset($service[$key]) ? $allQuotes[$key][] = $service[$key][0] ?? $service[$key] : null;
         isset($service[$key]) ? $multiShipmentQuotes[$key][$origin] = $service[$key][0] ?? $service[$key] : null;
@@ -706,61 +711,62 @@ class Functions
 
     // Make Access Title for Offer as an Option Delivery Features
     public static function getAccessTitle($quoteSettings = [], $isResi = false, $lgOption = false, $insideDel = false, $notifyDelivery = false, $laccess = false, $twoManDel = false, $appDel = false)
-    {   
+    {
         $accessTitles = '';
         $accessLabel = '';
         $autoResiAdrrLfg = isset($quoteSettings['autoDetectedResidentialAddressesLfg']) ? $quoteSettings['autoDetectedResidentialAddressesLfg'] : false;
-        
+
         $offerFeaturesAsOption = [
             'offerLiftGateDelivery' => [$lgOption, 'liftgate,'],
-            'offer_inside_delivery' => [$insideDel,'inside,'],
-            'offer_limited_access_delivery' => [$laccess,'limited access,'],
-            'offer_two_man_delivery' => [$twoManDel,'two man,'],
-            'offer_appointment_delivery' => [$appDel,'appointment,'],
-            'offer_notify_as_option' => [$notifyDelivery,'notify before,'],
+            'offer_inside_delivery' => [$insideDel, 'inside,'],
+            'offer_limited_access_delivery' => [$laccess, 'limited access,'],
+            'offer_two_man_delivery' => [$twoManDel, 'two man,'],
+            'offer_appointment_delivery' => [$appDel, 'appointment,'],
+            'offer_notify_as_option' => [$notifyDelivery, 'notify before,'],
         ];
-        
-        foreach($offerFeaturesAsOption as $key => $index){
-            if(isset($quoteSettings[$key]) && $quoteSettings[$key] && $index[0]){
-                $accessTitles = $accessTitles . $index[1];  
+
+        foreach ($offerFeaturesAsOption as $key => $index) {
+            if (isset($quoteSettings[$key]) && $quoteSettings[$key] && $index[0]) {
+                $accessTitles = $accessTitles . $index[1];
             }
         }
 
-        if($autoResiAdrrLfg && $isResi && $lgOption && !(isset($quoteSettings['offerLiftGateDelivery']) && $quoteSettings['offerLiftGateDelivery'])){
+        if ($autoResiAdrrLfg && $isResi && $lgOption && !(isset($quoteSettings['offerLiftGateDelivery']) && $quoteSettings['offerLiftGateDelivery'])) {
             $accessTitles = $accessTitles . 'liftgate,';
         }
-       
-       $accessTitleArray = explode(',', $accessTitles);
-       $count = count($accessTitleArray);
-       
-        if($count >= 2){
-            foreach($accessTitleArray as $key => $title){
-                if($accessTitleArray[$key+1] == ''){
-                    $len = !empty($accessLabel) ? strlen($accessLabel)-2 : 0;
+
+        $accessTitleArray = explode(',', $accessTitles);
+        $count = count($accessTitleArray);
+
+        if ($count >= 2) {
+            foreach ($accessTitleArray as $key => $title) {
+                if ($accessTitleArray[$key + 1] == '') {
+                    $len = !empty($accessLabel) ? strlen($accessLabel) - 2 : 0;
                     $accessLabel[$len] = '_';
-                    $accessLabel = str_replace("_" , '', $accessLabel);
+                    $accessLabel = str_replace("_", '', $accessLabel);
                     $accessLabel = $count == 2 ? $accessLabel . $title . ' delivery' : $accessLabel . '& ' . $title . ' delivery';
                     break;
-                }else{
+                } else {
                     $accessLabel = $accessLabel . $title . ', ';
                 }
             }
             $accessLabel = ' w/ ' . $accessLabel;
-            
+
         }
-        
-        if($isResi && !empty($accessLabel)){
-            $expolodAccess = explode('w/' , $accessLabel);
+
+        if ($isResi && !empty($accessLabel)) {
+            $expolodAccess = explode('w/', $accessLabel);
             $accessLabel = $isResi && $count <= 2 ? ' w/ residential &' . $expolodAccess[1] : ' w/ residential,' . $expolodAccess[1];
         }
 
         $accessLabel = $isResi && empty($accessLabel) ? Constant::RESI_LABEL : $accessLabel;
 
-       return  $accessLabel;
-    
+        return $accessLabel;
+
     }
-    
-    public static function getSBSInstalledAddon($request){
+
+    public static function getSBSInstalledAddon($request)
+    {
 
         $installed_addon = InstalledAddon::join('addons', 'addons.id', 'installed_addons.addon_id')
             ->where(['installed_addons.store_id' => $request->store_id ?? $request['id'],
@@ -774,7 +780,7 @@ class Functions
     public static function setEmptyHATQuotesArray($allOrigins, $inStoreLdData, $hatShipments)
     {
         $CompileQuotes = new CompileQuotes();
-        foreach($allOrigins as $array){
+        foreach ($allOrigins as $array) {
             $warehouseData = $CompileQuotes->getWarehouseData($array);
             if (isset($warehouseData['suppress_other']) && $warehouseData['suppress_other']) {
                 if (
