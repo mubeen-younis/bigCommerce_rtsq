@@ -1359,7 +1359,6 @@ class CompileQuotes
                 }
             }
 
-
             if (isset($quote['q'])) {
                 foreach ($quote['q'] as $key => $data) {
                     if (isset($data['scac']) && in_array($data['scac'], $allConfigServices)) {
@@ -1378,9 +1377,6 @@ class CompileQuotes
                             if ($value['description'] == "Delivery Call Ahead") {
                                 $data['surcharges']['notifyDeliveryFee'] = $value['amount'] ?? 0;
                             }
-                        }
-                        if(($lgQuotes || $notifyDelivery) && !isset($data['surcharges'])){
-                            continue;
                         }
                         $isLgSurcharges = isset($data['surcharges']['liftgateFee']) && $data['surcharges']['liftgateFee'];
                         $isNbdSurcharges = isset($data['surcharges']['notifyDeliveryFee']) && $data['surcharges']['notifyDeliveryFee'];
