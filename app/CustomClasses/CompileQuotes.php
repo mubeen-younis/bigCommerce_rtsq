@@ -1232,8 +1232,7 @@ class CompileQuotes
 
             if ($count == 0) { //To be checked only once
                 $isRad = $quote['autoResidentialsStatus'] ?? '';
-                $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
-                unset($quote['InstorPickupLocalDelivery']);
+                $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? [];
 
                 $lgQuotes =
                     (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery']) ||
@@ -1246,45 +1245,47 @@ class CompileQuotes
             $originQuotes = [];
             $arraySorting = [];
 
-            $standardQuotes = collect($quote['q'])->filter(function ($q) {
-                return isset($q["serviceLevel"]) && $q["serviceLevel"] == 'Standard';
-            })->toArray() ?? [];
-
-            $guaranteedQuotes = collect($quote['q'])->filter(function ($q) {
-                return isset($q["serviceLevel"]) && ($q["serviceLevel"] == 'Guaranteed 5 PM' || $q["serviceLevel"] == 'Guaranteed 12 PM');
-            })->toArray() ?? [];
-
-            if ($isStandardChecked && !$isGuaranteedChecked) {
-                $quote['q'] = $standardQuotes;
-            } elseif (!$isStandardChecked && $isGuaranteedChecked) {
-                $quote['q'] = $guaranteedQuotes;
-            } elseif ($isStandardChecked && $isGuaranteedChecked) {
-                if ($ratingMethod == 1 || $ratingMethod == 2 || $ratingMethod == 3) {
-                    $quote['q'] = $quote['q'];
-                } elseif ($ratingMethod == 4) {
-                    $quotes['q'] = $standardQuotes;
-                    $standard[] = $this->getCheapestQuotesArr($quotes);
-                    $quotes['q'] = $guaranteedQuotes;
-                    $guaranteed[] = $this->getCheapestQuotesArr($quotes);
-                    $bothService = array_merge($standard, $guaranteed);
-                    $quote['q'] = $bothService;
-
-                } elseif ($ratingMethod == 5) {
-                    $options = (int)$this->quoteSettings['number_of_options'];
-                    $standardSort = collect($standardQuotes)->sortBy('customerRate')->toArray();
-                    $standardSliced = array_slice($standardSort, 0, $options, true);
-                    $guaranteedSort = collect($guaranteedQuotes)->sortBy('customerRate')->toArray();
-                    $guaranteedSliced = array_slice($guaranteedSort, 0, $options, true);
-                    $bothService = array_merge($standardSliced, $guaranteedSliced);
-                    $quote['q'] = $bothService;
-
-                } elseif ($ratingMethod == 6) {
-                    $options = (int)$this->quoteSettings['number_of_options'];
-                    $standardSort = collect($standardQuotes)->sortBy('customerRate')->toArray();
-                    $standardPrice = $this->averageRattingMethodTQL($standardSort, $options, $lgQuotes);
-                    $guaranteedSort = collect($guaranteedQuotes)->sortBy('customerRate')->toArray();
-                    $guaranteedPrice = $this->averageRattingMethodTQL($guaranteedSort, $options, $lgQuotes);
-                    $quote['q'] = $originQuotes = array_merge($standardPrice, $guaranteedPrice);
+            if(isset($quote['q'])){
+                $standardQuotes = collect($quote['q'])->filter(function ($q) {
+                    return isset($q["serviceLevel"]) && $q["serviceLevel"] == 'Standard';
+                })->toArray() ?? [];
+    
+                $guaranteedQuotes = collect($quote['q'])->filter(function ($q) {
+                    return isset($q["serviceLevel"]) && ($q["serviceLevel"] == 'Guaranteed 5 PM' || $q["serviceLevel"] == 'Guaranteed 12 PM');
+                })->toArray() ?? [];
+    
+                if ($isStandardChecked && !$isGuaranteedChecked) {
+                    $quote['q'] = $standardQuotes;
+                } elseif (!$isStandardChecked && $isGuaranteedChecked) {
+                    $quote['q'] = $guaranteedQuotes;
+                } elseif ($isStandardChecked && $isGuaranteedChecked) {
+                    if ($ratingMethod == 1 || $ratingMethod == 2 || $ratingMethod == 3) {
+                        $quote['q'] = $quote['q'];
+                    } elseif ($ratingMethod == 4) {
+                        $quotes['q'] = $standardQuotes;
+                        $standard[] = $this->getCheapestQuotesArr($quotes);
+                        $quotes['q'] = $guaranteedQuotes;
+                        $guaranteed[] = $this->getCheapestQuotesArr($quotes);
+                        $bothService = array_merge($standard, $guaranteed);
+                        $quote['q'] = $bothService;
+    
+                    } elseif ($ratingMethod == 5) {
+                        $options = (int)$this->quoteSettings['number_of_options'];
+                        $standardSort = collect($standardQuotes)->sortBy('customerRate')->toArray();
+                        $standardSliced = array_slice($standardSort, 0, $options, true);
+                        $guaranteedSort = collect($guaranteedQuotes)->sortBy('customerRate')->toArray();
+                        $guaranteedSliced = array_slice($guaranteedSort, 0, $options, true);
+                        $bothService = array_merge($standardSliced, $guaranteedSliced);
+                        $quote['q'] = $bothService;
+    
+                    } elseif ($ratingMethod == 6) {
+                        $options = (int)$this->quoteSettings['number_of_options'];
+                        $standardSort = collect($standardQuotes)->sortBy('customerRate')->toArray();
+                        $standardPrice = $this->averageRattingMethodTQL($standardSort, $options, $lgQuotes);
+                        $guaranteedSort = collect($guaranteedQuotes)->sortBy('customerRate')->toArray();
+                        $guaranteedPrice = $this->averageRattingMethodTQL($guaranteedSort, $options, $lgQuotes);
+                        $quote['q'] = $originQuotes = array_merge($standardPrice, $guaranteedPrice);
+                    }
                 }
             }
 
@@ -1453,7 +1454,7 @@ class CompileQuotes
 
         $res = $this->purolatorSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items);
         if (!$this->isMultiShipment) {
-            $this->isMultiShipment = $res['isMultiShipment'];
+            $this->isMultiShipment = isset($res['isMultiShipment']) ? $res['isMultiShipment'] : [];
         }
 
         return $res['resp'];
@@ -1590,6 +1591,7 @@ class CompileQuotes
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
+            $hatShipments = Functions::setEmptyHATQuotesArray($allOrigins, $inStoreLdData, $hatShipments);
         }
         if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1)) {
             
@@ -2143,6 +2145,7 @@ class CompileQuotes
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
+            $HAT = Functions::setEmptyHATQuotesArray($allOrigins, $inStoreLdData, $HAT);
         }
 
         if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1)) {
@@ -2286,6 +2289,7 @@ class CompileQuotes
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
+            $hatShipments = Functions::setEmptyHATQuotesArray($allOrigins, $inStoreLdData, $hatShipments);
         }
 
         if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1)) {
@@ -2482,6 +2486,7 @@ class CompileQuotes
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
+            $HATS = Functions::setEmptyHATQuotesArray($allOrigins, $inStoreLdData, $HATS);
         }
 
         if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1)) {
@@ -2995,6 +3000,7 @@ class CompileQuotes
         /* Quotes for instore delivery */
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
+            $hatShipments = Functions::setEmptyHATQuotesArray($allOrigins, $inStoreLdData, $hatShipments);
         }
 
         /* Multishipment quotes with LGD  */
@@ -3613,6 +3619,7 @@ class CompileQuotes
         /* Quotes for instore delivery */
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
+            $hatShipments = Functions::setEmptyHATQuotesArray($allOrigins, $inStoreLdData, $hatShipments);
         }
 
         /* Multishipment quotes with LGD  */
