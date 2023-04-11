@@ -5625,7 +5625,7 @@ class CompileQuotes
         return $averageRateService;
     }
 
-    public function averageRattingMethodTQL($ratesArray, $options, $lgQuotes, $notifyDelivery)
+    public function averageRattingMethodTQL($ratesArray, $options, $lgQuotes, $notifyDelivery = false)
     {
         if (empty($ratesArray)) {
             return [];
