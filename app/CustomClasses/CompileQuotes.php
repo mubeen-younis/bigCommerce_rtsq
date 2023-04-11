@@ -1351,9 +1351,9 @@ class CompileQuotes
                     } elseif ($ratingMethod == 6) {
                         $options = (int)$this->quoteSettings['number_of_options'];
                         $standardSort = collect($standardQuotes)->sortBy('customerRate')->toArray();
-                        $standardPrice = $this->averageRattingMethodTQL($standardSort, $options, $lgQuotes);
+                        $standardPrice = $this->averageRattingMethodTQL($standardSort, $options, $lgQuotes, $notifyDelivery);
                         $guaranteedSort = collect($guaranteedQuotes)->sortBy('customerRate')->toArray();
-                        $guaranteedPrice = $this->averageRattingMethodTQL($guaranteedSort, $options, $lgQuotes);
+                        $guaranteedPrice = $this->averageRattingMethodTQL($guaranteedSort, $options, $lgQuotes, $notifyDelivery);
                         $quote['q'] = $originQuotes = array_merge($standardPrice, $guaranteedPrice);
                     }
                 }
