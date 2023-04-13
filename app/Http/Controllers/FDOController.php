@@ -121,6 +121,7 @@ class FDOController extends Controller
     public function getFDOCouponCarrierInfo(Request $request)
     {
         $carrierInfo = CouponCarrier::getCarrierInfoByName($request);
+        $promoCarriersInfo = CouponCarrier::getPromoCarriersInfo($request);
         $registerUrl = Endpoints::getFDORegisterUrl();
         if (isset($request['coupon_code']) && !blank($request['coupon_code'])) {
             $registerUrl = $registerUrl . '?code=' . $this->encodeBase64Code($request);
@@ -128,6 +129,7 @@ class FDOController extends Controller
         
         if($carrierInfo) {
             $data = $carrierInfo;
+            $data['promoCarriers'] = $promoCarriersInfo;
         }
         $data['registerUrl'] = $registerUrl;
 

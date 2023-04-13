@@ -31,6 +31,24 @@ class CouponCarrier extends Model
         return null;
     }
 
+    public static function getPromoCarriersInfo($request)
+    {
+        $couponCarriers = [
+            'small-package' => 'WWE_PL',
+            'ltl-quotes' => 'WWE_LTL',
+            'gtz-ltl' => 'GTZ',
+            'unishippers-small' => 'UNI_PL',
+        ];
+
+        $code = $request['coupon_code'] ?? '';        
+        if(!empty($code)){
+            $coupon = Coupon::where('code', $code)->first();
+            return self::where('coupon_code_id', $coupon->id)->get()->toArray();
+        }
+
+        return null;
+    }
+
     public static function addOrUpdateCarrierInfo($slug, $id, $code, $response)
     {
         /* $carrier = self::getCarrierInfoByName($slug);
