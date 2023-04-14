@@ -17,7 +17,7 @@ class DestinationAddresses extends Model
     {
         $destination = self::firstOrCreate(['store_id' => $storeId,'complete_Address' => $address]);
         $destination->complete_Address = $address;
-        $destination->status = $status == 'r' ? 1 : 0;
+        $destination->status = $status == 'r' ? 1 : ($status == 'c' ? 2 : 0);
         $destination->save();
     }
 
