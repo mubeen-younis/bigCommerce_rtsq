@@ -1784,7 +1784,7 @@ class GenerateRequestData
         $isSameDestination = DestinationAddresses::isSameDestinatonAddress($completeAddress, $storeId) ?? [];
         if (!empty($isSameDestination)) {
             $hits = 0;
-            $addressStatus = $isSameDestination['status'] == 1 ? 'r' : 'n';
+            $addressStatus = $isSameDestination['status'] == 1 ? 'r' : ($isSameDestination['status'] == 2 ? 'c' : 'n');
         }
         return $smarty->getSmartyResponse($storeId, $address, $hits, $addressStatus);
     }

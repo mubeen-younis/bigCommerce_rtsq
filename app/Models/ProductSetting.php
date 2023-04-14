@@ -48,22 +48,21 @@ class ProductSetting extends Model
                 ->where('store_id', $storeId)->first();
         } else {
             $saveProduct = new ProductSetting();
+
+            $storeSettings = $this->getStoreSettings($storeId);
+            $prodWeight = $this->convertWeight(isset($product['weight']) ? $product['weight'] : '', isset($storeSettings['weight_units']) ? strtolower($storeSettings['weight_units']) : 'lbs') ?? 0;
+            /*Start - Added FOr Default Quoting Method*/
+            $productSettings = new stdClass();
+            if (!empty($product['weight']) && $prodWeight > 150) {
+                $productSettings->freight_enabled = true;
+                $productSettings->parcel_enabled = false;
+            } else {
+                $productSettings->freight_enabled = false;
+                $productSettings->parcel_enabled = true;
+            }
+            $saveProduct->settings = json_encode($productSettings);
+            /*END*/
         }
-        
-        $storeSettings = $this->getStoreSettings($storeId);
-        $prodWeight = $this->convertWeight(isset($product['weight']) ? $product['weight'] : '', isset($storeSettings['weight_units']) ? strtolower($storeSettings['weight_units']) : 'lbs') ?? 0;
-        
-        /*Start - Added FOr Default Quoting Method*/
-        $productSettings = new stdClass();
-        if (!empty($product['weight']) && $prodWeight > 150) {
-            $productSettings->freight_enabled = true;
-            $productSettings->parcel_enabled = false;
-        } else {
-            $productSettings->freight_enabled = false;
-            $productSettings->parcel_enabled = true;
-        }
-        $saveProduct->settings = json_encode($productSettings);
-        /*END*/
 
         $saveProduct->name = $product['name'];
         $saveProduct->source_product_id = $product['id'];
