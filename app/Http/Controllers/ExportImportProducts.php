@@ -446,7 +446,6 @@ class ExportImportProducts extends Controller
     public function getSettings($oldSettings, $product, $indexes, $store_id)
     {
         $settings = isset($oldSettings[0]) && $oldSettings[0] ? json_decode($oldSettings[0]) : new \stdClass();
-        $shipMulti = false;
         Log::info('CSV logs');
         /*$freightUpdate = false;
         if(isset($indexes['freight_enabled']) && $indexes['freight_enabled']){
@@ -508,6 +507,8 @@ class ExportImportProducts extends Controller
                 $settings->allow_vertical = ($product["$key"] == 1) ? true : false;;
             }
         }
+
+        $shipMulti = false;
         if (isset($indexes['ship_multiple_package']) && $indexes['ship_multiple_package']) {
             $key = $indexes['ship_multiple_package'];
             if (array_key_exists($key, $product)) {
