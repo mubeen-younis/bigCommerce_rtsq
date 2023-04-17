@@ -445,7 +445,8 @@ class ExportImportProducts extends Controller
 
     public function getSettings($oldSettings, $product, $indexes, $store_id)
     {
-        $settings = $oldSettings[0] ? json_decode($oldSettings[0]) : new \stdClass();
+        $settings = isset($oldSettings[0]) && $oldSettings[0] ? json_decode($oldSettings[0]) : new \stdClass();
+        $shipMulti = false;
         /*$freightUpdate = false;
         if(isset($indexes['freight_enabled']) && $indexes['freight_enabled']){
             $key = $indexes['freight_enabled'];
