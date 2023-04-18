@@ -497,6 +497,8 @@ class ProductSettingController extends Controller
     public function skuFromWebhook(Request $request)
     {
         try {
+            // Added because of the bug creating multiple products
+            return response()->json(true);
             $postData = file_get_contents("php://input");
             Log::info('sku data: ' . $postData);
             $postData = json_decode($postData, true);
