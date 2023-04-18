@@ -498,9 +498,8 @@ class ProductSettingController extends Controller
     {
         try {
             // Added because of the bug creating multiple products
-            return response()->json(true);
             $postData = file_get_contents("php://input");
-            Log::info('sku data: ' . $postData);
+            Log::info('Webhook sku data: ' . $postData);
             $postData = json_decode($postData, true);
             $storeHash = explode('/', $postData['producer']);
             $storeHash = $storeHash[1];
@@ -522,11 +521,11 @@ class ProductSettingController extends Controller
              * Handle first time sku created
              * need to set variant_id null for base product
              * */
-            if ($scope == "store/sku/created") {
-                if (ProductSetting::where('source_product_id', $productId)->where('store_id', $store->id)->count() == 1) {
-                    ProductSetting::where('source_product_id', $productId)->where('store_id', $store->id)->update(['variant_id' => null]);
-                }
-            }
+//            if ($scope == "store/sku/created") {
+//                if (ProductSetting::where('source_product_id', $productId)->where('store_id', $store->id)->count() == 1) {
+//                    ProductSetting::where('source_product_id', $productId)->where('store_id', $store->id)->update(['variant_id' => null]);
+//                }
+//            }
             $toRequest['store_id'] = $store->id;
             $toRequest['store_name'] = $storeHash;
             $toRequest['product_id'] = $productId;
