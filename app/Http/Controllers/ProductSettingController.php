@@ -157,6 +157,7 @@ class ProductSettingController extends Controller
         $headers[] = 'Accept: application/json';
         $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
         $response = json_decode($response['response'], true);
+        Log::info('product settings from webhok 12' . json_encode($response));
         if (isset($response['data']) && count($response['data'])) {
             $product = $response['data'];
             if ($product['base_variant_id'] == null) {
