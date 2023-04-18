@@ -497,7 +497,7 @@ class ProductSettingController extends Controller
     public function skuFromWebhook(Request $request)
     {
         try {
-            // Added because of the bug creating multiple products
+
             $postData = file_get_contents("php://input");
             Log::info('Webhook sku data: ' . $postData);
             $postData = json_decode($postData, true);
@@ -505,6 +505,10 @@ class ProductSettingController extends Controller
             $storeHash = $storeHash[1];
             $productId = $postData['data']['sku']['product_id'];
             $variant_id = $postData['data']['sku']['variant_id'];
+
+
+
+
             // Update,delete,create from  webhook
             $scope = $postData['scope'];
             $store = Store::where('hash', $storeHash)->first();
@@ -517,6 +521,20 @@ class ProductSettingController extends Controller
             if (empty($store) || !in_array($scope, $onlyScopes)) {
                 return response()->json(true);
             }
+
+
+         $variant=   https://api.bigcommerce.com/stores/{store_hash}/v3/catalog/products/{product_id}/variants/{variant_id}
+
+            $product['price'] = $variant['price'];
+            $product['weight'] = $variant['weight'];
+            $product['depth'] = $variant['depth'];
+            $product['width'] = $variant['width'];
+            $product['height'] = $variant['height'];
+            $product['sku'] = $variant['sku'];
+            $product['base_variant_id'] = $variant['id'];
+
+            $this->saveproducts
+
             /*
              * Handle first time sku created
              * need to set variant_id null for base product
