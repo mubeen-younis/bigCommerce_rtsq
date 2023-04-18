@@ -63,7 +63,7 @@ class ProductSettingController extends Controller
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
         $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
-        
+
         if (isset($response['status']) && $response['status'] == false) {
             return response()->json(['error' => true,
                 'data' => [],
@@ -79,7 +79,7 @@ class ProductSettingController extends Controller
                  * otherwise base product is as a variant product
                  * */
                 if ($product['base_variant_id'] == null) {
-                    $this->saveProducts->saveProduct($product, $data['store_id']);
+                    // $this->saveProducts->saveProduct($product, $data['store_id']);
                     $this->getVariants($product, $data);
                 } else {
                     $this->saveProducts->saveProduct($product, $data['store_id']);
@@ -308,8 +308,8 @@ class ProductSettingController extends Controller
                     ->orderBy('name', $sortProd)->get();
             } else {
                 $count = ProductSetting::where('name', 'LIKE', '%' . $search . '%')
-                ->where('store_id', $request->store_id)->orderBy('name', $sortProd)
-                ->get();
+                    ->where('store_id', $request->store_id)->orderBy('name', $sortProd)
+                    ->get();
             }
 
             if ($count->count()) {
@@ -321,13 +321,13 @@ class ProductSettingController extends Controller
                 $products = ProductSetting::where('store_id', $request->store_id)
                     ->groupBy('source_product_id')->orderBy('name', $sortProd)->skip(($page - 1) * $perPage)->take($perPage)->get();
             } else {
-                $products = ProductSetting::where(function($query) use ($search) {
+                $products = ProductSetting::where(function ($query) use ($search) {
                     $query->where('name', 'LIKE', '%' . $search . '%');
                     $query->orWhere('variant_id', $search);
                     $query->orWhere('source_product_id', $search);
                 })->where('store_id', $request->store_id)
-                ->orderBy('name', $sortProd)
-                ->skip(($page - 1) * $perPage)->take($perPage)->get();
+                    ->orderBy('name', $sortProd)
+                    ->skip(($page - 1) * $perPage)->take($perPage)->get();
             }
             if ($products->isEmpty()) {
                 return response()->json(['error' => true,
