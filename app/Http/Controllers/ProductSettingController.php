@@ -529,20 +529,20 @@ class ProductSettingController extends Controller
             $headers[] = 'Accept: application/json';
             $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
             $response = json_decode($response['response'], true);
-            Log::info('variants response 123456' . json_encode($response));
+            Log::info('Get variants details' . json_encode($response));
 
-        // $variant=   https://api.bigcommerce.com/stores/{store_hash}/v3/catalog/products/{product_id}/variants/{variant_id}
-
-            $product['price'] = $variant['price'];
-            $product['weight'] = $variant['weight'];
-            $product['depth'] = $variant['depth'];
-            $product['width'] = $variant['width'];
-            $product['height'] = $variant['height'];
-            $product['sku'] = $variant['sku'];
-            $product['base_variant_id'] = $variant['id'];
-
-           // $this->saveproducts
-
+            if (isset($response['data']) && count($response['data'])) {
+                foreach ($response['data'] as $variant) {
+                    $product['price'] = $variant['price'];
+                    $product['weight'] = $variant['weight'];
+                    $product['depth'] = $variant['depth'];
+                    $product['width'] = $variant['width'];
+                    $product['height'] = $variant['height'];
+                    $product['sku'] = $variant['sku'];
+                    $product['base_variant_id'] = $variant['id'];
+                    $this->saveProducts->saveProduct($product, $data['store_id']);
+                }
+            }
             /*
              * Handle first time sku created
              * need to set variant_id null for base product
@@ -555,7 +555,7 @@ class ProductSettingController extends Controller
             $toRequest['store_id'] = $store->id;
             $toRequest['store_name'] = $storeHash;
             $toRequest['product_id'] = $productId;
-            $this->getSingleProductFromApi($toRequest);
+            //$this->getSingleProductFromApi($toRequest);
             return response()->json(true);
         } catch (\Exception $exception) {
             //  Have to LOg Here
