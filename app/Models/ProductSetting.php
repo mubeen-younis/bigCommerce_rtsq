@@ -43,6 +43,7 @@ class ProductSetting extends Model
         if (blank($product['base_variant_id'])) {
             return null;
         }
+        Log::info('Base variant ID ' . $product['base_variant_id']);
         if (ProductSetting::where('source_product_id', $product['id'])
             ->where('variant_id', $product['base_variant_id'])
             ->where('store_id', $storeId)->exists()) {
@@ -94,7 +95,7 @@ class ProductSetting extends Model
             $storeDetails = (new CurlRequest())->enSingleCurlRequest($storeDetails['endpoint'],
                 $storeDetails['request'], $storeDetails['headers'], $storeDetails['method'], false);
             $response = json_decode($storeDetails['response'], true);
-            
+
             return $response;
 
         } catch (\Exception $exception) {
