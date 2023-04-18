@@ -521,9 +521,17 @@ class ProductSettingController extends Controller
             if (empty($store) || !in_array($scope, $onlyScopes)) {
                 return response()->json(true);
             }
+            $storeToken = $this->mainController->getCustAccessTok($store->id);
+            $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products/' . $productId . '/variants' . '/' . $variant_id;
+            $headers[] = 'X-Auth-Client: ' . $this->mainController->getAppClientId();
+            $headers[] = 'X-Auth-Token: ' . $storeToken;
+            $headers[] = 'Content-Type: application/json';
+            $headers[] = 'Accept: application/json';
+            $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
+            $response = json_decode($response['response'], true);
+            Log::info('variants response 123456' . json_encode($response));
 
-
-         $variant=   https://api.bigcommerce.com/stores/{store_hash}/v3/catalog/products/{product_id}/variants/{variant_id}
+        // $variant=   https://api.bigcommerce.com/stores/{store_hash}/v3/catalog/products/{product_id}/variants/{variant_id}
 
             $product['price'] = $variant['price'];
             $product['weight'] = $variant['weight'];
@@ -533,7 +541,7 @@ class ProductSettingController extends Controller
             $product['sku'] = $variant['sku'];
             $product['base_variant_id'] = $variant['id'];
 
-            $this->saveproducts
+           // $this->saveproducts
 
             /*
              * Handle first time sku created
