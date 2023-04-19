@@ -68,11 +68,11 @@ class ProductSetting extends Model
             /*END*/
         }
 
-        $saveProduct->name = $product['name'] ?? null;
+        $saveProduct->name = $product['name'] ?? '';
         $saveProduct->source_product_id = $product['id'];
         $saveProduct->variant_id = $product['base_variant_id'];
         $saveProduct->image_src = '';
-        $saveProduct->product_type = $product['type'] ?? null;
+        $saveProduct->product_type = $product['type'] ?? '';
         $saveProduct->sku = $product['sku'];
         $saveProduct->weight = $product['weight'];
         $saveProduct->length = $product['depth'];
