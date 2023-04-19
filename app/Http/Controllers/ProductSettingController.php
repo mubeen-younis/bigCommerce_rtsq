@@ -63,7 +63,6 @@ class ProductSettingController extends Controller
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
         $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
-
         if (isset($response['status']) && $response['status'] == false) {
             return response()->json(['error' => true,
                 'data' => [],
@@ -99,7 +98,6 @@ class ProductSettingController extends Controller
         $headers[] = 'Accept: application/json';
         $metaResponse = $this->curlRequest->enSingleCurlRequest($metaEndPoint, [], $headers, 'GET', true);
         $metaResponse = json_decode($metaResponse['response'], true);
-        Log::info('prod veriants from webhok 1223' . json_encode($metaResponse));
         $total_pages = $metaResponse['meta']['pagination']['total_pages'];
         for ($count = 1; $count <= $total_pages; $count++) {
             $variantEndPoint = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products/' . $product['id'] . '/variants?limit=250&page=' . $count;
@@ -505,10 +503,6 @@ class ProductSettingController extends Controller
             $storeHash = $storeHash[1];
             $productId = $postData['data']['sku']['product_id'];
             $variant_id = $postData['data']['sku']['variant_id'];
-
-
-
-
             // Update,delete,create from  webhook
             $scope = $postData['scope'];
             $store = Store::where('hash', $storeHash)->first();
@@ -521,47 +515,22 @@ class ProductSettingController extends Controller
             if (empty($store) || !in_array($scope, $onlyScopes)) {
                 return response()->json(true);
             }
-            $storeToken = $this->mainController->getCustAccessTok($store->id);
-            $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products/' . $productId . '/variants' . '/' . $variant_id;
-            $headers[] = 'X-Auth-Client: ' . $this->mainController->getAppClientId();
-            $headers[] = 'X-Auth-Token: ' . $storeToken;
-            $headers[] = 'Content-Type: application/json';
-            $headers[] = 'Accept: application/json';
-            $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
-            $response = json_decode($response['response'], true);
-            Log::info('Get variant details-' . $store->id . json_encode($response));
-
-            if (isset($response['data'])) {
-                //foreach ($response['data'] as $variant) {
-                    $variant = $response['data'];
-                    $product['price'] = $variant['price'];
-                    $product['weight'] = $variant['weight'];
-                    $product['depth'] = $variant['depth'];
-                    $product['width'] = $variant['width'];
-                    $product['height'] = $variant['height'];
-                    $product['sku'] = $variant['sku'];
-                    $product['base_variant_id'] = $variant['id'];
-                    $product['id'] = $variant['product_id'];
-                    $this->saveProducts->saveProduct($product, $store->id);
-                //}
-            }
             /*
              * Handle first time sku created
              * need to set variant_id null for base product
              * */
-//            if ($scope == "store/sku/created") {
-//                if (ProductSetting::where('source_product_id', $productId)->where('store_id', $store->id)->count() == 1) {
-//                    ProductSetting::where('source_product_id', $productId)->where('store_id', $store->id)->update(['variant_id' => null]);
-//                }
-//            }
+            if ($scope == "store/sku/created") {
+                if (ProductSetting::where('source_product_id', $productId)->where('store_id', $store->id)->count() == 1) {
+                   ProductSetting::where('source_product_id', $productId)->where('store_id', $store->id)->update(['variant_id' => null]);
+                }
+            }
             $toRequest['store_id'] = $store->id;
             $toRequest['store_name'] = $storeHash;
             $toRequest['product_id'] = $productId;
-            //$this->getSingleProductFromApi($toRequest);
+            $this->getSingleProductFromApi($toRequest);
             return response()->json(true);
         } catch (\Exception $exception) {
             //  Have to LOg Here
-            Log::info('Sku Webhook Exception '.json_encode([$exception->getMessage(), $exception->getLine()]));
         }
     }
 

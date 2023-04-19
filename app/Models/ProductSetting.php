@@ -40,11 +40,6 @@ class ProductSetting extends Model
 
     public function saveProduct($product, $storeId)
     {
-        if ($product['base_variant_id'] == null && ProductSetting::where('source_product_id', $product['id'])
-            ->where('store_id', $storeId)->exists()) {
-            return null;
-        }
-        Log::info('Base variant ID ' . $product['base_variant_id']);
         if (ProductSetting::where('source_product_id', $product['id'])
             ->where('variant_id', $product['base_variant_id'])
             ->where('store_id', $storeId)->exists()) {
@@ -69,11 +64,11 @@ class ProductSetting extends Model
             /*END*/
         }
 
-        $saveProduct->name = $product['name'] ?? '';
+        $saveProduct->name = $product['name'];
         $saveProduct->source_product_id = $product['id'];
         $saveProduct->variant_id = $product['base_variant_id'];
         $saveProduct->image_src = '';
-        $saveProduct->product_type = $product['type'] ?? '';
+        $saveProduct->product_type = $product['type'];
         $saveProduct->sku = $product['sku'];
         $saveProduct->weight = $product['weight'];
         $saveProduct->length = $product['depth'];
