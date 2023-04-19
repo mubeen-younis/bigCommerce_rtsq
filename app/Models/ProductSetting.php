@@ -40,8 +40,9 @@ class ProductSetting extends Model
 
     public function saveProduct($product, $storeId)
     {
-        if ($product['base_variant_id'] == null) {
-           return null;
+        if ($product['base_variant_id'] == null && ProductSetting::where('source_product_id', $product['id'])
+            ->where('store_id', $storeId)->exists()) {
+            return null;
         }
         Log::info('Base variant ID ' . $product['base_variant_id']);
         if (ProductSetting::where('source_product_id', $product['id'])
