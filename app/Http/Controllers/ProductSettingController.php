@@ -529,10 +529,11 @@ class ProductSettingController extends Controller
             $headers[] = 'Accept: application/json';
             $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
             $response = json_decode($response['response'], true);
-            Log::info('Get variants details' . json_encode($response));
+            Log::info('Get variant details-' . $store->id . json_encode($response));
 
-            if (isset($response['data']) && count($response['data'])) {
-                foreach ($response['data'] as $variant) {
+            if (isset($response['data'])) {
+                //foreach ($response['data'] as $variant) {
+                    $variant = $response['data'];
                     $product['price'] = $variant['price'];
                     $product['weight'] = $variant['weight'];
                     $product['depth'] = $variant['depth'];
@@ -540,8 +541,9 @@ class ProductSettingController extends Controller
                     $product['height'] = $variant['height'];
                     $product['sku'] = $variant['sku'];
                     $product['base_variant_id'] = $variant['id'];
-                    $this->saveProducts->saveProduct($product, $data['store_id']);
-                }
+                    $product['id'] = $variant['product_id'];
+                    $this->saveProducts->saveProduct($product, $store->id);
+                //}
             }
             /*
              * Handle first time sku created
@@ -559,6 +561,7 @@ class ProductSettingController extends Controller
             return response()->json(true);
         } catch (\Exception $exception) {
             //  Have to LOg Here
+            Log::info('Sku Webhook Exception '.json_encode([$exception->getMessage(), $exception->getLine()]));
         }
     }
 
