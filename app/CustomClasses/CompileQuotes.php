@@ -935,7 +935,7 @@ class CompileQuotes
         $this->quoteSettingsData();
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
-        $lgQuotes = false;
+        $lgQuotes = $allowOwnArrangement = false;
         $numberOfShipments = 0;
         foreach ($shipments as $ship) {
             if (!isset($ship['severity'])) {
@@ -949,9 +949,7 @@ class CompileQuotes
         foreach ($shipments as $origin => $quote) {
             $this->originKey = $origin;
             if (isset($quote['severity'])) {
-                $instoreLocDelQuotes = $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
-                $ownArrangementQoutes = isset($quote['allowOwnArrangement']) && $quote['allowOwnArrangement'] ? $this->arrangeOwnFreight() : [];
-                return array_merge($instoreLocDelQuotes, $ownArrangementQoutes);
+                return $instoreLocDelQuotes = $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
             $resiPickup = $lgPickup = '';
@@ -976,7 +974,7 @@ class CompileQuotes
                 if (isset($quote['hazardousStatus'])) {
                     $hazShipmentArr[$origin] = $quote['hazardousStatus'] == 'y' ? 'Y' : 'N';
                 }
-
+                $allowOwnArrangement = isset($quote['allowOwnArrangement']) && $quote['allowOwnArrangement'] ?? false;
                 foreach ($quote['q'] as $key => $data) {
 
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) && isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y') {
@@ -1058,18 +1056,21 @@ class CompileQuotes
             $count++;
         }
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
+        if($allowOwnArrangement){
+            $allQuotes = $this->arrangeOwnFreight($allQuotes);
+        }
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
         if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1)) {
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
-                'checkoutQuotes' => $this->arrangeOwnFreight($allQuotes),
+                'checkoutQuotes' => $allQuotes,
                 'multiShipmentQuotes' => $multiShipmentQuotes,
             ];
             return $resp;
         }
-        return $this->arrangeOwnFreight($allQuotes);
+        return $allQuotes;
     }
 
 // For ODFL LTL Quotes
@@ -1406,6 +1407,9 @@ class CompileQuotes
     {
         if (!empty($allQuotes)) {
             foreach ($allQuotes as $key => $quote) {
+                if($quote['code'] === 'own_arrangement'){
+                    continue;
+                }
                 $title = explode('(', $quote['title'])[0];
                 $title = explode('w/', $title);
                 $title[0] = Functions::$ltlMultiTitle;
@@ -4193,8 +4197,9 @@ class CompileQuotes
     public function getInsPicAndLocDelQuotes($quote, $allOrigins): array
     {
         $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? $quote['q']['InstorPickupLocalDelivery'] ?? $quote['fedexServices']['InstorPickupLocalDelivery'] ?? [];
+        $ownArrangementQoutes = isset($quote['allowOwnArrangement']) && $quote['allowOwnArrangement'] ? $this->arrangeOwnFreight() : [];
         if (!$this->isMultiShipment && !blank($inStoreLdData)) {
-            return $this->inStoreLocalDeliveryQuotes([], $inStoreLdData, $allOrigins);
+            return $this->inStoreLocalDeliveryQuotes($ownArrangementQoutes, $inStoreLdData, $allOrigins);
         }
 
         return [];
