@@ -949,7 +949,9 @@ class CompileQuotes
         foreach ($shipments as $origin => $quote) {
             $this->originKey = $origin;
             if (isset($quote['severity'])) {
-                return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
+                $instoreLocDelQuotes = $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
+                $ownArrangementQoutes = isset($quote['allowOwnArrangement']) && $quote['allowOwnArrangement'] ? $this->arrangeOwnFreight() : [];
+                return array_merge($instoreLocDelQuotes, $ownArrangementQoutes);
             }
 
             $resiPickup = $lgPickup = '';
@@ -5266,7 +5268,7 @@ class CompileQuotes
      * @param $finalQuotes
      * @return array
      */
-    public function arrangeOwnFreight($finalQuotes)
+    public function arrangeOwnFreight($finalQuotes = [])
     {
         if (!isset($this->quoteSettings['own_arrangement']) || $this->quoteSettings['own_arrangement'] == 0) {
             return $finalQuotes;
