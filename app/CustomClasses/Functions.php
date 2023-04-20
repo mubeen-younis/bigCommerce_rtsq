@@ -662,7 +662,7 @@ class Functions
     }
 
     // Create Origin Quotes Array in case of notify before delivery enable
-    public static function getOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi, $insideDelivery = false, $laccess = false)
+    public static function getOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi, $insideDelivery = false, $laccess = false, $notifyDelivery = false, $resiPickup = false, $lgPickup = false)
     {
         $CompileQuotes = new CompileQuotes();
         $serviceCode = $data['ratquoteNumber'] ?? $data['CarrierSCAC'] ?? '';
@@ -674,7 +674,7 @@ class Functions
         $isQuickestSer = isset($quoteSettings['quickest_service']) && $quoteSettings['quickest_service'];
         $quickLabelAs = isset($quoteSettings['quickest_service_label']) && !empty($quoteSettings['quickest_service_label']) ? $quoteSettings['quickest_service_label'] : self::$simpleLTLTitle;
 
-        $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, $insideDelivery, '', '', $laccess, false, false, true, $isResi, $isAlwaysResi);
+        $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, $insideDelivery, $resiPickup, $lgPickup, $laccess, false, false, true, $isResi, $isAlwaysResi);
         $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, $isUpsLtl, $insideDelivery, $laccess, false, false, true, $originKey, $items, $allOrigins, $quoteSettings);
         $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, $insideDelivery, $laccess, false, false, false, false, true, $isResi);
 

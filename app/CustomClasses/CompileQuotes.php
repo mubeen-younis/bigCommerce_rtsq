@@ -1029,28 +1029,28 @@ class CompileQuotes
                         // Get Notify Before Delivery Origin Quotes
                         if($notifyDelivery){
                             $compileNotifyDeliveryQuotes = Functions::getOriginQuotes('notifydelivery', $data['serviceDesc'], $originQuotes, $data, $key, $data['totalTransitTimeInDays'], 
-                            $dateAndDays, false, "wweltl", $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi);
+                            $dateAndDays, false, "wweltl", $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi, false, false, false, $resiPickup, $lgPickup);
     
                             $arraySorting['notifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
                             $originQuotes = $compileNotifyDeliveryQuotes['originQuotes'];
                         }
                         if($notifyDelivery && $lgQuotes){
                             $compileNotifyDeliveryQuotes = Functions::getOriginQuotes('lgnotifydelivery', $data['serviceDesc'], $originQuotes, $data, $key, $data['totalTransitTimeInDays'], 
-                            $dateAndDays, true, "wweltl", $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi);
+                            $dateAndDays, true, "wweltl", $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi, false, false, false, $resiPickup, $lgPickup);
     
                             $arraySorting['lgnotifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
                             $originQuotes = $compileNotifyDeliveryQuotes['originQuotes'];
                         }
                         if($notifyDelivery && $insideDelivery){
                             $compileNotifyDeliveryQuotes = Functions::getOriginQuotes('insidenotifydelivery', $data['serviceDesc'], $originQuotes, $data, $key, $data['totalTransitTimeInDays'], 
-                            $dateAndDays, false, "wweltl", $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi, $insideDelivery);
+                            $dateAndDays, false, "wweltl", $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi, $insideDelivery, false, false, $resiPickup, $lgPickup);
     
                             $arraySorting['insidenotifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
                             $originQuotes = $compileNotifyDeliveryQuotes['originQuotes'];
                         }
                         if($notifyDelivery && $insideDelivery && $lgQuotes){
                             $compileNotifyDeliveryQuotes = Functions::getOriginQuotes('lginsidenotifydelivery', $data['serviceDesc'], $originQuotes, $data, $key, $data['totalTransitTimeInDays'], 
-                            $dateAndDays, true, "wweltl", $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi, $insideDelivery);
+                            $dateAndDays, true, "wweltl", $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi, $insideDelivery, false, false, $resiPickup, $lgPickup);
     
                             $arraySorting['lginsidenotifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
                             $originQuotes = $compileNotifyDeliveryQuotes['originQuotes'];
