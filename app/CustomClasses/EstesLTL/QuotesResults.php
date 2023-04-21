@@ -125,7 +125,10 @@ class QuotesResults
             $address['zipCode'] = $terminalInfo['address']['tranpostalCode'] ?? '';
             $address['countryCode'] = $terminalInfo['address']['trancountryCode'] ?? '';
             $distance = $terminalInfo['distance']['text'] ?? '0 mi';
-            $phoneNumber = isset($terminalInfo['phoneNumber']) ? $terminalInfo['phoneNumber']['trancountry'] . $terminalInfo['phoneNumber']['tranareaCode'] . $terminalInfo['phoneNumber']['transubscriber'] : '';
+            $country = isset($terminalInfo['phoneNumber']['trancountry']) ? $terminalInfo['phoneNumber']['trancountry'] : '';
+            $countryCode = isset($terminalInfo['phoneNumber']['tranareaCode']) ? $terminalInfo['phoneNumber']['tranareaCode'] : '';
+            $subscriber = isset($terminalInfo['phoneNumber']['transubscriber']) ? $terminalInfo['phoneNumber']['transubscriber'] : '';
+            $phoneNumber = isset($terminalInfo['phoneNumber']) ? $country . $countryCode . $subscriber : '';
 
             $compiledQuotes['serviceDesc'] = Functions::getHATTitle($title, $address, $distance, $phoneNumber);
             $compiledQuotes['totalNetCharge']['Amount'] = Functions::getHATPrice($quote['ratpricing']['rattotalPrice'], $quoteSettings['hold_at_terminal_price'] ?? 0);
