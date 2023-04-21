@@ -555,7 +555,7 @@ class Functions
     }
 
     // Create Origin Quotes Array in case of notify before delivery enable
-    public static function getOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi, $insideDelivery = false, $laccess = false)
+    public static function getOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi, $insideDelivery = false, $laccess = false, $notifyDelivery = false, $resiPickup = false, $lgPickup = false)
     {
         $CompileQuotes = new CompileQuotes();
         $serviceCode =  $data['ratquoteNumber'] ?? $data['CarrierSCAC'] ?? '';
@@ -567,9 +567,9 @@ class Functions
         $isQuickestSer = isset($quoteSettings['quickest_service']) && $quoteSettings['quickest_service'];
         $quickLabelAs = isset($quoteSettings['quickest_service_label']) && !empty($quoteSettings['quickest_service_label']) ? $quoteSettings['quickest_service_label'] : self::$simpleLTLTitle;
 
-        $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, $insideDelivery, '', '', $laccess, false, false, true, $isResi, $isAlwaysResi);
-        $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, $isUpsLtl, $insideDelivery, $laccess, false, false, true, $originKey, $items, $allOrigins, $quoteSettings);
-        $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, $insideDelivery, $laccess, false, false, false, false, true, $isResi);
+        $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, $insideDelivery, $resiPickup, $lgPickup, $laccess, false, false, $notifyDelivery, $isResi, $isAlwaysResi);
+        $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, $isUpsLtl, $insideDelivery, $laccess, false, false, $notifyDelivery, $originKey, $items, $allOrigins, $quoteSettings);
+        $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, $insideDelivery, $laccess, false, false, false, false, $notifyDelivery, $isResi);
         
         if($isQuickestSer){
             $explodTitle = explode('w/' , $ndTitle);
@@ -654,6 +654,128 @@ class Functions
 
        return  $accessLabel;
     
+    }
+    // Make Enabled Features Array for compiling Quotes and Order Widget 
+    public static function getEnableFeaturesArr($lgQuotes = false, $insideDelivery = false, $notifyDelivery = false, $limitedAccess = false)
+    {   /**
+        * Create Enabled Features Combinations Array and Make Sure Array Created In Ascendind Order,
+        * If Not in Ascending Order It will Create Incorrect Order Widget
+        **/
+        $enableFeaturesArray = [
+            'simple' => [
+                'isEnable' => true, 
+                'index' => [],
+            ],
+            'liftgate' => [
+                'isEnable' => $lgQuotes, 
+                'index' => [
+                    'isLG' => $lgQuotes,
+                ],
+            ],
+            'insideDelivery' => [
+                'isEnable' => $insideDelivery, 
+                'index' => [
+                    'isID' => $insideDelivery,
+                ],
+            ],
+            'notifydelivery' => [
+                'isEnable' => $notifyDelivery, 
+                'index' => [
+                    'isNBD' => $notifyDelivery,
+                ],
+            ],
+            'limitedaccess' => [
+                'isEnable' => $limitedAccess, 
+                'index' => [
+                    'isLAD' => $limitedAccess,
+                ],
+            ],
+            'insideLiftGateDelivery' => [
+                'isEnable' => $insideDelivery && $lgQuotes,
+                'index' => [
+                    'isID' => $insideDelivery, 
+                    'isLG' => $lgQuotes,
+                ],
+            ],
+            'lgnotifydelivery' => [
+                'isEnable' => $lgQuotes && $notifyDelivery, 
+                'index' => [
+                    'isLG' => $lgQuotes, 
+                    'isNBD' => $notifyDelivery,
+                ],
+            ],
+            'limitedaccessLG' => [
+                'isEnable' => $lgQuotes && $limitedAccess, 
+                'index' => [
+                    'isLG' => $lgQuotes, 
+                    'isLAD' => $limitedAccess,
+                ],
+            ],
+            'insidenotifydelivery' => [
+                'isEnable' => $insideDelivery && $notifyDelivery, 
+                'index' => [
+                    'isID' => $insideDelivery, 
+                    'isNBD' => $notifyDelivery,
+                ],
+            ],
+            'laccessinsidedelivery' => [
+                'isEnable' => $insideDelivery && $limitedAccess, 
+                'index' => [
+                    'isID' => $insideDelivery, 
+                    'isLAD' => $limitedAccess,
+                ],
+            ],
+            'laccessnotifydelivery' => [
+                'isEnable' => $limitedAccess && $notifyDelivery, 
+                'index' => [
+                    'isLAD' => $limitedAccess, 
+                    'isNBD' => $notifyDelivery,
+                ],
+            ],
+            'lginsidenotifydelivery' => [
+                'isEnable' => $lgQuotes && $insideDelivery && $notifyDelivery, 
+                'index' => [
+                    'isLG' => $lgQuotes, 
+                    'isID' => $insideDelivery, 
+                    'isNBD' => $notifyDelivery,
+                ],
+            ],
+            'lglaccessnotifydelivery' => [
+                'isEnable' => $lgQuotes && $limitedAccess && $notifyDelivery, 
+                'index' => [
+                    'isLG' => $lgQuotes, 
+                    'isLAD' => $limitedAccess, 
+                    'isNBD' => $notifyDelivery,
+                ],
+            ],
+            'lglaccessinsidedelivery' => [
+                'isEnable' => $lgQuotes && $limitedAccess && $insideDelivery, 
+                'index' => [
+                    'isLG' => $lgQuotes, 
+                    'isLAD' => $limitedAccess, 
+                    'isID' => $insideDelivery,
+                ],
+            ],
+            'laccessinsideNotifydelivery' => [
+                'isEnable' => $notifyDelivery && $limitedAccess && $insideDelivery, 
+                'index' => [
+                    'isNBD' => $notifyDelivery, 
+                    'isLAD' => $limitedAccess, 
+                    'isID' => $insideDelivery,
+                ],
+            ],
+            'lglaccessinsideNotifydelivery' => [
+                'isEnable' => $lgQuotes && $limitedAccess && $insideDelivery && $notifyDelivery, 
+                'index' => [
+                    'isLG' => $lgQuotes, 
+                    'isLAD' => $limitedAccess, 
+                    'isID' => $insideDelivery,
+                    'isNBD' => $notifyDelivery,
+                ],
+            ],
+        ];
+
+        return $enableFeaturesArray;
     }
     
 }
