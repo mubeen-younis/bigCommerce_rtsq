@@ -98,8 +98,11 @@ class ProductSettingController extends Controller
         $headers[] = 'Accept: application/json';
         $metaResponse = $this->curlRequest->enSingleCurlRequest($metaEndPoint, [], $headers, 'GET', true);
         $metaResponse = json_decode($metaResponse['response'], true);
-        Log::info('get all product variants' . json_encode($metaResponse));
-        $total_pages = $metaResponse['meta']['pagination']['total_pages'];
+        Log::info('get all product variants-productID:' . $product['id'] . json_encode($metaResponse));
+        $total_pages = $metaResponse['meta']['pagination']['total_pages'] ?? null;
+        if(blank($total_pages)){
+            return null;
+        }
         for ($count = 1; $count <= $total_pages; $count++) {
             $variantEndPoint = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products/' . $product['id'] . '/variants?limit=250&page=' . $count;
             $response = $this->curlRequest->enSingleCurlRequest($variantEndPoint, [], $headers, 'GET', true);
@@ -325,6 +328,7 @@ class ProductSettingController extends Controller
                     $query->orWhere('source_product_id', $search);
                 })->where('store_id', $request->store_id)
                 ->orderBy('name', $sortProd)
+                ->groupBy('source_product_id')
                 ->skip(($page - 1) * $perPage)->take($perPage)->get();
             }
             if ($products->isEmpty()) {
