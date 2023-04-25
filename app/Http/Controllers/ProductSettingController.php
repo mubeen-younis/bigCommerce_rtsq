@@ -309,8 +309,14 @@ class ProductSettingController extends Controller
                 $count = ProductSetting::where('store_id', $request->store_id)
                     ->orderBy('name', $sortProd)->get();
             } else {
-                $count = ProductSetting::where('name', 'LIKE', '%' . $search . '%')
-                    ->where('store_id', $request->store_id)->orderBy('name', $sortProd)
+                $count = ProductSetting::where('store_id', $request->store_id)
+                    ->where(function ($query) use ($search) {
+                        $query->where('name', 'LIKE', '%' . $search . '%')
+                            ->orWhere('sku', 'LIKE', '%' . $search . '%')
+                            ->orWhere('variant_id', $search)
+                            ->orWhere('source_product_id', $search);
+                    })
+                    ->orderBy('name', $sortProd)
                     ->get();
             }
 
@@ -319,15 +325,19 @@ class ProductSettingController extends Controller
             } else {
                 $count = 0;
             }
+
+
             if ($search === null || $search == '') {
                 $products = ProductSetting::where('store_id', $request->store_id)
                     ->groupBy('source_product_id')->orderBy('name', $sortProd)->skip(($page - 1) * $perPage)->take($perPage)->get();
             } else {
                 $products = ProductSetting::where(function ($query) use ($search) {
-                    $query->where('name', 'LIKE', '%' . $search . '%');
-                    $query->orWhere('variant_id', $search);
-                    $query->orWhere('source_product_id', $search);
-                })->where('store_id', $request->store_id)
+                    $query->where('name', 'LIKE', '%' . $search . '%')
+                        ->orWhere('sku', 'LIKE', '%' . $search . '%')
+                        ->orWhere('variant_id', $search)
+                        ->orWhere('source_product_id', $search);
+                })
+                    ->where('store_id', $request->store_id)
                     ->orderBy('name', $sortProd)
                     ->groupBy('source_product_id')
                     ->skip(($page - 1) * $perPage)->take($perPage)->get();
