@@ -99,7 +99,7 @@ class Functions
             'fedexltl' => 'fedexLTL', 'yrcltl' => 'yrc', 'gtzltl' => 'globalTranz', 'cltl' => 'cerasis',
             'parcel_12wwe' => 'wweSmall', 'parcel_12ups' => 'upsSmall', 'parcel_12fd' => 'fedexSmall', 'parcel_12uniship' => 'unishippersSmall',
             'fqltl' => 'freightQuote', 'estesltl' => 'estesLtl', 'dayrossltl' => 'dayross', 'odflltl' => 'OdflLTL', 'saialtl' => 'saia', 'parcel_12Purolator' => 'purolator', 'abfltl' => 'abf',
-            'SouthEastern' => 'southeastern', 'parcel_12usps' => 'usps', 'tqlltl' => 'tql', 'echoltl' => 'echoLogistics', 'daylightltl' => 'daylight', 'chr' => 'chr'];
+            'SouthEastern' => 'southeastern', 'parcel_12usps' => 'usps', 'tqlltl' => 'tql', 'echoltl' => 'echoLogistics', 'daylightltl' => 'daylight', 'chr' => 'chr', 'fqchrltl' => 'chr'];
         return $carrierCodesWithName[$carrierCode] ?? null;
     }
 
@@ -917,4 +917,25 @@ class Functions
         return $enableFeaturesArray;
     }
     
+    public static function get3plServiceName($sName, $rateId, $origin, $quotes)
+    {
+        if (!(isset($quotes->severity) && $quotes->severity == 'ERROR')) {
+            if(isset($quotes->q) && !empty($quotes->q)){
+                foreach($quotes->q as $quote){
+                    if(isset($quote->serviceType) && strpos($rateId, strtolower($quote->serviceType)) !== false){
+                        $sName = $quote->serviceDesc . ' ' ?? $sName;
+                    } else if(isset($quote->scac) && strpos($rateId, strtolower($quote->scac)) !== false){
+                        $sName = $quote->carrier . ' ' ?? $sName;
+                    } else if(isset($quote->CarrierDetail->CarrierCode) && strpos($rateId, strtolower($quote->CarrierDetail->CarrierCode)) !== false){
+                        $sName = $quote->CarrierDetail->CarrierName . ' ' ?? $sName;
+                    } else if(isset($quote->CarrierScac) && strpos($rateId, strtolower($quote->CarrierScac)) !== false){
+                        $sName = $quote->CarrierName . ' ' ?? $sName;
+                    } else if(isset($quote->CarrierSCAC) && strpos($rateId, strtolower($quote->CarrierSCAC)) !== false){
+                        $sName = $quote->CarrierName . ' ' ?? $sName;
+                    }
+                }
+            }
+        }
+        return $sName;
+    }
 }

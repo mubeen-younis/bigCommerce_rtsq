@@ -1385,8 +1385,8 @@ class CompileQuotes
 
             if (isset($quote['q'])) {
                 foreach ($quote['q'] as $key => $data) {
-                    if (isset($data['scac']) && in_array($data['scac'], $this->allConfigServices)) {
-                        $access = $this->getAccessorialCode() . $resiPickup;
+                    if (isset($data['scac']) && in_array($data['scac'], $allConfigServices)) {
+                        $access = $data['scac'] . $this->getAccessorialCode() . $resiPickup;
                         $data['totalNetCharge']['Amount'] = $data['customerRate'] ?? 0;
                         foreach ($data['priceCharges'] as $index => $value) {
                             if ($value['description'] == "Lift Gate") {
@@ -1420,8 +1420,8 @@ class CompileQuotes
                         $originQuotes[$key]['simple']['code'] = 'tqlltl' . $access;
                         $originQuotes[$key]['simple']['rate'] = $price;
                         $originQuotes[$key]['simple']['title'] = $title;
-                        if ($this->lgQuotes && $isLgSurcharges) {
-                            $lgAccess = 'tqlltl' . $this->getAccessorialCode(true) . $resiPickup;
+                        if ($lgQuotes) {
+                            $lgAccess = $data['scac'] . 'tqlltl' . $this->getAccessorialCode(true) . $resiPickup;
                             $lgPrice = $this->calculatePrice($data, true);
                             $lgTitle = $this->getTitle($data['carrier'] . $serviceType, true, false, $data['totalCalenderDaysInTransit'], [], $dateAndDays);
                             $arraySorting['liftgate'][$key] = $lgPrice ?? [];
@@ -4505,12 +4505,12 @@ class CompileQuotes
                         $title = $this->getTitle($data['serviceDesc'], false, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
                         
                         $arraySorting['simple'][$key] = $price;
-                        $originQuotes[$key]['simple']['code'] = 'fqchrltl' . $access;
+                        $originQuotes[$key]['simple']['code'] = $data['serviceType'] . 'fqchrltl' . $access;
                         $originQuotes[$key]['simple']['rate'] = $price;
                         $originQuotes[$key]['simple']['title'] = $title;
 
                         if ($lgQuotes) {
-                            $lgAccess = 'fqchrltl' . $this->getAccessorialCode(true);
+                            $lgAccess = $data['serviceType'] . 'fqchrltl' . $this->getAccessorialCode(true);
                             $lgPrice = $this->calculatePrice($charges, true);
                             $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
                          
