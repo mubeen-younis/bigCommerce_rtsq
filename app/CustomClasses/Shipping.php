@@ -995,7 +995,8 @@ class Shipping
         }
 
         if (strlen($quote['title']) > 100) {
-            $res = explode("(", $quote['title'])[0];
+            $res = explode("w/", $quote['title']);
+            $res = Functions::$simpleLTLTitle . ' w/' . $res[1];
         } else if ($quote['title'] == "") {
             $res = $quote['code'];
         }
