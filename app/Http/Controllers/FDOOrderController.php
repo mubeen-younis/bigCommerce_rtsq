@@ -135,6 +135,12 @@ class FDOOrderController extends Controller
         $lineItem->origin = $this->formatOrigins($requestToWS->requestArr->carriers);
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
         $liftGateStatus = 'n';
+        $LimitedAccessDel = strpos($rateId, '+LAD') ? 'Y' : 'n';
+        $insideDelivery = strpos($rateId, '+ID') ? 'Y' : 'n';
+        $isTruckLoad = strpos($rateId, '+TL') ? 'Y' : 'n';
+        $isFreightTruckLoad = strpos($rateId, '+FLGTL') ? 'Y' : 'n';
+        $isTwoManDel = strpos($rateId, Functions::$twoManDelAccess) ? 'Y' : 'n';
+        $isAppointmentDel = strpos($rateId, Functions::$appointmentDelAccess) ? 'Y' : 'n';
         $orderWidget = [];
         $isOneRate = strpos($rateId, '+or');
         $isGround = strpos($rateId, '+gd');
@@ -146,6 +152,7 @@ class FDOOrderController extends Controller
         }
         $autoResidentialsStatus = $liftResidentialStatus['resi'] ?? 'n';
         $residentialsPickup = $liftResidentialStatus['resiPickup'] ?? 'n';
+        $liftGatePickup = $liftResidentialStatus['lgPickup'] ?? 'n';
         // Removed Sbs COde From Here
         $packagingDetail = $this->getPackagingDetail($responseFromWS, $isSmallrate, $rateType);
         $origins = $lineItem->origin;
@@ -205,10 +212,11 @@ class FDOOrderController extends Controller
             }
             $shipping_name = explode('(', $order['shipping_name']);
             $sName = $shipping_name[0] ?? '';
-            $sName = str_replace(Constant::RESI_LABEL, '', $sName);
-            $sName = str_replace(Constant::LIFT_LABEL, '', $sName);
-            $sName = str_replace(Constant::RESI_LIFT_LABEL, '', $sName);
+            $sName = explode('w/', $sName)[0] ?? '';
             $sMethod = isset($shipping_name[1]) ? '(' . $shipping_name[1] : '';
+
+            $quotes = optional($responseFromWS)->$wsCarrierCode->$zip;
+            $sName = Functions::get3plServiceName($sName, $rateId, $origin, $quotes);
 
             $orderWidget[$zip]['service_name'] = $sName . $sMethod;
             $orderWidget[$zip]['ship_price'] = number_format((float)$sRate, 2);
@@ -253,9 +261,15 @@ class FDOOrderController extends Controller
 
             $isHAT ? array_push($orderWidget[$zip]['accessorials'], 'Hold At Terminal') : '';
             if (!$isSmall) {
-
                 $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Residential Pickup') : '';
                 $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Lift Gate Delivery') : '';
+                $liftGatePickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Pickup') : '';
+                $insideDelivery != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Inside Delivery') : '';
+                $LimitedAccessDel != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Limited Access Delivery') : '';
+                $isTruckLoad != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Truck Load Delivery') : '';
+                $isFreightTruckLoad != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Truck Load Delivery') : '';
+                $isTwoManDel != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Two Man Delivery') : '';
+                $isAppointmentDel != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Appointment Delivery') : '';
             }
             $accessorials = $this->formatAccessorials($orderWidget[$zip]['accessorials']);
             $orderWidget[$zip]['accessorials'] = $accessorials;

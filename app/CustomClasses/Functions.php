@@ -64,7 +64,7 @@ class Functions
 
     public static function getCarrierNameOrCode($code, $getWsCode = 0): ?string
     {
-        $carrierCodes = ['wweltl', 'rnlltl', 'xpoltl', 'fedexltl', 'gtzltl', 'cltl', 'upsltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship'];
+        $carrierCodes = ['wweltl', 'rnlltl', 'xpoltl', 'fedexltl', 'gtzltl', 'cltl', 'fqltl', 'upsltl', 'tqlltl', 'echoltl', 'fqchrltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship'];
         foreach ($carrierCodes as $carrierCode) {
             if (strpos($code, $carrierCode) !== false) {
                 if ($getWsCode == 0) {
@@ -79,8 +79,8 @@ class Functions
 
     public static function getCarrierCodeWs($carrierCode): ?string
     {
-        $carrierCodesWithName = ['wweltl' => 'wweLTL', 'rnlltl' => 'rnl', 'xpoltl' => 'xpoLogistics', 'upsltl' => 'upsLTL',
-            'fedexltl' => 'fedexLTL', 'gtzltl' => 'globalTranz', 'cltl' => 'cerasis',
+        $carrierCodesWithName = ['wweltl' => 'wweLTL', 'tqlltl' => 'tql', 'rnlltl' => 'rnl', 'fqltl' => 'freightQuote', 'fqchrltl' => 'chr', 'xpoltl' => 'xpoLogistics', 'upsltl' => 'upsLTL',
+            'fedexltl' => 'fedexLTL', 'gtzltl' => 'globalTranz', 'cltl' => 'cerasis', 'echoltl' => 'echoLogistics',
             'parcel_12wwe' => 'wweSmall', 'parcel_12ups' => 'upsSmall', 'parcel_12fd' => 'fedexSmall', 'parcel_12uniship' => 'unishippersSmall'];
         return $carrierCodesWithName[$carrierCode] ?? null;
     }
@@ -671,5 +671,27 @@ class Functions
             break;
         }
         return $hatShipments;
+    }
+
+    public static function get3plServiceName($sName, $rateId, $origin, $quotes)
+    {
+        if (!(isset($quotes->severity) && $quotes->severity == 'ERROR')) {
+            if(isset($quotes->q) && !empty($quotes->q)){
+                foreach($quotes->q as $quote){
+                    if(isset($quote->serviceType) && strpos($rateId, strtolower($quote->serviceType)) !== false){
+                        $sName = $quote->serviceDesc . ' ';
+                    } else if(isset($quote->scac) && strpos($rateId, strtolower($quote->scac)) !== false){
+                        $sName = $quote->carrier . ' ';
+                    } else if(isset($quote->CarrierDetail->CarrierCode) && strpos($rateId, strtolower($quote->CarrierDetail->CarrierCode)) !== false){
+                        $sName = $quote->CarrierDetail->CarrierName . ' ';
+                    } else if(isset($quote->CarrierScac) && strpos($rateId, strtolower($quote->CarrierScac)) !== false){
+                        $sName = $quote->CarrierName . ' ';
+                    } else if(isset($quote->CarrierSCAC) && strpos($rateId, strtolower($quote->CarrierSCAC)) !== false){
+                        $sName = $quote->CarrierName . ' ';
+                    }
+                }
+            }
+        }
+        return $sName;
     }
 }
