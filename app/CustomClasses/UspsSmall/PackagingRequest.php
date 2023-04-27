@@ -6,7 +6,7 @@ use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
 use App\Endpoints\Endpoints;
 use App\Models\BoxSize;
-
+use Illuminate\Support\Facades\Log;
 class PackagingRequest
 {
     private $binResArr, $finalBoxesForWs;
@@ -133,7 +133,7 @@ class PackagingRequest
 
         $this->getAndSet3dBinResponse();
         $sbsPackedBoxes = $this->getSbsPackedBoxes(true, $itemLocId);
-
+        Log::info('sbs Packed Boxes ' . json_encode($sbsPackedBoxes));
         $resp = [
             'packedBoxes' => $sbsPackedBoxes,
             'owdBoxes' => $this->finalBoxesForWs,
@@ -306,6 +306,7 @@ class PackagingRequest
         }
 
         $curlResponse = $this->boxingMultiCurl($this->packagingRequest);
+        Log::info('after 3D curl binResponse' . json_encode($curlResponse));
         $this->formatResponse($curlResponse);
     }
 

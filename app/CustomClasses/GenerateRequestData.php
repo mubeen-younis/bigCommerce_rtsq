@@ -2417,6 +2417,7 @@ class GenerateRequestData
 
                 $binReqArr[$itemLocId] = $uspsSmallPkgReq->getGroupedUSPSBoxes($storeId);
                 $binRespArr = $uspsSmallPkgReq->setAndGetBinsResponse($storeId, $connSettings, $enitOrigin, $lineItems, $itemLocId);
+                Log::info('BinResponse from api array' . json_encode($binRespArr));
                 $apiArray['binResponse'][$itemLocId] = $binRespArr['packedBoxes'];
                 $owdArr = $binRespArr['owdBoxes'];
             }
@@ -2427,6 +2428,7 @@ class GenerateRequestData
         }
 
         $apiArray = array_merge($apiArray, $this->getCutOffDetails($connSettings));
+        Log::info('final api array' . json_encode($apiArray));
         return $apiArray;
     }
 
