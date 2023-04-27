@@ -1449,7 +1449,7 @@ class CompileQuotes
                 }
             }
             if ($ratingMethod == 1 || $ratingMethod == 2 || $ratingMethod == 3) {
-                $compiledQuotes = $this->getCompiledQuotesTQL($originQuotes, $arraySorting, $lgQuotes, $notifyDelivery);
+                $compiledQuotes = $this->getCompiledQuotesTQL($originQuotes, $arraySorting, $lgQuotes, $this->notifyDelivery);
             } else {
                 $compiledQuotes = $originQuotes;
             }
