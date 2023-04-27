@@ -58,6 +58,7 @@ class PackagingRequest
                 $uspsGroupedBoxes['customBoxes'][$boxId] = $this->formatBoxFields($uspsBox);
             }
         }
+        Log::info('USPS Grouped Boxes ' . json_encode($uspsGroupedBoxes));
 
         return $uspsGroupedBoxes;
     }
