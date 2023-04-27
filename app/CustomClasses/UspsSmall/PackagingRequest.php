@@ -7,6 +7,7 @@ use App\CustomClasses\CompileQuotes;
 use App\Endpoints\Endpoints;
 use App\Models\BoxSize;
 use Illuminate\Support\Facades\Log;
+
 class PackagingRequest
 {
     private $binResArr, $finalBoxesForWs;
@@ -39,7 +40,7 @@ class PackagingRequest
     {
         $uspsGroupedBoxes = [];
         foreach ($uspsBoxes as $uspsBox) {
-            $boxCode = $uspsBox['box_name'] ?? '';
+            $boxCode = !empty($uspsBox['box_name']) ? preg_replace('/\d+/', '', $uspsBox['box_name']) : "";
             $boxId = $uspsBox['id'] ?? null;
 
             if ($boxCode == "UPMB" || $boxCode == "UMEB" || $boxCode == "UFLAT") {
