@@ -30,7 +30,7 @@ class ProductSettingController extends Controller
     public function importProducts(Request $request)
     {
         set_time_limit(0);
-        $isSyncinProgress = ImportProductsModel::where('store_id', $request['store_id'])->where('status', '=', 1)->where('created_at', '>', Carbon::now()->subDay(1)->toDateTimeString())->exists();
+        $isSyncinProgress = ImportProductsModel::where('store_id', $request['store_id'])->where('status', '=', 1)->where('created_at', '>', Carbon::now()->subDay()->toDateTimeString())->exists();
         if (!$isSyncinProgress) {
             $importPrdModel = new ImportProductsModel();
             $importPrdModel->store_id = $request['store_id'];
@@ -42,13 +42,15 @@ class ProductSettingController extends Controller
             $data['store_id'] = $request['store_id'];
             $data['perpage'] = 250;
             $totalpages = $this->importProductsGetPages($data);
-            $delay = 0;
+            // Adds seconds of delay
+            $delay = 1;
 
-            for ($page = 0; $page <= $totalpages; $page++) {
+            for ($page = 1; $page <= $totalpages; $page++) {
                 $data['page'] = $page;
-                ImportProductsFromBCStore::dispatch($data)->delay(Carbon::now()->addSecond(($delay++) * 20));
+                // Need to add this and comment below line if you want to execute without queue job or in dev server $this->importProductsJob($data);
+                ImportProductsFromBCStore::dispatch($data)->delay(Carbon::now()->addSeconds($delay++));
             }
-            ImportProductsFromBCStoreStatusUpdate::dispatch($insertedId, $request['email'])->delay(Carbon::now()->addSecond(($delay++) * 20));
+            ImportProductsFromBCStoreStatusUpdate::dispatch($insertedId, $request['email'])->delay(Carbon::now()->addSeconds(5));
             \Artisan::call('queue:work');
 
         }
@@ -100,7 +102,7 @@ class ProductSettingController extends Controller
         $metaResponse = json_decode($metaResponse['response'], true);
         Log::info('get all product variants-productID:' . $product['id'] . json_encode($metaResponse));
         $total_pages = $metaResponse['meta']['pagination']['total_pages'] ?? null;
-        if(blank($total_pages)){
+        if (blank($total_pages)) {
             return null;
         }
         for ($count = 1; $count <= $total_pages; $count++) {
@@ -128,13 +130,12 @@ class ProductSettingController extends Controller
 
     public function importProductsGetPages($data)
     {
-        $storeUrl = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products?limit=' . $data['perpage'] . '&page=0';
+        $storeUrl = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products?limit=' . $data['perpage'];
         $headers[] = 'X-Auth-Token: ' . $data['store_token'];
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
         $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
         $response = json_decode($response['response'], true);
-        //dd($response['meta']['pagination']['total_pages']);
         return $response['meta']['pagination']['total_pages'];
     }
 
@@ -308,9 +309,15 @@ class ProductSettingController extends Controller
                 $count = ProductSetting::where('store_id', $request->store_id)
                     ->orderBy('name', $sortProd)->get();
             } else {
-                $count = ProductSetting::where('name', 'LIKE', '%' . $search . '%')
-                ->where('store_id', $request->store_id)->orderBy('name', $sortProd)
-                ->get();
+                $count = ProductSetting::where('store_id', $request->store_id)
+                    ->where(function ($query) use ($search) {
+                        $query->where('name', 'LIKE', '%' . $search . '%')
+                            ->orWhere('sku', 'LIKE', '%' . $search . '%')
+                            ->orWhere('variant_id', $search)
+                            ->orWhere('source_product_id', $search);
+                    })
+                    ->orderBy('name', $sortProd)
+                    ->get();
             }
 
             if ($count->count()) {
@@ -322,10 +329,11 @@ class ProductSettingController extends Controller
                 $products = ProductSetting::where('store_id', $request->store_id)
                     ->groupBy('source_product_id')->orderBy('name', $sortProd)->skip(($page - 1) * $perPage)->take($perPage)->get();
             } else {
-                $products = ProductSetting::where(function($query) use ($search) {
-                    $query->where('name', 'LIKE', '%' . $search . '%');
-                    $query->orWhere('variant_id', $search);
-                    $query->orWhere('source_product_id', $search);
+                $products = ProductSetting::where(function ($query) use ($search) {
+                    $query->where('name', 'LIKE', '%' . $search . '%')
+                        ->orWhere('sku', 'LIKE', '%' . $search . '%')
+                        ->orWhere('variant_id', $search)
+                        ->orWhere('source_product_id', $search);
                 })->where('store_id', $request->store_id)
                 ->orderBy('name', $sortProd)
                 ->groupBy('source_product_id')
@@ -548,7 +556,7 @@ class ProductSettingController extends Controller
             return response()->json(true);
         } catch (\Exception $exception) {
             //  Have to LOg Here
-            Log::info('Sku Webhook Exception '.json_encode([$exception->getMessage(), $exception->getLine()]));
+            Log::info('Sku Webhook Exception ' . json_encode([$exception->getMessage(), $exception->getLine()]));
         }
     }
 
