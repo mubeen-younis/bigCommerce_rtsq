@@ -1043,7 +1043,7 @@ class CompileQuotes
                 }
             }
 
-            $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes, $resiPickup, $lgPickup, $insideDelivery);
+            $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes, $resiPickup, $lgPickup, $insideDelivery, false, $limitedAccess);
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
                 if (count($compiledQuotes) > 1) {
                     foreach ($compiledQuotes as $k => $service) {
@@ -3098,7 +3098,7 @@ class CompileQuotes
                     $lgQuotes = (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->isResi;
                 }
                 if(!$laccess){
-                    $laccess = !($this->isResi || $this->alwaysResi) && (isset($this->quoteSettings['offer_limited_access_delivery']) && $this->quoteSettings['offer_limited_access_delivery']);
+                    $laccess = !($this->isResi || $this->alwaysResi) && (isset($this->quoteSettings['offer_limited_access_delivery']) && $this->quoteSettings['offer_limited_access_delivery'] || isset($this->quoteSettings['always_limited_access_delivery']) && $this->quoteSettings['always_limited_access_delivery']);
                 }
             }
 
@@ -4387,7 +4387,7 @@ class CompileQuotes
                  * */
                 return array_merge($quotes['twoManDel'] ?? [], $quotes['aptDel'] ?? []) ?? $quotes['simple'];
             } else {
-                return array_merge($quotes['simple'] ?? [], $quotes['insideDelivery'] ?? [], $quotes['limitedaccess'] ?? [], $quotes['Truckload'] ?? [], $quotes['twoManDel'] ?? [], $quotes['aptDel'] ?? [], $quotes['twoManAptDel'] ?? [], $quotes['notifydelivery'] ?? [], $quotes['insidenotifydelivery'] ?? [], $quotes['laccessnotifydelivery'] ?? []);
+                return array_merge($quotes['simple'] ?? [], $quotes['insideDelivery'] ?? [], $quotes['limitedaccess'] ?? [], $quotes['Truckload'] ?? [], $quotes['twoManDel'] ?? [], $quotes['aptDel'] ?? [], $quotes['twoManAptDel'] ?? [], $quotes['notifydelivery'] ?? [], $quotes['insidenotifydelivery'] ?? [], $quotes['laccessnotifydelivery'] ?? [], $quotes['laccessinsidedelivery'] ?? [], $quotes['lglaccessinsidedelivery'] ?? []);
             }
         } elseif ($lfg && $alwaysNotifyDel && $alwaysInsideDel && $alwaysLimitedDel) {
             /**
@@ -4524,14 +4524,30 @@ class CompileQuotes
             if ($this->isMultiShipment) {
                 $rate = 0;
                 $code = '';
-                $isLiftGate = $key == 'liftgate' ? true : false;
-                $isInsideDelivery = $key == 'insideDelivery' ? true : false;
-                $isInsideLiftGateDelivery = $key == 'insideLiftGateDelivery' ? true : false;
-                $isLimitedAccess = $key == 'limitedaccess' ? true : false;
-                $isLimitedAccessLG = $key == 'limitedaccessLG' ? true : false;
-                $twoManDel = $key == 'twoManDel' ? true : false;
-                $appDel = $key == 'aptDel' ? true : false;
-                $twoManAptDel = $key == 'twoManAptDel' ? true : false;
+                // check liftgate key with other features enable
+                $isLiftGate = ( $key == 'liftgate' || $key == 'lgnotifydelivery' || $key == 'lginsidenotifydelivery' 
+                            || $key == 'insideLiftGateDelivery' || $key == 'limitedaccessLG' || $key == 'lglaccessnotifydelivery'
+                            || $key == 'lglaccessinsidedelivery' || $key == 'lglaccessinsideNotifydelivery') ? true : false;
+
+                // check inside delivery key with other features enable
+                $isInsideDelivery = ( $key == 'insideDelivery' || $key == 'insideLiftGateDelivery' || $key == 'lglaccessinsideNotifydelivery'
+                                || $key == 'insidenotifydelivery' || $key == 'lginsidenotifydelivery' || $key == 'laccessinsidedelivery'
+                                || $key == 'lglaccessinsidedelivery' || $key == 'laccessinsideNotifydelivery') ? true : false;
+
+                // check limited access delivery key with other features enable
+                $isLimitedAccess = ($key == 'limitedaccess' || $key == 'limitedaccessLG' || $key == 'laccessnotifydelivery' 
+                                || $key == 'laccessinsidedelivery' || $key == 'lglaccessnotifydelivery' || $key == 'laccessinsideNotifydelivery'
+                                || $key == 'lglaccessinsidedelivery' || $key == 'lglaccessinsideNotifydelivery') ? true : false;
+
+                // check two man and appointment delivery enable
+                $twoManDel = ($key == 'twoManDel' || $key == 'twoManAptDel') ? true : false;
+                $appDel = ($key == 'aptDel' || $key == 'twoManAptDel') ? true : false;
+
+                // check notify before delivery key with other features enable
+                $isNotifydelivery = ( $key == 'notifydelivery' || $key == 'insidenotifydelivery' || $key == 'lglaccessinsideNotifydelivery'
+                                    || $key == 'lgnotifydelivery' || $key == 'lginsidenotifydelivery' || $key == 'laccessinsideNotifydelivery'
+                                    || $key == 'laccessnotifydelivery' || $key == 'lglaccessnotifydelivery') ? true : false;
+
                 foreach ($value as $key2 => $data) {
                     $rate += $data['rate'];
                     $code = $data['code'];
@@ -4539,7 +4555,7 @@ class CompileQuotes
                 $quotesArr[] = [
                     'code' => $code,
                     'rate' => $rate,
-                    'title' => $this->getTitle(Functions::$ltlMultiTitle, $isLiftGate, true, '', [], [], $isInsideDelivery, $isInsideLiftGateDelivery, $isLimitedAccess, $isLimitedAccessLG, $twoManDel, $appDel, $twoManAptDel),
+                    'title' => $this->getTitle(Functions::$ltlMultiTitle, $isLiftGate, true, '', [], [], $isInsideDelivery, $isLimitedAccess, false, $twoManDel, $appDel, false, $isNotifydelivery, $this->isResi),
                 ];
             } else {
                 $quotesArr[] = reset($value);
@@ -5296,7 +5312,7 @@ class CompileQuotes
         return $resp;
     }
 
-    public function getCompiledQuotes($services, $arraySorting, $lgQuotes, $resiPickup = '', $lgPickup = '', $insideDelivery = false)
+    public function getCompiledQuotes($services, $arraySorting, $lgQuotes, $resiPickup = '', $lgPickup = '', $insideDelivery = false, $notifyDelivery = false, $limitedAccess = false)
     {
 
         if (empty($arraySorting) || empty($services)) {
@@ -5331,7 +5347,7 @@ class CompileQuotes
                 return $averageRateService;
             }
 
-            return $this->averageRattingMethod($arraySorting, $options, $lgQuotes, $resiPickup, $lgPickup, $insideDelivery);
+            return $this->averageRattingMethod($arraySorting, $options, $lgQuotes, $resiPickup, $lgPickup, $insideDelivery, $limitedAccess);
         }
 
         $resp = array_intersect_key($services, $sliced);
@@ -5369,7 +5385,7 @@ class CompileQuotes
      * @param $lgQuotes
      * @return array
      */
-    public function averageRattingMethod($ratesArray, $options, $lgQuotes, $resiPickup = '', $lgPickup = '', $insideDelivery = false)
+    public function averageRattingMethod($ratesArray, $options, $lgQuotes, $resiPickup = '', $lgPickup = '', $insideDelivery = false, $limitedAccess = false)
     {
         $sliced = array_slice($ratesArray['simple'], 0, $options, true);
         $simplePrice = $this->getAveragePrice($sliced, $options);
@@ -5403,6 +5419,26 @@ class CompileQuotes
                 'rate' => $insideDelPrice,
             ];
         }
+        if ($limitedAccess) {
+            asort($ratesArray['limitedaccess']);
+            $sliced = array_slice($ratesArray['limitedaccess'], 0, $options, true);
+            $limitedAccDelPrice = $this->getAveragePrice($sliced, $options);
+            $averageRateService[0]['limitedaccess'] = [
+                'title' => $this->getTitle($serviceName, false, false, '', [], [], false, $limitedAccess),
+                'code' => $prefix . $this->getAccessorialCode(false, false, $resiPickup, $lgPickup, $limitedAccess),
+                'rate' => $limitedAccDelPrice,
+            ];
+        }
+        if ($insideDelivery && $limitedAccess) {
+            asort($ratesArray['laccessinsidedelivery']);
+            $sliced = array_slice($ratesArray['laccessinsidedelivery'], 0, $options, true);
+            $insideDelLimitedPrice = $this->getAveragePrice($sliced, $options);
+            $averageRateService[0]['laccessinsidedelivery'] = [
+                'title' => $this->getTitle($serviceName, false, false, '', [], [], $insideDelivery, $limitedAccess),
+                'code' => $prefix . $this->getAccessorialCode(false, $insideDelivery, $resiPickup, $lgPickup, $limitedAccess),
+                'rate' => $insideDelLimitedPrice,
+            ];
+        }
         if ($insideDelivery && $lgQuotes) {
             asort($ratesArray['insideLiftGateDelivery']);
             $sliced = array_slice($ratesArray['insideLiftGateDelivery'], 0, $options, true);
@@ -5411,6 +5447,26 @@ class CompileQuotes
                 'title' => $this->getTitle($serviceName, $lgQuotes, false, '', [], [], $insideDelivery),
                 'code' => $prefix . $this->getAccessorialCode($lgQuotes, $insideDelivery, $resiPickup, $lgPickup),
                 'rate' => $insideDelLiftGatePrice,
+            ];
+        }
+        if ($limitedAccess && $lgQuotes) {
+            asort($ratesArray['limitedaccessLG']);
+            $sliced = array_slice($ratesArray['limitedaccessLG'], 0, $options, true);
+            $limitedLiftGatePrice = $this->getAveragePrice($sliced, $options);
+            $averageRateService[0]['limitedaccessLG'] = [
+                'title' => $this->getTitle($serviceName, $lgQuotes, false, '', [], [], false, $limitedAccess),
+                'code' => $prefix . $this->getAccessorialCode($lgQuotes, false, $resiPickup, $lgPickup, $limitedAccess),
+                'rate' => $limitedLiftGatePrice,
+            ];
+        }
+        if ($limitedAccess && $lgQuotes && $insideDelivery) {
+            asort($ratesArray['lglaccessinsidedelivery']);
+            $sliced = array_slice($ratesArray['lglaccessinsidedelivery'], 0, $options, true);
+            $limitedInsideLiftGatePrice = $this->getAveragePrice($sliced, $options);
+            $averageRateService[0]['lglaccessinsidedelivery'] = [
+                'title' => $this->getTitle($serviceName, $lgQuotes, false, '', [], [], $insideDelivery, $limitedAccess),
+                'code' => $prefix . $this->getAccessorialCode($lgQuotes, $insideDelivery, $resiPickup, $lgPickup, $limitedAccess),
+                'rate' => $limitedInsideLiftGatePrice,
             ];
         }
         return $averageRateService;
@@ -5475,7 +5531,7 @@ class CompileQuotes
     {
         $numOfIndexes = count($arraySorting);
         $divider = ($numOfIndexes == $options) ? $options : $numOfIndexes;
-        return array_sum($arraySorting) / $divider;
+        return round(array_sum($arraySorting) / $divider, 2);
     }
 
     public function customLabel($serviceName, $quoteSettings = [])

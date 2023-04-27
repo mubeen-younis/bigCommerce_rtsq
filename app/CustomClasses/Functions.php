@@ -36,6 +36,8 @@ class Functions
     public static $imageSeparatedUrl = 'https://us-east.api.3dbinpacking.com/images/70785010926d0cc360921e4541811a53/20181106/4c114cebfa2d61a0c8153b3170ab6663/1541503329-2391-8709331.png';
     public static $imageSbsUrl = 'https://us-east.api.3dbinpacking.com/images/70785010926d0cc360921e4541811a53/20181106/4c114cebfa2d61a0c8153b3170ab6663/1541503329-24-8612722.png';
     public static $limitedAccesDelLabel = ' w/ limited access delivery';
+    public static $resiLimitedAccesDelLabel = ' w/ residential & limited access delivery';
+    public static $resiLimitedAccessLGDelLable = ' w/ residential, lift gate & limited access delivery';
     public static $limitedAccessLGDelLable = ' w/ lift gate & limited access delivery';
     public static $twoManDeliveryLabel = ' w/ two man delivery';
     public static $appointmentDeliveryLabel = ' w/ appointment delivery';
