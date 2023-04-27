@@ -2960,10 +2960,11 @@ class GenerateRequestData
         $item['lineItemWeight'] = $bin->bin_data->weight + $boxWeight;
         $item['isHazmatLineItem'] = $hazmat;
 
+        Log::info('BinResponse for Update CommdityDetails ' . json_encode($bin));
         //$item['piecesOfLineItem'] = 1 ?? 0;
         $item['shipItemAlone'] = 1;
         if ((isset($item['shipBinAlone']) && $item['shipBinAlone'] == 0)) {
-            $item['piecesOfLineItem'] = 1;
+            $item['piecesOfLineItem'] = optional($bin)->bin_data->quantity ?? 1;
         }
         if (isset($bin->bin_data->type) && $bin->bin_data->type == 'item' && isset($bin->bin_data->id)) {
             $item['variant_id'] = $bin->bin_data->id ?? 0;
