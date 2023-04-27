@@ -1385,7 +1385,7 @@ class CompileQuotes
 
             if (isset($quote['q'])) {
                 foreach ($quote['q'] as $key => $data) {
-                    if (isset($data['scac']) && in_array($data['scac'], $allConfigServices)) {
+                    if (isset($data['scac']) && in_array($data['scac'], $this->allConfigServices)) {
                         $access = $data['scac'] . $this->getAccessorialCode() . $resiPickup;
                         $data['totalNetCharge']['Amount'] = $data['customerRate'] ?? 0;
                         foreach ($data['priceCharges'] as $index => $value) {
