@@ -997,7 +997,7 @@ class CompileQuotes
                         $days = $data['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
                         $enableFeaturesArray = Functions::getEnableFeaturesArr($lgQuotes && $isSurcharges, $insideDelivery && $isSurcharges, $notifyDelivery = false, $limitedAccess && $isSurcharges);
-                        Log::info('enable Features Array' . json_encode($enableFeaturesArray . $insideDelivery . $isSurcharges));
+                        Log::info('enable Features Array' . json_encode($enableFeaturesArray) . $insideDelivery . $isSurcharges);
                         foreach ($enableFeaturesArray as $index => $feature) {
                             if($feature['isEnable']){
                                 $compileNotifyDeliveryQuotes = Functions::getOriginQuotes($index, $data['serviceDesc'], $originQuotes, $data, $key, $data['totalTransitTimeInDays'], 
