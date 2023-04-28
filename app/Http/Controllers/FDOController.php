@@ -120,18 +120,25 @@ class FDOController extends Controller
 
     public function getFDOCouponCarrierInfo(Request $request)
     {
+        $isCarrPromoExpire = false;
         $carrierInfo = CouponCarrier::getCarrierInfoByName($request);
         $promoCarriersInfo = CouponCarrier::getPromoCarriersInfo($request);
         $registerUrl = Endpoints::getFDORegisterUrl();
         if (isset($request['coupon_code']) && !blank($request['coupon_code'])) {
             $registerUrl = $registerUrl . '?code=' . $this->encodeBase64Code($request);
         }
-        
+        if(isset($promoCarriersInfo) && !empty($promoCarriersInfo)){
+            foreach($promoCarriersInfo as $carr){
+                if(isset($carr['is_enabled']) && $carr['is_enabled'] === 2){
+                    $isCarrPromoExpire = true;
+                }
+            }
+        }
         if($carrierInfo) {
             $data = $carrierInfo;
-            $data['promoCarriers'] = $promoCarriersInfo;
         }
         $data['registerUrl'] = $registerUrl;
+        $data['isCarrPromoExpire'] = $isCarrPromoExpire;
 
         return response()->json(['error' => false,
             'data' => $data,
