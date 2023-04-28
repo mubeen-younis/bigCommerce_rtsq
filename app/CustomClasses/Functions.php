@@ -704,7 +704,7 @@ class Functions
 
         $offerFeaturesAsOption = [
             'offerLiftGateDelivery' => [$lgOption, 'liftgate,'],
-            'offer_inside_delivery' => [$insideDel, 'inside,'],
+            'insideDelivery' => [$insideDel, 'inside,'],
             'offer_limited_access_delivery' => [$laccess, 'limited access,'],
             'offer_two_man_delivery' => [$twoManDel, 'two man,'],
             'offer_appointment_delivery' => [$appDel, 'appointment,'],
