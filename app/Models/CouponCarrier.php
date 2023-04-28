@@ -42,7 +42,7 @@ class CouponCarrier extends Model
 
         $code = $request['coupon_code'] ?? '';        
         if(!empty($code)){
-            $coupon = Coupon::where('code', $code)->first();
+            $coupon = Coupon::where('code', $code)->where('store_id', $request['store_id'])->first();
             return self::where('coupon_code_id', $coupon->id)->get()->toArray();
         }
 
