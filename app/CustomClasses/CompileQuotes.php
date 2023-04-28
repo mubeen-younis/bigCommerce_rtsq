@@ -982,8 +982,7 @@ class CompileQuotes
                 foreach ($quote['q'] as $key => $data) {
 
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) && isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y') {
-                       // $access = $this->getAccessorialCode(false, false, $resiPickup, $lgPickup);
-                       // $price = $this->calculatePrice($data);
+                    
                        if($limitedAccess && isset($this->quoteSettings['limited_access_fee'])){
                             $data['totalNetCharge']['Amount'] += $this->quoteSettings['limited_access_fee'];
                             $data['surcharges']['limitedAccessDeliveryFee'] = (float) $this->quoteSettings['limited_access_fee'];
@@ -1006,39 +1005,7 @@ class CompileQuotes
                                 $arraySorting[$index][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
                                 $originQuotes = $compileNotifyDeliveryQuotes['originQuotes'];
                             }
-                        }
-                        //$title = $this->getTitle($data['serviceDesc'], false, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
-                        // $arraySorting['simple'][$key] = $price;
-                        // $originQuotes[$key]['simple']['code'] = 'wweltl' . $data['serviceType'] . $access;
-                        // $originQuotes[$key]['simple']['rate'] = $price;
-                        // $originQuotes[$key]['simple']['title'] = $title;
-                        // if ($insideDelivery && $lgQuotes) {
-                        //     $access = $this->getAccessorialCode(true, true, $resiPickup, $lgPickup);
-                        //     $price = $this->calculatePrice($data, true, false, false, true);
-                        //     $title = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays'], [], $dateAndDays, true);
-                        //     $arraySorting['insideLiftGateDelivery'][$key] = $price;
-                        //     $originQuotes[$key]['insideLiftGateDelivery']['code'] = "wweltl" . $data['serviceType'] . $access;
-                        //     $originQuotes[$key]['insideLiftGateDelivery']['rate'] = $price;
-                        //     $originQuotes[$key]['insideLiftGateDelivery']['title'] = $title;
-                        // }
-                        // if ($lgQuotes) {
-                        //     $lgAccess = 'wweltl' . $this->getAccessorialCode(true, false, $resiPickup, $lgPickup);
-                        //     $lgPrice = $this->calculatePrice($data, true);
-                        //     $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
-                        //     $arraySorting['liftgate'][$key] = $lgPrice;
-                        //     $originQuotes[$key]['liftgate']['code'] = $data['serviceType'] . $lgAccess;
-                        //     $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
-                        //     $originQuotes[$key]['liftgate']['title'] = $lgTitle;
-                        // }
-                        // if ($insideDelivery) {
-                        //     $access = $this->getAccessorialCode(false, true, $resiPickup, $lgPickup);
-                        //     $price = $this->calculatePrice($data, false, false, false, true);
-                        //     $title = $this->getTitle($data['serviceDesc'], false, false, $data['totalTransitTimeInDays'], [], $dateAndDays, true);
-                        //     $arraySorting['insideDelivery'][$key] = $price;
-                        //     $originQuotes[$key]['insideDelivery']['code'] = "wweltl" . $data['serviceType'] . $access;
-                        //     $originQuotes[$key]['insideDelivery']['rate'] = $price;
-                        //     $originQuotes[$key]['insideDelivery']['title'] = $title;
-                        // }                 
+                        }            
                     }
                 }
             }
@@ -4612,11 +4579,11 @@ class CompileQuotes
      *
      * @info: This will return specific code according to the accessorials for appending with the service code.
      */
-    public function getAccessorialCode($lgOption = false, $insideDel = false, $resiPickup = '', $lgPickup = '', $laccess = false, $twoManDel = false, $appDel = false)
+    public function getAccessorialCode($lgOption = false, $insideDel = false, $resiPickup = '', $lgPickup = '', $laccess = false, $twoManDel = false, $appDel = false, $notifyDelivery = false, $isResi = false, $isAlwaysResid = false)
     {
         $access = '';
         $isAlwaysResi = isset($this->isSameDayApi) && $this->isSameDayApi && $lgOption ? false : $this->alwaysResi;
-        if ($this->residentialDlvry == '1' || $this->isResi || $isAlwaysResi) {
+        if ($this->residentialDlvry == '1' || $this->isResi || $isAlwaysResi || $isResi || $isAlwaysResid) {
             $access .= '+R';
         }
         if (($lgOption || (isset($this->liftGate) && $this->liftGate == '1')) || (isset($this->RADforLiftgate) && $this->RADforLiftgate && $this->isResi)) {
@@ -4784,63 +4751,6 @@ class CompileQuotes
 
         $resp = $serviceTitle . $accessTitle . $deliveryEstimateLabel;
         return $resp;
-
-        // if ($lgOption === true || (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'])) {
-        //     if ($lgOption && $this->quoteSettings['alwaysLiftGateDelivery'] == '0') {
-        //         $accessTitle = $this->isResi ? $this->resiLgLabel : $this->lgLabel;
-        //     }
-        //     if (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery'] && $this->isResi) {
-        //         $accessTitle = $this->resiLabel;
-        //     }
-        //     if (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'] && $this->isResi) {
-        //         $accessTitle = $this->resiLgLabel;
-        //     }
-        // } elseif ($this->isResi) {
-        //     $accessTitle = $this->resiLabel;
-        // } 
-
-        // if(($lgOption && $insideDel) || $isInsideLiftGateDelivery){
-        //     if ($this->quoteSettings['alwaysLiftGateDelivery'] == '1') {
-        //         $accessTitle = $accessTitle ? $accessTitle . ' & inside delivery' : $this->insideDel;
-        //     } else {
-        //         $accessTitle = $this->isResi ? Functions::$insideDelLiftGateResiLable : Functions::$insideDelLiftGateLable;    
-        //     }
-        // } else if ($insideDel) {
-        //     $accessTitle = $accessTitle ? Functions::$insideDelResiLable : $this->insideDel;
-        // }
-
-        // if($laccess && $lgOption || $laccessLG){
-        //     if ($this->quoteSettings['alwaysLiftGateDelivery'] == '1') {
-        //         $accessTitle = $this->LADelLabel;
-        //     } else {
-        //         $accessTitle = $this->LimitedAccLGDelLabel;    
-        //     }
-        // } else if($laccess){
-        //     $accessTitle = $this->LADelLabel;
-        // }
-
-        // if (($twoManDel && $appDel) || $twoManAptDel) {
-        //     if ($this->quoteSettings['always_two_man_delivery'] == '1' && $this->quoteSettings['always_appointment_delivery'] == '1') {
-        //         $accessTitle = $accessTitle;
-        //     } else {
-        //         $accessTitle = empty($accessTitle) ? Functions::$twoManAppDelLabel : $accessTitle . ' & two man & appointment delivery';
-        //     }
-        // } elseif($twoManDel) {
-        //     if ($this->quoteSettings['always_two_man_delivery'] == '1') {
-        //         $accessTitle = $accessTitle;
-        //     } else {
-        //         $accessTitle = empty($accessTitle) ? Functions::$twoManDeliveryLabel : $accessTitle . ' & two man delivery';
-        //     }
-        // } elseif($appDel) {
-        //     if ($this->quoteSettings['always_appointment_delivery'] == '1') {
-        //         $accessTitle = $accessTitle;
-        //     } else {
-        //         $accessTitle = empty($accessTitle) ? Functions::$appointmentDeliveryLabel : $accessTitle . ' & appointment delivery';
-        //     }
-        // }
-
-        // $resp = $serviceTitle . $accessTitle . $deliveryEstimateLabel;
-        // return $resp;
     }
 
     public function getDeliveryEstimates($dateAndDays): string
