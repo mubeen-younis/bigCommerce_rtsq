@@ -1420,7 +1420,7 @@ class CompileQuotes
                         $originQuotes[$key]['simple']['code'] = 'tqlltl' . $access;
                         $originQuotes[$key]['simple']['rate'] = $price;
                         $originQuotes[$key]['simple']['title'] = $title;
-                        if ($lgQuotes) {
+                        if ($this->lgQuotes) {
                             $lgAccess = $data['scac'] . 'tqlltl' . $this->getAccessorialCode(true) . $resiPickup;
                             $lgPrice = $this->calculatePrice($data, true);
                             $lgTitle = $this->getTitle($data['carrier'] . $serviceType, true, false, $data['totalCalenderDaysInTransit'], [], $dateAndDays);
