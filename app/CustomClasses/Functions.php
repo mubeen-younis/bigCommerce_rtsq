@@ -118,6 +118,7 @@ class Functions
         $response['resi'] = strpos($rateId, '+r') ? 'Y' : 'n';
         $response['liftG'] = strpos($rateId, '+lg') ? 'Y' : 'n';
         $response['resiPickup'] = strpos($rateId, '+pu') ? 'Y' : 'n';
+        $response['lgPickup'] = strpos($rateId, '+lfgpu') ? 'Y' : 'n';
         return $response;
     }
 

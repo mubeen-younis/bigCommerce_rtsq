@@ -135,10 +135,11 @@ class FDOOrderController extends Controller
         $lineItem->origin = $this->formatOrigins($requestToWS->requestArr->carriers);
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
         $liftGateStatus = 'n';
-        $LimitedAccessDel = strpos($rateId, '+LAD') ? 'Y' : 'n';
-        $insideDelivery = strpos($rateId, '+ID') ? 'Y' : 'n';
-        $isTruckLoad = strpos($rateId, '+TL') ? 'Y' : 'n';
-        $isFreightTruckLoad = strpos($rateId, '+FLGTL') ? 'Y' : 'n';
+        $LimitedAccessDel = strpos($rateId, '+lad') ? 'Y' : 'n';
+        $notifyBeforeDel = strpos($rateId, '+nbd') ? 'Y' : 'n';
+        $insideDelivery = strpos($rateId, '+id') ? 'Y' : 'n';
+        $isTruckLoad = strpos($rateId, '+tl') ? 'Y' : 'n';
+        $isFreightTruckLoad = strpos($rateId, '+flgtl') ? 'Y' : 'n';
         $isTwoManDel = strpos($rateId, Functions::$twoManDelAccess) ? 'Y' : 'n';
         $isAppointmentDel = strpos($rateId, Functions::$appointmentDelAccess) ? 'Y' : 'n';
         $orderWidget = [];
@@ -263,13 +264,14 @@ class FDOOrderController extends Controller
             if (!$isSmall) {
                 $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Residential Pickup') : '';
                 $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Lift Gate Delivery') : '';
-                $liftGatePickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Pickup') : '';
-                $insideDelivery != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Inside Delivery') : '';
-                $LimitedAccessDel != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Limited Access Delivery') : '';
-                $isTruckLoad != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Truck Load Delivery') : '';
-                $isFreightTruckLoad != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Truck Load Delivery') : '';
-                $isTwoManDel != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Two Man Delivery') : '';
-                $isAppointmentDel != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Appointment Delivery') : '';
+                $liftGatePickup != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Lift Gate Pickup') : '';
+                $insideDelivery != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Inside Delivery') : '';
+                $LimitedAccessDel != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Limited Access Delivery') : '';
+                $notifyBeforeDel != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Notify before Delivery') : '';
+                $isTruckLoad != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Truck Load Delivery') : '';
+                $isFreightTruckLoad != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Truck Load Delivery') : '';
+                $isTwoManDel != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Two Man Delivery') : '';
+                $isAppointmentDel != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Appointment Delivery') : '';
             }
             $accessorials = $this->formatAccessorials($orderWidget[$zip]['accessorials']);
             $orderWidget[$zip]['accessorials'] = $accessorials;
@@ -370,6 +372,33 @@ class FDOOrderController extends Controller
             }
             if ($accessorial == "Hazardous Material") {
                 $formAccess['hazmat'] = true;
+            }
+            if ($accessorial == "Inside Delivery") {
+                $formAccess['inside'] = true;
+            }
+            if ($accessorial == "Limited Access Delivery") {
+                $formAccess['limitedaccess'] = true;
+            }
+            if ($accessorial == "Truck Load Delivery") {
+                $formAccess['truckload'] = true;
+            }
+            if ($accessorial == "Notify before Delivery") {
+                $formAccess['notify'] = true;
+            }
+            if ($accessorial == "Two Man Delivery") {
+                $formAccess['twoman'] = true;
+            }
+            if ($accessorial == "Appointment Delivery") {
+                $formAccess['appointment'] = true;
+            }
+            if ($accessorial == "Residential Pickup") {
+                $formAccess['residentialpickup'] = true;
+            }
+            if ($accessorial == "Lift Gate Pickup") {
+                $formAccess['liftgatepickup'] = true;
+            }
+            if ($accessorial == "Insurance") {
+                $formAccess['insurance'] = true;
             }
         }
         return $formAccess;
