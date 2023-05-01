@@ -4637,7 +4637,7 @@ class CompileQuotes
         $basePrice = (float)$basePrice;
         $basePrice = $basePrice - $lgCost - $LADCost - $IDCost - $TMDCost - $APDCost;
         $productOriginMarkupFee = Functions::calProductOriginMarkupFee($basePrice, $this->originKey ?? $originKey, $this->items ?? $items, $this->allOrigins ?? $allOrigins);
-        $basePrice = $this->calculateHandlingFee($basePrice);
+        $basePrice = $this->calculateHandlingFee($basePrice, $quoteSettings);
         $basePrice = $basePrice + $productOriginMarkupFee;
         return $basePrice;
     }
