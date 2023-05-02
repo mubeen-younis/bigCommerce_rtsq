@@ -851,7 +851,7 @@ class Shipping
             if (isset($quote['code']) && ($quote['code'] == 'INSP' || $quote['code'] == 'LOCDEL')) {
                 continue;
             }
-            if (empty($quote['rate']) || $quote['rate'] == '0.00') {
+            if ((empty($quote['rate']) || $quote['rate'] == '0.00') && $quote['code'] !== 'own_arrangement') {
                 $finalQuotes[$key]['title'] = Functions::$freeShipping;
             }
         }
@@ -995,7 +995,8 @@ class Shipping
         }
 
         if (strlen($quote['title']) > 100) {
-            $res = explode("(", $quote['title'])[0];
+            $res = explode("w/", $quote['title']);
+            $res = Functions::$simpleLTLTitle . ' w/' . $res[1];
         } else if ($quote['title'] == "") {
             $res = $quote['code'];
         }

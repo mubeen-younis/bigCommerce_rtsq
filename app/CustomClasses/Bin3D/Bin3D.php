@@ -41,15 +41,8 @@ class Bin3D
     public function getBinResponse($storeId, $bins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment, $palletPkgReq = false)
     {
         $this->isPalletPkgReq = $palletPkgReq;
-        //loop for each bin request
-        if ($hits != 0) {
-            $addonType = $this->isPalletPkgReq ? 'PLT' : 'SBS';
-            $sbsStatus = $this->consumeHits($storeId, $hits, $addonType);
-            if (!$sbsStatus['status']) {
-                return [];
-            }
-        }
 
+        //loop for each bin request
         if (count($items) && count($itemsAlone)) {
             foreach ($items as $key => $item) {
                 $binRequest[$key] = $this->generateBinRequest($bins, $item, [], $storeId);
@@ -318,6 +311,15 @@ class Bin3D
                 return $response;
             }
         }
+        // consuming packaging Add-On hits
+        if ($hits != 0) {
+            $addonType = $this->isPalletPkgReq ? 'PLT' : 'SBS';
+            $sbsStatus = $this->consumeHits($storeId, $hits, $addonType);
+            if (!$sbsStatus['status']) {
+                return [];
+            }
+        }
+
         $binRequestLog = new BinRequestLog();
         $binRequestLog->store_id = $storeId;
         $binRequestLog->cart_id = $cartInfo['cartId'];

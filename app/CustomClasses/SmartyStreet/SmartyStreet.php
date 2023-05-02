@@ -8,7 +8,7 @@ use App\Models\AdditionalCarrierTabSetting;
 use App\Models\BinRequestLog;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-
+use App\Models\DestinationAddresses;
 class SmartyStreet
 {
     private $authId = Constant::SMARTY_AUTH_ID;
@@ -25,12 +25,17 @@ class SmartyStreet
      */
     private $endURL = Constant::SMARTY_URL;
 
-    public function getSmartyResponse($storeId, $address){
-        $radStatus = $this->consumeHits($storeId);
+    public function getSmartyResponse($storeId, $address, $hits, $addressStatus){
+        $radStatus = $this->consumeHits($storeId, $hits);
         if(!$radStatus['status']){
             return "N";
         }
-        $addressStatus = $this->address_validated($address);
+        $addressStatus = empty($addressStatus) ? $this->address_validated($address) : $addressStatus;
+        if($storeId != null){
+            $completeAddress = $this->set_address($address);
+            DestinationAddresses::saveDestination($completeAddress, $storeId, $addressStatus);
+        }
+
         if($addressStatus == "n"){
             $addonSettings = DB::table('addon_settings')->select('addon_settings.value')
                 ->join('installed_addons', 'installed_addons.id', '=', 'addon_settings.installed_addon_id')
@@ -46,17 +51,18 @@ class SmartyStreet
             }
         }
         $addressStatus = $addressStatus == 'r' ? 'Y' : 'N';
+
         return $addressStatus;
     }
 
-    private function consumeHits($storeId){
+    private function consumeHits($storeId, $hits){
         $PackageSubscriptionController = new PackageSubscriptionController();
-        $param = ['store_id' => $storeId, 'hits'=>1, 'addon_type'=>'RAD'];
+        $param = ['store_id' => $storeId, 'hits'=> $hits, 'addon_type'=>'RAD'];
         $resp = $PackageSubscriptionController->consumeHits($param);
         return $resp;
     }
 
-    private function set_address($address)
+    public function set_address($address)
     {
         $street = $address['street_1'] ?? '';
         $city = $address['city'] ?? '';
@@ -97,11 +103,11 @@ class SmartyStreet
         $data = json_decode($response, true);
         //when address valid API return Address detail array
         if (!empty($data)) {
-            if ($data[0]['metadata']['rdi'] == 'Commercial') {
+            if (isset( $data[0]['metadata']['rdi']) && $data[0]['metadata']['rdi'] == 'Commercial') {
 
                 $res = 'c';     //Address is Commercial
 
-            } elseif ($data[0]['metadata']['rdi'] == 'Residential' && $data[0]['analysis']['dpv_match_code'] == 'Y' && $data[0]['analysis']['active'] == 'Y') {
+            } elseif ((isset($data[0]['metadata']['rdi']) && $data[0]['metadata']['rdi'] == 'Residential') && (isset($data[0]['analysis']['dpv_match_code']) && $data[0]['analysis']['dpv_match_code'] == 'Y') && (isset($data[0]['analysis']['active']) && $data[0]['analysis']['active'] == 'Y')) {
 
                 $res = 'r';     //Address is Residential
             } else {

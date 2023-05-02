@@ -17,7 +17,7 @@ use App\CustomClasses\DayRossLTL\QuotesResults;
 use App\CustomClasses\UpsSmall\QuotesResults as UpsSmallQuotesResults;
 use App\Models\Store;
 use Illuminate\Http\Request;
-
+use App\Models\DestinationAddresses;
 /**
  * class that generated request data
  */
@@ -1164,7 +1164,7 @@ class GenerateRequestData
         $this->resiCarrier['wweLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['wweLtl'] = $alwaysResi;
 
-        $residentialPickup = (isset($rad_settings['residentialPickup']) && $rad_settings['residentialPickup'] && $rad_settings['residentialPickup'] == true) ? 'Y' : 'N';
+        $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
         $this->resiCarrier['residentialPickup'] = $residentialPickup;
 
         $liftGatePickup = (isset($connSettings['quote_settings']['liftGatePickup']) && $connSettings['quote_settings']['liftGatePickup'] && $connSettings['quote_settings']['liftGatePickup'] == true) ? 'Y' : 'N';
@@ -1747,8 +1747,16 @@ class GenerateRequestData
 
     private function checkRadStatus($storeId, $address)
     {
+        $hits = 1;
         $smarty = new SmartyStreet();
-        return $smarty->getSmartyResponse($storeId, $address);
+        $addressStatus = '';
+        $completeAddress = $smarty->set_address($address);
+        $isSameDestination = DestinationAddresses::isSameDestinatonAddress($completeAddress, $storeId) ?? [];
+        if(!empty($isSameDestination) ){
+            $hits = 0;
+            $addressStatus = $isSameDestination['status'] == 1 ? 'r' : ($isSameDestination['status'] == 2 ? 'c' : 'n');
+        }
+        return $smarty->getSmartyResponse($storeId, $address, $hits, $addressStatus);
     }
 
     public function getApiInfoArrWweSmall($connSettings, $destination)
@@ -2409,6 +2417,7 @@ class GenerateRequestData
 
                 $binReqArr[$itemLocId] = $uspsSmallPkgReq->getGroupedUSPSBoxes($storeId);
                 $binRespArr = $uspsSmallPkgReq->setAndGetBinsResponse($storeId, $connSettings, $enitOrigin, $lineItems, $itemLocId);
+                Log::info('BinResponse from api array' . json_encode($binRespArr));
                 $apiArray['binResponse'][$itemLocId] = $binRespArr['packedBoxes'];
                 $owdArr = $binRespArr['owdBoxes'];
             }
@@ -2419,6 +2428,7 @@ class GenerateRequestData
         }
 
         $apiArray = array_merge($apiArray, $this->getCutOffDetails($connSettings));
+        Log::info('final api array' . json_encode($apiArray));
         return $apiArray;
     }
 
@@ -2653,7 +2663,7 @@ class GenerateRequestData
 
         //$this->resiCarrier['wweLtl'] = $residential;
 
-        $residentialPickup = (isset($rad_settings['residentialPickup']) && $rad_settings['residentialPickup'] && $rad_settings['residentialPickup'] == true) ? 'Y' : 'N';
+        $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
         $this->resiCarrier['residentialPickup'] = $residentialPickup;
 
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
@@ -2952,10 +2962,11 @@ class GenerateRequestData
         $item['lineItemWeight'] = $bin->bin_data->weight + $boxWeight;
         $item['isHazmatLineItem'] = $hazmat;
 
+        Log::info('BinResponse for Update CommdityDetails ' . json_encode($bin));
         //$item['piecesOfLineItem'] = 1 ?? 0;
         $item['shipItemAlone'] = 1;
         if ((isset($item['shipBinAlone']) && $item['shipBinAlone'] == 0)) {
-            $item['piecesOfLineItem'] = 1;
+            $item['piecesOfLineItem'] = optional($bin)->bin_data->quantity ?? 1;
         }
         if (isset($bin->bin_data->type) && $bin->bin_data->type == 'item' && isset($bin->bin_data->id)) {
             $item['variant_id'] = $bin->bin_data->id ?? 0;

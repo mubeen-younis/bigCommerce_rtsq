@@ -58,7 +58,8 @@ class ExportImportProducts extends Controller
         $storeHash = $request['store_hash'] ?? null;
         $weightDimensionUnits = $this->getweightDimensionUnits($storeHash);
         $weightUnit = isset($weightDimensionUnits['weight_units']) && !blank($weightDimensionUnits['weight_units']) ? strtolower($weightDimensionUnits['weight_units']) : 'lbs' ?? 'lbs';
-        $dimensionsUnit = isset($weightDimensionUnits['dimension_units']) && $weightDimensionUnits['dimension_units'] === 'Centimeters' ? 'cm' : 'in' ?? 'in'; 
+        $dimensionsUnit = isset($weightDimensionUnits['dimension_units']) && $weightDimensionUnits['dimension_units'] === 'Centimeters' ? 'cm' : 'in' ?? 'in';
+        Log::info('Store hash ' . $storeHash . 'Weight dimesnions ' . json_encode($weightDimensionUnits));
         $dropShips = [];
         foreach ($locations as $location) {
             $dropShips[$location['id']] = $location;
@@ -79,7 +80,7 @@ class ExportImportProducts extends Controller
         $folderName = $request['folderName'];
         $folderNamePath = [];
         try {
-            $productsChunk->chunk(2500, function ($products, $chunkCount = 0) use ($comma, $folderName, $dropShips, $weightUnit) {
+            $productsChunk->chunk(2500, function ($products, $chunkCount = 0) use ($comma, $folderName, $dropShips, $weightUnit, $dimensionsUnit) {
                 $fileName = $chunkCount++ . '-export.csv';
                 $filename = $folderName . '/' . $fileName;
                 $folderNamePath[] = $filename;
@@ -444,7 +445,7 @@ class ExportImportProducts extends Controller
 
     public function getSettings($oldSettings, $product, $indexes, $store_id)
     {
-        $settings = $oldSettings[0] ? json_decode($oldSettings[0]) : new \stdClass();
+        $settings = isset($oldSettings[0]) && $oldSettings[0] ? json_decode($oldSettings[0]) : new \stdClass();
         /*$freightUpdate = false;
         if(isset($indexes['freight_enabled']) && $indexes['freight_enabled']){
             $key = $indexes['freight_enabled'];
@@ -505,6 +506,8 @@ class ExportImportProducts extends Controller
                 $settings->allow_vertical = ($product["$key"] == 1) ? true : false;;
             }
         }
+
+        $shipMulti = false;
         if (isset($indexes['ship_multiple_package']) && $indexes['ship_multiple_package']) {
             $key = $indexes['ship_multiple_package'];
             if (array_key_exists($key, $product)) {

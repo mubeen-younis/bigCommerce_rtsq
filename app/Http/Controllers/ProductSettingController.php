@@ -30,7 +30,7 @@ class ProductSettingController extends Controller
     public function importProducts(Request $request)
     {
         set_time_limit(0);
-        $isSyncinProgress = ImportProductsModel::where('store_id', $request['store_id'])->where('status', '=', 1)->where('created_at', '>', Carbon::now()->subDay(1)->toDateTimeString())->exists();
+        $isSyncinProgress = ImportProductsModel::where('store_id', $request['store_id'])->where('status', '=', 1)->where('created_at', '>', Carbon::now()->subDay()->toDateTimeString())->exists();
         if (!$isSyncinProgress) {
             $importPrdModel = new ImportProductsModel();
             $importPrdModel->store_id = $request['store_id'];
@@ -42,13 +42,15 @@ class ProductSettingController extends Controller
             $data['store_id'] = $request['store_id'];
             $data['perpage'] = 250;
             $totalpages = $this->importProductsGetPages($data);
-            $delay = 0;
+            // Adds seconds of delay
+            $delay = 1;
 
-            for ($page = 0; $page <= $totalpages; $page++) {
+            for ($page = 1; $page <= $totalpages; $page++) {
                 $data['page'] = $page;
-                ImportProductsFromBCStore::dispatch($data)->delay(Carbon::now()->addSecond(($delay++) * 20));
+                // Need to add this and comment below line if you want to execute without queue job or in dev server $this->importProductsJob($data);
+                ImportProductsFromBCStore::dispatch($data)->delay(Carbon::now()->addSeconds($delay++));
             }
-            ImportProductsFromBCStoreStatusUpdate::dispatch($insertedId, $request['email'])->delay(Carbon::now()->addSecond(($delay++) * 20));
+            ImportProductsFromBCStoreStatusUpdate::dispatch($insertedId, $request['email'])->delay(Carbon::now()->addSeconds(5));
             \Artisan::call('queue:work');
 
         }
@@ -98,7 +100,11 @@ class ProductSettingController extends Controller
         $headers[] = 'Accept: application/json';
         $metaResponse = $this->curlRequest->enSingleCurlRequest($metaEndPoint, [], $headers, 'GET', true);
         $metaResponse = json_decode($metaResponse['response'], true);
-        $total_pages = $metaResponse['meta']['pagination']['total_pages'];
+        Log::info('get all product variants-productID:' . $product['id'] . json_encode($metaResponse));
+        $total_pages = $metaResponse['meta']['pagination']['total_pages'] ?? null;
+        if (blank($total_pages)) {
+            return null;
+        }
         for ($count = 1; $count <= $total_pages; $count++) {
             $variantEndPoint = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products/' . $product['id'] . '/variants?limit=250&page=' . $count;
             $response = $this->curlRequest->enSingleCurlRequest($variantEndPoint, [], $headers, 'GET', true);
@@ -124,13 +130,12 @@ class ProductSettingController extends Controller
 
     public function importProductsGetPages($data)
     {
-        $storeUrl = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products?limit=' . $data['perpage'] . '&page=0';
+        $storeUrl = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products?limit=' . $data['perpage'];
         $headers[] = 'X-Auth-Token: ' . $data['store_token'];
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
         $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
         $response = json_decode($response['response'], true);
-        //dd($response['meta']['pagination']['total_pages']);
         return $response['meta']['pagination']['total_pages'];
     }
 
@@ -304,9 +309,15 @@ class ProductSettingController extends Controller
                 $count = ProductSetting::where('store_id', $request->store_id)
                     ->orderBy('name', $sortProd)->get();
             } else {
-                $count = ProductSetting::where('name', 'LIKE', '%' . $search . '%')
-                ->where('store_id', $request->store_id)->orderBy('name', $sortProd)
-                ->get();
+                $count = ProductSetting::where('store_id', $request->store_id)
+                    ->where(function ($query) use ($search) {
+                        $query->where('name', 'LIKE', '%' . $search . '%')
+                            ->orWhere('sku', 'LIKE', '%' . $search . '%')
+                            ->orWhere('variant_id', $search)
+                            ->orWhere('source_product_id', $search);
+                    })
+                    ->orderBy('name', $sortProd)
+                    ->get();
             }
 
             if ($count->count()) {
@@ -318,12 +329,14 @@ class ProductSettingController extends Controller
                 $products = ProductSetting::where('store_id', $request->store_id)
                     ->groupBy('source_product_id')->orderBy('name', $sortProd)->skip(($page - 1) * $perPage)->take($perPage)->get();
             } else {
-                $products = ProductSetting::where(function($query) use ($search) {
-                    $query->where('name', 'LIKE', '%' . $search . '%');
-                    $query->orWhere('variant_id', $search);
-                    $query->orWhere('source_product_id', $search);
+                $products = ProductSetting::where(function ($query) use ($search) {
+                    $query->where('name', 'LIKE', '%' . $search . '%')
+                        ->orWhere('sku', 'LIKE', '%' . $search . '%')
+                        ->orWhere('variant_id', $search)
+                        ->orWhere('source_product_id', $search);
                 })->where('store_id', $request->store_id)
                 ->orderBy('name', $sortProd)
+                ->groupBy('source_product_id')
                 ->skip(($page - 1) * $perPage)->take($perPage)->get();
             }
             if ($products->isEmpty()) {
@@ -514,21 +527,36 @@ class ProductSettingController extends Controller
                 return response()->json(true);
             }
             /*
-             * Handle first time sku created
-             * need to set variant_id null for base product
+             * get variant details from bigcommerce
+             * update details and save product into db
              * */
-            if ($scope == "store/sku/created") {
-                if (ProductSetting::where('source_product_id', $productId)->where('store_id', $store->id)->count() == 1) {
-                    ProductSetting::where('source_product_id', $productId)->where('store_id', $store->id)->update(['variant_id' => null]);
-                }
+            $storeToken = $this->mainController->getCustAccessTok($store->id);
+            $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products/' . $productId . '/variants' . '/' . $variant_id;
+            $headers[] = 'X-Auth-Client: ' . $this->mainController->getAppClientId();
+            $headers[] = 'X-Auth-Token: ' . $storeToken;
+            $headers[] = 'Content-Type: application/json';
+            $headers[] = 'Accept: application/json';
+            $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
+            $response = json_decode($response['response'], true);
+            Log::info('Get variant details-' . $store->id . json_encode($response));
+
+            if (isset($response['data'])) {
+                $variant = $response['data'];
+                $product['price'] = $variant['price'];
+                $product['weight'] = $variant['weight'];
+                $product['depth'] = $variant['depth'];
+                $product['width'] = $variant['width'];
+                $product['height'] = $variant['height'];
+                $product['sku'] = $variant['sku'];
+                $product['base_variant_id'] = $variant['id'];
+                $product['id'] = $variant['product_id'];
+                $this->saveProducts->saveProduct($product, $store->id);
             }
-            $toRequest['store_id'] = $store->id;
-            $toRequest['store_name'] = $storeHash;
-            $toRequest['product_id'] = $productId;
-            $this->getSingleProductFromApi($toRequest);
+            
             return response()->json(true);
         } catch (\Exception $exception) {
             //  Have to LOg Here
+            Log::info('Sku Webhook Exception ' . json_encode([$exception->getMessage(), $exception->getLine()]));
         }
     }
 

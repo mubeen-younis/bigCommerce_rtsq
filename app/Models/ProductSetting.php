@@ -38,38 +38,50 @@ class ProductSetting extends Model
         self::where('shipping_group', $shippingGroupId)->update(['shipping_group' => null, 'shipping_group_enabled' => false]);
     }
 
+    /**
+     * Saves or Updates product from import product in DB
+     * @param $product
+     * @param $storeId
+     * @return void|null
+     */
     public function saveProduct($product, $storeId)
     {
-        if (ProductSetting::where('source_product_id', $product['id'])
-            ->where('variant_id', $product['base_variant_id'])
-            ->where('store_id', $storeId)->exists()) {
-            $saveProduct = ProductSetting::where('source_product_id', $product['id'])
-                ->where('variant_id', $product['base_variant_id'])
-                ->where('store_id', $storeId)->first();
-        } else {
-            $saveProduct = new ProductSetting();
-        }
-        
-        $storeSettings = $this->getStoreSettings($storeId);
-        $prodWeight = $this->convertWeight(isset($product['weight']) ? $product['weight'] : '', isset($storeSettings['weight_units']) ? strtolower($storeSettings['weight_units']) : 'lbs') ?? 0;
-        
-        /*Start - Added FOr Default Quoting Method*/
-        $productSettings = new stdClass();
-        if (!empty($product['weight']) && $prodWeight > 150) {
-            $productSettings->freight_enabled = true;
-            $productSettings->parcel_enabled = false;
-        } else {
-            $productSettings->freight_enabled = false;
-            $productSettings->parcel_enabled = true;
-        }
-        $saveProduct->settings = json_encode($productSettings);
-        /*END*/
 
-        $saveProduct->name = $product['name'];
+        if ($product['base_variant_id'] == null && ProductSetting::where('source_product_id', $product['id'])
+                ->where('store_id', $storeId)->exists()) {
+            return null;
+        }
+
+        Log::info('Base variant ID ' . $product['base_variant_id'] . ' - Product ID : ' . $product['id']);
+        
+        $saveProduct = ProductSetting::where('source_product_id', $product['id'])
+            ->where('variant_id', $product['base_variant_id'])
+            ->where('store_id', $storeId)->first();
+
+        if (blank($saveProduct)) {
+            $saveProduct = new ProductSetting();
+
+            $storeSettings = $this->getStoreSettings($storeId);
+            $prodWeight = $this->convertWeight(isset($product['weight']) ? $product['weight'] : '', isset($storeSettings['weight_units']) ? strtolower($storeSettings['weight_units']) : 'lbs') ?? 0;
+            /*Start - Added FOr Default Quoting Method*/
+            $productSettings = new stdClass();
+            if (!empty($product['weight']) && $prodWeight > 150) {
+                $productSettings->freight_enabled = true;
+                $productSettings->parcel_enabled = false;
+            } else {
+                $productSettings->freight_enabled = false;
+                $productSettings->parcel_enabled = true;
+            }
+
+            $saveProduct->settings = json_encode($productSettings);
+        }
+
+
+        $saveProduct->name = $product['name'] ?? '';
         $saveProduct->source_product_id = $product['id'];
         $saveProduct->variant_id = $product['base_variant_id'];
         $saveProduct->image_src = '';
-        $saveProduct->product_type = $product['type'];
+        $saveProduct->product_type = $product['type'] ?? '';
         $saveProduct->sku = $product['sku'];
         $saveProduct->weight = $product['weight'];
         $saveProduct->length = $product['depth'];
@@ -92,7 +104,7 @@ class ProductSetting extends Model
             $storeDetails = (new CurlRequest())->enSingleCurlRequest($storeDetails['endpoint'],
                 $storeDetails['request'], $storeDetails['headers'], $storeDetails['method'], false);
             $response = json_decode($storeDetails['response'], true);
-            
+
             return $response;
 
         } catch (\Exception $exception) {

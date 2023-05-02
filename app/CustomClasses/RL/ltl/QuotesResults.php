@@ -100,8 +100,8 @@ class QuotesResults
                         $address['city'] = $quotes['holdAtTerminalResponse']['address']['City']; 
                         $address['state'] = $quotes['holdAtTerminalResponse']['address']['State']; 
                         $address['zipCode'] = $quotes['holdAtTerminalResponse']['address']['ZipCode'];
-                        $distance = $quotes['holdAtTerminalResponse']['distance']['text'];
-                        $phoneNumber = $quotes['holdAtTerminalResponse']['address']['Phone']; 
+                        $distance = isset($quotes['holdAtTerminalResponse']['distance']['text']) ? $quotes['holdAtTerminalResponse']['distance']['text'] : '';
+                        $phoneNumber = isset($quotes['holdAtTerminalResponse']['address']['Phone']) ? $quotes['holdAtTerminalResponse']['address']['Phone'] : ''; 
 
                         $shipments[$shipment]['q'][$key]['serviceDesc'] = Functions::getHATTitle($title, $address, $distance, $phoneNumber);
                         $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = Functions::getHATPrice($quote['totalNetCharge'], $quoteSettings['hold_at_terminal_price'] ?? 0);
