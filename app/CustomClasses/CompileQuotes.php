@@ -4198,7 +4198,7 @@ class CompileQuotes
     {
         $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? $quote['q']['InstorPickupLocalDelivery'] ?? $quote['fedexServices']['InstorPickupLocalDelivery'] ?? [];
         $ownArrangementQoutes = isset($quote['allowOwnArrangement']) && $quote['allowOwnArrangement'] ? $this->arrangeOwnFreight() : [];
-        if (!$this->isMultiShipment && !blank($inStoreLdData)) {
+        if (!$this->isMultiShipment && (!blank($inStoreLdData) || !blank($ownArrangementQoutes))) {
             return $this->inStoreLocalDeliveryQuotes($ownArrangementQoutes, $inStoreLdData, $allOrigins);
         }
 
