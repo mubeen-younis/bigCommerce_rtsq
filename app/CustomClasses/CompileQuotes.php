@@ -997,7 +997,6 @@ class CompileQuotes
                         $days = $data['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
                         $enableFeaturesArray = Functions::getEnableFeaturesArr($lgQuotes && $isSurcharges, $insideDelivery && $isSurcharges, $notifyDelivery = false, $limitedAccess && $isSurcharges);
-                        Log::info('enable Features Array' . json_encode($enableFeaturesArray) . $insideDelivery . $isSurcharges);
                         foreach ($enableFeaturesArray as $index => $feature) {
                             if($feature['isEnable']){
                                 $compileNotifyDeliveryQuotes = Functions::getOriginQuotes($index, $data['serviceDesc'], $originQuotes, $data, $key, $data['totalTransitTimeInDays'], 
@@ -1011,7 +1010,7 @@ class CompileQuotes
                     }
                 }
             }
-            Log::info('origin Quotes' . json_encode($originQuotes));
+
             $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes, $resiPickup, $lgPickup, $insideDelivery, false, $limitedAccess);
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
                 if (count($compiledQuotes) > 1) {
@@ -1037,9 +1036,9 @@ class CompileQuotes
             }
             $count++;
         }
-        Log::info('before all quotes' . json_encode($allQuotes));
+
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
-        Log::info('after all quotes' . json_encode($allQuotes));
+
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
