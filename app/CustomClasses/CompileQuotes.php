@@ -24,6 +24,7 @@ use App\CustomClasses\DayLightLtl\QuotesResults as dayLightLtlQuotesResults;
 use App\CustomClasses\FreightQuote\ChrLtl\QuotesResults as FQChrQuotesResults;
 use App\CustomClasses\FreightQuote\Ltl\QuotesResults as FQQuotesResults;
 use App\CustomClasses\EstesLTL\QuotesResults as estesLtlQuotesResults;
+use Illuminate\Support\Facades\Log;
 
 
 use App\Http\Controllers\RADController;
@@ -971,6 +972,10 @@ class CompileQuotes
                 $notifyDelivery =
                     (isset($this->quoteSettings['always_quote_notify']) && $this->quoteSettings['always_quote_notify']) ||
                     (isset($this->quoteSettings['offer_notify_as_option']) && $this->quoteSettings['offer_notify_as_option']);
+                
+                $limitedAccess = 
+                    (isset($this->quoteSettings['offer_limited_access_delivery']) && $this->quoteSettings['offer_limited_access_delivery']) ||
+                    (isset($this->quoteSettings['always_limited_access_delivery']) && $this->quoteSettings['always_limited_access_delivery']) ?? false;
             }
             $originQuotes = [];
             $arraySorting = [];
@@ -981,12 +986,17 @@ class CompileQuotes
                 $allowOwnArrangement = isset($quote['allowOwnArrangement']) && $quote['allowOwnArrangement'] ?? false;
                 foreach ($quote['q'] as $key => $data) {
 
-                    if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) && isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y') {
-                        $access = $this->getAccessorialCode(false, false, $resiPickup, $lgPickup);
-                        $price = $this->calculatePrice($data);
-                        if(($insideDelivery || $lgQuotes || $notifyDelivery) && !isset($data['surcharges'])){
+                    if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) && isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y') {                                               
+                    
+                       if($limitedAccess && isset($this->quoteSettings['limited_access_fee'])){
+                            $data['totalNetCharge']['Amount'] += $this->quoteSettings['limited_access_fee'];
+                            $data['surcharges']['limitedAccessDeliveryFee'] = (float) $this->quoteSettings['limited_access_fee'];
+                        }
+                        $isSurcharges = isset($data['surcharges']) && !empty($data['surcharges']);
+
+                        if(($insideDelivery || $lgQuotes || $notifyDelivery || $limitedAccess) && !isset($data['surcharges'])){
                             continue;
-                        }                                               
+                        }
                         /*
                          * Date 01-07-22
                          * Adding Functionality of Delivery Estimate Options
@@ -994,72 +1004,22 @@ class CompileQuotes
                         $date = $data['deliveryTimestamp'] ?? null;
                         $days = $data['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
-                        $title = $this->getTitle($data['serviceDesc'], false, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
-                        $arraySorting['simple'][$key] = $price;
-                        $originQuotes[$key]['simple']['code'] = 'wweltl' . $data['serviceType'] . $access;
-                        $originQuotes[$key]['simple']['rate'] = $price;
-                        $originQuotes[$key]['simple']['title'] = $title;
-                        if ($insideDelivery && $lgQuotes) {
-                            $access = $this->getAccessorialCode(true, true, $resiPickup, $lgPickup);
-                            $price = $this->calculatePrice($data, true, false, false, true);
-                            $title = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays'], [], $dateAndDays, true);
-                            $arraySorting['insideLiftGateDelivery'][$key] = $price;
-                            $originQuotes[$key]['insideLiftGateDelivery']['code'] = "wweltl" . $data['serviceType'] . $access;
-                            $originQuotes[$key]['insideLiftGateDelivery']['rate'] = $price;
-                            $originQuotes[$key]['insideLiftGateDelivery']['title'] = $title;
-                        }
-                        if ($lgQuotes) {
-                            $lgAccess = 'wweltl' . $this->getAccessorialCode(true, false, $resiPickup, $lgPickup);
-                            $lgPrice = $this->calculatePrice($data, true);
-                            $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
-                            $arraySorting['liftgate'][$key] = $lgPrice;
-                            $originQuotes[$key]['liftgate']['code'] = $data['serviceType'] . $lgAccess;
-                            $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
-                            $originQuotes[$key]['liftgate']['title'] = $lgTitle;
-                        }
-                        if ($insideDelivery) {
-                            $access = $this->getAccessorialCode(false, true, $resiPickup, $lgPickup);
-                            $price = $this->calculatePrice($data, false, false, false, true);
-                            $title = $this->getTitle($data['serviceDesc'], false, false, $data['totalTransitTimeInDays'], [], $dateAndDays, true);
-                            $arraySorting['insideDelivery'][$key] = $price;
-                            $originQuotes[$key]['insideDelivery']['code'] = "wweltl" . $data['serviceType'] . $access;
-                            $originQuotes[$key]['insideDelivery']['rate'] = $price;
-                            $originQuotes[$key]['insideDelivery']['title'] = $title;
-                        }
-                        // Get Notify Before Delivery Origin Quotes
-                        if($notifyDelivery){
-                            $compileNotifyDeliveryQuotes = Functions::getOriginQuotes('notifydelivery', $data['serviceDesc'], $originQuotes, $data, $key, $data['totalTransitTimeInDays'], 
-                            $dateAndDays, false, "wweltl", $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi, false, false, $notifyDelivery, $resiPickup, $lgPickup);
+                        $enableFeaturesArray = Functions::getEnableFeaturesArr($lgQuotes && $isSurcharges, $insideDelivery && $isSurcharges, $notifyDelivery = false, $limitedAccess && $isSurcharges);
+                        foreach ($enableFeaturesArray as $index => $feature) {
+                            if($feature['isEnable']){
+                                $compileNotifyDeliveryQuotes = Functions::getOriginQuotes($index, $data['serviceDesc'], $originQuotes, $data, $key, $data['totalTransitTimeInDays'], 
+                                $dateAndDays, $feature['index']['isLG'] ?? false, "wweltl", $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, 
+                                $this->isResi, $this->alwaysResi, $feature['index']['isID'] ?? false, $feature['index']['isLAD'] ?? false, $feature['index']['isNBD'] ?? false, $resiPickup, $lgPickup);
     
-                            $arraySorting['notifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
-                            $originQuotes = $compileNotifyDeliveryQuotes['originQuotes'];
-                        }
-                        if($notifyDelivery && $lgQuotes){
-                            $compileNotifyDeliveryQuotes = Functions::getOriginQuotes('lgnotifydelivery', $data['serviceDesc'], $originQuotes, $data, $key, $data['totalTransitTimeInDays'], 
-                            $dateAndDays, true, "wweltl", $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi, false, false, $notifyDelivery, $resiPickup, $lgPickup);
-    
-                            $arraySorting['lgnotifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
-                            $originQuotes = $compileNotifyDeliveryQuotes['originQuotes'];
-                        }
-                        if($notifyDelivery && $insideDelivery){
-                            $compileNotifyDeliveryQuotes = Functions::getOriginQuotes('insidenotifydelivery', $data['serviceDesc'], $originQuotes, $data, $key, $data['totalTransitTimeInDays'], 
-                            $dateAndDays, false, "wweltl", $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi, $insideDelivery, false, $notifyDelivery , $resiPickup, $lgPickup);
-    
-                            $arraySorting['insidenotifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
-                            $originQuotes = $compileNotifyDeliveryQuotes['originQuotes'];
-                        }
-                        if($notifyDelivery && $insideDelivery && $lgQuotes){
-                            $compileNotifyDeliveryQuotes = Functions::getOriginQuotes('lginsidenotifydelivery', $data['serviceDesc'], $originQuotes, $data, $key, $data['totalTransitTimeInDays'], 
-                            $dateAndDays, true, "wweltl", $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi, $insideDelivery, false, $notifyDelivery, $resiPickup, $lgPickup);
-    
-                            $arraySorting['lginsidenotifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
-                            $originQuotes = $compileNotifyDeliveryQuotes['originQuotes'];
-                        }                 
+                                $arraySorting[$index][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
+                                $originQuotes = $compileNotifyDeliveryQuotes['originQuotes'];
+                            }
+                        }            
                     }
                 }
             }
 
-            $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes, $resiPickup, $lgPickup, $insideDelivery, $notifyDelivery);
+            $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes, $resiPickup, $lgPickup, $insideDelivery, $notifyDelivery, $limitedAccess);
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
                 if (count($compiledQuotes) > 1) {
                     foreach ($compiledQuotes as $k => $service) {
@@ -4660,56 +4620,76 @@ class CompileQuotes
                     (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'] == 0) || $this->isResi == 0)
             ) {
 
+                // Condition for always notify before delivery, inside delivery and limited access delivery
+                if($alwaysNotifyDel && $alwaysInsideDel && $alwaysLimitedDel){
+                    return array_merge($quotes['lglaccessinsideNotifydelivery'] ?? [], $quotes['laccessinsideNotifydelivery'] ?? [], $quotes['Truckload'] ?? []);             
+                }
                 // Condition for always notify before delivery and inside delivery
                 if($alwaysNotifyDel && $alwaysInsideDel){
-                    return array_merge($quotes['insidenotifydelivery'] ?? [], $quotes['lginsidenotifydelivery'] ?? [], $quotes['limitedaccess'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['Truckload'] ?? []);             
+                    return array_merge($quotes['insidenotifydelivery'] ?? [], $quotes['lginsidenotifydelivery'] ?? [], $quotes['laccessinsideNotifydelivery'] ?? [], $quotes['lglaccessinsideNotifydelivery'] ?? [], $quotes['Truckload'] ?? []);
+                }
+                // Condition for always limited access delivery and inside delivery
+                if($alwaysLimitedDel && $alwaysInsideDel){
+                    return array_merge($quotes['laccessinsidedelivery'] ?? [], $quotes['lglaccessinsidedelivery'] ?? [], $quotes['laccessinsideNotifydelivery'] ?? [], $quotes['lglaccessinsideNotifydelivery'] ?? [], $quotes['Truckload'] ?? []);             
                 }
                 // Condition for always notify before delivery and limited access delivery
                 if($alwaysNotifyDel && $alwaysLimitedDel){
-                    return array_merge($quotes['laccessnotifydelivery'] ?? [], $quotes['lglaccessnotifydelivery'] ?? [], $quotes['Truckload'] ?? []);             
+                    return array_merge($quotes['laccessnotifydelivery'] ?? [], $quotes['lglaccessnotifydelivery'] ?? [], $quotes['laccessinsideNotifydelivery'] ?? [], $quotes['lglaccessinsideNotifydelivery'] ?? [], $quotes['Truckload'] ?? []);             
                 }
                 // Condition for always notify before delivery
                 if($alwaysNotifyDel){
-                    return array_merge($quotes['insidenotifydelivery'] ?? [], $quotes['lginsidenotifydelivery'] ?? [], $quotes['Truckload'] ?? [], $quotes['notifydelivery'] ?? [], $quotes['lgnotifydelivery'] ?? [], $quotes['laccessnotifydelivery'] ?? [], $quotes['lglaccessnotifydelivery'] ?? []);             
+                    return array_merge($quotes['notifydelivery'] ?? [], $quotes['lgnotifydelivery'] ?? [], $quotes['Truckload'] ?? [], $quotes['laccessnotifydelivery'] ?? [], $quotes['insidenotifydelivery'] ?? [], $quotes['lglaccessnotifydelivery'] ?? [], $quotes['lginsidenotifydelivery'] ?? [], $quotes['laccessinsideNotifydelivery'] ?? [], $quotes['lglaccessinsideNotifydelivery'] ?? []);             
                 } 
                 // Condition for always limited access delivery
                 if($alwaysLimitedDel){
-                    return array_merge($quotes['insidenotifydelivery'] ?? [], $quotes['lginsidenotifydelivery'] ?? [], $quotes['Truckload'] ?? [], $quotes['limitedaccess'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['laccessnotifydelivery'] ?? [], $quotes['lglaccessnotifydelivery'] ?? []);             
+                    return array_merge($quotes['limitedaccess'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['laccessnotifydelivery'] ?? [], $quotes['Truckload'] ?? [], $quotes['lglaccessnotifydelivery'] ?? [], $quotes['laccessinsidedelivery'] ?? [], $quotes['lglaccessinsidedelivery'] ?? [], $quotes['laccessinsideNotifydelivery'] ?? [], $quotes['lglaccessinsideNotifydelivery'] ?? []);             
                 }
                 // Condition for always inside delivery
                 if($alwaysInsideDel){
-                    return array_merge($quotes['insideDelivery'] ?? [], $quotes['insidenotifydelivery'] ?? [], $quotes['lginsidenotifydelivery'] ?? [], $quotes['limitedaccess'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['Truckload'] ?? [], $quotes['insideLiftGateDelivery'] ?? []);             
+                    return array_merge($quotes['insideDelivery'] ?? [], $quotes['insideLiftGateDelivery'] ?? [], $quotes['insidenotifydelivery'] ?? [], $quotes['laccessinsidedelivery'] ?? [], $quotes['lginsidenotifydelivery'] ?? [], $quotes['Truckload'] ?? [], $quotes['lglaccessinsidedelivery'] ?? [], $quotes['laccessinsideNotifydelivery'] ?? [], $quotes['lglaccessinsideNotifydelivery'] ?? []);             
                 }
 
                 /**
-                 * Condition for lift gate, inside and notify before delivery as an option
+                 * Condition for lift gate, inside, limited access and notify before delivery as an option
                  * */
-                return array_merge($quotes['simple'] ?? [], $quotes['liftgate'] ?? [], $quotes['insideDelivery'] ?? [], $quotes['insideLiftGateDelivery'] ?? [], $quotes['limitedaccess'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['Truckload'] ?? [], $quotes['notifydelivery'] ?? [], $quotes['lgnotifydelivery'] ?? [], $quotes['insidenotifydelivery'] ?? [], $quotes['lginsidenotifydelivery'] ?? [], $quotes['laccessnotifydelivery'] ?? [], $quotes['lglaccessnotifydelivery'] ?? []);
+                return array_merge($quotes['simple'] ?? [], $quotes['liftgate'] ?? [], $quotes['insideDelivery'] ?? [], $quotes['insideLiftGateDelivery'] ?? [], $quotes['limitedaccess'] ?? [], $quotes['limitedaccessLG'] ?? [],
+                 $quotes['Truckload'] ?? [], $quotes['notifydelivery'] ?? [], $quotes['lgnotifydelivery'] ?? [], $quotes['insidenotifydelivery'] ?? [], $quotes['lginsidenotifydelivery'] ?? [], $quotes['laccessnotifydelivery'] ?? [],
+                 $quotes['lglaccessnotifydelivery'] ?? [], $quotes['laccessinsidedelivery'] ?? [], $quotes['lglaccessinsidedelivery'] ?? [], $quotes['laccessinsideNotifydelivery'] ?? [], $quotes['lglaccessinsideNotifydelivery'] ?? []);
+            } elseif ($lfg && $alwaysNotifyDel  && $alwaysInsideDel && $alwaysLimitedDel) {
+                /**
+                 * Condition for Always lift gate, notify before delivery and inside delivery (Single Shipment)
+                 * */
+                return array_merge($quotes['lglaccessinsideNotifydelivery'] ?? [], $quotes['Truckload'] ?? []) ?? $quotes['simple'];
             } elseif ($lfg && $alwaysNotifyDel  && $alwaysInsideDel) {
                 /**
                  * Condition for Always lift gate, notify before delivery and inside delivery (Single Shipment)
                  * */
-                return array_merge($quotes['lginsidenotifydelivery'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['Truckload'] ?? []) ?? $quotes['simple'];
-            } elseif ($lfg && $alwaysInsideDel) {
-                /**
-                 * Condition for Always lift gate, inside delivery (Single Shipment)
-                 * */
-                return array_merge($quotes['lginsidenotifydelivery'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['Truckload'] ?? [], $quotes['insideLiftGateDelivery'] ?? []) ?? $quotes['simple'];
+                return array_merge($quotes['lginsidenotifydelivery'] ?? [], $quotes['lglaccessinsideNotifydelivery'] ?? [], $quotes['Truckload'] ?? []) ?? $quotes['simple'];
             } elseif ($lfg && $alwaysLimitedDel && $alwaysNotifyDel) {
                 /**
                  * Condition for Always lift gate, limited access and notify before delivery (Single Shipment)
                  * */
-                return array_merge($quotes['lginsidenotifydelivery'] ?? [], $quotes['Truckload'] ?? [], $quotes['lglaccessnotifydelivery'] ?? []) ?? $quotes['simple'];
+                return array_merge($quotes['lglaccessinsideNotifydelivery'] ?? [], $quotes['Truckload'] ?? [], $quotes['lglaccessnotifydelivery'] ?? []) ?? $quotes['simple'];
+            } elseif ($lfg && $alwaysLimitedDel && $alwaysInsideDel) {
+                /**
+                 * Condition for Always lift gate, limited access and notify before delivery (Single Shipment)
+                 * */
+                return array_merge($quotes['lglaccessinsideNotifydelivery'] ?? [], $quotes['Truckload'] ?? [], $quotes['lglaccessinsidedelivery'] ?? []) ?? $quotes['simple'];
+            } elseif ($lfg && $alwaysInsideDel) {
+                /**
+                 * Condition for Always lift gate, inside delivery (Single Shipment)
+                 * */
+                return array_merge($quotes['insideLiftGateDelivery'] ?? [], $quotes['lginsidenotifydelivery'] ?? [], $quotes['lglaccessinsidedelivery'] ?? [], $quotes['Truckload'] ?? [], $quotes['lglaccessinsideNotifydelivery'] ?? []) ?? $quotes['simple'];
             } elseif ($lfg && $alwaysLimitedDel) {
                 /**
                  * Condition for Always lift gate, limited access delivery (Single Shipment)
                  * */
-                return array_merge($quotes['lginsidenotifydelivery'] ?? [], $quotes['Truckload'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['lglaccessnotifydelivery'] ?? []) ?? $quotes['simple'];
+                return array_merge($quotes['lglaccessinsidedelivery'] ?? [], $quotes['Truckload'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['lglaccessnotifydelivery'] ?? [], $quotes['lglaccessinsideNotifydelivery'] ?? []) ?? $quotes['simple'];
             } elseif ($lfg && $alwaysNotifyDel) {
                 /**
                  * Condition for Always lift gate, notify before delivery and lift gate for residential (Single Shipment)
                  * */
-                return array_merge($quotes['lginsidenotifydelivery'] ?? [], $quotes['Truckload'] ?? [], $quotes['lgnotifydelivery'] ?? [], $quotes['lglaccessnotifydelivery'] ?? []) ?? $quotes['simple'];
+                return array_merge($quotes['lgnotifydelivery'] ?? [], $quotes['lginsidenotifydelivery'] ?? [], $quotes['Truckload'] ?? [], $quotes['lglaccessnotifydelivery'] ?? [], $quotes['lglaccessinsideNotifydelivery'] ?? []) ?? $quotes['simple'];
             } elseif ($alwaysNotifyDel && $alwaysInsideDel) {
                 /**
                  * Condition for Always inside and notify before delivery (Single Shipment)
@@ -4734,12 +4714,12 @@ class CompileQuotes
                 /**
                  * Condition for Always lift gate and lift gate for residential (Single Shipment)
                  * */
-                return array_merge($quotes['liftgate'] ?? [], $quotes['insideLiftGateDelivery'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['Truckload'] ?? [], $quotes['lgnotifydelivery'] ?? [], $quotes['lginsidenotifydelivery'] ?? [], $quotes['lglaccessnotifydelivery'] ?? []) ?? $quotes['simple'];
+                return array_merge($quotes['liftgate'] ?? [], $quotes['insideLiftGateDelivery'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['lgnotifydelivery'] ?? [], $quotes['lginsidenotifydelivery'] ?? [], $quotes['Truckload'] ?? [], $quotes['lglaccessinsidedelivery'] ?? [], $quotes['lglaccessnotifydelivery'] ?? [], $quotes['lglaccessinsideNotifydelivery'] ?? []) ?? $quotes['simple'];
             } elseif ($alwaysLimitedDel) {
                 /**
-                 * Condition for Always lift gate and lift gate for residential (Single Shipment)
+                 * Condition for Always limited (Single Shipment)
                  * */
-                return array_merge($quotes['insidenotifydelivery'] ?? [], $quotes['lginsidenotifydelivery'] ?? [], $quotes['Truckload'] ?? [], $quotes['limitedaccess'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['laccessnotifydelivery'] ?? [], $quotes['lglaccessnotifydelivery'] ?? []) ?? $quotes['simple'];
+                return array_merge($quotes['liftgate'] ?? [], $quotes['insideLiftGateDelivery'] ?? [], $quotes['limitedaccess'] ?? [], $quotes['Truckload'] ?? [], $quotes['lgnotifydelivery'] ?? [], $quotes['lginsidenotifydelivery'] ?? [], $quotes['lglaccessnotifydelivery'] ?? []) ?? $quotes['simple'];
             } elseif ($TMD_and_APD) {
                 /**
                  * Condition for Always two man and appointment delivery (Single Shipment)
@@ -4751,43 +4731,96 @@ class CompileQuotes
                  * */
                 return array_merge($quotes['twoManDel'] ?? [], $quotes['aptDel'] ?? []) ?? $quotes['simple'];
             } else {
-                return array_merge($quotes['simple'] ?? [], $quotes['insideDelivery'] ?? [], $quotes['limitedaccess'] ?? [], $quotes['Truckload'] ?? [], $quotes['twoManDel'] ?? [], $quotes['aptDel'] ?? [], $quotes['twoManAptDel'] ?? [], $quotes['notifydelivery'] ?? [], $quotes['insidenotifydelivery'] ?? [], $quotes['laccessnotifydelivery'] ?? []);
+                return array_merge($quotes['simple'] ?? [], $quotes['insideDelivery'] ?? [], $quotes['limitedaccess'] ?? [], $quotes['Truckload'] ?? [], $quotes['twoManDel'] ?? [], $quotes['aptDel'] ?? [], $quotes['twoManAptDel'] ?? [], $quotes['notifydelivery'] ?? [], $quotes['insidenotifydelivery'] ?? [], $quotes['laccessnotifydelivery'] ?? [], $quotes['laccessinsidedelivery'] ?? [], $quotes['lglaccessinsidedelivery'] ?? []);
             }
+        } elseif ($lfg && $alwaysNotifyDel && $alwaysInsideDel && $alwaysLimitedDel) {
+            /**
+             * Condition for Always lift gate, notify before delivery, limited access and inside delivery (Multi Shipment)
+             * */
+            unset($quotes['simple'], $quotes['liftgate'], $quotes['insideDelivery'], $quotes['insideLiftGateDelivery'], $quotes['limitedaccess'], $quotes['limitedaccessLG'],
+                 $quotes['Truckload'], $quotes['notifydelivery'], $quotes['lgnotifydelivery'], $quotes['insidenotifydelivery'], $quotes['lginsidenotifydelivery'], $quotes['laccessnotifydelivery'],
+                 $quotes['lglaccessnotifydelivery'], $quotes['laccessinsidedelivery'], $quotes['lglaccessinsidedelivery'], $quotes['laccessinsideNotifydelivery']);
+
+        } elseif ($alwaysNotifyDel && $alwaysInsideDel && $alwaysLimitedDel) {
+            /**
+             * Condition for Always notify before delivery, limited access and inside delivery (Multi Shipment)
+             * */
+            unset($quotes['simple'], $quotes['liftgate'], $quotes['insideDelivery'], $quotes['insideLiftGateDelivery'], $quotes['limitedaccess'], $quotes['limitedaccessLG'],
+                 $quotes['Truckload'], $quotes['notifydelivery'], $quotes['lgnotifydelivery'], $quotes['insidenotifydelivery'], $quotes['lginsidenotifydelivery'],
+                 $quotes['laccessnotifydelivery'], $quotes['lglaccessnotifydelivery'], $quotes['laccessinsidedelivery'], $quotes['lglaccessinsidedelivery']);
+
         } elseif ($lfg && $alwaysNotifyDel && $alwaysInsideDel) {
             /**
              * Condition for Always lift gate, notify before delivery and inside delivery (Multi Shipment)
              * */
-            unset($quotes['simple'], $quotes['insideDelivery'], $quotes['lgnotifydelivery'], $quotes['insidenotifydelivery'], $quotes['insideLiftGateDelivery'], $quotes['limitedaccess'],$quotes['twoManDel'], $quotes['aptDel'], $quotes['notifydelivery'], $quotes['liftgate']);
+            unset($quotes['simple'], $quotes['liftgate'], $quotes['insideDelivery'], $quotes['insideLiftGateDelivery'], $quotes['limitedaccess'], $quotes['limitedaccessLG'],
+                 $quotes['Truckload'], $quotes['notifydelivery'], $quotes['lgnotifydelivery'], $quotes['insidenotifydelivery'], $quotes['laccessnotifydelivery'],
+                 $quotes['lglaccessnotifydelivery'], $quotes['laccessinsidedelivery'], $quotes['lglaccessinsidedelivery'], $quotes['laccessinsideNotifydelivery']);
+
+        } elseif ($lfg && $alwaysInsideDel && $alwaysLimitedDel) {
+            /**
+             * Condition for Always lift gate, inside delivery and limited access delivery (Multi Shipment)
+             * */
+            unset($quotes['simple'], $quotes['liftgate'], $quotes['insideDelivery'], $quotes['insideLiftGateDelivery'], $quotes['limitedaccess'], $quotes['limitedaccessLG'],
+                 $quotes['Truckload'], $quotes['notifydelivery'], $quotes['lgnotifydelivery'], $quotes['insidenotifydelivery'], $quotes['lginsidenotifydelivery'], 
+                 $quotes['laccessnotifydelivery'], $quotes['lglaccessnotifydelivery'], $quotes['laccessinsidedelivery'], $quotes['laccessinsideNotifydelivery']);
+
         } elseif ($lfg && $alwaysNotifyDel && $alwaysLimitedDel) {
             /**
              * Condition for Always lift gate, notify before delivery and limited access delivery (Multi Shipment)
              * */
-            unset($quotes['simple'], $quotes['insideDelivery'], $quotes['lgnotifydelivery'], $quotes['insidenotifydelivery'], $quotes['insideLiftGateDelivery'], $quotes['limitedaccess'], $quotes['limitedaccessLG'], $quotes['twoManDel'], $quotes['aptDel'], $quotes['notifydelivery'], $quotes['laccessnotifydelivery'], $quotes['liftgate']);
+            unset($quotes['simple'], $quotes['liftgate'], $quotes['insideDelivery'], $quotes['insideLiftGateDelivery'], $quotes['limitedaccess'], $quotes['limitedaccessLG'],
+                 $quotes['Truckload'], $quotes['notifydelivery'], $quotes['lgnotifydelivery'], $quotes['insidenotifydelivery'], $quotes['lginsidenotifydelivery'], 
+                 $quotes['laccessnotifydelivery'], $quotes['laccessinsidedelivery'], $quotes['lglaccessinsidedelivery'], $quotes['laccessinsideNotifydelivery']);
+
         } elseif ($lfg && $alwaysInsideDel) {
             /**
              * Condition for Always lift gate, inside delivery and lift gate for residential (Multi Shipment)
              * */
-            unset($quotes['simple'], $quotes['insideDelivery'], $quotes['insidenotifydelivery'], $quotes['limitedaccess'],$quotes['twoManDel'], $quotes['aptDel'], $quotes['notifydelivery'], $quotes['lgnotifydelivery'], $quotes['liftgate']);
+            unset($quotes['simple'], $quotes['liftgate'], $quotes['insideDelivery'], $quotes['limitedaccess'], $quotes['limitedaccessLG'],
+                 $quotes['Truckload'], $quotes['notifydelivery'], $quotes['lgnotifydelivery'], $quotes['insidenotifydelivery'], $quotes['laccessnotifydelivery'],
+                 $quotes['lglaccessnotifydelivery'], $quotes['laccessinsidedelivery'], $quotes['laccessinsideNotifydelivery']);
+
         } elseif ($lfg && $alwaysLimitedDel) {
             /**
              * Condition for Always lift gate, limited access delivery and lift gate (Multi Shipment)
              * */
-            unset($quotes['simple'], $quotes['insideDelivery'], $quotes['insidenotifydelivery'], $quotes['limitedaccess'],$quotes['twoManDel'], $quotes['aptDel'], $quotes['notifydelivery'], $quotes['laccessnotifydelivery'], $quotes['lgnotifydelivery'], $quotes['liftgate']);
+            unset($quotes['simple'], $quotes['liftgate'], $quotes['insideDelivery'], $quotes['insideLiftGateDelivery'], $quotes['limitedaccess'],
+                 $quotes['Truckload'], $quotes['notifydelivery'], $quotes['lgnotifydelivery'], $quotes['insidenotifydelivery'], $quotes['lginsidenotifydelivery'],
+                 $quotes['laccessnotifydelivery'], $quotes['laccessinsidedelivery'], $quotes['laccessinsideNotifydelivery']);
+
         } elseif ($alwaysInsideDel && $alwaysNotifyDel) {
             /**
              * Condition for Always inside, notify before delivery and (Multi Shipment)
              * */
-            unset($quotes['simple'], $quotes['insideDelivery'], $quotes['lgnotifydelivery'], $quotes['insideLiftGateDelivery'], $quotes['limitedaccess'],$quotes['twoManDel'], $quotes['aptDel'], $quotes['notifydelivery'], $quotes['liftgate']);
+            unset($quotes['simple'], $quotes['liftgate'], $quotes['insideDelivery'], $quotes['insideLiftGateDelivery'], $quotes['limitedaccess'], 
+                 $quotes['limitedaccessLG'], $quotes['Truckload'], $quotes['notifydelivery'], $quotes['lgnotifydelivery'], $quotes['laccessnotifydelivery'],
+                 $quotes['lglaccessnotifydelivery'], $quotes['laccessinsidedelivery'], $quotes['lglaccessinsidedelivery']);
+
+        } elseif ($alwaysLimitedDel && $alwaysInsideDel) {
+            /**
+             * Condition for Always limited access and inside delivery and (Multi Shipment)
+             * */
+            unset($quotes['simple'], $quotes['liftgate'], $quotes['insideDelivery'], $quotes['insideLiftGateDelivery'], $quotes['limitedaccess'], $quotes['limitedaccessLG'],
+                 $quotes['Truckload'], $quotes['notifydelivery'], $quotes['lgnotifydelivery'], $quotes['insidenotifydelivery'], $quotes['lginsidenotifydelivery'], 
+                 $quotes['laccessnotifydelivery'], $quotes['lglaccessnotifydelivery']);
+
         } elseif ($alwaysLimitedDel && $alwaysNotifyDel) {
             /**
              * Condition for Always limited access and notify before delivery and (Multi Shipment)
              * */
-            unset($quotes['simple'], $quotes['insideDelivery'], $quotes['lgnotifydelivery'], $quotes['insideLiftGateDelivery'], $quotes['limitedaccess'], $quotes['limitedaccessLG'], $quotes['twoManDel'], $quotes['aptDel'], $quotes['notifydelivery'], $quotes['liftgate']);
+            unset($quotes['simple'], $quotes['liftgate'], $quotes['insideDelivery'], $quotes['insideLiftGateDelivery'], $quotes['limitedaccess'], $quotes['limitedaccessLG'],
+                 $quotes['Truckload'], $quotes['notifydelivery'], $quotes['lgnotifydelivery'], $quotes['insidenotifydelivery'], $quotes['lginsidenotifydelivery'],
+                 $quotes['laccessinsidedelivery'], $quotes['lglaccessinsidedelivery']);
+
         } elseif ($lfg && $alwaysNotifyDel) {
             /**
              * Condition for Always lift gate, notify before delivery and lift gate for residential (Multi Shipment)
              * */
-            unset($quotes['simple'], $quotes['insideDelivery'], $quotes['insidenotifydelivery'], $quotes['insideLiftGateDelivery'], $quotes['limitedaccess'],$quotes['twoManDel'], $quotes['aptDel'], $quotes['notifydelivery'], $quotes['liftgate']);
+            unset($quotes['simple'], $quotes['liftgate'], $quotes['insideDelivery'], $quotes['insideLiftGateDelivery'], $quotes['limitedaccess'], 
+                 $quotes['limitedaccessLG'], $quotes['Truckload'], $quotes['notifydelivery'], $quotes['insidenotifydelivery'], $quotes['laccessnotifydelivery'],
+                 $quotes['laccessinsidedelivery'], $quotes['lglaccessinsidedelivery'], $quotes['laccessinsideNotifydelivery']);
+
         } elseif ($TMD_and_APD) {
             /**
              * Condition for Always two man and appointment delivery (Multi Shipment)
@@ -4797,23 +4830,33 @@ class CompileQuotes
             /**
              * Condition for Always inside delivery (Multi Shipment)
              * */
-            unset($quotes['simple'], $quotes['liftgate'], $quotes['limitedaccess'],$quotes['twoManDel'], $quotes['aptDel'], $quotes['lgnotifydelivery'], $quotes['notifydelivery']);
+            unset($quotes['simple'], $quotes['liftgate'], $quotes['limitedaccess'], $quotes['limitedaccessLG'],
+                 $quotes['Truckload'], $quotes['notifydelivery'], $quotes['lgnotifydelivery'], $quotes['laccessnotifydelivery'],
+                 $quotes['lglaccessnotifydelivery'], $quotes['twoManDel'], $quotes['aptDel']);
+
         }elseif ($alwaysNotifyDel) {
             /**
              * Condition for Always notify before delivery (Multi Shipment)
              * */
-            unset($quotes['simple'], $quotes['liftgate'], $quotes['insideLiftGateDelivery'], $quotes['insideDelivery'], $quotes['limitedaccess'],$quotes['twoManDel'], $quotes['aptDel']);
+            unset($quotes['simple'], $quotes['liftgate'], $quotes['insideDelivery'], $quotes['insideLiftGateDelivery'], $quotes['limitedaccess'], $quotes['limitedaccessLG'],
+                 $quotes['Truckload'], $quotes['laccessinsidedelivery'], $quotes['lglaccessinsidedelivery'], $quotes['twoManDel'], $quotes['aptDel']);
+
         }elseif ($alwaysLimitedDel) {
             /**
              * Condition for Always limited access delivery (Multi Shipment)
              * */
-            unset($quotes['simple'], $quotes['notifydelivery'], $quotes['lgnotifydelivery'], $quotes['liftgate'], $quotes['insideLiftGateDelivery'], $quotes['insideDelivery'], $quotes['twoManDel'], $quotes['aptDel']);
+            unset($quotes['simple'], $quotes['liftgate'], $quotes['insideDelivery'], $quotes['insideLiftGateDelivery'],
+                 $quotes['Truckload'], $quotes['notifydelivery'], $quotes['lgnotifydelivery'], $quotes['insidenotifydelivery'], 
+                 $quotes['lginsidenotifydelivery'], $quotes['twoManDel'], $quotes['aptDel']);
+
         } elseif ($lfg || $TMD_or_APD) {
             /**
              * Condition for always ;8lift gate and lift gate for residential (Multi Shipment)
              * Condition for Always two man or appointment delivery (Multi Shipment)
              * */
-            unset($quotes['simple'], $quotes['insideDelivery'], $quotes['insidenotifydelivery'], $quotes['limitedaccess'], $quotes['twoManAptDel'], $quotes['notifydelivery']);
+            unset($quotes['simple'], $quotes['insideDelivery'], $quotes['limitedaccess'], $quotes['Truckload'], $quotes['notifydelivery'], 
+                 $quotes['insidenotifydelivery'], $quotes['laccessnotifydelivery'], $quotes['laccessinsidedelivery'], 
+                 $quotes['laccessinsideNotifydelivery'], $quotes['twoManAptDel']);
         }
         return $this->organizeQuotesArray($quotes);
     }
@@ -4827,23 +4870,26 @@ class CompileQuotes
                 $code = '';
                 // check liftgate key with other features enable
                 $isLiftGate = ( $key == 'liftgate' || $key == 'lgnotifydelivery' || $key == 'lginsidenotifydelivery' 
-                            || $key == 'insideLiftGateDelivery' || $key == 'limitedaccessLG' || $key == 'lglaccessnotifydelivery') ? true : false;
+                            || $key == 'insideLiftGateDelivery' || $key == 'limitedaccessLG' || $key == 'lglaccessnotifydelivery'
+                            || $key == 'lglaccessinsidedelivery' || $key == 'lglaccessinsideNotifydelivery') ? true : false;
 
                 // check inside delivery key with other features enable
-                $isInsideDelivery = ( $key == 'insideDelivery' || $key == 'insideLiftGateDelivery' 
-                                || $key == 'insidenotifydelivery' || $key == 'lginsidenotifydelivery' ) ? true : false;
+                $isInsideDelivery = ( $key == 'insideDelivery' || $key == 'insideLiftGateDelivery' || $key == 'lglaccessinsideNotifydelivery'
+                                || $key == 'insidenotifydelivery' || $key == 'lginsidenotifydelivery' || $key == 'laccessinsidedelivery'
+                                || $key == 'lglaccessinsidedelivery' || $key == 'laccessinsideNotifydelivery') ? true : false;
 
                 // check limited access delivery key with other features enable
                 $isLimitedAccess = ($key == 'limitedaccess' || $key == 'limitedaccessLG' || $key == 'laccessnotifydelivery' 
-                                || $key == 'lglaccessnotifydelivery') ? true : false;
+                                || $key == 'laccessinsidedelivery' || $key == 'lglaccessnotifydelivery' || $key == 'laccessinsideNotifydelivery'
+                                || $key == 'lglaccessinsidedelivery' || $key == 'lglaccessinsideNotifydelivery') ? true : false;
 
                 // check two man and appointment delivery enable
                 $twoManDel = ($key == 'twoManDel' || $key == 'twoManAptDel') ? true : false;
                 $appDel = ($key == 'aptDel' || $key == 'twoManAptDel') ? true : false;
 
                 // check notify before delivery key with other features enable
-                $isNotifydelivery = ( $key == 'notifydelivery' || $key == 'insidenotifydelivery' 
-                                    || $key == 'lgnotifydelivery' || $key == 'lginsidenotifydelivery' 
+                $isNotifydelivery = ( $key == 'notifydelivery' || $key == 'insidenotifydelivery' || $key == 'lglaccessinsideNotifydelivery'
+                                    || $key == 'lgnotifydelivery' || $key == 'lginsidenotifydelivery' || $key == 'laccessinsideNotifydelivery'
                                     || $key == 'laccessnotifydelivery' || $key == 'lglaccessnotifydelivery') ? true : false;
 
                 foreach ($value as $key2 => $data) {
@@ -4960,7 +5006,7 @@ class CompileQuotes
     {
         $lgCost = $lgOption ? 0 : $this->getLiftGateCost($data, $getCost, $isUpsLtl);
         $IDCost = $insideDel ? 0 : $this->getInsideDeliveryCost($data); 
-        $LADCost = $laccess ? 0 : $data['limitedAccessDeliveryFee'] ?? 0;
+        $LADCost = $laccess ? 0 : $data['limitedAccessDeliveryFee'] ?? $data['surcharges']['limitedAccessDeliveryFee'] ?? 0;
         $TMDCost = $twoManDel ? 0 : $data['surcharges']['twoManFee'] ?? 0;
         $APDCost = $appDel ? 0 : $data['surcharges']['appointmentFee'] ?? 0;
         $NBDCost = $notifyDelivery ? 0 : $this->getNotifyDeliveryCost($data, $isUpsLtl);
@@ -4969,6 +5015,28 @@ class CompileQuotes
         $basePrice = $basePrice - $lgCost - $LADCost - $IDCost - $TMDCost - $APDCost - $NBDCost;
         $productOriginMarkupFee = Functions::calProductOriginMarkupFee($basePrice, $this->originKey ?? $originKey, $this->items ?? $items, $this->allOrigins ?? $allOrigins);
         $basePrice = $this->calculateHandlingFee($basePrice, $quoteSettings);
+        $basePrice = $basePrice + $productOriginMarkupFee;
+        return $basePrice;
+    }
+
+    public function calculateOdflPrice($data, $lgOption = false, $getCost = false)
+    {
+        $lgCost = $lgOption ? 0 : $this->getLiftGateCost($data, $getCost);
+        $basePrice = (float)$data['rateEstimate']['netFreightCharge'];
+        $basePrice = $basePrice - $lgCost;
+        $productOriginMarkupFee = Functions::calProductOriginMarkupFee($basePrice, $this->originKey, $this->items, $this->allOrigins);
+        $basePrice = $this->calculateHandlingFee($basePrice);
+        $basePrice = $basePrice + $productOriginMarkupFee;
+        return $basePrice;
+    }
+
+    public function calculateEstesPrice($data, $lgOption = false, $getCost = false, $isUpsLtl = false)
+    {
+        $lgCost = $lgOption ? 0 : $this->getLiftGateCost($data, $getCost, $isUpsLtl);
+        $basePrice = (float)$data['ratpricing']['rattotalPrice'];
+        $basePrice = $basePrice - $lgCost;
+        $productOriginMarkupFee = Functions::calProductOriginMarkupFee($basePrice, $this->originKey, $this->items, $this->allOrigins);
+        $basePrice = $this->calculateHandlingFee($basePrice);
         $basePrice = $basePrice + $productOriginMarkupFee;
         return $basePrice;
     }
@@ -5577,7 +5645,7 @@ class CompileQuotes
         return $resp;
     }
 
-    public function getCompiledQuotes($services, $arraySorting, $lgQuotes, $resiPickup = '', $lgPickup = '', $insideDelivery = false, $notifyDelivery = false)
+    public function getCompiledQuotes($services, $arraySorting, $lgQuotes, $resiPickup = '', $lgPickup = '', $insideDelivery = false, $notifyDelivery = false, $limitedAccess = false)
     {
 
         if (empty($arraySorting) || empty($services)) {
@@ -5612,7 +5680,7 @@ class CompileQuotes
                 return $averageRateService;
             }
 
-            return $this->averageRattingMethod($arraySorting, $options, $lgQuotes, $resiPickup, $lgPickup, $insideDelivery, $notifyDelivery);
+            return $this->averageRattingMethod($arraySorting, $options, $lgQuotes, $resiPickup, $lgPickup, $insideDelivery, $limitedAccess, $notifyDelivery);
         }
 
         $resp = array_intersect_key($services, $sliced);
@@ -5654,7 +5722,7 @@ class CompileQuotes
      * @param $lgQuotes
      * @return array
      */
-    public function averageRattingMethod($ratesArray, $options, $lgQuotes, $resiPickup = '', $lgPickup = '', $insideDelivery = false, $notifyDelivery = false, $labelAs = '')
+    public function averageRattingMethod($ratesArray, $options, $lgQuotes, $resiPickup = '', $lgPickup = '', $insideDelivery = false, $limitedAccess = false, $notifyDelivery = false, $labelAs = '')
     {
         $averageRateService = [];
         $prefix = $this->isGTZCerasis ? 'AVG' : 'AVGwweltl';

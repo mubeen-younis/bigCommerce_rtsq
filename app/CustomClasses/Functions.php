@@ -37,7 +37,9 @@ class Functions
     public static $imageSeparatedUrl = 'https://us-east.api.3dbinpacking.com/images/70785010926d0cc360921e4541811a53/20181106/4c114cebfa2d61a0c8153b3170ab6663/1541503329-2391-8709331.png';
     public static $imageSbsUrl = 'https://us-east.api.3dbinpacking.com/images/70785010926d0cc360921e4541811a53/20181106/4c114cebfa2d61a0c8153b3170ab6663/1541503329-24-8612722.png';
     public static $limitedAccesDelLabel = ' w/ limited access delivery';
-    public static $limitedAccessLGDelLable = ' w/ liftgate & limited access delivery';
+    public static $resiLimitedAccesDelLabel = ' w/ residential & limited access delivery';
+    public static $resiLimitedAccessLGDelLable = ' w/ residential, lift gate & limited access delivery';
+    public static $limitedAccessLGDelLable = ' w/ lift gate & limited access delivery';
     public static $twoManDeliveryLabel = ' w/ two man delivery';
     public static $appointmentDeliveryLabel = ' w/ appointment delivery';
     public static $twoManAppDelLabel = ' w/ two man & appointment delivery';
@@ -666,8 +668,9 @@ class Functions
     public static function getOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi, $insideDelivery = false, $laccess = false, $notifyDelivery = false, $resiPickup = false, $lgPickup = false)
     {
         $CompileQuotes = new CompileQuotes();
-        $serviceCode = $data['ratquoteNumber'] ?? $data['CarrierSCAC'] ?? '';
-        $serviceCode = (isset($data['serviceType']) && ($carrName == 'wweltl' || $carrName == 'cltl')) ? $data['serviceType'] : $serviceCode ?? '';
+        $serviceCode = !($carrName == 'SouthEastern' || $carrName == 'yrcltl' || $carrName == 'upsltl' || $carrName == 'saialtl' || $carrName == 'fedexltl' || $carrName == 'tqlltl' || $carrName == 'abfltl' || $carrName == 'daylightltl' || $carrName == 'dayrossltl') && isset($data['serviceType']) ? $data['serviceType'] : '';
+        $serviceCode =  $data['ratquoteNumber'] ?? $data['scac'] ?? $data['CarrierSCAC'] ?? $serviceCode;
+
         $isUpsLtl = false;
         if ($carrName === 'upsltl') {
             $isUpsLtl = true;
