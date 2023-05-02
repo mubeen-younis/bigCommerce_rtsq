@@ -325,8 +325,6 @@ class ProductSettingController extends Controller
             } else {
                 $count = 0;
             }
-
-
             if ($search === null || $search == '') {
                 $products = ProductSetting::where('store_id', $request->store_id)
                     ->groupBy('source_product_id')->orderBy('name', $sortProd)->skip(($page - 1) * $perPage)->take($perPage)->get();
@@ -336,11 +334,10 @@ class ProductSettingController extends Controller
                         ->orWhere('sku', 'LIKE', '%' . $search . '%')
                         ->orWhere('variant_id', $search)
                         ->orWhere('source_product_id', $search);
-                })
-                    ->where('store_id', $request->store_id)
-                    ->orderBy('name', $sortProd)
-                    ->groupBy('source_product_id')
-                    ->skip(($page - 1) * $perPage)->take($perPage)->get();
+                })->where('store_id', $request->store_id)
+                ->orderBy('name', $sortProd)
+                ->groupBy('source_product_id')
+                ->skip(($page - 1) * $perPage)->take($perPage)->get();
             }
             if ($products->isEmpty()) {
                 return response()->json(['error' => true,
@@ -555,7 +552,7 @@ class ProductSettingController extends Controller
                 $product['id'] = $variant['product_id'];
                 $this->saveProducts->saveProduct($product, $store->id);
             }
-
+            
             return response()->json(true);
         } catch (\Exception $exception) {
             //  Have to LOg Here
