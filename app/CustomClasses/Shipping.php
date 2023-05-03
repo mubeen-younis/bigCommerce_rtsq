@@ -877,7 +877,7 @@ class Shipping
 
         //Filter multi shipment same titles quotes array
         $freightQuotesArr = collect($finalCheapestQuotes)->filter(function ($quote) use ($freightTitle) {
-            return strpos($quote['title'], $freightTitle) !== false || strpos($quote['title'], 'Freight') !== false;
+            return strpos($quote['title'], $freightTitle) !== false || strpos($quote['title'], 'Freight') !== false || strpos($quote['code'], 'own_arrangement') !== false;
         })->toArray() ?? [];
         $shippingQuotesArr = collect($finalCheapestQuotes)->filter(function ($quote) use ($shippingTitle) {
             return strpos($quote['title'], $shippingTitle) !== false;
