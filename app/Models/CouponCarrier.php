@@ -31,6 +31,24 @@ class CouponCarrier extends Model
         return null;
     }
 
+    public static function getPromoCarriersInfo($request)
+    {
+        $couponCarriers = [
+            'small-package' => 'WWE_PL',
+            'ltl-quotes' => 'WWE_LTL',
+            'gtz-ltl' => 'GTZ',
+            'unishippers-small' => 'UNI_PL',
+        ];
+
+        $code = $request['coupon_code'] ?? '';        
+        if(!empty($code)){
+            $coupon = Coupon::where('code', $code)->where('store_id', $request['store_id'])->first();
+            return self::where('coupon_code_id', $coupon->id)->get()->toArray();
+        }
+
+        return null;
+    }
+
     public static function addOrUpdateCarrierInfo($slug, $id, $code, $response)
     {
         /* $carrier = self::getCarrierInfoByName($slug);
@@ -45,7 +63,7 @@ class CouponCarrier extends Model
         $carrier->coupon_code_id = $id;
         $carrier->carrier_name = $slug;
         $carrier->carrier_code = $code ?? null;
-        $carrier->is_enabled = 1;
+        $carrier->is_enabled = $response['promo']['status'];
         $carrier->start_date = $response['promo']['start_date'];
         $carrier->end_date = $response['promo']['end_date'];
         $carrier->save();

@@ -42,28 +42,7 @@ class Bin3D
     {
         $this->isPalletPkgReq = $palletPkgReq;
 
-        if (count($items)) {
-            foreach ($items as $key => $item) {
-                $binRequest[$key] = $this->generateBinRequest($bins, $item, [], $storeId);
-            }
-            $requestHash = $this->get_encrypted_params(json_encode($binRequest)); 
-            /*
-            * Check hash if available same request in last 24 hours then no need consume hits
-            * **/
-            if (BinRequestLog::where('request_hash', '=', $requestHash)->where('created_at', '>', Carbon::now()->subDay(1))->exists()) {
-                $hits = 0;    
-            }
-        }
-
         //loop for each bin request
-        if ($hits != 0) {
-            $addonType = $this->isPalletPkgReq ? 'PLT' : 'SBS';
-            $sbsStatus = $this->consumeHits($storeId, $hits, $addonType);
-            if (!$sbsStatus['status']) {
-                return [];
-            }
-        }
-
         if (count($items) && count($itemsAlone)) {
             foreach ($items as $key => $item) {
                 $binRequest[$key] = $this->generateBinRequest($bins, $item, [], $storeId);
@@ -332,6 +311,15 @@ class Bin3D
                 return $response;
             }
         }
+        // consuming packaging Add-On hits
+        if ($hits != 0) {
+            $addonType = $this->isPalletPkgReq ? 'PLT' : 'SBS';
+            $sbsStatus = $this->consumeHits($storeId, $hits, $addonType);
+            if (!$sbsStatus['status']) {
+                return [];
+            }
+        }
+
         $binRequestLog = new BinRequestLog();
         $binRequestLog->store_id = $storeId;
         $binRequestLog->cart_id = $cartInfo['cartId'];
