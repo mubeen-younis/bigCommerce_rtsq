@@ -146,7 +146,7 @@ class GetRatesController extends Controller
                 $ltlCheck = $product_settings['freight_enabled'] ?? false;
                 $shipBinAlone = (isset($product_settings['ship_multiple_package']) && $product_settings['ship_multiple_package'])
                 || (isset($product_settings['ship_own_package']) && $product_settings['ship_own_package']) ? 1 : 0;
-                Log::info('product price: ' . $product_price . 'product id: ' . $product['product_id']);
+
                 $key = $product['variant_id'] ?? $product['product_id'];
                 /*Added this block of code for catering an it 56yuk  g5 E
                  ship_own_package0YUJHZQA\  578em with diff product rules*/
@@ -232,7 +232,7 @@ class GetRatesController extends Controller
                 }
             }
         }
-        Log::info('lineItemData details' . json_encode($details));
+
         return ['lineItemData' => $details];
     }
 
