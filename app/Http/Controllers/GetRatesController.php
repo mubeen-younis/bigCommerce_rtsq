@@ -138,7 +138,7 @@ class GetRatesController extends Controller
         if (count($data['base_options']['items'])) {
             foreach ($data['base_options']['items'] as $productKey => $product) {
                 $product_settings = $this->getProductSetting($product['product_id'], $product['variant_id'], $storeId);
-                $product_price = $this->getProductPrice($product['product_id'], $product['variant_id']);
+                $product_price = $this->getProductPrice($product['product_id'], $product['variant_id'], $storeId);
                 $weight = (isset($product['weight']['value']) && isset($product['weight']['units'])) ? $this->convertWeight($product['weight']['value'], strtolower($product['weight']['units'])) : 0;
                 $length = (isset($product['length']['value']) && isset($product['length']['units'])) ? $this->convertDimensionUnit($product['length']['value'], strtolower($product['length']['units'])) : 0;
                 $width = (isset($product['width']['value']) && isset($product['width']['units'])) ? $this->convertDimensionUnit($product['width']['value'], strtolower($product['width']['units'])) : 0;
@@ -330,9 +330,9 @@ class GetRatesController extends Controller
         return $settings;
     }
 
-    private function getProductPrice($productId, $variantId)
+    private function getProductPrice($productId, $variantId, $storeId)
     {
-        return ProductSetting::where(['source_product_id' => $productId, 'variant_id' => $variantId])
+        return ProductSetting::where(['store_id' => $storeId, 'source_product_id' => $productId, 'variant_id' => $variantId])
             ->pluck('price')->first();
     }
 
