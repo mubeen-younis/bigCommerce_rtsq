@@ -38,20 +38,27 @@ class ProductSetting extends Model
         self::where('shipping_group', $shippingGroupId)->update(['shipping_group' => null, 'shipping_group_enabled' => false]);
     }
 
+    /**
+     * Saves or Updates product from import product in DB
+     * @param $product
+     * @param $storeId
+     * @return void|null
+     */
     public function saveProduct($product, $storeId)
     {
+
         if ($product['base_variant_id'] == null && ProductSetting::where('source_product_id', $product['id'])
-            ->where('store_id', $storeId)->exists()) {
+                ->where('store_id', $storeId)->exists()) {
             return null;
         }
-        Log::info('Base variant ID ' . $product['base_variant_id']);
-        if (ProductSetting::where('source_product_id', $product['id'])
+
+        Log::info('Base variant ID ' . $product['base_variant_id'] . ' - Product ID : ' . $product['id']);
+        
+        $saveProduct = ProductSetting::where('source_product_id', $product['id'])
             ->where('variant_id', $product['base_variant_id'])
-            ->where('store_id', $storeId)->exists()) {
-            $saveProduct = ProductSetting::where('source_product_id', $product['id'])
-                ->where('variant_id', $product['base_variant_id'])
-                ->where('store_id', $storeId)->first();
-        } else {
+            ->where('store_id', $storeId)->first();
+
+        if (blank($saveProduct)) {
             $saveProduct = new ProductSetting();
 
             $storeSettings = $this->getStoreSettings($storeId);
@@ -65,9 +72,10 @@ class ProductSetting extends Model
                 $productSettings->freight_enabled = false;
                 $productSettings->parcel_enabled = true;
             }
+
             $saveProduct->settings = json_encode($productSettings);
-            /*END*/
         }
+
 
         $saveProduct->name = $product['name'] ?? '';
         $saveProduct->source_product_id = $product['id'];
@@ -96,7 +104,7 @@ class ProductSetting extends Model
             $storeDetails = (new CurlRequest())->enSingleCurlRequest($storeDetails['endpoint'],
                 $storeDetails['request'], $storeDetails['headers'], $storeDetails['method'], false);
             $response = json_decode($storeDetails['response'], true);
-            
+
             return $response;
 
         } catch (\Exception $exception) {

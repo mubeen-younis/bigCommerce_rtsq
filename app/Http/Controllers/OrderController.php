@@ -442,21 +442,7 @@ class OrderController extends Controller
 
             $shipping_name = explode('(', $order['shipping_name']);
             $sName = $shipping_name[0] ?? '';
-            $sName = str_replace(Constant::RESI_LABEL, '', $sName);
-            $sName = str_replace(Constant::LIFT_LABEL, '', $sName);
-            $sName = str_replace(Constant::RESI_LIFT_LABEL, '', $sName);
-            $sName = str_replace(Functions::$twoManDeliveryLabel, '', $sName);
-            $sName = str_replace(Functions::$appointmentDeliveryLabel, '', $sName);
-            $sName = str_replace(Functions::$twoManAppDelLabel, '', $sName);
-            $sName = str_replace(Functions::$twoManDelResiLabel, '', $sName);
-            $sName = str_replace(Functions::$appointmentDelResiLabel, '', $sName);
-            $sName = str_replace(Functions::$twoManAptDelResiLabel, '', $sName);
-            $sName = str_replace(Functions::$insideDelLiftGateResiLable, '', $sName);
-            $sName = str_replace(Functions::$insideDelLiftGateLable, '', $sName);
-            $sName = str_replace(Functions::$insideDelResiLable, '', $sName);
-            $sName = str_replace(Functions::$insideDelLable, '', $sName);
-            $sName = str_replace(Functions::$limitedAccesDelLabel, '', $sName);
-            $sName = str_replace(Functions::$limitedAccessLGDelLable, '', $sName);
+            $sName = explode('w/', $sName)[0] ?? '';
             $sMethod = isset($shipping_name[1]) ? '(' . $shipping_name[1] : '';
 
             $orderWidget[$zip]['shipping_method'] = $sName . $sMethod;
