@@ -62,6 +62,7 @@ Route::get('/add_to_test_stores', [MainController::class, 'addTestStore']);
 Route::middleware([\App\Http\Middleware\FDOValidity::class])->group(function () {
     Route::get('/order/{orderId}.json', [\App\Http\Controllers\FDOOrderController::class, 'getOrderDetails']);
     Route::get('/product/{variantID}.json', [\App\Http\Controllers\FDOProductController::class, 'getVariantDetail']);
+    Route::get('/get_product_details', [\App\Http\Controllers\FDOProductController::class, 'getProductDetails']);
     Route::get('/locations.json', [\App\Http\Controllers\FDOLocationsController::class, 'getLocations']);
 
 });
