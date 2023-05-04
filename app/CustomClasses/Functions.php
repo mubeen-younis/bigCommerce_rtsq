@@ -660,7 +660,7 @@ class Functions
         $isQuickestSer = isset($quoteSettings['quickest_service']) && $quoteSettings['quickest_service'] && $carrName === 'gtzltl';
         $quickLabelAs = isset($quoteSettings['quickest_service_label']) && !empty($quoteSettings['quickest_service_label']) ? $quoteSettings['quickest_service_label'] : self::$simpleLTLTitle;
 
-        $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, $insideDelivery, '', '', $laccess, false, false, $notifyDelivery, $isResi, $isAlwaysResi);
+        $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, $insideDelivery, $resiPickup, $lgPickup, $laccess, false, false, $notifyDelivery, $isResi, $isAlwaysResi);
         $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, $isUpsLtl, $insideDelivery, $laccess, false, false, $notifyDelivery, $originKey, $items, $allOrigins, $quoteSettings);
         $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, $insideDelivery, $laccess, false, false, false, false, $notifyDelivery, $isResi);
 
