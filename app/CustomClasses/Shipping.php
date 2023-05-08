@@ -521,19 +521,14 @@ class Shipping
     private
     function addBoxFeeToQuotes(array $quotes, array $boxFee, $fedexBoxesFee = []): array
     {
-        try {
-            $parcelCarName = ['wweSmall', 'upsSmall', 'fedexSmall', 'unishippersSmall', 'usps'];
+        $parcelCarName = ['wweSmall', 'upsSmall', 'fedexSmall', 'unishippersSmall', 'usps'];
             if (isset($quotes) && !empty($quotes)) {
                 foreach ($quotes as $carName => $quot) {
                     if (in_array($carName, $parcelCarName)) {
                         foreach ($quot as $locId => $q) {
-                            Log::info('fedex Services '.json_encode($q));
                             // Added Condition for fedex small for adding box fees
                             if ($carName == "fedexSmall") {
                                 if (isset($q['fedexServices']['q'])) {
-                                    if (isset($q['fedexServices']['q']['severity']) && $q['fedexServices']['q']['severity'] == "ERROR") {
-                                        continue;
-                                    }
                                     foreach ($q['fedexServices']['q'] as $key => $qs) {
                                         $fee = $this->getBoxFeeAccordingToService($qs['serviceType'], $fedexBoxesFee, $boxFee, $locId);
                                         if (isset($qs['totalNetCharge']['Amount'])) {
@@ -577,9 +572,6 @@ class Shipping
     
                                 if (isset($q['fedexOneRate']['q'])) {
                                     foreach ($q['fedexOneRate']['q'] as $key => $qs) {
-                                        if (isset($q['fedexOneRate']['q']['severity']) && $q['fedexOneRate']['q']['severity'] == "ERROR") {
-                                            continue;
-                                        }
                                         $fee = $this->getBoxFeeAccordingToService($qs['serviceType'], $fedexBoxesFee, $boxFee, $locId, true);
                                         if (isset($qs['totalNetCharge']['Amount'])) {
                                             if ($fee != 0) {
@@ -631,10 +623,6 @@ class Shipping
                 }
             }
             return $quotes;
-
-        } catch (\Exception $exception){
-            Log::info('Add Box Fee Exception ' . json_encode($exception->getMessage()) . ' line ' . $exception->getLine());
-        }
     }
 
     public
@@ -820,7 +808,6 @@ class Shipping
     public
     function generateQuoteFormatResponse($quotes)
     {
-        Log::info('final quotes ' . json_encode($quotes));
         $onlyDbscEnabled = false;
         if (empty(array_filter($quotes)) && isset($this->dbscRates) && !empty($this->dbscRates)) {
             $onlyDbscEnabled = true;
