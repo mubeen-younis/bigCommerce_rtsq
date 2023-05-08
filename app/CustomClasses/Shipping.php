@@ -863,7 +863,7 @@ class Shipping
             if (isset($quote['code']) && ($quote['code'] == 'INSP' || $quote['code'] == 'LOCDEL')) {
                 continue;
             }
-            if ((empty($quote['rate']) || $quote['rate'] == '0.00') && $quote['code'] !== 'own_arrangement') {
+            if ((empty($quote['rate']) || $quote['rate'] == '0.00') && isset($quote['code']) && $quote['code'] !== 'own_arrangement') {
                 $finalQuotes[$key]['title'] = Functions::$freeShipping;
             }
         }
