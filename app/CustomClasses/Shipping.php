@@ -529,6 +529,10 @@ class Shipping
                             // Added Condition for fedex small for adding box fees
                             if ($carName == "fedexSmall") {
                                 if (isset($q['fedexServices']['q'])) {
+                                    if (isset($q['fedexServices']['q']['severity']) && $q['fedexServices']['q']['severity'] == "ERROR") {
+                                        continue;
+                                    }
+
                                     foreach ($q['fedexServices']['q'] as $key => $qs) {
                                         $fee = $this->getBoxFeeAccordingToService($qs['serviceType'], $fedexBoxesFee, $boxFee, $locId);
                                         if (isset($qs['totalNetCharge']['Amount'])) {
@@ -571,6 +575,10 @@ class Shipping
     
     
                                 if (isset($q['fedexOneRate']['q'])) {
+                                    if (isset($q['fedexOneRate']['q']['severity']) && $q['fedexOneRate']['q']['severity'] == "ERROR") {
+                                        continue;
+                                    }
+
                                     foreach ($q['fedexOneRate']['q'] as $key => $qs) {
                                         $fee = $this->getBoxFeeAccordingToService($qs['serviceType'], $fedexBoxesFee, $boxFee, $locId, true);
                                         if (isset($qs['totalNetCharge']['Amount'])) {

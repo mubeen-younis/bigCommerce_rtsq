@@ -320,7 +320,8 @@ class QuotesResults
   
         foreach ($shipments as $shipment => $quotes) {
             $temp = [];
-            if (!isset($quotes['q'])) {
+            if (!isset($quotes['q']) || !isset($quotes['q']) && isset($quotes['tnt'])) {
+                $shipments = [];
                 continue;
             }
 
