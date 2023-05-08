@@ -820,6 +820,7 @@ class Shipping
     public
     function generateQuoteFormatResponse($quotes)
     {
+        Log::info('final quotes ' . json_encode($quotes));
         $onlyDbscEnabled = false;
         if (empty(array_filter($quotes)) && isset($this->dbscRates) && !empty($this->dbscRates)) {
             $onlyDbscEnabled = true;
