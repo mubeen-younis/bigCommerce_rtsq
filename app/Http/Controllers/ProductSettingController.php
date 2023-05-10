@@ -435,34 +435,38 @@ class ProductSettingController extends Controller
 
     public function deleteDuplicateVariants(Request $request)
     {
-        if(!(isset($request->store_id) && isset($request->variant_id))){
+        if(!(isset($request->store_id))){
             return response()->json(['error' => false,
                 'data' => [],
-                'message' => 'Missing Store or Variant ID',
+                'message' => 'Missing Store ID',
             ], 200);    
         }
 
-        $records = ProductSetting::where(['store_id' => $request->store_id, 'variant_id' => $request->variant_id])->get();
-        $count = count($records) ?? 0;
+        $duplicates = ProductSetting::select('variant_id', DB::raw('COUNT(*) as count'))
+            ->where('store_id', $request->store_id)
+            ->groupBy('variant_id')
+            ->having('count', '>', 1)
+            ->get();
 
-        if($count <= 1){
-            $message = 'No Duplicated Variants Found';
-            if($count === 0){
-                $message = 'Variant Not Found';
+            if(!count($duplicates)){
+                $message = 'No Duplicated Variants Found';
+                return response()->json(['error' => false,
+                    'data' => [],
+                    'message' => $message,
+                ], 200);    
             }
 
-            return response()->json(['error' => false,
-                'data' => [],
-                'message' => $message,
-            ], 200);    
-        }
+            foreach ($duplicates as $duplicate) {
+                $count = $duplicate->count ?? 0;
 
-        foreach($records as $record){
-            if($count !== 1){
-                $record->delete();
+                while($count > 1){
+                    ProductSetting::where(['store_id' => $request->store_id, 'variant_id' => $duplicate->variant_id])
+                    ->first()
+                    ->delete();
+                    $count--;
+                }
+                        
             }
-            $count--;
-        }
 
         return response()->json(['error' => false,
             'data' => [],
