@@ -433,6 +433,44 @@ class ProductSettingController extends Controller
         ], 200);
     }
 
+    public function deleteDuplicateVariants(Request $request)
+    {
+        if(!(isset($request->store_id) && isset($request->variant_id))){
+            return response()->json(['error' => false,
+                'data' => [],
+                'message' => 'Missing Store or Variant ID',
+            ], 200);    
+        }
+
+        $records = ProductSetting::where(['store_id' => $request->store_id, 'variant_id' => $request->variant_id])->get();
+        $count = count($records) ?? 0;
+
+        if($count <= 1){
+            $message = 'No Duplicated Variants Found';
+            if($count === 0){
+                $message = 'Variant Not Found';
+            }
+
+            return response()->json(['error' => false,
+                'data' => [],
+                'message' => $message,
+            ], 200);    
+        }
+
+        foreach($records as $record){
+            if($count !== 1){
+                $record->delete();
+            }
+            $count--;
+        }
+
+        return response()->json(['error' => false,
+            'data' => [],
+            'message' => 'Duplicated Variants deleted Successfully',
+        ], 200);
+
+    }
+
     public function getSetting($product)
     {
         $getOnly = ['freight_class',
