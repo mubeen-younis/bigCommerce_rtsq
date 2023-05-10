@@ -927,15 +927,15 @@ class Functions
             if(isset($quotes->q) && !empty($quotes->q)){
                 foreach($quotes->q as $quote){
                     if(isset($quote->serviceType) && strpos($rateId, strtolower($quote->serviceType)) !== false){
-                        $sName = $quote->serviceDesc . ' ' ?? $sName;
+                        $sName = isset($quote->serviceDesc) ? $quote->serviceDesc . ' ' : $sName;
                     } else if(isset($quote->scac) && strpos($rateId, strtolower($quote->scac)) !== false){
-                        $sName = $quote->carrier . ' ' ?? $sName;
+                        $sName = isset($quote->carrier) ? $quote->carrier . ' ' : $sName;
                     } else if(isset($quote->CarrierDetail->CarrierCode) && strpos($rateId, strtolower($quote->CarrierDetail->CarrierCode)) !== false){
-                        $sName = $quote->CarrierDetail->CarrierName . ' ' ?? $sName;
+                        $sName = isset($quote->CarrierDetail->CarrierName) ? $quote->CarrierDetail->CarrierName . ' ' : $sName;
                     } else if(isset($quote->CarrierScac) && strpos($rateId, strtolower($quote->CarrierScac)) !== false){
-                        $sName = $quote->CarrierName . ' ' ?? $sName;
+                        $sName = isset($quote->CarrierName) ? $quote->CarrierName . ' ' : $sName;
                     } else if(isset($quote->CarrierSCAC) && strpos($rateId, strtolower($quote->CarrierSCAC)) !== false){
-                        $sName = $quote->CarrierName . ' ' ?? $sName;
+                        $sName = isset($quote->CarrierName) ? $quote->CarrierName . ' ' : $sName;
                     }
                 }
             }
