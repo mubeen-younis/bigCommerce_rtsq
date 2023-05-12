@@ -123,7 +123,7 @@ class ProductSettingController extends Controller
                     $product['base_variant_id'] = $variant['id'];
 
                     !$useTransaction ? $this->saveProducts->saveProductFromSync($product, $data['store_id']) :
-                        $this->saveProducts->saveProduct($product, $data['store_id']);
+                        $this->saveProducts->saveProduct($product, $data['store_id'], $scope);
                 }
             }
         }
