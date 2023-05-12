@@ -369,7 +369,6 @@ class MainController extends BaseController
 
             //TODO:Need to remove
 
-
             $postData = json_decode($postData, true);
             $storeHash = explode('/', $postData['producer']);
             $storeHash = $storeHash[1];
