@@ -85,6 +85,8 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::get('/get_product', [ProductSettingController::class, 'getSingleProductDetail']);
     Route::get('/edit_product', [ProductSettingController::class, 'editProduct']);
     Route::post('/update_product', [ProductSettingController::class, 'updateProductDetail']);
+    //========Delete duplicate variants 
+    Route::post('/delete_duplicate_variants', [ProductSettingController::class, 'deleteDuplicateVariants']);
 
     //=======Carriers
     Route::get('/get_add_tab_sett', [AdditionalCarrierTabSettingController::class, 'getAddTabSett']);
