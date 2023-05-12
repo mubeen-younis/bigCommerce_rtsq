@@ -93,7 +93,7 @@ class ProductSetting extends Model
             $saveProduct->price = $product['price'];
             $saveProduct->store_id = $storeId;
             $saveProduct->save();
-
+            Log::info('Saved Product Details ' . json_encode($saveProduct));
             DB::commit();
 
         } catch (\Exception $exception) {
