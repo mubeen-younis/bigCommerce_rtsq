@@ -423,7 +423,7 @@ class MainController extends BaseController
             return true;
         }
         $prodSetCon = new ProductSettingController();
-        $prodSetCon->getSingleProductFromApi($toRequest);
+        $prodSetCon->getSingleProductFromApi($toRequest,$scope);
         Log::info('Successfully imported product' . json_encode($toRequest));
         return response()->json(true, 200);
 

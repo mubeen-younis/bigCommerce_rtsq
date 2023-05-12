@@ -120,7 +120,7 @@ class ProductSettingController extends Controller
                     $product['height'] = $variant['height'];
                     $product['sku'] = $variant['sku'];
                     $product['base_variant_id'] = $variant['id'];
-                    $this->saveProducts->saveProduct($product, $data['store_id']);
+                    $this->saveProducts->saveProduct($product, $data['store_id'],$scope);
                 }
             }
         }
@@ -141,7 +141,7 @@ class ProductSettingController extends Controller
         return $response['meta']['pagination']['total_pages'];
     }
 
-    public function getSingleProductFromApi($request)
+    public function getSingleProductFromApi($request, $scope = null)
     {
         $storeId = $request['store_id'] ?? '';
         $storeName = $request['store_name'] ?? '';
@@ -166,8 +166,8 @@ class ProductSettingController extends Controller
         if (isset($response['data']) && count($response['data'])) {
             $product = $response['data'];
             if ($product['base_variant_id'] == null) {
-                $this->saveProducts->saveProduct($product, $storeId);
-                $this->getVariants($product, $data);
+                $this->saveProducts->saveProduct($product, $storeId,$scope);
+                $this->getVariants($product, $data,$scope);
             } else {
                 $this->saveProducts->saveProduct($product, $storeId);
             }

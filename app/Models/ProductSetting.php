@@ -45,18 +45,25 @@ class ProductSetting extends Model
      * @param $storeId
      * @return void|null
      */
-    public function saveProduct($product, $storeId)
+    public function saveProduct($product, $storeId, $scope = null)
     {
         try {
             DB::beginTransaction();
 
+
+            if ($scope == "store/product/created" && ProductSetting::where('source_product_id', $product['id'])
+                    ->where('variant_id', $product['base_variant_id'])
+                    ->where('store_id', $storeId)->exists()) {
+                return null;
+            }
+
             if ($product['base_variant_id'] == null && ProductSetting::where('source_product_id', $product['id'])
-                ->where('store_id', $storeId)->exists()) {
+                    ->where('store_id', $storeId)->exists()) {
                 return null;
             }
 
             Log::info('Base variant ID ' . $product['base_variant_id'] . ' - Product ID : ' . $product['id']);
-        
+
             $saveProduct = ProductSetting::where('source_product_id', $product['id'])
                 ->where('variant_id', $product['base_variant_id'])
                 ->where('store_id', $storeId)->first();
@@ -100,7 +107,7 @@ class ProductSetting extends Model
             DB::rollBack();
             Log::info('Exception on saving Product Details ' . $exception->getMessage());
         }
-        
+
     }
 
     public function getStoreSettings($storeId)
