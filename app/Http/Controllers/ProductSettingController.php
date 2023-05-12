@@ -32,6 +32,7 @@ class ProductSettingController extends Controller
     public function importProducts(Request $request)
     {
         set_time_limit(0);
+        Log::info('started sync process');
         $isSyncinProgress = ImportProductsModel::where('store_id', $request['store_id'])->where('status', '=', 1)->where('created_at', '>', Carbon::now()->subDay()->toDateTimeString())->exists();
         if (!$isSyncinProgress) {
             $importPrdModel = new ImportProductsModel();
@@ -83,7 +84,7 @@ class ProductSettingController extends Controller
                  * */
                 if ($product['base_variant_id'] == null) {
                     $this->saveProducts->saveProductFromSync($product, $data['store_id']);
-                    $this->getVariants($product, $data);
+                    $this->getVariants($product, $data, '', false);
                 } else {
                     $this->saveProducts->saveProductFromSync($product, $data['store_id']);
                 }
@@ -93,7 +94,7 @@ class ProductSettingController extends Controller
         }
     }
 
-    public function getVariants($product, $data)
+    public function getVariants($product, $data, $scope = null, $useTransaction = true)
     {
         $metaEndPoint = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products/' . $product['id'] . '/variants?limit=250';
         unset($headers);
@@ -120,7 +121,9 @@ class ProductSettingController extends Controller
                     $product['height'] = $variant['height'];
                     $product['sku'] = $variant['sku'];
                     $product['base_variant_id'] = $variant['id'];
-                    $this->saveProducts->saveProduct($product, $data['store_id'], $scope);
+
+                    !$useTransaction ? $this->saveProducts->saveProductFromSync($product, $data['store_id']) :
+                        $this->saveProducts->saveProduct($product, $data['store_id']);
                 }
             }
         }
