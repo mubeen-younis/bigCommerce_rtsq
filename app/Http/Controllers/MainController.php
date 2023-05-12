@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Constants\Constant;
 
+use App\Jobs\ProductWebhookImport;
 use App\Models\AccessTokens;
 use App\Models\HubSpot;
 use App\Models\ProductSetting;
 use App\Models\Store;
+use Carbon\Carbon;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Http\Request;
 use GuzzleHttp\Psr7;
@@ -358,6 +360,10 @@ class MainController extends BaseController
     {
         try {
             $postData = file_get_contents("php://input");
+            ProductWebhookImport::dispatch($postData)->delay(Carbon::now()->addSeconds(3));
+            // start running queue
+            \Artisan::call('queue:work');
+            return response()->json(true);
             $postData = json_decode($postData, true);
             $storeHash = explode('/', $postData['producer']);
             $storeHash = $storeHash[1];
@@ -388,6 +394,34 @@ class MainController extends BaseController
 //        echo 'I am from Webhook';
         //DB::table('webhook_test')->insert(['value' => json_encode($request)]);
         // Log::info('I am from Webhook ' . json_encode($request->all()));
+    }
+
+
+    public function productWebhookProcess($postData)
+    {
+        $postData = json_decode($postData, true);
+        $storeHash = explode('/', $postData['producer']);
+        $storeHash = $storeHash[1];
+        $productId = $postData['data']['id'];
+        // Update,delete,create from  webhook
+        $scope = $postData['scope'];
+        $storeID = Store::where('hash', $storeHash)->first();
+        if ($storeID === null) {
+            return null;
+        }
+        $toRequest['store_id'] = $storeID->id;
+        $toRequest['store_name'] = $storeHash;
+        $toRequest['product_id'] = $productId;
+        // If product is deleted through webhook
+        if ($scope == "store/product/deleted") {
+            ProductSetting::where('source_product_id', $productId)->where('store_id', $storeID->id)->delete();
+            return true;
+        }
+        $prodSetCon = new ProductSettingController();
+        $prodSetCon->getSingleProductFromApi($toRequest);
+        Log::info('Successfully imported product' . json_encode($toRequest));
+        return response()->json(true, 200);
+
     }
 
     public function rate(Request $request)
