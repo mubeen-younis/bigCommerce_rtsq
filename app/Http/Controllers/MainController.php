@@ -360,7 +360,8 @@ class MainController extends BaseController
     {
         try {
             $postData = file_get_contents("php://input");
-            Log::info('Post data addAndUpdateProductFromWebHook ' . $postData);
+            $postData = json_decode($postData, true);
+            Log::info('Post data addAndUpdateProductFromWebHook ' . json_encode($postData));
             ProductWebhookImport::dispatch($postData)->delay(Carbon::now()->addSeconds(3));
             // start running queue
             \Artisan::call('queue:work');
@@ -404,7 +405,6 @@ class MainController extends BaseController
 
     public function productWebhookProcess($postData)
     {
-        $postData = json_decode($postData, true);
         $storeHash = explode('/', $postData['producer']);
         $storeHash = $storeHash[1];
         $productId = $postData['data']['id'];
