@@ -364,6 +364,11 @@ class MainController extends BaseController
             // start running queue
             \Artisan::call('queue:work');
             return response()->json(true);
+
+
+            //TODO:Need to remove
+
+
             $postData = json_decode($postData, true);
             $storeHash = explode('/', $postData['producer']);
             $storeHash = $storeHash[1];
