@@ -114,7 +114,6 @@ class ProductSetting extends Model
     {
         try {
 
-
             if ($scope == "store/product/created" && ProductSetting::where('source_product_id', $product['id'])
                     ->where('variant_id', $product['base_variant_id'])
                     ->where('store_id', $storeId)->exists()) {
@@ -130,7 +129,7 @@ class ProductSetting extends Model
 
             $saveProduct = ProductSetting::where('source_product_id', $product['id'])
                 ->where('variant_id', $product['base_variant_id'])
-                ->where('store_id', $storeId)->lockForUpdate()->first();
+                ->where('store_id', $storeId)->first();
 
             if (blank($saveProduct)) {
                 $saveProduct = new ProductSetting();
