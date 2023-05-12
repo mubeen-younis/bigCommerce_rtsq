@@ -110,6 +110,68 @@ class ProductSetting extends Model
 
     }
 
+    public function saveProductFromSync($product, $storeId, $scope = null)
+    {
+        try {
+
+
+            if ($scope == "store/product/created" && ProductSetting::where('source_product_id', $product['id'])
+                    ->where('variant_id', $product['base_variant_id'])
+                    ->where('store_id', $storeId)->exists()) {
+                return null;
+            }
+
+            if ($product['base_variant_id'] == null && ProductSetting::where('source_product_id', $product['id'])
+                    ->where('store_id', $storeId)->exists()) {
+                return null;
+            }
+
+            Log::info('Base variant ID ' . $product['base_variant_id'] . ' - Product ID : ' . $product['id']);
+
+            $saveProduct = ProductSetting::where('source_product_id', $product['id'])
+                ->where('variant_id', $product['base_variant_id'])
+                ->where('store_id', $storeId)->lockForUpdate()->first();
+
+            if (blank($saveProduct)) {
+                $saveProduct = new ProductSetting();
+
+                $storeSettings = $this->getStoreSettings($storeId);
+                $prodWeight = $this->convertWeight(isset($product['weight']) ? $product['weight'] : '', isset($storeSettings['weight_units']) ? strtolower($storeSettings['weight_units']) : 'lbs') ?? 0;
+                /*Start - Added FOr Default Quoting Method*/
+                $productSettings = new stdClass();
+                if (!empty($product['weight']) && $prodWeight > 150) {
+                    $productSettings->freight_enabled = true;
+                    $productSettings->parcel_enabled = false;
+                } else {
+                    $productSettings->freight_enabled = false;
+                    $productSettings->parcel_enabled = true;
+                }
+
+                $saveProduct->settings = json_encode($productSettings);
+            }
+
+
+            $saveProduct->name = $product['name'] ?? '';
+            $saveProduct->source_product_id = $product['id'];
+            $saveProduct->variant_id = $product['base_variant_id'];
+            $saveProduct->image_src = '';
+            $saveProduct->product_type = $product['type'] ?? '';
+            $saveProduct->sku = $product['sku'];
+            $saveProduct->weight = $product['weight'];
+            $saveProduct->length = $product['depth'];
+            $saveProduct->width = $product['width'];
+            $saveProduct->height = $product['height'];
+            $saveProduct->price = $product['price'];
+            $saveProduct->store_id = $storeId;
+            $saveProduct->save();
+            Log::info('Saved Product Details ' . json_encode($saveProduct));
+
+        } catch (\Exception $exception) {
+            Log::info('Exception on saving Product Details ' . $exception->getMessage());
+        }
+
+    }
+
     public function getStoreSettings($storeId)
     {
 

@@ -82,10 +82,10 @@ class ProductSettingController extends Controller
                  * otherwise base product is as a variant product
                  * */
                 if ($product['base_variant_id'] == null) {
-                    $this->saveProducts->saveProduct($product, $data['store_id']);
+                    $this->saveProducts->saveProductFromSync($product, $data['store_id']);
                     $this->getVariants($product, $data);
                 } else {
-                    $this->saveProducts->saveProduct($product, $data['store_id']);
+                    $this->saveProducts->saveProductFromSync($product, $data['store_id']);
                 }
 
                 //$this->saveProducts->saveProduct($product, $data['store_id']);
@@ -517,7 +517,7 @@ class ProductSettingController extends Controller
 //            // start running queue
 //            \Artisan::call('queue:work');
 //            return response()->json(true);
-            
+
         } catch (\Exception $exception) {
             //  Have to LOg Here
             Log::info('Sku Webhook Exception ' . json_encode([$exception->getMessage(), $exception->getLine()]));
