@@ -12,6 +12,7 @@ use App\Models\Store;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Jobs\ProductWebhookImport;
 
 
 class ProductSettingController extends Controller
@@ -509,6 +510,10 @@ class ProductSettingController extends Controller
         try {
             $postData = file_get_contents("php://input");
             Log::info('sku data: ' . $postData);
+            ProductWebhookImport::dispatch($postData)->delay(Carbon::now()->addSeconds(3));
+            // start running queue
+            \Artisan::call('queue:work');
+            return response()->json(true);
             $postData = json_decode($postData, true);
             $storeHash = explode('/', $postData['producer']);
             $storeHash = $storeHash[1];
