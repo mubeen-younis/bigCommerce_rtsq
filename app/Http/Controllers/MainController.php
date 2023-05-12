@@ -362,15 +362,26 @@ class MainController extends BaseController
             $postData = file_get_contents("php://input");
             $postData = json_decode($postData, true);
             Log::info('Post data addAndUpdateProductFromWebHook ' . json_encode($postData));
-            ProductWebhookImport::dispatch($postData)->delay(Carbon::now()->addSeconds(3));
-            // start running queue
-            \Artisan::call('queue:work');
-            return response()->json(true);
+            return $this->productWebhookProcess($postData);
+//            ProductWebhookImport::dispatch($postData)->delay(Carbon::now()->addSeconds(3));
+//            // start running queue
+//            \Artisan::call('queue:work');
+//            return response()->json(true);
+
+        } catch (\Exception $exception) {
+            Log::info('Products data Exception ' . $exception->getMessage());
+            return response()->json(true, 200);
+        }
+
+//        echo 'I am from Webhook';
+        //DB::table('webhook_test')->insert(['value' => json_encode($request)]);
+        // Log::info('I am from Webhook ' . json_encode($request->all()));
+    }
 
 
-            //TODO:Need to remove
-
-            $postData = json_decode($postData, true);
+    public function productWebhookProcess($postData)
+    {
+        try {
             $storeHash = explode('/', $postData['producer']);
             $storeHash = $storeHash[1];
             $productId = $postData['data']['id'];
@@ -389,43 +400,12 @@ class MainController extends BaseController
                 return true;
             }
             $prodSetCon = new ProductSettingController();
-            $prodSetCon->getSingleProductFromApi($toRequest);
+            $prodSetCon->getSingleProductFromApi($toRequest, $scope);
             Log::info('Successfully imported product' . json_encode($toRequest));
             return response()->json(true, 200);
         } catch (\Exception $exception) {
             Log::info('Products data Exception ' . $exception->getMessage());
-            return response()->json(true, 200);
         }
-
-//        echo 'I am from Webhook';
-        //DB::table('webhook_test')->insert(['value' => json_encode($request)]);
-        // Log::info('I am from Webhook ' . json_encode($request->all()));
-    }
-
-
-    public function productWebhookProcess($postData)
-    {
-        $storeHash = explode('/', $postData['producer']);
-        $storeHash = $storeHash[1];
-        $productId = $postData['data']['id'];
-        // Update,delete,create from  webhook
-        $scope = $postData['scope'];
-        $storeID = Store::where('hash', $storeHash)->first();
-        if ($storeID === null) {
-            return null;
-        }
-        $toRequest['store_id'] = $storeID->id;
-        $toRequest['store_name'] = $storeHash;
-        $toRequest['product_id'] = $productId;
-        // If product is deleted through webhook
-        if ($scope == "store/product/deleted") {
-            ProductSetting::where('source_product_id', $productId)->where('store_id', $storeID->id)->delete();
-            return true;
-        }
-        $prodSetCon = new ProductSettingController();
-        $prodSetCon->getSingleProductFromApi($toRequest, $scope);
-        Log::info('Successfully imported product' . json_encode($toRequest));
-        return response()->json(true, 200);
 
     }
 

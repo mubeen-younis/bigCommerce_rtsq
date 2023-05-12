@@ -511,58 +511,13 @@ class ProductSettingController extends Controller
         try {
             $postData = file_get_contents("php://input");
             $postData = json_decode($postData, true);
-            Log::info('sku product data fall in job: ' . json_encode($postData));
-            SKUWebhookImport::dispatch($postData)->delay(Carbon::now()->addSeconds(3));
-            // start running queue
-            \Artisan::call('queue:work');
-            return response()->json(true);
-
-            //TODO:Need to remove
-            $postData = json_decode($postData, true);
-            $storeHash = explode('/', $postData['producer']);
-            $storeHash = $storeHash[1];
-            $productId = $postData['data']['sku']['product_id'];
-            $variant_id = $postData['data']['sku']['variant_id'];
-            // Update,delete,create from  webhook
-            $scope = $postData['scope'];
-            $store = Store::where('hash', $storeHash)->first();
-            //allow only create/update orders actions
-            if ($scope == "store/sku/deleted") {
-                ProductSetting::where('source_product_id', $productId)->where('variant_id', $variant_id)->where('store_id', $store->id)->delete();
-                return response()->json(true);
-            }
-            $onlyScopes = ['store/sku/created', 'store/sku/updated'];
-            if (empty($store) || !in_array($scope, $onlyScopes)) {
-                return response()->json(true);
-            }
-            /*
-             * get variant details from bigcommerce
-             * update details and save product into db
-             * */
-            $storeToken = $this->mainController->getCustAccessTok($store->id);
-            $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products/' . $productId . '/variants' . '/' . $variant_id;
-            $headers[] = 'X-Auth-Client: ' . $this->mainController->getAppClientId();
-            $headers[] = 'X-Auth-Token: ' . $storeToken;
-            $headers[] = 'Content-Type: application/json';
-            $headers[] = 'Accept: application/json';
-            $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
-            $response = json_decode($response['response'], true);
-            Log::info('Get variant details-' . $store->id . json_encode($response));
-
-            if (isset($response['data'])) {
-                $variant = $response['data'];
-                $product['price'] = $variant['price'];
-                $product['weight'] = $variant['weight'];
-                $product['depth'] = $variant['depth'];
-                $product['width'] = $variant['width'];
-                $product['height'] = $variant['height'];
-                $product['sku'] = $variant['sku'];
-                $product['base_variant_id'] = $variant['id'];
-                $product['id'] = $variant['product_id'];
-                $this->saveProducts->saveProduct($product, $store->id);
-            }
-
-            return response()->json(true);
+            return $this->skuWebhookProcess($postData);
+//            Log::info('sku product data fall in job: ' . json_encode($postData));
+//            SKUWebhookImport::dispatch($postData)->delay(Carbon::now()->addSeconds(3));
+//            // start running queue
+//            \Artisan::call('queue:work');
+//            return response()->json(true);
+            
         } catch (\Exception $exception) {
             //  Have to LOg Here
             Log::info('Sku Webhook Exception ' . json_encode([$exception->getMessage(), $exception->getLine()]));
