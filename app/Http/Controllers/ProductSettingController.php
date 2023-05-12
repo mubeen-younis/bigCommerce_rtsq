@@ -120,7 +120,7 @@ class ProductSettingController extends Controller
                     $product['height'] = $variant['height'];
                     $product['sku'] = $variant['sku'];
                     $product['base_variant_id'] = $variant['id'];
-                    $this->saveProducts->saveProduct($product, $data['store_id'],$scope);
+                    $this->saveProducts->saveProduct($product, $data['store_id'], $scope);
                 }
             }
         }
@@ -166,8 +166,8 @@ class ProductSettingController extends Controller
         if (isset($response['data']) && count($response['data'])) {
             $product = $response['data'];
             if ($product['base_variant_id'] == null) {
-                $this->saveProducts->saveProduct($product, $storeId,$scope);
-                $this->getVariants($product, $data,$scope);
+                $this->saveProducts->saveProduct($product, $storeId, $scope);
+                $this->getVariants($product, $data, $scope);
             } else {
                 $this->saveProducts->saveProduct($product, $storeId);
             }
@@ -510,8 +510,8 @@ class ProductSettingController extends Controller
     {
         try {
             $postData = file_get_contents("php://input");
-
-            Log::info('sku product data fall in job: ' . $postData);
+            $postData = json_decode($postData, true);
+            Log::info('sku product data fall in job: ' . json_encode($postData));
             SKUWebhookImport::dispatch($postData)->delay(Carbon::now()->addSeconds(3));
             // start running queue
             \Artisan::call('queue:work');
@@ -573,9 +573,8 @@ class ProductSettingController extends Controller
     public function skuWebhookProcess($postData)
     {
         try {
-            Log::info('sku product data fall in process: ' . $postData);
-
-            $postData = json_decode($postData, true);
+            Log::info('sku product data fall in process: ' . json_encode($postData));
+            // $postData = json_decode($postData, true);
             $storeHash = explode('/', $postData['producer']);
             $storeHash = $storeHash[1];
             $productId = $postData['data']['sku']['product_id'];
