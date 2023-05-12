@@ -360,6 +360,7 @@ class MainController extends BaseController
     {
         try {
             $postData = file_get_contents("php://input");
+            Log::info('Post data addAndUpdateProductFromWebHook ' . $postData);
             ProductWebhookImport::dispatch($postData)->delay(Carbon::now()->addSeconds(3));
             // start running queue
             \Artisan::call('queue:work');
@@ -423,7 +424,7 @@ class MainController extends BaseController
             return true;
         }
         $prodSetCon = new ProductSettingController();
-        $prodSetCon->getSingleProductFromApi($toRequest,$scope);
+        $prodSetCon->getSingleProductFromApi($toRequest, $scope);
         Log::info('Successfully imported product' . json_encode($toRequest));
         return response()->json(true, 200);
 
