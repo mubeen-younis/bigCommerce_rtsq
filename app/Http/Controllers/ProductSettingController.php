@@ -484,10 +484,10 @@ class ProductSettingController extends Controller
     
     public function deleteDuplicateVariants(Request $request)
     {
-        if(!(isset($request->store_id))){
+        if(!(isset($request->store_id) && isset($request->deleteit) && $request->deleteit == 'true')){
             return response()->json(['error' => false,
                 'data' => [],
-                'message' => 'Missing Store ID',
+                'message' => 'Request not acceptable',
             ], 200);    
         }
 
