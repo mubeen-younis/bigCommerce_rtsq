@@ -363,19 +363,12 @@ class MainController extends BaseController
             $postData = json_decode($postData, true);
             Log::info('Post data addAndUpdateProductFromWebHook ' . json_encode($postData));
             return $this->productWebhookProcess($postData);
-//            ProductWebhookImport::dispatch($postData)->delay(Carbon::now()->addSeconds(3));
-//            // start running queue
-//            \Artisan::call('queue:work');
-//            return response()->json(true);
 
         } catch (\Exception $exception) {
             Log::info('Products data Exception ' . $exception->getMessage());
             return response()->json(true, 200);
         }
 
-//        echo 'I am from Webhook';
-        //DB::table('webhook_test')->insert(['value' => json_encode($request)]);
-        // Log::info('I am from Webhook ' . json_encode($request->all()));
     }
 
 

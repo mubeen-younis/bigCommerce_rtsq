@@ -558,11 +558,6 @@ class ProductSettingController extends Controller
             $postData = file_get_contents("php://input");
             $postData = json_decode($postData, true);
             return $this->skuWebhookProcess($postData);
-//            Log::info('sku product data fall in job: ' . json_encode($postData));
-//            SKUWebhookImport::dispatch($postData)->delay(Carbon::now()->addSeconds(3));
-//            // start running queue
-//            \Artisan::call('queue:work');
-//            return response()->json(true);
 
         } catch (\Exception $exception) {
             //  Have to LOg Here
