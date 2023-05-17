@@ -486,6 +486,49 @@ class ProductSettingController extends Controller
         );
     }
 
+    
+    public function deleteDuplicateVariants(Request $request)
+    {
+        if(!(isset($request->store_id) && isset($request->deleteit) && $request->deleteit == 'true')){
+            return response()->json(['error' => false,
+                'data' => [],
+                'message' => 'Request not acceptable',
+            ], 200);    
+        }
+
+        $duplicateVar = ProductSetting::select('variant_id', DB::raw('COUNT(*) as count'))
+            ->where('store_id', $request->store_id)
+            ->groupBy('variant_id')
+            ->having('count', '>', 1)
+            ->get();
+
+            if(!count($duplicateVar)){
+                $message = 'No Duplicated Variants Found';
+                return response()->json(['error' => false,
+                    'data' => [],
+                    'message' => $message,
+                ], 200);    
+            }
+
+            foreach ($duplicateVar as $duplicate) {
+                $count = $duplicate->count ?? 0;
+
+                while($count > 1){
+                    ProductSetting::where(['store_id' => $request->store_id, 'variant_id' => $duplicate->variant_id])
+                    ->first()
+                    ->delete();
+                    $count--;
+                }
+                        
+            }
+
+        return response()->json(['error' => false,
+            'data' => [],
+            'message' => 'Duplicated Variants deleted Successfully',
+        ], 200);
+
+    }
+
     public function getProductImageByID($id, $request, $token)
     {
         $imageEndPoint = 'https://api.bigcommerce.com/stores/' . $request['store_hash'] . '/v3/catalog/products/' . $id . '/images';
