@@ -1126,7 +1126,7 @@ class CompileQuotes
                 if ($lgQuotes) {
                     $lgAccess = $this->getAccessorialCode(true);
                     $lgPrice = $this->calculateOdflPrice($data, $lgOption = 1);
-                    $lgTitle = $this->getTitle($lableAs, true, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
+                    $lgTitle = $this->getTitle($lableAs, true, false, $days, [], $dateAndDays);
                     $arraySorting['liftgate'][$origin] = $lgPrice;
                     $originQuotes[$origin]['liftgate']['code'] = 'odflltl' . $lgAccess;
                     $originQuotes[$origin]['liftgate']['rate'] = $lgPrice;
