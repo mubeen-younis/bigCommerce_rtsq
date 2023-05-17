@@ -492,7 +492,7 @@ class ProductSettingController extends Controller
         if(!(isset($request->store_id) && isset($request->deleteit) && $request->deleteit == 'true')){
             return response()->json(['error' => false,
                 'data' => [],
-                'message' => 'Request not acceptable',
+                'message' => 'Request not acceptable.',
             ], 200);    
         }
 
@@ -503,7 +503,7 @@ class ProductSettingController extends Controller
             ->get();
 
             if(!count($duplicateVar)){
-                $message = 'No Duplicated Variants Found';
+                $message = 'No Duplicated Variants Found.';
                 return response()->json(['error' => false,
                     'data' => [],
                     'message' => $message,
@@ -524,7 +524,7 @@ class ProductSettingController extends Controller
 
         return response()->json(['error' => false,
             'data' => [],
-            'message' => 'Duplicated Variants deleted Successfully',
+            'message' => 'Duplicated Variants deleted Successfully.',
         ], 200);
 
     }
