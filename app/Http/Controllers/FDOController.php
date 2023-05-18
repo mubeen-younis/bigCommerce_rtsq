@@ -501,14 +501,14 @@ class FDOController extends Controller
         $companyId = $request->company_id ?? '';
         $status = $request->status ?? false;
         if (blank($storeUrl) || blank($companyId)) {
-            Helpers::sendJsonResponse(true, 'Store Url and Company Id is required');
+            return Helpers::sendJsonResponse(true, 'Store Url and Company Id is required');
         }
         if ($status) {
-            Store::where(['url' => $storeUrl, 'freightdesk_company_id' => $companyId])->update(['freightdesk_company_id' => $companyId]);
-            Helpers::sendJsonResponse(false, 'Connection Activated');
+            Store::where('url' , $storeUrl)->update(['freightdesk_company_id' => $companyId]);
+            return Helpers::sendJsonResponse(false, 'Connection Activated');
         } else {
-            Store::where(['url' => $storeUrl, 'freightdesk_company_id' => $companyId])->update(['freightdesk_company_id' => null]);
-            Helpers::sendJsonResponse(false, 'Disconnected from BigCommerce');
+            Store::where('url' , $storeUrl)->update(['freightdesk_company_id' => null]);
+            return Helpers::sendJsonResponse(false, 'Disconnected from BigCommerce');
         }
     }
 
