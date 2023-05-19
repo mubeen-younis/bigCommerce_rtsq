@@ -499,9 +499,10 @@ class ExportImportProducts extends Controller
         if (isset($indexes['ship_alone']) && $indexes['ship_alone']) {
             $key = $indexes['ship_alone'];
             if (array_key_exists($key, $product)) {
+                Log::info('before settings array: ' . json_encode($settings));
                 $settings->ship_own_package = ($product["$key"] == 1) ? true : false;
             }
-            Log::info('ship alone if block: ' . json_encode($product) . ' indexes array: ' . json_encode($indexes));
+            Log::info('ship alone if block: ' . json_encode($product) . 'after settings array: ' . json_encode($settings));
         }
         if (isset($indexes['vertical_rotation']) && $indexes['vertical_rotation']) {
             $key = $indexes['vertical_rotation'];
@@ -527,9 +528,11 @@ class ExportImportProducts extends Controller
         $allowVert = optional($settings)->allow_vertical ?? false;
         $shipOwn = optional($settings)->ship_own_package ?? false;
         if ($allowVert && $shipOwn) {
+            Log::info('codition for shipalone 1: ' . $allowVert . $shipOwn);
             $settings->ship_own_package = false;
         }
         if (($allowVert || $shipOwn) && $shipMulti) {
+            Log::info('codition for shipalone 2: ' . $allowVert . $shipOwn . $shipMulti);
             $settings->ship_own_package = false;
             $settings->allow_vertical = false;
         }
