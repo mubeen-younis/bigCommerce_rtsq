@@ -270,7 +270,7 @@ class ExportImportProducts extends Controller
     }
 
     public function importProductsCsv(Request $request)
-    {
+    {Log::info('importProductsCsv: ' . json_encode($request->all()));
         $chunks = $this->splitCcvInChunks($request);
         $delay = 2;
 
@@ -297,7 +297,7 @@ class ExportImportProducts extends Controller
     }
 
     public function importProductCsvJob($request)
-    {
+    {Log::info('importProductCsvJob: ' . json_encode($request->all()));
         $indexes = $request['indexes'];
         $store_id = $request['store_id'];
         $store = Store::where('id', $store_id)->first();
