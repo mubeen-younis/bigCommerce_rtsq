@@ -342,7 +342,9 @@ class ExportImportProducts extends Controller
                     ->whereNull('variant_id')
                     ->where('store_id', $store_id)->pluck('settings')->toArray();
             }
+            Log::info('before Product settings' . json_encode($oldSettings));
             $update['settings'] = json_encode($this->getSettings($oldSettings, $product, $indexes, $store_id));
+            Log::info('after Product settings' . json_encode($update));
         }
         if (isset($indexes['name']) && $indexes['name']) {
             $key = $indexes['name'];
@@ -427,7 +429,7 @@ class ExportImportProducts extends Controller
             $update['dropship_location'] = null;
         }
         // END //
-
+        Log::info('all Product settings' . json_encode($update));
         if (!empty($update)) {
             if ($variant_id) {
                 ProductSetting::where('source_product_id', $source_product_id)
@@ -499,6 +501,7 @@ class ExportImportProducts extends Controller
             if (array_key_exists($key, $product)) {
                 $settings->ship_own_package = ($product["$key"] == 1) ? true : false;
             }
+            Log::info('ship alone if block: ' . json_encode($product) . ' indexes array: ' . json_encode($indexes));
         }
         if (isset($indexes['vertical_rotation']) && $indexes['vertical_rotation']) {
             $key = $indexes['vertical_rotation'];
