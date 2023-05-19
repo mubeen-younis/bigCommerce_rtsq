@@ -297,7 +297,7 @@ class ExportImportProducts extends Controller
     }
 
     public function importProductCsvJob($request)
-    {Log::info('importProductCsvJob: ' . json_encode($request->all()));
+    {Log::info('importProductCsvJob: ' . json_encode($request));
         $indexes = $request['indexes'];
         $store_id = $request['store_id'];
         $store = Store::where('id', $store_id)->first();
