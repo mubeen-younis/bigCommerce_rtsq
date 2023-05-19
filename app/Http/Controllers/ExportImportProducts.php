@@ -708,7 +708,7 @@ class ExportImportProducts extends Controller
         $inputFile = $path;
         $outputFile = str_replace('.csv', '', $path) . '/';
         $this->makeDirectory($outputFile, $mode = 0777, true, true);
-        $splitSize = 20;
+        $splitSize = 100;
 
         $in = fopen($inputFile, 'r');
         $headerRow = [];
