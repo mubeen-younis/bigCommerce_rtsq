@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\CurlRequest;
 use App\Jobs\ImportProductsFromBCStore;
 use App\Jobs\ImportProductsFromBCStoreStatusUpdate;
+use App\Jobs\SKUWebhookImport;
 use App\Models\ProductSetting;
 use App\Models\ImportProducts as ImportProductsModel;
 use Illuminate\Http\Request;
@@ -12,6 +13,7 @@ use App\Models\Store;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Jobs\ProductWebhookImport;
 
 
 class ProductSettingController extends Controller
@@ -30,6 +32,7 @@ class ProductSettingController extends Controller
     public function importProducts(Request $request)
     {
         set_time_limit(0);
+        Log::info('started sync process');
         $isSyncinProgress = ImportProductsModel::where('store_id', $request['store_id'])->where('status', '=', 1)->where('created_at', '>', Carbon::now()->subDay()->toDateTimeString())->exists();
         if (!$isSyncinProgress) {
             $importPrdModel = new ImportProductsModel();
@@ -80,10 +83,10 @@ class ProductSettingController extends Controller
                  * otherwise base product is as a variant product
                  * */
                 if ($product['base_variant_id'] == null) {
-                    $this->saveProducts->saveProduct($product, $data['store_id']);
-                    $this->getVariants($product, $data);
+                    $this->saveProducts->saveProductFromSync($product, $data['store_id']);
+                    $this->getVariants($product, $data, '', false);
                 } else {
-                    $this->saveProducts->saveProduct($product, $data['store_id']);
+                    $this->saveProducts->saveProductFromSync($product, $data['store_id']);
                 }
 
                 //$this->saveProducts->saveProduct($product, $data['store_id']);
@@ -91,7 +94,7 @@ class ProductSettingController extends Controller
         }
     }
 
-    public function getVariants($product, $data)
+    public function getVariants($product, $data, $scope = null, $useTransaction = true)
     {
         $metaEndPoint = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products/' . $product['id'] . '/variants?limit=250';
         unset($headers);
@@ -118,7 +121,9 @@ class ProductSettingController extends Controller
                     $product['height'] = $variant['height'];
                     $product['sku'] = $variant['sku'];
                     $product['base_variant_id'] = $variant['id'];
-                    $this->saveProducts->saveProduct($product, $data['store_id']);
+
+                    !$useTransaction ? $this->saveProducts->saveProductFromSync($product, $data['store_id']) :
+                        $this->saveProducts->saveProduct($product, $data['store_id'], $scope);
                 }
             }
         }
@@ -139,7 +144,7 @@ class ProductSettingController extends Controller
         return $response['meta']['pagination']['total_pages'];
     }
 
-    public function getSingleProductFromApi($request)
+    public function getSingleProductFromApi($request, $scope = null)
     {
         $storeId = $request['store_id'] ?? '';
         $storeName = $request['store_name'] ?? '';
@@ -165,8 +170,8 @@ class ProductSettingController extends Controller
         if (isset($response['data']) && count($response['data'])) {
             $product = $response['data'];
             if ($product['base_variant_id'] == null) {
-                $this->saveProducts->saveProduct($product, $storeId);
-                $this->getVariants($product, $data);
+                $this->saveProducts->saveProduct($product, $storeId, $scope);
+                $this->getVariants($product, $data, $scope);
             } else {
                 $this->saveProducts->saveProduct($product, $storeId);
             }
@@ -336,9 +341,9 @@ class ProductSettingController extends Controller
                         ->orWhere('variant_id', $search)
                         ->orWhere('source_product_id', $search);
                 })->where('store_id', $request->store_id)
-                ->orderBy('name', $sortProd)
-                ->groupBy('source_product_id')
-                ->skip(($page - 1) * $perPage)->take($perPage)->get();
+                    ->orderBy('name', $sortProd)
+                    ->groupBy('source_product_id')
+                    ->skip(($page - 1) * $perPage)->take($perPage)->get();
             }
             if ($products->isEmpty()) {
                 return response()->json(['error' => true,
@@ -482,6 +487,49 @@ class ProductSettingController extends Controller
         );
     }
 
+    
+    public function deleteDuplicateVariants(Request $request)
+    {
+        if(!(isset($request->store_id) && isset($request->deleteit) && $request->deleteit == 'true')){
+            return response()->json(['error' => false,
+                'data' => [],
+                'message' => 'Request not acceptable.',
+            ], 200);    
+        }
+
+        $duplicateVar = ProductSetting::select('variant_id', DB::raw('COUNT(*) as count'))
+            ->where('store_id', $request->store_id)
+            ->groupBy('variant_id')
+            ->having('count', '>', 1)
+            ->get();
+
+            if(!count($duplicateVar)){
+                $message = 'No Duplicated Variants Found.';
+                return response()->json(['error' => false,
+                    'data' => [],
+                    'message' => $message,
+                ], 200);    
+            }
+
+            foreach ($duplicateVar as $duplicate) {
+                $count = $duplicate->count ?? 0;
+
+                while($count > 1){
+                    ProductSetting::where(['store_id' => $request->store_id, 'variant_id' => $duplicate->variant_id])
+                    ->first()
+                    ->delete();
+                    $count--;
+                }
+                        
+            }
+
+        return response()->json(['error' => false,
+            'data' => [],
+            'message' => 'Duplicated Variants deleted Successfully.',
+        ], 200);
+
+    }
+
     public function getProductImageByID($id, $request, $token)
     {
         $imageEndPoint = 'https://api.bigcommerce.com/stores/' . $request['store_hash'] . '/v3/catalog/products/' . $id . '/images';
@@ -512,6 +560,20 @@ class ProductSettingController extends Controller
             $postData = file_get_contents("php://input");
             Log::info('Webhook sku data: ' . $postData);
             $postData = json_decode($postData, true);
+            return $this->skuWebhookProcess($postData);
+
+        } catch (\Exception $exception) {
+            //  Have to LOg Here
+            Log::info('Sku Webhook Exception ' . json_encode([$exception->getMessage(), $exception->getLine()]));
+        }
+    }
+
+
+    public function skuWebhookProcess($postData)
+    {
+        try {
+            Log::info('sku product data fall in process: ' . json_encode($postData));
+            // $postData = json_decode($postData, true);
             $storeHash = explode('/', $postData['producer']);
             $storeHash = $storeHash[1];
             $productId = $postData['data']['sku']['product_id'];
@@ -540,7 +602,7 @@ class ProductSettingController extends Controller
             $headers[] = 'Accept: application/json';
             $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
             $response = json_decode($response['response'], true);
-            Log::info('Get variant details-' . $store->id . json_encode($response));
+            Log::info('From SKU Get variant details-' . $store->id . json_encode($response));
 
             if (isset($response['data'])) {
                 $variant = $response['data'];
@@ -554,12 +616,12 @@ class ProductSettingController extends Controller
                 $product['id'] = $variant['product_id'];
                 $this->saveProducts->saveProduct($product, $store->id);
             }
-            
-            return response()->json(true);
+
         } catch (\Exception $exception) {
-            //  Have to LOg Here
             Log::info('Sku Webhook Exception ' . json_encode([$exception->getMessage(), $exception->getLine()]));
+
         }
+
     }
 
 //

@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Constants\Constant;
 
+use App\Jobs\ProductWebhookImport;
 use App\Models\AccessTokens;
 use App\Models\HubSpot;
 use App\Models\ProductSetting;
 use App\Models\Store;
+use Carbon\Carbon;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Http\Request;
 use GuzzleHttp\Psr7;
@@ -359,6 +361,20 @@ class MainController extends BaseController
         try {
             $postData = file_get_contents("php://input");
             $postData = json_decode($postData, true);
+            Log::info('Post data addAndUpdateProductFromWebHook ' . json_encode($postData));
+            return $this->productWebhookProcess($postData);
+
+        } catch (\Exception $exception) {
+            Log::info('Products data Exception ' . $exception->getMessage());
+            return response()->json(true, 200);
+        }
+
+    }
+
+
+    public function productWebhookProcess($postData)
+    {
+        try {
             $storeHash = explode('/', $postData['producer']);
             $storeHash = $storeHash[1];
             $productId = $postData['data']['id'];
@@ -377,17 +393,13 @@ class MainController extends BaseController
                 return true;
             }
             $prodSetCon = new ProductSettingController();
-            $prodSetCon->getSingleProductFromApi($toRequest);
+            $prodSetCon->getSingleProductFromApi($toRequest, $scope);
             Log::info('Successfully imported product' . json_encode($toRequest));
             return response()->json(true, 200);
         } catch (\Exception $exception) {
             Log::info('Products data Exception ' . $exception->getMessage());
-            return response()->json(true, 200);
         }
 
-//        echo 'I am from Webhook';
-        //DB::table('webhook_test')->insert(['value' => json_encode($request)]);
-        // Log::info('I am from Webhook ' . json_encode($request->all()));
     }
 
     public function rate(Request $request)
