@@ -5799,7 +5799,7 @@ class CompileQuotes
                     
                 }
             }
-            return $this->averageRattingMethod($arraySorting, $options, false, '', '', false, false, $labelAs);
+            return $this->averageRattingMethod($arraySorting, $options, false, '', '', false, false, false, $labelAs);
         }
         return [];
     }
