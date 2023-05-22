@@ -270,7 +270,7 @@ class ExportImportProducts extends Controller
     }
 
     public function importProductsCsv(Request $request)
-    {Log::info('importProductsCsv: ' . json_encode($request->all()));
+    {
         $chunks = $this->splitCcvInChunks($request);
         $delay = 2;
 
@@ -297,7 +297,7 @@ class ExportImportProducts extends Controller
     }
 
     public function importProductCsvJob($request)
-    {Log::info('importProductCsvJob: ' . json_encode($request));
+    {
         $indexes = $request['indexes'];
         $store_id = $request['store_id'];
         $store = Store::where('id', $store_id)->first();
@@ -342,9 +342,7 @@ class ExportImportProducts extends Controller
                     ->whereNull('variant_id')
                     ->where('store_id', $store_id)->pluck('settings')->toArray();
             }
-            Log::info('before Product settings' . json_encode($oldSettings));
             $update['settings'] = json_encode($this->getSettings($oldSettings, $product, $indexes, $store_id));
-            Log::info('after Product settings' . json_encode($update));
         }
         if (isset($indexes['name']) && $indexes['name']) {
             $key = $indexes['name'];
@@ -429,7 +427,7 @@ class ExportImportProducts extends Controller
             $update['dropship_location'] = null;
         }
         // END //
-        Log::info('all Product settings' . json_encode($update));
+
         if (!empty($update)) {
             if ($variant_id) {
                 ProductSetting::where('source_product_id', $source_product_id)
@@ -499,10 +497,8 @@ class ExportImportProducts extends Controller
         if (isset($indexes['ship_alone']) && $indexes['ship_alone']) {
             $key = $indexes['ship_alone'];
             if (array_key_exists($key, $product)) {
-                Log::info('before settings array: ' . json_encode($settings));
                 $settings->ship_own_package = ($product["$key"] == 1) ? true : false;
             }
-            Log::info('ship alone if block: ' . json_encode($product) . 'after settings array: ' . json_encode($settings));
         }
         if (isset($indexes['vertical_rotation']) && $indexes['vertical_rotation']) {
             $key = $indexes['vertical_rotation'];
@@ -528,11 +524,9 @@ class ExportImportProducts extends Controller
         $allowVert = optional($settings)->allow_vertical ?? false;
         $shipOwn = optional($settings)->ship_own_package ?? false;
         if ($allowVert && $shipOwn) {
-            Log::info('codition for shipalone 1: ' . $allowVert . $shipOwn);
             $settings->ship_own_package = false;
         }
         if (($allowVert || $shipOwn) && $shipMulti) {
-            Log::info('codition for shipalone 2: ' . $allowVert . $shipOwn . $shipMulti);
             $settings->ship_own_package = false;
             $settings->allow_vertical = false;
         }
@@ -708,7 +702,7 @@ class ExportImportProducts extends Controller
         $inputFile = $path;
         $outputFile = str_replace('.csv', '', $path) . '/';
         $this->makeDirectory($outputFile, $mode = 0777, true, true);
-        $splitSize = 100;
+        $splitSize = 20;
 
         $in = fopen($inputFile, 'r');
         $headerRow = [];
