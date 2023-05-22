@@ -71,10 +71,10 @@ class QuotesResults
                 'Standard', 'SouthEastern', $lineItems, $lgStatus, $radStatus, $quotesArr['rateQuote']);
                 if(isset($quotes['q']['details']['description']) && !empty($quotes['q']['details']['description'])){
                     foreach($quotes['q']['details']['description'] as $key => $description){
-                        if(!empty($description) && str_contains($description, 'LIFTGATE DELIVERY')){
+                        if(!empty($description) && (gettype($description) === "string") && str_contains($description, 'LIFTGATE DELIVERY')){
                             $lgFee = (float)$quotes['q']['details']['charges'][$key];
                         }
-                        if(!empty($description) && str_contains($description, 'ARRIVAL NTC')){
+                        if(!empty($description) && (gettype($description) === "string") && str_contains($description, 'ARRIVAL NTC')){
                             if($quotes['q']['details']['charges'][$key] === []){
                                 continue;
                             }
