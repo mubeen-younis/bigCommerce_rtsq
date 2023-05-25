@@ -26,10 +26,12 @@ use Carbon\Carbon;
 class ExportImportProducts extends Controller
 {
     public $curlRequest;
+    public $csvChunksLength;
 
     public function __construct()
     {
         $this->curlRequest = new CurlRequest();
+        $this->csvChunksLength = 20;
     }
 
     public function exportProductsTemplate(Request $request)
@@ -271,10 +273,13 @@ class ExportImportProducts extends Controller
 
     public function importProductsCsv(Request $request)
     {
+        ini_set('memory_limit', '-1');
         try {
-            $chunks = $this->splitCcvInChunks($request);
+            // set_time_limit(0);
+            //$chunks = $this->splitCcvInChunks($request);
+            //return $chunks;
             $delay = 2;
-    
+           // Log::info('chunks : ' . json_encode($chunks));
             $data['filename'] = $request['filename'];
             $data['firstHeader'] = $request['firstHeader'];
             $data['importEmailAddress'] = $request['importEmailAddress'];
@@ -282,20 +287,26 @@ class ExportImportProducts extends Controller
             $data['store_hash'] = $request['store_hash'];
             $data['store_id'] = $request['store_id'];
             $data['store_name'] = $request['store_name'];
-
-            foreach ($chunks as $key => $path) {
-                $data['path'] = $path;
-                $delay = ($key + 1) * 3;
-                sleep($delay);
-                $this->importProductCsvJob($data);
-            }
-
-            $this->ImportNotifyEmail($data['importEmailAddress']);
+            $data['path'] = public_path('import_files/' . $request['store_hash'] . '/' . $request['filename']);
+            //$this->importProductCsvJob($data);
+            ImportProductsJob::dispatch($data)->delay(Carbon::now()->addSeconds($delay));
+            //\Artisan::call('queue:work');
+            // foreach ($chunks as $key => $path) {
+                
+            //     $data['path'] = $path;
+            //     //$delay = ($key + 1) * 3;
+            //    // sleep($delay);
+            //    return $this->importProductCsvJob($data);
+            // }
+            
+            //$this->ImportNotifyEmail($data['importEmailAddress']);
 
         } catch (\Exception $exception) {
-
-            $this->ImportNotifyEmail($data['importEmailAddress']);
-
+            Log::info(json_encode([
+                'line' => $exception->getLine(),
+                'message' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+            ]));
         }
         
         // foreach ($chunks as $key => $path) {
@@ -309,7 +320,7 @@ class ExportImportProducts extends Controller
         return response()->json([
             'error' => false,
             'data' => $data,
-            'delay' => $delay,
+           // 'delay' => $delay,
         ], 200);
     }
 
@@ -320,19 +331,59 @@ class ExportImportProducts extends Controller
         $store = Store::where('id', $store_id)->first();
         $emailNotify = $request['importEmailAddress'] ?? '';
         $path = $request['path'];//public_path('import_files/'.$request['store_hash'].'/'.$request['filename']);
-        $csv = array_map('str_getcsv', file($path));
-        $headerRow = array_slice(range('A', 'Z'), 0, count($csv[0]));
-        if ($request['firstHeader'] == "true") {
-            $headerRow = $csv[0];
-            unset($csv[0]);
+        $exceptionProducts = [];
+
+        if (!file_exists($path)) {
+            Log::info('File Not Found On Importing Csv' . $request['filename']);
+            return false;
         }
-        array_walk($csv, function (&$a) use ($csv, $headerRow) {
+
+        // Converting Csv TO String
+        $csvArray = array_map('str_getcsv', file($request['path']));
+        if (count($csvArray) < 1) {
+            return false;
+        }
+
+        $headerRow = array_slice(range('A', 'Z'), 0, count($csvArray[0]));
+        if ($request['firstHeader'] == "true") {
+            $headerRow = $csvArray[0];
+             unset($csvArray[0]);
+        }
+        array_walk($csvArray, function (&$a) use ($csvArray, $headerRow) {
             $a = array_combine(array_map('trim', $headerRow), array_map('trim', $a));
         });
-        foreach ($csv as $key => $product) {
-            $this->getUpdateData($product, $indexes, $store_id, $store->access_token, $request['store_hash']);
+
+        $csvChunks = array_chunk($csvArray, $this->csvChunksLength);
+
+        foreach ($csvChunks as $chunkKey => $csv) {
+            foreach ($csv as $key => $product) {
+                try {
+                    $this->getUpdateData($product, $indexes, $store_id, $store->access_token, $request['store_hash']);
+
+                } catch (\Exception $exception) {
+                    Log::info('Exception on Product: ' . $product['Product Id']);
+                    $exceptionProducts[] = $product['Product Id'];
+                    $this->ImportNotifyEmail($emailNotify);
+                }
+                
+            }
         }
-        unlink($path);
+        $this->ImportNotifyEmail($emailNotify);
+        // $csv = array_map('str_getcsv', file($path));
+        
+        // $headerRow = array_slice(range('A', 'Z'), 0, count($csv[0]));
+        // if ($request['firstHeader'] == "true") {
+        //     $headerRow = $csv[0];
+        //     unset($csv[0]);
+        // }
+        // array_walk($csv, function (&$a) use ($csv, $headerRow) {
+        //     $a = array_combine(array_map('trim', $headerRow), array_map('trim', $a));
+        // });
+        // return $csv;
+        // foreach ($csv as $key => $product) {
+        //     $this->getUpdateData($product, $indexes, $store_id, $store->access_token, $request['store_hash']);
+        // }
+        // unlink($path);
     }
 
     function getUpdateData($product, $indexes, $store_id, $access_token, $hash)
