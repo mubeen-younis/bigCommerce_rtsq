@@ -283,9 +283,11 @@ class ExportImportProducts extends Controller
             $data['store_hash'] = $request['store_hash'];
             $data['store_id'] = $request['store_id'];
             $data['store_name'] = $request['store_name'];
+            $data['path'] = public_path('import_files/' . $request['store_hash'] . '/' . $request['filename']);
 
             ImportProductsJob::dispatch($data)->delay(Carbon::now()->addSeconds($delay));
-            
+            unset($data['path']);
+
             return response()->json([
                 'error' => false,
                 'data' => $data,
@@ -306,7 +308,7 @@ class ExportImportProducts extends Controller
         $store_id = $request['store_id'];
         $store = Store::where('id', $store_id)->first();
         $emailNotify = $request['importEmailAddress'] ?? '';
-        $path = public_path('import_files/' . $request['store_hash'] . '/' . $request['filename']);
+        $path = $request['path'];
         $exceptionProducts = [];
 
         if (!file_exists($path)) {
