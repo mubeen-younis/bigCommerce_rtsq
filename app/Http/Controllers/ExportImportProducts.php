@@ -290,6 +290,11 @@ class ExportImportProducts extends Controller
             $data['path'] = public_path('import_files/' . $request['store_hash'] . '/' . $request['filename']);
             //$this->importProductCsvJob($data);
             ImportProductsJob::dispatch($data)->delay(Carbon::now()->addSeconds($delay));
+            return response()->json([
+                'error' => false,
+                'data' => $data,
+               // 'delay' => $delay,
+            ], 200);
             //\Artisan::call('queue:work');
             // foreach ($chunks as $key => $path) {
                 
