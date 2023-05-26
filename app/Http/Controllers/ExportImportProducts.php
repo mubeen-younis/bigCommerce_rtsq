@@ -315,7 +315,7 @@ class ExportImportProducts extends Controller
         }
 
         // Converting Csv TO String
-        $csvArray = array_map('str_getcsv', file($request['path']));
+        $csvArray = array_map('str_getcsv', file($path));
         if (count($csvArray) < 1) {
             return false;
         }
