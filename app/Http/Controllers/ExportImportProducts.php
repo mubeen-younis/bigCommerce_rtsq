@@ -275,11 +275,7 @@ class ExportImportProducts extends Controller
     {
         ini_set('memory_limit', '-1');
         try {
-            // set_time_limit(0);
-            //$chunks = $this->splitCcvInChunks($request);
-            //return $chunks;
             $delay = 2;
-           // Log::info('chunks : ' . json_encode($chunks));
             $data['filename'] = $request['filename'];
             $data['firstHeader'] = $request['firstHeader'];
             $data['importEmailAddress'] = $request['importEmailAddress'];
@@ -287,24 +283,13 @@ class ExportImportProducts extends Controller
             $data['store_hash'] = $request['store_hash'];
             $data['store_id'] = $request['store_id'];
             $data['store_name'] = $request['store_name'];
-            $data['path'] = public_path('import_files/' . $request['store_hash'] . '/' . $request['filename']);
-            //$this->importProductCsvJob($data);
+
             ImportProductsJob::dispatch($data)->delay(Carbon::now()->addSeconds($delay));
+            
             return response()->json([
                 'error' => false,
                 'data' => $data,
-               // 'delay' => $delay,
             ], 200);
-            //\Artisan::call('queue:work');
-            // foreach ($chunks as $key => $path) {
-                
-            //     $data['path'] = $path;
-            //     //$delay = ($key + 1) * 3;
-            //    // sleep($delay);
-            //    return $this->importProductCsvJob($data);
-            // }
-            
-            //$this->ImportNotifyEmail($data['importEmailAddress']);
 
         } catch (\Exception $exception) {
             Log::info(json_encode([
@@ -313,20 +298,6 @@ class ExportImportProducts extends Controller
                 'file' => $exception->getFile(),
             ]));
         }
-        
-        // foreach ($chunks as $key => $path) {
-        //     $data['path'] = $path;
-        //     $delay = ($key + 1) * 10;
-        //     ImportProductsJob::dispatch($data)->delay(Carbon::now()->addSeconds($delay));
-        // }
-        // ImportProductsNotification::dispatch($data['importEmailAddress'])->delay(Carbon::now()->addSeconds($delay + 10));
-        // // start running queue
-        // \Artisan::call('queue:work');
-        return response()->json([
-            'error' => false,
-            'data' => $data,
-           // 'delay' => $delay,
-        ], 200);
     }
 
     public function importProductCsvJob($request)
@@ -335,7 +306,7 @@ class ExportImportProducts extends Controller
         $store_id = $request['store_id'];
         $store = Store::where('id', $store_id)->first();
         $emailNotify = $request['importEmailAddress'] ?? '';
-        $path = $request['path'];//public_path('import_files/'.$request['store_hash'].'/'.$request['filename']);
+        $path = public_path('import_files/' . $request['store_hash'] . '/' . $request['filename']);
         $exceptionProducts = [];
 
         if (!file_exists($path)) {
@@ -361,6 +332,7 @@ class ExportImportProducts extends Controller
         $csvChunks = array_chunk($csvArray, $this->csvChunksLength);
 
         foreach ($csvChunks as $chunkKey => $csv) {
+            Log::info('CSV Chunk: ' . json_encode($csv));
             foreach ($csv as $key => $product) {
                 try {
                     $this->getUpdateData($product, $indexes, $store_id, $store->access_token, $request['store_hash']);
@@ -368,27 +340,11 @@ class ExportImportProducts extends Controller
                 } catch (\Exception $exception) {
                     Log::info('Exception on Product: ' . $product['Product Id']);
                     $exceptionProducts[] = $product['Product Id'];
-                    $this->ImportNotifyEmail($emailNotify);
                 }
-                
             }
         }
+
         $this->ImportNotifyEmail($emailNotify);
-        // $csv = array_map('str_getcsv', file($path));
-        
-        // $headerRow = array_slice(range('A', 'Z'), 0, count($csv[0]));
-        // if ($request['firstHeader'] == "true") {
-        //     $headerRow = $csv[0];
-        //     unset($csv[0]);
-        // }
-        // array_walk($csv, function (&$a) use ($csv, $headerRow) {
-        //     $a = array_combine(array_map('trim', $headerRow), array_map('trim', $a));
-        // });
-        // return $csv;
-        // foreach ($csv as $key => $product) {
-        //     $this->getUpdateData($product, $indexes, $store_id, $store->access_token, $request['store_hash']);
-        // }
-        // unlink($path);
     }
 
     function getUpdateData($product, $indexes, $store_id, $access_token, $hash)
