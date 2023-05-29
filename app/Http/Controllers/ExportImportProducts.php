@@ -345,16 +345,14 @@ class ExportImportProducts extends Controller
             foreach ($csv as $key => $product) {
                 try {
                     $this->getUpdateData($product, $indexes, $store_id, $store->access_token, $request['store_hash']);
-                    $exceptionProducts[]['productId'] = $product['Product Id'];
-                    $exceptionProducts[]['varientId'] = $product['Variant Id'];
-                    $exceptionProducts[]['productName'] = $product['Product Name'];
 
                 } catch (\Exception $exception) {
                     Log::info('Exception on Product: ' . $product['Product Id']);
-                    $exceptionProducts[]['productId'] = $product['Product Id'];
-                    $exceptionProducts[]['varientId'] = $product['Variant Id'];
-                    $exceptionProducts[]['productName'] = $product['Product Name'];
-
+                    $exceptionProducts[] = [
+                        'productId' => $product['Product Id'],
+                        'varientId' => $product['Variant Id'],
+                        'productName' => $product['Product Name'],
+                    ];
                 }
             }
             Log::info('CSV Products Exception Array: ' . json_encode($exceptionProducts));
