@@ -304,6 +304,7 @@ class ExportImportProducts extends Controller
 
     public function importProductCsvJob($request)
     {
+        Log::info('import Product Csv Job Request: ' . json_encode($request));
         $indexes = $request['indexes'];
         $store_id = $request['store_id'];
         $store = Store::where('id', $store_id)->first();
@@ -331,10 +332,11 @@ class ExportImportProducts extends Controller
             $a = array_combine(array_map('trim', $headerRow), array_map('trim', $a));
         });
 
+        Log::info('CSV Products Array: ' . json_encode($csvArray));
         $csvChunks = array_chunk($csvArray, $this->csvChunksLength);
+        Log::info('CSV Products Chunks Array: ' . json_encode($csvChunks));
 
         foreach ($csvChunks as $chunkKey => $csv) {
-            Log::info('CSV Chunk: ' . json_encode($csv));
             foreach ($csv as $key => $product) {
                 try {
                     $this->getUpdateData($product, $indexes, $store_id, $store->access_token, $request['store_hash']);
