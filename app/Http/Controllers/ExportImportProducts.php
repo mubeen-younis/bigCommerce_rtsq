@@ -285,6 +285,7 @@ class ExportImportProducts extends Controller
             $data['store_name'] = $request['store_name'];
             $data['path'] = public_path('import_files/' . $request['store_hash'] . '/' . $request['filename']);
 
+            Log::info('import Product Csv Request: ' . json_encode($data));
             ImportProductsJob::dispatch($data)->delay(Carbon::now()->addSeconds($delay));
             unset($data['path']);
 
@@ -309,7 +310,6 @@ class ExportImportProducts extends Controller
 
     public function importProductCsvJob($request)
     {
-        Log::info('import Product Csv Job Request: ' . json_encode($request));
         $indexes = $request['indexes'];
         $store_id = $request['store_id'];
         $store = Store::where('id', $store_id)->first();
@@ -337,7 +337,6 @@ class ExportImportProducts extends Controller
             $a = array_combine(array_map('trim', $headerRow), array_map('trim', $a));
         });
 
-        Log::info('CSV Products Array: ' . json_encode($csvArray));
         $csvChunks = array_chunk($csvArray, $this->csvChunksLength);
         Log::info('CSV Products Chunks Array: ' . json_encode($csvChunks));
 
@@ -355,9 +354,8 @@ class ExportImportProducts extends Controller
                     ];
                 }
             }
-            Log::info('CSV Products Exception Array: ' . json_encode($exceptionProducts));
         }
-        
+        Log::info('CSV Products Exception Array: ' . json_encode($exceptionProducts));
         $this->ImportNotifyEmail($emailNotify);
     }
 
