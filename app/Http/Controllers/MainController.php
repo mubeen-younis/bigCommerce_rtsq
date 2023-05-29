@@ -361,7 +361,6 @@ class MainController extends BaseController
         try {
             $postData = file_get_contents("php://input");
             $postData = json_decode($postData, true);
-            Log::info('Post data addAndUpdateProductFromWebHook ' . json_encode($postData));
             return $this->productWebhookProcess($postData);
 
         } catch (\Exception $exception) {
