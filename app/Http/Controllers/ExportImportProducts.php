@@ -286,7 +286,7 @@ class ExportImportProducts extends Controller
             $data['path'] = public_path('import_files/' . $request['store_hash'] . '/' . $request['filename']);
 
             ImportProductsJob::dispatch($data)->delay(Carbon::now()->addSeconds($delay));
-            //unset($data['path']);
+            unset($data['path']);
 
             return response()->json([
                 'error' => false,
@@ -340,14 +340,20 @@ class ExportImportProducts extends Controller
             foreach ($csv as $key => $product) {
                 try {
                     $this->getUpdateData($product, $indexes, $store_id, $store->access_token, $request['store_hash']);
+                    $exceptionProducts[]['productId'] = $product['Product Id'];
+                    $exceptionProducts[]['varientId'] = $product['Variant Id'];
+                    $exceptionProducts[]['productName'] = $product['Product Name'];
 
                 } catch (\Exception $exception) {
                     Log::info('Exception on Product: ' . $product['Product Id']);
-                    $exceptionProducts[] = $product['Product Id'];
+                    $exceptionProducts[]['productId'] = $product['Product Id'];
+                    $exceptionProducts[]['varientId'] = $product['Variant Id'];
+                    $exceptionProducts[]['productName'] = $product['Product Name'];
+
                 }
             }
         }
-
+        Log::info('CSV Products Exception Array: ' . json_encode($exceptionProducts));
         $this->ImportNotifyEmail($emailNotify);
     }
 
