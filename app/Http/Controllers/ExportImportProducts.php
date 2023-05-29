@@ -383,7 +383,9 @@ class ExportImportProducts extends Controller
                     ->whereNull('variant_id')
                     ->where('store_id', $store_id)->pluck('settings')->toArray();
             }
-            $update['settings'] = json_encode($this->getSettings($oldSettings, $product, $indexes, $store_id));
+            $settings = $this->getSettings($oldSettings, $product, $indexes, $store_id);
+            $shipAlone = isset($settings->ship_own_package) ? $settings->ship_own_package : false;
+            $update['settings'] = json_encode($settings);
         }
         if (isset($indexes['name']) && $indexes['name']) {
             $key = $indexes['name'];
@@ -454,7 +456,12 @@ class ExportImportProducts extends Controller
             $data = (string)$product["$key"];
             $data = $data != '' ? (float)$product["$key"] : '';
             if ($data >= 0) {
-                $update['ship_multiple_package'] = (float)$product["$key"];
+                if($shipAlone){
+                    $update['ship_multiple_package'] = false;    
+                }else{
+                    $update['ship_multiple_package'] = (float)$product["$key"];
+                }
+                
             }
         }
 
@@ -568,7 +575,6 @@ class ExportImportProducts extends Controller
             $settings->allow_vertical = false;
         }
         if (($allowVert || $shipOwn) && $shipMulti) {
-            $settings->ship_own_package = false;
             $settings->allow_vertical = false;
         }
         if (isset($indexes['own_pallet']) && $indexes['own_pallet']) {
