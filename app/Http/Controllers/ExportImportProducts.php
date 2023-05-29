@@ -286,7 +286,7 @@ class ExportImportProducts extends Controller
             $data['path'] = public_path('import_files/' . $request['store_hash'] . '/' . $request['filename']);
 
             ImportProductsJob::dispatch($data)->delay(Carbon::now()->addSeconds($delay));
-            unset($data['path']);
+            //unset($data['path']);
 
             return response()->json([
                 'error' => false,
