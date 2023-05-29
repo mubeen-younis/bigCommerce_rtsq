@@ -302,7 +302,7 @@ class ExportImportProducts extends Controller
 
             return response()->json([
                 'error' => true,
-                'message' => 'import Products Csv Exception',
+                'message' => $exception->getMessage(),
             ], 200);
         }
     }
