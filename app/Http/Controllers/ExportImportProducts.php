@@ -276,7 +276,7 @@ class ExportImportProducts extends Controller
         ini_set('memory_limit', '-1');
         try {
             $delay = 2;
-            $data['filename'] = $request['filename'];
+            $data['filename'] = $request['file'];
             $data['firstHeader'] = $request['firstHeader'];
             $data['importEmailAddress'] = $request['importEmailAddress'];
             $data['indexes'] = $request['indexes'];
@@ -286,7 +286,7 @@ class ExportImportProducts extends Controller
             $data['path'] = public_path('import_files/' . $request['store_hash'] . '/' . $request['filename']);
 
             ImportProductsJob::dispatch($data)->delay(Carbon::now()->addSeconds($delay));
-            //unset($data['path']);
+            unset($data['path']);
 
             return response()->json([
                 'error' => false,
@@ -299,6 +299,11 @@ class ExportImportProducts extends Controller
                 'message' => $exception->getMessage(),
                 'file' => $exception->getFile(),
             ]));
+
+            return response()->json([
+                'error' => true,
+                'message' => 'import Products Csv Exception',
+            ], 200);
         }
     }
 
@@ -352,8 +357,9 @@ class ExportImportProducts extends Controller
 
                 }
             }
+            Log::info('CSV Products Exception Array: ' . json_encode($exceptionProducts));
         }
-        Log::info('CSV Products Exception Array: ' . json_encode($exceptionProducts));
+        
         $this->ImportNotifyEmail($emailNotify);
     }
 
@@ -563,7 +569,7 @@ class ExportImportProducts extends Controller
         $allowVert = optional($settings)->allow_vertical ?? false;
         $shipOwn = optional($settings)->ship_own_package ?? false;
         if ($allowVert && $shipOwn) {
-            $settings->ship_own_package = false;
+            $settings->allow_vertical = false;
         }
         if (($allowVert || $shipOwn) && $shipMulti) {
             $settings->ship_own_package = false;
