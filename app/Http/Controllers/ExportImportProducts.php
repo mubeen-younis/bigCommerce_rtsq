@@ -391,6 +391,14 @@ class ExportImportProducts extends Controller
             $key = $indexes['name'];
             $update['name'] = $product["$key"];
         }
+        if (isset($indexes['sku']) && $indexes['sku']) {
+            $key = $indexes['sku'];
+            $data = (string)$product["$key"];
+            $data = $data != '' ? $product["$key"] : '';
+            if (!empty($data)) {
+                $update['sku'] = $product["$key"];
+            }
+        }
         if (isset($indexes['weight']) && $indexes['weight']) {
             $key = $indexes['weight'];
             $data = (string)$product["$key"];
