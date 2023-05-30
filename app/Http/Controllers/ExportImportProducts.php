@@ -474,13 +474,20 @@ class ExportImportProducts extends Controller
         }
 
         /*Start -  For Dropship CHange*/
-        $dropShipId = $this->updateDropShip($product, $indexes, $store_id);
-        if ($dropShipId != false) {
-            $update['dropship_enabled'] = true;
-            $update['dropship_location'] = $dropShipId;
-        } else {
-            $update['dropship_enabled'] = false;
-            $update['dropship_location'] = null;
+        if (isset($indexes['drop_ship_nickname']) && $indexes['drop_ship_nickname']
+        && isset($indexes['drop_ship_city']) && $indexes['drop_ship_city']
+        && isset($indexes['drop_ship_state']) && $indexes['drop_ship_state']
+        && isset($indexes['drop_ship_zip']) && $indexes['drop_ship_zip']
+        && isset($indexes['drop_ship_country']) && $indexes['drop_ship_country'])
+        {
+            $dropShipId = $this->updateDropShip($product, $indexes, $store_id);
+            if ($dropShipId != false) {
+                $update['dropship_enabled'] = true;
+                $update['dropship_location'] = $dropShipId;
+            } else {
+                $update['dropship_enabled'] = false;
+                $update['dropship_location'] = null;
+            }
         }
         // END //
 
