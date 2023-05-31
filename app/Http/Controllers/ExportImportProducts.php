@@ -393,61 +393,55 @@ class ExportImportProducts extends Controller
         }
         if (isset($indexes['sku']) && $indexes['sku']) {
             $key = $indexes['sku'];
-            $data = (string)$product["$key"];
-            $data = $data != '' ? $product["$key"] : '';
-            if (!empty($data)) {
-                $update['sku'] = $product["$key"];
-            }
+            $update['sku'] = $product["$key"];
         }
         if (isset($indexes['weight']) && $indexes['weight']) {
             $key = $indexes['weight'];
-            $data = (string)$product["$key"];
-            $data = $data != '' ? (float)$product["$key"] : '';
-            if ($data >= 0) {
-                $update['weight'] = (float)$product["$key"];
+            $data = $product["$key"];
+            if(is_numeric($data) || empty($data)){
+                $update['weight'] = $data != '' ? round($data, 2) : '';
             }
         }
         if (isset($indexes['length']) && $indexes['length']) {
             $key = $indexes['length'];
-            $data = (string)$product["$key"];
-            $data = $data != '' ? (float)$product["$key"] : '';
-            if ($data >= 0) {
-                $update['length'] = (float)$product["$key"];
+            $data = $product["$key"];
+            if(is_numeric($data) || empty($data)){
+                $update['length'] = $data != '' ? round($data, 2) : '';
             }
         }
         if (isset($indexes['width']) && $indexes['width']) {
             $key = $indexes['width'];
-            $data = (string)$product["$key"];
-            $data = $data != '' ? (float)$product["$key"] : '';
-            if ($data >= 0) {
-                $update['width'] = (float)$product["$key"];
+            $data = $product["$key"];
+            if(is_numeric($data) || empty($data)){
+                $update['width'] = $data != '' ? round($data, 2) : '';
             }
         }
         if (isset($indexes['height']) && $indexes['height']) {
             $key = $indexes['height'];
-            $data = (string)$product["$key"];
-            $data = $data != '' ? (float)$product["$key"] : '';
-            if ($data >= 0) {
-                $update['height'] = (float)$product["$key"];
+            $data = $product["$key"];
+            if(is_numeric($data) || empty($data)){
+                $update['height'] = $data != '' ? round($data, 2) : '';
             }
         }
         if (isset($indexes['nmfc']) && $indexes['nmfc']) {
             $key = $indexes['nmfc'];
-            $data = (string)$product["$key"];
-            $data = $data != '' ? (float)$product["$key"] : '';
-            if ($data >= 0) {
-                $update['nmfc'] = (float)$product["$key"];
+            $data = $product["$key"];
+            if(is_numeric($data) || empty($data)){
+                $update['nmfc'] = $data != '' ? round($data, 2) : '';
             }
         }
         if (isset($indexes['product_markup']) && $indexes['product_markup']) {
             $key = $indexes['product_markup'];
-            $update['product_markup'] = (string)$product["$key"];
+            $data = $product["$key"];
+            if(is_numeric($data) || empty($data)){
+                $update['product_markup'] = $data != '' ? round($data, 2) : '';
+            }
         }
         if (isset($indexes['own_pallet']) && $indexes['own_pallet']) {
             $key = $indexes['own_pallet'];
             $data = (string)$product["$key"];
             $data = $data != '' ? (float)$product["$key"] : '';
-            if ($data >= 0) {
+            if ($data >= 0 || empty($data)) {
                 $update['own_pallet'] = (float)$product["$key"];
             }
         }
@@ -455,7 +449,7 @@ class ExportImportProducts extends Controller
             $key = $indexes['pallet_vertical_rotation'];
             $data = (string)$product["$key"];
             $data = $data != '' ? (float)$product["$key"] : '';
-            if ($data >= 0) {
+            if ($data >= 0 || empty($data)) {
                 $update['pallet_vertical_rotation'] = (float)$product["$key"];
             }
         }
@@ -463,9 +457,9 @@ class ExportImportProducts extends Controller
             $key = $indexes['ship_multiple_package'];
             $data = (string)$product["$key"];
             $data = $data != '' ? (float)$product["$key"] : '';
-            if ($data >= 0) {
+            if ($data >= 0 || empty($data)) {
                 if($shipAlone){
-                    $update['ship_multiple_package'] = false;    
+                    $update['ship_multiple_package'] = 0;    
                 }else{
                     $update['ship_multiple_package'] = (float)$product["$key"];
                 }
