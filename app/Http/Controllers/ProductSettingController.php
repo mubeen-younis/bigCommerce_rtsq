@@ -280,6 +280,8 @@ class ProductSettingController extends Controller
 
     public function getSingleProductDetail(Request $request)
     {
+        $this->deleteDuplicateProducts($request);
+
         if (empty($request->product_id)) {
             return response()->json(['error' => true,
                 'data' => [],
@@ -299,6 +301,36 @@ class ProductSettingController extends Controller
             'data' => $products,
             'message' => '',
         ], 200);
+    }
+
+    public function deleteDuplicateProducts($request)
+    {
+        if(!(isset($request->store_id) && isset($request->product_id) && !empty($request->store_id) && !empty($request->product_id))){
+            return false;
+        }
+
+        $duplicateProd = ProductSetting::select('variant_id', 'source_product_id', DB::raw('COUNT(*) as count'))
+            ->where(['store_id' => $request->store_id, 'source_product_id' => $request->product_id])
+            ->groupBy('variant_id')
+            ->having('count', '>', 1)
+            ->get();
+
+            if(!count($duplicateProd)){
+                return false;
+            }
+
+            foreach ($duplicateProd as $product) {
+                $count = $product->count ?? 0;
+                while($count > 1){
+                    ProductSetting::where(['store_id' => $request->store_id, 'variant_id' => $product->variant_id, 'source_product_id' => $product->source_product_id])
+                    ->first()
+                    ->delete();
+                    $count--;
+                }
+                        
+            }
+
+        return true;
     }
 
     public function getStoreProductsFromDb(Request $request)
