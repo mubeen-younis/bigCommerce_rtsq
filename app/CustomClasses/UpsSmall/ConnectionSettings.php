@@ -22,28 +22,25 @@ class ConnectionSettings
             'message' => 'Something went wrong!',
         ];
         $url = $this->testConnectionUrl;
-        /*$params = array(
-            'carrierName' => 'ups',
-            'carrier_mode' => 'test',
-            'accessLevel' => $data->access_level, //test or pro
-            'AccountNumber' => $data->account_number ?? '',
-            'UserName' => $data->username ?? '',
-            'Password' => $data->password ?? '',
-            'APIKey' => $data->ups_api_access_key ?? '',
-            'licence_key' => $data->license_key ?? '',
-            'server_name' => $storeName ?? '',
-            'dont_auth' => 1
-        );*/
+
         $params = array(
             'dont_auth' => '1',
             'platform' => 'bigcommerce',
-            'ups_username' => $data->username ?? '',
-            'ups_password' => $data->password ?? '',
-            'ups_license_key' => $data->ups_api_access_key ?? '',
-            'ups_account_number' => $data->account_number ?? '',
             'ups_domain_name' => $storeName ?? '',
             'plugin_licence_key' => $data->license_key ?? '',
         );
+        if(isset($data->api_type) && $data->api_type === 'new_api'){
+            $params['ups_account_number'] = $data->new_api_account_number ?? '';
+            $params['clientId'] = $data->clientId ?? '';
+            $params['clientSecret'] = $data->clientSecret ?? '';
+            $params['ApiVersion'] = '2.0';
+
+        } else{
+            $params['ups_account_number'] = $data->account_number ?? '';
+            $params['ups_username'] = $data->username ?? '';
+            $params['ups_password'] = $data->password ?? '';
+            $params['ups_license_key'] = $data->license_key ?? '';
+        }
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
 
@@ -60,7 +57,12 @@ class ConnectionSettings
                 'error' => true,
                 'message' => 'Invalid authentication info',
             ];
-        } elseif (isset($output['success'])) {
+        } elseif (isset($output['severity']) && $output['severity'] === 'ERROR' ) {
+            $response = [
+                'error' => true,
+                'message' => $output['Message'] ?? 'Invalid authentication info',
+            ];
+        } elseif (isset($output['success']) || (isset($output['severity']) && $output['severity'] === 'SUCCESS')) {
             $response = [
                 'error' => false,
                 'message' => 'Test connection successful.',
