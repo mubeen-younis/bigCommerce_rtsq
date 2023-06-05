@@ -88,7 +88,7 @@ class ExportImportProducts extends Controller
                 $folderNamePath[] = $filename;
                 $fp = fopen($filename, "w");
                 if (true) {
-                    $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (' . $dimensionsUnit . '), Width (' . $dimensionsUnit . '), Height (' . $dimensionsUnit . '), NMFC, Markup, Quote Method, Freight Class, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Ships Alone, Vertical Rotation, Ships Multiple Package, Ships Own Pallet, Pallet Vertical Rotation';
+                    $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (' . $dimensionsUnit . '), Width (' . $dimensionsUnit . '), Height (' . $dimensionsUnit . '), NMFC, Markup, Quote Method, Freight Class, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Boxing Properties, Ships Own Pallet, Pallet Vertical Rotation';
                     $line .= "\n";
                     fputs($fp, $line);
                 }
@@ -132,14 +132,25 @@ class ExportImportProducts extends Controller
                             $country = $dropShip['country'] ?? '';
                         }
                     }
+                    $boxingProperty = '';
+                    // Added Boxing Properties
+                    if (isset($settings->ship_own_package) && $settings->ship_own_package) {
+                        $boxingProperty = '1';
+                    } else if (isset($settings->allow_vertical) && $settings->allow_vertical) {
+                        $boxingProperty = '2';
+                    } else if (isset($product->ship_multiple_package) && $product->ship_multiple_package) {
+                        $boxingProperty = '3';
+                    } else if (isset($product->ship_multiple_package) && !$product->ship_multiple_package && 
+                            isset($settings->ship_own_package) && !$settings->ship_own_package && 
+                            isset($settings->allow_vertical) && !$settings->allow_vertical) {
+                        $boxingProperty = '0';
+                    }
                     $productLine[] = $nickname;
                     $productLine[] = $zip;
                     $productLine[] = $city;
                     $productLine[] = $state;
                     $productLine[] = $country;
-                    $productLine[] = isset($settings->ship_own_package) && $settings->ship_own_package ? 1 : 0;
-                    $productLine[] = isset($settings->allow_vertical) && $settings->allow_vertical ? 1 : 0;
-                    $productLine[] = isset($product->ship_multiple_package) && $product->ship_multiple_package ? 1 : 0;
+                    $productLine[] = $boxingProperty;
                     $productLine[] = isset($product->own_pallet) && $product->own_pallet ? 1 : 0;
                     $productLine[] = isset($product->pallet_vertical_rotation) && $product->pallet_vertical_rotation ? 1 : 0;
                     fputcsv($fp, $productLine);
@@ -365,15 +376,11 @@ class ExportImportProducts extends Controller
         if (isset($indexes['id']) && $indexes['id'] && isset($indexes['variantid']) && $indexes['variantid']) {
             $key = $indexes['id'];
             $variant_key = $indexes['variantid'];
-            //$source_product_id = (int) $product["$key"];
+
             $source_product_id = (int)filter_var($product["$key"], FILTER_SANITIZE_NUMBER_INT);
 
             $variant_id = (int)filter_var($product["$variant_key"], FILTER_SANITIZE_NUMBER_INT);
-            /*if(!ProductSetting::where('source_product_id', $source_product_id)
-                ->where('variant_id', $variant_id)
-                ->where('store_id', $store_id)->exists()) {
-                return true; // no action perform if product not exist
-            }*/
+
             if ($variant_id) {
                 $oldSettings = ProductSetting::where('source_product_id', $source_product_id)
                     ->where('variant_id', $variant_id)
@@ -384,7 +391,7 @@ class ExportImportProducts extends Controller
                     ->where('store_id', $store_id)->pluck('settings')->toArray();
             }
             $settings = $this->getSettings($oldSettings, $product, $indexes, $store_id);
-            $shipAlone = isset($settings->ship_own_package) ? $settings->ship_own_package : false;
+            $shipMultiPackage = isset($settings->ship_multi_package) ? $settings->ship_multi_package : null;
             $update['settings'] = json_encode($settings);
         }
         if (isset($indexes['name']) && $indexes['name']) {
@@ -453,18 +460,13 @@ class ExportImportProducts extends Controller
                 $update['pallet_vertical_rotation'] = (float)$product["$key"];
             }
         }
-        if (isset($indexes['ship_multiple_package']) && $indexes['ship_multiple_package']) {
-            $key = $indexes['ship_multiple_package'];
-            $data = (string)$product["$key"];
-            $data = $data != '' ? (float)$product["$key"] : '';
-            if ($data >= 0 || empty($data)) {
-                if($shipAlone){
-                    $update['ship_multiple_package'] = 0;    
-                }else{
-                    $update['ship_multiple_package'] = (float)$product["$key"];
-                }
-                
-            }
+
+        if ($shipMultiPackage){
+            $update['ship_multiple_package'] = true;    
+        } else if ($shipMultiPackage === null){
+            $update['ship_multiple_package'] = null;
+        } else {
+            $update['ship_multiple_package'] = false;
         }
 
         /*Start -  For Dropship CHange*/
@@ -503,27 +505,7 @@ class ExportImportProducts extends Controller
     public function getSettings($oldSettings, $product, $indexes, $store_id)
     {
         $settings = isset($oldSettings[0]) && $oldSettings[0] ? json_decode($oldSettings[0]) : new \stdClass();
-        /*$freightUpdate = false;
-        if(isset($indexes['freight_enabled']) && $indexes['freight_enabled']){
-            $key = $indexes['freight_enabled'];
-            if(array_key_exists($key, $product)){
-                $settings->freight_enabled = (bool) $product["$key"];
-                $freightUpdate = true;
-            }
-        }
-        if(isset($indexes['parcel_enabled']) && $indexes['parcel_enabled']){
-            $key = $indexes['parcel_enabled'];
-            if(array_key_exists($key, $product)){
-                $settings->parcel_enabled = (bool) $product["$key"];;
-            }
-            if(isset($settings->parcel_enabled) && $settings->parcel_enabled === true && isset($settings->freight_enabled) && $settings->freight_enabled === true) {
-                $settings->parcel_enabled = false;
-            }
-            $freightUpdate = false;
-        }
-        if($freightUpdate && isset($settings->parcel_enabled) && $settings->parcel_enabled === true){
-            $settings->freight_enabled = false;
-        }*/
+       
         if (isset($indexes['quote_method']) && $indexes['quote_method']) {
             $key = $indexes['quote_method'];
             $quoteMethod = strtolower($product["$key"]);
@@ -551,26 +533,29 @@ class ExportImportProducts extends Controller
                 }
             }
         }
-        if (isset($indexes['ship_alone']) && $indexes['ship_alone']) {
-            $key = $indexes['ship_alone'];
+        if (isset($indexes['boxing_property']) && $indexes['boxing_property']) {
+            $key = $indexes['boxing_property'];
+            $boxingProperty = strtolower($product["$key"]);
             if (array_key_exists($key, $product)) {
-                $settings->ship_own_package = ($product["$key"] == 1) ? true : false;
-            }
-        }
-        if (isset($indexes['vertical_rotation']) && $indexes['vertical_rotation']) {
-            $key = $indexes['vertical_rotation'];
-            if (array_key_exists($key, $product)) {
-                $settings->allow_vertical = ($product["$key"] == 1) ? true : false;;
+                $settings->ship_own_package = false;
+                $settings->allow_vertical = false;
+                $settings->ship_multi_package = false;
+                // Added Boxing Properties
+
+                if ($boxingProperty === '1') {
+                    $settings->ship_own_package = true;
+                } else if ($boxingProperty === '2') {
+                    $settings->allow_vertical = true;
+                } else if ($boxingProperty === '3') {
+                    $settings->ship_multi_package = true;
+                } else if ($boxingProperty === '') {
+                    $settings->ship_own_package = null;
+                    $settings->allow_vertical = null;
+                    $settings->ship_multi_package = null;
+                }
             }
         }
 
-        $shipMulti = false;
-        if (isset($indexes['ship_multiple_package']) && $indexes['ship_multiple_package']) {
-            $key = $indexes['ship_multiple_package'];
-            if (array_key_exists($key, $product)) {
-                $shipMulti = ($product["$key"] == 1) ? true : false;;
-            }
-        }
         if (isset($indexes['nmfc']) && $indexes['nmfc']) {
             $key = $indexes['nmfc'];
             if (array_key_exists($key, $product)) {
@@ -578,14 +563,6 @@ class ExportImportProducts extends Controller
             }
         }
 
-        $allowVert = optional($settings)->allow_vertical ?? false;
-        $shipOwn = optional($settings)->ship_own_package ?? false;
-        if ($allowVert && $shipOwn) {
-            $settings->allow_vertical = false;
-        }
-        if (($allowVert || $shipOwn) && $shipMulti) {
-            $settings->allow_vertical = false;
-        }
         if (isset($indexes['own_pallet']) && $indexes['own_pallet']) {
             $key = $indexes['own_pallet'];
             if (array_key_exists($key, $product)) {
@@ -612,34 +589,6 @@ class ExportImportProducts extends Controller
             }
         }
 
-
-        /*
-         * Commented Dropship code*/
-
-        /*   $dropShipId = $this->updateDropShip($oldSettings, $product, $indexes, $store_id);
-           $settings->dropship_enabled = false;
-           $settings->dropship_location = false;
-           if ($dropShipId) {
-               $settings->dropship_enabled = true;
-               $settings->dropship_location = $dropShipId;
-           }*/
-
-
-        // END ////
-
-
-        /*if(isset($indexes['dropship_enabled']) && $indexes['dropship_enabled']){
-            $key = $indexes['dropship_enabled'];
-            if(array_key_exists($key, $product)) {
-                $settings->dropship_enabled = (bool)$product["$key"];
-            }
-        }
-        if(isset($indexes['dropship_location']) && $indexes['dropship_location']){
-            $key = $indexes['dropship_location'];
-            if(array_key_exists($key, $product)) {
-                $settings->dropship_location = (int)$product["$key"];
-            }
-        }*/
         return $settings;
     }
 
