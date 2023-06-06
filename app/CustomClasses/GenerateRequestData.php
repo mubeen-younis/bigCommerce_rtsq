@@ -2746,11 +2746,14 @@ class GenerateRequestData
 
         $paymentType = isset($connSettings['quote_settings']['shipper_relationship']) && $connSettings['quote_settings']['shipper_relationship'] === 'third_party' ? 'ThirdParty' : 'shipper';
         $apiArray = [
-            'accessLevel' => $connSettings['creds']['access_level'],
-            'APIKey' => $connSettings['creds']['ups_api_access_key'],
-            'AccountNumber' => $connSettings['creds']['account_number'],
-            'UserName' => $connSettings['creds']['username'],
-            'Password' => $connSettings['creds']['password'],
+            'accessLevel' => isset($connSettings['creds']['access_level']) ? $connSettings['creds']['access_level'] : '',
+            'APIKey' => isset($connSettings['creds']['ups_api_access_key']) ? $connSettings['creds']['ups_api_access_key'] : '',
+            'AccountNumber' => isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api' && isset($connSettings['creds']['new_api_account_number']) ? $connSettings['creds']['new_api_account_number'] : $connSettings['creds']['account_number'] ?? '',
+            'UserName' => isset($connSettings['creds']['username']) ? $connSettings['creds']['username'] : '',
+            'Password' => isset($connSettings['creds']['password']) ? $connSettings['creds']['password'] : '',
+            'clientId' => isset($connSettings['creds']['clientId']) ? $connSettings['creds']['clientId'] : '',
+            'clientSecret' => isset($connSettings['creds']['clientSecret']) ? $connSettings['creds']['clientSecret'] : '',
+            'ApiVersion' => '2.0',
             'paymentCode' => '10',
             'paymentDescription' => 'PREPAID',
             'paymentType' => $paymentType,
@@ -2777,6 +2780,20 @@ class GenerateRequestData
         ];
         if ($apiArray['paymentType'] === 'shipper') {
             unset($apiArray['payerAddress']);
+        }
+        if (isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api'){
+            unset(
+                $apiArray['accessLevel'],
+                $apiArray['APIKey'],
+                $apiArray['UserName'],
+                $apiArray['Password'],
+            );
+        }else {
+            unset(
+                $apiArray['clientId'],
+                $apiArray['clientSecret'],
+                $apiArray['ApiVersion'],
+            );
         }
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }

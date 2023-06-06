@@ -23,15 +23,26 @@ class UpsLtlConnectionSettings extends CarriersConnectionSettings
         $params = array(
             'carrierName' => 'ups',
             'carrier_mode' => 'test',
-            'accessLevel' => $data->access_level, //test or pro
-            'AccountNumber' => $data->account_number ?? '',
-            'UserName' => $data->username ?? '',
-            'Password' => $data->password ?? '',
-            'APIKey' => $data->ups_api_access_key ?? '',
-            'licence_key' => $data->license_key ?? '',
-            'server_name' => $storeName ?? '',
             'dont_auth' => 1
         );
+
+        if(isset($data->api_type) && $data->api_type === 'new_api'){
+            $params['AccountNumber'] = $data->new_api_account_number ?? '';
+            $params['clientId'] = $data->clientId ?? '';
+            $params['clientSecret'] = $data->clientSecret ?? '';
+            $params['ApiVersion'] = '2.0';
+            $params['licenseKey'] = $data->license_key ?? '';
+            $params['serverName'] = $storeName ?? '';
+
+        } else{
+            $params['accessLevel'] = $data->access_level; //test or pro
+            $params['AccountNumber'] = $data->account_number ?? '';
+            $params['UserName'] = $data->username ?? '';
+            $params['Password'] = $data->password ?? '';
+            $params['APIKey'] = $data->ups_api_access_key ?? '';
+            $params['licence_key'] = $data->license_key ?? '';
+            $params['server_name'] = $storeName ?? '';
+        }
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
 
@@ -46,7 +57,7 @@ class UpsLtlConnectionSettings extends CarriersConnectionSettings
 
         $output = json_decode($output['response'], true);
 
-        if (isset($output['q']['TotalShipmentCharge']['MonetaryValue'])) {
+        if (isset($output['q']['TotalShipmentCharge']['MonetaryValue']) || (isset($output['severity']) && $output['severity'] === 'SUCCESS')) {
             $response = [
                 'error' => false,
                 'message' => 'Test connection successful.',
@@ -56,6 +67,11 @@ class UpsLtlConnectionSettings extends CarriersConnectionSettings
             $response = [
                 'error' => true,
                 'message' => $output['error']['Description'] ?? $output['error'],
+            ];
+        } else if(isset($output['severity']) && $output['severity'] === 'ERROR'){
+            $response = [
+                'error' => true,
+                'message' => $output['message'],
             ];
         }
 
