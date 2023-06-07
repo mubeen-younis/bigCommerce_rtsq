@@ -39,7 +39,7 @@ class ConnectionSettings
             $params['ups_account_number'] = $data->account_number ?? '';
             $params['ups_username'] = $data->username ?? '';
             $params['ups_password'] = $data->password ?? '';
-            $params['ups_license_key'] = $data->license_key ?? '';
+            $params['ups_license_key'] = $data->ups_api_access_key ?? '';
         }
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
