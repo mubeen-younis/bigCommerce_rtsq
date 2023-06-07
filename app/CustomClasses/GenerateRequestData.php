@@ -1884,11 +1884,13 @@ class GenerateRequestData
         $saturdayDelivery = $upsSmall->isSaturdayDeliveryEnabled($connSettings) ? '1' : '0';
 
         $apiArray = [
-            'ups_small_pkg_username' => $connSettings['creds']['username'],
-            'ups_small_pkg_password' => $connSettings['creds']['password'],
-            'ups_small_pkg_authentication_key' => $connSettings['creds']['ups_api_access_key'],
-            'ups_small_pkg_account_number' => $connSettings['creds']['account_number'],
-
+            'ups_small_pkg_username' => isset($connSettings['creds']['username']) ? $connSettings['creds']['username'] : '',
+            'ups_small_pkg_password' => isset($connSettings['creds']['password']) ? $connSettings['creds']['password'] : '',
+            'ups_small_pkg_authentication_key' => isset($connSettings['creds']['ups_api_access_key']) ? $connSettings['creds']['ups_api_access_key'] : '',
+            'ups_small_pkg_account_number' => isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api' && isset($connSettings['creds']['new_api_account_number']) ? $connSettings['creds']['new_api_account_number'] : $connSettings['creds']['account_number'] ?? '',
+            'clientId' => isset($connSettings['creds']['clientId']) ? $connSettings['creds']['clientId'] : '',
+            'clientSecret' => isset($connSettings['creds']['clientSecret']) ? $connSettings['creds']['clientSecret'] : '',
+            'ApiVersion' => '2.0',
             'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
             'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
             'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
@@ -1923,6 +1925,21 @@ class GenerateRequestData
                 'ups_small_pkg_aditional_handling' => $this->issetIndex($carrierServices, 'ups_ground_with_freight_pricing')
             ],
         ];
+
+        if (isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api'){
+            unset(
+                $apiArray['ups_small_pkg_username'],
+                $apiArray['ups_small_pkg_password'],
+                $apiArray['ups_small_pkg_authentication_key'],
+            );
+        }else {
+            unset(
+                $apiArray['clientId'],
+                $apiArray['clientSecret'],
+                $apiArray['ApiVersion'],
+            );
+        }
+
         return $apiArray;
     }
 
