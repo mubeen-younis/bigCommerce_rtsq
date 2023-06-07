@@ -62,8 +62,6 @@ class ProductSetting extends Model
                 return null;
             }
 
-            Log::info('Base variant ID ' . $product['base_variant_id'] . ' - Product ID : ' . $product['id']);
-
             $saveProduct = ProductSetting::where('source_product_id', $product['id'])
                 ->where('variant_id', $product['base_variant_id'])
                 ->where('store_id', $storeId)->first();
@@ -100,7 +98,6 @@ class ProductSetting extends Model
             $saveProduct->price = $product['price'];
             $saveProduct->store_id = $storeId;
             $saveProduct->save();
-            Log::info('Saved Product Details ' . json_encode($saveProduct));
             DB::commit();
 
         } catch (\Exception $exception) {
@@ -119,8 +116,6 @@ class ProductSetting extends Model
                 return null;
             }
 
-            Log::info('Base variant ID ' . $product['base_variant_id'] . ' - Product ID : ' . $product['id']);
-
             $saveProduct = ProductSetting::where('source_product_id', $product['id'])
                 ->where('variant_id', $product['base_variant_id'])
                 ->where('store_id', $storeId)->first();
@@ -157,7 +152,6 @@ class ProductSetting extends Model
             $saveProduct->price = $product['price'];
             $saveProduct->store_id = $storeId;
             $saveProduct->save();
-            Log::info('Saved Product Details ' . json_encode($saveProduct));
 
         } catch (\Exception $exception) {
             Log::info('Exception on saving Product Details ' . $exception->getMessage());
