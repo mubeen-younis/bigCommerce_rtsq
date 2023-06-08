@@ -8,6 +8,7 @@ use App\CustomClasses\Functions;
 use App\Endpoints\Endpoints;
 use App\Helpers\Helpers;
 use App\Models\RequestData;
+use App\Models\RequestTempData;
 use App\Models\Store;
 use Illuminate\Http\Request;
 
@@ -90,27 +91,44 @@ class FDOOrderController extends Controller
         return $resp;
     }
 
+    public function getRequestDataFromDB($tableName, $storeId, $rateId, $cartId, $order)
+    {
+        $modelName = $tableName === 'RequestData' ? new RequestData() : new RequestTempData();
+
+        $data = optional($modelName::where('rate_id', $rateId)
+            ->where('cart_id', $cartId)
+            ->where('store_id', $storeId)
+            ->first())->toArray() ?? null;
+        if (blank($data) && isset($order['full_rate_id']) && !blank($order['full_rate_id'])) {
+            $data = optional($modelName::where('rate_id', $order['full_rate_id'])
+                ->where('cart_id', $cartId)
+                ->where('store_id', $storeId)
+                ->first())->toArray() ?? null;
+            $rateId = $order['full_rate_id'] ?? null;
+        }
+
+        return $data;
+    }
 
     public function getDetail($detail)
     {
         $storeId = $detail['store_id'];
         $order = $detail['order_detail'];
         $rateId = $order['rate_id'] ?? null;
+        $cartId = $order['cart_id'] ?? null;
 
-        $data = optional(RequestData::where('rate_id', $rateId)
-            ->where('cart_id', $order['cart_id'])
-            ->where('store_id', $storeId)
-            ->first())->toArray() ?? null;
+        $data = $this->getRequestDataFromDB('RequestData', $storeId, $rateId, $cartId, $order);
 
-        if (blank($data) && !blank($order['full_rate_id'])) {
-            $rateId = $order['full_rate_id'] ?? null;
-            $data = optional(RequestData::where('rate_id', $order['full_rate_id'])
-                ->where('cart_id', $order['cart_id'])
-                ->where('store_id', $storeId)
-                ->first())->toArray() ?? null;
-        }
         if (blank($data)) {
-            return [];
+            $data = $this->getRequestDataFromDB('RequestTempData', $storeId, $rateId, $cartId, $order);
+
+            if (!blank($data)) {
+                unset($data['id']);
+                RequestData::insert($data);
+
+            } else {
+                return [];
+            }
         }
         $carrierHasInsurance = Functions::hasInsureCarrier($rateId);
         $carrierName = Functions::getCarrierNameOrCode($rateId);
