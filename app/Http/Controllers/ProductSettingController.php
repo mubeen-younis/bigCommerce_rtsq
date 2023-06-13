@@ -84,7 +84,7 @@ class ProductSettingController extends Controller
                     Log::info('1 :' . json_encode($product));
                     $this->saveProducts->saveProductFromSync($product, $data['store_id']);
                     $this->getVariants($product, $data, '', false);
-                } else {
+                } else {Log::info('0 :' . json_encode($product));
                     $this->saveProducts->saveProductFromSync($product, $data['store_id']);
                 }
 

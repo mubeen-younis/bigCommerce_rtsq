@@ -109,7 +109,7 @@ class ProductSetting extends Model
     }
 
     public function saveProductFromSync($product, $storeId)
-    {
+    {Log::info('7 :' . json_encode($product));
         try {
 
             // if ($product['base_variant_id'] == null && ProductSetting::where('source_product_id', $product['id'])
