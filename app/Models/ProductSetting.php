@@ -46,7 +46,7 @@ class ProductSetting extends Model
      * @return void|null
      */
     public function saveProduct($product, $storeId, $scope = null)
-    {
+    {Log::info('6 :' . json_encode($product) . $scope);
         try {
             DB::beginTransaction();
 
@@ -97,6 +97,7 @@ class ProductSetting extends Model
             $saveProduct->height = $product['height'];
             $saveProduct->price = $product['price'];
             $saveProduct->store_id = $storeId;
+            Log::info('5 :' . json_encode($saveProduct));
             $saveProduct->save();
             DB::commit();
 

@@ -59,7 +59,7 @@ class ProductSettingController extends Controller
     }
 
     public function importProductsJob($data)
-    {
+    {Log::info('start CSV jobs');
         $storeUrl = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products?limit=' . $data['perpage'] . '&page=' . $data['page'];
         unset($headers);
         $headers[] = 'X-Auth-Token: ' . $data['store_token'];
@@ -169,6 +169,7 @@ class ProductSettingController extends Controller
         if (isset($response['data']) && count($response['data'])) {
             $product = $response['data'];
             if ($product['base_variant_id'] == null) {
+                Log::info('4 :' . json_encode($product));
                 $this->saveProducts->saveProduct($product, $storeId, $scope);
                 $this->getVariants($product, $data, $scope);
             } else {
