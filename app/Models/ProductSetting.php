@@ -151,6 +151,7 @@ class ProductSetting extends Model
             $saveProduct->height = $product['height'];
             $saveProduct->price = $product['price'];
             $saveProduct->store_id = $storeId;
+            Log::info('2 :' . json_encode($saveProduct));
             $saveProduct->save();
 
         } catch (\Exception $exception) {
