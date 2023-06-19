@@ -46,7 +46,7 @@ class ProductSetting extends Model
      * @return void|null
      */
     public function saveProduct($product, $storeId, $scope = null)
-    {Log::info('6 :' . json_encode($product) . $scope);
+    {
         try {
             DB::beginTransaction();
 
@@ -97,7 +97,6 @@ class ProductSetting extends Model
             $saveProduct->height = $product['height'];
             $saveProduct->price = $product['price'];
             $saveProduct->store_id = $storeId;
-            Log::info('5 :' . json_encode($saveProduct));
             $saveProduct->save();
             DB::commit();
 
@@ -111,11 +110,6 @@ class ProductSetting extends Model
     public function saveProductFromSync($product, $storeId)
     {
         try {
-
-            // if ($product['base_variant_id'] == null && ProductSetting::where('source_product_id', $product['id'])
-            //         ->where('store_id', $storeId)->exists()) {
-            //     return null;
-            // }
 
             $saveProduct = ProductSetting::where('source_product_id', $product['id'])
                 ->where('variant_id', $product['base_variant_id'])
@@ -152,7 +146,6 @@ class ProductSetting extends Model
             $saveProduct->height = $product['height'];
             $saveProduct->price = $product['price'];
             $saveProduct->store_id = $storeId;
-            Log::info('2 :' . json_encode($saveProduct));
             $saveProduct->save();
 
         } catch (\Exception $exception) {
