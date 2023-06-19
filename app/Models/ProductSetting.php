@@ -111,11 +111,6 @@ class ProductSetting extends Model
     {
         try {
 
-            // if ($product['base_variant_id'] == null && ProductSetting::where('source_product_id', $product['id'])
-            //         ->where('store_id', $storeId)->exists()) {
-            //     return null;
-            // }
-
             $saveProduct = ProductSetting::where('source_product_id', $product['id'])
                 ->where('variant_id', $product['base_variant_id'])
                 ->where('store_id', $storeId)->first();
