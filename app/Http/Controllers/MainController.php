@@ -189,11 +189,13 @@ class MainController extends BaseController
                 $store->app_status = 0;
                 $store->save();
                 $store = Store::where('hash', $storeHash)->first()->toArray();
-                $hubspotData = HubSpot::where('store_id', $store['id'])->first()->toArray();
-                $user = ['email' => $hubspotData['email']];
-                $status = ['products_lost' => true];
-                $hubSpotController = new HubSpotController();
-                $hubSpotController->createUpdateHubSpotUser($store['id'], $user, $status);
+                $hubspotData = optional(HubSpot::where('store_id', $store['id'])->first())->toArray() ?? [];
+                if(!blank($hubspotData)){
+                    $user = ['email' => $hubspotData['email']];
+                    $status = ['products_lost' => true];
+                    $hubSpotController = new HubSpotController();
+                    $hubSpotController->createUpdateHubSpotUser($store['id'], $user, $status);
+                }
                 /*
                  * Update WS graph data
                  * */
@@ -361,7 +363,6 @@ class MainController extends BaseController
         try {
             $postData = file_get_contents("php://input");
             $postData = json_decode($postData, true);
-            Log::info('Post data addAndUpdateProductFromWebHook ' . json_encode($postData));
             return $this->productWebhookProcess($postData);
 
         } catch (\Exception $exception) {

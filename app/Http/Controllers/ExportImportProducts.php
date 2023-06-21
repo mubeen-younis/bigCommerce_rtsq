@@ -26,10 +26,12 @@ use Carbon\Carbon;
 class ExportImportProducts extends Controller
 {
     public $curlRequest;
+    public $csvChunksLength;
 
     public function __construct()
     {
         $this->curlRequest = new CurlRequest();
+        $this->csvChunksLength = 20;
     }
 
     public function exportProductsTemplate(Request $request)
@@ -86,7 +88,7 @@ class ExportImportProducts extends Controller
                 $folderNamePath[] = $filename;
                 $fp = fopen($filename, "w");
                 if (true) {
-                    $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (' . $dimensionsUnit . '), Width (' . $dimensionsUnit . '), Height (' . $dimensionsUnit . '), NMFC, Markup, Quote Method, Freight Class, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Ships Alone, Vertical Rotation, Ships Multiple Package, Ships Own Pallet, Pallet Vertical Rotation';
+                    $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (' . $dimensionsUnit . '), Width (' . $dimensionsUnit . '), Height (' . $dimensionsUnit . '), NMFC, Markup, Quote Method, Freight Class, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Boxing Properties, Ships Own Pallet, Pallet Vertical Rotation';
                     $line .= "\n";
                     fputs($fp, $line);
                 }
@@ -130,14 +132,25 @@ class ExportImportProducts extends Controller
                             $country = $dropShip['country'] ?? '';
                         }
                     }
+                    $boxingProperty = '';
+                    // Added Boxing Properties
+                    if (isset($settings->ship_own_package) && $settings->ship_own_package) {
+                        $boxingProperty = '1';
+                    } else if (isset($settings->allow_vertical) && $settings->allow_vertical) {
+                        $boxingProperty = '2';
+                    } else if (isset($product->ship_multiple_package) && $product->ship_multiple_package) {
+                        $boxingProperty = '3';
+                    } else if (isset($product->ship_multiple_package) && !$product->ship_multiple_package && 
+                            isset($settings->ship_own_package) && !$settings->ship_own_package && 
+                            isset($settings->allow_vertical) && !$settings->allow_vertical) {
+                        $boxingProperty = '0';
+                    }
                     $productLine[] = $nickname;
                     $productLine[] = $zip;
                     $productLine[] = $city;
                     $productLine[] = $state;
                     $productLine[] = $country;
-                    $productLine[] = isset($settings->ship_own_package) && $settings->ship_own_package ? 1 : 0;
-                    $productLine[] = isset($settings->allow_vertical) && $settings->allow_vertical ? 1 : 0;
-                    $productLine[] = isset($product->ship_multiple_package) && $product->ship_multiple_package ? 1 : 0;
+                    $productLine[] = $boxingProperty;
                     $productLine[] = isset($product->own_pallet) && $product->own_pallet ? 1 : 0;
                     $productLine[] = isset($product->pallet_vertical_rotation) && $product->pallet_vertical_rotation ? 1 : 0;
                     fputcsv($fp, $productLine);
@@ -271,29 +284,39 @@ class ExportImportProducts extends Controller
 
     public function importProductsCsv(Request $request)
     {
-        $chunks = $this->splitCcvInChunks($request);
-        $delay = 2;
+        ini_set('memory_limit', '-1');
+        try {
+            $delay = 2;
+            $data['filename'] = $request['file'];
+            $data['firstHeader'] = $request['firstHeader'];
+            $data['importEmailAddress'] = $request['importEmailAddress'];
+            $data['indexes'] = $request['indexes'];
+            $data['store_hash'] = $request['store_hash'];
+            $data['store_id'] = $request['store_id'];
+            $data['store_name'] = $request['store_name'];
+            $data['path'] = public_path('import_files/' . $request['store_hash'] . '/' . $request['filename']);
 
-        $data['filename'] = $request['filename'];
-        $data['firstHeader'] = $request['firstHeader'];
-        $data['importEmailAddress'] = $request['importEmailAddress'];
-        $data['indexes'] = $request['indexes'];
-        $data['store_hash'] = $request['store_hash'];
-        $data['store_id'] = $request['store_id'];
-        $data['store_name'] = $request['store_name'];
-        foreach ($chunks as $key => $path) {
-            $data['path'] = $path;
-            $delay = ($key + 1) * 10;
+            Log::info('import Product Csv Request: ' . json_encode($data));
             ImportProductsJob::dispatch($data)->delay(Carbon::now()->addSeconds($delay));
+            unset($data['path']);
+
+            return response()->json([
+                'error' => false,
+                'data' => $data,
+            ], 200);
+
+        } catch (\Exception $exception) {
+            Log::info(json_encode([
+                'line' => $exception->getLine(),
+                'message' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+            ]));
+
+            return response()->json([
+                'error' => true,
+                'message' => $exception->getMessage(),
+            ], 200);
         }
-        ImportProductsNotification::dispatch($data['importEmailAddress'])->delay(Carbon::now()->addSeconds($delay + 10));
-        // start running queue
-        \Artisan::call('queue:work');
-        return response()->json([
-            'error' => false,
-            'data' => $data,
-            'delay' => $delay,
-        ], 200);
     }
 
     public function importProductCsvJob($request)
@@ -302,20 +325,49 @@ class ExportImportProducts extends Controller
         $store_id = $request['store_id'];
         $store = Store::where('id', $store_id)->first();
         $emailNotify = $request['importEmailAddress'] ?? '';
-        $path = $request['path'];//public_path('import_files/'.$request['store_hash'].'/'.$request['filename']);
-        $csv = array_map('str_getcsv', file($path));
-        $headerRow = array_slice(range('A', 'Z'), 0, count($csv[0]));
-        if ($request['firstHeader'] == "true") {
-            $headerRow = $csv[0];
-            unset($csv[0]);
+        $path = $request['path'];
+        $exceptionProducts = [];
+
+        if (!file_exists($path)) {
+            Log::info('File Not Found On Importing Csv' . $request['filename']);
+            return false;
         }
-        array_walk($csv, function (&$a) use ($csv, $headerRow) {
+
+        // Converting Csv TO String
+        $csvArray = array_map('str_getcsv', file($path));
+        if (count($csvArray) < 1) {
+            return false;
+        }
+
+        $headerRow = array_slice(range('A', 'Z'), 0, count($csvArray[0]));
+        if ($request['firstHeader'] == "true") {
+            $headerRow = $csvArray[0];
+             unset($csvArray[0]);
+        }
+        array_walk($csvArray, function (&$a) use ($csvArray, $headerRow) {
             $a = array_combine(array_map('trim', $headerRow), array_map('trim', $a));
         });
-        foreach ($csv as $key => $product) {
-            $this->getUpdateData($product, $indexes, $store_id, $store->access_token, $request['store_hash']);
+
+        $csvChunks = array_chunk($csvArray, $this->csvChunksLength);
+        Log::info('CSV Products Chunks Array: ' . json_encode($csvChunks));
+
+        foreach ($csvChunks as $chunkKey => $csv) {
+            foreach ($csv as $key => $product) {
+                try {
+                    $this->getUpdateData($product, $indexes, $store_id, $store->access_token, $request['store_hash']);
+
+                } catch (\Exception $exception) {
+                    Log::info('Exception on Product: ' . $product['Product Id']);
+                    $exceptionProducts[] = [
+                        'productId' => $product['Product Id'],
+                        'varientId' => $product['Variant Id'],
+                        'productName' => $product['Product Name'],
+                    ];
+                }
+            }
         }
-        unlink($path);
+        Log::info('CSV Products Exception Array: ' . json_encode($exceptionProducts));
+        $this->ImportNotifyEmail($emailNotify);
     }
 
     function getUpdateData($product, $indexes, $store_id, $access_token, $hash)
@@ -324,15 +376,11 @@ class ExportImportProducts extends Controller
         if (isset($indexes['id']) && $indexes['id'] && isset($indexes['variantid']) && $indexes['variantid']) {
             $key = $indexes['id'];
             $variant_key = $indexes['variantid'];
-            //$source_product_id = (int) $product["$key"];
+
             $source_product_id = (int)filter_var($product["$key"], FILTER_SANITIZE_NUMBER_INT);
 
             $variant_id = (int)filter_var($product["$variant_key"], FILTER_SANITIZE_NUMBER_INT);
-            /*if(!ProductSetting::where('source_product_id', $source_product_id)
-                ->where('variant_id', $variant_id)
-                ->where('store_id', $store_id)->exists()) {
-                return true; // no action perform if product not exist
-            }*/
+
             if ($variant_id) {
                 $oldSettings = ProductSetting::where('source_product_id', $source_product_id)
                     ->where('variant_id', $variant_id)
@@ -342,61 +390,65 @@ class ExportImportProducts extends Controller
                     ->whereNull('variant_id')
                     ->where('store_id', $store_id)->pluck('settings')->toArray();
             }
-            $update['settings'] = json_encode($this->getSettings($oldSettings, $product, $indexes, $store_id));
+            $settings = $this->getSettings($oldSettings, $product, $indexes, $store_id);
+            $shipMultiPackage = isset($settings->ship_multi_package) ? $settings->ship_multi_package : null;
+            $update['settings'] = json_encode($settings);
         }
         if (isset($indexes['name']) && $indexes['name']) {
             $key = $indexes['name'];
             $update['name'] = $product["$key"];
         }
+        if (isset($indexes['sku']) && $indexes['sku']) {
+            $key = $indexes['sku'];
+            $update['sku'] = $product["$key"];
+        }
         if (isset($indexes['weight']) && $indexes['weight']) {
             $key = $indexes['weight'];
-            $data = (string)$product["$key"];
-            $data = $data != '' ? (float)$product["$key"] : '';
-            if ($data >= 0) {
-                $update['weight'] = (float)$product["$key"];
+            $data = $product["$key"];
+            if(is_numeric($data) || empty($data)){
+                $update['weight'] = $data != '' ? round($data, 2) : '';
             }
         }
         if (isset($indexes['length']) && $indexes['length']) {
             $key = $indexes['length'];
-            $data = (string)$product["$key"];
-            $data = $data != '' ? (float)$product["$key"] : '';
-            if ($data >= 0) {
-                $update['length'] = (float)$product["$key"];
+            $data = $product["$key"];
+            if(is_numeric($data) || empty($data)){
+                $update['length'] = $data != '' ? round($data, 2) : '';
             }
         }
         if (isset($indexes['width']) && $indexes['width']) {
             $key = $indexes['width'];
-            $data = (string)$product["$key"];
-            $data = $data != '' ? (float)$product["$key"] : '';
-            if ($data >= 0) {
-                $update['width'] = (float)$product["$key"];
+            $data = $product["$key"];
+            if(is_numeric($data) || empty($data)){
+                $update['width'] = $data != '' ? round($data, 2) : '';
             }
         }
         if (isset($indexes['height']) && $indexes['height']) {
             $key = $indexes['height'];
-            $data = (string)$product["$key"];
-            $data = $data != '' ? (float)$product["$key"] : '';
-            if ($data >= 0) {
-                $update['height'] = (float)$product["$key"];
+            $data = $product["$key"];
+            if(is_numeric($data) || empty($data)){
+                $update['height'] = $data != '' ? round($data, 2) : '';
             }
         }
         if (isset($indexes['nmfc']) && $indexes['nmfc']) {
             $key = $indexes['nmfc'];
-            $data = (string)$product["$key"];
-            $data = $data != '' ? (float)$product["$key"] : '';
-            if ($data >= 0) {
-                $update['nmfc'] = (float)$product["$key"];
+            $data = $product["$key"];
+            if(is_numeric($data) || empty($data)){
+                $update['nmfc'] = $data != '' ? round($data, 2) : '';
             }
         }
         if (isset($indexes['product_markup']) && $indexes['product_markup']) {
             $key = $indexes['product_markup'];
-            $update['product_markup'] = (string)$product["$key"];
+            $data = $product["$key"];
+            if(is_numeric($data) || empty($data)){
+                $update['product_markup'] = $data != '' ? round($data, 2) : '';
+            }
         }
         if (isset($indexes['own_pallet']) && $indexes['own_pallet']) {
             $key = $indexes['own_pallet'];
             $data = (string)$product["$key"];
             $data = $data != '' ? (float)$product["$key"] : '';
-            if ($data >= 0) {
+            if ($data >= 0 || empty($data)) {
                 $update['own_pallet'] = (float)$product["$key"];
             }
         }
@@ -404,27 +456,34 @@ class ExportImportProducts extends Controller
             $key = $indexes['pallet_vertical_rotation'];
             $data = (string)$product["$key"];
             $data = $data != '' ? (float)$product["$key"] : '';
-            if ($data >= 0) {
+            if ($data >= 0 || empty($data)) {
                 $update['pallet_vertical_rotation'] = (float)$product["$key"];
             }
         }
-        if (isset($indexes['ship_multiple_package']) && $indexes['ship_multiple_package']) {
-            $key = $indexes['ship_multiple_package'];
-            $data = (string)$product["$key"];
-            $data = $data != '' ? (float)$product["$key"] : '';
-            if ($data >= 0) {
-                $update['ship_multiple_package'] = (float)$product["$key"];
-            }
+
+        if ($shipMultiPackage){
+            $update['ship_multiple_package'] = true;    
+        } else if ($shipMultiPackage === null){
+            $update['ship_multiple_package'] = null;
+        } else {
+            $update['ship_multiple_package'] = false;
         }
 
         /*Start -  For Dropship CHange*/
-        $dropShipId = $this->updateDropShip($product, $indexes, $store_id);
-        if ($dropShipId != false) {
-            $update['dropship_enabled'] = true;
-            $update['dropship_location'] = $dropShipId;
-        } else {
-            $update['dropship_enabled'] = false;
-            $update['dropship_location'] = null;
+        if (isset($indexes['drop_ship_nickname']) && $indexes['drop_ship_nickname']
+        && isset($indexes['drop_ship_city']) && $indexes['drop_ship_city']
+        && isset($indexes['drop_ship_state']) && $indexes['drop_ship_state']
+        && isset($indexes['drop_ship_zip']) && $indexes['drop_ship_zip']
+        && isset($indexes['drop_ship_country']) && $indexes['drop_ship_country'])
+        {
+            $dropShipId = $this->updateDropShip($product, $indexes, $store_id);
+            if ($dropShipId != false) {
+                $update['dropship_enabled'] = true;
+                $update['dropship_location'] = $dropShipId;
+            } else {
+                $update['dropship_enabled'] = false;
+                $update['dropship_location'] = null;
+            }
         }
         // END //
 
@@ -446,27 +505,7 @@ class ExportImportProducts extends Controller
     public function getSettings($oldSettings, $product, $indexes, $store_id)
     {
         $settings = isset($oldSettings[0]) && $oldSettings[0] ? json_decode($oldSettings[0]) : new \stdClass();
-        /*$freightUpdate = false;
-        if(isset($indexes['freight_enabled']) && $indexes['freight_enabled']){
-            $key = $indexes['freight_enabled'];
-            if(array_key_exists($key, $product)){
-                $settings->freight_enabled = (bool) $product["$key"];
-                $freightUpdate = true;
-            }
-        }
-        if(isset($indexes['parcel_enabled']) && $indexes['parcel_enabled']){
-            $key = $indexes['parcel_enabled'];
-            if(array_key_exists($key, $product)){
-                $settings->parcel_enabled = (bool) $product["$key"];;
-            }
-            if(isset($settings->parcel_enabled) && $settings->parcel_enabled === true && isset($settings->freight_enabled) && $settings->freight_enabled === true) {
-                $settings->parcel_enabled = false;
-            }
-            $freightUpdate = false;
-        }
-        if($freightUpdate && isset($settings->parcel_enabled) && $settings->parcel_enabled === true){
-            $settings->freight_enabled = false;
-        }*/
+       
         if (isset($indexes['quote_method']) && $indexes['quote_method']) {
             $key = $indexes['quote_method'];
             $quoteMethod = strtolower($product["$key"]);
@@ -494,26 +533,29 @@ class ExportImportProducts extends Controller
                 }
             }
         }
-        if (isset($indexes['ship_alone']) && $indexes['ship_alone']) {
-            $key = $indexes['ship_alone'];
+        if (isset($indexes['boxing_property']) && $indexes['boxing_property']) {
+            $key = $indexes['boxing_property'];
+            $boxingProperty = strtolower($product["$key"]);
             if (array_key_exists($key, $product)) {
-                $settings->ship_own_package = ($product["$key"] == 1) ? true : false;
-            }
-        }
-        if (isset($indexes['vertical_rotation']) && $indexes['vertical_rotation']) {
-            $key = $indexes['vertical_rotation'];
-            if (array_key_exists($key, $product)) {
-                $settings->allow_vertical = ($product["$key"] == 1) ? true : false;;
+                $settings->ship_own_package = false;
+                $settings->allow_vertical = false;
+                $settings->ship_multi_package = false;
+                // Added Boxing Properties
+
+                if ($boxingProperty === '1') {
+                    $settings->ship_own_package = true;
+                } else if ($boxingProperty === '2') {
+                    $settings->allow_vertical = true;
+                } else if ($boxingProperty === '3') {
+                    $settings->ship_multi_package = true;
+                } else if ($boxingProperty === '') {
+                    $settings->ship_own_package = null;
+                    $settings->allow_vertical = null;
+                    $settings->ship_multi_package = null;
+                }
             }
         }
 
-        $shipMulti = false;
-        if (isset($indexes['ship_multiple_package']) && $indexes['ship_multiple_package']) {
-            $key = $indexes['ship_multiple_package'];
-            if (array_key_exists($key, $product)) {
-                $shipMulti = ($product["$key"] == 1) ? true : false;;
-            }
-        }
         if (isset($indexes['nmfc']) && $indexes['nmfc']) {
             $key = $indexes['nmfc'];
             if (array_key_exists($key, $product)) {
@@ -521,15 +563,6 @@ class ExportImportProducts extends Controller
             }
         }
 
-        $allowVert = optional($settings)->allow_vertical ?? false;
-        $shipOwn = optional($settings)->ship_own_package ?? false;
-        if ($allowVert && $shipOwn) {
-            $settings->ship_own_package = false;
-        }
-        if (($allowVert || $shipOwn) && $shipMulti) {
-            $settings->ship_own_package = false;
-            $settings->allow_vertical = false;
-        }
         if (isset($indexes['own_pallet']) && $indexes['own_pallet']) {
             $key = $indexes['own_pallet'];
             if (array_key_exists($key, $product)) {
@@ -556,34 +589,6 @@ class ExportImportProducts extends Controller
             }
         }
 
-
-        /*
-         * Commented Dropship code*/
-
-        /*   $dropShipId = $this->updateDropShip($oldSettings, $product, $indexes, $store_id);
-           $settings->dropship_enabled = false;
-           $settings->dropship_location = false;
-           if ($dropShipId) {
-               $settings->dropship_enabled = true;
-               $settings->dropship_location = $dropShipId;
-           }*/
-
-
-        // END ////
-
-
-        /*if(isset($indexes['dropship_enabled']) && $indexes['dropship_enabled']){
-            $key = $indexes['dropship_enabled'];
-            if(array_key_exists($key, $product)) {
-                $settings->dropship_enabled = (bool)$product["$key"];
-            }
-        }
-        if(isset($indexes['dropship_location']) && $indexes['dropship_location']){
-            $key = $indexes['dropship_location'];
-            if(array_key_exists($key, $product)) {
-                $settings->dropship_location = (int)$product["$key"];
-            }
-        }*/
         return $settings;
     }
 
