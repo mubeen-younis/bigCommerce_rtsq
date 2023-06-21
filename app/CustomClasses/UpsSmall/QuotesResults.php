@@ -125,7 +125,7 @@ class QuotesResults
             }
         }
         if (!$isMultiShipment) {
-            $isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
+            $isMultiShipment = is_countable($shipments) && count($shipments) > 1;
         }
         $returnResp = [
             'isMultiShipment' => $isMultiShipment
