@@ -1812,14 +1812,32 @@ class GenerateRequestData
         $this->resiCarrier['alwaysResi']['wweSmall'] = $alwaysResi;
 
         $apiArray = [
-            'speed_ship_username' => $connSettings['creds']['username'],
-            'speed_ship_password' => $connSettings['creds']['password'],
-            'authentication_key' => $connSettings['creds']['authentication_key'],
-            'world_wide_express_account_number' => $connSettings['creds']['account_number'],
+            'speed_ship_username' => isset($connSettings['creds']['username']) ? $connSettings['creds']['username'] : '',
+            'speed_ship_password' => isset($connSettings['creds']['password']) ? $connSettings['creds']['password'] : '',
+            'authentication_key' => isset($connSettings['creds']['authentication_key']) ? $connSettings['creds']['authentication_key'] : '',
+            'world_wide_express_account_number' => isset($connSettings['creds']['account_number']) ? $connSettings['creds']['account_number'] : '',
+            'clientId' => isset($connSettings['creds']['clientId']) ? $connSettings['creds']['clientId'] : '',
+            'clientSecret' => isset($connSettings['creds']['clientSecret']) ? $connSettings['creds']['clientSecret'] : '',
+            'ApiVersion' => '2.0',
             'residentials_delivery' => ($alwaysResi ? 'Y' : $residential == 'Y') ? 'yes' : 'no',
             'prefferedCurrency' => 'USD',
             'includeDeclaredValue' => "1",
         ];
+
+        if (isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api'){
+            unset(
+                $apiArray['speed_ship_username'],
+                $apiArray['speed_ship_password'],
+                $apiArray['authentication_key'],
+                $apiArray['world_wide_express_account_number'],
+            );
+        }else {
+            unset(
+                $apiArray['clientId'],
+                $apiArray['clientSecret'],
+                $apiArray['ApiVersion'],
+            );
+        }
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
 
