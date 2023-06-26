@@ -125,6 +125,7 @@ class Shipping
         $destination = $request['lineItemData']['destination'] ?? [];
         $resp = $generateReqData->generateEnitureArray($originAddress, $destination, $package['items']);
 
+
         if (empty($resp)) {
             return [];
         }
@@ -179,11 +180,13 @@ class Shipping
         unset($requestArr['SuppressParcelRates']);
         $url = Constant::QUOTES_URL;
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
+        //Sending request to WS to get Quotes
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
+
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
         /*
-      * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
-      */
+         * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
+         */
         $this->isRequestMultishipment = $ltlSmallCompileQuotes->checkIsRequestMiltiShipment($requestArr['requestArr'], $quotes);
         /* Catering Usps carrier packaging response */
         $uspsCarrierArr = $requestArr['requestArr']['carriers']['usps'] ?? [];
@@ -200,6 +203,8 @@ class Shipping
         if (isset($uspsBoxBins) && !empty($uspsBoxBins)) {
             $boxbins = array_merge($boxbins, $uspsBoxBins);
         }
+
+        // TODO: Need to check when packaging is happening
         if (isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])) {
             $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes, false);
         }
@@ -277,7 +282,7 @@ class Shipping
             /*Removed Code of removing parcel and ltl*/
         }
         /*Adding shipping group rates response in quotes
-        */
+         */
         if (!blank($this->shippingGroupResponse)) {
             $items = data_get($request, 'lineItemData.items');
             $items = $items + $itemsWithShippingGroup;
@@ -371,8 +376,7 @@ class Shipping
      * @param $finalQuotes
      * @return array
      */
-    protected
-    function addShipGroupRatesInQuotes($finalQuotes): array
+    protected function addShipGroupRatesInQuotes($finalQuotes): array
     {
         foreach ($finalQuotes as $key => $quote) {
             $finalQuotes[$key]['rate'] = $quote['rate'] + $this->shippingGroupResponse[0]['rate'];
@@ -380,8 +384,7 @@ class Shipping
         return $finalQuotes;
     }
 
-    private
-    function removeParcelIfLtl($finalQuotes)
+    private function removeParcelIfLtl($finalQuotes)
     {
         $finalQuotes = $finalQuotes['checkoutQuotes'] ?? $finalQuotes;
         $hasLtl = false;
@@ -406,8 +409,7 @@ class Shipping
         return $finalQuotes;
     }
 
-    private
-    function makeMultishipmentSmallLtl($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr)
+    private function makeMultishipmentSmallLtl($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr)
     {
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
         /*
@@ -419,63 +421,68 @@ class Shipping
         return $resp;
     }
 
-    private
-    function addBinResponseToQuotes($binReponse, $quotes, $uspsRes = false)
+    private function addBinResponseToQuotes($binReponse, $quotes, $uspsRes = false)
     {
-        $boxFee = [];
-        $fedexBoxesFee = [];
-        $uspsBoxesFee = [];
-        foreach ($quotes as $carrierName => $quote) {
-            if ($this->isSmallCarrier($carrierName)) {
-                if (($carrierName == 'fedexSmall') && !$uspsRes) {
-                    foreach ($binReponse as $serviceType => $response) {
-                        foreach ($response as $locationId => $bin) {
-                            $quotes[$carrierName][$locationId]['binPackagingData']['response'][$serviceType] = $bin;
-                            $fee = $this->getCumulativeBoxFee($bin);
-                            $boxFee[$locationId] = $fee;
-
-                            if ($carrierName == 'fedexSmall') {
-                                $fedexBoxesFee[$locationId][$serviceType] = $fee;
-                            }
-                        }
-                    }
-                } else if ($carrierName == 'usps' && $uspsRes) {
-                    foreach ($binReponse as $locationId => $boxTypes) {
-                        if (isset($boxTypes) && !empty($boxTypes)) {
-                            foreach ($boxTypes as $type => $value) {
-                                $quotes[$carrierName][$locationId]['binPackagingData']['response'][strtolower($type)] = $value;
-                                if ($type == 'UMEB' || $type == 'UPMB') {
-                                    $value = $this->getBinsByBoxType($type, $boxTypes);
-                                }
-                                $fee = $this->getCumulativeBoxFee($value, true);
-                                $boxFee[$locationId] = $fee;
-                                $uspsBoxesFee[$locationId][$type] = $fee;
-                            }
-                        }
-                    }
-                } else if ($carrierName !== 'fedexSmall' && $carrierName !== 'usps' && ($uspsRes === null || !$uspsRes)) {
-                    if (isset($binReponse['ground']) && !empty($binReponse['ground']) && isset($binReponse['simpleRate']) && !empty($binReponse['simpleRate'])) {
+        try {
+            $boxFee = [];
+            $fedexBoxesFee = [];
+            $uspsBoxesFee = [];
+            foreach ($quotes as $carrierName => $quote) {
+                if ($this->isSmallCarrier($carrierName)) {
+                    if (($carrierName == 'fedexSmall') && !$uspsRes) {
                         foreach ($binReponse as $serviceType => $response) {
                             foreach ($response as $locationId => $bin) {
                                 $quotes[$carrierName][$locationId]['binPackagingData']['response'][$serviceType] = $bin;
                                 $fee = $this->getCumulativeBoxFee($bin);
                                 $boxFee[$locationId] = $fee;
+
+                                if ($carrierName == 'fedexSmall') {
+                                    $fedexBoxesFee[$locationId][$serviceType] = $fee;
+                                }
                             }
                         }
-                    } else {
-                        foreach ($binReponse as $locationId => $bin) {
-                            $quotes[$carrierName][$locationId]['binPackagingData']['response'] = $bin;
-                            $boxFee[$locationId] = $this->getCumulativeBoxFee($bin);
+                    } else if ($carrierName == 'usps' && $uspsRes) {
+                        foreach ($binReponse as $locationId => $boxTypes) {
+                            if (isset($boxTypes) && !empty($boxTypes)) {
+                                foreach ($boxTypes as $type => $value) {
+                                    $quotes[$carrierName][$locationId]['binPackagingData']['response'][strtolower($type)] = $value;
+                                    if ($type == 'UMEB' || $type == 'UPMB') {
+                                        $value = $this->getBinsByBoxType($type, $boxTypes);
+                                    }
+                                    $fee = $this->getCumulativeBoxFee($value, true);
+                                    $boxFee[$locationId] = $fee;
+                                    $uspsBoxesFee[$locationId][$type] = $fee;
+                                }
+                            }
+                        }
+                    } else if ($carrierName !== 'fedexSmall' && $carrierName !== 'usps' && ($uspsRes === null || !$uspsRes)) {
+                        if (isset($binReponse['ground']) && !empty($binReponse['ground']) && isset($binReponse['simpleRate']) && !empty($binReponse['simpleRate'])) {
+                            foreach ($binReponse as $serviceType => $response) {
+                                foreach ($response as $locationId => $bin) {
+                                    $quotes[$carrierName][$locationId]['binPackagingData']['response'][$serviceType] = $bin;
+                                    $fee = $this->getCumulativeBoxFee($bin);
+                                    $boxFee[$locationId] = $fee;
+                                }
+                            }
+                        } else {
+                            foreach ($binReponse as $locationId => $bin) {
+                                $quotes[$carrierName][$locationId]['binPackagingData']['response'] = $bin;
+                                $boxFee[$locationId] = $this->getCumulativeBoxFee($bin);
+                            }
                         }
                     }
                 }
             }
-        }
-        if (!empty($boxFee)) {
-            $quotes = $this->addBoxFeeToQuotes($quotes, $boxFee, $fedexBoxesFee);
+            if (!empty($boxFee)) {
+                $quotes = $this->addBoxFeeToQuotes($quotes, $boxFee, $fedexBoxesFee);
+            }
+            return $quotes;
+        } catch (\Exception $exception) {
+            return $quotes;
         }
 
-        return $quotes;
+
+
     }
 
     private function getBinsByBoxType($type, $boxes)
@@ -490,22 +497,25 @@ class Shipping
     }
 
     public
-    function isSmallCarrier($carrierName)
-    {
+        function isSmallCarrier(
+        $carrierName
+    ) {
         $smallCarriers = [
             'wweSmall',
             'upsSmall',
             'fedexSmall',
             'unishippersSmall',
             'usps',
-            'purolator'
+            'purolator',
+            'shipEngine'
         ];
         return in_array($carrierName, $smallCarriers);
     }
 
     public
-    function isLtlCarrier($carrierName)
-    {
+        function isLtlCarrier(
+        $carrierName
+    ) {
         $ltlCarriers = [
             'wweLTL',
             'upsLTL',
@@ -518,111 +528,111 @@ class Shipping
         return in_array($carrierName, $ltlCarriers);
     }
 
-    private
-    function addBoxFeeToQuotes(array $quotes, array $boxFee, $fedexBoxesFee = []): array
-    {
+    private function addBoxFeeToQuotes(
+        array $quotes, array $boxFee,
+        $fedexBoxesFee = []
+    ): array {
         $parcelCarName = ['wweSmall', 'upsSmall', 'fedexSmall', 'unishippersSmall', 'usps'];
-            if (isset($quotes) && !empty($quotes)) {
-                foreach ($quotes as $carName => $quot) {
-                    if (in_array($carName, $parcelCarName)) {
-                        foreach ($quot as $locId => $q) {
-                            // Added Condition for fedex small for adding box fees
-                            if ($carName == "fedexSmall") {
-                                if (isset($q['fedexServices']['q'])) {
-                                    if (isset($q['fedexServices']['q']['severity']) && $q['fedexServices']['q']['severity'] == "ERROR") {
-                                        continue;
-                                    }
+        if (isset($quotes) && !empty($quotes)) {
+            foreach ($quotes as $carName => $quot) {
+                if (in_array($carName, $parcelCarName)) {
+                    foreach ($quot as $locId => $q) {
+                        // Added Condition for fedex small for adding box fees
+                        if ($carName == "fedexSmall") {
+                            if (isset($q['fedexServices']['q'])) {
+                                if (isset($q['fedexServices']['q']['severity']) && $q['fedexServices']['q']['severity'] == "ERROR") {
+                                    continue;
+                                }
 
-                                    foreach ($q['fedexServices']['q'] as $key => $qs) {
-                                        $fee = $this->getBoxFeeAccordingToService($qs['serviceType'], $fedexBoxesFee, $boxFee, $locId);
-                                        if (isset($qs['totalNetCharge']['Amount'])) {
-                                            if ($fee != 0) {
-                                                $quotes[$carName][$locId]['fedexServices']['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $fee;
-                                                $quotes[$carName][$locId]['fedexServices']['q'][$key]['boxFees']['Amount'] = $fee;
-                                            }
-                                        }
-                                        if (isset($qs['NegotiatedRates']['Amount'])) {
-                                            if ($fee != 0) {
-                                                $quotes[$carName][$locId]['fedexServices']['q'][$key]['NegotiatedRates']['Amount'] = $qs['NegotiatedRates']['Amount'] + $fee;
-                                                $quotes[$carName][$locId]['fedexServices']['q'][$key]['boxFees']['Amount'] = $fee;
-                                            }
+                                foreach ($q['fedexServices']['q'] as $key => $qs) {
+                                    $fee = $this->getBoxFeeAccordingToService($qs['serviceType'], $fedexBoxesFee, $boxFee, $locId);
+                                    if (isset($qs['totalNetCharge']['Amount'])) {
+                                        if ($fee != 0) {
+                                            $quotes[$carName][$locId]['fedexServices']['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $fee;
+                                            $quotes[$carName][$locId]['fedexServices']['q'][$key]['boxFees']['Amount'] = $fee;
                                         }
                                     }
-                                }
-    
-                                if (isset($q['fedexAirServices']['q'])) {
-    
-                                    if (isset($q['fedexAirServices']['q']['severity']) && $q['fedexAirServices']['q']['severity'] == "ERROR") {
-                                        continue;
-                                    }
-    
-                                    foreach ($q['fedexAirServices']['q'] as $key => $qs) {
-                                        $fee = $this->getBoxFeeAccordingToService($qs['serviceType'], $fedexBoxesFee, $boxFee, $locId);
-                                        if (isset($qs['totalNetCharge']['Amount'])) {
-                                            if ($fee != 0) {
-                                                $quotes[$carName][$locId]['fedexAirServices']['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $fee;
-                                                $quotes[$carName][$locId]['fedexAirServices']['q'][$key]['boxFees']['Amount'] = $fee;
-                                            }
-                                        }
-                                        if (isset($qs['NegotiatedRates']['Amount'])) {
-                                            if ($fee != 0) {
-                                                $quotes[$carName][$locId]['fedexAirServices']['q'][$key]['NegotiatedRates']['Amount'] = $qs['NegotiatedRates']['Amount'] + $fee;
-                                                $quotes[$carName][$locId]['fedexServices']['q'][$key]['boxFees']['Amount'] = $fee;
-                                            }
-                                        }
-                                    }
-                                }
-    
-    
-                                if (isset($q['fedexOneRate']['q'])) {
-                                    if (isset($q['fedexOneRate']['q']['severity']) && $q['fedexOneRate']['q']['severity'] == "ERROR") {
-                                        continue;
-                                    }
-
-                                    foreach ($q['fedexOneRate']['q'] as $key => $qs) {
-                                        $fee = $this->getBoxFeeAccordingToService($qs['serviceType'], $fedexBoxesFee, $boxFee, $locId, true);
-                                        if (isset($qs['totalNetCharge']['Amount'])) {
-                                            if ($fee != 0) {
-                                                $quotes[$carName][$locId]['fedexOneRate']['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $fee;
-                                                $quotes[$carName][$locId]['fedexOneRate']['q'][$key]['boxFees']['Amount'] = $fee;
-                                            }
-                                        }
-                                        if (isset($qs['NegotiatedRates']['Amount'])) {
-                                            if ($fee != 0) {
-                                                $quotes[$carName][$locId]['fedexOneRate']['q'][$key]['NegotiatedRates']['Amount'] = $qs['NegotiatedRates']['Amount'] + $fee;
-                                                $quotes[$carName][$locId]['fedexOneRate']['q'][$key]['boxFees']['Amount'] = $fee;
-                                            }
-                                        }
-                                    }
-                                }
-    
-                                /*
-                               * Adds Box fee in SMart POst QUotes
-                                 * */
-    
-                                if (isset($q['smartPost']['q']['SMART_POST']['serviceType'])) {
-                                    $fee = $this->getBoxFeeAccordingToService('smart_post', $fedexBoxesFee, $boxFee, $locId);
-                                    if ($fee != 0) {
-                                        if (isset($quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['NegotiatedRates']['Amount'])) {
-                                            $quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['NegotiatedRates']['Amount'] = $quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['NegotiatedRates']['Amount'] + $fee;
-                                            // $quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['boxFees']['Amount'] = $fee;
-                                        }
-                                        if (isset($quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['totalNetCharge']['Amount'])) {
-                                            $quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['totalNetCharge']['Amount'] = $quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['totalNetCharge']['Amount'] + $fee;
-                                            //$quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['boxFees']['Amount'] = $fee;
+                                    if (isset($qs['NegotiatedRates']['Amount'])) {
+                                        if ($fee != 0) {
+                                            $quotes[$carName][$locId]['fedexServices']['q'][$key]['NegotiatedRates']['Amount'] = $qs['NegotiatedRates']['Amount'] + $fee;
+                                            $quotes[$carName][$locId]['fedexServices']['q'][$key]['boxFees']['Amount'] = $fee;
                                         }
                                     }
                                 }
                             }
-    
-    
-                            if (isset($q['q'])) {
-                                foreach ($q['q'] as $key => $qs) {
+
+                            if (isset($q['fedexAirServices']['q'])) {
+
+                                if (isset($q['fedexAirServices']['q']['severity']) && $q['fedexAirServices']['q']['severity'] == "ERROR") {
+                                    continue;
+                                }
+
+                                foreach ($q['fedexAirServices']['q'] as $key => $qs) {
+                                    $fee = $this->getBoxFeeAccordingToService($qs['serviceType'], $fedexBoxesFee, $boxFee, $locId);
                                     if (isset($qs['totalNetCharge']['Amount'])) {
-                                        if (isset($boxFee[$locId])) {
-                                            $quotes[$carName][$locId]['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $boxFee[$locId];
-                                            $quotes[$carName][$locId]['q'][$key]['boxFees']['Amount'] = $boxFee[$locId];
+                                        if ($fee != 0) {
+                                            $quotes[$carName][$locId]['fedexAirServices']['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $fee;
+                                            $quotes[$carName][$locId]['fedexAirServices']['q'][$key]['boxFees']['Amount'] = $fee;
                                         }
+                                    }
+                                    if (isset($qs['NegotiatedRates']['Amount'])) {
+                                        if ($fee != 0) {
+                                            $quotes[$carName][$locId]['fedexAirServices']['q'][$key]['NegotiatedRates']['Amount'] = $qs['NegotiatedRates']['Amount'] + $fee;
+                                            $quotes[$carName][$locId]['fedexServices']['q'][$key]['boxFees']['Amount'] = $fee;
+                                        }
+                                    }
+                                }
+                            }
+
+
+                            if (isset($q['fedexOneRate']['q'])) {
+                                if (isset($q['fedexOneRate']['q']['severity']) && $q['fedexOneRate']['q']['severity'] == "ERROR") {
+                                    continue;
+                                }
+
+                                foreach ($q['fedexOneRate']['q'] as $key => $qs) {
+                                    $fee = $this->getBoxFeeAccordingToService($qs['serviceType'], $fedexBoxesFee, $boxFee, $locId, true);
+                                    if (isset($qs['totalNetCharge']['Amount'])) {
+                                        if ($fee != 0) {
+                                            $quotes[$carName][$locId]['fedexOneRate']['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $fee;
+                                            $quotes[$carName][$locId]['fedexOneRate']['q'][$key]['boxFees']['Amount'] = $fee;
+                                        }
+                                    }
+                                    if (isset($qs['NegotiatedRates']['Amount'])) {
+                                        if ($fee != 0) {
+                                            $quotes[$carName][$locId]['fedexOneRate']['q'][$key]['NegotiatedRates']['Amount'] = $qs['NegotiatedRates']['Amount'] + $fee;
+                                            $quotes[$carName][$locId]['fedexOneRate']['q'][$key]['boxFees']['Amount'] = $fee;
+                                        }
+                                    }
+                                }
+                            }
+
+                            /*
+                             * Adds Box fee in SMart POst QUotes
+                             * */
+
+                            if (isset($q['smartPost']['q']['SMART_POST']['serviceType'])) {
+                                $fee = $this->getBoxFeeAccordingToService('smart_post', $fedexBoxesFee, $boxFee, $locId);
+                                if ($fee != 0) {
+                                    if (isset($quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['NegotiatedRates']['Amount'])) {
+                                        $quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['NegotiatedRates']['Amount'] = $quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['NegotiatedRates']['Amount'] + $fee;
+                                        // $quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['boxFees']['Amount'] = $fee;
+                                    }
+                                    if (isset($quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['totalNetCharge']['Amount'])) {
+                                        $quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['totalNetCharge']['Amount'] = $quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['totalNetCharge']['Amount'] + $fee;
+                                        //$quotes[$carName][$locId]['smartPost']['q']['SMART_POST']['boxFees']['Amount'] = $fee;
+                                    }
+                                }
+                            }
+                        }
+
+
+                        if (isset($q['q'])) {
+                            foreach ($q['q'] as $key => $qs) {
+                                if (isset($qs['totalNetCharge']['Amount'])) {
+                                    if (isset($boxFee[$locId])) {
+                                        $quotes[$carName][$locId]['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $boxFee[$locId];
+                                        $quotes[$carName][$locId]['q'][$key]['boxFees']['Amount'] = $boxFee[$locId];
                                     }
                                 }
                             }
@@ -630,12 +640,17 @@ class Shipping
                     }
                 }
             }
-            return $quotes;
+        }
+        return $quotes;
     }
 
-    public
-    function getBoxFeeAccordingToService($serviceType, $fedexBoxFee, $boxFee, $locId, $oneRate = false)
-    {
+    public function getBoxFeeAccordingToService(
+        $serviceType,
+        $fedexBoxFee,
+        $boxFee,
+        $locId,
+        $oneRate = false
+    ) {
         $commonBoxFee = $boxFee[$locId] ?? 0;
         if ($oneRate) {
             $fee = $fedexBoxFee[$locId]['oneRate'] ?? $commonBoxFee;
@@ -650,7 +665,7 @@ class Shipping
     private function getCumulativeBoxFee($bins, $usps = false): float
     {
         if ($usps) {
-            $bins = (object)$bins;
+            $bins = (object) $bins;
         }
         $boxFee = 0;
         if (!empty($bins->bins_packed)) {
@@ -667,9 +682,9 @@ class Shipping
         return $boxFee;
     }
 
-    private
-    function BoxFeeByID(int $boxId)
-    {
+    private function BoxFeeByID(
+        int $boxId
+    ) {
         if (BoxSize::where('id', $boxId)->exists()) {
             return BoxSize::find($boxId)->pluck('box_fee')->first();
         }
@@ -677,8 +692,16 @@ class Shipping
     }
 
     public
-    function orderWidgetSave($lineItems, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes = null)
-    {
+        function orderWidgetSave(
+        $lineItems,
+        $requestArr,
+        $quotes,
+        $finalQuotes,
+        $resp,
+        $cartInfo,
+        $boxbins,
+        $multiShipmentQuotes = null
+    ) {
         if (!blank($this->dbscRates)) {
             $finalQuotes = array_merge($finalQuotes, $this->dbscRates);
         }
@@ -701,8 +724,9 @@ class Shipping
     }
 
     public
-    function addRateId($finalQuotes)
-    {
+        function addRateId(
+        $finalQuotes
+    ) {
         $time = time();
         foreach ($finalQuotes as $key => $finalQuote) {
             $finalQuotes[$key]['rate_id'] = isset($finalQuote['code']) ? $finalQuote['code'] . 'idx+' . $key . $time : $time;
@@ -711,8 +735,9 @@ class Shipping
     }
 
     public
-    function checkInstorePickup($origin)
-    {
+        function checkInstorePickup(
+        $origin
+    ) {
         if (count($origin) > 1) {
             $whIDs = [];
             foreach ($origin as $wh) {
@@ -735,8 +760,9 @@ class Shipping
      * to enable hazmat property for Api
      */
     public
-    function isHazmatMaterial($items)
-    {
+        function isHazmatMaterial(
+        $items
+    ) {
         $hazmatAllItems = [];
         foreach ($items['items'] as $key => $item) {
             if (isset($item['isHazmatLineItem']) && $item['isHazmatLineItem'] == 'Y') {
@@ -751,8 +777,9 @@ class Shipping
     }
 
     private
-    function checkIndividualHazmat($request)
-    {
+        function checkIndividualHazmat(
+        $request
+    ) {
         // TODO: Need to Add small and Ltl Carriers Here as well
 
         $smallOrigins = $marketItemSmall = $request['carriers']['wweSmall']['originAddress'] ?? $request['carriers']['upsSmall']['originAddress'] ?? $request['carriers']['fedexSmall']['originAddress'] ?? $request['carriers']['unishippersSmall']['originAddress'] ?? $request['carriers']['usps']['originAddress'] ?? $request['carriers']['purolator']['originAddress'] ?? [];
@@ -785,8 +812,9 @@ class Shipping
      * to enable insurance property for Api
      */
     public
-    function isInsurance($items)
-    {
+        function isInsurance(
+        $items
+    ) {
         foreach ($items['items'] as $key => $item) {
             if (isset($item['product_insurance_active']) && $item['product_insurance_active'] === 1) {
                 $this->isInsurance = 'Y';
@@ -798,8 +826,8 @@ class Shipping
      * @return array
      */
     public
-    function getAllowedMethods()
-    {
+        function getAllowedMethods(
+    ) {
         return [$this->_code => $this->getConfigData('name')];
     }
 
@@ -808,14 +836,16 @@ class Shipping
      * @return array
      */
     public
-    function setCarrierRates($quotes)
-    {
+        function setCarrierRates(
+        $quotes
+    ) {
         return $quotes = $quotes ?? [];
     }
 
     public
-    function generateQuoteFormatResponse($quotes)
-    {
+        function generateQuoteFormatResponse(
+        $quotes
+    ) {
         $onlyDbscEnabled = false;
         if (empty(array_filter($quotes)) && isset($this->dbscRates) && !empty($this->dbscRates)) {
             $onlyDbscEnabled = true;
@@ -825,7 +855,7 @@ class Shipping
         $quotes = array_values($quotes);
         $current = str_replace(' ', 'T', Carbon::now()) . "-00:00";
         if (!empty(array_filter($quotes))) {
-            $resp['quote_id'] = (string)rand(1, 9); // need to change
+            $resp['quote_id'] = (string) rand(1, 9); // need to change
             $resp['messages'] = []; // need to change
 
             if (!$onlyDbscEnabled) {
@@ -992,8 +1022,9 @@ class Shipping
     }
 
     public
-    function limitTitle($quote)
-    {
+        function limitTitle(
+        $quote
+    ) {
         $res = $quote['title'];
         if (strpos($res, Functions::$ltlPrefix) !== false) {
             $res = str_replace(Functions::$ltlPrefix, '', $res);
@@ -1020,8 +1051,10 @@ class Shipping
      * @return object|array
      */
     public
-    function sendCurlRequest($url, $postData)
-    {
+        function sendCurlRequest(
+        $url,
+        $postData
+    ) {
         Log::info('$postData ' . json_encode($postData));
         $fieldString = http_build_query($postData);
         try {
@@ -1043,8 +1076,9 @@ class Shipping
     }
 
     public
-    function isSmall($carrier)
-    {
+        function isSmall(
+        $carrier
+    ) {
         $smallCarriers = ['wweSmall', 'upsSmall', 'fedexSmall', 'unishippersSmall'];
         return in_array($carrier, $smallCarriers);
     }
