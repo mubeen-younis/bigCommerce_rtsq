@@ -146,8 +146,10 @@ class QuotesResults
             Log::info('Origin Quotes ' . json_encode($quote));
 
             if ((isset($quote['severity']) || (isset($quote['q']) && empty($quote['q'])) || (!isset($quote['q']) && !empty($quote['InstorPickupLocalDelivery'])))) {
+                Log::info('Instore quotes ' . json_encode($quote));
                 return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
+            Log::info('Not suppressed');
 
             if ($count == 0) { //To be checked only once
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
