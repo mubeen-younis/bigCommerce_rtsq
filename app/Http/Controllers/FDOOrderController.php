@@ -30,7 +30,6 @@ class FDOOrderController extends Controller
 
             }
             $order = $this->getBCOrderByID($storeHash, $orderId);
-            dd(33, $order);
             if (blank($order['order_detail'])) {
                 return Helpers::sendJsonResponseFdo(true, 'No Order Detail Found From BigCommerce');
             }
@@ -40,7 +39,6 @@ class FDOOrderController extends Controller
             }
             return Helpers::sendJsonResponseFdo(false, '', $orderDetail);
         } catch (\Exception $exception) {
-            dd(33, $exception);
             return Helpers::sendJsonResponseFdo(true, 'Something went wrong', ['exception' => $exception->getMessage(),
                 'line' => $exception->getLine()]);
         }
