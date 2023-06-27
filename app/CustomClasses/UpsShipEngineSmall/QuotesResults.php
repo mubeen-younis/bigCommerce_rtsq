@@ -307,7 +307,7 @@ class QuotesResults
             foreach ($shipments as $shipment => $quotes) {
                 $temp = [];
                 if (!isset($quotes['q'])) {
-                    return [];
+                    continue;
                 }
 
                 foreach ($quotes['q'] as $key => $quote) {
