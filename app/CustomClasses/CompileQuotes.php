@@ -288,6 +288,7 @@ class CompileQuotes
      */
     public function inStoreLocalDeliveryQuotes($quotesArray, $inStoreLd, $allOrigins)
     {
+        Log::info('All origins ' . json_encode($allOrigins));
         $count = 0;
         foreach ($allOrigins as $array) {
             if ($count == 1) {
@@ -295,6 +296,7 @@ class CompileQuotes
             }
             $count++;
             $warehouseData = $this->getWarehouseData($array);
+            Log::info('Warehouse data ' . json_encode($warehouseData));
 
             /**
              * Quotes array only to be made empty if Suppress other rates is ON and In-store
@@ -316,8 +318,11 @@ class CompileQuotes
                 $quotesArray = [];
             }
 
+            Log::info('Before instore script ' . json_encode($inStoreLd));
+
             if (isset($inStoreLd['inStorePickup']['status']) && $inStoreLd['inStorePickup']['status'] == 1) {
                 $title = $warehouseData['inStoreTitle'] ?? '';
+                Log::info('inside instore script ' . json_encode($title));
 
                 if (isset($inStoreLd['totalDistance']) && $inStoreLd['totalDistance'] > 0) {
                     $title .= " | " . $inStoreLd['totalDistance'] . " away ";
@@ -336,6 +341,7 @@ class CompileQuotes
             }
 
             if (isset($inStoreLd['localDelivery']['status']) && $inStoreLd['localDelivery']['status'] == 1) {
+                Log::info('inside local script ' . json_encode($inStoreLd));
                 $quotesArray[] = [
                     'code' => 'LOCDEL',
                     'rate' => $warehouseData['fee_local_delivery'] ?? 0,
@@ -344,6 +350,7 @@ class CompileQuotes
                 ];
             }
         }
+        Log::info('quotes array after instore ' . json_encode($quotesArray));
         return $quotesArray;
     }
 
