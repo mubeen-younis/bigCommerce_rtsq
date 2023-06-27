@@ -7,6 +7,7 @@ namespace App\CustomClasses\UpsShipEngineSmall;
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
 use App\CustomClasses\Functions;
+use Illuminate\Support\Facades\Log;
 
 class QuotesResults
 {
@@ -145,7 +146,8 @@ class QuotesResults
 
             if ((isset($quote['severity']) || (isset($quote['q']) && empty($quote['q'])) || (!isset($quote['q']) && !empty($quote['InstorPickupLocalDelivery'])))) {
                 $allQuotes = $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);
-                $returnResp['resp'] = $allQuotes;
+                Log::info('All quotes inside local delivery ' . json_encode($allQuotes));
+                $returnResp['resp']['checkoutQuotes'] = $allQuotes;
                 return $returnResp;
             }
 
