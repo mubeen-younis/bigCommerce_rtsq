@@ -331,20 +331,26 @@ class QuotesResults
     public function getServiceNameByCode($code)
     {
         $upsShipEngineServices = [
-            "ups_ground" => "UPS Ground",
-            "ups_2nd_day_air" => "UPS 2nd Day Air",
-            "ups_next_day_air_saver" => "UPS Next Day Air Saver",
-            "ups_next_day_air" => "UPS Next Day Air",
-            "ups_standard" => "UPS Standard",
-            "ups_next_day_air_early_am" => "UPS Next Day Air Early",
-            "ups_2nd_day_air_am" => "UPS 2nd Day Air AM",
-            "ups_3_day_select" => "UPS 3 Day Select",
-            "ups_worldwide_express" => "UPS Worldwide Express",
-            "ups_worldwide_expedited" => "UPS Worldwide Expedited",
-            "ups_worldwide_saver" => "UPS Worldwide Saver",
-            "ups_standard_international" => "UPS Standard",
-            "ups_ground_international" => "UPS Ground (International)",
-            "ups_worldwide_express_plus" => "UPS Worldwide Express Plus",
+            "ups_ground" => "UPS Ground®", //1
+            "ups_2nd_day_air" => "UPS 2nd Day Air®",
+            //1
+            "ups_next_day_air_saver" => "UPS Next Day Air Saver®",
+            //1
+            "ups_next_day_air" => "UPS Next Day Air®",
+            //1
+            "ups_standard" => "UPS Standard®",
+            "ups_next_day_air_early_am" => "UPS Next Day Air® Early",
+            //1
+            "ups_2nd_day_air_am" => "UPS 2nd Day Air AM®",
+            //1
+            "ups_3_day_select" => "UPS 3 Day Select®",
+            //1
+            "ups_worldwide_express" => "UPS Worldwide Express®",
+            "ups_worldwide_expedited" => "UPS Worldwide Expedited®",
+            "ups_worldwide_saver" => "UPS Worldwide Saver®",
+            "ups_standard_international" => "UPS Standard®",
+            "ups_ground_international" => "UPS Ground® (International)",
+            "ups_worldwide_express_plus" => "UPS Worldwide Express Plus®",
         ];
         return $upsShipEngineServices[$code] ?? null;
 
