@@ -7,7 +7,6 @@ namespace App\CustomClasses\UpsShipEngineSmall;
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
 use App\CustomClasses\Functions;
-use Illuminate\Support\Facades\Log;
 
 class QuotesResults
 {
@@ -143,13 +142,12 @@ class QuotesResults
         $carrierCode = "shipEng";
 
         foreach ($shipments as $origin => $quote) {
-            Log::info('Origin Quotes ' . json_encode($quote));
 
             if ((isset($quote['severity']) || (isset($quote['q']) && empty($quote['q'])) || (!isset($quote['q']) && !empty($quote['InstorPickupLocalDelivery'])))) {
-                Log::info('Instore quotes ' . json_encode($quote));
-                return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);
+                $allQuotes = $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);
+                $returnResp['resp'] = $allQuotes;
+                return $returnResp;
             }
-            Log::info('Not suppressed');
 
             if ($count == 0) { //To be checked only once
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
@@ -307,7 +305,7 @@ class QuotesResults
             foreach ($shipments as $shipment => $quotes) {
                 $temp = [];
                 if (!isset($quotes['q'])) {
-                    continue;
+                    return [];
                 }
 
                 foreach ($quotes['q'] as $key => $quote) {
