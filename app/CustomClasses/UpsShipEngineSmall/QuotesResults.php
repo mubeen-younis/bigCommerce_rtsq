@@ -206,7 +206,8 @@ class QuotesResults
 
                     $title = $this->getServiceTitle($data['serviceDesc'], $data, $this->quoteSettings, $residential);
                     $price = (float) str_replace(',', '', $price);
-                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12' . $carrierCode . $serviceCode . $access2;
+                    $shortServiceCode = $this->getShortCodesOfService($serviceCode);
+                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12' . $carrierCode . $shortServiceCode . $access2;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
 
@@ -331,20 +332,14 @@ class QuotesResults
     public function getServiceNameByCode($code)
     {
         $upsShipEngineServices = [
-            "ups_ground" => "UPS Ground®", //1
+            "ups_ground" => "UPS Ground®",
             "ups_2nd_day_air" => "UPS 2nd Day Air®",
-            //1
             "ups_next_day_air_saver" => "UPS Next Day Air Saver®",
-            //1
             "ups_next_day_air" => "UPS Next Day Air®",
-            //1
             "ups_standard" => "UPS Standard®",
             "ups_next_day_air_early_am" => "UPS Next Day Air® Early",
-            //1
             "ups_2nd_day_air_am" => "UPS 2nd Day Air AM®",
-            //1
             "ups_3_day_select" => "UPS 3 Day Select®",
-            //1
             "ups_worldwide_express" => "UPS Worldwide Express®",
             "ups_worldwide_expedited" => "UPS Worldwide Expedited®",
             "ups_worldwide_saver" => "UPS Worldwide Saver®",
@@ -354,6 +349,29 @@ class QuotesResults
         ];
         return $upsShipEngineServices[$code] ?? null;
 
+
+    }
+
+
+    public function getShortCodesOfService($code)
+    {
+        $upsShipEngineServices = [
+            "ups_ground" => "03",
+            "ups_2nd_day_air" => "02",
+            "ups_next_day_air_saver" => "01",
+            "ups_next_day_air" => "04",
+            "ups_standard" => "05",
+            "ups_next_day_air_early_am" => "06",
+            "ups_2nd_day_air_am" => "07",
+            "ups_3_day_select" => "08",
+            "ups_worldwide_express" => "09",
+            "ups_worldwide_expedited" => "10",
+            "ups_worldwide_saver" => "11",
+            "ups_standard_international" => "12",
+            "ups_ground_international" => "13",
+            "ups_worldwide_express_plus" => "14",
+        ];
+        return $upsShipEngineServices[$code] ?? "00";
 
     }
 
