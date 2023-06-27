@@ -7,6 +7,7 @@ namespace App\CustomClasses\UpsShipEngineSmall;
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
 use App\CustomClasses\Functions;
+use Illuminate\Support\Facades\Log;
 
 class QuotesResults
 {
