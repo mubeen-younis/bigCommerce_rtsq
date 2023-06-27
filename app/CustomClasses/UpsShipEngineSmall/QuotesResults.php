@@ -137,7 +137,7 @@ class QuotesResults
 
         foreach ($shipments as $origin => $quote) {
 
-            if ((isset($quote['severity']) || (isset($quote['q']) && empty($quote['q'])))) {
+            if ((isset($quote['severity']) || (isset($quote['q']) && empty($quote['q'])) || (!isset($quote['q']) && !empty($quote['InstorPickupLocalDelivery'])))) {
                 return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
