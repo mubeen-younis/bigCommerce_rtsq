@@ -2029,8 +2029,6 @@ class GenerateRequestData
             'storeDateTime' => $this->storeDateTime,
             'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
             'residentialDelivery' => ($alwaysResi || $residential == 'Y') ? 'yes' : 'no',
-            //TODO: Need to check why is that
-            'includeDeclaredValue' => "1",
             'prefferedCurrency' => 'USD',
 
         ];

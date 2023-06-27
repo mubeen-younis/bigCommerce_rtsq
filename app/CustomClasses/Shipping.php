@@ -156,7 +156,7 @@ class Shipping
                     ],
                 ];
             }
-            if ($this->isInsurance === 'Y' && $key == 'wweLTL') {
+            if ($this->isInsurance === 'Y' && ($key == 'wweLTL' || $key == 'shipEngine')) {
                 if ($this->isSmall($key)) {
                     $carriersArray['carriers'][$key]['api']['includeDeclaredValue'] = 1;
                 } else {
@@ -1082,7 +1082,7 @@ class Shipping
         function isSmall(
         $carrier
     ) {
-        $smallCarriers = ['wweSmall', 'upsSmall', 'fedexSmall', 'unishippersSmall'];
+        $smallCarriers = ['wweSmall', 'upsSmall', 'fedexSmall', 'unishippersSmall', 'shipEngine'];
         return in_array($carrier, $smallCarriers);
     }
 }
