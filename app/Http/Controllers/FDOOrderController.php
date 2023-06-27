@@ -39,7 +39,8 @@ class FDOOrderController extends Controller
             }
             return Helpers::sendJsonResponseFdo(false, '', $orderDetail);
         } catch (\Exception $exception) {
-            return Helpers::sendJsonResponseFdo(true, 'Something went wrong', ['exception' => $exception->getMessage()]);
+            return Helpers::sendJsonResponseFdo(true, 'Something went wrong', ['exception' => $exception->getMessage(),
+                'line' => $exception->getLine()]);
         }
     }
 
