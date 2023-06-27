@@ -82,18 +82,24 @@ class QuotesResults
         if ($isResi) {
             $title = $title . Constant::RESI_LABEL;
         }
-        if (
-            isset($data['totalTransitTimeInDays']) && $data['totalTransitTimeInDays'] !== '' &&
-            isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2
-        ) {
-            $title = $title . ' (Intransit days: ' . $data['totalTransitTimeInDays'] . ')';
-        } else if (
-            isset($data['estimated_delivery_date']) && $data['estimated_delivery_date'] !== '' &&
-            isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3
-        ) {
-            $title = $title . ' (Expected delivery by ' . date('m-d-Y', strtotime($data['estimated_delivery_date'])) . ')';
+
+        try {
+            if (
+                isset($data['totalTransitTimeInDays']) && $data['totalTransitTimeInDays'] !== '' &&
+                isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2
+            ) {
+                $title = $title . ' (Intransit days: ' . $data['totalTransitTimeInDays'] . ')';
+            } else if (
+                isset($data['estimated_delivery_date']) && $data['estimated_delivery_date'] !== '' &&
+                isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3
+            ) {
+                $title = $title . ' (Expected delivery by ' . date('h:i A m-d-Y', strtotime($data['estimated_delivery_date'])) . ')';
+            }
+            return $title;
+        } catch (\Exception $exception) {
+            return $title;
         }
-        return $title;
+
     }
 
     public function checkGroundTransit($quote, $quoteSettings)
