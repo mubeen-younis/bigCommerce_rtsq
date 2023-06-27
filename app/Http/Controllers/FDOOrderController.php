@@ -237,7 +237,6 @@ class FDOOrderController extends Controller
             $sName = $shipping_name[0] ?? '';
             $sName = explode('w/', $sName)[0] ?? '';
             $sMethod = isset($shipping_name[1]) ? '(' . $shipping_name[1] : '';
-
             $quotes = optional($responseFromWS)->$wsCarrierCode->$zip;
             $sName = Functions::get3plServiceName($sName, $rateId, $origin, $quotes);
 
