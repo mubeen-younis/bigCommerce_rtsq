@@ -760,7 +760,9 @@ class GenerateRequestData
                 $carriers = $multiplePackaging['carriers'];
 
                 $olditemsArr = $itemsArr;
-                $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ?? $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? $carriers['usps']['originAddress'] ?? $carriers['purolator']['originAddress'] ?? [];
+                $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ??
+                 $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? $carriers['usps']['originAddress'] ??
+                  $carriers['purolator']['originAddress'] ?? $carriers['shipEngine']['originAddress'] ?? "";
 
                 if (isset($carriers['fedexSmall'])) {
                     $this->checkServiceEnabled();
