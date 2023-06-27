@@ -142,6 +142,7 @@ class QuotesResults
         $carrierCode = "shipEng";
 
         foreach ($shipments as $origin => $quote) {
+            Log::info('Origin Quotes ' . json_encode($quote));
 
             if ((isset($quote['severity']) || (isset($quote['q']) && empty($quote['q'])) || (!isset($quote['q']) && !empty($quote['InstorPickupLocalDelivery'])))) {
                 return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);
@@ -303,7 +304,7 @@ class QuotesResults
             foreach ($shipments as $shipment => $quotes) {
                 $temp = [];
                 if (!isset($quotes['q'])) {
-                    return [];
+                    continue;
                 }
 
                 foreach ($quotes['q'] as $key => $quote) {
