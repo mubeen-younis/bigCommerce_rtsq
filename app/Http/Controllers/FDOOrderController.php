@@ -30,6 +30,7 @@ class FDOOrderController extends Controller
 
             }
             $order = $this->getBCOrderByID($storeHash, $orderId);
+            dd(33, $order);
             if (blank($order['order_detail'])) {
                 return Helpers::sendJsonResponseFdo(true, 'No Order Detail Found From BigCommerce');
             }
