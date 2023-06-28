@@ -117,7 +117,7 @@ class ProductSetting extends Model
 
             if (blank($saveProduct)) {
                 $saveProduct = new ProductSetting();
-
+                Log::info("product: " . json_encode($product));
                 $storeSettings = $this->getStoreSettings($storeId);
                 $prodWeight = $this->convertWeight(isset($product['weight']) ? $product['weight'] : '', isset($storeSettings['weight_units']) ? strtolower($storeSettings['weight_units']) : 'lbs') ?? 0;
                 /*Start - Added FOr Default Quoting Method*/
