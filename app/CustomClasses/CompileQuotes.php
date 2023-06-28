@@ -2841,7 +2841,6 @@ class CompileQuotes
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12wwe' . $data['serviceType'] . $access;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
-                    $multiShipmentQuotes['simple'][$origin] = $originQuotes[$shipmentCount]['shipment'][$key]['simple'];
                 }
             }
             $shipmentCount++;
@@ -2855,6 +2854,9 @@ class CompileQuotes
                 $netChargeArray = array_column($shipment['shipment'], 'simple');
                 $minValueFromNetChargeArr = min(array_column($netChargeArray, 'rate'));
                 $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
+                $keys = array_column($netChargeArray, 'rate');
+                array_multisort($keys, SORT_ASC, $netChargeArray);
+                $multiShipmentQuotes['simple'][$shipmentKey] = array_values($netChargeArray)[0];
                 $originQuotesMulti[0]['code'] = $this->isResi || $this->alwaysResi ? 'Multi+R' : 'Multi';
                 $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
                 $originQuotesMulti[0]['title'] = $this->isResi ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
