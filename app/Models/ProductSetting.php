@@ -70,7 +70,7 @@ class ProductSetting extends Model
                 $saveProduct = new ProductSetting();
 
                 $storeSettings = $this->getStoreSettings($storeId);
-                $prodWeight = $this->convertWeight(isset($product['weight']) ? $product['weight'] : '', isset($storeSettings['weight_units']) ? strtolower($storeSettings['weight_units']) : 'lbs') ?? 0;
+                $prodWeight = $this->convertWeight(isset($product['weight']) ? (float)$product['weight'] : '', isset($storeSettings['weight_units']) ? strtolower($storeSettings['weight_units']) : 'lbs') ?? 0;
                 /*Start - Added FOr Default Quoting Method*/
                 $productSettings = new stdClass();
                 if (!empty($product['weight']) && $prodWeight > 150) {
@@ -177,7 +177,7 @@ class ProductSetting extends Model
     }
 
     public function convertWeight($value, $unit)
-    {
+    {Log::info('convert weight ' . $value . " " . $unit);
         switch ($unit) {
             case 'ounces' :
                 return $value / 16;
