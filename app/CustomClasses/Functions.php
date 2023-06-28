@@ -81,7 +81,7 @@ class Functions
 
     public static function getCarrierNameOrCode($code, $getWsCode = 0): ?string
     {
-        $carrierCodes = ['wweltl', 'rnlltl', 'xpoltl', 'fedexltl', 'gtzltl', 'yrcltl', 'cltl', 'upsltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship',
+        $carrierCodes = ['wweltl', 'rnlltl', 'xpoltl', 'fedexltl', 'gtzltl', 'yrcltl', 'cltl', 'upsltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship', 'parcel_12shipEng',
             'fqltl', 'estesltl', 'dayrossltl', 'odflltl', 'saialtl', 'parcel_12Purolator', 'abfltl', 'SouthEastern', 'parcel_12usps', 'tqlltl', 'echoltl', 'daylightltl', 'fqchrltl'];
         foreach ($carrierCodes as $carrierCode) {
             if (strpos($code, $carrierCode) !== false) {
@@ -100,6 +100,7 @@ class Functions
         $carrierCodesWithName = ['wweltl' => 'wweLTL', 'rnlltl' => 'rnl', 'xpoltl' => 'xpoLogistics', 'upsltl' => 'upsLTL',
             'fedexltl' => 'fedexLTL', 'yrcltl' => 'yrc', 'gtzltl' => 'globalTranz', 'cltl' => 'cerasis',
             'parcel_12wwe' => 'wweSmall', 'parcel_12ups' => 'upsSmall', 'parcel_12fd' => 'fedexSmall', 'parcel_12uniship' => 'unishippersSmall',
+            'parcel_12shipEng' => 'shipEngine',
             'fqltl' => 'freightQuote', 'estesltl' => 'estesLtl', 'dayrossltl' => 'dayross', 'odflltl' => 'OdflLTL', 'saialtl' => 'saia', 'parcel_12Purolator' => 'purolator', 'abfltl' => 'abf',
             'SouthEastern' => 'southeastern', 'parcel_12usps' => 'usps', 'tqlltl' => 'tql', 'echoltl' => 'echoLogistics', 'daylightltl' => 'daylight', 'chr' => 'chr', 'fqchrltl' => 'chr'];
         return $carrierCodesWithName[$carrierCode] ?? null;
@@ -110,6 +111,7 @@ class Functions
         $carrierCodesWithName = ['wweltl' => 'Worldwide Express LTL', 'upsltl' => 'UPS LTL', 'rnlltl' => 'R&L Carriers', 'xpoltl' => 'XPO Logistics',
             'fedexltl' => 'FedEx LTL', 'gtzltl' => 'GlobalTranz LTL', 'cltl' => 'Cerasis Ltl',
             'parcel_12wwe' => 'Worldwide Express Small', 'parcel_12ups' => 'UPS Small', 'parcel_12fd' => 'FedEx Small', 'parcel_12uniship' => 'Unishippers Small',
+            'parcel_12shipEng' => 'UPS via ShipEngine',
             'fqltl' => 'Freight Quote', 'fqchrltl' => 'C.H. Robinson', 'parcel_12Purolator' => 'Purolator Small', 'parcel_12usps' => 'United State Postal Service',
             'tqlltl' => 'Total Quality Logistics', 'yrcltl' => 'YRC Freight', 'odflltl' => 'Old Dominion Freight Lines', 'dayrossltl' => 'Day & Ross Ltl',
             'estesltl' => 'Estes Express Ltl', 'echoltl' => 'Echo Global Logistics', 'saialtl' => 'SAIA LTL Freight', 'abfltl' => 'ABF Freight', 'daylightltl' => 'DayLight LTL Freight',
@@ -167,7 +169,7 @@ class Functions
 
     public static function isSmallCarrier($code)
     {
-        $carriers = ['parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship', 'parcel_12usps', 'parcel_12Purolator'];
+        $carriers = ['parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship', 'parcel_12usps', 'parcel_12Purolator', 'parcel_12shipEng'];
         foreach ($carriers as $carrier) {
             if (strpos($code, $carrier) !== false) {
                 return true;
@@ -669,7 +671,7 @@ class Functions
     {
         $CompileQuotes = new CompileQuotes();
         $serviceCode = !($carrName == 'SouthEastern' || $carrName == 'yrcltl' || $carrName == 'upsltl' || $carrName == 'saialtl' || $carrName == 'fedexltl' || $carrName == 'tqlltl' || $carrName == 'abfltl' || $carrName == 'daylightltl' || $carrName == 'dayrossltl') && isset($data['serviceType']) ? $data['serviceType'] : '';
-        $serviceCode =  $data['ratquoteNumber'] ?? $data['scac'] ?? $data['CarrierSCAC'] ?? $serviceCode;
+        $serviceCode = $data['ratquoteNumber'] ?? $data['scac'] ?? $data['CarrierSCAC'] ?? $serviceCode;
 
         $isUpsLtl = false;
         if ($carrName === 'upsltl') {
@@ -682,11 +684,11 @@ class Functions
         $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, $isUpsLtl, $insideDelivery, $laccess, false, false, $notifyDelivery, $originKey, $items, $allOrigins, $quoteSettings);
         $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, $insideDelivery, $laccess, false, false, false, false, $notifyDelivery, $isResi);
 
-        if($isQuickestSer){
-            $explodTitle = explode('w/' , $ndTitle);
-            if(!isset($explodTitle[1])){
-                $explodTitle = explode('(' , $ndTitle)[1] ?? '';
-                $explodTitle = empty($explodTitle) ? '' : ' ('. $explodTitle;
+        if ($isQuickestSer) {
+            $explodTitle = explode('w/', $ndTitle);
+            if (!isset($explodTitle[1])) {
+                $explodTitle = explode('(', $ndTitle)[1] ?? '';
+                $explodTitle = empty($explodTitle) ? '' : ' (' . $explodTitle;
                 $titleQuickest = $quickLabelAs . $explodTitle;
             } else {
                 $explodTitle = $explodTitle[1];
@@ -798,37 +800,38 @@ class Functions
         return $hatShipments;
     }
 
-    // Make Enabled Features Array for compiling Quotes and Order Widget 
+    // Make Enabled Features Array for compiling Quotes and Order Widget
     public static function getEnableFeaturesArr($lgQuotes = false, $insideDelivery = false, $notifyDelivery = false, $limitedAccess = false)
-    {   /**
-        * Create Enabled Features Combinations Array and Make Sure Array Created In Ascendind Order,
-        * If Not in Ascending Order It will Create Incorrect Order Widget
-        **/
+    {
+        /**
+         * Create Enabled Features Combinations Array and Make Sure Array Created In Ascendind Order,
+         * If Not in Ascending Order It will Create Incorrect Order Widget
+         **/
         $enableFeaturesArray = [
             'simple' => [
-                'isEnable' => true, 
+                'isEnable' => true,
                 'index' => [],
             ],
             'liftgate' => [
-                'isEnable' => $lgQuotes, 
+                'isEnable' => $lgQuotes,
                 'index' => [
                     'isLG' => $lgQuotes,
                 ],
             ],
             'insideDelivery' => [
-                'isEnable' => $insideDelivery, 
+                'isEnable' => $insideDelivery,
                 'index' => [
                     'isID' => $insideDelivery,
                 ],
             ],
             'notifydelivery' => [
-                'isEnable' => $notifyDelivery, 
+                'isEnable' => $notifyDelivery,
                 'index' => [
                     'isNBD' => $notifyDelivery,
                 ],
             ],
             'limitedaccess' => [
-                'isEnable' => $limitedAccess, 
+                'isEnable' => $limitedAccess,
                 'index' => [
                     'isLAD' => $limitedAccess,
                 ],
@@ -836,82 +839,82 @@ class Functions
             'insideLiftGateDelivery' => [
                 'isEnable' => $insideDelivery && $lgQuotes,
                 'index' => [
-                    'isID' => $insideDelivery, 
+                    'isID' => $insideDelivery,
                     'isLG' => $lgQuotes,
                 ],
             ],
             'lgnotifydelivery' => [
-                'isEnable' => $lgQuotes && $notifyDelivery, 
+                'isEnable' => $lgQuotes && $notifyDelivery,
                 'index' => [
-                    'isLG' => $lgQuotes, 
+                    'isLG' => $lgQuotes,
                     'isNBD' => $notifyDelivery,
                 ],
             ],
             'limitedaccessLG' => [
-                'isEnable' => $lgQuotes && $limitedAccess, 
+                'isEnable' => $lgQuotes && $limitedAccess,
                 'index' => [
-                    'isLG' => $lgQuotes, 
+                    'isLG' => $lgQuotes,
                     'isLAD' => $limitedAccess,
                 ],
             ],
             'insidenotifydelivery' => [
-                'isEnable' => $insideDelivery && $notifyDelivery, 
+                'isEnable' => $insideDelivery && $notifyDelivery,
                 'index' => [
-                    'isID' => $insideDelivery, 
+                    'isID' => $insideDelivery,
                     'isNBD' => $notifyDelivery,
                 ],
             ],
             'laccessinsidedelivery' => [
-                'isEnable' => $insideDelivery && $limitedAccess, 
+                'isEnable' => $insideDelivery && $limitedAccess,
                 'index' => [
-                    'isID' => $insideDelivery, 
+                    'isID' => $insideDelivery,
                     'isLAD' => $limitedAccess,
                 ],
             ],
             'laccessnotifydelivery' => [
-                'isEnable' => $limitedAccess && $notifyDelivery, 
+                'isEnable' => $limitedAccess && $notifyDelivery,
                 'index' => [
-                    'isLAD' => $limitedAccess, 
+                    'isLAD' => $limitedAccess,
                     'isNBD' => $notifyDelivery,
                 ],
             ],
             'lginsidenotifydelivery' => [
-                'isEnable' => $lgQuotes && $insideDelivery && $notifyDelivery, 
+                'isEnable' => $lgQuotes && $insideDelivery && $notifyDelivery,
                 'index' => [
-                    'isLG' => $lgQuotes, 
-                    'isID' => $insideDelivery, 
+                    'isLG' => $lgQuotes,
+                    'isID' => $insideDelivery,
                     'isNBD' => $notifyDelivery,
                 ],
             ],
             'lglaccessnotifydelivery' => [
-                'isEnable' => $lgQuotes && $limitedAccess && $notifyDelivery, 
+                'isEnable' => $lgQuotes && $limitedAccess && $notifyDelivery,
                 'index' => [
-                    'isLG' => $lgQuotes, 
-                    'isLAD' => $limitedAccess, 
+                    'isLG' => $lgQuotes,
+                    'isLAD' => $limitedAccess,
                     'isNBD' => $notifyDelivery,
                 ],
             ],
             'lglaccessinsidedelivery' => [
-                'isEnable' => $lgQuotes && $limitedAccess && $insideDelivery, 
+                'isEnable' => $lgQuotes && $limitedAccess && $insideDelivery,
                 'index' => [
-                    'isLG' => $lgQuotes, 
-                    'isLAD' => $limitedAccess, 
+                    'isLG' => $lgQuotes,
+                    'isLAD' => $limitedAccess,
                     'isID' => $insideDelivery,
                 ],
             ],
             'laccessinsideNotifydelivery' => [
-                'isEnable' => $notifyDelivery && $limitedAccess && $insideDelivery, 
+                'isEnable' => $notifyDelivery && $limitedAccess && $insideDelivery,
                 'index' => [
-                    'isNBD' => $notifyDelivery, 
-                    'isLAD' => $limitedAccess, 
+                    'isNBD' => $notifyDelivery,
+                    'isLAD' => $limitedAccess,
                     'isID' => $insideDelivery,
                 ],
             ],
             'lglaccessinsideNotifydelivery' => [
-                'isEnable' => $lgQuotes && $limitedAccess && $insideDelivery && $notifyDelivery, 
+                'isEnable' => $lgQuotes && $limitedAccess && $insideDelivery && $notifyDelivery,
                 'index' => [
-                    'isLG' => $lgQuotes, 
-                    'isLAD' => $limitedAccess, 
+                    'isLG' => $lgQuotes,
+                    'isLAD' => $limitedAccess,
                     'isID' => $insideDelivery,
                     'isNBD' => $notifyDelivery,
                 ],
@@ -920,21 +923,21 @@ class Functions
 
         return $enableFeaturesArray;
     }
-    
+
     public static function get3plServiceName($sName, $rateId, $origin, $quotes)
     {
         if (!(isset($quotes->severity) && $quotes->severity == 'ERROR')) {
-            if(isset($quotes->q) && !empty($quotes->q)){
-                foreach($quotes->q as $quote){
-                    if(isset($quote->serviceType) && strpos($rateId, strtolower($quote->serviceType)) !== false){
+            if (isset($quotes->q) && !empty($quotes->q)) {
+                foreach ($quotes->q as $quote) {
+                    if (isset($quote->serviceType) && strpos($rateId, strtolower($quote->serviceType)) !== false) {
                         $sName = isset($quote->serviceDesc) ? $quote->serviceDesc . ' ' : $sName;
-                    } else if(isset($quote->scac) && strpos($rateId, strtolower($quote->scac)) !== false){
+                    } else if (isset($quote->scac) && strpos($rateId, strtolower($quote->scac)) !== false) {
                         $sName = isset($quote->carrier) ? $quote->carrier . ' ' : $sName;
-                    } else if(isset($quote->CarrierDetail->CarrierCode) && strpos($rateId, strtolower($quote->CarrierDetail->CarrierCode)) !== false){
+                    } else if (isset($quote->CarrierDetail->CarrierCode) && strpos($rateId, strtolower($quote->CarrierDetail->CarrierCode)) !== false) {
                         $sName = isset($quote->CarrierDetail->CarrierName) ? $quote->CarrierDetail->CarrierName . ' ' : $sName;
-                    } else if(isset($quote->CarrierScac) && strpos($rateId, strtolower($quote->CarrierScac)) !== false){
+                    } else if (isset($quote->CarrierScac) && strpos($rateId, strtolower($quote->CarrierScac)) !== false) {
                         $sName = isset($quote->CarrierName) ? $quote->CarrierName . ' ' : $sName;
-                    } else if(isset($quote->CarrierSCAC) && strpos($rateId, strtolower($quote->CarrierSCAC)) !== false){
+                    } else if (isset($quote->CarrierSCAC) && strpos($rateId, strtolower($quote->CarrierSCAC)) !== false) {
                         $sName = isset($quote->CarrierName) ? $quote->CarrierName . ' ' : $sName;
                     }
                 }

@@ -171,6 +171,7 @@ class OrderController extends Controller
                 return [];
             }
         }
+
         $carrierHasInsurance = $this->hasInsureCarrier($rateId);
         $index = explode('idx+', $rateId);
         if (is_string($index[0]) && $index[0] == "shippingGroup") {
@@ -182,6 +183,7 @@ class OrderController extends Controller
         }
 
         $index = explode('idx+', $rateId)[1];
+
         if (!empty($index)) {
             $index = strlen($index) <= 11 ? (int)substr($index, 0, 1) : (int)substr($index, 0, 2);
             // $index = (int)substr($index, 0, 1);
@@ -676,8 +678,7 @@ class OrderController extends Controller
         return $resp;
     }
 
-    public
-    function getBCOrderByID($request)
+    public function getBCOrderByID($request)
     {
         $store = Store::where('hash', $request['store_hash'])->first();
         if (empty($store)) {
@@ -708,8 +709,7 @@ class OrderController extends Controller
         return $resp;
     }
 
-    public
-    function getBCOrders($request)
+    public function getBCOrders($request)
     {
         $store = Store::where('hash', $request['store_hash'])->first();
         if (empty($store)) {
@@ -1171,10 +1171,9 @@ class OrderController extends Controller
         return in_array($quote, $small);
     }
 
-    private
-    function hasInsureCarrier($code)
+    private function hasInsureCarrier($code)
     {
-        $insureCarriers = ['wweltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship'];
+        $insureCarriers = ['wweltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship', 'parcel_12shipEng'];
         foreach ($insureCarriers as $insureCarrier) {
             if (strpos($code, $insureCarrier) !== false) {
                 return true;
@@ -1201,16 +1200,16 @@ class OrderController extends Controller
                         foreach ($quote as $loc => $code) {
                             $ratecode[$loc] = $code->code;
                         }
-                    } else if(strpos($rateId, 'NBD') !== false && $key === 'notifydelivery'){
-                        foreach($quote as $loc =>  $code){
+                    } else if (strpos($rateId, 'NBD') !== false && $key === 'notifydelivery') {
+                        foreach ($quote as $loc => $code) {
                             $ratecode[$loc] = $code->code;
                         }
-                    } else if(strpos($rateId, 'LGNBD') !== false && $key === 'lgnotifydelivery'){
-                        foreach($quote as $loc =>  $code){
+                    } else if (strpos($rateId, 'LGNBD') !== false && $key === 'lgnotifydelivery') {
+                        foreach ($quote as $loc => $code) {
                             $ratecode[$loc] = $code->code;
                         }
-                    } else if(strpos($rateId, 'ID') !== false && $key === 'insideDelivery'){
-                        foreach($quote as $loc =>  $code){
+                    } else if (strpos($rateId, 'ID') !== false && $key === 'insideDelivery') {
+                        foreach ($quote as $loc => $code) {
                             $ratecode[$loc] = $code->code;
                         }
                     } else if (strpos($rateId, 'LGID') !== false && $key === 'insideLiftGateDelivery') {

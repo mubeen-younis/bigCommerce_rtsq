@@ -163,45 +163,46 @@ class CarrierController extends Controller
             $installCarrier->plan_updated_at = now();
             $installCarrier->save();
 
-            if($carrier->slug == 'dbsc'){
-            
+            if ($carrier->slug == 'dbsc') {
+
                 $otherSettings = DbscOtherSettings::create();
-                $generalProfile = DbscShippingProfile::create(['p_nickname' => "General Profile", 
-                'store_id' => $request->store_id, 'is_general_profile' => 1,
-                'allow_all_classes' => 1
+                $generalProfile = DbscShippingProfile::create(['p_nickname' => "General Profile",
+                    'store_id' => $request->store_id, 'is_general_profile' => 1,
+                    'allow_all_classes' => 1
                 ]);
-    
+
             }
-            
-            $install_carrier=InstalledCarrier::find($installCarrier->id);
 
-            if($carrier->slug == "ltl-quotes" || $carrier->slug == "freightquote-ltl" || $carrier->slug == "tql-ltl" || $carrier->slug == "echo-ltl" || $carrier->slug == "freightquote-chr-ltl"){
+            $install_carrier = InstalledCarrier::find($installCarrier->id);
 
-                $services = CarrierServices::where("app_id" , $carrier->id)->pluck("speed_freight_carrierSCAC")->all();
-                $checked = $this->CheckedAllServices($installCarrier->id, $services,$request);
+            if ($carrier->slug == "ltl-quotes" || $carrier->slug == "freightquote-ltl" || $carrier->slug == "tql-ltl" || $carrier->slug == "echo-ltl" || $carrier->slug == "freightquote-chr-ltl") {
 
-            }else if($carrier->slug == "gtz-ltl"){
+                $services = CarrierServices::where("app_id", $carrier->id)->pluck("speed_freight_carrierSCAC")->all();
+                $checked = $this->CheckedAllServices($installCarrier->id, $services, $request);
+
+            } else if ($carrier->slug == "gtz-ltl") {
 
                 $GTZ = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
-                ->where('installed_carriers.id', $install_carrier->id)
-                ->whereNull('shopify_freights.store_id')
-                ->orderBy('speed_freight_carrierName')->pluck("speed_freight_carrierSCAC")->all();
+                    ->where('installed_carriers.id', $install_carrier->id)
+                    ->whereNull('shopify_freights.store_id')
+                    ->orderBy('speed_freight_carrierName')->pluck("speed_freight_carrierSCAC")->all();
 
                 $CRS = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
-                ->where('installed_carriers.id', $install_carrier->id)
-                ->where('shopify_freights.store_id', $store_id)
-                ->orderBy('speed_freight_carrierSCAC')->pluck("speed_freight_carrierName")->all();
+                    ->where('installed_carriers.id', $install_carrier->id)
+                    ->where('shopify_freights.store_id', $store_id)
+                    ->orderBy('speed_freight_carrierSCAC')->pluck("speed_freight_carrierName")->all();
 
                 $services = array(
-                "GTZ" => $GTZ,
-                "CRS" => $CRS,
+                    "GTZ" => $GTZ,
+                    "CRS" => $CRS,
                 );
 
-                $checked = $this->CheckedAllServices($installCarrier->id, $services,$request);
+                $checked = $this->CheckedAllServices($installCarrier->id, $services, $request);
             }
 
             $uspsSmall = 'usps-small';
-            if ($carrier->slug === $uspsSmall) {
+            $shipEngineSlug = 'ups-ship-engine';
+            if ($carrier->slug === $uspsSmall || $carrier->slug === $shipEngineSlug) {
                 $con = Connection::firstOrNew(['installed_carrier_id' => $installCarrier->id]);
 
                 $request['carrier_id'] = $installCarrier->id;
@@ -226,10 +227,10 @@ class CarrierController extends Controller
             'message' => "Carrier is not available at the moment",
         ], 200);
     }
-    
-    public function CheckedAllServices($installCarrier, $services,$request)
+
+    public function CheckedAllServices($installCarrier, $services, $request)
     {
-        $install_carrier=InstalledCarrier::find($installCarrier);
+        $install_carrier = InstalledCarrier::find($installCarrier);
         $settings = AdditionalCarrierTabSetting::firstOrNew(['installed_carrier_id' => $install_carrier->id, 'store_id' => $request->store_id]);
         $settings->installed_carrier_id = $install_carrier->id;
         $settings->store_id = $request->store_id;
