@@ -482,7 +482,6 @@ class Shipping
         }
 
 
-
     }
 
     private function getBinsByBoxType($type, $boxes)
@@ -496,10 +495,8 @@ class Shipping
         return [];
     }
 
-    public
-        function isSmallCarrier(
-        $carrierName
-    ) {
+    public function isSmallCarrier($carrierName)
+    {
         $smallCarriers = [
             'wweSmall',
             'upsSmall',
@@ -512,10 +509,8 @@ class Shipping
         return in_array($carrierName, $smallCarriers);
     }
 
-    public
-        function isLtlCarrier(
-        $carrierName
-    ) {
+    public function isLtlCarrier($carrierName)
+    {
         $ltlCarriers = [
             'wweLTL',
             'upsLTL',
@@ -528,10 +523,8 @@ class Shipping
         return in_array($carrierName, $ltlCarriers);
     }
 
-    private function addBoxFeeToQuotes(
-        array $quotes, array $boxFee,
-        $fedexBoxesFee = []
-    ): array {
+    private function addBoxFeeToQuotes($quotes, $boxFee, $fedexBoxesFee = [])
+    {
         $parcelCarName = ['wweSmall', 'upsSmall', 'fedexSmall', 'unishippersSmall', 'usps'];
         if (isset($quotes) && !empty($quotes)) {
             foreach ($quotes as $carName => $quot) {
@@ -650,7 +643,8 @@ class Shipping
         $boxFee,
         $locId,
         $oneRate = false
-    ) {
+    )
+    {
         $commonBoxFee = $boxFee[$locId] ?? 0;
         if ($oneRate) {
             $fee = $fedexBoxFee[$locId]['oneRate'] ?? $commonBoxFee;
@@ -665,7 +659,7 @@ class Shipping
     private function getCumulativeBoxFee($bins, $usps = false): float
     {
         if ($usps) {
-            $bins = (object) $bins;
+            $bins = (object)$bins;
         }
         $boxFee = 0;
         if (!empty($bins->bins_packed)) {
@@ -684,7 +678,8 @@ class Shipping
 
     private function BoxFeeByID(
         int $boxId
-    ) {
+    )
+    {
         if (BoxSize::where('id', $boxId)->exists()) {
             return BoxSize::find($boxId)->pluck('box_fee')->first();
         }
@@ -692,7 +687,7 @@ class Shipping
     }
 
     public
-        function orderWidgetSave(
+    function orderWidgetSave(
         $lineItems,
         $requestArr,
         $quotes,
@@ -701,7 +696,8 @@ class Shipping
         $cartInfo,
         $boxbins,
         $multiShipmentQuotes = null
-    ) {
+    )
+    {
         if (!blank($this->dbscRates)) {
             $finalQuotes = array_merge($finalQuotes, $this->dbscRates);
         }
@@ -723,10 +719,10 @@ class Shipping
         }
     }
 
-    public
-        function addRateId(
+    public function addRateId(
         $finalQuotes
-    ) {
+    )
+    {
         $time = time();
         foreach ($finalQuotes as $key => $finalQuote) {
             $finalQuotes[$key]['rate_id'] = isset($finalQuote['code']) ? $finalQuote['code'] . 'idx+' . $key . $time : $time;
@@ -734,10 +730,10 @@ class Shipping
         return $finalQuotes;
     }
 
-    public
-        function checkInstorePickup(
+    public function checkInstorePickup(
         $origin
-    ) {
+    )
+    {
         if (count($origin) > 1) {
             $whIDs = [];
             foreach ($origin as $wh) {
@@ -759,10 +755,10 @@ class Shipping
     /**
      * to enable hazmat property for Api
      */
-    public
-        function isHazmatMaterial(
+    public function isHazmatMaterial(
         $items
-    ) {
+    )
+    {
         $hazmatAllItems = [];
         foreach ($items['items'] as $key => $item) {
             if (isset($item['isHazmatLineItem']) && $item['isHazmatLineItem'] == 'Y') {
@@ -776,10 +772,10 @@ class Shipping
         return $hazmatAllItems;
     }
 
-    private
-        function checkIndividualHazmat(
+    private function checkIndividualHazmat(
         $request
-    ) {
+    )
+    {
         Log::info('checkIndividualHazmat' . json_encode($request));
         // TODO: Need to Add small and Ltl Carriers Here as well
 
@@ -814,10 +810,10 @@ class Shipping
     /**
      * to enable insurance property for Api
      */
-    public
-        function isInsurance(
+    public function isInsurance(
         $items
-    ) {
+    )
+    {
         foreach ($items['items'] as $key => $item) {
             if (isset($item['product_insurance_active']) && $item['product_insurance_active'] === 1) {
                 $this->isInsurance = 'Y';
@@ -828,9 +824,8 @@ class Shipping
     /**
      * @return array
      */
-    public
-        function getAllowedMethods(
-    ) {
+    public function getAllowedMethods()
+    {
         return [$this->_code => $this->getConfigData('name')];
     }
 
@@ -838,17 +833,17 @@ class Shipping
      * @param $quotes
      * @return array
      */
-    public
-        function setCarrierRates(
+    public function setCarrierRates(
         $quotes
-    ) {
+    )
+    {
         return $quotes = $quotes ?? [];
     }
 
-    public
-        function generateQuoteFormatResponse(
+    public function generateQuoteFormatResponse(
         $quotes
-    ) {
+    )
+    {
         $onlyDbscEnabled = false;
         if (empty(array_filter($quotes)) && isset($this->dbscRates) && !empty($this->dbscRates)) {
             $onlyDbscEnabled = true;
@@ -858,7 +853,7 @@ class Shipping
         $quotes = array_values($quotes);
         $current = str_replace(' ', 'T', Carbon::now()) . "-00:00";
         if (!empty(array_filter($quotes))) {
-            $resp['quote_id'] = (string) rand(1, 9); // need to change
+            $resp['quote_id'] = (string)rand(1, 9); // need to change
             $resp['messages'] = []; // need to change
 
             if (!$onlyDbscEnabled) {
@@ -1024,10 +1019,10 @@ class Shipping
         return $updatedRates;
     }
 
-    public
-        function limitTitle(
+    public function limitTitle(
         $quote
-    ) {
+    )
+    {
         $res = $quote['title'];
         if (strpos($res, Functions::$ltlPrefix) !== false) {
             $res = str_replace(Functions::$ltlPrefix, '', $res);
@@ -1053,11 +1048,11 @@ class Shipping
      * @param $postData
      * @return object|array
      */
-    public
-        function sendCurlRequest(
+    public function sendCurlRequest(
         $url,
         $postData
-    ) {
+    )
+    {
         Log::info('$postData ' . json_encode($postData));
         $fieldString = http_build_query($postData);
         try {
@@ -1078,10 +1073,10 @@ class Shipping
         return $result;
     }
 
-    public
-        function isSmall(
+    public function isSmall(
         $carrier
-    ) {
+    )
+    {
         $smallCarriers = ['wweSmall', 'upsSmall', 'fedexSmall', 'unishippersSmall', 'shipEngine'];
         return in_array($carrier, $smallCarriers);
     }
