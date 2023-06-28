@@ -17,6 +17,12 @@ class QuotesResults
     }
 
 
+    /**
+     * @param $data
+     * @param $serviceCode
+     * @param $quoteSettings
+     * @return mixed|string
+     */
     public function getServiceRate($data, $serviceCode, $quoteSettings)
     {
         $amount = $data['shipping_amount']['amount'];
@@ -60,9 +66,14 @@ class QuotesResults
 
     }
 
+    /**
+     * @param $amount
+     * @param $markupValue
+     * @return float|int
+     */
     public function addHandlingMarkupOfHazmat($amount, $markupValue)
     {
-        $amount = (float) str_replace(',', '', $amount);
+        $amount = (float)str_replace(',', '', $amount);
         if (strpbrk($markupValue, '%') !== FALSE) {
             $amount = $this->getvalueFromPercent($amount, str_replace('%', '', $markupValue));
         } else {
@@ -71,6 +82,11 @@ class QuotesResults
         return $amount;
     }
 
+    /**
+     * @param $amount
+     * @param $markupPercentage
+     * @return float|int
+     */
     public function getvalueFromPercent($amount, $markupPercentage)
     {
         $markupValue = $markupPercentage / 100 * $amount;
@@ -78,6 +94,14 @@ class QuotesResults
         return $amountWithMarkup;
     }
 
+    /**
+     * Returns service title
+     * @param $title
+     * @param $data
+     * @param $quoteSettings
+     * @param $isResi
+     * @return mixed|string
+     */
     public function getServiceTitle($title, $data, $quoteSettings, $isResi = false)
     {
         if ($isResi) {
@@ -103,6 +127,11 @@ class QuotesResults
 
     }
 
+    /**
+     * @param $quote
+     * @param $quoteSettings
+     * @return bool
+     */
     public function checkGroundTransit($quote, $quoteSettings)
     {
         // Check limited to carrier transit days
@@ -120,7 +149,9 @@ class QuotesResults
         return false;
     }
 
-
+    /*
+     * Returns compiled quotes of shipengine
+     * */
     public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items)
     {
         $shipments = $this->formateQuoteBeforeCompile($shipments);
@@ -167,7 +198,7 @@ class QuotesResults
                     $serviceCode = $data['service_code'] ?? "";
                     //$serviceName = $this->getServiceNameByCode($serviceCode);
                     $isServiceEnabled = isset($this->quoteSettings['carrier_services'][$serviceCode]) &&
-                        $this->quoteSettings['carrier_services'][$serviceCode] ? true : false;
+                    $this->quoteSettings['carrier_services'][$serviceCode] ? true : false;
                     if (!$isServiceEnabled) {
                         continue;
                     }
@@ -215,7 +246,7 @@ class QuotesResults
 
 
                     $title = $this->getServiceTitle($data['serviceDesc'], $data, $this->quoteSettings, $residential);
-                    $price = (float) str_replace(',', '', $price);
+                    $price = (float)str_replace(',', '', $price);
                     $shortServiceCode = $this->getShortCodesOfService($serviceCode);
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12' . $carrierCode . $shortServiceCode . $access2;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
