@@ -75,9 +75,11 @@ class QuotesResults
         return $amountWithMarkup;
     }
 
-    public function getServiceTitle($title, $data, $serviceCode, $quoteSettings, $isResi = false)
+    public function getServiceTitle($title, $data, $serviceCode, $quoteSettings, $isResi = false, $storeId = '')
     {
-        if ($isResi) {
+        $rad_settings = Functions::getRADsettings($storeId) ?? [];
+        $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
+        if ($isResi && $showRadNotation) {
             $title = $title . Constant::RESI_LABEL;
         }
         if (isset($data['totalTransitTimeInDays']) && $data['totalTransitTimeInDays'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2) {
@@ -106,7 +108,7 @@ class QuotesResults
     }
 
 
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items)
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items, $storeId = '')
     {
         $shipments = $this->formateQuoteBeforeCompile($shipments);
         $this->quoteSettings = [];
@@ -221,7 +223,7 @@ class QuotesResults
                         $access2 = $access2 . '+sr'; 
                     } 
 
-                    $title = $this->getServiceTitle($data['serviceDesc'], $data, $data['serviceType'], $this->quoteSettings, $residential);
+                    $title = $this->getServiceTitle($data['serviceDesc'], $data, $data['serviceType'], $this->quoteSettings, $residential, $storeId);
                     $price = (float)str_replace(',', '', $price);
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12ups' . $data['serviceType'] . $access2;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;

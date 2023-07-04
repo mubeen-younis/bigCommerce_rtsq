@@ -13,7 +13,7 @@ class QuotesResults
         $this->CompileQuotes = new CompileQuotes();
     }
 
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items)
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items, $storeId = '')
     {
         $shipments = $this->formateQuoteBeforeCompile($shipments);
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
@@ -65,7 +65,7 @@ class QuotesResults
                     $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
                     $price = $price + $productOriginMarkupFee;
                     // Get service title
-                    $title = $this->getServiceTitle($data, $srvcType, $this->quoteSettings, $residential);
+                    $title = $this->getServiceTitle($data, $srvcType, $this->quoteSettings, $residential, $storeId);
                     $price = (float) str_replace(',', '', $price);
 
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12usps' . $access;
@@ -220,14 +220,16 @@ class QuotesResults
         return $amountWithMarkup;
     }
 
-    public function getServiceTitle($data, $title, $quoteSettings, $isResi = false): string
+    public function getServiceTitle($data, $title, $quoteSettings, $isResi = false, $storeId = ''): string
     {
-        $title = $isResi ? $title . Constant::RESI_LABEL : $title;
+        $rad_settings = Functions::getRADsettings($storeId) ?? [];
+        $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
+        $title = ($isResi && $showRadNotation) ? $title . Constant::RESI_LABEL : $title;
 
         if (isset($data['totalTransitTimeInDays']) && $data['totalTransitTimeInDays'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2) {
-            $title = $title . ' (Estimated number of days until delivery is ' . $data['totalTransitTimeInDays'] . ')';
+            $title = $title . ' (Intransit days: ' . $data['totalTransitTimeInDays'] . ')';
         } else if (isset($data['transitDate']) && $data['transitDate'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3) {
-            $title = $title . ' (Estimated delivery date is ' . date('m-d-Y', strtotime($data['transitDate'])) . ')';
+            $title = $title . ' (Expected delivery by ' . date('m-d-Y', strtotime($data['transitDate'])) . ')';
         }
 
         return $title;

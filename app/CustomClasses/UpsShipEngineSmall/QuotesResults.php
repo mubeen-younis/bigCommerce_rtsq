@@ -102,9 +102,11 @@ class QuotesResults
      * @param $isResi
      * @return mixed|string
      */
-    public function getServiceTitle($title, $data, $quoteSettings, $isResi = false)
+    public function getServiceTitle($title, $data, $quoteSettings, $isResi = false, $storeId = '')
     {
-        if ($isResi) {
+        $rad_settings = Functions::getRADsettings($storeId) ?? [];
+        $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
+        if ($isResi && $showRadNotation) {
             $title = $title . Constant::RESI_LABEL;
         }
 
@@ -152,7 +154,7 @@ class QuotesResults
     /*
      * Returns compiled quotes of shipengine
      * */
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items)
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items, $storeId = '')
     {
         $shipments = $this->formateQuoteBeforeCompile($shipments);
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
@@ -245,7 +247,7 @@ class QuotesResults
                     }
 
 
-                    $title = $this->getServiceTitle($data['serviceDesc'], $data, $this->quoteSettings, $residential);
+                    $title = $this->getServiceTitle($data['serviceDesc'], $data, $this->quoteSettings, $residential, $storeId);
                     $price = (float)str_replace(',', '', $price);
                     $shortServiceCode = $this->getShortCodesOfService($serviceCode);
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12' . $carrierCode . $shortServiceCode . $access2;
