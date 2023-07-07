@@ -33,8 +33,22 @@ class SmallConnectionSettings
             'world_wide_express_account_number' => $data->account_number,
             'plugin_domain_name' => $storeName ?? '',
             'plugin_licence_key' => $data->license_key ?? '',
-            'dont_auth' => 1
+            'dont_auth' => 1,
+            // New Api Test Connection Params
+            'clientId' => $data->clientId,
+            'clientSecret' => $data->clientSecret,
+            'ApiVersion' => '2.0'
         ];
+
+        if (isset($data->api_type) && $data->api_type === 'new_api'){
+            unset($params['speed_freight_username'], $params['speed_freight_password'], $params['authentication_key'],
+            $params['world_wide_express_account_number']);
+
+        } else {
+            unset($params['clientId'], $params['clientSecret'], $params['ApiVersion']);
+
+        }
+
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
         if (isset($output['status']) && $output['status'] == false) {
@@ -49,7 +63,12 @@ class SmallConnectionSettings
                 'error' => true,
                 'message' => $output['error_desc'],
             ];
-        } elseif (isset($output['success'])) {
+        } elseif (isset($output['severity']) && $output['severity'] === 'ERROR') {
+            $response = [
+                'error' => true,
+                'message' => $output['Message'],
+            ];
+        } elseif (isset($output['success']) || (isset($output['severity']) && $output['severity'] === 'SUCCESS')) {
             $response = [
                 'error' => false,
                 'message' => 'Test connection successful.',

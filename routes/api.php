@@ -47,10 +47,14 @@ use App\Http\Controllers\DBSC\OtherSettingsController;
 |
  */
 
+
+Route::get('/testImportCsvJob', [GetRatesController::class, 'importProductCsvJob']);
+
+
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
-Route::middleware([ \App\Http\Middleware\EnsureStoreisActive::class])->group(function () {
+Route::middleware([\App\Http\Middleware\EnsureStoreisActive::class])->group(function () {
     Route::post('webhooks', [MainController::class, 'addAndUpdateProductFromWebHook']);
     Route::post('order/webhooks', [OrderController::class, 'orderFromWebhook']);
     Route::post('sku/webhooks', [ProductSettingController::class, 'skuFromWebhook']);
@@ -88,7 +92,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::get('/get_product', [ProductSettingController::class, 'getSingleProductDetail']);
     Route::get('/edit_product', [ProductSettingController::class, 'editProduct']);
     Route::post('/update_product', [ProductSettingController::class, 'updateProductDetail']);
-    //========Delete duplicate variants 
+    //========Delete duplicate variants
     Route::post('/delete_duplicate_variants', [ProductSettingController::class, 'deleteDuplicateVariants']);
 
     //=======Carriers
@@ -215,39 +219,39 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
 
     // DBSC carrier
     // Shipping class Route
-    Route::post('/add_shipping_class',[ShippingClassController::class,'store']);
-    Route::get('/get_shipping_classes',[ShippingClassController::class,'show']);
-    Route::post('/update_shipping_class',[ShippingClassController::class,'update']);
-    Route::post('/delete_shipping_class',[ShippingClassController::class,'destroy']);
+    Route::post('/add_shipping_class', [ShippingClassController::class, 'store']);
+    Route::get('/get_shipping_classes', [ShippingClassController::class, 'show']);
+    Route::post('/update_shipping_class', [ShippingClassController::class, 'update']);
+    Route::post('/delete_shipping_class', [ShippingClassController::class, 'destroy']);
 
     // Shipping Profile Route
-    Route::post('/add_dbsc_profile',[ShippingProfileController::class,'store']);
-    Route::get('/edit_dbsc_profile',[ShippingProfileController::class,'edit']);
-    Route::get('/get_dbsc_profiles',[ShippingProfileController::class,'show']);
-    Route::post('/update_dbsc_profile',[ShippingProfileController::class,'update']);
-    Route::post('/delete_dbsc_profile',[ShippingProfileController::class,'destroy']);
+    Route::post('/add_dbsc_profile', [ShippingProfileController::class, 'store']);
+    Route::get('/edit_dbsc_profile', [ShippingProfileController::class, 'edit']);
+    Route::get('/get_dbsc_profiles', [ShippingProfileController::class, 'show']);
+    Route::post('/update_dbsc_profile', [ShippingProfileController::class, 'update']);
+    Route::post('/delete_dbsc_profile', [ShippingProfileController::class, 'destroy']);
 
     // Shipping Origin  Route
-    Route::post('/add_dbsc_origin',[ShippingOriginController::class,'store']);
-    Route::get('/edit_dbsc_origin',[ShippingOriginController::class,'edit']);
-    Route::get('/get_dbsc_origins',[ShippingOriginController::class,'show']);
-    Route::post('/update_dbsc_origin',[ShippingOriginController::class,'update']);
-    Route::post('/delete_dbsc_origin',[ShippingOriginController::class,'destroy']);
+    Route::post('/add_dbsc_origin', [ShippingOriginController::class, 'store']);
+    Route::get('/edit_dbsc_origin', [ShippingOriginController::class, 'edit']);
+    Route::get('/get_dbsc_origins', [ShippingOriginController::class, 'show']);
+    Route::post('/update_dbsc_origin', [ShippingOriginController::class, 'update']);
+    Route::post('/delete_dbsc_origin', [ShippingOriginController::class, 'destroy']);
 
     // Shipping Zone Route
-    Route::get('/get_zones_bc',[ShippingZoneController::class,'getZonesOfStore']);
-    Route::post('/add_dbsc_zone',[ShippingZoneController::class,'store']);
-    Route::get('/edit_dbsc_zone',[ShippingZoneController::class,'edit']);
-    Route::get('/get_dbsc_zones',[ShippingZoneController::class,'show']);
-    Route::post('/update_dbsc_zone',[ShippingZoneController::class,'update']);
-    Route::post('/delete_dbsc_zone',[ShippingZoneController::class,'destroy']);
+    Route::get('/get_zones_bc', [ShippingZoneController::class, 'getZonesOfStore']);
+    Route::post('/add_dbsc_zone', [ShippingZoneController::class, 'store']);
+    Route::get('/edit_dbsc_zone', [ShippingZoneController::class, 'edit']);
+    Route::get('/get_dbsc_zones', [ShippingZoneController::class, 'show']);
+    Route::post('/update_dbsc_zone', [ShippingZoneController::class, 'update']);
+    Route::post('/delete_dbsc_zone', [ShippingZoneController::class, 'destroy']);
 
     // Shipping Rates Route
-    Route::post('/add_dbsc_rates',[ShippingRatesController::class,'store']);
-    Route::get('/edit_dbsc_rates',[ShippingRatesController::class,'edit']);
-    Route::get('/get_dbsc_rates',[ShippingRatesController::class,'show']);
-    Route::post('/update_dbsc_rates',[ShippingRatesController::class,'update']);
-    Route::post('/delete_dbsc_rates',[ShippingRatesController::class,'destroy']);
+    Route::post('/add_dbsc_rates', [ShippingRatesController::class, 'store']);
+    Route::get('/edit_dbsc_rates', [ShippingRatesController::class, 'edit']);
+    Route::get('/get_dbsc_rates', [ShippingRatesController::class, 'show']);
+    Route::post('/update_dbsc_rates', [ShippingRatesController::class, 'update']);
+    Route::post('/delete_dbsc_rates', [ShippingRatesController::class, 'destroy']);
 
     // Dbsc Other Settings
     Route::get('/get_dbsc_other_settings', [OtherSettingsController::class, 'index']);

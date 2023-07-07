@@ -39,7 +39,8 @@ class FDOOrderController extends Controller
             }
             return Helpers::sendJsonResponseFdo(false, '', $orderDetail);
         } catch (\Exception $exception) {
-            return Helpers::sendJsonResponseFdo(true, 'Something went wrong', ['exception' => $exception->getMessage()]);
+            return Helpers::sendJsonResponseFdo(true, 'Something went wrong', ['exception' => $exception->getMessage(),
+                'line' => $exception->getLine()]);
         }
     }
 
@@ -236,7 +237,6 @@ class FDOOrderController extends Controller
             $sName = $shipping_name[0] ?? '';
             $sName = explode('w/', $sName)[0] ?? '';
             $sMethod = isset($shipping_name[1]) ? '(' . $shipping_name[1] : '';
-
             $quotes = optional($responseFromWS)->$wsCarrierCode->$zip;
             $sName = Functions::get3plServiceName($sName, $rateId, $origin, $quotes);
 

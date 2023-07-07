@@ -494,8 +494,9 @@ class GetRatesController extends Controller
         }
     }
 
-    public function getQuoteSettings()
+    public function importProductCsvJob(Request $request)
     {
-
+        $ExportImportProducts = new ExportImportProducts();
+        $ExportImportProducts->importProductCsvJob($request->all());
     }
 }

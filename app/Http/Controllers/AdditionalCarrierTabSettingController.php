@@ -25,27 +25,27 @@ class AdditionalCarrierTabSettingController extends Controller
             ->join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
             ->where('installed_carriers.id', $installed_carrier)->first();
 
-        if($carrier->slug == 'ltl-quotes' || $carrier->slug == 'freightquote-ltl' || $carrier->slug == 'tql-ltl' || $carrier->slug == "echo-ltl" || $carrier->slug == 'freightquote-chr-ltl'){
+        if ($carrier->slug == 'ltl-quotes' || $carrier->slug == 'freightquote-ltl' || $carrier->slug == 'tql-ltl' || $carrier->slug == "echo-ltl" || $carrier->slug == 'freightquote-chr-ltl') {
             $services = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
                 ->where('installed_carriers.id', $installed_carrier)
                 ->orderBy('speed_freight_carrierName')->get();
-        }else if($carrier->slug == 'gtz-ltl'){
+        } else if ($carrier->slug == 'gtz-ltl') {
             $storeId = null;
             $carrierType = $request->carrier_type ?? 'gtz';
             //dd($carrierType);
-            if($carrierType === 'CRS'){
+            if ($carrierType === 'CRS') {
                 $storeId = $request['store_id'] ?? null;
                 $services = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
                     ->where('installed_carriers.id', $installed_carrier)
                     ->where('shopify_freights.store_id', $storeId)
                     ->orderBy('speed_freight_carrierSCAC')->get();
-            }else{
+            } else {
                 $services = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
                     ->where('installed_carriers.id', $installed_carrier)
                     ->whereNull('shopify_freights.store_id')
                     ->orderBy('speed_freight_carrierName')->get();
             }
-        }        
+        }
 
         return response()->json(['error' => false, 'data' => $services]);
     }
@@ -130,7 +130,8 @@ class AdditionalCarrierTabSettingController extends Controller
     public function getAddTabSett(Request $request)
     {
         if (empty($request->carrier_id)) {
-            return response()->json(['error' => true,
+            return response()->json([
+                'error' => true,
                 'data' => [],
                 'message' => "Carrier Id Missing",
             ], 404);
@@ -140,12 +141,14 @@ class AdditionalCarrierTabSettingController extends Controller
             ->first();
         // If Record NOt Exists
         if ($addTabSettings === null) {
-            return response()->json(['error' => true,
+            return response()->json([
+                'error' => true,
                 'data' => [],
                 'message' => "Settings Not Found",
             ], 404);
         }
-        return response()->json(['error' => false,
+        return response()->json([
+            'error' => false,
             'data' => $addTabSettings,
             'message' => "Settings Not Found",
         ], 200);
@@ -159,20 +162,22 @@ class AdditionalCarrierTabSettingController extends Controller
             ->where('additional_carrier_tab_settings.installed_carrier_id', $carrierId)
             ->get();
 
-        return response()->json(['error' => false,
+        return response()->json([
+            'error' => false,
             'data' => $addTabSettings,
             'message' => "Settings Found",
         ], 200);
     }
 
-    public function syncGTZCerasisProviders(Request $request){
+    public function syncGTZCerasisProviders(Request $request)
+    {
         $storeId = $request['store_id'];
         $ConnectionSettings = new ConnectionSettings();
         $gtzLtlId = Carrier::select('id')->where('slug', 'gtz-ltl')->pluck('id')->toArray()[0] ?? '';
         $resp = $ConnectionSettings->getCerasisProviders($storeId, $gtzLtlId);
-        if($resp){
+        if ($resp) {
             $insert = [];
-            foreach ($resp['carriers'] as $carrier){
+            foreach ($resp['carriers'] as $carrier) {
                 $insert = [
                     'speed_freight_carrierSCAC' => $carrier['CarrierName'] ?? '',
                     'speed_freight_carrierName' => $carrier['CarrierSCAC'] ?? '',
@@ -184,7 +189,7 @@ class AdditionalCarrierTabSettingController extends Controller
                     ->where('speed_freight_carrierName', $insert['speed_freight_carrierName'])
                     ->where('app_id', $insert['app_id'])
                     ->where('store_id', $insert['store_id'])->exists();
-                if(!$Added){
+                if (!$Added) {
                     CarrierServices::insert($insert);
                     unset($insert);
                 }
@@ -194,13 +199,15 @@ class AdditionalCarrierTabSettingController extends Controller
             ->where('shopify_freights.store_id', $storeId)
             ->orderBy('speed_freight_carrierSCAC')->get();
 
-        return response()->json(['error' => false,
+        return response()->json([
+            'error' => false,
             'data' => $services,
             'message' => "Success! Carriers list updated successfully.",
         ], 200);
     }
 
-    public function hasInsurance(Request $request){
+    public function hasInsurance(Request $request)
+    {
         $storeId = $request['store_id'];
         $installed_carrier = $request->installed_carrier_id;
         $carrier = DB::table('installed_carriers')
@@ -209,13 +216,15 @@ class AdditionalCarrierTabSettingController extends Controller
             ->where('installed_carriers.id', $installed_carrier)
             ->where('installed_carriers.store_id', $storeId)->first();
 
-        return response()->json(['error' => false,
+        return response()->json([
+            'error' => false,
             'data' => $this->isInusreCarrier($carrier->slug)
         ], 200);
     }
 
-    public function isInusreCarrier($slug){
-        $insureCarrier = ['ltl-quotes', 'small-package', 'ups-small','fedex-small', 'unishippers-small'];
+    public function isInusreCarrier($slug)
+    {
+        $insureCarrier = ['ltl-quotes', 'small-package', 'ups-small', 'fedex-small', 'unishippers-small', 'ups-ship-engine'];
         return in_array($slug, $insureCarrier);
     }
 }
