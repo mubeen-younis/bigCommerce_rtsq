@@ -64,7 +64,20 @@ class GetRatesController extends Controller
         if (!$this->storePlanStatus($storeData['store']['id'])) {
             return [];
         }
-        $cartInfo['cartId'] = $request->base_options['request_context']['reference_values'][0]['value'] ?? 0;
+        // Getting cart id and store id of the store.
+        $refValue = $request->base_options['request_context']['reference_values'] ?? [];
+        foreach($refValue as $value){
+            if($value['name'] === 'cart_id'){
+                $cartInfo['cartId'] = $value['value'] ?? 0;
+            }
+        }
+
+        if(!isset($cartInfo['cartId']) || empty($cartInfo['cartId'])){
+            Log::info('Cart Id not found ' . json_encode($refValue));
+            sleep(3);
+            $this->returnRates($request);
+        }
+
         $cartInfo['store_id'] = $storeData['installed_carriers'][0]['store_id'] ?? 0;
 // Getting installed carriers there quote settings and services
         $this->getCarrierSettings($storeData['installed_carriers']);
