@@ -75,10 +75,8 @@ class QuotesResults
         return $amountWithMarkup;
     }
 
-    public function getServiceTitle($title, $data, $serviceCode, $quoteSettings, $isResi = false, $storeId = '')
+    public function getServiceTitle($title, $data, $serviceCode, $quoteSettings, $isResi = false, $showRadNotation = false)
     {
-        $rad_settings = Functions::getRADsettings($storeId) ?? [];
-        $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
         if ($isResi && $showRadNotation) {
             $title = $title . Constant::RESI_LABEL;
         }
@@ -136,6 +134,9 @@ class QuotesResults
         $shipmentCount = 0;
         $count = 0;
         $access2 = $access;
+
+        $rad_settings = Functions::getRADsettings($storeId) ?? [];
+        $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
         
         unset($shipments['air'],$shipments['ground']);
         foreach ($shipments as $origin => $quote) {
@@ -223,7 +224,7 @@ class QuotesResults
                         $access2 = $access2 . '+sr'; 
                     } 
 
-                    $title = $this->getServiceTitle($data['serviceDesc'], $data, $data['serviceType'], $this->quoteSettings, $residential, $storeId);
+                    $title = $this->getServiceTitle($data['serviceDesc'], $data, $data['serviceType'], $this->quoteSettings, $residential, $showRadNotation);
                     $price = (float)str_replace(',', '', $price);
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12ups' . $data['serviceType'] . $access2;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
@@ -252,7 +253,7 @@ class QuotesResults
                 $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
                 $originQuotesMulti[0]['code'] = 'Multiups' . $access2;
                 $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
-                $originQuotesMulti[0]['title'] = $residential ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
+                $originQuotesMulti[0]['title'] = $residential && $showRadNotation ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
             }
             foreach ($multiShipmentQuotes as $shipmentKey => $shipment) {
                 $keys = array_column($shipment, 'rate');

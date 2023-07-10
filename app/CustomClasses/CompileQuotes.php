@@ -3089,6 +3089,9 @@ class CompileQuotes
             return [];
         }
 
+        $rad_settings = Functions::getRADsettings($storeId) ?? [];
+        $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
+
         $numberOfShipments = 0;
         foreach ($shipments as $key => $ship) {
             if (!isset($ship['severity']) && !in_array($key, ['air', 'ground', 'oneRate'])) {
@@ -3155,7 +3158,7 @@ class CompileQuotes
                     $date = $data['deliveryTimestamp'] ?? null;
                     $days = $data['totalTransitTimeInDays'] ?? null;
                     $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
-                    $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $dateAndDays, $data['serviceType'], $this->quoteSettings, $this->isResi, $this->storeId);
+                    $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $dateAndDays, $data['serviceType'], $this->quoteSettings, $this->isResi, $showRadNotation);
                     $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $this->originKey, $this->items, $this->allOrigins);
                     $price = $price + $productOriginMarkupFee;
                     $price = (float) str_replace(',', '', $price);
@@ -3178,7 +3181,7 @@ class CompileQuotes
                 $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
                 $originQuotesMulti[0]['code'] = $this->isResi || $this->alwaysResi ? 'Multi+R' : 'Multi';
                 $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
-                $originQuotesMulti[0]['title'] = $this->isResi ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
+                $originQuotesMulti[0]['title'] = $this->isResi && $showRadNotation ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
             }
             foreach ($multiShipmentQuotes as $shipmentKey => $shipment) {
                 $keys = array_column($shipment, 'rate');

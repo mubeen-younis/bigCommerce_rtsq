@@ -102,10 +102,8 @@ class QuotesResults
      * @param $isResi
      * @return mixed|string
      */
-    public function getServiceTitle($title, $data, $quoteSettings, $isResi = false, $storeId = '')
+    public function getServiceTitle($title, $data, $quoteSettings, $isResi = false, $showRadNotation = false)
     {
-        $rad_settings = Functions::getRADsettings($storeId) ?? [];
-        $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
         if ($isResi && $showRadNotation) {
             $title = $title . Constant::RESI_LABEL;
         }
@@ -174,6 +172,9 @@ class QuotesResults
         $access2 = $access;
         $groundServiceCodes = ["ups_ground"];
         $carrierCode = "shipEng";
+
+        $rad_settings = Functions::getRADsettings($storeId) ?? [];
+        $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
 
         foreach ($shipments as $origin => $quote) {
 
@@ -247,7 +248,7 @@ class QuotesResults
                     }
 
 
-                    $title = $this->getServiceTitle($data['serviceDesc'], $data, $this->quoteSettings, $residential, $storeId);
+                    $title = $this->getServiceTitle($data['serviceDesc'], $data, $this->quoteSettings, $residential, $showRadNotation);
                     $price = (float)str_replace(',', '', $price);
                     $shortServiceCode = $this->getShortCodesOfService($serviceCode);
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12' . $carrierCode . $shortServiceCode . $access2;
@@ -274,7 +275,7 @@ class QuotesResults
                 $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
                 $originQuotesMulti[0]['code'] = 'Multi' . $carrierCode . $access2;
                 $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
-                $originQuotesMulti[0]['title'] = $residential ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
+                $originQuotesMulti[0]['title'] = $residential && $showRadNotation ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
             }
 
 

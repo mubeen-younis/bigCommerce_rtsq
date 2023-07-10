@@ -5,6 +5,7 @@ namespace App\CustomClasses\WWESMALL;
 
 
 use App\Constants\Constant;
+use App\CustomClasses\Functions;
 
 class WweSmallQuoteResults
 {
@@ -92,10 +93,8 @@ class WweSmallQuoteResults
 
     }
 
-    public function getServiceTitle($title, $dateAndDays, $serviceCode, $quoteSettings, $isResi = false, $storeId = '')
+    public function getServiceTitle($title, $dateAndDays, $serviceCode, $quoteSettings, $isResi = false, $showRadNotation = false)
     {
-        $rad_settings = Functions::getRADsettings($storeId) ?? [];
-        $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
         if ($isResi && $showRadNotation) {
             $title = $title . Constant::RESI_LABEL;
         }

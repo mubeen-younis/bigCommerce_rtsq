@@ -31,6 +31,9 @@ class QuotesResults
             $isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
 
+        $rad_settings = Functions::getRADsettings($storeId) ?? [];
+        $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
+
         $returnResp = [
             'isMultiShipment' => $isMultiShipment,
         ];
@@ -90,7 +93,7 @@ class QuotesResults
                     }
 
                     // Get service title
-                    $title = $this->getServiceTitle($data, $srvcType, $this->quoteSettings, $residential, $storeId);
+                    $title = $this->getServiceTitle($data, $srvcType, $this->quoteSettings, $residential, $showRadNotation);
                     $price = (float) str_replace(',', '', $price);
 
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12uniship' . $srvcType . $access;
@@ -116,7 +119,7 @@ class QuotesResults
                 $multiShipmentPrice += str_replace(',', '', $minRateFromNetChargeArr);
                 $multishipmentCheckoutQuotes[0]['code'] = 'Multiuniship' . $access;
                 $multishipmentCheckoutQuotes[0]['rate'] = number_format($multiShipmentPrice, 2);
-                $multishipmentCheckoutQuotes[0]['title'] = $residential ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
+                $multishipmentCheckoutQuotes[0]['title'] = $residential && $showRadNotation ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
             }
 
             foreach ($multiShipmentQuotes as $shipmentKey => $shipment) {
@@ -309,11 +312,10 @@ class QuotesResults
         return $amountWithMarkup;
     }
 
-    public function getServiceTitle($data, $serviceCode, $quoteSettings, $isResi = false, $storeId = '')
+    public function getServiceTitle($data, $serviceCode, $quoteSettings, $isResi = false, $showRadNotation = false)
     {
         $title = $this->getServiceTitleFromServiceType($serviceCode);
-        $rad_settings = Functions::getRADsettings($storeId) ?? [];
-        $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
+
         if ($isResi && $showRadNotation) {
             $title = $title . Constant::RESI_LABEL;
         }
