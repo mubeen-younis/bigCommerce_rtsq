@@ -3089,7 +3089,7 @@ class CompileQuotes
             return [];
         }
 
-        $rad_settings = Functions::getRADsettings($storeId) ?? [];
+        $rad_settings = Functions::getRADsettings($this->storeId) ?? [];
         $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
 
         $numberOfShipments = 0;
