@@ -47,7 +47,7 @@ class GetRatesController extends Controller
      * returnRates will use to parse request
      */
 
-    public function returnRates(Request $request)
+    public function returnRates(Request $request, $count = null)
     {
         Log::info('Request ' . json_encode($request->all()));
         $storeHash = $request->base_options['store_id'] ?? null;
@@ -64,7 +64,27 @@ class GetRatesController extends Controller
         if (!$this->storePlanStatus($storeData['store']['id'])) {
             return [];
         }
-        $cartInfo['cartId'] = $request->base_options['request_context']['reference_values'][0]['value'] ?? 0;
+        // Getting cart id and store id of the store.
+        $refValue = $request->base_options['request_context']['reference_values'] ?? [];
+        foreach($refValue as $value){
+            if($value['name'] === 'cart_id'){
+                $cartInfo['cartId'] = $value['value'] ?? 0;
+            }
+        }
+
+        if(!isset($cartInfo['cartId']) || empty($cartInfo['cartId'])){
+            if(!isset($count) && empty($count)){
+                $count = 0;
+            }
+            if($count < 3){
+                sleep(3);
+                $count = $count + 1;
+                $this->returnRates($request, $count);    
+            } 
+            Log::info('Cart Id not found ' . json_encode($refValue));
+            return [];
+        }
+
         $cartInfo['store_id'] = $storeData['installed_carriers'][0]['store_id'] ?? 0;
 // Getting installed carriers there quote settings and services
         $this->getCarrierSettings($storeData['installed_carriers']);
