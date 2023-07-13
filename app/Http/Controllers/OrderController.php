@@ -172,6 +172,7 @@ class OrderController extends Controller
             }
         }
 
+        $rateId = str_contains($rateId, 'idx+') ? $rateId : $order['full_rate_id'];
         $carrierHasInsurance = $this->hasInsureCarrier($rateId);
         $index = explode('idx+', $rateId);
         if (is_string($index[0]) && $index[0] == "shippingGroup") {
