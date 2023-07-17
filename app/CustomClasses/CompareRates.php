@@ -1,12 +1,12 @@
 <?php
 
 namespace App\CustomClasses;
-
+use Illuminate\Support\Facades\Log;
+use App\Models\Store;
+use App\Models\InstalledCarrier;
 use App\CustomClasses\UpsShipEngineSmall\QuotesResults as upsShipEngineSmallQuotesResults;
 use App\CustomClasses\WWESMALL\WweSmallQuoteResults;
-use App\Models\InstalledCarrier;
-use App\Models\Store;
-use Illuminate\Support\Facades\Log;
+
 
 class CompareRates
 {
@@ -26,7 +26,7 @@ class CompareRates
                 'state' => $data['destination_state'] ?? null,
                 'country' => $data['destination_country'] ?? null,
                 'address_type' => $data['address_type'] ?? null,
-            ],
+            ]
         ];
         $origin['origin'][$data['origin_zip']] = [
 
@@ -58,20 +58,20 @@ class CompareRates
 
         $generateCarriersArray = $this->generateCarriersArray($originAddress, $destination, $lineItems);
         $carriersArray = $generateCarriersArray['carriersArr'];
-
+        
         return $this->generateRequestArray($details, $carriersArray, $lineItems);
     }
 
     public function generateCarriersArray($origin, $destination, $lineItems)
     {
-
+        
         $carriersArr['carriers'] = [];
         $GenerateRequestData = new GenerateRequestData();
         $this->storeDateTime = $GenerateRequestData->getBCStoreDateTime();
         Log::info('Store Time' . $this->storeDateTime);
 
         foreach ($this->connectionSettings as $key => $con1) {
-            if (isset($this->carriers[$key]) && $this->carriers[$key]) {
+            if(isset($this->carriers[$key]) && $this->carriers[$key]){
                 switch ($key) {
                     case "small-package":
                         $wweLtlArr = $this->wweSmallEnitArr($con1, $destination);
@@ -106,7 +106,7 @@ class CompareRates
     {
         return [
             'licenseKey' => '',
-            // 'serverName' => Functions::getServerName($this->storeData),
+           // 'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'small', // ltl / small
             'version' => '1.0.0',
@@ -131,14 +131,14 @@ class CompareRates
             'includeDeclaredValue' => "1",
         ];
 
-        if (isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api') {
+        if (isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api'){
             unset(
                 $apiArray['speed_ship_username'],
                 $apiArray['speed_ship_password'],
                 $apiArray['authentication_key'],
                 $apiArray['world_wide_express_account_number'],
             );
-        } else {
+        }else {
             unset(
                 $apiArray['clientId'],
                 $apiArray['clientSecret'],
@@ -161,6 +161,7 @@ class CompareRates
             'prefferedCurrency' => 'USD',
 
         ];
+
 
         return $apiArray;
     }
@@ -204,7 +205,7 @@ class CompareRates
                 ->where(['store_id' => $store->id])
                 ->select('installed_carriers.*', 'carriers.slug')
                 ->get();
-
+            
             if (!empty($installedCarriers) && count($installedCarriers)) {
                 return [
                     'installed_carriers' => $installedCarriers,
@@ -248,18 +249,19 @@ class CompareRates
     public function getCompareRates($quotes, $connectionSettings)
     {
         $this->connectionSettings = $connectionSettings ?? [];
-
+        
         foreach ($quotes as $key => $shipment) {
             switch ($key) {
                 case "wweSmall":
-                    $$compiledQuotes = $this->compileWweSmallQuotes($shipment);
-                    foreach ($compiledQuotes as $quote) {
+                    $compiledQuotes = $this->compileWweSmallQuotes($shipment);
+                    foreach($compiledQuotes as $quote){
                         $resp['small_package'][] = $quote;
                     }
+                    
                     break;
                 case "shipEngine":
                     $compiledQuotes = $this->compileUpsShipEngineQuotes($shipment);
-                    foreach ($compiledQuotes as $quote) {
+                    foreach($compiledQuotes as $quote){
                         $resp['ups_ship_engine'][] = $quote;
                     }
                     break;
@@ -268,7 +270,7 @@ class CompareRates
 
         return $resp;
     }
-
+    
     public function compileUpsShipEngineQuotes($shipments)
     {
 
@@ -277,9 +279,9 @@ class CompareRates
         try {
             $res = $quoteResults->compileCompareQuotes($shipments, $this->connectionSettings);
         } catch (\Exception $exception) {
-            Log::info('Exception on shipengine compare quotes ' . json_encode([
+            Log::info('Exception on shipengine results ' . json_encode([
                 'line' => $exception->getLine(),
-                'message' => $exception->getMessage(),
+                'message' => $exception->getMessage()
             ]));
 
             return [];
@@ -296,9 +298,9 @@ class CompareRates
         try {
             $res = $quoteResults->compileCompareQuotes($shipments, $this->connectionSettings);
         } catch (\Exception $exception) {
-            Log::info('Exception on wwe small compare quotes ' . json_encode([
+            Log::info('Exception on shipengine results ' . json_encode([
                 'line' => $exception->getLine(),
-                'message' => $exception->getMessage(),
+                'message' => $exception->getMessage()
             ]));
 
             return [];
