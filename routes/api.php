@@ -175,6 +175,9 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     //subscription
     Route::post('/create_subscription', [Subscriptions::class, 'createSubscription']);
 
+    //Compare rates
+    Route::post('get_compare_rates', [GetRatesController::class, 'getCompareRates']);
+
 
     //stores
     Route::get('/store', [StoreController::class, 'index']);

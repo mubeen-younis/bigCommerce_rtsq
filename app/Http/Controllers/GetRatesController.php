@@ -18,6 +18,8 @@ use App\Models\ProductSetting;
 use App\CustomClasses\Shipping;
 use App\Models\Subscription\Subscription;
 use Illuminate\Support\Facades\Log;
+use App\CustomClasses\CompareRates;
+use App\Constants\Constant;
 
 class GetRatesController extends Controller
 {
@@ -85,6 +87,48 @@ class GetRatesController extends Controller
         return $quotes;
 
 
+    }
+
+    public function getCompareRates(Request $request)
+    {
+        Log::info('Compare Rates Request ' . json_encode($request->all()));
+        $CompareRates = new CompareRates();
+        $storeHash = $request['store_hash'] ?? null;
+        $storeData = $CompareRates->getData($storeHash);
+
+        $isTestStore = Helpers::checkIsTestStore($storeHash);
+        Helpers::setStripeAPiKey($isTestStore);
+
+        if ($storeData == null) {
+            return [];
+        }
+        if (!$this->storePlanStatus($storeData['store']['id'])) {
+            return [];
+        }
+
+        $this->getCarrierSettings($storeData['installed_carriers']);
+
+        $CompareRates = new CompareRates();
+
+        $formatCompareRateRequest = $CompareRates->formatCompareRateRequest($request->all(), $storeData, $this->connectionSettings, $request['carriers']);
+
+        $url = Constant::QUOTES_URL;
+        $quotes = $this->sendCurlRequest($url, $formatCompareRateRequest['requestArr']);
+        
+        $finalCompareRates = $CompareRates->getCompareRates($quotes, $this->connectionSettings);
+        
+        if(!empty($finalCompareRates)){
+            return $response = [
+                'error' => false,
+                'message' => 'Successfully get quotes.',
+                'data' => $finalCompareRates,
+            ];  
+        }
+        return $response = [
+            'error' => true,
+            'message' => 'Something went Wrong.',
+            'data' => [],
+        ];
     }
 
     function testQuotes()
@@ -498,5 +542,30 @@ class GetRatesController extends Controller
     {
         $ExportImportProducts = new ExportImportProducts();
         $ExportImportProducts->importProductCsvJob($request->all());
+    }
+
+    public function sendCurlRequest(
+        $url,
+        $postData
+    )
+    {
+        Log::info('compare rates postData ' . json_encode($postData));
+        $fieldString = http_build_query($postData);
+        try {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 1000);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $fieldString);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, array('Expect:'));
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            $output = curl_exec($ch);
+            curl_close($ch);
+            Log::info('$output ' . $output);
+            return json_decode($output, true);
+        } catch (\Throwable $e) {
+            $result = [];
+        }
+        return $result;
     }
 }

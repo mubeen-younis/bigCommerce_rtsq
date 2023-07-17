@@ -188,4 +188,87 @@ class WweSmallQuoteResults
         }
     }
 
+    public function compileCompareQuotes($shipment, $connectionSettings)
+    {
+        
+        
+        $this->quoteSettings = $connectionSettings['small-package']['quote_settings'] ?? '';
+        $allConfigServices = $connectionSettings['small-package']['quote_settings']['carrier_services'] ?? [];
+        // Removing Markup indexes from services
+        $allConfigServices = $this->filterWweSmallServicesFromMarkup($allConfigServices);
+        $enabledServices = $this->getEnabledServicesCodes($allConfigServices);
+        
+        if (empty($enabledServices)) {
+            return [];
+        }
+
+        $originQuotes  = [];
+        
+    
+        foreach ($shipment as $origin => $quote) {
+            
+            if (isset($quote['severity'])) {
+                return [];
+            }
+            
+            $lowestAmount = 0;
+            
+            if (isset($quote['q'])) {
+                foreach ($quote['q'] as $key => $data) {
+                    // Check if service type is checked to show
+                    if (!isset($enabledServices[$data['serviceType']])) {
+                        continue;
+                    }
+                    //  CHeck FOr Ups ground transit days
+                    if ($data['serviceType'] == "GND") {
+                        // TODO: ALso We have to check plan here
+                        if (isset($this->quoteSettings['number_of_transit_days']) && $this->quoteSettings['number_of_transit_days'] != null && isset($this->quoteSettings['ground_metric']) && $this->quoteSettings['ground_metric'] != null) {
+                            $islimited = $this->checkGroundTransit($data, $this->quoteSettings);
+                            if ($islimited) {
+                                continue;
+                            }
+                        }
+                    }
+                    
+
+                    // Adding Markup in services if enabled
+                    $price = $this->getServiceRate($data['totalNetCharge']['Amount'], $data['serviceType'], $this->quoteSettings);
+                    $quoteSettings = $this->quoteSettings;
+
+                    $price = $this->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup'] ?? 0);
+                    $price = (float) str_replace(',', '', $price);
+                    
+                    $title = $data['serviceDesc'];
+                    $dateTime = $this->getEstimatedDateTime($data);
+                    $originQuotes[$key]['date'] = $dateTime;
+                    $originQuotes[$key]['rate'] = $price;
+                    $originQuotes[$key]['title'] = $title;
+                }
+            }
+        }
+
+        if (!empty($originQuotes)) {
+            return $originQuotes;
+        }
+
+        return [];
+    }
+
+    public function getEstimatedDateTime($data)
+    {
+        $dateTime = '';
+        try {
+            if(isset($data['deliveryTimestamp']) && !empty($data['deliveryTimestamp'])){
+                $time = date('h:i A', strtotime($data['deliveryTimestamp']));
+                $date = date('l, F d, Y', strtotime($data['deliveryTimestamp']));
+                $dateTime = 'Delivery By ' . $date;
+            }
+
+            return $dateTime;
+        } catch (\Exception $exception) {
+            return $dateTime;
+        }
+
+    }
+
 }
