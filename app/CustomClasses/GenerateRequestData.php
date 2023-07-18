@@ -1240,10 +1240,13 @@ class GenerateRequestData
         }
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $apiArray = [
-            'speed_freight_username' => $connSettings['creds']['username'],
-            'speed_freight_password' => $connSettings['creds']['password'],
-            'speed_freight_authentication_key' => $connSettings['creds']['authentication_key'],
-            'speed_freight_account_number' => $connSettings['creds']['account_number'],
+            'speed_freight_username' => isset($connSettings['creds']['username']) ? $connSettings['creds']['username'] : '',
+            'speed_freight_password' => isset($connSettings['creds']['password']) ? $connSettings['creds']['password'] : '',
+            'speed_freight_authentication_key' => isset($connSettings['creds']['authentication_key']) ? $connSettings['creds']['authentication_key'] : '',
+            'speed_freight_account_number' => isset($connSettings['creds']['account_number']) ? $connSettings['creds']['account_number'] : '',
+            'clientId' => isset($connSettings['creds']['clientId']) ? $connSettings['creds']['clientId'] : '',
+            'clientSecret' => isset($connSettings['creds']['clientSecret']) ? $connSettings['creds']['clientSecret'] : '',
+            'ApiVersion' => '2.0',
             'speed_freight_residential_delivery' => $alwaysResi ? 'Y' : $residential,
             'speed_freight_lift_gate_delivery' => $liftGate,
             'speed_freight_residential_pickup' => $residentialPickup,
@@ -1256,6 +1259,23 @@ class GenerateRequestData
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? '',
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? '',
         ];
+
+        if (isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api'){
+            unset(
+                $apiArray['speed_freight_authentication_key'],
+                $apiArray['speed_freight_account_number'],
+            );
+
+            $apiArray['speed_freight_username'] = isset($connSettings['creds']['new_api_username']) ? $connSettings['creds']['new_api_username'] : '';
+            $apiArray['speed_freight_password'] = isset($connSettings['creds']['new_api_password']) ? $connSettings['creds']['new_api_password'] : '';
+        }else {
+            unset(
+                $apiArray['clientId'],
+                $apiArray['clientSecret'],
+                $apiArray['ApiVersion'],
+            );
+        }
+
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
 

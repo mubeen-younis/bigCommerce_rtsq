@@ -131,6 +131,8 @@ class FDOOrderController extends Controller
                 return [];
             }
         }
+
+        $rateId = str_contains($rateId, 'idx+') ? $rateId : $order['full_rate_id'];
         $carrierHasInsurance = Functions::hasInsureCarrier($rateId);
         $carrierName = Functions::getCarrierNameOrCode($rateId);
 
