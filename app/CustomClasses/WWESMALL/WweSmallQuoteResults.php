@@ -199,7 +199,7 @@ class WweSmallQuoteResults
         $enabledServices = $this->getEnabledServicesCodes($allConfigServices);
         
         if (empty($enabledServices)) {
-            return [];
+            return "Please enable quoting services.";
         }
 
         $originQuotes  = [];
@@ -208,7 +208,7 @@ class WweSmallQuoteResults
         foreach ($shipment as $origin => $quote) {
             
             if (isset($quote['severity'])) {
-                return [];
+                return $quote['Message'];
             }
             
             $lowestAmount = 0;

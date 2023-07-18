@@ -117,7 +117,7 @@ class GetRatesController extends Controller
         
         $finalCompareRates = $CompareRates->getCompareRates($quotes, $this->connectionSettings);
         
-        if(!empty($finalCompareRates)){
+        if(!empty($finalCompareRates) && gettype($finalCompareRates) !== 'string'){
             return $response = [
                 'error' => false,
                 'message' => 'Successfully get quotes.',
@@ -126,7 +126,7 @@ class GetRatesController extends Controller
         }
         return $response = [
             'error' => true,
-            'message' => 'Something went Wrong.',
+            'message' => $finalCompareRates,
             'data' => [],
         ];
     }

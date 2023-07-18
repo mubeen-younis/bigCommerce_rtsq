@@ -438,7 +438,7 @@ class QuotesResults
         foreach ($shipments as $origin => $quote) {
 
             if ((isset($quote['severity']) || (isset($quote['q']) && empty($quote['q'])) || (!isset($quote['q']) && !empty($quote['InstorPickupLocalDelivery'])))) {
-                return [];
+                return $quote['Message'];
             }
 
             if (isset($quote['q'])) {

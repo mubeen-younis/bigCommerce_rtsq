@@ -256,6 +256,10 @@ class CompareRates
                 switch ($key) {
                     case "wweSmall":
                         $compiledQuotes = $this->compileWweSmallQuotes($shipment);
+                        if(gettype($compiledQuotes) === 'string'){
+                            $resp = $compiledQuotes;
+                            break;
+                        }
                         foreach($compiledQuotes as $quote){
                             $resp['small_package'][] = $quote;
                         }
@@ -263,6 +267,10 @@ class CompareRates
                         break;
                     case "shipEngine":
                         $compiledQuotes = $this->compileUpsShipEngineQuotes($shipment);
+                        if(gettype($compiledQuotes) === 'string'){
+                            $resp = $compiledQuotes;
+                            break;
+                        }
                         foreach($compiledQuotes as $quote){
                             $resp['ups_ship_engine'][] = $quote;
                         }
