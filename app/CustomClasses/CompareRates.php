@@ -249,22 +249,25 @@ class CompareRates
     public function getCompareRates($quotes, $connectionSettings)
     {
         $this->connectionSettings = $connectionSettings ?? [];
+        $resp = [];
         
-        foreach ($quotes as $key => $shipment) {
-            switch ($key) {
-                case "wweSmall":
-                    $compiledQuotes = $this->compileWweSmallQuotes($shipment);
-                    foreach($compiledQuotes as $quote){
-                        $resp['small_package'][] = $quote;
-                    }
-                    
-                    break;
-                case "shipEngine":
-                    $compiledQuotes = $this->compileUpsShipEngineQuotes($shipment);
-                    foreach($compiledQuotes as $quote){
-                        $resp['ups_ship_engine'][] = $quote;
-                    }
-                    break;
+        if(!empty($quotes)){
+            foreach ($quotes as $key => $shipment) {
+                switch ($key) {
+                    case "wweSmall":
+                        $compiledQuotes = $this->compileWweSmallQuotes($shipment);
+                        foreach($compiledQuotes as $quote){
+                            $resp['small_package'][] = $quote;
+                        }
+                        
+                        break;
+                    case "shipEngine":
+                        $compiledQuotes = $this->compileUpsShipEngineQuotes($shipment);
+                        foreach($compiledQuotes as $quote){
+                            $resp['ups_ship_engine'][] = $quote;
+                        }
+                        break;
+                }
             }
         }
 
