@@ -250,6 +250,7 @@ class CompareRates
     {
         $this->connectionSettings = $connectionSettings ?? [];
         $resp = [];
+        $isError = '';
         
         if(!empty($quotes)){
             foreach ($quotes as $key => $shipment) {
@@ -257,7 +258,7 @@ class CompareRates
                     case "wweSmall":
                         $compiledQuotes = $this->compileWweSmallQuotes($shipment);
                         if(gettype($compiledQuotes) === 'string'){
-                            $resp = $compiledQuotes;
+                            $isError = $compiledQuotes;
                             break;
                         }
                         foreach($compiledQuotes as $quote){
@@ -268,7 +269,7 @@ class CompareRates
                     case "shipEngine":
                         $compiledQuotes = $this->compileUpsShipEngineQuotes($shipment);
                         if(gettype($compiledQuotes) === 'string'){
-                            $resp = $compiledQuotes;
+                            $isError = $compiledQuotes;
                             break;
                         }
                         foreach($compiledQuotes as $quote){
@@ -277,6 +278,10 @@ class CompareRates
                         break;
                 }
             }
+        }
+
+        if(!empty($isError)){
+            return $isError;
         }
 
         return $resp;
