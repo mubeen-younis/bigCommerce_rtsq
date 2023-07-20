@@ -478,8 +478,11 @@ class QuotesResults
     {
         $dateTime = '';
         try {
-            if(isset($data['estimated_delivery_date']) && !empty($data['estimated_delivery_date'])){
+            if (isset($data['estimated_delivery_date']) && !empty($data['estimated_delivery_date'])){
                 $date = date('l, F d, Y', strtotime($data['estimated_delivery_date']));
+                $dateTime = 'Delivery By ' . $date;
+            } else {
+                $date = date('l, F d, Y', strtotime($data['ship_date']));
                 $dateTime = 'Delivery By ' . $date;
             }
 
