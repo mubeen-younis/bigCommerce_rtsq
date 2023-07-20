@@ -431,13 +431,11 @@ class QuotesResults
     public function compileCompareQuotes($shipment, $connectionSettings)
     {
         $shipments = $this->formateQuoteBeforeCompile($shipment);
-        $this->quoteSettings = $connectionSettings['ups-ship-engine']['quote_settings'] ?? '';
         $originQuotes = [];
-        $groundServiceCodes = ["ups_ground"];
 
         foreach ($shipments as $origin => $quote) {
 
-            if ((isset($quote['severity']) || (isset($quote['q']) && empty($quote['q'])) || (!isset($quote['q']) && !empty($quote['InstorPickupLocalDelivery'])))) {
+            if ((isset($quote['severity']) || (isset($quote['q']) && empty($quote['q'])) || (!isset($quote['q'])))) {
                 return $quote['Message'];
             }
 
@@ -450,32 +448,11 @@ class QuotesResults
                     }
 
                     $serviceCode = $data['service_code'] ?? "";
-                    //$serviceName = $this->getServiceNameByCode($serviceCode);
-
-                    $isServiceEnabled = isset($this->quoteSettings['carrier_services'][$serviceCode]) &&
-                    $this->quoteSettings['carrier_services'][$serviceCode] ? true : false;
-                    
-                    if (!$isServiceEnabled) {
-                        continue;
-                    }
-
-                    //  CHeck FOr Ups ground transit days
-                    if (in_array($serviceCode, $groundServiceCodes)) {
-                        if (
-                            isset($this->quoteSettings['number_of_transit_days']) && $this->quoteSettings['number_of_transit_days'] != null &&
-                            isset($this->quoteSettings['ground_metric']) && $this->quoteSettings['ground_metric'] != null
-                        ) {
-                            $islimited = $this->checkGroundTransit($data, $this->quoteSettings);
-                            if ($islimited) {
-                                continue;
-                            }
-                        }
-                    }
 
                     // Adding Markup in services if enabled
-                    $price = $this->getServiceRate($data, $serviceCode, $this->quoteSettings);
+                    $price = $this->getServiceRate($data, $serviceCode, []);
 
-                    $price = $this->addHandlingMarkupOfHazmat($price, $this->quoteSettings['handling_fee_markup'] ?? 0);
+                    $price = $this->addHandlingMarkupOfHazmat($price, 0);
                     $price = (float)str_replace(',', '', $price) ?? 0;
 
                     $title = $data['serviceDesc'] ?? '';
@@ -484,10 +461,11 @@ class QuotesResults
                     $originQuotes[$key]['date'] = $dateTime;
                     $originQuotes[$key]['rate'] = $price;
                     $originQuotes[$key]['title'] = $title;
-
+                    $sortedArray[$key] = $price;
                 }
             }
         }
+        array_multisort($sortedArray, SORT_ASC, $originQuotes);
 
         if (!empty($originQuotes)) {
             return $originQuotes;

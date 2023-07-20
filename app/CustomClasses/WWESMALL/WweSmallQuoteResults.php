@@ -190,21 +190,8 @@ class WweSmallQuoteResults
 
     public function compileCompareQuotes($shipment, $connectionSettings)
     {
-        
-        
-        $this->quoteSettings = $connectionSettings['small-package']['quote_settings'] ?? '';
-        $allConfigServices = $connectionSettings['small-package']['quote_settings']['carrier_services'] ?? [];
-        // Removing Markup indexes from services
-        $allConfigServices = $this->filterWweSmallServicesFromMarkup($allConfigServices);
-        $enabledServices = $this->getEnabledServicesCodes($allConfigServices);
-        
-        if (empty($enabledServices)) {
-            return "Please enable quoting services.";
-        }
-
         $originQuotes  = [];
-        
-    
+
         foreach ($shipment as $origin => $quote) {
             
             if (isset($quote['severity'])) {
@@ -215,25 +202,10 @@ class WweSmallQuoteResults
             
             if (isset($quote['q'])) {
                 foreach ($quote['q'] as $key => $data) {
-                    // Check if service type is checked to show
-                    if (!isset($enabledServices[$data['serviceType']])) {
-                        continue;
-                    }
-                    //  CHeck FOr Ups ground transit days
-                    if ($data['serviceType'] == "GND") {
-                        // TODO: ALso We have to check plan here
-                        if (isset($this->quoteSettings['number_of_transit_days']) && $this->quoteSettings['number_of_transit_days'] != null && isset($this->quoteSettings['ground_metric']) && $this->quoteSettings['ground_metric'] != null) {
-                            $islimited = $this->checkGroundTransit($data, $this->quoteSettings);
-                            if ($islimited) {
-                                continue;
-                            }
-                        }
-                    }
                     
-
                     // Adding Markup in services if enabled
-                    $price = $this->getServiceRate($data['totalNetCharge']['Amount'], $data['serviceType'], $this->quoteSettings);
-                    $quoteSettings = $this->quoteSettings;
+                    $price = $this->getServiceRate($data['totalNetCharge']['Amount'], $data['serviceType'], []);
+                    $quoteSettings = [];
 
                     $price = $this->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup'] ?? 0);
                     $price = (float) str_replace(',', '', $price);
@@ -243,9 +215,11 @@ class WweSmallQuoteResults
                     $originQuotes[$key]['date'] = $dateTime;
                     $originQuotes[$key]['rate'] = $price;
                     $originQuotes[$key]['title'] = $title;
+                    $sortedArray[$key] = $price;
                 }
             }
         }
+        array_multisort($sortedArray, SORT_ASC, $originQuotes);
 
         if (!empty($originQuotes)) {
             return $originQuotes;

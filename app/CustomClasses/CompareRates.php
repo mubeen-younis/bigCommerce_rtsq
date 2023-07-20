@@ -56,13 +56,13 @@ class CompareRates
         $lineItems = $details['items'] ?? [];
         $destination = $details['destination'] ?? [];
 
-        $generateCarriersArray = $this->generateCarriersArray($originAddress, $destination, $lineItems);
+        $generateCarriersArray = $this->generateCarriersArray($originAddress, $lineItems);
         $carriersArray = $generateCarriersArray['carriersArr'];
         
         return $this->generateRequestArray($details, $carriersArray, $lineItems);
     }
 
-    public function generateCarriersArray($origin, $destination, $lineItems)
+    public function generateCarriersArray($origin, $lineItems)
     {
         
         $carriersArr['carriers'] = [];
@@ -70,26 +70,25 @@ class CompareRates
         $this->storeDateTime = $GenerateRequestData->getBCStoreDateTime();
         Log::info('Store Time' . $this->storeDateTime);
 
-        foreach ($this->connectionSettings as $key => $con1) {
-            if(isset($this->carriers[$key]) && $this->carriers[$key]){
-                switch ($key) {
-                    case "small-package":
-                        $wweLtlArr = $this->wweSmallEnitArr($con1, $destination);
-                        $wweLtlArr['originAddress'] = $origin;
-                        $carriersArr['carriers']['wweSmall'] = $wweLtlArr;
-                        break;
-                    case "ups-ship-engine":
-                        $upsShipEngineArr = $this->upsShipEngineSmallEnitArr($con1, $destination);
-                        $upsShipEngineArr['originAddress'] = $origin;
-                        $carriersArr['carriers']['shipEngine'] = $upsShipEngineArr;
-                        break;
-                }
+        foreach ($this->carriers as $key => $carr) {
+            switch ($key) {
+                case "small-package":
+                    $wweLtlArr = $this->wweSmallEnitArr($key);
+                    $wweLtlArr['originAddress'] = $origin;
+                    $carriersArr['carriers']['wweSmall'] = $wweLtlArr;
+                    break;
+                case "ups-ship-engine":
+                    $upsShipEngineArr = $this->upsShipEngineSmallEnitArr();
+                    $upsShipEngineArr['originAddress'] = $origin;
+                    $carriersArr['carriers']['shipEngine'] = $upsShipEngineArr;
+                    break;
             }
+            
         }
         return ['carriersArr' => $carriersArr];
     }
 
-    public function wweSmallEnitArr($connSettings, $destination)
+    public function wweSmallEnitArr($key)
     {
         return [
             'licenseKey' => '',
@@ -97,26 +96,27 @@ class CompareRates
             'carrierMode' => 'pro',
             'quotestType' => 'small', // ltl / small
             'version' => '2.0.4',
-            'api' => $this->getApiInfoArrWweSmall($connSettings, $destination),
+            'api' => $this->getApiInfoArrWweSmall($key),
             'getDistance' => 0,
         ];
     }
 
-    public function upsShipEngineSmallEnitArr($connSettings, $destination)
+    public function upsShipEngineSmallEnitArr()
     {
         return [
             'licenseKey' => '',
-           // 'serverName' => Functions::getServerName($this->storeData),
+            'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'small', // ltl / small
             'version' => '1.0.0',
-            'api' => $this->getApiInfoArrUpsShipEngineSmall($connSettings, $destination),
+            'api' => $this->getApiInfoArrUpsShipEngineSmall(),
             'getDistance' => 0,
         ];
     }
 
-    public function getApiInfoArrWweSmall($connSettings, $destination)
+    public function getApiInfoArrWweSmall($key)
     {
+        $connSettings = $this->connectionSettings[$key];
 
         $apiArray = [
             'speed_ship_username' => isset($connSettings['creds']['username']) ? $connSettings['creds']['username'] : '',
@@ -145,18 +145,18 @@ class CompareRates
                 $apiArray['ApiVersion'],
             );
         }
-        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
+        return array_merge($apiArray, $this->getCutOffDetails());
     }
 
-    public function getApiInfoArrUpsShipEngineSmall($connSettings, $destination)
+    public function getApiInfoArrUpsShipEngineSmall()
     {
         $apiArray = [
             'apiVersion' => '2.0',
-            'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
-            'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
-            'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
+            'modifyShipmentDateTime' => '1', 
+            'OrderCutoffTime' => '',
+            'shipmentOffsetDays' => '',
             'storeDateTime' => $this->storeDateTime,
-            'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
+            'shipmentWeekDays' => '', 
             'residentialDelivery' => ($this->isResidentail) ? 'yes' : 'no',
             'prefferedCurrency' => 'USD',
 
@@ -166,33 +166,17 @@ class CompareRates
         return $apiArray;
     }
 
-    public function getCutOffDetails($connSettings): array
+    public function getCutOffDetails(): array
     {
-        $delEstimateOption = $connSettings['quote_settings']['delivery_estimate_options'] ?? 1;
-        $fulfillmentOffsetDays = $connSettings['quote_settings']['fulfillment_offset_days'] ?? null;
-        $orderCutOffTime = $connSettings['quote_settings']['order_cut_off_time'] ?? null;
-        $shipmentWeekDays = isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : null;
-        $modifyShipmentDateTime = $delEstimateOption != 1 && (!blank($fulfillmentOffsetDays) || !blank($orderCutOffTime) || !blank($shipmentWeekDays)) ? '1' : '0';
         return [
-            'modifyShipmentDateTime' => $modifyShipmentDateTime,
-            'OrderCutoffTime' => $orderCutOffTime,
-            'shipmentOffsetDays' => $fulfillmentOffsetDays,
+            'modifyShipmentDateTime' => '1',
+            'OrderCutoffTime' => '',
+            'shipmentOffsetDays' => '',
             'storeDateTime' => $this->storeDateTime,
-            'shipmentWeekDays' => $shipmentWeekDays,
+            'shipmentWeekDays' => '',
         ];
     }
 
-    private function getDays($days)
-    {
-        $daysNameKey = ['Monday' => 1, 'Tuesday' => 2, 'Wednesday' => 3, 'Thursday' => 4, 'Friday' => 5];
-        $selectedDays = [];
-        foreach ($days as $dayName => $day) {
-            if (isset($daysNameKey[$day])) {
-                array_push($selectedDays, $daysNameKey[$day]);
-            }
-        }
-        return $selectedDays;
-    }
 
     public function getData($storeHash)
     {
@@ -250,7 +234,7 @@ class CompareRates
     {
         $this->connectionSettings = $connectionSettings ?? [];
         $resp = [];
-        $isError = '';
+        $isError = [];
         
         if(!empty($quotes)){
             foreach ($quotes as $key => $shipment) {
@@ -258,7 +242,7 @@ class CompareRates
                     case "wweSmall":
                         $compiledQuotes = $this->compileWweSmallQuotes($shipment);
                         if(gettype($compiledQuotes) === 'string'){
-                            $isError = $compiledQuotes;
+                            $isError[] = $compiledQuotes;
                             break;
                         }
                         foreach($compiledQuotes as $quote){
@@ -269,7 +253,7 @@ class CompareRates
                     case "shipEngine":
                         $compiledQuotes = $this->compileUpsShipEngineQuotes($shipment);
                         if(gettype($compiledQuotes) === 'string'){
-                            $isError = $compiledQuotes;
+                            $isError[] = $compiledQuotes;
                             break;
                         }
                         foreach($compiledQuotes as $quote){
@@ -281,10 +265,10 @@ class CompareRates
         }
 
         if(!empty($isError)){
-            return $isError;
+            return $isError[0];
         }
 
-        return $resp;
+        return !empty($resp) ? $resp : "Get quotes error (invalid origin or destination).";
     }
     
     public function compileUpsShipEngineQuotes($shipments)
