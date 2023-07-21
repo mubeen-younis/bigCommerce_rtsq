@@ -268,7 +268,7 @@ class CompareRates
             return $isError[0];
         }
 
-        return !empty($resp) ? $resp : "Get quotes error (invalid origin or destination).";
+        return !empty($resp) ? $resp : "Get quotes error (invalid origin, destination or connection credentials).";
     }
     
     public function compileUpsShipEngineQuotes($shipments)
