@@ -126,7 +126,7 @@ class CompareRates
             'clientId' => isset($connSettings['creds']['clientId']) ? $connSettings['creds']['clientId'] : '',
             'clientSecret' => isset($connSettings['creds']['clientSecret']) ? $connSettings['creds']['clientSecret'] : '',
             'ApiVersion' => '2.0',
-            'residentials_delivery' => ($this->isResidentail ? 'Y' : 'no'),
+            'residentials_delivery' => ($this->isResidentail ? 'yes' : 'no'),
             'prefferedCurrency' => 'USD',
             'includeDeclaredValue' => "1",
         ];
