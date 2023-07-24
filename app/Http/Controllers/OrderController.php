@@ -172,6 +172,7 @@ class OrderController extends Controller
             }
         }
 
+        $rateId = str_contains($rateId, 'idx+') ? $rateId : $order['full_rate_id'];
         $carrierHasInsurance = $this->hasInsureCarrier($rateId);
         $index = explode('idx+', $rateId);
         if (is_string($index[0]) && $index[0] == "shippingGroup") {
@@ -597,10 +598,13 @@ class OrderController extends Controller
             }
         }
 
+        $fdoShipmenst = json_decode($data['fdo_shipments_data'], true) ?? [];
+
         $sbs = '';
         $resp = [
             'widget' => $this->objectToArray($orderWidget),
-            'sbs' => $sbs
+            'sbs' => $sbs,
+            'fdoShipments' =>$fdoShipmenst, 
         ];
         return $resp;
     }
