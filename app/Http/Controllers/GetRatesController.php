@@ -140,7 +140,7 @@ class GetRatesController extends Controller
         if(!empty($finalCompareRates) && gettype($finalCompareRates) !== 'string'){
             return $response = [
                 'error' => false,
-                'message' => 'Successfully get quotes.',
+                'message' => 'Quotes are successfully updated.',
                 'data' => $finalCompareRates,
             ];  
         }

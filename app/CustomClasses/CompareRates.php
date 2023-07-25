@@ -39,6 +39,12 @@ class CompareRates
             'senderCountryCode' => $data['origin_country'] ?? null,
         ];
 
+        if(empty($data['length']) || empty($data['width']) || empty($data['height'])){
+            $data['length'] = 0;
+            $data['width'] = 0;
+            $data['height'] = 0;
+        }
+
         $item['items'][$data['origin_zip']] = [
             'piecesOfLineItem' => 1,
             'originalPiecesOfLineItem' => 1,
