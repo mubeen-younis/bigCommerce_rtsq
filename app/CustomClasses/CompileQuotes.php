@@ -2842,7 +2842,7 @@ class CompileQuotes
 
                     $access = $this->getAccessorialCode();
                     $arraySorting['simple'][$key] = $price;
-                    $originQuotes[$key]['simple']['code'] = $preAccess . $access;
+                    $originQuotes[$key]['simple']['code'] = $data['serviceType'] . $preAccess . $access;
                     $originQuotes[$key]['simple']['rate'] = $price;
                     $originQuotes[$key]['simple']['title'] = $title;
                     if ($lgQuotes && !$isHat) {
@@ -2850,7 +2850,7 @@ class CompileQuotes
                         $lgPrice = $this->calculatePrice($data, true);
                         $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
                         $arraySorting['liftgate'][$key] = $lgPrice;
-                        $originQuotes[$key]['liftgate']['code'] = $preAccess . $lgAccess;
+                        $originQuotes[$key]['liftgate']['code'] = $data['serviceType'] . $preAccess . $lgAccess;
                         $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
                         $originQuotes[$key]['liftgate']['title'] = $lgTitle;
                     }

@@ -82,7 +82,7 @@ class Functions
     public static function getCarrierNameOrCode($code, $getWsCode = 0): ?string
     {
         $carrierCodes = ['wweltl', 'rnlltl', 'xpoltl', 'fedexltl', 'gtzltl', 'yrcltl', 'cltl', 'upsltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship', 'parcel_12shipEng',
-            'fqltl', 'estesltl', 'dayrossltl', 'odflltl', 'saialtl', 'parcel_12Purolator', 'abfltl', 'SouthEastern', 'parcel_12usps', 'tqlltl', 'echoltl', 'daylightltl', 'fqchrltl'];
+            'fqltl', 'estesltl', 'dayrossltl', 'odflltl', 'saialtl', 'parcel_12Purolator', 'abfltl', 'southeastern', 'parcel_12usps', 'tqlltl', 'echoltl', 'daylightltl', 'fqchrltl'];
         foreach ($carrierCodes as $carrierCode) {
             if (strpos($code, $carrierCode) !== false) {
                 if ($getWsCode == 0) {
@@ -101,8 +101,8 @@ class Functions
             'fedexltl' => 'fedexLTL', 'yrcltl' => 'yrc', 'gtzltl' => 'globalTranz', 'cltl' => 'cerasis',
             'parcel_12wwe' => 'wweSmall', 'parcel_12ups' => 'upsSmall', 'parcel_12fd' => 'fedexSmall', 'parcel_12uniship' => 'unishippersSmall',
             'parcel_12shipEng' => 'shipEngine',
-            'fqltl' => 'freightQuote', 'estesltl' => 'estesLtl', 'dayrossltl' => 'dayross', 'odflltl' => 'OdflLTL', 'saialtl' => 'saia', 'parcel_12Purolator' => 'purolator', 'abfltl' => 'abf',
-            'SouthEastern' => 'southeastern', 'parcel_12usps' => 'usps', 'tqlltl' => 'tql', 'echoltl' => 'echoLogistics', 'daylightltl' => 'daylight', 'chr' => 'chr', 'fqchrltl' => 'chr'];
+            'fqltl' => 'freightQuote', 'estesltl' => 'estes', 'dayrossltl' => 'dayross', 'odflltl' => 'OdflLTL', 'saialtl' => 'saia', 'parcel_12Purolator' => 'purolator', 'abfltl' => 'abf',
+            'southeastern' => 'southeastern', 'parcel_12usps' => 'usps', 'tqlltl' => 'tql', 'echoltl' => 'echoLogistics', 'daylightltl' => 'daylight', 'chr' => 'chr', 'fqchrltl' => 'chr'];
         return $carrierCodesWithName[$carrierCode] ?? null;
     }
 
@@ -944,5 +944,181 @@ class Functions
             }
         }
         return $sName;
+    }
+
+    public static function getQuoteId($rateId, $quotes, $zip = null)
+    {
+        
+        $carrierCode = self::getCarrierNameOrCode($rateId, 1);
+        $carrierQuoteIds = '';
+      
+        foreach ($quotes as $carrrierName => $quote) {
+            if($carrrierName === $carrierCode){
+                switch ($carrrierName) {
+                    case "wweLTL":
+                        
+                        break;
+                    case "wweSmall":
+                        
+                        break;
+                    case "upsLTL":
+                        
+                        break;
+                    case "upsSmall":
+                       
+                        break;
+                    case "shipEngine":
+                        
+                        break;
+                    case "fedexSmall":
+                        
+                        break;
+    
+                    case "globalTranz":
+                        foreach ($quote as $zipCode => $q) {
+                            if($zip == $zipCode){
+                                foreach ($q->q as $service) {
+                                    $serviceCode = isset($service->CarrierDetail->CarrierCode) ? $service->CarrierDetail->CarrierCode : ' ';
+                                    $length = strlen($serviceCode);
+                                    $isTrue = str_contains(strtolower($rateId), strtolower($serviceCode));
+                                    if($isTrue){
+                                        $carrierQuoteIds = $service->QuoteId ?? '';
+                                    }
+                                }
+                            }
+                        }
+                    break;
+                    case "cerasis":
+                        
+                    break;
+                    case "xpoLogistics":
+                        
+                        break;
+                    case "rnl":
+                        foreach ($quote as $zipCode => $q) {
+                            $services = isset($q->q->ServiceLevels->ServiceLevel) ? $q->q->ServiceLevels->ServiceLevel : [];
+                            $isHat = str_contains(strtolower($rateId), '+hat');
+                            if ($isHat) {
+                                $services = isset($q->holdAtTerminalResponse->serviceLevels) ? $q->holdAtTerminalResponse->serviceLevels : [];
+                            }
+                            if ($zip == $zipCode) {
+                                foreach ($services as $service) {
+                                    $serviceCode = isset($service->Code) ? $service->Code : ' ';
+                                    $length = strlen($serviceCode);
+                                    $isTrue = str_contains(strtolower($rateId), strtolower($serviceCode));
+                                    if($isTrue){
+                                        $carrierQuoteIds = $service->QuoteNumber ?? '';
+                                    }
+                                }
+                            }
+                        }
+                    break;
+                    case "unishippersSmall":
+                        
+                        break;
+                    case 'yrc':
+                        foreach ($quote as $zipCode => $q) {
+                            if($zip == $zipCode) {
+                                $carrierQuoteIds = $q->q->QuoteId ?? '';
+                            }
+                        }
+                    break;
+                    case 'freightQuote':
+                        foreach ($quote as $zipCode => $q) {
+                            if($zip == $zipCode){
+                                foreach ($q->q as $service) {
+                                    $serviceCode = isset($service->serviceType) ? $service->serviceType : ' ';
+                                    $length = strlen($serviceCode);
+                                    $isTrue = str_contains(strtolower($rateId), strtolower($serviceCode));
+                                    if($isTrue){
+                                        $carrierQuoteIds = $service->quoteId ?? '';
+                                    }
+                                }
+                            }
+                        }
+                    break;
+                    case "estes":
+                        foreach ($quote as $zipCode => $q) {
+                            if($zip == $zipCode){
+                                foreach ($q->q as $service) {
+                                    $serviceCode = isset($service->ratquoteNumber) ? $service->ratquoteNumber : ' ';
+                                    $length = strlen($serviceCode);
+                                    $isTrue = str_contains(strtolower($rateId), strtolower($serviceCode));
+                                    if($isTrue){
+                                        $carrierQuoteIds = $service->ratquoteNumber ?? '';
+                                    }
+                                }
+                            }
+                        }
+                    break;
+                    case "dayross":
+                        foreach ($quote as $zipCode => $q) {
+                            if($zip == $zipCode) {
+                                $carrierQuoteIds = $q->q->QuoteNumber ?? '';
+                            }
+                        }
+                    break;
+                    case 'saia':
+                       
+                        break;
+                    case "purolator":
+                       
+                        break;
+                    case 'abf':
+                        foreach ($quote as $zipCode => $q) {
+                            if($zip == $zipCode) {
+                                $carrierQuoteIds = $q->q->QUOTEID ?? '';
+                            }
+                        }
+                    break;
+                    case 'southeastern':
+                        foreach ($quote as $zipCode => $q) {
+                            if($zip == $zipCode) {
+                                $carrierQuoteIds = $q->q->quoteId ?? '';
+                            }
+                        }
+                        break;
+                    case 'usps':
+                        
+                        break;
+                    case "tql":
+                        foreach ($quote as $zipCode => $q) {
+                            if($zip == $zipCode){
+                                foreach ($q->q as $service) {
+                                    $serviceCode = isset($service->scac) ? $service->scac : ' ';
+                                    $length = strlen($serviceCode);
+                                    $isTrue = str_contains(strtolower($rateId), strtolower($serviceCode));
+                                    if($isTrue){
+                                        $carrierQuoteIds = $service->quoteId ?? '';
+                                    }
+                                }
+                            }
+                        }
+                    break;
+                    case 'daylight':
+                        foreach ($quote as $zipCode => $q) {
+                            if($zip == $zipCode) {
+                                $carrierQuoteIds = $q->q->quoteNumber ?? '';
+                            }
+                        }
+                    break;
+                    case 'chr':
+                        foreach ($quote as $zipCode => $q) {
+                            if($zip == $zipCode){
+                                foreach ($q->q as $service) {
+                                    $serviceCode = isset($service->serviceType) ? $service->serviceType : ' ';
+                                    $length = strlen($serviceCode);
+                                    $isTrue = str_contains(strtolower($rateId), strtolower($serviceCode));
+                                    if($isTrue){
+                                        $carrierQuoteIds = $service->quoteId ?? '';
+                                    }
+                                }
+                            }
+                        }
+                    break;
+                }
+            }
+        }
+        return $carrierQuoteIds;
     }
 }
