@@ -5,6 +5,7 @@ namespace App\CustomClasses\WWESMALL;
 
 
 use App\Constants\Constant;
+use App\CustomClasses\Functions;
 
 class WweSmallQuoteResults
 {
@@ -92,17 +93,17 @@ class WweSmallQuoteResults
 
     }
 
-    public function getServiceTitle($title, $dateAndDays, $serviceCode, $quoteSettings, $isResi = false)
+    public function getServiceTitle($title, $dateAndDays, $serviceCode, $quoteSettings, $isResi = false, $showRadNotation = false)
     {
-        if ($isResi) {
+        if ($isResi && $showRadNotation) {
             $title = $title . Constant::RESI_LABEL;
         }
         $date = $dateAndDays['deliveryDate'] ?? null;
         $days = $dateAndDays['totalTransitTimeInDays'] ?? null;
         if (isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2) {
-            $title = !blank($days) ? $title . " (Estimated number of days until delivery is " . $days . ")" : $title;
+            $title = !blank($days) ? $title . " (Intransit days: " . $days . ")" : $title;
         } elseif (isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3) {
-            $title = !blank($date) ? $title . " (Estimated delivery date is " . date('m-d-Y', strtotime($date)) . ")" : $title;
+            $title = !blank($date) ? $title . " (Expected delivery by " . date('m-d-Y', strtotime($date)) . ")" : $title;
         }
         return $title;
     }

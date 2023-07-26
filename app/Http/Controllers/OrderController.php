@@ -598,10 +598,13 @@ class OrderController extends Controller
             }
         }
 
+        $fdoShipmenst = json_decode($data['fdo_shipments_data'], true) ?? [];
+
         $sbs = '';
         $resp = [
             'widget' => $this->objectToArray($orderWidget),
-            'sbs' => $sbs
+            'sbs' => $sbs,
+            'fdoShipments' =>$fdoShipmenst, 
         ];
         return $resp;
     }

@@ -13,7 +13,7 @@ class QuotesResults
         $this->CompileQuotes = new CompileQuotes();
     }
 
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items)
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items, $storeId = '')
     {
         $shipments = $this->formateQuoteBeforeCompile($shipments);
         $this->quoteSettings = [];
@@ -30,6 +30,9 @@ class QuotesResults
         if (!$isMultiShipment) {
             $isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
+
+        $rad_settings = Functions::getRADsettings($storeId) ?? [];
+        $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
 
         $returnResp = [
             'isMultiShipment' => $isMultiShipment,
@@ -90,7 +93,7 @@ class QuotesResults
                     }
 
                     // Get service title
-                    $title = $this->getServiceTitle($data, $srvcType, $this->quoteSettings, $residential);
+                    $title = $this->getServiceTitle($data, $srvcType, $this->quoteSettings, $residential, $showRadNotation);
                     $price = (float) str_replace(',', '', $price);
 
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12uniship' . $srvcType . $access;
@@ -116,7 +119,7 @@ class QuotesResults
                 $multiShipmentPrice += str_replace(',', '', $minRateFromNetChargeArr);
                 $multishipmentCheckoutQuotes[0]['code'] = 'Multiuniship' . $access;
                 $multishipmentCheckoutQuotes[0]['rate'] = number_format($multiShipmentPrice, 2);
-                $multishipmentCheckoutQuotes[0]['title'] = $residential ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
+                $multishipmentCheckoutQuotes[0]['title'] = $residential && $showRadNotation ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
             }
 
             foreach ($multiShipmentQuotes as $shipmentKey => $shipment) {
@@ -309,17 +312,18 @@ class QuotesResults
         return $amountWithMarkup;
     }
 
-    public function getServiceTitle($data, $serviceCode, $quoteSettings, $isResi = false)
+    public function getServiceTitle($data, $serviceCode, $quoteSettings, $isResi = false, $showRadNotation = false)
     {
         $title = $this->getServiceTitleFromServiceType($serviceCode);
-        if ($isResi) {
+
+        if ($isResi && $showRadNotation) {
             $title = $title . Constant::RESI_LABEL;
         }
 
         if (isset($data['totalTransitTimeInDays']) && $data['totalTransitTimeInDays'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2) {
-            $title = $title . ' (Estimated number of days until delivery is ' . $data['totalTransitTimeInDays'] . ')';
+            $title = $title . ' (Intransit days: ' . $data['totalTransitTimeInDays'] . ')';
         } else if (isset($data['deliveryDate']) && $data['deliveryDate'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3) {
-            $title = $title . ' (Estimated delivery date is ' . date('m-d-Y', strtotime($data['deliveryDate'])) . ')';
+            $title = $title . ' (Expected delivery by ' . date('m-d-Y', strtotime($data['deliveryDate'])) . ')';
         }
 
         return $title;

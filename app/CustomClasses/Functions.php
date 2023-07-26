@@ -82,7 +82,7 @@ class Functions
     public static function getCarrierNameOrCode($code, $getWsCode = 0): ?string
     {
         $carrierCodes = ['wweltl', 'rnlltl', 'xpoltl', 'fedexltl', 'gtzltl', 'yrcltl', 'cltl', 'upsltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship', 'parcel_12shipEng',
-            'fqltl', 'estesltl', 'dayrossltl', 'odflltl', 'saialtl', 'parcel_12Purolator', 'abfltl', 'SouthEastern', 'parcel_12usps', 'tqlltl', 'echoltl', 'daylightltl', 'fqchrltl'];
+            'fqltl', 'estesltl', 'dayrossltl', 'odflltl', 'saialtl', 'parcel_12Purolator', 'abfltl', 'SouthEastern', 'parcel_12usps', 'tqlltl', 'echoltl', 'daylightltl', 'fqchrltl', 'shipeng'];
         foreach ($carrierCodes as $carrierCode) {
             if (strpos($code, $carrierCode) !== false) {
                 if ($getWsCode == 0) {
@@ -100,7 +100,7 @@ class Functions
         $carrierCodesWithName = ['wweltl' => 'wweLTL', 'rnlltl' => 'rnl', 'xpoltl' => 'xpoLogistics', 'upsltl' => 'upsLTL',
             'fedexltl' => 'fedexLTL', 'yrcltl' => 'yrc', 'gtzltl' => 'globalTranz', 'cltl' => 'cerasis',
             'parcel_12wwe' => 'wweSmall', 'parcel_12ups' => 'upsSmall', 'parcel_12fd' => 'fedexSmall', 'parcel_12uniship' => 'unishippersSmall',
-            'parcel_12shipEng' => 'shipEngine',
+            'parcel_12shipEng' => 'shipEngine', 'shipeng' => 'shipEngine',
             'fqltl' => 'freightQuote', 'estesltl' => 'estesLtl', 'dayrossltl' => 'dayross', 'odflltl' => 'OdflLTL', 'saialtl' => 'saia', 'parcel_12Purolator' => 'purolator', 'abfltl' => 'abf',
             'SouthEastern' => 'southeastern', 'parcel_12usps' => 'usps', 'tqlltl' => 'tql', 'echoltl' => 'echoLogistics', 'daylightltl' => 'daylight', 'chr' => 'chr', 'fqchrltl' => 'chr'];
         return $carrierCodesWithName[$carrierCode] ?? null;
@@ -469,6 +469,7 @@ class Functions
                 'alwaysResidentialDelivery' => $settings->always_quote_residential_delivery ?? false,
                 'returRates' => $settings->return_rates ?? false,
                 'unconfirmed_address_type' => $settings->unconfirmed_address_type,
+                'suppress_rad_notation' => $settings->suppress_rad_notation ?? 1,
             ];
 
         } else {
@@ -667,7 +668,7 @@ class Functions
     }
 
     // Create Origin Quotes Array in case of notify before delivery enable
-    public static function getOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi, $insideDelivery = false, $laccess = false, $notifyDelivery = false, $resiPickup = false, $lgPickup = false)
+    public static function getOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi, $insideDelivery = false, $laccess = false, $notifyDelivery = false, $resiPickup = false, $lgPickup = false, $storeId = null)
     {
         $CompileQuotes = new CompileQuotes();
         $serviceCode = !($carrName == 'SouthEastern' || $carrName == 'yrcltl' || $carrName == 'upsltl' || $carrName == 'saialtl' || $carrName == 'fedexltl' || $carrName == 'tqlltl' || $carrName == 'abfltl' || $carrName == 'daylightltl' || $carrName == 'dayrossltl') && isset($data['serviceType']) ? $data['serviceType'] : '';
@@ -682,7 +683,7 @@ class Functions
 
         $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, $insideDelivery, $resiPickup, $lgPickup, $laccess, false, false, $notifyDelivery, $isResi, $isAlwaysResi);
         $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, $isUpsLtl, $insideDelivery, $laccess, false, false, $notifyDelivery, $originKey, $items, $allOrigins, $quoteSettings);
-        $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, $insideDelivery, $laccess, false, false, false, false, $notifyDelivery, $isResi);
+        $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, $insideDelivery, $laccess, false, false, false, false, $notifyDelivery, $isResi, $storeId);
 
         if ($isQuickestSer) {
             $explodTitle = explode('w/', $ndTitle);
@@ -715,7 +716,7 @@ class Functions
     }
 
     // Make Access Title for Offer as an Option Delivery Features
-    public static function getAccessTitle($quoteSettings = [], $isResi = false, $lgOption = false, $insideDel = false, $notifyDelivery = false, $laccess = false, $twoManDel = false, $appDel = false)
+    public static function getAccessTitle($quoteSettings = [], $isResi = false, $lgOption = false, $insideDel = false, $notifyDelivery = false, $laccess = false, $twoManDel = false, $appDel = false, $storeId)
     {
         $accessTitles = '';
         $accessLabel = '';
@@ -758,13 +759,15 @@ class Functions
             $accessLabel = ' w/ ' . $accessLabel;
 
         }
+        $rad_settings = Functions::getRADsettings($storeId) ?? [];
+        $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
 
-        if ($isResi && !empty($accessLabel)) {
+        if ($isResi && !empty($accessLabel) && $showRadNotation) {
             $expolodAccess = explode('w/', $accessLabel);
             $accessLabel = $isResi && $count <= 2 ? ' w/ residential &' . $expolodAccess[1] : ' w/ residential,' . $expolodAccess[1];
         }
 
-        $accessLabel = $isResi && empty($accessLabel) ? Constant::RESI_LABEL : $accessLabel;
+        $accessLabel = $isResi && empty($accessLabel) && $showRadNotation ? Constant::RESI_LABEL : $accessLabel;
 
         return $accessLabel;
 

@@ -75,18 +75,19 @@ class QuotesResults
         return $amountWithMarkup;
     }
 
-    public function getServiceTitle($title, $data, $serviceCode, $quoteSettings, $isResi = false)
+    public function getServiceTitle($title, $data, $serviceCode, $quoteSettings, $isResi = false, $showRadNotation = false)
     {
         if ($title == "Fedex Smart Post") {
             $title = "Fedex SmartPost";
         }
-        if ($isResi) {
+
+        if ($isResi && $showRadNotation) {
             $title = $title . Constant::RESI_LABEL;
         }
         if (isset($data['totalTransitTimeInDays']) && $data['totalTransitTimeInDays'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2) {
-            $title = $title . ' (Estimated number of days until delivery is ' . $data['totalTransitTimeInDays'] . ')';
+            $title = $title . ' (Intransit days: ' . $data['totalTransitTimeInDays'] . ')';
         } else if (isset($data['deliveryTimestamp']) && $data['deliveryTimestamp'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3) {
-            $title = $title . ' (Estimated delivery date is ' . date('m-d-Y', strtotime($data['deliveryTimestamp'])) . ')';
+            $title = $title . ' (Expected delivery by ' . date('m-d-Y', strtotime($data['deliveryTimestamp'])) . ')';
         }
         return $title;
     }
@@ -136,7 +137,7 @@ class QuotesResults
     }
 
 
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $destination, $items)
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $destination, $items, $storeId = '')
     {
         $this->allOrigins = $this->originIndexToShipment($allOrigins);
         $this->destination = $destination;
@@ -144,6 +145,9 @@ class QuotesResults
         $this->quoteSettings = $connectionSettings['fedex-small']['quote_settings'] ?? [];
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
         $allConfigServices['services'] = $allConfigServices = [];
+
+        $rad_settings = Functions::getRADsettings($storeId) ?? [];
+        $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
 
         if (isset($this->quoteSettings['carrier_services'])) {
             foreach ($this->quoteSettings['carrier_services'] as $key => $serviceName) {
@@ -267,7 +271,7 @@ class QuotesResults
                         }
                     }
                     $data['serviceDesc'] = $this->checkAndAppendFedex($data['serviceDesc']);
-                    $title = $this->getServiceTitle($data['serviceDesc'], $data, $data['serviceType'], $this->quoteSettings, $residential);
+                    $title = $this->getServiceTitle($data['serviceDesc'], $data, $data['serviceType'], $this->quoteSettings, $residential, $showRadNotation);
                     $price = (float)str_replace(',', '', $price);
                     /*
                     * Generate random code to limit rate_id to 50 chars
@@ -311,7 +315,7 @@ class QuotesResults
                     $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
                     $originQuotesMulti[0]['code'] = 'Multifedexsmall' . $access2;
                     $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
-                    $originQuotesMulti[0]['title'] = $residential ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
+                    $originQuotesMulti[0]['title'] = $residential && $showRadNotation ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
                 }
             }
             $resp = [

@@ -222,7 +222,7 @@ class Shipping
         Log::info('after addBinResponseToQuotes ' . json_encode($quotes));
 
         $quotesFromWs = $quotes ?? [];
-        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $package['items'], $SuppressParcelRates);
+        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $package['items'], $SuppressParcelRates, $store_id);
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];

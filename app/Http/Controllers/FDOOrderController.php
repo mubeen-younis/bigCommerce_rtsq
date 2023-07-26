@@ -239,7 +239,7 @@ class FDOOrderController extends Controller
             $sName = $shipping_name[0] ?? '';
             $sName = explode('w/', $sName)[0] ?? '';
             $sMethod = isset($shipping_name[1]) ? '(' . $shipping_name[1] : '';
-            $quotes = optional($responseFromWS)->$wsCarrierCode->$zip;
+            $quotes = optional($responseFromWS)->$wsCarrierCode->$zip ?? [];
             $sName = Functions::get3plServiceName($sName, $rateId, $origin, $quotes);
 
             $orderWidget[$zip]['service_name'] = $sName . $sMethod;
@@ -498,6 +498,55 @@ class FDOOrderController extends Controller
             }
         }
         return $packagingDetail;
+    }
+
+    public function save($detail, $request)
+    {
+        $storeId = $detail['store_id'];
+        $order = $detail['order_detail'];
+        $rateId = $order['rate_id'] ?? null;
+        $cartId = $order['cart_id'] ?? null;
+        $orderId = $request['order_id'] ?? null;
+        unset($request['order_id']);
+        $newShipment[] = $request->all() ?? []; 
+
+        $data = $this->getRequestDataFromDB('RequestData', $storeId, $rateId, $cartId, $order);        
+        if (!blank($data)) {
+            $data = RequestData::where('id', $data['id'])
+            ->where('store_id', $storeId)
+            ->first();
+
+            $oldShipments = json_decode($data->fdo_shipments_data, true) ?? []; 
+            $shipmentsData = array_merge($oldShipments, $newShipment);
+            $data->fdo_shipments_data = json_encode($shipmentsData);
+            $data->order_id = $orderId;
+            $data->save();
+            return $shipmentsData ?? [];
+        }
+        return [];
+    }
+
+    public function saveFdoShipments(Request $request)
+    {
+        try {
+            $orderId = $request->order_id ?? '';
+            $storeHash = $request->header('store-hash') ?? null;
+            if (blank($storeHash) || blank($orderId)) {
+                return Helpers::sendJsonResponseFdo(true, 'Store hash and order id required');
+
+            }
+            $order = $this->getBCOrderByID($storeHash, $orderId);
+            if (blank($order['order_detail'])) {
+                return Helpers::sendJsonResponseFdo(true, 'No Shipment Detail Found From BigCommerce');
+            }
+            $orderDetail = $this->save($order, $request);
+            if (empty($orderDetail)) {
+                return Helpers::sendJsonResponseFdo(true, 'No Shipment detail found from DB');
+            }
+            return Helpers::sendJsonResponseFdo(false, 'Shipment details saved successfully', $orderDetail);
+        } catch (\Exception $exception) {
+            return Helpers::sendJsonResponseFdo(true, 'Exception on saving shipments', ['exception' => $exception->getMessage()]);
+        }
     }
 
 }

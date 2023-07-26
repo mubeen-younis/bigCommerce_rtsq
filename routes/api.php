@@ -69,6 +69,7 @@ Route::middleware([\App\Http\Middleware\FDOValidity::class])->group(function () 
     Route::get('/get_product_details', [\App\Http\Controllers\FDOProductController::class, 'getProductDetails']);
     Route::get('/locations.json', [\App\Http\Controllers\FDOLocationsController::class, 'getLocations']);
     Route::get('/get_boxes', 'App\Http\Controllers\BoxSizeController@index');
+    Route::post('/save_fdo_shipments', [\App\Http\Controllers\FDOOrderController::class, 'saveFdoShipments']);
 
 });
 Route::post('update_coupon_details_fdo_av', [FDOController::class, 'updateCouponDetailsFromFDOAV']);
