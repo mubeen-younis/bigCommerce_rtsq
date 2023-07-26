@@ -38,8 +38,9 @@ class CompareRates
             'senderState' => $data['origin_state'] ?? null,
             'senderCountryCode' => $data['origin_country'] ?? null,
         ];
+        $isLegacyApi = isset($connectionSettings['small-package']['creds']['api_type']) && $connectionSettings['small-package']['creds']['api_type'] === 'legacy_api' ?? false;
 
-        if(empty($data['length']) || empty($data['width']) || empty($data['height'])){
+        if($isLegacyApi && (empty($data['length']) || empty($data['width']) || empty($data['height']))){
             $data['length'] = 0;
             $data['width'] = 0;
             $data['height'] = 0;
