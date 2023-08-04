@@ -388,6 +388,7 @@ class OrderController extends Controller
                 if ($isHAT) {
                     $sRate = $multiShipmentresponse->$index->hat->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->hat->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
+                    $code = $multiShipmentresponse->$index->hat->$zip->code ?? $multiShipmentresponse->$index->liftgate->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
                 } else if ($isLG && $insideDelivery == 'Y') {
                     $sRate = $multiShipmentresponse->$index->insideLiftGateDelivery->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
                     $order['shipping_name'] = $multiShipmentresponse->$index->insideLiftGateDelivery->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
@@ -450,6 +451,15 @@ class OrderController extends Controller
                     $sRate = $sRate + $shippingGroupRate;
                 }
                 $isMulti = true;
+            }
+
+            /** 
+             * Add Quote ID
+             * */ 
+            if (!$isSmallLtlrate && empty($multiShipmentresponse)){
+                $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($rateId, $responseFromWS, $zip);
+            } elseif (!$isSmallLtlrate && $isMultiShipment) {
+                $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($code, $responseFromWS, $zip);
             }
 
             $shipping_name = explode('(', $order['shipping_name']);
