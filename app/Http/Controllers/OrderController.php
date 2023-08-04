@@ -138,18 +138,28 @@ class OrderController extends Controller
     {
         $modelName = $tableName === 'RequestData' ? new RequestData() : new RequestTempData();
 
-        $data = optional($modelName::where('rate_id', $rateId)
-            ->where('cart_id', $cartId)
-            ->where('store_id', $request['store_id'])
-            ->first())->toArray() ?? null;
-        if (blank($data) && !blank($order['full_rate_id'])) {
-            $data = optional($modelName::where('rate_id', $order['full_rate_id'])
+        if (blank($cartId)) {
+            $data = optional($modelName::where('rate_id', $rateId)
+                ->where('store_id', $request['store_id'])
+                ->first())->toArray() ?? null;
+            if (blank($data) && !blank($order['full_rate_id'])) {
+                $data = optional($modelName::where('rate_id', $order['full_rate_id'])
+                    ->where('store_id', $request['store_id'])
+                    ->first())->toArray() ?? null;
+            }
+
+        } else {
+            $data = optional($modelName::where('rate_id', $rateId)
                 ->where('cart_id', $cartId)
                 ->where('store_id', $request['store_id'])
                 ->first())->toArray() ?? null;
-            $rateId = $order['full_rate_id'] ?? null;
+            if (blank($data) && !blank($order['full_rate_id'])) {
+                $data = optional($modelName::where('rate_id', $order['full_rate_id'])
+                    ->where('cart_id', $cartId)
+                    ->where('store_id', $request['store_id'])
+                    ->first())->toArray() ?? null;
+            }
         }
-
         return $data;
     }
 
@@ -1136,6 +1146,10 @@ class OrderController extends Controller
 
                     if (blank($reqData)) {
                         $reqData = optional(RequestTempData::where('rate_id', $fullRateId)->where('cart_id', $cartId)->first())->toArray();
+                    }
+
+                    if (blank($reqData)) {
+                        $reqData = optional(RequestTempData::where('rate_id', $fullRateId)->where('store_id', $toRequest['store_id'])->latest()->first())->toArray();
                     }
                     Log::info('Order Data DB: ' . json_encode($reqData) . ' RateID: ' . $rateId . ' CartId: ' . $cartId);
                     if (!blank($reqData)) {
