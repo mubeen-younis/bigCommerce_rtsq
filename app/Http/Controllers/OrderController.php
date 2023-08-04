@@ -137,8 +137,22 @@ class OrderController extends Controller
     public function getRequestDataFromDB($tableName, $request, $rateId, $cartId, $order)
     {
         $modelName = $tableName === 'RequestData' ? new RequestData() : new RequestTempData();
+        $source = $order['order_source'] ?? "www";
 
-        if (blank($cartId)) {
+        $data = optional($modelName::where('rate_id', $rateId)
+            ->where('cart_id', $cartId)
+            ->where('store_id', $request['store_id'])
+            ->first())->toArray() ?? null;
+
+        if (blank($data) && !blank($order['full_rate_id'])) {
+            $data = optional($modelName::where('rate_id', $order['full_rate_id'])
+                ->where('cart_id', $cartId)
+                ->where('store_id', $request['store_id'])
+                ->first())->toArray() ?? null;
+        }
+
+        // Get data for draft order from DB
+        if (blank($data) && $source === "manual") {
             $data = optional($modelName::where('rate_id', $rateId)
                 ->where('store_id', $request['store_id'])
                 ->where('is_draft_order', 1)
@@ -147,18 +161,6 @@ class OrderController extends Controller
                 $data = optional($modelName::where('rate_id', $order['full_rate_id'])
                     ->where('store_id', $request['store_id'])
                     ->where('is_draft_order', 1)
-                    ->first())->toArray() ?? null;
-            }
-
-        } else {
-            $data = optional($modelName::where('rate_id', $rateId)
-                ->where('cart_id', $cartId)
-                ->where('store_id', $request['store_id'])
-                ->first())->toArray() ?? null;
-            if (blank($data) && !blank($order['full_rate_id'])) {
-                $data = optional($modelName::where('rate_id', $order['full_rate_id'])
-                    ->where('cart_id', $cartId)
-                    ->where('store_id', $request['store_id'])
                     ->first())->toArray() ?? null;
             }
         }
