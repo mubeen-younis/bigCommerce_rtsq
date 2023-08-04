@@ -703,19 +703,20 @@ class Shipping
         }
 
         foreach ($finalQuotes as $finalQuote) {
-            $RequestTempData = new RequestTempData();
-            $RequestTempData->request = json_encode($requestArr);
-            $RequestTempData->lineitems = json_encode($lineItems);
-            $RequestTempData->quotes = json_encode($quotes);
-            $RequestTempData->response = json_encode($resp);
-            $RequestTempData->multiShipmentresponse = json_encode($multiShipmentQuotes, JSON_FORCE_OBJECT);
-            $RequestTempData->store_id = $cartInfo['store_id'];
-            $RequestTempData->rate_id = $finalQuote['rate_id'];
-            $RequestTempData->cart_id = $cartInfo['cartId'];
-            $RequestTempData->box_bins = json_encode($boxbins);
-            $RequestTempData->shipping_group_resp = !blank($this->shippingGroupResponse) ? json_encode($this->shippingGroupResponse) : null;
-            $RequestTempData->dbsc_resp = !blank($this->dbscOrdWid) ? json_encode($this->dbscOrdWid) : null;
-            $RequestTempData->save();
+            $requestTempData = new RequestTempData();
+            $requestTempData->request = json_encode($requestArr);
+            $requestTempData->lineitems = json_encode($lineItems);
+            $requestTempData->quotes = json_encode($quotes);
+            $requestTempData->response = json_encode($resp);
+            $requestTempData->multiShipmentresponse = json_encode($multiShipmentQuotes, JSON_FORCE_OBJECT);
+            $requestTempData->store_id = $cartInfo['store_id'];
+            $requestTempData->rate_id = $finalQuote['rate_id'];
+            $requestTempData->cart_id = $cartInfo['cartId'];
+            $requestTempData->is_draft_order = $cartInfo['is_draft_order'] ?? false;
+            $requestTempData->box_bins = json_encode($boxbins);
+            $requestTempData->shipping_group_resp = !blank($this->shippingGroupResponse) ? json_encode($this->shippingGroupResponse) : null;
+            $requestTempData->dbsc_resp = !blank($this->dbscOrdWid) ? json_encode($this->dbscOrdWid) : null;
+            $requestTempData->save();
         }
     }
 

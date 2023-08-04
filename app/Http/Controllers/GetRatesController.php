@@ -75,6 +75,7 @@ class GetRatesController extends Controller
             }
         }
 
+        $cartInfo['is_draft_order']=!empty($cartID) ? false: true;
         $cartInfo['cartId'] = !empty($cartID) ? $cartID : "draft_" . time() . "_" . $storeData['store']['id'];
         $cartInfo['store_id'] = $storeData['installed_carriers'][0]['store_id'] ?? 0;
         // Getting installed carriers there quote settings and services

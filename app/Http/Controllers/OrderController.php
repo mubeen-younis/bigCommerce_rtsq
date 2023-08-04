@@ -141,10 +141,12 @@ class OrderController extends Controller
         if (blank($cartId)) {
             $data = optional($modelName::where('rate_id', $rateId)
                 ->where('store_id', $request['store_id'])
+                ->where('is_draft_order', 1)
                 ->first())->toArray() ?? null;
             if (blank($data) && !blank($order['full_rate_id'])) {
                 $data = optional($modelName::where('rate_id', $order['full_rate_id'])
                     ->where('store_id', $request['store_id'])
+                    ->where('is_draft_order', 1)
                     ->first())->toArray() ?? null;
             }
 
