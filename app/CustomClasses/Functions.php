@@ -11,6 +11,7 @@ use App\CustomClasses\CompileQuotes;
 use App\Models\InstalledAddon;
 use App\Http\Controllers\OrderController;
 use App\Models\PackagingDetail;
+use App\Helpers\Helpers;
 
 use App\Constants\Constant;
 
@@ -973,7 +974,7 @@ class Functions
         $carriers = isset($requestArr['requestArr']['carriers']) ? $requestArr['requestArr']['carriers'] : [];
         $binResp = isset($requestArr['binReponse']) ? $requestArr['binReponse'] : [];
         if(!blank($carriers)){
-            $packingId = md5(microtime() . rand());
+            $packingId = Helpers::getUuid();
             foreach($carriers as $carrName => $carrier){
                 $carriers[$carrName]['api']['packaging_id'] =  $packingId ?? '';
             }
