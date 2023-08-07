@@ -172,6 +172,12 @@ class Shipping
         // Added customization for eniture packaging disabled stores
         $requestArr = (new Customizations())->eniturePackagingCustomization($requestArr, $storeData['store']['hash']);
 
+        // adding packing id if sbs or pallet packaging is occure
+        $requestArr = Functions::addPackagingId($requestArr, $package, $store_id);
+        $packagingId = isset($requestArr['packaging_id']) ? $requestArr['packaging_id'] : '';
+        unset($requestArr['packaging_id']);
+        $requestArr = $requestArr['requestArr'] ?? [];
+
         if (empty($requestArr)) {
             return [];
         }

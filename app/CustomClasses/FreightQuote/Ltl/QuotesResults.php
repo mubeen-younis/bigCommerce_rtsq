@@ -4,6 +4,7 @@ namespace App\CustomClasses\FreightQuote\Ltl;
 
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes as compileQuotes;
+use App\CustomClasses\Functions;
 
 class QuotesResults
 {
