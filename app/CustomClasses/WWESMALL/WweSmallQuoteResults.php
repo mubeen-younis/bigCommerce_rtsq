@@ -39,6 +39,23 @@ class WweSmallQuoteResults
         return array_flip($enabledServices);
     }
 
+    public function isActiveService($srvcType, $quoteSettings): bool
+    {
+        $serviceIndex = $this->getServiceIndexFromServiceType($srvcType) ?? null;
+        if ($serviceIndex && isset($quoteSettings['carrier_services'][$serviceIndex]) && $quoteSettings['carrier_services'][$serviceIndex] == true) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function getServiceIndexFromServiceType($srvcType)
+    {
+        $indexesArr = ['GND' => 'ups_ground', '3DS' => 'ups_3_day_select', '2DA' => 'ups_2nd_day_air', '2DM' => 'ups_2nd_day_air_am', '2DAS' => 'ups_2nd_day_air_saver', '1DA' => 'ups_next_day_air', '1DP' => 'ups_next_day_air_saver', '1DM' => 'ups_next_day_air_early'];
+
+        return $indexesArr[$srvcType] ?? '';
+    }
+
     public function getServiceRate($amount, $serviceCode, $quoteSettings)
     {
         $markupIndex = $this->getMarkupIndexFromServiceCode($serviceCode);

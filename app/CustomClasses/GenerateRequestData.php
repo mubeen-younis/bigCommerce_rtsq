@@ -161,10 +161,11 @@ class GenerateRequestData
                     }
                     break;
                 case 'unishippers-small':
+                    $carName = isset($con1['creds']['api_type']) && $con1['creds']['api_type'] === 'new_api' ? 'wweSmall' : 'unishippersSmall';
                     $wweLtlArr = $this->unishippersSmallEnitArr($con1, $destination);
                     $wweLtlArr['originAddress'] = $enitOrigin;
-                    $carriersArr['carriers']['unishippersSmall'] = $wweLtlArr;
-                    $errorManagment['unishippersSmall'] = $con1['quote_settings']['error_managment'] ?? 1;
+                    $carriersArr['carriers'][$carName] = $wweLtlArr;
+                    $errorManagment[$carName] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case 'odfl-ltl':
                     $odflLtlArr = $this->odflLtlEnitArr($con1, $destination);
@@ -2169,28 +2170,46 @@ class GenerateRequestData
 
         $accessorial = ($alwaysResi ? 'Y' : $residential == 'Y') ? ['REP'] : [];
 
-        $apiArray = [
-            'username' => $connSettings['creds']['username'],
-            'password' => $connSettings['creds']['password'],
-            'requestkey' => $connSettings['creds']['request_key'] ?? '',
-            'upsaccountnumber' => $connSettings['creds']['ups_account_number'],
-            'unishipperscustomernumber' => $connSettings['creds']['unishippers_customer_number'],
-            'packagetype' => 'P',
-            'doNesting' => '0',
+        if (isset($connSettings['creds']['api_type']) &&  $connSettings['creds']['api_type'] === 'new_api'){
+            $this->resiCarrier['isUnishipperNewApi'] = true;
+            $apiArray = [
+                'clientId' => isset($connSettings['creds']['clientId']) ? $connSettings['creds']['clientId'] : '',
+                'clientSecret' => isset($connSettings['creds']['clientSecret']) ? $connSettings['creds']['clientSecret'] : '',
+                'ApiVersion' => '2.0',
+                'residentials_delivery' => ($alwaysResi ? 'Y' : $residential == 'Y') ? 'yes' : 'no',
+                'prefferedCurrency' => 'USD',
+                'includeDeclaredValue' => "1",
+                'isUnishipperNewApi' => true,
+                'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
+                'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
+                'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
+                'storeDateTime' => $this->storeDateTime,
+                'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
+            ];
 
-            'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
-            'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
-            'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
-            'storeDateTime' => $this->storeDateTime,
-            'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
-
-            'prefferedCurrency' => 'USD',
-            'includeDeclaredValue' => '1',
-            'service' => 'ALL',
-            'accessorial' => $accessorial,
-            'residentials_delivery' => isset($accessorial) && !blank($accessorial) ? 'yes' : 'no'
-        ];
-
+        } else {
+            $apiArray = [
+                'username' => $connSettings['creds']['username'],
+                'password' => $connSettings['creds']['password'],
+                'requestkey' => $connSettings['creds']['request_key'] ?? '',
+                'upsaccountnumber' => $connSettings['creds']['ups_account_number'],
+                'unishipperscustomernumber' => $connSettings['creds']['unishippers_customer_number'],
+                'packagetype' => 'P',
+                'doNesting' => '0',
+    
+                'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
+                'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
+                'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
+                'storeDateTime' => $this->storeDateTime,
+                'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
+    
+                'prefferedCurrency' => 'USD',
+                'includeDeclaredValue' => '1',
+                'service' => 'ALL',
+                'accessorial' => $accessorial,
+                'residentials_delivery' => isset($accessorial) && !blank($accessorial) ? 'yes' : 'no'
+            ];
+        }
         return $apiArray;
     }
 

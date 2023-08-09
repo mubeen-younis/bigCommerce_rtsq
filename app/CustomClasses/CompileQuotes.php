@@ -684,6 +684,7 @@ class CompileQuotes
         $this->allOrigins = $allOrigins;
         $this->SuppressParcelRates = $SuppressParcelRates;
         $this->storeId = $store_id;
+        $isUnishipperNewApi = isset($this->residential['isUnishipperNewApi']) &&  $this->residential['isUnishipperNewApi'];
         if ($quotes == null) {
             return [];
         }
@@ -702,8 +703,9 @@ class CompileQuotes
                     }
                     break;
                 case "wweSmall":
+                    $carName = $isUnishipperNewApi ? 'unishippersSmall' : 'wweSmall';
                     $resp = $this->compileWweSmallQuotes($shipment, $connectionSettings, $allOrigins, $isHazmat, $smalLtlHazmat, $hazmatAllItems);
-                    $quotesTemp['wweSmall'] = $resp;
+                    $quotesTemp[$carName] = $resp;
                     if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
                         //$quotesRes['wwe'] = $quotesRes['wwe'] ?? [];
                         $quotesRes = array_merge($quotesRes, $resp);
@@ -3069,25 +3071,43 @@ class CompileQuotes
         if ($this->SuppressParcelRates) {
             return [];
         }
-        if ($this->residential['wweSmall'] == 'Y') {
-            $this->isResi = true;
-            $this->residentialDlvry = 1;
+        $isUnishipperNewApi = isset($this->residential['isUnishipperNewApi']) &&  $this->residential['isUnishipperNewApi'];
+        if ($isUnishipperNewApi){
+            if ($this->residential['unishippersSmall'] == 'Y') {
+                $this->isResi = true;
+                $this->residentialDlvry = 1;
+            } else {
+                $this->isResi = false;
+                $this->residentialDlvry = 0;
+            }
+            $this->alwaysResi = $this->residential['alwaysResi']['unishippersSmall'] ?? false;
+            $this->quoteSettings = [];
+            //$isHazmat = $isHazmat == "Y" ? true : false;
+            $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
+            $this->quoteSettings = $connectionSettings['unishippers-small']['quote_settings'] ?? '';
         } else {
-            $this->isResi = false;
-            $this->residentialDlvry = 0;
+            if ($this->residential['wweSmall'] == 'Y') {
+                $this->isResi = true;
+                $this->residentialDlvry = 1;
+            } else {
+                $this->isResi = false;
+                $this->residentialDlvry = 0;
+            }
+            $this->alwaysResi = $this->residential['alwaysResi']['wweSmall'] ?? false;
+            $this->quoteSettings = [];
+            //$isHazmat = $isHazmat == "Y" ? true : false;
+            $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
+            $this->quoteSettings = $connectionSettings['small-package']['quote_settings'] ?? '';
+            $allConfigServices = $connectionSettings['small-package']['quote_settings']['carrier_services'] ?? [];
+
+            // Removing Markup indexes from services
+            $allConfigServices = $this->wweSmallQuoteRes->filterWweSmallServicesFromMarkup($allConfigServices);
+            $enabledServices = $this->wweSmallQuoteRes->getEnabledServicesCodes($allConfigServices);
+            if (empty($enabledServices)) {
+                return [];
+            }
         }
-        $this->alwaysResi = $this->residential['alwaysResi']['wweSmall'] ?? false;
-        $this->quoteSettings = [];
-        //$isHazmat = $isHazmat == "Y" ? true : false;
-        $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
-        $this->quoteSettings = $connectionSettings['small-package']['quote_settings'] ?? '';
-        $allConfigServices = $connectionSettings['small-package']['quote_settings']['carrier_services'] ?? [];
-        // Removing Markup indexes from services
-        $allConfigServices = $this->wweSmallQuoteRes->filterWweSmallServicesFromMarkup($allConfigServices);
-        $enabledServices = $this->wweSmallQuoteRes->getEnabledServicesCodes($allConfigServices);
-        if (empty($enabledServices)) {
-            return [];
-        }
+       
 
         $rad_settings = Functions::getRADsettings($this->storeId) ?? [];
         $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
@@ -3119,7 +3139,10 @@ class CompileQuotes
             if (isset($quote['q'])) {
                 foreach ($quote['q'] as $key => $data) {
                     // Check if service type is checked to show
-                    if (!isset($enabledServices[$data['serviceType']])) {
+                    if (!isset($enabledServices[$data['serviceType']]) && !$isUnishipperNewApi) {
+                        continue;
+                    }
+                    if (!$this->wweSmallQuoteRes->isActiveService($data['serviceType'] , $this->quoteSettings) && $isUnishipperNewApi) {
                         continue;
                     }
                     //  CHeck FOr Ups ground transit days
@@ -3156,13 +3179,14 @@ class CompileQuotes
                         }
                     }
                     $date = $data['deliveryTimestamp'] ?? null;
+                    $carrName = $isUnishipperNewApi ? 'parcel_12uniship' : 'parcel_12wwe';
                     $days = $data['totalTransitTimeInDays'] ?? null;
                     $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
                     $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $dateAndDays, $data['serviceType'], $this->quoteSettings, $this->isResi, $showRadNotation);
                     $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $this->originKey, $this->items, $this->allOrigins);
                     $price = $price + $productOriginMarkupFee;
                     $price = (float) str_replace(',', '', $price);
-                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12wwe' . $data['serviceType'] . $access;
+                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = $carrName . $data['serviceType'] . $access;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
                     $multiShipmentQuotes[$origin][$key] = $originQuotes[$shipmentCount]['shipment'][$key]['simple'];
