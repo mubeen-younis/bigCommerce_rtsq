@@ -3179,7 +3179,7 @@ class CompileQuotes
                         }
                     }
                     $date = $data['deliveryTimestamp'] ?? null;
-                    $carrName = $isUnishipperNewApi ? 'parcel_12uniship' : 'parcel_12wwe';
+                    $carrName = $isUnishipperNewApi ? 'parcel_12uniship_new' : 'parcel_12wwe';
                     $days = $data['totalTransitTimeInDays'] ?? null;
                     $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
                     $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $dateAndDays, $data['serviceType'], $this->quoteSettings, $this->isResi, $showRadNotation);
