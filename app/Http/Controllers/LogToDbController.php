@@ -99,10 +99,11 @@ class LogToDbController extends Controller
             $response = json_decode($storeDetails['response'], true);
             $prePackageId = null;
             $count = 0;
+            $key = 0;
             
             if(isset($logsResp['severity']) && $logsResp['severity'] === "SUCCESS"){
                 if(isset($logsResp['data']) && !empty($logsResp['data'])){
-                    foreach($logsResp['data'] as $key => $data){
+                    foreach($logsResp['data'] as $data){
                         $requestData = isset($data['request']) ? json_decode($data['request'], true) : [];
                         $packageId = isset($requestData['packaging_id']) ? $requestData['packaging_id'] : '';
                         if($prePackageId == $packageId){
@@ -113,8 +114,8 @@ class LogToDbController extends Controller
                         $respdata = optional(PackagingDetail::select('is_packaging', 'lineitems')->where('packaging_uuid', $packageId)
                         ->where('store_id', $request['store_id'])
                         ->first())->toArray() ?? [];
-                        
-                        if(empty($respdata)){
+
+                        if(isset($requestData['carrier_mode']) && $requestData['carrier_mode'] === 'pro' && empty($respdata)){
                             continue;
                         }
                         if ($carrierName === 'dayross'){
@@ -130,7 +131,7 @@ class LogToDbController extends Controller
                         $originKeys = $getOriginKeys['originKeys'];
                         $locationIds = $getOriginKeys['locationIds'];
 
-                        $logsData[$key]['location_id'] = $locationIds[$count];
+                        $logsData[$key]['location_id'] = $locationIds[$count] ?? null;
                         $logsData[$key]['packaging_id'] = $packageId;
                         $logsData[$key]['response'] = isset($data['status']) ? $data['status'] : '';
 
@@ -187,6 +188,7 @@ class LogToDbController extends Controller
                         $logsData[$key]['responseData'] = $resp;
                         $logsData[$key]['is_packaging'] = isset($respdata['is_packaging']) ? $respdata['is_packaging'] : 0;
                         $prePackageId = $packageId;
+                        $key++;
                     }
                 }
             }
