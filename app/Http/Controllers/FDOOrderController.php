@@ -95,6 +95,7 @@ class FDOOrderController extends Controller
     public function getRequestDataFromDB($tableName, $storeId, $rateId, $cartId, $order)
     {
         $modelName = $tableName === 'RequestData' ? new RequestData() : new RequestTempData();
+        $source = $order['order_source'] ?? "www";
 
         $data = optional($modelName::where('rate_id', $rateId)
             ->where('cart_id', $cartId)
@@ -108,6 +109,19 @@ class FDOOrderController extends Controller
             $rateId = $order['full_rate_id'] ?? null;
         }
 
+         // Get data for draft order from DB
+         if (blank($data) && $source === "manual") {
+            $data = optional($modelName::where('rate_id', $rateId)
+                ->where('store_id', $storeId)
+                ->where('is_draft_order', 1)
+                ->first())->toArray() ?? null;
+            if (blank($data) && !blank($order['full_rate_id'])) {
+                $data = optional($modelName::where('rate_id', $order['full_rate_id'])
+                    ->where('store_id', $storeId)
+                    ->where('is_draft_order', 1)
+                    ->first())->toArray() ?? null;
+            }
+        }
         return $data;
     }
 

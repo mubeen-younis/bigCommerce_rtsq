@@ -68,27 +68,17 @@ class GetRatesController extends Controller
         }
         // Getting cart id and store id of the store.
         $refValue = $request->base_options['request_context']['reference_values'] ?? [];
-        foreach($refValue as $value){
-            if($value['name'] === 'cart_id'){
-                $cartInfo['cartId'] = $value['value'] ?? 0;
+        $cartID = "";
+        foreach ($refValue as $value) {
+            if ($value['name'] === 'cart_id') {
+                $cartID = $value['value'] ?? "";
             }
         }
 
-        if(!isset($cartInfo['cartId']) || empty($cartInfo['cartId'])){
-            if(!isset($count) && empty($count)){
-                $count = 0;
-            }
-            if($count < 3){
-                sleep(3);
-                $count = $count + 1;
-                $this->returnRates($request, $count);    
-            } 
-            Log::info('Cart Id not found ' . json_encode($refValue));
-            return [];
-        }
-
+        $cartInfo['is_draft_order']=!empty($cartID) ? false: true;
+        $cartInfo['cartId'] = !empty($cartID) ? $cartID : "draft_" . time() . "_" . $storeData['store']['id'];
         $cartInfo['store_id'] = $storeData['installed_carriers'][0]['store_id'] ?? 0;
-// Getting installed carriers there quote settings and services
+        // Getting installed carriers there quote settings and services
         $this->getCarrierSettings($storeData['installed_carriers']);
 
         $formatReq = $this->formatRequest($request->all(), $storeData);
