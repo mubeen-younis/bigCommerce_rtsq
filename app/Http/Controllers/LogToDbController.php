@@ -188,6 +188,7 @@ class LogToDbController extends Controller
                         $logsData[$key]['responseData'] = $resp;
                         $logsData[$key]['is_packaging'] = isset($respdata['is_packaging']) ? $respdata['is_packaging'] : 0;
                         $prePackageId = $packageId;
+                        $logsData[$key]['key'] = $key;
                         $key++;
                     }
                 }
