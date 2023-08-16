@@ -161,7 +161,7 @@ class GenerateRequestData
                     }
                     break;
                 case 'unishippers-small':
-                    $carName = isset($con1['creds']['api_type']) && $con1['creds']['api_type'] === 'new_api' ? 'wweSmall' : 'unishippersSmall';
+                    $carName = isset($con1['creds']['api_type']) && $con1['creds']['api_type'] === 'new_api' ? 'wweSmallN' : 'unishippersSmall';
                     $wweLtlArr = $this->unishippersSmallEnitArr($con1, $destination);
                     $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers'][$carName] = $wweLtlArr;
@@ -2165,13 +2165,12 @@ class GenerateRequestData
             $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
-        $this->resiCarrier['unishippersSmall'] = $residential;
-        $this->resiCarrier['alwaysResi']['unishippersSmall'] = $alwaysResi;
-
         $accessorial = ($alwaysResi ? 'Y' : $residential == 'Y') ? ['REP'] : [];
 
         if (isset($connSettings['creds']['api_type']) &&  $connSettings['creds']['api_type'] === 'new_api'){
             $this->resiCarrier['isUnishipperNewApi'] = true;
+            $this->resiCarrier['unishippersSmallNewApi'] = $residential;
+            $this->resiCarrier['alwaysResi']['unishippersSmallNewApi'] = $alwaysResi;
             $apiArray = [
                 'clientId' => isset($connSettings['creds']['clientId']) ? $connSettings['creds']['clientId'] : '',
                 'clientSecret' => isset($connSettings['creds']['clientSecret']) ? $connSettings['creds']['clientSecret'] : '',
@@ -2188,6 +2187,9 @@ class GenerateRequestData
             ];
 
         } else {
+            $this->resiCarrier['unishippersSmall'] = $residential;
+            $this->resiCarrier['alwaysResi']['unishippersSmall'] = $alwaysResi;
+
             $apiArray = [
                 'username' => $connSettings['creds']['username'],
                 'password' => $connSettings['creds']['password'],
