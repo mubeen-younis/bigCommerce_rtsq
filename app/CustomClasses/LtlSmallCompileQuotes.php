@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 
 class LtlSmallCompileQuotes
 {
-    public function compileQuotes($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr)
+    public function compileQuotes($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr, $storeId)
     {
         $quoteSettings = $connectionSettings['ltl-quotes']['quote_settings'] ?? [];
         $lgQuotesAlways =
@@ -33,6 +33,10 @@ class LtlSmallCompileQuotes
                         $alwaysResi = (isset($requestArr['carriers']['fedexSmall']['api']['residentials_delivery']) && $requestArr['carriers']['fedexSmall']['api']['residentials_delivery'] == 'yes');
                         $quote['alwaysResi'] = $alwaysResi;
                         $quote['isResi'] = $residential['fedexSmall'] == 'Y';
+                    }  else if (strpos($quote['code'], 'parcel_12uniship_new') !== false) {
+                        $alwaysResi = (isset($requestArr['carriers']['wweSmallN']['api']['residentials_delivery']) && $requestArr['carriers']['wweSmallN']['api']['residentials_delivery'] == 'yes');
+                        $quote['alwaysResi'] = $alwaysResi;
+                        $quote['isResi'] = $residential['unishippersSmallNewApi'] == 'Y';
                     } else if (strpos($quote['code'], 'parcel_12uniship') !== false) {
                         $alwaysResi = (isset($requestArr['carriers']['unishippersSmall']['api']['residentials_delivery']) && $requestArr['carriers']['unishippersSmall']['api']['residentials_delivery'] == 'yes');
                         $quote['alwaysResi'] = $alwaysResi;
@@ -449,7 +453,7 @@ class LtlSmallCompileQuotes
                 $rCode = (($parcel['isResi'] ?? false) || ($ltlQuot['isResi'] ?? false) || ($parcel['alwaysResi'] ?? false) || ($ltlQuot['alwaysResi'] ?? false)) ? '+R' : '';
                 $isResi = ($parcel['isResi'] ?? false) || ($ltlQuot['isResi'] ?? false);
                 if ($simpleLg === 'simple') {
-                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi);
+                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, false, false, false, false, false, false, $storeId);
 
                     $newQuotes[] = [
                         'code' => 'multi' . $rCode,
@@ -457,7 +461,7 @@ class LtlSmallCompileQuotes
                         'title' => 'Freight' . $rtitle
                     ];
                 } else if ($simpleLg === 'LG') {
-                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, $ltlQuot['isLG']);
+                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, $ltlQuot['isLG'], false, false, false, false, false, $storeId);
                     
                     $newQuotes[] = [
                         'code' => 'multi' . $rCode . '+LG',
@@ -465,7 +469,7 @@ class LtlSmallCompileQuotes
                         'title' => 'Freight' . $rtitle
                     ];
                 } else if ($simpleLg === 'ID') {
-                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, false, $ltlQuot['isID']);
+                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, false, $ltlQuot['isID'], false, false, false, false, $storeId);
                     
                     $newQuotes[] = [
                         'code' => 'multi' . $rCode . '+ID',
@@ -473,7 +477,7 @@ class LtlSmallCompileQuotes
                         'title' => 'Freight' . $rtitle
                     ];
                 } else if ($simpleLg === 'LGID') {
-                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, $ltlQuot['isLG'], $ltlQuot['isID']);
+                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, $ltlQuot['isLG'], $ltlQuot['isID'], false, false, false, false, $storeId);
                     
                     $newQuotes[] = [
                         'code' => 'multi' . $rCode . '+LG+ID',
@@ -482,7 +486,7 @@ class LtlSmallCompileQuotes
                     ];
                 } else if ($simpleLg === 'LAD') {                    
                     // Create Multi Quotes Array of Limited Access Delivery, When Small and Ltl Products
-                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, false, false, false, $ltlQuot['isLAD']);
+                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, false, false, false, $ltlQuot['isLAD'], false, false, $storeId);
                     
                     $newQuotes[] = [
                         'code' => 'multi' . $rCode . '+LAD',
@@ -491,7 +495,7 @@ class LtlSmallCompileQuotes
                     ];
                 } else if ($simpleLg === 'LGLAD') {
                     // Create Multi Quotes Array of liftgate and Limited Access Delivery, When Small and Ltl Products
-                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, $ltlQuot['isLG'], false, false, $ltlQuot['isLAD']);
+                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, $ltlQuot['isLG'], false, false, $ltlQuot['isLAD'], false, false, $storeId);
                     
                     $newQuotes[] = [
                         'code' => 'multi' . $rCode . '+LG+LAD',
@@ -500,7 +504,7 @@ class LtlSmallCompileQuotes
                     ];
                 } else if ($simpleLg === 'IDLAD') {
                     // Create Multi Quotes Array of inside and Limited Access Delivery, When Small and Ltl Products
-                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, false, $ltlQuot['isID'], false, $ltlQuot['isLAD']);
+                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, false, $ltlQuot['isID'], false, $ltlQuot['isLAD'], false, false, $storeId);
                     
                     $newQuotes[] = [
                         'code' => 'multi' . $rCode . '+ID+LAD',
@@ -509,7 +513,7 @@ class LtlSmallCompileQuotes
                     ];
                 } else if ($simpleLg === 'LGIDLAD') {
                     // Create Multi Quotes Array of liftgate, inside and Limited Access Delivery, When Small and Ltl Products
-                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, $ltlQuot['isLG'], $ltlQuot['isID'], false, $ltlQuot['isLAD']);
+                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, $ltlQuot['isLG'], $ltlQuot['isID'], false, $ltlQuot['isLAD'], false, false, $storeId);
                     
                     $newQuotes[] = [
                         'code' => 'multi' . $rCode . '+LG+ID+LAD',
@@ -549,7 +553,7 @@ class LtlSmallCompileQuotes
                     ];
                 } else if ($simpleLg == 'IDNBD'){
                     // Create Multi Quotes Array of Inside and Notify before Delivery, When Small and Ltl Products
-                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, false, $ltlQuot['isID'], $ltlQuot['isNBD']);
+                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, false, $ltlQuot['isID'], $ltlQuot['isNBD'], false, false, false, $storeId);
 
                     $newQuotes[] = [
                         'code' => 'multi' . $rCode . Functions::$insideNotifyDelAccess,
@@ -558,7 +562,7 @@ class LtlSmallCompileQuotes
                     ];
                 } else if ($simpleLg == 'LGNBD'){
                     // Create Multi Quotes Array of Liftgate and Notify before Delivery, When Small and Ltl Products
-                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, $ltlQuot['isLG'], false, $ltlQuot['isNBD']);
+                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, $ltlQuot['isLG'], false, $ltlQuot['isNBD'], false, false, false, $storeId);
 
                     $newQuotes[] = [
                         'code' => 'multi' . $rCode . Functions::$notifyDelLgAccess,
@@ -567,7 +571,7 @@ class LtlSmallCompileQuotes
                     ];
                 }  else if ($simpleLg == 'LGIDNBD'){
                     // Create Multi Quotes Array of liftgate and  Notify before Delivery, When Small and Ltl Products
-                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, $ltlQuot['isLG'], $ltlQuot['isID'], $ltlQuot['isNBD']);
+                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, $ltlQuot['isLG'], $ltlQuot['isID'], $ltlQuot['isNBD'], false, false, false, $storeId);
                    
                     $newQuotes[] = [
                         'code' => 'multi' . $rCode . Functions::$lginsideNotifyDelAccess,
@@ -576,7 +580,7 @@ class LtlSmallCompileQuotes
                     ];
                 }  else if ($simpleLg == 'NBD'){
                     // Create Multi Quotes Array of Notify before Delivery, When Small and Ltl Products
-                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, false, false, $ltlQuot['isNBD']);      
+                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, false, false, $ltlQuot['isNBD'], false, false, false, $storeId);      
 
                     $newQuotes[] = [
                         'code' => 'multi' . $rCode . Functions::$notifyDelAccess,
@@ -585,7 +589,7 @@ class LtlSmallCompileQuotes
                     ];
                 } else if ($simpleLg == 'LADNBD'){
                     // Create Multi Quotes Array of Limited Access and  Notify before Delivery, When Small and Ltl Products
-                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, false, false, $ltlQuot['isNBD'], $ltlQuot['isLAD']);
+                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, false, false, $ltlQuot['isNBD'], $ltlQuot['isLAD'], false, false, $storeId);
                    
                     $newQuotes[] = [
                         'code' => 'multi' . $rCode . Functions::$laccessNotifyDelAccess,
@@ -594,7 +598,7 @@ class LtlSmallCompileQuotes
                     ];
                 } else if ($simpleLg == 'LGLADNBD'){
                     // Create Multi Quotes Array of liftgate, Limited Access and  Notify before Delivery, When Small and Ltl Products
-                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, $ltlQuot['isLG'], false, $ltlQuot['isNBD'], $ltlQuot['isLAD']);
+                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, $ltlQuot['isLG'], false, $ltlQuot['isNBD'], $ltlQuot['isLAD'], false, false, $storeId);
                    
                     $newQuotes[] = [
                         'code' => 'multi' . $rCode . Functions::$lglaccesseNotifyDelAccess,
@@ -725,7 +729,7 @@ class LtlSmallCompileQuotes
             $ltl[] = $key;
         }
 
-        $smallQuotes = $quotes['wweSmall'] ?? $quotes['upsSmall'] ?? $quotes['fedexSmall'] ?? $quotes['unishippersSmall'] ?? $quotes['usps'] ?? $quotes['purolator'] ?? [];
+        $smallQuotes = $quotes['wweSmall'] ?? $quotes['wweSmallN'] ?? $quotes['upsSmall'] ?? $quotes['fedexSmall'] ?? $quotes['unishippersSmall'] ?? $quotes['usps'] ?? $quotes['purolator'] ?? [];
         foreach ($smallQuotes as $key => $quote) {
             $small[] = $key;
         }
