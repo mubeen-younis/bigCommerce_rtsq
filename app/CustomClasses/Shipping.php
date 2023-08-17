@@ -156,7 +156,7 @@ class Shipping
                     ],
                 ];
             }
-            if ($this->isInsurance === 'Y' && ($key == 'wweLTL' || $key == 'shipEngine')) {
+            if ($this->isInsurance === 'Y' && ($key == 'wweLTL' || $key == 'shipEngine' || $key == 'upsSmall')) {
                 if ($this->isSmall($key)) {
                     $carriersArray['carriers'][$key]['api']['includeDeclaredValue'] = 1;
                 } else {
@@ -889,7 +889,17 @@ class Shipping
                 continue;
             }
             if ((empty($quote['rate']) || $quote['rate'] == '0.00') && isset($quote['code']) && $quote['code'] !== 'own_arrangement') {
-                $finalQuotes[$key]['title'] = Functions::$freeShipping;
+                $title = '';
+
+                if (isset($quote['title']) && strpos($quote['title'], '(Expected')){
+                    $estimate = explode('(Expected', $quote['title'])[1] ?? '';
+                    $title = Functions::$freeShipping . ' (Expected' . $estimate;
+                } elseif (isset($quote['title']) && strpos($quote['title'], '(Intransit')){
+                    $estimate = explode('(Intransit', $quote['title'])[1] ?? '';
+                    $title = Functions::$freeShipping . ' (Intransit' . $estimate;
+                }
+
+                $finalQuotes[$key]['title'] = empty($title) ? Functions::$freeShipping : $title;
             }
         }
 
