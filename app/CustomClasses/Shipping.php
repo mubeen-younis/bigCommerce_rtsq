@@ -170,13 +170,13 @@ class Shipping
         // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo, $carriersErrorSettings);
         // Added customization for eniture packaging disabled stores
-        Log::info('173 requestArr ' . json_encode($requestArr));
+
         $requestArr = (new Customizations())->eniturePackagingCustomization($requestArr, $storeData['store']['hash']);
 
         if (empty($requestArr)) {
             return [];
         }
-        Log::info('179 requestArr ' . json_encode($requestArr));
+
         $SuppressParcelRates = isset($requestArr['SuppressParcelRates']) ? $requestArr['SuppressParcelRates'] : false;
         unset($requestArr['SuppressParcelRates']);
         $url = Constant::QUOTES_URL;
