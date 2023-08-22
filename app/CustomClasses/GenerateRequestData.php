@@ -730,7 +730,7 @@ class GenerateRequestData
 
 
         // if sbs is enabled then we are going to do the packaging for the small carriers line items
-
+        Log::info('SBS carriersArray ' . json_encode($carriersArray));
         if (isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs']) {
             Log::info('Packaging enabled');
             $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ??
@@ -751,7 +751,7 @@ class GenerateRequestData
                 || isset($carriers['usps'])
                 || isset($carriers['shipEngine'])
                 || isset($carriers['wweSmallN']);
-
+                Log::info('SBS carriers ' . json_encode($carriers));
             if ($hasSmall) {
                 $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
                 if (empty($multiplePackaging)) {
@@ -912,7 +912,7 @@ class GenerateRequestData
                     $simpleItems = $itemsArr;
                     $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
                     $itemsArr = $sbsResponse['items'] ?? $itemsArr;
-
+                    Log::info('SBS sbsResponse ' . json_encode($sbsResponse));
                     if (isset($carriers) && count($carriers) == 1 && isset($carriers['usps'])) {
                         $sbsResponse['binResponse'] = [];
                         $sbsResponse['boxBins'] = [];
