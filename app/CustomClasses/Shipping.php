@@ -500,6 +500,7 @@ class Shipping
     {
         $smallCarriers = [
             'wweSmall',
+            'wweSmallN',
             'upsSmall',
             'fedexSmall',
             'unishippersSmall',
