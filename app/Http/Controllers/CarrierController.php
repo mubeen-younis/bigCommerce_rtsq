@@ -192,9 +192,13 @@ class CarrierController extends Controller
                     ->where('shopify_freights.store_id', $store_id)
                     ->orderBy('speed_freight_carrierSCAC')->pluck("speed_freight_carrierName")->all();
 
+                $NEWAPI = CarrierServices::where('app_id', 1)->where('api_type', 'NEWAPI')
+                    ->orderBy('speed_freight_carrierSCAC')->pluck("speed_freight_carrierName")->all();
+
                 $services = array(
                     "GTZ" => $GTZ,
                     "CRS" => $CRS,
+                    'NEWAPI' => $NEWAPI,
                 );
 
                 $checked = $this->CheckedAllServices($installCarrier->id, $services, $request);
