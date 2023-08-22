@@ -996,6 +996,7 @@ class GenerateRequestData
                 Log::info('SBS response ' . json_encode($sbsResponse));
                 $binReponse = $sbsResponse['binResponse'] ?? [];
                 $boxBins = $sbsResponse['boxBins'] ?? [];
+                Log::info('999 binResponse ' . json_encode($binReponse) . 'boxbins'. json_encode($boxBins));
                 $isLtl = isset($carriers['wweLTL'])
                     || isset($carriers['upsLTL'])
                     || isset($carriers['fedexLTL'])
@@ -1059,7 +1060,7 @@ class GenerateRequestData
                 $requestArr['FedexHomeDeliveryPremiumPricing'] = 1;
             }
         }
-
+        Log::info('1062 binResponse ' . json_encode($binReponse) . 'boxbins'. json_encode($boxBins));
         return ['requestArr' => $requestArr, 'binReponse' => $binReponse, 'boxBins' => $boxBins, 'palletResponse' => $palletResp, 'palletBins' => $palletBins, 'SuppressParcelRates' => $IsSuppressParcelRates];
     }
 
