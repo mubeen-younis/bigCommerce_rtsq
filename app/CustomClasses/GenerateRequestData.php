@@ -736,7 +736,7 @@ class GenerateRequestData
             $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ??
                 $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ??
                 $carriers['usps']['originAddress'] ?? $carriers['purolator']['originAddress'] ??
-                $carriers['shipEngine']['originAddress'] ?? [];
+                $carriers['shipEngine']['originAddress'] ?? $carriers['wweSmallN']['originAddress'] ?? [];
             $this->itemsArr = $itemsArr;
             $this->carriers = $carriers;
 
@@ -749,7 +749,8 @@ class GenerateRequestData
                 || isset($carriers['unishippersSmall'])
                 || isset($carriers['purolator'])
                 || isset($carriers['usps'])
-                || isset($carriers['shipEngine']);
+                || isset($carriers['shipEngine'])
+                || isset($carriers['wweSmallN']);
 
             if ($hasSmall) {
                 $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
@@ -763,7 +764,7 @@ class GenerateRequestData
                 $olditemsArr = $itemsArr;
                 $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ??
                  $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? $carriers['usps']['originAddress'] ??
-                  $carriers['purolator']['originAddress'] ?? $carriers['shipEngine']['originAddress'] ?? "";
+                  $carriers['purolator']['originAddress'] ?? $carriers['shipEngine']['originAddress'] ?? $carriers['wweSmallN']['originAddress'] ?? "";
 
                 if (isset($carriers['fedexSmall'])) {
                     $this->checkServiceEnabled();
@@ -826,6 +827,14 @@ class GenerateRequestData
 
                             foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
                                 $carriers['wweSmall']['originAddress'][$key] = $origin;
+                            }
+                        }
+
+                        if (isset($carriers['wweSmallN'])) {
+                            unset($carriers['wweSmallN']['originAddress']);
+
+                            foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
+                                $carriers['wweSmallN']['originAddress'][$key] = $origin;
                             }
                         }
 
@@ -911,6 +920,10 @@ class GenerateRequestData
 
                     if (isset($carriers['wweSmall'])) {
                         $carriers['wweSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
+                    }
+
+                    if (isset($carriers['wweSmallN'])) {
+                        $carriers['wweSmallN']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                     }
 
                     if (isset($carriers['unishippersSmall'])) {
