@@ -137,7 +137,8 @@ class GenerateRequestData
                     $errorManagment['fedexSmall'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case "gtz-ltl":
-                    $carName = isset($con1['creds']['api_type']) && $con1['creds']['api_type'] === 'CRS' ? 'cerasis' : 'globalTranz';
+                    $carName = isset($con1['creds']['api_type']) && $con1['creds']['api_type'] === 'CRS' ? 'cerasis' : 
+                    (isset($con1['creds']['api_type']) && $con1['creds']['api_type'] === 'NEWAPI' ? 'wweLTLN' : 'globalTranz');
                     $wweLtlArr = $this->gtzLtlEnitArr($con1, $destination, $enitOrigin, $carName);
 
                     $wweLtlArr['originAddress'] = $enitOrigin;
@@ -1501,7 +1502,7 @@ class GenerateRequestData
                 'accessorial' => $accessorial,
                 'guaranteedRates' => $guaranteedService
             ];
-        } else { // for cerasis
+        } else if ($carName === 'cerasis') { // for cerasis
             $notify = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']);
 
             if ($residential === 'Y' || $alwaysResi) {
@@ -1539,6 +1540,30 @@ class GenerateRequestData
                 'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? '',
                 'accessorial' => $accessorial
             ];
+        } else { // for GTZ new api
+            $connSettings['creds'] = $connSettings['creds']['gtz_new_api'];
+            $liftGatePickup = (isset($connSettings['quote_settings']['liftGatePickup']) && $connSettings['quote_settings']['liftGatePickup'] && $connSettings['quote_settings']['liftGatePickup'] == true) ? 'Y' : 'N';
+            $insideDelivery = (isset($connSettings['quote_settings']['always_inside_delivery']) && $connSettings['quote_settings']['always_inside_delivery'] == true) || (isset($connSettings['quote_settings']['offer_inside_delivery']) && $connSettings['quote_settings']['offer_inside_delivery'] == true) ? 'Y' : 'N';
+            $notifyDelivery = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']) ? 'Y' : 'N';
+            $apiArray = [
+                'speed_freight_username' => isset($connSettings['creds']['user_name']) ? $connSettings['creds']['user_name'] : '',
+                'speed_freight_password' => isset($connSettings['creds']['password']) ? $connSettings['creds']['password'] : '',
+                'clientId' => isset($connSettings['creds']['clientId']) ? $connSettings['creds']['clientId'] : '',
+                'clientSecret' => isset($connSettings['creds']['clientSecret']) ? $connSettings['creds']['clientSecret'] : '',
+                'ApiVersion' => '2.0',
+                'speed_freight_residential_delivery' => $alwaysResi ? 'Y' : $residential,
+                'speed_freight_lift_gate_delivery' => $liftGate,
+                'speed_freight_residential_pickup' => $residentialPickup,
+                'speed_freight_lift_gate_pickup' => $liftGatePickup,
+                'speed_freight_lift_inside_delivery' => $insideDelivery,
+                'speed_freight_notify_before_delivery' => $notifyDelivery,
+                'insureShipment' => 0,
+                'insuranceCategory' => $insurance,
+                'thresholdWeightLimit' => $weightThreshold,
+                'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? '',
+                'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? '',
+            ];
+            
         }
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
