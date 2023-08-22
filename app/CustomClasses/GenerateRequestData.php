@@ -993,7 +993,7 @@ class GenerateRequestData
                         }
                     }
                 }
-
+                Log::info('SBS response ' . json_encode($sbsResponse));
                 $binReponse = $sbsResponse['binResponse'] ?? [];
                 $boxBins = $sbsResponse['boxBins'] ?? [];
                 $isLtl = isset($carriers['wweLTL'])
