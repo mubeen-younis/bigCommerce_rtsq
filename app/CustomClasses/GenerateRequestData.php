@@ -984,6 +984,7 @@ class GenerateRequestData
                 $binReponse = $sbsResponse['binResponse'] ?? [];
                 $boxBins = $sbsResponse['boxBins'] ?? [];
                 $isLtl = isset($carriers['wweLTL'])
+                    || isset($carriers['wweLTLN'])
                     || isset($carriers['upsLTL'])
                     || isset($carriers['fedexLTL'])
                     || isset($carriers['cerasis'])
