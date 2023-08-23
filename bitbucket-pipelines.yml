@@ -20,7 +20,7 @@ pipelines:
                 MODE: 'command'
                 COMMAND: '/home/apx-bc-01/html/bc/remote-script.sh'
 
-    staging-new:
+    feature/unishipper-new-api:
       - step:
           caches:
             - composer
@@ -28,7 +28,7 @@ pipelines:
             - pipe: atlassian/ssh-run:0.2.2
               variables:
                 SSH_USER: 'apx-bc-01'
-                SERVER: '54.165.5.4'
+                SERVER: '52.87.17.243'
                 MODE: 'command'
                 COMMAND: '/home/apx-bc-01/html/bc/remote-script.sh'
 

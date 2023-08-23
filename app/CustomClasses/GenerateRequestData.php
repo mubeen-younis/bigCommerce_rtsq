@@ -162,10 +162,11 @@ class GenerateRequestData
                     }
                     break;
                 case 'unishippers-small':
+                    $carName = isset($con1['creds']['api_type']) && $con1['creds']['api_type'] === 'new_api' ? 'wweSmallN' : 'unishippersSmall';
                     $wweLtlArr = $this->unishippersSmallEnitArr($con1, $destination);
                     $wweLtlArr['originAddress'] = $enitOrigin;
-                    $carriersArr['carriers']['unishippersSmall'] = $wweLtlArr;
-                    $errorManagment['unishippersSmall'] = $con1['quote_settings']['error_managment'] ?? 1;
+                    $carriersArr['carriers'][$carName] = $wweLtlArr;
+                    $errorManagment[$carName] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case 'odfl-ltl':
                     $odflLtlArr = $this->odflLtlEnitArr($con1, $destination);
@@ -730,13 +731,12 @@ class GenerateRequestData
 
 
         // if sbs is enabled then we are going to do the packaging for the small carriers line items
-
         if (isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs']) {
             Log::info('Packaging enabled');
             $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ??
                 $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ??
                 $carriers['usps']['originAddress'] ?? $carriers['purolator']['originAddress'] ??
-                $carriers['shipEngine']['originAddress'] ?? [];
+                $carriers['shipEngine']['originAddress'] ?? $carriers['wweSmallN']['originAddress'] ?? [];
             $this->itemsArr = $itemsArr;
             $this->carriers = $carriers;
 
@@ -749,7 +749,8 @@ class GenerateRequestData
                 || isset($carriers['unishippersSmall'])
                 || isset($carriers['purolator'])
                 || isset($carriers['usps'])
-                || isset($carriers['shipEngine']);
+                || isset($carriers['shipEngine'])
+                || isset($carriers['wweSmallN']);
 
             if ($hasSmall) {
                 $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
@@ -763,7 +764,7 @@ class GenerateRequestData
                 $olditemsArr = $itemsArr;
                 $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ??
                  $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? $carriers['usps']['originAddress'] ??
-                  $carriers['purolator']['originAddress'] ?? $carriers['shipEngine']['originAddress'] ?? "";
+                  $carriers['purolator']['originAddress'] ?? $carriers['shipEngine']['originAddress'] ?? $carriers['wweSmallN']['originAddress'] ?? "";
 
                 if (isset($carriers['fedexSmall'])) {
                     $this->checkServiceEnabled();
@@ -826,6 +827,14 @@ class GenerateRequestData
 
                             foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
                                 $carriers['wweSmall']['originAddress'][$key] = $origin;
+                            }
+                        }
+
+                        if (isset($carriers['wweSmallN'])) {
+                            unset($carriers['wweSmallN']['originAddress']);
+
+                            foreach ($sbsResponseGround['originAddress'] as $key => $origin) {
+                                $carriers['wweSmallN']['originAddress'][$key] = $origin;
                             }
                         }
 
@@ -903,7 +912,6 @@ class GenerateRequestData
                     $simpleItems = $itemsArr;
                     $sbsResponse = $this->getStoreBoxes($this->storeData['store']->id, $itemsArr, $carriersoriginAddress, $cartInfo, $isMultishipment);
                     $itemsArr = $sbsResponse['items'] ?? $itemsArr;
-
                     if (isset($carriers) && count($carriers) == 1 && isset($carriers['usps'])) {
                         $sbsResponse['binResponse'] = [];
                         $sbsResponse['boxBins'] = [];
@@ -911,6 +919,10 @@ class GenerateRequestData
 
                     if (isset($carriers['wweSmall'])) {
                         $carriers['wweSmall']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
+                    }
+
+                    if (isset($carriers['wweSmallN'])) {
+                        $carriers['wweSmallN']['originAddress'] = $sbsResponse['originAddress'] ?? $carriersoriginAddress;
                     }
 
                     if (isset($carriers['unishippersSmall'])) {
@@ -982,7 +994,7 @@ class GenerateRequestData
                 }
 
                 $binReponse = $sbsResponse['binResponse'] ?? [];
-                $boxBins = $sbsResponse['boxBins'] ?? [];
+                $boxBins = $sbsResponse['boxBins'] ?? [];                
                 $isLtl = isset($carriers['wweLTL'])
                     || isset($carriers['wweLTLN'])
                     || isset($carriers['upsLTL'])
@@ -2190,33 +2202,53 @@ class GenerateRequestData
             $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
-        $this->resiCarrier['unishippersSmall'] = $residential;
-        $this->resiCarrier['alwaysResi']['unishippersSmall'] = $alwaysResi;
-
         $accessorial = ($alwaysResi ? 'Y' : $residential == 'Y') ? ['REP'] : [];
 
-        $apiArray = [
-            'username' => $connSettings['creds']['username'],
-            'password' => $connSettings['creds']['password'],
-            'requestkey' => $connSettings['creds']['request_key'] ?? '',
-            'upsaccountnumber' => $connSettings['creds']['ups_account_number'],
-            'unishipperscustomernumber' => $connSettings['creds']['unishippers_customer_number'],
-            'packagetype' => 'P',
-            'doNesting' => '0',
+        if (isset($connSettings['creds']['api_type']) &&  $connSettings['creds']['api_type'] === 'new_api'){
+            $this->resiCarrier['isUnishipperNewApi'] = true;
+            $this->resiCarrier['unishippersSmallNewApi'] = $residential;
+            $this->resiCarrier['alwaysResi']['unishippersSmallNewApi'] = $alwaysResi;
+            $apiArray = [
+                'clientId' => isset($connSettings['creds']['clientId']) ? $connSettings['creds']['clientId'] : '',
+                'clientSecret' => isset($connSettings['creds']['clientSecret']) ? $connSettings['creds']['clientSecret'] : '',
+                'ApiVersion' => '2.0',
+                'residentials_delivery' => ($alwaysResi ? 'Y' : $residential == 'Y') ? 'yes' : 'no',
+                'prefferedCurrency' => 'USD',
+                'includeDeclaredValue' => "1",
+                'isUnishipperNewApi' => true,
+                'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
+                'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
+                'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
+                'storeDateTime' => $this->storeDateTime,
+                'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
+            ];
 
-            'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
-            'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
-            'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
-            'storeDateTime' => $this->storeDateTime,
-            'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
+        } else {
+            $this->resiCarrier['unishippersSmall'] = $residential;
+            $this->resiCarrier['alwaysResi']['unishippersSmall'] = $alwaysResi;
 
-            'prefferedCurrency' => 'USD',
-            'includeDeclaredValue' => '1',
-            'service' => 'ALL',
-            'accessorial' => $accessorial,
-            'residentials_delivery' => isset($accessorial) && !blank($accessorial) ? 'yes' : 'no'
-        ];
-
+            $apiArray = [
+                'username' => $connSettings['creds']['username'],
+                'password' => $connSettings['creds']['password'],
+                'requestkey' => $connSettings['creds']['request_key'] ?? '',
+                'upsaccountnumber' => $connSettings['creds']['ups_account_number'],
+                'unishipperscustomernumber' => $connSettings['creds']['unishippers_customer_number'],
+                'packagetype' => 'P',
+                'doNesting' => '0',
+    
+                'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
+                'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
+                'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
+                'storeDateTime' => $this->storeDateTime,
+                'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
+    
+                'prefferedCurrency' => 'USD',
+                'includeDeclaredValue' => '1',
+                'service' => 'ALL',
+                'accessorial' => $accessorial,
+                'residentials_delivery' => isset($accessorial) && !blank($accessorial) ? 'yes' : 'no'
+            ];
+        }
         return $apiArray;
     }
 

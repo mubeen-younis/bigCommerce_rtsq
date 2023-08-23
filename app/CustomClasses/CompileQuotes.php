@@ -717,6 +717,13 @@ class CompileQuotes
                         $quotesRes = array_merge($quotesRes, $resp);
                     }
                     break;
+                case "wweSmallN":
+                    $resp = $this->compileUnishipSmallNewApiQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential);
+                    $quotesTemp['wweSmallN'] = $resp;
+                    if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
+                        $quotesRes = array_merge($quotesRes, $resp);
+                    }
+                    break;
                 case "upsLTL":
                     $resp = $this->compileUpsLtlQuotes($shipment, $connectionSettings, $allOrigins);
                     $quotesTemp['upsLTL'] = $resp;
@@ -1772,6 +1779,31 @@ class CompileQuotes
         $access = $this->getAccessorialCodeSmall();
 
         $res = $this->upsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items, $this->storeId);
+        if (!$this->isMultiShipment) {
+            $this->isMultiShipment = $res['isMultiShipment'] ?? false;
+        }
+
+        return $res['resp'] ?? [];
+    }
+
+    public function compileUnishipSmallNewApiQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
+    {
+        if ($this->SuppressParcelRates) {
+            return [];
+        }
+        $this->unishippersSmallQuotesResults = new unishippersSmallQuotesResults();
+        
+        if ($residential['unishippersSmallNewApi'] == 'Y') {
+            $this->isResi = true;
+            $this->residentialDlvry = 1;
+        } else {
+            $this->isResi = false;
+            $this->residentialDlvry = 0;
+        }
+        $this->alwaysResi = $this->residential['alwaysResi']['unishippersSmallNewApi'] ?? false;
+        $access = $this->getAccessorialCodeSmall();
+
+        $res = $this->unishippersSmallQuotesResults->compileQuotesNewApi($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items, $this->storeId);
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = $res['isMultiShipment'] ?? false;
         }
@@ -3240,6 +3272,7 @@ class CompileQuotes
         if ($this->SuppressParcelRates) {
             return [];
         }
+
         if ($this->residential['wweSmall'] == 'Y') {
             $this->isResi = true;
             $this->residentialDlvry = 1;
@@ -3253,12 +3286,14 @@ class CompileQuotes
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
         $this->quoteSettings = $connectionSettings['small-package']['quote_settings'] ?? '';
         $allConfigServices = $connectionSettings['small-package']['quote_settings']['carrier_services'] ?? [];
+
         // Removing Markup indexes from services
         $allConfigServices = $this->wweSmallQuoteRes->filterWweSmallServicesFromMarkup($allConfigServices);
         $enabledServices = $this->wweSmallQuoteRes->getEnabledServicesCodes($allConfigServices);
         if (empty($enabledServices)) {
             return [];
         }
+       
 
         $rad_settings = Functions::getRADsettings($this->storeId) ?? [];
         $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
