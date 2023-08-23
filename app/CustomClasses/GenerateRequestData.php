@@ -1908,9 +1908,9 @@ class GenerateRequestData
         ];
 
         if (isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api'){
+            $apiArray['speed_ship_username'] = isset($connSettings['creds']['new_api_username']) ? $connSettings['creds']['new_api_username'] : '';
+            $apiArray['speed_ship_password'] = isset($connSettings['creds']['new_api_password']) ? $connSettings['creds']['new_api_password'] : '';
             unset(
-                $apiArray['speed_ship_username'],
-                $apiArray['speed_ship_password'],
                 $apiArray['authentication_key'],
                 $apiArray['world_wide_express_account_number'],
             );
@@ -2183,6 +2183,8 @@ class GenerateRequestData
             $this->resiCarrier['unishippersSmallNewApi'] = $residential;
             $this->resiCarrier['alwaysResi']['unishippersSmallNewApi'] = $alwaysResi;
             $apiArray = [
+                'speed_ship_username' => isset($connSettings['creds']['new_api_username']) ? $connSettings['creds']['new_api_username'] : '',
+                'speed_ship_password' => isset($connSettings['creds']['new_api_password']) ? $connSettings['creds']['new_api_password'] : '',
                 'clientId' => isset($connSettings['creds']['clientId']) ? $connSettings['creds']['clientId'] : '',
                 'clientSecret' => isset($connSettings['creds']['clientSecret']) ? $connSettings['creds']['clientSecret'] : '',
                 'ApiVersion' => '2.0',
