@@ -1129,6 +1129,7 @@ class CompileQuotes
         $shipments = $this->GTZLtlQuotesResults->newApiFormateQuoteBeforeCompile($shipments);
 
         $this->quoteSettings = $connectionSettings['gtz-ltl']['quote_settings'] ?? [];
+        $this->quoteSettings['method'] = $this->quoteSettings['new_api_rating_method'] ?? $this->quoteSettings['method'] ?? 1;
 
         $allConfigServices = $connectionSettings['gtz-ltl']['carrier_services']['NEWAPI'] ?? [];
         foreach ($allConfigServices as $key => $allConfigService) {
