@@ -32,7 +32,7 @@ class AdditionalCarrierTabSettingController extends Controller
         } else if ($carrier->slug == 'gtz-ltl') {
             $storeId = null;
             $carrierType = $request->carrier_type ?? 'gtz';
-            //dd($carrierType);
+
             if ($carrierType === 'CRS') {
                 $storeId = $request['store_id'] ?? null;
                 $services = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
@@ -40,9 +40,7 @@ class AdditionalCarrierTabSettingController extends Controller
                     ->where('shopify_freights.store_id', $storeId)
                     ->orderBy('speed_freight_carrierSCAC')->get();
             } elseif ($carrierType === 'NEWAPI') {
-                $services = CarrierServices::where('app_id', '=', 1)
-                    ->where('api_type', '=', $carrierType)
-                    ->orderBy('speed_freight_carrierName')->get();
+                $services = CarrierServices::where('app_id', '=', 1)->orderBy('speed_freight_carrierName')->get();
             } else {
                 $services = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
                     ->where('installed_carriers.id', $installed_carrier)
