@@ -275,7 +275,7 @@ class Shipping
             }
 
             if ($this->isRequestMultishipment && !$isShippingOrFreight) {
-                $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings, $residential, $quotesFromWs, $requestArr['requestArr']);
+                $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings, $residential, $quotesFromWs, $requestArr['requestArr'], $store_id);
                 $finalQuotes = $finalQuotesMulti['checkoutQuotes'] ?? [];
                 $multiShipmentQuotes = $finalQuotesMulti['multiShipmentQuotes'] ?? [];
             }
@@ -409,7 +409,7 @@ class Shipping
         return $finalQuotes;
     }
 
-    private function makeMultishipmentSmallLtl($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr)
+    private function makeMultishipmentSmallLtl($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr, $storeId)
     {
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
         /*
@@ -417,7 +417,7 @@ class Shipping
          * there is some caompatibility code of multi shipment here
          *
          * */
-        $resp = $ltlSmallCompileQuotes->compileQuotes($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr);
+        $resp = $ltlSmallCompileQuotes->compileQuotes($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr, $storeId);
         return $resp;
     }
 
