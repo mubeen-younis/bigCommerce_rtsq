@@ -708,6 +708,10 @@ class PalletPackaging
                 foreach ($q['q'] as $key => $value) {
                     $quotesWithFee[$carName][$locId]['q'][$key]['customerRate'] = $value['customerRate'] + $palletFee[$locId];
                 }
+            } elseif ($carName == 'wweLTLN') {                
+                foreach ($q['q'] as $key => $value) {
+                    $quotesWithFee[$carName][$locId]['q'][$key]['totalOfferPrice']['value'] = $value['totalOfferPrice']['value'] + $palletFee[$locId];
+                }
             } else {
                 $quotesWithFee = [];
             }
