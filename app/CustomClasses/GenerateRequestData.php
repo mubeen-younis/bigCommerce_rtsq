@@ -138,7 +138,7 @@ class GenerateRequestData
                     break;
                 case "gtz-ltl":
                     $carName = isset($con1['creds']['api_type']) && $con1['creds']['api_type'] === 'CRS' ? 'cerasis' : 
-                    (isset($con1['creds']['api_type']) && $con1['creds']['api_type'] === 'NEWAPI' ? 'wweLTLN' : 'globalTranz');
+                    (isset($con1['creds']['api_type']) && $con1['creds']['api_type'] === 'GTZ' ? 'globalTranz' : 'wweLTLN');
                     $wweLtlArr = $this->gtzLtlEnitArr($con1, $destination, $enitOrigin, $carName);
 
                     $wweLtlArr['originAddress'] = $enitOrigin;
