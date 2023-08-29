@@ -138,7 +138,7 @@ class GenerateRequestData
                     break;
                 case "gtz-ltl":
                     $carName = isset($con1['creds']['api_type']) && $con1['creds']['api_type'] === 'CRS' ? 'cerasis' : 
-                    (isset($con1['creds']['api_type']) && $con1['creds']['api_type'] === 'GTZ' ? 'globalTranz' : 'wweLTLN');
+                    (isset($con1['creds']['api_type']) && $con1['creds']['api_type'] === 'NEWAPI' ? 'wweLTLN' : 'globalTranz');
                     $wweLtlArr = $this->gtzLtlEnitArr($con1, $destination, $enitOrigin, $carName);
 
                     $wweLtlArr['originAddress'] = $enitOrigin;
@@ -1554,7 +1554,7 @@ class GenerateRequestData
                 'accessorial' => $accessorial
             ];
         } else { // for GTZ new api
-            $connSettings['creds'] = $connSettings['creds']['gtz_new_api'];
+            $connSettings['creds'] = isset($connSettings['creds']['gtz_new_api']) ? $connSettings['creds']['gtz_new_api'] : [];
             $liftGatePickup = (isset($connSettings['quote_settings']['liftGatePickup']) && $connSettings['quote_settings']['liftGatePickup'] && $connSettings['quote_settings']['liftGatePickup'] == true) ? 'Y' : 'N';
             $insideDelivery = (isset($connSettings['quote_settings']['always_inside_delivery']) && $connSettings['quote_settings']['always_inside_delivery'] == true) || (isset($connSettings['quote_settings']['offer_inside_delivery']) && $connSettings['quote_settings']['offer_inside_delivery'] == true) ? 'Y' : 'N';
             $notifyDelivery = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']) ? 'Y' : 'N';
