@@ -659,7 +659,7 @@ class SubscriptionController extends Controller
         $metadata = isset($data['metadata']) ? $data['metadata'] : '';
         $cardArray = array(
             "number" => $cNumber,
-            "exp_month" => (int)$cExpiryMonth,
+            "exp_month" => $cExpiryMonth,
             "exp_year" => (int)$cExpiryYear,
             "cvc" => $cCvc,
             "name" => $cName,
