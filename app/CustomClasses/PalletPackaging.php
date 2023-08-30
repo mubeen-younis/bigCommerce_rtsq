@@ -44,7 +44,7 @@ class PalletPackaging
      */
     public function getLtlCarriers()
     {
-        $ltlCarriers = ['wweLTL', 'upsLTL', 'fedexLTL', 'globalTranz', 'cerasis', 'xpoLogistics', 'rnl', 'yrc', 'freightQuote', 'estes', 'dayross', 'odfl4me', 'saia', 'abf', 'southeastern', 'tql', 'echoLogistics', 'daylight', 'chr'];
+        $ltlCarriers = ['wweLTL', 'wweLTLN', 'upsLTL', 'fedexLTL', 'globalTranz', 'cerasis', 'xpoLogistics', 'rnl', 'yrc', 'freightQuote', 'estes', 'dayross', 'odfl4me', 'saia', 'abf', 'southeastern', 'tql', 'echoLogistics', 'daylight', 'chr'];
 
         return $ltlCarriers;
     }
@@ -707,6 +707,10 @@ class PalletPackaging
             } elseif ($carName == 'tql') {
                 foreach ($q['q'] as $key => $value) {
                     $quotesWithFee[$carName][$locId]['q'][$key]['customerRate'] = $value['customerRate'] + $palletFee[$locId];
+                }
+            } elseif ($carName == 'wweLTLN') {                
+                foreach ($q['q'] as $key => $value) {
+                    $quotesWithFee[$carName][$locId]['q'][$key]['totalOfferPrice']['value'] = $value['totalOfferPrice']['value'] + $palletFee[$locId];
                 }
             } else {
                 $quotesWithFee = [];

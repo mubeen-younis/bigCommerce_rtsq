@@ -20,7 +20,7 @@ pipelines:
                 MODE: 'command'
                 COMMAND: '/home/apx-bc-01/html/bc/remote-script.sh'
 
-    feature/unishipper-new-api:
+    feature/gtz-new-api:
       - step:
           caches:
             - composer
