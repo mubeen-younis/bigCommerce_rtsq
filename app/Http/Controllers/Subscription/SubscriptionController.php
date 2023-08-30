@@ -661,7 +661,7 @@ class SubscriptionController extends Controller
             "number" => $cNumber,
             "exp_month" => (int)$cExpiryMonth,
             "exp_year" => (int)$cExpiryYear,
-            "cvc" => (int)$cCvc,
+            "cvc" => $cCvc,
             "name" => $cName,
             "address_line1" => $cAddress_line1,
             "address_city" => $cAddress_city,
