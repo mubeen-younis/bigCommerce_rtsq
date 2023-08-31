@@ -2941,7 +2941,7 @@ class GenerateRequestData
 
         $paymentType = isset($connSettings['quote_settings']['shipper_relationship']) && $connSettings['quote_settings']['shipper_relationship'] === 'third_party' ? 'ThirdParty' : 'shipper';
         $apiArray = [
-            'accessLevel' => isset($connSettings['creds']['access_level']) ? $connSettings['creds']['access_level'] : '',
+            'accessLevel' => 'pro', // set accessLevel to be pro mentioned in Ticket#1846800919
             'APIKey' => isset($connSettings['creds']['ups_api_access_key']) ? $connSettings['creds']['ups_api_access_key'] : '',
             'AccountNumber' => isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api' && isset($connSettings['creds']['new_api_account_number']) ? $connSettings['creds']['new_api_account_number'] : $connSettings['creds']['account_number'] ?? '',
             'UserName' => isset($connSettings['creds']['username']) ? $connSettings['creds']['username'] : '',
