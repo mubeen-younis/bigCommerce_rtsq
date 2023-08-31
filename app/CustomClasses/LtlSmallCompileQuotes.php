@@ -85,6 +85,41 @@ class LtlSmallCompileQuotes
                     } else {
                         $quotesCarrier['ltl']['fedex']['simple'][] = $quote;
                     }
+                } else if (strpos($quote['code'], 'gtzltl_new') !== false) {
+                    $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
+                    $quote['isResi'] = $residential['gtzLtl'] == 'Y';
+                    $quote['isLG'] = isset($connectionSettings['gtz-ltl']['quote_settings']['offerLiftGateDelivery']) && $connectionSettings['gtz-ltl']['quote_settings']['offerLiftGateDelivery'];
+                    $quote['isNBD'] = isset($connectionSettings['gtz-ltl']['quote_settings']['offer_notify_as_option']) && $connectionSettings['gtz-ltl']['quote_settings']['offer_notify_as_option'];
+                    $quoteSettings = isset($connectionSettings['gtz-ltl']['quote_settings']) ? $connectionSettings['gtz-ltl']['quote_settings'] : [];
+                    $quote['isID'] = isset($connectionSettings['gtz-ltl']['quote_settings']['offer_inside_delivery']) && $connectionSettings['gtz-ltl']['quote_settings']['offer_inside_delivery'];
+                    $quote['isLAD'] = isset($connectionSettings['gtz-ltl']['quote_settings']['offer_limited_access_delivery']) && $connectionSettings['gtz-ltl']['quote_settings']['offer_limited_access_delivery'];
+                    
+                    if (strpos($quote['code'], '+LG+ID+NBD') !== false) {
+                        $quotesCarrier['ltl']['gtznew']['LGIDNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+ID+LAD') !== false) {
+                        $quotesCarrier['ltl']['gtznew']['LGIDLAD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+NBD') !== false) {
+                        $quotesCarrier['ltl']['gtznew']['LGNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+ID+NBD') !== false) {
+                        $quotesCarrier['ltl']['gtznew']['IDNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+LAD') !== false) {
+                        $quotesCarrier['ltl']['gtznew']['LGLAD'][] = $quote;
+                    } else if (strpos($quote['code'], '+ID+LAD') !== false) {
+                        $quotesCarrier['ltl']['gtznew']['IDLAD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+ID') !== false) {
+                        $quotesCarrier['ltl']['gtznew']['LGID'][] = $quote;
+                    } else if (strpos($quote['code'], '+NBD') !== false) {
+                        $quotesCarrier['ltl']['gtznew']['NBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG') !== false) {
+                        $quotesCarrier['ltl']['gtznew']['LG'][] = $quote;
+                    } else if (strpos($quote['code'], '+LAD') !== false) {
+                        $quotesCarrier['ltl']['gtznew']['LAD'][] = $quote;
+                    } else if (strpos($quote['code'], '+ID') !== false) {
+                        $quotesCarrier['ltl']['gtznew']['ID'][] = $quote;
+                    } else {
+                        $quotesCarrier['ltl']['gtznew']['simple'][] = $quote;
+                    }
+
                 } else if (strpos($quote['code'], 'gtzltl') !== false) {
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
                     $quote['isResi'] = $residential['gtzLtl'] == 'Y';
@@ -724,7 +759,7 @@ class LtlSmallCompileQuotes
     private function indexesOfQuotes($quotes)
     {
         $small = $ltl = [];
-        $ltlQuotes = $quotes['wweLTL'] ?? $quotes['upsLTL'] ?? $quotes['fedexLTL'] ?? $quotes['globalTranz'] ?? $quotes['cerasis'] ?? $quotes['xpoLogistics'] ?? $quotes['rnl'] ?? $quotes['yrc'] ?? $quotes['freightQuote'] ?? $quotes['estes'] ?? $quotes['dayross'] ?? $quotes['odfl4me'] ?? $quotes['saia'] ?? $quotes['abf'] ?? $quotes['southeastern'] ?? $quotes['tql'] ?? $quotes['echoLogistics'] ?? $quotes['daylight'] ?? $quotes['chr'] ?? [];
+        $ltlQuotes = $quotes['wweLTL'] ?? $quotes['wweLTLN'] ?? $quotes['upsLTL'] ?? $quotes['fedexLTL'] ?? $quotes['globalTranz'] ?? $quotes['cerasis'] ?? $quotes['xpoLogistics'] ?? $quotes['rnl'] ?? $quotes['yrc'] ?? $quotes['freightQuote'] ?? $quotes['estes'] ?? $quotes['dayross'] ?? $quotes['odfl4me'] ?? $quotes['saia'] ?? $quotes['abf'] ?? $quotes['southeastern'] ?? $quotes['tql'] ?? $quotes['echoLogistics'] ?? $quotes['daylight'] ?? $quotes['chr'] ?? [];
         foreach ($ltlQuotes as $key => $quote) {
             $ltl[] = $key;
         }
