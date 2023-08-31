@@ -13,7 +13,7 @@ class WweSmallQuoteResults
     public function filterWweSmallServicesFromMarkup($services)
     {
         if (!empty($services)) {
-            $allowed = Constant::WWE_SMALL_SERVICES;
+            $allowed = Functions::$WWE_SMALL_SERVICES;
             $filtered = array_filter(
                 $services,
                 function ($key) use ($allowed) {

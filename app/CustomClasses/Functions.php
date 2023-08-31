@@ -67,6 +67,21 @@ class Functions
     public static $lglaccesseNotifyDelAccess = '+LG+LAD+NBD';
     public static $lginsideNotifyDelAccess = '+LG+ID+NBD';
     public static $notifyDelAccess = '+NBD';
+    public static $WWE_SMALL_SERVICES = [
+        'ups_ground',
+        'ups_3_day_select', 
+        'ups_2nd_day_air', 
+        'ups_2nd_day_air_am',  
+        'ups_next_day_air_saver', 
+        'ups_next_day_air', 
+        'ups_next_day_air_early',
+        // International services
+        'ups_standard',
+        'ups_worldwide_expedited',
+        'ups_worldwide_saver',
+        'ups_worldwide_express',
+        'ups_worldwide_express_plus',
+    ];
 
     public static function hasInsureCarrier($code)
     {
