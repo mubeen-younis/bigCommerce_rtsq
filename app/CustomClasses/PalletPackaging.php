@@ -722,7 +722,7 @@ class PalletPackaging
 
     private function isAbfError($q)
     {
-        return isset($q['q']['NUMERRORS']) && $q['q']['NUMERRORS'] == 1;
+        return isset($q['q']['NUMERRORS']) && ($q['q']['NUMERRORS'] == 1 || $q['q']['NUMERRORS'] == 2);
     }
 
     private function dayRossError($q)
