@@ -3472,6 +3472,11 @@ class CompileQuotes
                 $notifyDelivery = !($this->isResi || $this->alwaysResi) && (
                     (isset($this->quoteSettings['always_quote_notify']) && $this->quoteSettings['always_quote_notify']) ||
                     (isset($this->quoteSettings['offer_notify_as_option']) && $this->quoteSettings['offer_notify_as_option']));
+                
+                if(!$notifyDelivery){
+                    $this->quoteSettings['offer_notify_as_option'] = false;
+                    $this->quoteSettings['always_quote_notify'] = false;
+                }
             }
             $originQuotes = [];
             $arraySorting = [];
