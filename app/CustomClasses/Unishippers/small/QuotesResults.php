@@ -502,7 +502,7 @@ class QuotesResults
             'GND' => 'UPS Ground',
             '3DS' => 'UPS 3 Day Select',
             '2DA' => 'UPS 2nd Day Air',
-            '2DM' => 'UPS 2nd Day Air A.M.',
+            '2DM' => 'UPS 2nd Day Air Early',
             '2DAS' => 'UPS 2nd Day Air Saver',
             '1DA' => 'UPS Next Day Air',
             '1DP' => 'UPS Next Day Air Saver',
