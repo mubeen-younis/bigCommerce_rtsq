@@ -6,6 +6,7 @@ use App\Constants\Constant;
 use App\CustomClasses\CarriersConnectionSettings;
 use App\CustomClasses\CurlRequest;
 use Illuminate\Support\Facades\DB;
+use App\Endpoints\Endpoints;
 
 class ConnectionSettings extends CarriersConnectionSettings
 {
@@ -25,24 +26,44 @@ class ConnectionSettings extends CarriersConnectionSettings
         if($data->api_type === 'CRS'){
             $data = $data->cerasis;
             $apiType = 'cerasis';
-        }else{
+        }elseif($data->api_type === 'GTZ'){
             $data = $data->global_tranz;
             $apiType = 'globalTranz';
+        }else{
+            $data = $data->gtz_new_api;
+            $apiType = 'NEWAPI';
         }
-        $params  = [
-            'platform' => 'bigcommerce',
-            'carrier_mode' => 'test',
-            'accessLevel' => 'pro', // pro , test
-            'version' => '2.0',
-            'username' => $data['user_name'] ?? '',
-            'password' => $data['password'] ?? '',
-            'accessKey' => $data['access_key'] ?? '',
-            'dont_auth' => '1',
-            'serverName' => $storeName ?? '',
-            'customer_id' => $data['customer_id'] ?? '',
-            'shipperID' => $data['customer_id'] ?? '',
-            'carrierName' => $apiType,
-        ];
+        if($apiType === 'NEWAPI'){
+            $url = Endpoints::wweLtlTestEndpoint();
+            $params = [
+                'platform' => 'bigcommerce',
+                'carrier_mode' => 'test',
+                'speed_freight_username' => $data['user_name'],
+                'speed_freight_password' => $data['password'],
+                'plugin_domain_name' => $storeName ?? '',
+                'plugin_licence_key' => $data->license_key ?? '',
+                'dont_auth' => 1,
+                // New Api Test Connection Params
+                'clientId' => $data['clientId'],
+                'clientSecret' => $data['clientSecret'],
+                'ApiVersion' => '2.0'
+            ];
+        }else{
+            $params  = [
+                'platform' => 'bigcommerce',
+                'carrier_mode' => 'test',
+                'accessLevel' => 'pro', // pro , test
+                'version' => '2.0',
+                'username' => $data['user_name'] ?? '',
+                'password' => $data['password'] ?? '',
+                'accessKey' => $data['access_key'] ?? '',
+                'dont_auth' => '1',
+                'serverName' => $storeName ?? '',
+                'customer_id' => $data['customer_id'] ?? '',
+                'shipperID' => $data['customer_id'] ?? '',
+                'carrierName' => $apiType,
+            ];
+        }
 
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
