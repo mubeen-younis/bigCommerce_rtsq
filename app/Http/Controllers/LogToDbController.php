@@ -119,10 +119,10 @@ class LogToDbController extends Controller
                             continue;
                         }
                         if ($carrierName === 'dayross'){
-                            $resp = isset($data['response']) ? stripslashes($data['response']) : [];
+                            $resp = isset($data['response']) && !empty($data['response']) ? stripslashes($data['response']) : json_encode((object) null);
                             $resp = preg_replace('/\s+/', '', $resp);
                         } else { 
-                            $resp = isset($data['response']) ? preg_replace('/\s+/', '', $data['response']) : [];
+                            $resp = isset($data['response']) && !empty($data['response']) ? preg_replace('/\s+/', '', $data['response']) : json_encode((object) null);
                         }
                         
                         $lineitems = isset($respdata['lineitems']) ? json_decode($respdata['lineitems'], true) : [];
