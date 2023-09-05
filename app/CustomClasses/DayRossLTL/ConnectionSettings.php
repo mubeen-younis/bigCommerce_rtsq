@@ -24,10 +24,11 @@ class ConnectionSettings extends CarriersConnectionSettings
         $params = [
             // -------------Carrier type and Status------------- //
             'licence_key' => 'TDVB9ONC-M7QJRPRQ-5EDIH32D-DE73Y57I',
-            'sever_name' => 'wc.eniture-dev.com',
+            'sever_name' => $storeName,
             'carrierName' => 'dayross',
             'carrier_mode' => 'test', // use test / pro
             'dont_auth' => '1',
+            'platform' => 'bigcommerce',
             // -------------Carrier Credentials------------- //
             'emailAddress' => $data['email'],
             'password' => $data['password'],
