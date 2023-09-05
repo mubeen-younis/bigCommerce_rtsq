@@ -140,8 +140,8 @@ class Functions
     public static function getCarrNameBySlug($carrSlug): ?string
     {
         $carrierCodesWithName = ['ltl-quotes' => 'WWE LTL', 'ups-ltl' => 'ups', 'rl-ltl' => 'rnl', 'xpo-ltl' => 'xpoLogistics',
-            'fedex-ltl' => 'fedex', 'gtz-ltl' => 'globaltranz', 'cltl' => 'cerasis',
-            'small-package' => 'WWE SmPkg', 'ups-small' => 'UPS Small', 'fedex-small' => 'FedEx Small', 'unishippers-small' => 'unisheppers',
+            'fedex-ltl' => 'fedex', 'gtz-new' => 'WWE LTL', 'gtz-ltl' => 'globaltranz', 'cltl' => 'cerasis', 'ups-ship-engine' => 'ShipEngine',
+            'small-package' => 'WWE SmPkg', 'unishippers-small-new' => 'WWE SmPkg', 'ups-small' => 'UPS Small', 'fedex-small' => 'FedEx Small', 'unishippers-small' => 'Unishippers',
             'freightquote-ltl' => 'b2b', 'freightquote-chr-ltl' => 'b2b', 'purolator-small' => 'purolator', 'usps-small' => 'usps',
             'tql-ltl' => 'tql', 'yrc-ltl' => 'yrc', 'odfl-ltl' => 'odfl4me', 'dayross-ltl' => 'dayross',
             'estes-ltl' => 'estes', 'echo-ltl' => 'echoLogistics', 'saia-ltl' => 'saia', 'abf-ltl' => 'abf', 'daylight-ltl' => 'daylight',

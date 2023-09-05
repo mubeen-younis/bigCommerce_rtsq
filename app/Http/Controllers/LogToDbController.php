@@ -121,6 +121,8 @@ class LogToDbController extends Controller
                         if ($carrierName === 'dayross'){
                             $resp = isset($data['response']) && !empty($data['response']) ? stripslashes($data['response']) : json_encode((object) null);
                             $resp = preg_replace('/\s+/', '', $resp);
+                        } else if ($carrierName === 'yrc'){
+                            $resp = isset($data['response']) && !empty($data['response']) ? preg_replace('/\s+/', '', strip_tags($data['response'])) : json_encode((object) null);
                         } else { 
                             $resp = isset($data['response']) && !empty($data['response']) ? preg_replace('/\s+/', '', $data['response']) : json_encode((object) null);
                         }
