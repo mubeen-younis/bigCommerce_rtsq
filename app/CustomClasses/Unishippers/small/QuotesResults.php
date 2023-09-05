@@ -467,7 +467,13 @@ class QuotesResults
             '2DAS' => 'ups_2nd_day_air_saver',
             '1DA' => 'ups_next_day_air',
             '1DP' => 'ups_next_day_air_saver',
-            '1DM' => 'ups_next_day_air_early'
+            '1DM' => 'ups_next_day_air_early',
+            /** International Services Index for Unishipper New API */
+            '01' => 'ups_worldwide_express',
+            '05' => 'ups_worldwide_expedited',
+            '28' => 'ups_worldwide_saver',
+            '03' => 'ups_standard',
+            '21' => 'ups_worldwide_express_plus',
         ];
 
         return $indexesArr[$srvcType] ?? '';
@@ -496,11 +502,17 @@ class QuotesResults
             'GND' => 'UPS Ground',
             '3DS' => 'UPS 3 Day Select',
             '2DA' => 'UPS 2nd Day Air',
-            '2DM' => 'UPS 2nd Day Air A.M.',
+            '2DM' => 'UPS 2nd Day Air Early',
             '2DAS' => 'UPS 2nd Day Air Saver',
             '1DA' => 'UPS Next Day Air',
             '1DP' => 'UPS Next Day Air Saver',
-            '1DM' => 'UPS Next Day Air Early'
+            '1DM' => 'UPS Next Day Air Early',
+            /** International Name for Unishipper New API */
+            "01" => "UPS Worldwide Express",
+            "03" => "UPS Standard",
+            "05" => "UPS Worldwide Expedited",
+            "21" => "UPS Worldwide Express Plus",
+            "28" => "UPS Worldwide Saver",
         ];
 
         return $titlesArr[$srvcType] ?? '';

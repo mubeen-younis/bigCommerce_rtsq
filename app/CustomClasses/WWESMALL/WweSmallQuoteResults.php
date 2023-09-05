@@ -13,7 +13,7 @@ class WweSmallQuoteResults
     public function filterWweSmallServicesFromMarkup($services)
     {
         if (!empty($services)) {
-            $allowed = Constant::WWE_SMALL_SERVICES;
+            $allowed = Functions::$WWE_SMALL_SERVICES;
             $filtered = array_filter(
                 $services,
                 function ($key) use ($allowed) {
@@ -135,6 +135,21 @@ class WweSmallQuoteResults
             case "ups_next_day_air_early":
                 return "1DM";
                 break;
+            case "ups_worldwide_express":
+                return "01";
+                break;
+            case "ups_worldwide_expedited":
+                return "05";
+                break;
+            case "ups_worldwide_saver":
+                return "28";
+                break;
+            case "ups_worldwide_express_plus":
+                return "21";
+                break;
+            case "ups_standard":
+                return "03";
+                break;
             default:
                 return "";
         }
@@ -183,6 +198,21 @@ class WweSmallQuoteResults
                 break;
             case "1DM":
                 return "ups_next_day_air_early_markup";
+                break;
+            case "01":
+                return "ups_worldwide_express_markup";
+                break;
+            case "03":
+                return "ups_standard_markup";
+                break;
+            case "05":
+                return "ups_worldwide_expedited_markup";
+                break;
+            case "21":
+                return "ups_worldwide_express_plus_markup";
+                break;
+            case "28":
+                return "ups_worldwide_saver_markup";
                 break;
             default:
                 return "";
