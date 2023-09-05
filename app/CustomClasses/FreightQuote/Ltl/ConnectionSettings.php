@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 
 class ConnectionSettings
 {
-    private $testConnectionUrl = Constant::BASEURL . '/ws/index.php';
+    private $testConnectionUrl = Constant::BASEURL . '/index.php';
 
     public function __construct()
     {
