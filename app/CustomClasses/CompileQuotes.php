@@ -3380,7 +3380,7 @@ class CompileQuotes
         // $multiShipmentQuotes
         // Check for mukti shipment finding lowest price in each shipment and adding them for multi shipment
         if ($this->isMultiShipment) {
-            $originQuotesMulti = [];
+            $originQuotesMulti = $multiShipmentQuote = [];
             $multiShipPrice = 0;
             foreach ($originQuotes as $shipmentKey => $shipment) {
                 $netChargeArray = array_column($shipment['shipment'], 'simple');

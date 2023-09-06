@@ -84,7 +84,6 @@ class GetRatesController extends Controller
         $formatReq = $this->formatRequest($request->all(), $storeData);
         if (
             $formatReq['lineItemData']['destination']['zip'] == null ||
-            $formatReq['lineItemData']['destination']['state'] == null ||
             $formatReq['lineItemData']['destination']['country'] == null ||
             count($this->connectionSettings) == 0
         ) {
