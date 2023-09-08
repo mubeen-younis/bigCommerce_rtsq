@@ -16,7 +16,7 @@ class LocationsController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public $googleURL = 'https://eniture.com/ws/addon/google-location.php';
+    public $googleURL = 'https://ws001.eniture.com/addon/google-location.php';
     public $curlRequest;
 
     public function __construct()

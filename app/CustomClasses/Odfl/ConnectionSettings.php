@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 class ConnectionSettings
 {
-    private $testConnectionUrl = Constant::BASEURL.'/ws/index.php';
+    private $testConnectionUrl = Constant::BASEURL.'/index.php';
     public function __construct()
     {
         $this->curlRequest = new CurlRequest();
@@ -33,7 +33,7 @@ class ConnectionSettings
             'Password' => $data['password'] ?? '',
             'CUSTNMBR' => $data['customer_number'] ?? '',
             'requestType' => isset($data['access_level']) && $data['access_level'] == 'pro' ? 'thirdParty':'shipper'
-        ];
+        ];return $url;
         $isPro = false;
         if(isset($data['access_level']) && $data['access_level'] == 'pro' && isset($data['api_key']) && $data['api_key'] != '' ){
             $Test = [
