@@ -1770,6 +1770,8 @@ class GenerateRequestData
          * **/
         $residential = 'N';
         $alwaysResi = false;
+        $palletWeight = '';
+        $palletCode = '';
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
         if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
@@ -1791,6 +1793,15 @@ class GenerateRequestData
         $this->resiCarrier['rnlLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['rnlLtl'] = $alwaysResi;
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
+        
+        if (isset($connSettings['quote_settings']['pallet_code']) && !empty($connSettings['quote_settings']['pallet_code']) && 
+            is_numeric($connSettings['quote_settings']['pallet_code']) && isset($connSettings['quote_settings']['pallet_weight']) && 
+            !empty($connSettings['quote_settings']['pallet_weight']))
+        {
+            $palletWeight = $connSettings['quote_settings']['pallet_weight'];
+            $palletCode = $connSettings['quote_settings']['pallet_code'];
+        }
+
         $apiArray = [
             'UserName' => $connSettings['creds']['username'] ?? '',
             'Password' => $connSettings['creds']['password'] ?? '',
@@ -1809,6 +1820,8 @@ class GenerateRequestData
             'DeclaredValue' => '0',
 
             'holdAtTerminal' => $connSettings['quote_settings']['hold_at_terminal'] ?? 0,
+            'palletCode' => $palletCode ?? '',
+            'palletWeight' => $palletWeight ?? '',
 
             /*'modifyShipmentDateTime' => '1',
             'OrderCutoffTime' => '16:00',

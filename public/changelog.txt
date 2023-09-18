@@ -1,0 +1,7 @@
+= 1.0.1 2023-09-18 =
+
+* Update - update url's domain name in BC. (sabir ali)[#377](https://bitbucket.org/eniture/big-commerce/pull-requests/377)
+
+= 1.0.0 2023-09-08 =
+
+* Initial release.
