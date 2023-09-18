@@ -214,23 +214,26 @@ class ConnectionController extends Controller
                     ]);
             }
         }
-
-        $url = Endpoints::testConnectionEndpoint();
-        $getPalletsParams  = [
-            'platform' => 'bigcommerce',
-            'carrier_mode' => 'getPallets',
-            'dont_auth' => '1',
-            'carrierName' => 'rnl',
-            'serverName' => $storeName ?? '',
-
-            'UserName' => $request['username'] ?? '',
-            'Password' => $request['password'] ?? '',
-            'APIKey' => $request['authentication_key'] ?? '',
-        ];
-
-        $getPalletsQueryString = http_build_query($getPalletsParams);
-        $getPalletsOutput = $this->curlRequest->enSingleCurlRequest($url, $getPalletsQueryString, [], 'POST');
-        $getPalletsOutput = json_decode($getPalletsOutput['response'], true) ?? [];
+        
+        $getPalletsOutput = [];
+        if ($checkCarrierType->slug === 'rl-ltl') {
+            $url = Endpoints::testConnectionEndpoint();
+            $getPalletsParams  = [
+                'platform' => 'bigcommerce',
+                'carrier_mode' => 'getPallets',
+                'dont_auth' => '1',
+                'carrierName' => 'rnl',
+                'serverName' => $storeName ?? '',
+    
+                'UserName' => $request['username'] ?? '',
+                'Password' => $request['password'] ?? '',
+                'APIKey' => $request['authentication_key'] ?? '',
+            ];
+    
+            $getPalletsQueryString = http_build_query($getPalletsParams);
+            $getPalletsOutput = $this->curlRequest->enSingleCurlRequest($url, $getPalletsQueryString, [], 'POST');
+            $getPalletsOutput = json_decode($getPalletsOutput['response'], true) ?? [];
+        }
 
         if(isset($getPalletsOutput['severity']) && $getPalletsOutput['severity'] == 'success'){
             $request['pallets'] = isset($getPalletsOutput['pallets']) ? $getPalletsOutput['pallets'] : [] ?? [];
