@@ -476,6 +476,9 @@ class OrderController extends Controller
                 $sName = explode('w/', $sName)[0] ?? '';
                 $estimate = explode('(Intransit', $order['shipping_name'])[1] ?? '';
                 $sMethod = '(Intransit' . $estimate;
+            } else {
+                $sName = $order['shipping_name'] ?? '';
+                $sMethod = '';
             }            
 
             $orderWidget[$zip]['shipping_method'] = $sName . $sMethod;
