@@ -188,7 +188,7 @@ class LogToDbController extends Controller
                         $storeTimezone = isset($response['timezone']['name']) ? $response['timezone']['name'] : ''; 
                         $storeTime = new \DateTimeZone($storeTimezone);
                         $datetime->setTimezone($storeTime);
-                        $formattedTime = $datetime->format('Y-m-d H:i:s');
+                        $formattedTime = $datetime->format('m/d/Y H:i:s');
 
                         $logsData[$key]['dateTime'] = $formattedTime ?? '';
                         $logsData[$key]['responseData'] = $resp;
