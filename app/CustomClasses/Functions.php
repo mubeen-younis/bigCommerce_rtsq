@@ -156,7 +156,7 @@ class Functions
     {
         $carrierCodesWithName = ['ltl-quotes' => 'WWE LTL', 'ups-ltl' => 'ups', 'rl-ltl' => 'rnl', 'xpo-ltl' => 'xpoLogistics',
             'fedex-ltl' => 'fedex', 'gtz-new' => 'WWE LTL', 'gtz-ltl' => 'globaltranz', 'cltl' => 'cerasis', 'ups-ship-engine' => 'ShipEngine',
-            'small-package' => 'WWE SmPkg', 'unishippers-small-new' => 'WWE SmPkg', 'ups-small' => 'UPS Small', 'fedex-small' => 'FedEx Small', 'unishippers-small' => 'Unishippers',
+            'small-package' => 'WWE SmPkg', 'unishippers-small-new' => 'WWE SmPkg', 'ups-small' => 'UPS Small', 'fedex-small' => 'FedEx Small', 'unishippers-small' => 'unisheppers',
             'freightquote-ltl' => 'b2b', 'freightquote-chr-ltl' => 'b2b', 'purolator-small' => 'purolator', 'usps-small' => 'usps',
             'tql-ltl' => 'tql', 'yrc-ltl' => 'yrc', 'odfl-ltl' => 'odfl4me', 'dayross-ltl' => 'dayross',
             'estes-ltl' => 'estes', 'echo-ltl' => 'echoLogistics', 'saia-ltl' => 'saia', 'abf-ltl' => 'abf', 'daylight-ltl' => 'daylight',
