@@ -249,10 +249,19 @@ class FDOOrderController extends Controller
             if (blank($handlingUnitDetails)) {
                 $handlingUnitDetails = optional($responseFromWS)->$wsCarrierCode->$zip->DEBUG ?? [];
             }
-            $shipping_name = explode('(', $order['shipping_name']);
-            $sName = $shipping_name[0] ?? '';
-            $sName = explode('w/', $sName)[0] ?? '';
-            $sMethod = isset($shipping_name[1]) ? '(' . $shipping_name[1] : '';
+
+            if (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Expected')){
+                $sName = explode('(Expected', $order['shipping_name'])[0] ?? '';
+                $sName = explode('w/', $sName)[0] ?? '';
+                $estimate = explode('(Expected', $order['shipping_name'])[1] ?? '';
+                $sMethod = '(Expected' . $estimate;
+            } elseif (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Intransit')){
+                $sName = explode('(Intransit', $order['shipping_name'])[0] ?? '';
+                $sName = explode('w/', $sName)[0] ?? '';
+                $estimate = explode('(Intransit', $order['shipping_name'])[1] ?? '';
+                $sMethod = '(Intransit' . $estimate;
+            }
+
             $quotes = optional($responseFromWS)->$wsCarrierCode->$zip ?? [];
             $sName = Functions::get3plServiceName($sName, $rateId, $origin, $quotes);
 
