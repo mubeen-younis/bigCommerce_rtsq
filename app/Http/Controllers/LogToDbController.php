@@ -126,7 +126,11 @@ class LogToDbController extends Controller
                         } else { 
                             $resp = isset($data['response']) && !empty($data['response']) ? preg_replace('/\s+/', '', $data['response']) : json_encode((object) null);
                         }
-                        
+                        if(!$this->isJson($resp) && $carrierName === 'FedEx Small'){
+                            $resp = ['Error' => ['message' => $resp]];
+                            $resp = json_encode($resp);
+                        }
+
                         $lineitems = isset($respdata['lineitems']) ? json_decode($respdata['lineitems'], true) : [];
                         $getOriginKeys = $this->getOriginKeys($lineitems);
                         $destination = isset($lineitems['destination']) ? $lineitems['destination'] : [];
@@ -222,18 +226,25 @@ class LogToDbController extends Controller
         $locationId = '';
 
         if(isset($lineitems['origin']) && !empty($lineitems['origin'])){
+            $countOrigin = count($lineitems['origin']) - 1;
+            $this->isMulti = $countOrigin > 0 ? true : false;
             foreach($lineitems['origin'] as $key => $origin){
-                $originKeys[] = $key;
-                $locationIds[] = $origin['locationId'];
+                $originKeys[$countOrigin] = $key;
+                $locationIds[$countOrigin] = $origin['locationId'];
                 if($origin['locationId'] !== $locationId){
-                    $countOrigin++;
+                    $countOrigin--;
                     $locationId = $origin['locationId'];
                 }
             }
-            $this->isMulti = $countOrigin > 1 ? true : false;
         }
 
         return ['originKeys' => $originKeys, 'locationIds' => $locationIds];
+    }
+
+    public function isJson($string) {
+        return ((is_string($string) &&
+                (is_object(json_decode($string)) ||
+                is_array(json_decode($string))))) ? true : false;
     }
 
     /**
