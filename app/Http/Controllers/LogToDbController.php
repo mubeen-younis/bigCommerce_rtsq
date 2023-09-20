@@ -12,6 +12,7 @@ use App\Models\Store;
 use App\Models\PackagingDetail;
 use App\CustomClasses\BigCommerceFunctions;
 use App\CurlRequest;
+use Carbon\Carbon;
 class LogToDbController extends Controller
 {
     /**
@@ -184,13 +185,14 @@ class LogToDbController extends Controller
                         }
 
                         $requestTime = isset($data['request_time']) ? $data['request_time'] : '';
-                        $datetime = new \DateTime($requestTime);
-                        $storeTimezone = isset($response['timezone']['name']) ? $response['timezone']['name'] : ''; 
-                        $storeTime = new \DateTimeZone($storeTimezone);
-                        $datetime->setTimezone($storeTime);
-                        $formattedTime = $datetime->format('m/d/Y H:i:s');
+                        $responseTime = isset($data['response_time']) ? $data['response_time'] : '';
 
-                        $logsData[$key]['dateTime'] = $formattedTime ?? '';
+                        $from = Carbon::createFromFormat('Y-m-d H:s:i', $requestTime);
+                        $to = Carbon::createFromFormat('Y-m-d H:s:i', $responseTime);
+
+                        $logsData[$key]['requestTime'] = self::getDateTime($requestTime, $response) ?? '';
+                        $logsData[$key]['responseTime'] = self::getDateTime($responseTime, $response) ?? '';
+                        $logsData[$key]['latency'] = $to->diffInMinutes($from) ?? '';
                         $logsData[$key]['responseData'] = $resp;
                         $logsData[$key]['is_packaging'] = isset($respdata['is_packaging']) ? $respdata['is_packaging'] : 0;
                         $prePackageId = $packageId;
@@ -212,6 +214,16 @@ class LogToDbController extends Controller
         }
     }
 
+    public static function getDateTime($time, $response)
+    {
+        $datetime = new \DateTime($time);
+        $storeTimezone = isset($response['timezone']['name']) ? $response['timezone']['name'] : ''; 
+        $storeTime = new \DateTimeZone($storeTimezone);
+        $datetime->setTimezone($storeTime);
+        $formattedTime = $datetime->format('m/d/Y H:i:s');
+
+        return $formattedTime;
+    }
     /**
      * Display the specified resource.
      *
