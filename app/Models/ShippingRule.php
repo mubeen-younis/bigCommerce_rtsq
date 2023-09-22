@@ -1,0 +1,220 @@
+<?php
+
+namespace App\Models;
+
+use App\Constants\Constant;
+use App\Helpers\Helper;
+use App\Helpers\Helpers;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
+use Psy\Util\Str;
+
+class ShippingRule extends Model
+{
+
+
+    protected $guarded = [];
+    protected $table = "shipping_rules";
+
+
+    /**
+     * @param $storeId
+     * @return array
+     */
+    public static function getStoreShippingRules($storeId): array
+    {
+        return optional(self::where('store_id', $storeId)->get())->toArray() ?? [];
+    }
+
+
+    public static function deleteShippingRule($uuid)
+    {
+        $id = optional(self::where('uuid', $uuid)->first())->id;
+        if (!blank($id)) {
+            //self::updateShippingRuleProduct($id);
+        }
+        self::where('uuid', $uuid)->delete();
+    }
+
+
+    public static function updateShippingRuleProduct($id)
+    {
+        ProductSetting::updateShippingRuleProduct($id);
+    }
+
+    /**
+     * @param $shippingRuleItems
+     * @return array
+     */
+    public static function setShippingRule($shippingRuleItems): array
+    {
+        if (blank($shippingRuleItems)) {
+            return [];
+        }
+        $ruleItemsByShippingRule = [];
+        foreach ($shippingRuleItems as $item) {
+            $ruleItemsByShippingRule[$item['shipping_rule']][] = $item;
+        }
+        $rate = 0;
+        $response = [];
+        $title = [];
+        foreach ($ruleItemsByShippingRule as $shippingRuleId => $rule) {
+            $ruleDetail = self::getShippingRuleDetail($shippingRuleId);
+            $response[0]['title'] = $title[] = $ruleDetail['checkout_description'];
+            if ($ruleDetail['rate_x_quantity']) {
+                $rate += self::getSumAftermultipItemRulewithQty($rule, $ruleDetail['rate']);
+            } else {
+                $rate += $ruleDetail['rate'];
+            }
+        }
+        if (count($ruleItemsByShippingRule) > 1) {
+            if (count(array_unique($title)) == 1) {
+                $response[0]['title'] = $title[0] ?? "Shipping";
+            } else {
+                $response[0]['title'] = "Shipping";
+
+            }
+        }
+        $response[0]['rate'] = $rate;
+        $response[0]['code'] = "shippingRule";
+        return $response;
+    }
+
+
+    /**
+     * @param $id
+     * @return array
+     */
+    public static function getShippingRuleDetail($id): array
+    {
+        return optional(self::where('id', $id)->first())->toArray() ?? [];
+    }
+
+
+    /**
+     * @param $uuid
+     * @return array
+     */
+    public static function getShippingRuleDetailByUuid($uuid)
+    {
+        return self::where('uuid', $uuid)->first();
+    }
+
+
+    /**
+     * @param $rule
+     * @param $rate
+     * @return float|int
+     */
+    public static function getSumAftermultipItemRulewithQty($rule, $rate)
+    {
+        $noOfQuantityInRule = collect($rule)->sum('piecesOfLineItem');
+        return $noOfQuantityInRule * $rate;
+    }
+
+
+    /**
+     * @param $shippingRuleData
+     * @return mixed
+     */
+    public static function saveOrUpdateShippingRule($shippingRuleData)
+    {
+        if (isset($shippingRuleData['uuid'])) {
+            $shippingRule = self::getShippingRuleDetailByUuid($shippingRuleData['uuid']);
+            if (blank($shippingRule)) {
+                return [
+                    'error' => true,
+                    'message' => 'Shipping rule not found.',
+                    'data' => []
+                ];
+            }
+            $message = 'updated successfully.';
+            $save = 0;
+        } else {
+            $shippingRule = new self();
+            $shippingRule->uuid = Helpers::getUuid();
+            $message = 'added successfully.';
+            $save = 1;
+        }
+        $shippingRule->rule_name = $shippingRuleData['rule_name'] ?? '';
+        $shippingRule->store_id = $shippingRuleData['store_id'];
+        $shippingRule->rule_type = $shippingRuleData['rule_type'] ?? '';
+        $shippingRule->filter_name = $shippingRuleData['filter_name'] ?? '';
+        $shippingRule->apply_to = $shippingRuleData['apply_to'] ?? false;
+        $shippingRule->available = $shippingRuleData['available'] ?? false;
+        $shippingRule->filter_settings = json_encode($shippingRuleData['filter_settings']) ?? '';
+        $shippingRule->save();
+
+        return [
+            'error' => false,
+            'message' => $message,
+            'data' => [
+                'shippingRule' => $shippingRule,
+                'save' => $save
+            ]
+        ];
+    }
+
+
+    public static function shippingRuleOrderWidget($data, $order)
+    {
+        $lineItem = json_decode($data['lineitems'])->lineItemData;
+        $origins = $lineItem->origin;
+        $items = $lineItem->items;
+        $count = 0;
+        $insertedIds = $insertedNames = [];
+
+        $code = '';
+        foreach ($origins as $key => $origin) {
+            $item = $items->$key;
+            $city = $origin->senderCity ? $origin->senderCity . ',' : '';
+            $state = $origin->senderState ?? '';
+            $zip = $origin->locationId != '' ? $origin->locationId : $origin->senderZip;
+            $senderZip = $origin->senderZip ?? '';
+            $orderWidget[$zip]['sbs'] = [];
+            $orderWidget[$zip]['locationtype'] = $item->dropship_enabled == 'N' ? 'Warehouse' : 'Dropship';
+            $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
+            $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
+            $sRate = $order['shipping_rate'];
+
+            $shipping_name = explode('(', $order['shipping_name']);
+            $sName = $shipping_name[0] ?? '';
+            $sName = str_replace(Constant::RESI_LABEL, '', $sName);
+            $sName = str_replace(Constant::LIFT_LABEL, '', $sName);
+            $sName = str_replace(Constant::RESI_LIFT_LABEL, '', $sName);
+            $sMethod = isset($shipping_name[1]) ? '(' . $shipping_name[1] : '';
+
+            $orderWidget[$zip]['shipping_method'] = $sName . $sMethod;
+            $orderWidget[$zip]['shipping_rate'] = '$' . number_format((float)$sRate, 2,);
+            if ($item->shipMultiplePackage) {
+                if ((!in_array($item->lineItemName, $insertedNames))) {
+                    $insertedNames[] = $item->lineItemName;
+                    $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
+                }
+            } else {
+                if ((!in_array($item->id, $insertedIds))) {
+                    $insertedIds[] = $item->id;
+                    $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
+                }
+            }
+            $orderWidget[$zip]['accessories'] = [];
+            $count++;
+        }
+        return $orderWidget;
+    }
+
+    /**
+     * @param $id
+     * @return array
+     */
+    public static function getShippingRuleDetailTest($id): array
+    {
+        // TODO: Need to get From DB
+        return ['nickname' => 'Rule 1',
+            'checkout_description' => 'Rule 1',
+            'rate' => 0,
+            'rate_x_quantity' => false,
+        ];
+    }
+
+}
