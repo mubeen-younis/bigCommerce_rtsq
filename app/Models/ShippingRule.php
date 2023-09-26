@@ -155,6 +155,32 @@ class ShippingRule extends Model
         ];
     }
 
+    public static function updateAvaiableShippingRuleStatus($shippingRuleData)
+    {
+        if (isset($shippingRuleData['uuid'])) {
+            $shippingRule = self::getShippingRuleDetailByUuid($shippingRuleData['uuid']);
+            if (blank($shippingRule)) {
+                return [
+                    'error' => true,
+                    'message' => 'Shipping rule not found.',
+                    'data' => []
+                ];
+            }
+            $message = 'updated successfully.';
+            $save = 0;
+        } 
+        $shippingRule->available = !$shippingRuleData['available'] ?? false;
+        $shippingRule->save();
+
+        return [
+            'error' => false,
+            'message' => $message,
+            'data' => [
+                'shippingRule' => $shippingRule,
+                'save' => $save
+            ]
+        ];
+    }
 
     public static function shippingRuleOrderWidget($data, $order)
     {

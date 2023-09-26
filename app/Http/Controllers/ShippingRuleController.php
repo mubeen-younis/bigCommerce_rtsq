@@ -29,9 +29,14 @@ class ShippingRuleController extends Controller
     public function saveShippingRule(Request $request): \Illuminate\Http\JsonResponse
     {
         $res = ShippingRule::saveOrUpdateShippingRule($request->all());
-        return Helpers::sendJsonResponse($res['error'], "Shipping Rule " . $res['message'], $res['data']);
+        return Helpers::sendJsonResponse($res['error'], "Shipping Rule is " . $res['message'], $res['data']);
     }
 
+    public function updateAvaiableStatus(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $res = ShippingRule::updateAvaiableShippingRuleStatus($request->all());
+        return Helpers::sendJsonResponse($res['error'], "Shipping Rule is " . $res['message'], $res['data']);
+    }
 
     /**
      * @param Request $request
@@ -40,7 +45,7 @@ class ShippingRuleController extends Controller
     public function deleteShippingRule(Request $request): \Illuminate\Http\JsonResponse
     {
         ShippingRule::deleteShippingRule($request->uuid);
-        return Helpers::sendJsonResponse(false, "Shipping Rule deleted successfully.", $request->uuid);
+        return Helpers::sendJsonResponse(false, "Shipping Rule is deleted successfully.", $request->uuid);
     }
 
 
