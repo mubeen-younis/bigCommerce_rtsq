@@ -13,7 +13,7 @@ class QuotesResults
         $this->CompileQuotes = new CompileQuotes();
     }
 
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items)
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items, $storeId = '')
     {
         $shipments = $this->formateQuoteBeforeCompile($shipments);
         $this->quoteSettings = [];
@@ -30,6 +30,9 @@ class QuotesResults
         if (!$isMultiShipment) {
             $isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
         }
+
+        $rad_settings = Functions::getRADsettings($storeId) ?? [];
+        $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
 
         $returnResp = [
             'isMultiShipment' => $isMultiShipment,
@@ -90,7 +93,7 @@ class QuotesResults
                     }
 
                     // Get service title
-                    $title = $this->getServiceTitle($data, $srvcType, $this->quoteSettings, $residential);
+                    $title = $this->getServiceTitle($data, $srvcType, $this->quoteSettings, $residential, $showRadNotation);
                     $price = (float) str_replace(',', '', $price);
 
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12uniship' . $srvcType . $access;
@@ -116,7 +119,7 @@ class QuotesResults
                 $multiShipmentPrice += str_replace(',', '', $minRateFromNetChargeArr);
                 $multishipmentCheckoutQuotes[0]['code'] = 'Multiuniship' . $access;
                 $multishipmentCheckoutQuotes[0]['rate'] = number_format($multiShipmentPrice, 2);
-                $multishipmentCheckoutQuotes[0]['title'] = $residential ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
+                $multishipmentCheckoutQuotes[0]['title'] = $residential && $showRadNotation ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
             }
 
             foreach ($multiShipmentQuotes as $shipmentKey => $shipment) {
@@ -151,6 +154,190 @@ class QuotesResults
 
         return $returnResp;
 
+    }
+
+    public function compileQuotesNewApi($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items, $storeId = '')
+    {
+        $shipments = $this->formateQuoteBeforeCompileNewApi($shipments);
+        $this->quoteSettings = [];
+        $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
+        $this->quoteSettings = $connectionSettings['unishippers-small']['quote_settings'] ?? '';
+
+        $numberOfShipments = 0;
+        foreach ($shipments as $key => $ship) {
+            if (!isset($ship['severity']) && !in_array($key, ['ground', 'air', 'simpleRate'])) {
+                $numberOfShipments++;
+            }
+        }
+
+        if (!$isMultiShipment) {
+            $isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
+        }
+
+        $rad_settings = Functions::getRADsettings($storeId) ?? [];
+        $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
+
+        $returnResp = [
+            'isMultiShipment' => $isMultiShipment,
+        ];
+        $originQuotes = $multiShipmentQuotes = $multiShipmentQuote = [];
+        $shipmentCount = 0;
+        $count = 0;
+        foreach ($shipments as $origin => $quote) {
+            if (isset($quote['severity'])) {
+                return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);
+            }
+
+            if ($count == 0) {
+                //To be checked only once
+                // $this->getAutoResidentialTitle('');
+                $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
+                unset($quote['InstorPickupLocalDelivery']);
+            }
+
+            if (isset($quote['q'])) {
+                foreach ($quote['q'] as $key => $data) {
+    
+                    if (isset($data['severity'])) {
+                        continue;
+                    }
+                    // Check for service availability
+                    $srvcType = $data['serviceType'];
+                    if (!$this->isActiveService($srvcType)) {
+                        continue;
+                    }
+
+                    //  Check for Unishippers ground transit days
+                    $skipService = $this->checkGroundTransit($data, $srvcType);
+                    if ($skipService) {
+                        continue;
+                    }
+
+                    //  Checks for only quote ground service if hazardous
+                    if ($this->onylQuoteGroundServices($isHazmat, $srvcType)) {
+                        continue;
+                    }
+
+                    // Getting markup values form quote settings
+                    $price = $this->getServiceRate($data);
+                    // Adding markup values if available
+                    $price = $this->addHandlingMarkupOfHazmat($price);
+                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
+                    $price = $price + $productOriginMarkupFee;
+
+                    // Checking hazmat and adding hazmat amounts in services
+                    if ($isHazmat) {
+                        if ($isMultiShipment) {
+                            if ($hazmatAllItems[$origin] == 'Y') {
+                                $price = $this->addHazmatAmountsInServices($price, $srvcType);
+                            }
+                        } else {
+                            $price = $this->addHazmatAmountsInServices($price, $srvcType);
+                        }
+                    }
+
+                    // Get service title
+                    $title = $this->getServiceTitle($data, $srvcType, $this->quoteSettings, $residential, $showRadNotation);
+                    $price = (float) str_replace(',', '', $price);
+
+                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12uniship_new' . $srvcType . $access;
+                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
+                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
+
+                    $multiShipmentQuotes[$origin][$key] = $originQuotes[$shipmentCount]['shipment'][$key]['simple'];
+                }
+            }
+
+            $shipmentCount++;
+        }
+
+        // Check for multi-shipment, finding lowest price in each shipment and adding them for multi shipment
+        if ($isMultiShipment) {
+            $multishipmentCheckoutQuotes = [];
+            $multiShipmentPrice = 0;
+
+            foreach ($originQuotes as $shipmentKey => $shipment) {
+                $netChargeArr = array_column($shipment['shipment'], 'simple');
+                $minRateFromNetChargeArr = min(array_column($netChargeArr, 'rate'));
+
+                $multiShipmentPrice += str_replace(',', '', $minRateFromNetChargeArr);
+                $multishipmentCheckoutQuotes[0]['code'] = 'Multiuniship_new' . $access;
+                $multishipmentCheckoutQuotes[0]['rate'] = number_format($multiShipmentPrice, 2);
+                $multishipmentCheckoutQuotes[0]['title'] = $residential && $showRadNotation ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
+            }
+
+            foreach ($multiShipmentQuotes as $shipmentKey => $shipment) {
+                $keys = array_column($shipment, 'rate');
+                array_multisort($keys, SORT_ASC, $shipment);
+                $multiShipmentQuote['simple'][$shipmentKey] = array_values($shipment)[0];
+            }
+
+            $resp = [
+                'checkoutQuotes' => $multishipmentCheckoutQuotes,
+                'multiShipmentQuotes' => $multiShipmentQuote,
+            ];
+            $returnResp['resp'] = $resp;
+
+            return $returnResp;
+        }
+        // Handling single shipment
+        if (!empty($originQuotes)) {
+            $originQuotes = array_column(array_values($originQuotes), 'shipment');
+            $originQuotes = reset($originQuotes);
+            $originQuotes = array_column(array_values($originQuotes), 'simple');
+            array_multisort(array_map(function($element) {
+                return $element['rate'];
+            }, $originQuotes), SORT_ASC, $originQuotes);
+            
+            $resp = $originQuotes;
+        }
+
+        // Checkking for instore pickup
+        if (!$isMultiShipment && isset($inStoreLdData) && $inStoreLdData) {
+            $allQuotes = $this->CompileQuotes->inStoreLocalDeliveryQuotes($originQuotes, $inStoreLdData, $allOrigins);
+            $resp = $allQuotes;
+        }
+
+        $returnResp['resp'] = isset($resp) && !empty($resp) ? $resp : [];
+
+        return $returnResp;
+    }
+
+    private function formateQuoteBeforeCompileNewApi($shipments)
+    {
+        $servicesDesc = '';
+
+        foreach ($shipments as $shipment => $quotes) {
+            $temp = [];
+            if (!isset($quotes['q'])) {
+                continue;
+            }
+
+            foreach ($quotes['q'] as $key => $quote) {
+
+                if (!isset($quote['severity'])) {
+                    $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = $quote['totalOfferPrice']['value'] ?? 0;
+                    if(isset($quote['timeInTransit'])){
+                        $servicesDesc = $quote['timeInTransit']['serviceDescription'] ?? '';
+                        $shipments[$shipment]['q'][$key]['serviceType'] = $quote['timeInTransit']['upsServiceCode'] ?? '';
+                        $shipments[$shipment]['q'][$key]['deliveryDate'] = $quote['timeInTransit']['estimatedDeliveryDate'] ?? '';
+                        $shipments[$shipment]['q'][$key]['serviceDesc']['CalenderDaysInTransit'] = $quote['timeInTransit']['CalenderDaysInTransit'] ?? null;
+                        $shipments[$shipment]['q'][$key]['serviceDesc']['TransitTimeInDays'] = $quote['timeInTransit']['totalTransitTimeInDays'] ?? null;
+                        $shipments[$shipment]['q'][$key]['totalTransitTimeInDays'] = $quote['timeInTransit']['totalTransitTimeInDays'] ?? null;
+                    }
+                    
+                    if (isset($shipments[$shipment]['q'][$key]['timeInTransit']['CalenderDaysInTransit']) && $shipments[$shipment]['q'][$key]['timeInTransit']['CalenderDaysInTransit'] == '') {
+                        if (isset($quotes['tnt']['TransitResponse']['ServiceSummary'])) {
+
+                            $shipments[$shipment]['q'][$key]['CalenderDaysInTransit'] = $this->calenderDays($servicesDesc, $quotes['tnt']['TransitResponse']['ServiceSummary']);
+                        }
+                    }
+                } else {
+                    unset($shipments[$shipment]['q'][$key]);
+                }
+            }
+        }
+        return $shipments;
     }
 
     private function formateQuoteBeforeCompile($shipments)
@@ -202,7 +389,7 @@ class QuotesResults
     {
         $islimited = false;
 
-        if ($srvcType == "SG" || $srvcType == "SGR") {
+        if ($srvcType == "SG" || $srvcType == "SGR" || $srvcType == "GND") {
             if (isset($this->quoteSettings['number_of_transit_days']) && $this->quoteSettings['number_of_transit_days'] != null && isset($this->quoteSettings['ground_metric']) && $this->quoteSettings['ground_metric'] != null) {
                 // Check limited to carrier transit days
                 if ($this->quoteSettings['ground_metric'] == 1) {
@@ -241,7 +428,7 @@ class QuotesResults
 
     private function onylQuoteGroundServices($isHazmat, $srvcType)
     {
-        $grdServicesArr = ['SG', 'SGR'];
+        $grdServicesArr = ['SG', 'SGR', 'GND'];
         $grdSrvcForHazMat = $this->quoteSettings['ground_service_for_hazardous_material'] ?? false;
 
         if ($isHazmat && isset($grdSrvcForHazMat) && $grdSrvcForHazMat) {
@@ -255,14 +442,78 @@ class QuotesResults
 
     private function getServiceIndexFromServiceType($srvcType)
     {
-        $indexesArr = ['ND' => 'ups_next_day_air', 'ND4' => 'ups_next_day_air_saver', 'ND5' => 'ups_next_day_air_early_am', 'SC' => 'ups_2nd_day_air', 'SC25' => 'ups_2nd_day_air_am', 'SC3' => 'ups_3_day_select', 'SG' => 'ups_ground', 'SGR' => 'ups_ground_residential_delivery', 'SND' => 'ups_next_day_air_saturday', 'SND5' => 'ups_next_day_air_early_am_saturday', 'SSC' => 'ups_2nd_day_air_saturday', 'ZZ1' => 'ups_worldwide_express', 'ZZ2' => 'ups_worldwide_expedited', 'ZZ90' => 'ups_worldwide_saver', 'ZZ11' => 'ups_standard'];
+        $indexesArr = [
+            /** Services Index for Unishipper */
+            'ND' => 'ups_next_day_air',
+            'ND4' => 'ups_next_day_air_saver',
+            'ND5' => 'ups_next_day_air_early_am',
+            'SC' => 'ups_2nd_day_air',
+            'SC25' => 'ups_2nd_day_air_am',
+            'SC3' => 'ups_3_day_select',
+            'SG' => 'ups_ground',
+            'SGR' => 'ups_ground_residential_delivery',
+            'SND' => 'ups_next_day_air_saturday',
+            'SND5' => 'ups_next_day_air_early_am_saturday',
+            'SSC' => 'ups_2nd_day_air_saturday',
+            'ZZ1' => 'ups_worldwide_express',
+            'ZZ2' => 'ups_worldwide_expedited',
+            'ZZ90' => 'ups_worldwide_saver',
+            'ZZ11' => 'ups_standard',
+            /** Services Index for Unishipper New API */
+            'GND' => 'ups_ground',
+            '3DS' => 'ups_3_day_select',
+            '2DA' => 'ups_2nd_day_air',
+            '2DM' => 'ups_2nd_day_air_am',
+            '2DAS' => 'ups_2nd_day_air_saver',
+            '1DA' => 'ups_next_day_air',
+            '1DP' => 'ups_next_day_air_saver',
+            '1DM' => 'ups_next_day_air_early',
+            /** International Services Index for Unishipper New API */
+            '01' => 'ups_worldwide_express',
+            '05' => 'ups_worldwide_expedited',
+            '28' => 'ups_worldwide_saver',
+            '03' => 'ups_standard',
+            '21' => 'ups_worldwide_express_plus',
+        ];
 
         return $indexesArr[$srvcType] ?? '';
     }
 
     private function getServiceTitleFromServiceType($srvcType)
     {
-        $titlesArr = ['ND' => 'UPS Next Day Air', 'ND4' => 'UPS Next Day Air Saver', 'ND5' => 'UPS Next Day Air Early A.M.', 'SC' => 'UPS 2nd Day Air', 'SC25' => 'UPS 2nd Day Air A.M.', 'SC3' => 'UPS 3 Day Select', 'SG' => 'UPS Ground', 'SGR' => 'UPS Ground (Residential Delivery)', 'SND' => 'Saturday - UPS Next Day Air', 'SND5' => 'Saturday - UPS Next Day Air Early A.M.', 'SSC' => 'Saturday - UPS 2nd Day Air', 'ZZ1' => 'Worldwide Express', 'ZZ2' => 'Worldwide Expedited', 'ZZ90' => 'Worldwide Saver', 'ZZ11' => 'Standard (Canada)'];
+        $titlesArr = [
+            /** Services Name for Unishipper */
+            'ND' => 'UPS Next Day Air', 
+            'ND4' => 'UPS Next Day Air Saver', 
+            'ND5' => 'UPS Next Day Air Early A.M.', 
+            'SC' => 'UPS 2nd Day Air', 
+            'SC25' => 'UPS 2nd Day Air A.M.', 
+            'SC3' => 'UPS 3 Day Select', 
+            'SG' => 'UPS Ground', 'SGR' => 
+            'UPS Ground (Residential Delivery)', 
+            'SND' => 'Saturday - UPS Next Day Air', 
+            'SND5' => 'Saturday - UPS Next Day Air Early A.M.', 
+            'SSC' => 'Saturday - UPS 2nd Day Air', 
+            'ZZ1' => 'Worldwide Express', 
+            'ZZ2' => 'Worldwide Expedited', 
+            'ZZ90' => 'Worldwide Saver', 
+            'ZZ11' => 'Standard (Canada)',
+            /** Services Name for Unishipper New API */
+            'GND' => 'UPS Ground',
+            '3DS' => 'UPS 3 Day Select',
+            '2DA' => 'UPS 2nd Day Air',
+            '2DM' => 'UPS 2nd Day Air Early',
+            '2DAS' => 'UPS 2nd Day Air Saver',
+            '1DA' => 'UPS Next Day Air',
+            '1DP' => 'UPS Next Day Air Saver',
+            '1DM' => 'UPS Next Day Air Early',
+            /** International Name for Unishipper New API */
+            "01" => "UPS Worldwide Express",
+            "03" => "UPS Standard",
+            "05" => "UPS Worldwide Expedited",
+            "21" => "UPS Worldwide Express Plus",
+            "28" => "UPS Worldwide Saver",
+        ];
 
         return $titlesArr[$srvcType] ?? '';
     }
@@ -271,7 +522,7 @@ class QuotesResults
     {
         $quoteSettings = $this->quoteSettings;
         // Adding hazmat fee to Ground Service
-        if ($serviceCode == "SG" || $serviceCode == "SGR") {
+        if ($serviceCode == "SG" || $serviceCode == "SGR" || $serviceCode == "GND") {
             $grdHazMatFee = $quoteSettings['ground_hazardous_material_fee'] ?? null;
             if (isset($grdHazMatFee) && is_numeric($grdHazMatFee) && !empty($grdHazMatFee)) {
                 $amount = $amount + $grdHazMatFee;
@@ -309,17 +560,18 @@ class QuotesResults
         return $amountWithMarkup;
     }
 
-    public function getServiceTitle($data, $serviceCode, $quoteSettings, $isResi = false)
+    public function getServiceTitle($data, $serviceCode, $quoteSettings, $isResi = false, $showRadNotation = false)
     {
         $title = $this->getServiceTitleFromServiceType($serviceCode);
-        if ($isResi) {
+
+        if ($isResi && $showRadNotation) {
             $title = $title . Constant::RESI_LABEL;
         }
 
         if (isset($data['totalTransitTimeInDays']) && $data['totalTransitTimeInDays'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2) {
-            $title = $title . ' (Estimated number of days until delivery is ' . $data['totalTransitTimeInDays'] . ')';
+            $title = $title . ' (Intransit days: ' . $data['totalTransitTimeInDays'] . ')';
         } else if (isset($data['deliveryDate']) && $data['deliveryDate'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3) {
-            $title = $title . ' (Estimated delivery date is ' . date('m-d-Y', strtotime($data['deliveryDate'])) . ')';
+            $title = $title . ' (Expected delivery by ' . date('m-d-Y', strtotime($data['deliveryDate'])) . ')';
         }
 
         return $title;
@@ -331,7 +583,7 @@ class QuotesResults
         foreach ($tnts as $key => $tnt) {
             $desc = $tnt['Service']['Description'] ?? '';
             if ($desc === $fDesc) {
-                $resp = $tnt['EstimatedArrival']['BusinessDaysInTransit'];
+                $resp = $tnt['EstimatedArrival']['BusinessDaysInTransit'] ?? null;
             }
         }
 

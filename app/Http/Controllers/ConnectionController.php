@@ -41,6 +41,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\CustomClasses\CurlRequest as connCurlRequest;
 
 class ConnectionController extends Controller
 {
@@ -80,6 +81,7 @@ class ConnectionController extends Controller
         $this->echoLogisticsLtlTestCon = new EchoLogisticsLtlConnectionSettings();
         $this->dayLightLtlTestCon = new DayLightLtlConnectionSettings();
         $this->freightQuoteChrLtlTestCon = new FreightQuoteChrConnectionSettings();
+        $this->curlRequest = new connCurlRequest();
     }
 
     public function index(Request $request)
@@ -211,6 +213,32 @@ class ConnectionController extends Controller
                         'message' => 'No carrier Matches'
                     ]);
             }
+        }
+        
+        $getPalletsOutput = [];
+        if ($checkCarrierType->slug === 'rl-ltl') {
+            $url = Endpoints::testConnectionEndpoint();
+            $getPalletsParams  = [
+                'platform' => 'bigcommerce',
+                'carrier_mode' => 'getPallets',
+                'dont_auth' => '1',
+                'carrierName' => 'rnl',
+                'serverName' => $storeName ?? '',
+    
+                'UserName' => $request['username'] ?? '',
+                'Password' => $request['password'] ?? '',
+                'APIKey' => $request['authentication_key'] ?? '',
+            ];
+    
+            $getPalletsQueryString = http_build_query($getPalletsParams);
+            $getPalletsOutput = $this->curlRequest->enSingleCurlRequest($url, $getPalletsQueryString, [], 'POST');
+            $getPalletsOutput = json_decode($getPalletsOutput['response'], true) ?? [];
+        }
+
+        if(isset($getPalletsOutput['severity']) && $getPalletsOutput['severity'] == 'success'){
+            $request['pallets'] = isset($getPalletsOutput['pallets']) ? $getPalletsOutput['pallets'] : [] ?? [];
+        } else {
+            $request['pallets'] = [];
         }
 
         $message = 'Connection settings has been saved successfully';

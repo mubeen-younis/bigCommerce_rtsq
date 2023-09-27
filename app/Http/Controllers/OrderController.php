@@ -137,19 +137,33 @@ class OrderController extends Controller
     public function getRequestDataFromDB($tableName, $request, $rateId, $cartId, $order)
     {
         $modelName = $tableName === 'RequestData' ? new RequestData() : new RequestTempData();
+        $source = $order['order_source'] ?? "www";
 
         $data = optional($modelName::where('rate_id', $rateId)
             ->where('cart_id', $cartId)
             ->where('store_id', $request['store_id'])
             ->first())->toArray() ?? null;
+
         if (blank($data) && !blank($order['full_rate_id'])) {
             $data = optional($modelName::where('rate_id', $order['full_rate_id'])
                 ->where('cart_id', $cartId)
                 ->where('store_id', $request['store_id'])
                 ->first())->toArray() ?? null;
-            $rateId = $order['full_rate_id'] ?? null;
         }
 
+        // Get data for draft order from DB
+        if (blank($data) && $source === "manual") {
+            $data = optional($modelName::where('rate_id', $rateId)
+                ->where('store_id', $request['store_id'])
+                ->where('is_draft_order', 1)
+                ->first())->toArray() ?? null;
+            if (blank($data) && !blank($order['full_rate_id'])) {
+                $data = optional($modelName::where('rate_id', $order['full_rate_id'])
+                    ->where('store_id', $request['store_id'])
+                    ->where('is_draft_order', 1)
+                    ->first())->toArray() ?? null;
+            }
+        }
         return $data;
     }
 
@@ -462,10 +476,21 @@ class OrderController extends Controller
                 $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($code, $responseFromWS, $zip);
             }
 
-            $shipping_name = explode('(', $order['shipping_name']);
-            $sName = $shipping_name[0] ?? '';
-            $sName = explode('w/', $sName)[0] ?? '';
-            $sMethod = isset($shipping_name[1]) ? '(' . $shipping_name[1] : '';
+            if (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Expected')){
+                $sName = explode('(Expected', $order['shipping_name'])[0] ?? '';
+                $sName = explode('w/', $sName)[0] ?? '';
+                $estimate = explode('(Expected', $order['shipping_name'])[1] ?? '';
+                $sMethod = '(Expected' . $estimate;
+            } elseif (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Intransit')){
+                $sName = explode('(Intransit', $order['shipping_name'])[0] ?? '';
+                $sName = explode('w/', $sName)[0] ?? '';
+                $estimate = explode('(Intransit', $order['shipping_name'])[1] ?? '';
+                $sMethod = '(Intransit' . $estimate;
+            } else {
+                $sName = $order['shipping_name'] ?? '';
+                $sName = explode('w/', $sName)[0] ?? '';
+                $sMethod = '';
+            }            
 
             $orderWidget[$zip]['shipping_method'] = $sName . $sMethod;
             $orderWidget[$zip]['shipping_rate'] = '$' . number_format((float)$sRate, 2,);
@@ -608,10 +633,13 @@ class OrderController extends Controller
             }
         }
 
+        $fdoShipmenst = json_decode($data['fdo_shipments_data'], true) ?? [];
+
         $sbs = '';
         $resp = [
             'widget' => $this->objectToArray($orderWidget),
-            'sbs' => $sbs
+            'sbs' => $sbs,
+            'fdoShipments' =>$fdoShipmenst, 
         ];
         return $resp;
     }
@@ -1143,6 +1171,10 @@ class OrderController extends Controller
 
                     if (blank($reqData)) {
                         $reqData = optional(RequestTempData::where('rate_id', $fullRateId)->where('cart_id', $cartId)->first())->toArray();
+                    }
+
+                    if (blank($reqData)) {
+                        $reqData = optional(RequestTempData::where('rate_id', $fullRateId)->where('store_id', $toRequest['store_id'])->latest()->first())->toArray();
                     }
                     Log::info('Order Data DB: ' . json_encode($reqData) . ' RateID: ' . $rateId . ' CartId: ' . $cartId);
                     if (!blank($reqData)) {

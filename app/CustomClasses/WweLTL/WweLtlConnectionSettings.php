@@ -37,6 +37,7 @@ class WweLtlConnectionSettings
             'plugin_domain_name' => $storeName ?? '',
             'plugin_licence_key' => $data->license_key ?? '',
             'dont_auth' => 1,
+            'carrier_mode' => 'test',
             // New Api Test Connection Params
             'clientId' => $data->clientId,
             'clientSecret' => $data->clientSecret,

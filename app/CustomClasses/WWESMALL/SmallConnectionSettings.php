@@ -9,7 +9,7 @@ use App\Models\Connection;
 
 class SmallConnectionSettings
 {
-    private $testConnectionUrl = 'https://eniture.com/ws/carriers/wwe-small/speedshipTest.php';
+    private $testConnectionUrl = 'https://ws002.eniture.com/carriers/wwe-small/speedshipTest.php';
 
     public function __construct()
     {

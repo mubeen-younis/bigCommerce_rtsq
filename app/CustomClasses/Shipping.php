@@ -156,7 +156,7 @@ class Shipping
                     ],
                 ];
             }
-            if ($this->isInsurance === 'Y' && ($key == 'wweLTL' || $key == 'shipEngine')) {
+            if ($this->isInsurance === 'Y' && ($key == 'wweLTL' || $key == 'shipEngine' || $key == 'upsSmall')) {
                 if ($this->isSmall($key)) {
                     $carriersArray['carriers'][$key]['api']['includeDeclaredValue'] = 1;
                 } else {
@@ -170,7 +170,14 @@ class Shipping
         // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo, $carriersErrorSettings);
         // Added customization for eniture packaging disabled stores
+
         $requestArr = (new Customizations())->eniturePackagingCustomization($requestArr, $storeData['store']['hash']);
+
+        // adding packing id if sbs or pallet packaging is occure
+        $requestArr = Functions::addPackagingId($requestArr, $package, $store_id);
+        $packagingId = isset($requestArr['packaging_id']) ? $requestArr['packaging_id'] : '';
+        unset($requestArr['packaging_id']);
+        $requestArr = $requestArr['requestArr'] ?? [];
 
         if (empty($requestArr)) {
             return [];
@@ -222,7 +229,7 @@ class Shipping
         Log::info('after addBinResponseToQuotes ' . json_encode($quotes));
 
         $quotesFromWs = $quotes ?? [];
-        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $package['items'], $SuppressParcelRates);
+        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $package['items'], $SuppressParcelRates, $store_id);
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];
@@ -275,7 +282,7 @@ class Shipping
             }
 
             if ($this->isRequestMultishipment && !$isShippingOrFreight) {
-                $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings, $residential, $quotesFromWs, $requestArr['requestArr']);
+                $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings, $residential, $quotesFromWs, $requestArr['requestArr'], $store_id);
                 $finalQuotes = $finalQuotesMulti['checkoutQuotes'] ?? [];
                 $multiShipmentQuotes = $finalQuotesMulti['multiShipmentQuotes'] ?? [];
             }
@@ -409,7 +416,7 @@ class Shipping
         return $finalQuotes;
     }
 
-    private function makeMultishipmentSmallLtl($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr)
+    private function makeMultishipmentSmallLtl($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr, $storeId)
     {
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
         /*
@@ -417,7 +424,7 @@ class Shipping
          * there is some caompatibility code of multi shipment here
          *
          * */
-        $resp = $ltlSmallCompileQuotes->compileQuotes($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr);
+        $resp = $ltlSmallCompileQuotes->compileQuotes($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr, $storeId);
         return $resp;
     }
 
@@ -499,6 +506,7 @@ class Shipping
     {
         $smallCarriers = [
             'wweSmall',
+            'wweSmallN',
             'upsSmall',
             'fedexSmall',
             'unishippersSmall',
@@ -703,19 +711,20 @@ class Shipping
         }
 
         foreach ($finalQuotes as $finalQuote) {
-            $RequestTempData = new RequestTempData();
-            $RequestTempData->request = json_encode($requestArr);
-            $RequestTempData->lineitems = json_encode($lineItems);
-            $RequestTempData->quotes = json_encode($quotes);
-            $RequestTempData->response = json_encode($resp);
-            $RequestTempData->multiShipmentresponse = json_encode($multiShipmentQuotes, JSON_FORCE_OBJECT);
-            $RequestTempData->store_id = $cartInfo['store_id'];
-            $RequestTempData->rate_id = $finalQuote['rate_id'];
-            $RequestTempData->cart_id = $cartInfo['cartId'];
-            $RequestTempData->box_bins = json_encode($boxbins);
-            $RequestTempData->shipping_group_resp = !blank($this->shippingGroupResponse) ? json_encode($this->shippingGroupResponse) : null;
-            $RequestTempData->dbsc_resp = !blank($this->dbscOrdWid) ? json_encode($this->dbscOrdWid) : null;
-            $RequestTempData->save();
+            $requestTempData = new RequestTempData();
+            $requestTempData->request = json_encode($requestArr);
+            $requestTempData->lineitems = json_encode($lineItems);
+            $requestTempData->quotes = json_encode($quotes);
+            $requestTempData->response = json_encode($resp);
+            $requestTempData->multiShipmentresponse = json_encode($multiShipmentQuotes, JSON_FORCE_OBJECT);
+            $requestTempData->store_id = $cartInfo['store_id'];
+            $requestTempData->rate_id = $finalQuote['rate_id'];
+            $requestTempData->cart_id = $cartInfo['cartId'];
+            $requestTempData->is_draft_order = $cartInfo['is_draft_order'] ?? false;
+            $requestTempData->box_bins = json_encode($boxbins);
+            $requestTempData->shipping_group_resp = !blank($this->shippingGroupResponse) ? json_encode($this->shippingGroupResponse) : null;
+            $requestTempData->dbsc_resp = !blank($this->dbscOrdWid) ? json_encode($this->dbscOrdWid) : null;
+            $requestTempData->save();
         }
     }
 
@@ -780,7 +789,7 @@ class Shipping
         // TODO: Need to Add small and Ltl Carriers Here as well
 
         $smallOrigins = $marketItemSmall = $request['carriers']['wweSmall']['originAddress'] ?? $request['carriers']['upsSmall']['originAddress'] ?? $request['carriers']['fedexSmall']['originAddress']
-            ?? $request['carriers']['unishippersSmall']['originAddress']
+            ?? $request['carriers']['unishippersSmall']['originAddress'] ?? $request['carriers']['wweSmallN']['originAddress']
             ?? $request['carriers']['usps']['originAddress'] ?? $request['carriers']['purolator']['originAddress'] ?? $request['carriers']['shipEngine']['originAddress'] ?? [];
         $ltlOrigins = $request['carriers']['wweLTL']['originAddress'] ?? $request['carriers']['upsLTL']['originAddress'] ?? $request['carriers']['yrcLTL']['originAddress'] ?? $request['carriers']['odfl4me']['originAddress'] ?? $request['carriers']['abf']['originAddress'] ?? $request['carriers']['southeastern']['originAddress'] ?? $request['carriers']['tql']['originAddress'] ?? $request['carriers']['echoLogistics']['originAddress'] ?? $request['carriers']['daylight']['originAddress'] ?? $request['carriers']['chr']['originAddress'] ?? [];
         $items = $request['commdityDetails'] ?? [];
@@ -888,7 +897,17 @@ class Shipping
                 continue;
             }
             if ((empty($quote['rate']) || $quote['rate'] == '0.00') && isset($quote['code']) && $quote['code'] !== 'own_arrangement') {
-                $finalQuotes[$key]['title'] = Functions::$freeShipping;
+                $title = '';
+
+                if (isset($quote['title']) && strpos($quote['title'], '(Expected')){
+                    $estimate = explode('(Expected', $quote['title'])[1] ?? '';
+                    $title = Functions::$freeShipping . ' (Expected' . $estimate;
+                } elseif (isset($quote['title']) && strpos($quote['title'], '(Intransit')){
+                    $estimate = explode('(Intransit', $quote['title'])[1] ?? '';
+                    $title = Functions::$freeShipping . ' (Intransit' . $estimate;
+                }
+
+                $finalQuotes[$key]['title'] = empty($title) ? Functions::$freeShipping : $title;
             }
         }
 

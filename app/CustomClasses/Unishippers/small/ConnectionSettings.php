@@ -4,6 +4,7 @@ namespace App\CustomClasses\Unishippers\small;
 
 use App\CustomClasses\CarriersConnectionSettings;
 use App\CustomClasses\CurlRequest;
+use App\Endpoints\Endpoints;
 
 class ConnectionSettings extends CarriersConnectionSettings
 {
@@ -20,20 +21,35 @@ class ConnectionSettings extends CarriersConnectionSettings
             'message' => 'Something went wrong!',
         ];
         $url = $this->testConnectionUrl;
-        $params = array(
-            'dont_auth' => '1',
-            // -------------Carrier Credentials------------- //
-            'username' => $data->username,
-            'password' => $data->password,
-            'unishipperscustomernumber' => $data->unishippers_customer_number,
-            'upsaccountnumber' => $data->ups_account_number,
-            'requestkey' => $data->request_key,
-            'carrierName' => 'unisheppers',
-            'carrier_mode' => 'test',
-            'unique_key' => '87676ba67fc1bd58a97e77f05063c177',
-            'platform' => 'bigcommerce',
-            'serverName' => $storeName, // $_SERVER['SERVER_NAME'];
-        );
+        if (isset($data->api_type) && $data->api_type === 'new_api'){
+            $params = [
+                'platform' => 'bigcommerce',
+                'plugin_domain_name' => $storeName ?? '',
+                'plugin_licence_key' => $data->license_key ?? '',
+                'dont_auth' => 1,
+                // New Api Test Connection Params
+                'clientId' => $data->clientId,
+                'clientSecret' => $data->clientSecret,
+                'ApiVersion' => '2.0'
+            ];
+            $url = $this->testConnectionUrl = Endpoints::wweSmallTestEndpoint();
+
+        } else {
+            $params = array(
+                'dont_auth' => '1',
+                // -------------Carrier Credentials------------- //
+                'username' => $data->username,
+                'password' => $data->password,
+                'unishipperscustomernumber' => $data->unishippers_customer_number,
+                'upsaccountnumber' => $data->ups_account_number,
+                'requestkey' => $data->request_key,
+                'carrierName' => 'unisheppers',
+                'carrier_mode' => 'test',
+                'unique_key' => '87676ba67fc1bd58a97e77f05063c177',
+                'platform' => 'bigcommerce',
+                'serverName' => $storeName, // $_SERVER['SERVER_NAME'];
+            );
+        }
 
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');

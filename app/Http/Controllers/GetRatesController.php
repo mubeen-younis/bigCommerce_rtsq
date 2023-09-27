@@ -18,6 +18,8 @@ use App\Models\ProductSetting;
 use App\CustomClasses\Shipping;
 use App\Models\Subscription\Subscription;
 use Illuminate\Support\Facades\Log;
+use App\CustomClasses\CompareRates;
+use App\Constants\Constant;
 
 class GetRatesController extends Controller
 {
@@ -66,33 +68,22 @@ class GetRatesController extends Controller
         }
         // Getting cart id and store id of the store.
         $refValue = $request->base_options['request_context']['reference_values'] ?? [];
-        foreach($refValue as $value){
-            if($value['name'] === 'cart_id'){
-                $cartInfo['cartId'] = $value['value'] ?? 0;
+        $cartID = "";
+        foreach ($refValue as $value) {
+            if ($value['name'] === 'cart_id') {
+                $cartID = $value['value'] ?? "";
             }
         }
 
-        if(!isset($cartInfo['cartId']) || empty($cartInfo['cartId'])){
-            if(!isset($count) && empty($count)){
-                $count = 0;
-            }
-            if($count < 3){
-                sleep(3);
-                $count = $count + 1;
-                $this->returnRates($request, $count);    
-            } 
-            Log::info('Cart Id not found ' . json_encode($refValue));
-            return [];
-        }
-
+        $cartInfo['is_draft_order']=!empty($cartID) ? false: true;
+        $cartInfo['cartId'] = !empty($cartID) ? $cartID : "draft_" . time() . "_" . $storeData['store']['id'];
         $cartInfo['store_id'] = $storeData['installed_carriers'][0]['store_id'] ?? 0;
-// Getting installed carriers there quote settings and services
+        // Getting installed carriers there quote settings and services
         $this->getCarrierSettings($storeData['installed_carriers']);
 
         $formatReq = $this->formatRequest($request->all(), $storeData);
         if (
             $formatReq['lineItemData']['destination']['zip'] == null ||
-            $formatReq['lineItemData']['destination']['state'] == null ||
             $formatReq['lineItemData']['destination']['country'] == null ||
             count($this->connectionSettings) == 0
         ) {
@@ -105,6 +96,48 @@ class GetRatesController extends Controller
         return $quotes;
 
 
+    }
+
+    public function getCompareRates(Request $request)
+    {
+        Log::info('Compare Rates Request ' . json_encode($request->all()));
+        $CompareRates = new CompareRates();
+        $storeHash = $request['store_hash'] ?? null;
+        $storeData = $CompareRates->getData($storeHash);
+
+        $isTestStore = Helpers::checkIsTestStore($storeHash);
+        Helpers::setStripeAPiKey($isTestStore);
+
+        if ($storeData == null) {
+            return [];
+        }
+        if (!$this->storePlanStatus($storeData['store']['id'])) {
+            return [];
+        }
+
+        $this->getCarrierSettings($storeData['installed_carriers']);
+
+        $CompareRates = new CompareRates();
+
+        $formatCompareRateRequest = $CompareRates->formatCompareRateRequest($request->all(), $storeData, $this->connectionSettings, $request['carriers']);
+
+        $url = Constant::QUOTES_URL;
+        $quotes = $this->sendCurlRequest($url, $formatCompareRateRequest['requestArr']);
+        
+        $finalCompareRates = $CompareRates->getCompareRates($quotes, $this->connectionSettings);
+        
+        if(!empty($finalCompareRates) && gettype($finalCompareRates) !== 'string'){
+            return $response = [
+                'error' => false,
+                'message' => 'Quotes are successfully updated.',
+                'data' => $finalCompareRates,
+            ];  
+        }
+        return $response = [
+            'error' => true,
+            'message' => $finalCompareRates,
+            'data' => [],
+        ];
     }
 
     function testQuotes()
@@ -518,5 +551,30 @@ class GetRatesController extends Controller
     {
         $ExportImportProducts = new ExportImportProducts();
         $ExportImportProducts->importProductCsvJob($request->all());
+    }
+
+    public function sendCurlRequest(
+        $url,
+        $postData
+    )
+    {
+        Log::info('compare rates postData ' . json_encode($postData));
+        $fieldString = http_build_query($postData);
+        try {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 1000);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $fieldString);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, array('Expect:'));
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            $output = curl_exec($ch);
+            curl_close($ch);
+            Log::info('$output ' . $output);
+            return json_decode($output, true);
+        } catch (\Throwable $e) {
+            $result = [];
+        }
+        return $result;
     }
 }

@@ -5,6 +5,7 @@ namespace App\CustomClasses\WWESMALL;
 
 
 use App\Constants\Constant;
+use App\CustomClasses\Functions;
 
 class WweSmallQuoteResults
 {
@@ -12,7 +13,7 @@ class WweSmallQuoteResults
     public function filterWweSmallServicesFromMarkup($services)
     {
         if (!empty($services)) {
-            $allowed = Constant::WWE_SMALL_SERVICES;
+            $allowed = Functions::$WWE_SMALL_SERVICES;
             $filtered = array_filter(
                 $services,
                 function ($key) use ($allowed) {
@@ -92,17 +93,17 @@ class WweSmallQuoteResults
 
     }
 
-    public function getServiceTitle($title, $dateAndDays, $serviceCode, $quoteSettings, $isResi = false)
+    public function getServiceTitle($title, $dateAndDays, $serviceCode, $quoteSettings, $isResi = false, $showRadNotation = false)
     {
-        if ($isResi) {
+        if ($isResi && $showRadNotation) {
             $title = $title . Constant::RESI_LABEL;
         }
         $date = $dateAndDays['deliveryDate'] ?? null;
         $days = $dateAndDays['totalTransitTimeInDays'] ?? null;
         if (isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2) {
-            $title = !blank($days) ? $title . " (Estimated number of days until delivery is " . $days . ")" : $title;
+            $title = !blank($days) ? $title . " (Intransit days: " . $days . ")" : $title;
         } elseif (isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3) {
-            $title = !blank($date) ? $title . " (Estimated delivery date is " . date('m-d-Y', strtotime($date)) . ")" : $title;
+            $title = !blank($date) ? $title . " (Expected delivery by " . date('m-d-Y', strtotime($date)) . ")" : $title;
         }
         return $title;
     }
@@ -133,6 +134,21 @@ class WweSmallQuoteResults
                 break;
             case "ups_next_day_air_early":
                 return "1DM";
+                break;
+            case "ups_worldwide_express":
+                return "01";
+                break;
+            case "ups_worldwide_expedited":
+                return "05";
+                break;
+            case "ups_worldwide_saver":
+                return "28";
+                break;
+            case "ups_worldwide_express_plus":
+                return "21";
+                break;
+            case "ups_standard":
+                return "03";
                 break;
             default:
                 return "";
@@ -183,9 +199,81 @@ class WweSmallQuoteResults
             case "1DM":
                 return "ups_next_day_air_early_markup";
                 break;
+            case "01":
+                return "ups_worldwide_express_markup";
+                break;
+            case "03":
+                return "ups_standard_markup";
+                break;
+            case "05":
+                return "ups_worldwide_expedited_markup";
+                break;
+            case "21":
+                return "ups_worldwide_express_plus_markup";
+                break;
+            case "28":
+                return "ups_worldwide_saver_markup";
+                break;
             default:
                 return "";
         }
+    }
+
+    public function compileCompareQuotes($shipment, $connectionSettings)
+    {
+        $originQuotes  = [];
+
+        foreach ($shipment as $origin => $quote) {
+            
+            if (isset($quote['severity'])) {
+                return $quote['Message'];
+            }
+            
+            $lowestAmount = 0;
+            
+            if (isset($quote['q'])) {
+                foreach ($quote['q'] as $key => $data) {
+                    
+                    // Adding Markup in services if enabled
+                    $price = $this->getServiceRate($data['totalNetCharge']['Amount'], $data['serviceType'], []);
+                    $quoteSettings = [];
+
+                    $price = $this->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup'] ?? 0);
+                    $price = (float) str_replace(',', '', $price);
+                    
+                    $title = $data['serviceDesc'];
+                    $dateTime = $this->getEstimatedDateTime($data);
+                    $originQuotes[$key]['date'] = $dateTime;
+                    $originQuotes[$key]['rate'] = $price;
+                    $originQuotes[$key]['title'] = $title;
+                    $sortedArray[$key] = $price;
+                }
+            }
+        }
+        array_multisort($sortedArray, SORT_ASC, $originQuotes);
+
+        if (!empty($originQuotes)) {
+            return $originQuotes;
+        }
+
+        return [];
+    }
+
+    public function getEstimatedDateTime($data)
+    {
+        $dateTime = '';
+        try {
+            if(isset($data['deliveryTimestamp']) && !empty($data['deliveryTimestamp'])){
+                $time = date('h:i A', strtotime($data['deliveryTimestamp']));
+                $date = date('l, F d, Y', strtotime($data['deliveryTimestamp']));
+                $dateTime = 'Delivery By ' . $date;
+            }
+
+            return $dateTime;
+        } catch (\Exception $exception) {
+            return $dateTime;
+        }
+
     }
 
 }

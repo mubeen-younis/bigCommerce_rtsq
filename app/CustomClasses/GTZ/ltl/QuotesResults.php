@@ -54,6 +54,39 @@ class QuotesResults
         return $shipments;
     }
 
+    public function newApiFormateQuoteBeforeCompile($shipments)
+    {
+        foreach ($shipments as $shipment => $quotes){
+            if(!isset($quotes['q'])){
+                continue;
+            }
+            foreach ($quotes['q'] as $key => $quote){
+                $shipments[$shipment]['q'][$key]['serviceType'] = $quote['timeInTransit']['scac'] ?? '';
+                $shipments[$shipment]['q'][$key]['serviceDesc'] = $quote['timeInTransit']['carrierName'] ?? '';
+                $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = $quote['totalOfferPrice']['value'] ?? 0;
+                $shipments[$shipment]['q'][$key]['EstimatedDeliveryDate'] = $quote['timeInTransit']['estimatedDeliveryDate'] ?? '';
+                $shipments[$shipment]['q'][$key]['totalTransitTimeInDays'] = $quote['timeInTransit']['totalTransitTimeInDays'] ?? '';
+                unset($shipments[$shipment]['q'][$key]['totalOfferPrice']);
+                unset($shipments[$shipment]['q'][$key]['timeInTransit']);
+                if(isset($quote['surchargeList'][0]['chargeItemList'])) {
+                    foreach ($quote['surchargeList'][0]['chargeItemList'] as $surcharge){
+                        if(isset($surcharge['customerChargeCode']) && $surcharge['customerChargeCode'] === 'LGDEL'){
+                            $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $surcharge['customerPrice']['value'] ?? 0;
+                        }
+                        if(isset($surcharge['customerChargeCode']) && $surcharge['customerChargeCode'] === 'NOTIFY'){
+                            $shipments[$shipment]['q'][$key]['surcharges']['notifyBeforeDeliveryFee'] = $surcharge['customerPrice']['value'] ?? 0;
+                        }
+                        if(isset($surcharge['customerChargeCode']) && $surcharge['customerChargeCode'] === 'INDEL'){
+                            $shipments[$shipment]['q'][$key]['surcharges']['insideDeliveryFee'] = $surcharge['customerPrice']['value'] ?? 0;
+                        }
+                    }
+                }
+                unset($shipments[$shipment]['q'][$key]['surchargeList']);
+            }
+        }
+        return $shipments;
+    }
+
     public function calculatePrice($data, $uoteSettings, $lgOption = false, $notify = false, $laccess = false, $originKey = '', $items = [], $allOrigins = [])
     {
         $lgCost = $lgOption ? 0 : $data['surcharges']['liftgateFee'] ?? 0;

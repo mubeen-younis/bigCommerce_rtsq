@@ -69,6 +69,7 @@ Route::middleware([\App\Http\Middleware\FDOValidity::class])->group(function () 
     Route::get('/get_product_details', [\App\Http\Controllers\FDOProductController::class, 'getProductDetails']);
     Route::get('/locations.json', [\App\Http\Controllers\FDOLocationsController::class, 'getLocations']);
     Route::get('/get_boxes', 'App\Http\Controllers\BoxSizeController@index');
+    Route::post('/save_fdo_shipments', [\App\Http\Controllers\FDOOrderController::class, 'saveFdoShipments']);
 
 });
 Route::post('update_coupon_details_fdo_av', [FDOController::class, 'updateCouponDetailsFromFDOAV']);
@@ -93,6 +94,10 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/update_product', [ProductSettingController::class, 'updateProductDetail']);
     //========Delete duplicate variants
     Route::post('/delete_duplicate_variants', [ProductSettingController::class, 'deleteDuplicateVariants']);
+
+    //=======Logs Routes
+    Route::get('/get_logs', [App\Http\Controllers\LogToDbController::class, 'getStoreLogs']);
+    Route::get('/get_packaging', [App\Http\Controllers\LogToDbController::class, 'getSingleLogDetail']);
 
     //=======Carriers
     Route::get('/get_add_tab_sett', [AdditionalCarrierTabSettingController::class, 'getAddTabSett']);
@@ -174,6 +179,9 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
 
     //subscription
     Route::post('/create_subscription', [Subscriptions::class, 'createSubscription']);
+
+    //Compare rates
+    Route::post('get_compare_rates', [GetRatesController::class, 'getCompareRates']);
 
 
     //stores

@@ -102,9 +102,9 @@ class QuotesResults
      * @param $isResi
      * @return mixed|string
      */
-    public function getServiceTitle($title, $data, $quoteSettings, $isResi = false)
+    public function getServiceTitle($title, $data, $quoteSettings, $isResi = false, $showRadNotation = false)
     {
-        if ($isResi) {
+        if ($isResi && $showRadNotation) {
             $title = $title . Constant::RESI_LABEL;
         }
 
@@ -152,7 +152,7 @@ class QuotesResults
     /*
      * Returns compiled quotes of shipengine
      * */
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items)
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items, $storeId = '')
     {
         $shipments = $this->formateQuoteBeforeCompile($shipments);
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
@@ -172,6 +172,9 @@ class QuotesResults
         $access2 = $access;
         $groundServiceCodes = ["ups_ground"];
         $carrierCode = "shipEng";
+
+        $rad_settings = Functions::getRADsettings($storeId) ?? [];
+        $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
 
         foreach ($shipments as $origin => $quote) {
 
@@ -245,7 +248,7 @@ class QuotesResults
                     }
 
 
-                    $title = $this->getServiceTitle($data['serviceDesc'], $data, $this->quoteSettings, $residential);
+                    $title = $this->getServiceTitle($data['serviceDesc'], $data, $this->quoteSettings, $residential, $showRadNotation);
                     $price = (float)str_replace(',', '', $price);
                     $shortServiceCode = $this->getShortCodesOfService($serviceCode);
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12' . $carrierCode . $shortServiceCode . $access2;
@@ -272,7 +275,7 @@ class QuotesResults
                 $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
                 $originQuotesMulti[0]['code'] = 'Multi' . $carrierCode . $access2;
                 $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
-                $originQuotesMulti[0]['title'] = $residential ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
+                $originQuotesMulti[0]['title'] = $residential && $showRadNotation ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
             }
 
 
@@ -428,5 +431,69 @@ class QuotesResults
         return $resp;
     }
 
+    public function compileCompareQuotes($shipment, $connectionSettings)
+    {
+        $shipments = $this->formateQuoteBeforeCompile($shipment);
+        $originQuotes = [];
+
+        foreach ($shipments as $origin => $quote) {
+
+            if ((isset($quote['severity']) || (isset($quote['q']) && empty($quote['q'])) || (!isset($quote['q'])))) {
+                return $quote['Message'];
+            }
+
+            if (isset($quote['q'])) {
+                foreach ($quote['q'] as $key => $data) {
+
+                    // Check if service type is checked to show
+                    if (isset($data['severity'])) {
+                        continue;
+                    }
+
+                    $serviceCode = $data['service_code'] ?? "";
+
+                    // Adding Markup in services if enabled
+                    $price = $this->getServiceRate($data, $serviceCode, []);
+
+                    $price = $this->addHandlingMarkupOfHazmat($price, 0);
+                    $price = (float)str_replace(',', '', $price) ?? 0;
+
+                    $title = $data['serviceDesc'] ?? '';
+                    
+                    $dateTime = $this->getEstimatedDateTime($data) ?? '';
+                    $originQuotes[$key]['date'] = $dateTime;
+                    $originQuotes[$key]['rate'] = $price;
+                    $originQuotes[$key]['title'] = $title;
+                    $sortedArray[$key] = $price;
+                }
+            }
+        }
+        array_multisort($sortedArray, SORT_ASC, $originQuotes);
+
+        if (!empty($originQuotes)) {
+            return $originQuotes;
+        }
+
+        return [];
+    }
+
+    public function getEstimatedDateTime($data)
+    {
+        $dateTime = '';
+        try {
+            if (isset($data['estimated_delivery_date']) && !empty($data['estimated_delivery_date'])){
+                $date = date('l, F d, Y', strtotime($data['estimated_delivery_date']));
+                $dateTime = 'Delivery By ' . $date;
+            } else {
+                $date = date('l, F d, Y', strtotime($data['ship_date']));
+                $dateTime = 'Delivery By ' . $date;
+            }
+
+            return $dateTime;
+        } catch (\Exception $exception) {
+            return $dateTime;
+        }
+
+    }
 
 }

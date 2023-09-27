@@ -66,7 +66,7 @@ class QuotesResults
             $radStatus = $quotes['residentialStatus'] ?? '';
             $lgFee = 0;
 
-            if(isset($quotes['q']) || isset($quotes['q']['NUMERRORS']) && $quotes['q']['NUMERRORS'] == 0){
+            if((isset($quotes['q']) && !$this->isAbfError($quotes)) || isset($quotes['q']['NUMERRORS']) && $quotes['q']['NUMERRORS'] == 0){
                 $items = $quotesArr['ITEMIZEDCHARGES']['ITEM'] ?? [];
                 $lineItems = [];
              
@@ -113,6 +113,11 @@ class QuotesResults
         }
 
         return $formattedShipments;
+    }
+
+    private function isAbfError($q)
+    {
+        return isset($q['q']['NUMERRORS']) && ($q['q']['NUMERRORS'] == 1 || $q['q']['NUMERRORS'] == 2);
     }
 
     private function formatShipments($quotesArr, $srvcType, $srvcDesc, $lineItems, $lgStatus, $radStatus, $charges): array
