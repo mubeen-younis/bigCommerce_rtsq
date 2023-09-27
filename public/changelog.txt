@@ -1,3 +1,7 @@
+= 1.1.0 2023-09-26 =
+
+* Update - Enable Logs = The logs tab that show recent logs . (Ticket:1568548488)[#382](https://bitbucket.org/eniture/big-commerce/pull-requests/382)
+
 = 1.0.2 2023-09-19 =
 
 * Update - add GLS Carrier in Carriers of WWE LTL in BC. (Ticket:1901615617)[#380](https://bitbucket.org/eniture/big-commerce/pull-requests/380)

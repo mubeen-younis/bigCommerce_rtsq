@@ -3,6 +3,7 @@
 namespace App\CustomClasses\FreightQuote\ChrLtl;
 
 use App\CustomClasses\CompileQuotes;
+use App\CustomClasses\Functions;
 
 class QuotesResults
 {

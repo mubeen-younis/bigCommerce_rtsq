@@ -9,6 +9,9 @@ use App\Models\LocAssociatedAccountNo;
 use App\Models\WeightThresholdSettings;
 use App\CustomClasses\CompileQuotes;
 use App\Models\InstalledAddon;
+use App\Http\Controllers\OrderController;
+use App\Models\PackagingDetail;
+use App\Helpers\Helpers;
 
 use App\Constants\Constant;
 
@@ -38,8 +41,8 @@ class Functions
     public static $imageSbsUrl = 'https://us-east.api.3dbinpacking.com/images/70785010926d0cc360921e4541811a53/20181106/4c114cebfa2d61a0c8153b3170ab6663/1541503329-24-8612722.png';
     public static $limitedAccesDelLabel = ' w/ limited access delivery';
     public static $resiLimitedAccesDelLabel = ' w/ residential & limited access delivery';
-    public static $resiLimitedAccessLGDelLable = ' w/ residential, lift gate & limited access delivery';
-    public static $limitedAccessLGDelLable = ' w/ lift gate & limited access delivery';
+    public static $resiLimitedAccessLGDelLable = ' w/ residential, liftgate & limited access delivery';
+    public static $limitedAccessLGDelLable = ' w/ liftgate & limited access delivery';
     public static $twoManDeliveryLabel = ' w/ two man delivery';
     public static $appointmentDeliveryLabel = ' w/ appointment delivery';
     public static $twoManAppDelLabel = ' w/ two man & appointment delivery';
@@ -147,6 +150,19 @@ class Functions
             'SouthEastern' => 'southeastern'];
 
         return $carrierCodesWithName[$carrierCode] ?? null;
+    }
+
+    public static function getCarrNameBySlug($carrSlug): ?string
+    {
+        $carrierCodesWithName = ['ltl-quotes' => 'WWE LTL', 'ups-ltl' => 'ups', 'rl-ltl' => 'rnl', 'xpo-ltl' => 'xpoLogistics',
+            'fedex-ltl' => 'fedex', 'gtz-new' => 'WWE LTL', 'gtz-ltl' => 'globaltranz', 'cltl' => 'cerasis', 'ups-ship-engine' => 'ShipEngine',
+            'small-package' => 'WWE SmPkg', 'unishippers-small-new' => 'WWE SmPkg', 'ups-small' => 'UPS Small', 'fedex-small' => 'FedEx Small', 'unishippers-small' => 'unisheppers',
+            'freightquote-ltl' => 'b2b', 'freightquote-chr-ltl' => 'b2b', 'purolator-small' => 'purolator', 'usps-small' => 'usps',
+            'tql-ltl' => 'tql', 'yrc-ltl' => 'yrc', 'odfl-ltl' => 'odfl4me', 'dayross-ltl' => 'dayross',
+            'estes-ltl' => 'estes', 'echo-ltl' => 'echoLogistics', 'saia-ltl' => 'saia', 'abf-ltl' => 'abf', 'daylight-ltl' => 'daylight',
+            'southeastern-ltl' => 'southeastern'];
+
+        return $carrierCodesWithName[$carrSlug] ?? null;
     }
 
     public static function getLiftResidentialStatus($rateId)
@@ -693,7 +709,7 @@ class Functions
         if ($carrName === 'upsltl') {
             $isUpsLtl = true;
         }
-        $isQuickestSer = isset($quoteSettings['quickest_service']) && $quoteSettings['quickest_service'];
+        $isQuickestSer = isset($quoteSettings['quickest_service']) && $quoteSettings['quickest_service'] && $carrName === 'gtzltl';
         $quickLabelAs = isset($quoteSettings['quickest_service_label']) && !empty($quoteSettings['quickest_service_label']) ? $quoteSettings['quickest_service_label'] : self::$simpleLTLTitle;
 
         $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, $insideDelivery, $resiPickup, $lgPickup, $laccess, false, false, $notifyDelivery, $isResi, $isAlwaysResi);
@@ -962,5 +978,161 @@ class Functions
             }
         }
         return $sName;
+    }
+
+    public static function addPackagingId($requestArr, $lineItems, $storeId)
+    {
+        if (empty($requestArr)) {
+            return [];
+        }
+
+        $carriers = isset($requestArr['requestArr']['carriers']) ? $requestArr['requestArr']['carriers'] : [];
+        $binResp = isset($requestArr['binReponse']) ? $requestArr['binReponse'] : [];
+        if(!blank($carriers)){
+            $packingId = Helpers::getUuid();
+            foreach($carriers as $carrName => $carrier){
+                $carriers[$carrName]['api']['packaging_id'] =  $packingId ?? '';
+            }
+            self::savePackagingDetails($binResp, $lineItems, $packingId, $storeId);
+            $requestArr['requestArr']['carriers'] = $carriers;
+        }
+        return ['requestArr' => $requestArr, 'packaging_id' => $packingId];
+    }
+
+    public static function savePackagingDetails($binResp, $lineItems, $packingId, $storeId)
+    {
+        $packagingDetail = new PackagingDetail();
+        $packagingDetail->store_id = $storeId;
+        $packagingDetail->packaging_uuid = $packingId;
+        $packagingDetail->is_packaging = !blank($binResp) ? 1 : 0;
+        $packagingDetail->packaging_detail = json_encode($binResp) ?? '';
+        $packagingDetail->lineitems = json_encode($lineItems) ?? '';
+        $packagingDetail->save();
+    }
+
+    public static function formatPackaging($packagingDetails, $lineItem, $locationId)
+    {
+        /*
+        * Shipment Packaging */
+        $sbsItems = $orderWidgetData = $orderWidget = [];
+        $totalPackedItems = 0;
+
+        $packagingService = $packagingDetails->ground ?? $packagingDetails->air ?? $packagingDetails->oneRate ?? $packagingDetails->simpleRate ?? $packagingDetails ?? [];
+        if(blank($packagingService)){
+            return [];
+        }
+
+            foreach ($packagingService as $zip => $ws) {
+                if (!(isset($ws->severity) && $ws->severity == 'ERROR') && ($locationId == $zip)) {
+
+                    $totalBoxes = 1;
+                    if (!empty($ws)) {
+                        
+                            $sbsData = $ws->bins_packed ?? [];
+
+                        /* Usps carrier packaging according to boxes types */
+                        $OrderController = new OrderController();
+                        $customBoxes = $ws->binPackagingData->response->customboxes->bins_packed ?? [];
+                        if (!blank($customBoxes)) {
+                            $orderWidgetData[] = $OrderController->formatUspsPackaging($customBoxes, $zip, $lineItem);
+                        }
+                        $upmbBoxes = $ws->binPackagingData->response->upmb->bins_packed ?? [];
+                        if (!blank($upmbBoxes)) {
+                            $orderWidgetData[] = $OrderController->formatUspsPackaging($upmbBoxes, $zip, $lineItem);
+                        }
+                        $umebBoxes = $ws->binPackagingData->response->umeb->bins_packed ?? [];
+                        if (!blank($umebBoxes)) {
+                            $orderWidgetData[] = $OrderController->formatUspsPackaging($umebBoxes, $zip, $lineItem);
+                        }
+                        $uflatBoxes = $ws->binPackagingData->response->uflat->bins_packed ?? [];
+                        if (!blank($uflatBoxes)) {
+                            $orderWidgetData[] = $OrderController->formatUspsPackaging($uflatBoxes, $zip, $lineItem);
+                        }
+
+                        $itemCount = 0;
+                        foreach ($sbsData as $key => $binPacked) {
+                            $type = optional($binPacked->bin_data)->type ?? '';
+                            $quantity = 1;
+                            if ($type == 'item' || $type == 'weight_based') {
+                                $type = $binPacked->bin_data->type;
+                                $product_id = $binPacked->bin_data->id;
+                                $quantity = $binPacked->bin_data->quantity ?? 1;
+                                $itemCount++;
+                            }
+                            $count = 0;
+                            $orderWidgetData['type'] = $type;
+                            $orderWidgetData['image_complete'] = $binPacked->image_complete;
+                            $orderWidgetData['quantity'] = $quantity;
+                           // $totalPackedItems += $quantity; 
+                            /*For Weight Based Products*/
+                            if ($type == 'weight_based') {
+                                $orderWidgetData['d'] = '';
+                                $orderWidgetData['w'] = '';
+                                $orderWidgetData['h'] = '';
+                                $orderWidgetData['weight'] = $binPacked->bin_data->weight ?? '';
+                            } else {
+                                $orderWidgetData['d'] = $binPacked->bin_data->d . ' x ';
+                                $orderWidgetData['w'] = $binPacked->bin_data->w . ' x ';
+                                $orderWidgetData['h'] = $binPacked->bin_data->h;
+                            }
+
+                            $orderWidgetData['nickname'] = self::getBoxName($binPacked->bin_data->id);
+                            foreach ($binPacked->items as $item) {
+                                $productid = $item->id;
+                                $sbsItems[$zip][$productid] = 1;
+
+                                $orderWidgetData['items'][$count]['product_name'] = $lineItem->items->$productid->lineItemName ?? '';
+                                $orderWidgetData['items'][$count]['w'] = $item->w;
+                                $orderWidgetData['items'][$count]['h'] = $item->h;
+                                $orderWidgetData['items'][$count]['d'] = $item->d;
+
+                                $orderWidgetData['items'][$count]['image_separated'] = $item->image_separated;
+                                $orderWidgetData['items'][$count]['image_sbs'] = $item->image_sbs;
+
+                                $orderWidget[$zip]['sbs'][$key] = $orderWidgetData;
+                                ++$count;
+
+                            }
+                            unset($orderWidgetData);
+                            if ($count) {
+                                $orderWidget[$zip]['sbs'][$key]['number_of_items'] = $count;
+                                $totalPackedItems += $count;
+                            }
+                        }
+                        $totalBoxes = isset($key) ? $key + 1 - $itemCount : 0;
+                    }
+
+                    // Pallet packaging order widget
+                    if (isset($ws->palletPackagingData) && !empty($ws->palletPackagingData) && $isLtlRate) {
+                        $palletPkgResp = (new PalletPackaging())->formatOrderWidget($responseFromWS, $lineItem);
+
+                        if (!empty($palletPkgResp)) {
+                            if (empty($orderWidget)) {
+                                $orderWidget = $palletPkgResp;
+                            } else {
+                                $orderWidget[$zip]['pallet'] = $palletPkgResp[$zip]['pallet'];
+                            }
+                        }
+                    }
+                    $orderWidget[$zip]['totalPackedBoxes'] = $totalBoxes ?? 0;
+                    $orderWidget[$zip]['totalPackedItems'] = $totalPackedItems ?? 0;
+                }
+            }
+
+            
+
+        $resp = [
+            'widget' => self::objectToArray($orderWidget),
+        ];
+        return $resp;
+    }
+
+    public static function objectToArray($orderWidget)
+    {
+        $resp = [];
+        foreach ($orderWidget as $widget) {
+            $resp[] = $widget;
+        }
+        return $resp;
     }
 }

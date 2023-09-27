@@ -95,6 +95,10 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     //========Delete duplicate variants
     Route::post('/delete_duplicate_variants', [ProductSettingController::class, 'deleteDuplicateVariants']);
 
+    //=======Logs Routes
+    Route::get('/get_logs', [App\Http\Controllers\LogToDbController::class, 'getStoreLogs']);
+    Route::get('/get_packaging', [App\Http\Controllers\LogToDbController::class, 'getSingleLogDetail']);
+
     //=======Carriers
     Route::get('/get_add_tab_sett', [AdditionalCarrierTabSettingController::class, 'getAddTabSett']);
     Route::get('/get_add_tab_sett_store/{carrierId}', [AdditionalCarrierTabSettingController::class, 'getAddTabSettByCarrierID']);

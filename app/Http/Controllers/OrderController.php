@@ -478,6 +478,7 @@ class OrderController extends Controller
                 $sMethod = '(Intransit' . $estimate;
             } else {
                 $sName = $order['shipping_name'] ?? '';
+                $sName = explode('w/', $sName)[0] ?? '';
                 $sMethod = '';
             }            
 
