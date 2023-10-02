@@ -30,6 +30,7 @@ use App\CustomClasses\SouthEasternLtl\ConnectionSettings as SouthEasternLtlConne
 use App\CustomClasses\EchoLogisticsLtl\ConnectionSettings as EchoLogisticsLtlConnectionSettings;
 use App\CustomClasses\DayLightLtl\ConnectionSettings as DayLightLtlConnectionSettings;
 use App\CustomClasses\FreightQuote\ChrLtl\ConnectionSettings as FreightQuoteChrConnectionSettings;
+use App\CustomClasses\Priority1Ltl\ConnectionSettings as Priority1LtlConnectionSettings;
 use App\Endpoints\Endpoints;
 
 use App\Models\Connection;
@@ -81,6 +82,7 @@ class ConnectionController extends Controller
         $this->echoLogisticsLtlTestCon = new EchoLogisticsLtlConnectionSettings();
         $this->dayLightLtlTestCon = new DayLightLtlConnectionSettings();
         $this->freightQuoteChrLtlTestCon = new FreightQuoteChrConnectionSettings();
+        $this->Priority1LtlTestCon = new Priority1LtlConnectionSettings();
         $this->curlRequest = new connCurlRequest();
     }
 
@@ -206,6 +208,9 @@ class ConnectionController extends Controller
                     return response()->json($response);
                 case 'freightquote-chr-ltl':
                     $response = $this->freightQuoteChrLtlTestCon->testConnection($request, $storeName);
+                    return response()->json($response);
+                case "priority-one-ltl":
+                    $response = $this->Priority1LtlTestCon->testLtlConnection($request, $storeName);
                     return response()->json($response);
                 default:
                     return response()->json([
