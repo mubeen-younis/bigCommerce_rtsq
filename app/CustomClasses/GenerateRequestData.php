@@ -2897,6 +2897,7 @@ class GenerateRequestData
 
         $this->resiCarrier['priority1Ltl'] = $residential;
         $this->resiCarrier['alwaysResi']['priority1Ltl'] = $alwaysResi;
+        $notify = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']);
 
         $accessorial = [];
         if ($liftGate == 'Y') {
@@ -2904,6 +2905,9 @@ class GenerateRequestData
         }
         if ($residential == 'Y' || $alwaysResi) {
             array_push($accessorial, 'RESDEL');
+        }
+        if ($notify) {
+            array_push($accessorial, 'NOTIFY');
         }
 
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
