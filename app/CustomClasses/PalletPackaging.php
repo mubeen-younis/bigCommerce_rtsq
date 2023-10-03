@@ -715,7 +715,7 @@ class PalletPackaging
             } elseif ($carName == 'priority1') {
                 foreach ($q['q'] as $key => $value) {
                     $quotePrice = isset($value['rateQuoteDetail']['total']) ? $value['rateQuoteDetail']['total'] : 0;
-                    $quotesWithFee[$carName][$locId]['q'][$key]['totalOfferPrice']['value'] = $quotePrice + $palletFee[$locId];
+                    $quotesWithFee[$carName][$locId]['q'][$key]['rateQuoteDetail']['total'] = $quotePrice + $palletFee[$locId];
                 }
             } else {
                 $quotesWithFee = [];
