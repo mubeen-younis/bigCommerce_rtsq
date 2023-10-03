@@ -256,6 +256,12 @@ class GenerateRequestData
                     $carriersArr['carriers']['chr'] = $fqLtlArr;
                     $errorManagment['chr'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
+                case 'priority-one-ltl':
+                    $p1LtlArr = $this->priority1LtlEnitArr($con1, $destination);
+                    $p1LtlArr['originAddress'] = $enitOrigin;
+                    $carriersArr['carriers']['priority1'] = $p1LtlArr;
+                    $errorManagment['priority1'] = $con1['quote_settings']['error_managment'] ?? 1;
+                    break;
             }
         }
         return ['carriersArr' => $carriersArr, 'residential' => $this->resiCarrier, 'errorManagment' => $errorManagment];
@@ -659,6 +665,19 @@ class GenerateRequestData
             'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
             'returnQuotesOnExceedWeight' => 1,
             'api' => $this->getApiInfoArrFreightQuoteChrLtl($connSettings, $destination),
+        ];
+    }
+
+    public function priority1LtlEnitArr($connSettings, $destination)
+    {
+        return [
+            'licenseKey' => '',
+            'serverName' => Functions::getServerName($this->storeData),
+            'carrierMode' => 'pro',
+            'quotestType' => 'ltl',
+            'version' => '1.0.0',
+            'returnQuotesOnExceedWeight' => 1,
+            'api' => $this->getApiInfoArrPriority1Ltl($connSettings, $destination),
         ];
     }
 
@@ -2842,6 +2861,60 @@ class GenerateRequestData
             'quoteLTLAboveThreshold' => $quoteLTLAboveThreshold,
             'TLWeightThreshold' => $TLWeightThreshold,
             'TLEquipmentType' => $TLEquipmentType,
+        ];
+
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
+    }
+
+    function getApiInfoArrPriority1Ltl($connSettings, $destination)
+    {
+        $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
+            (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+
+        /*
+         * Check if rad hit not consumed and residential is enables
+         * **/
+        $residential = 'N';
+        $alwaysResi = false;
+
+        if ($this->checkIsAutoDetectedResDel($rad_settings)) {
+            if ($this->radHitConsumed == 0) {
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+
+            } else {
+                $residential = $this->residential;
+            }
+            if ($liftGate != 'Y') {
+                $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
+            }
+        } else {
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
+        }
+
+        $this->resiCarrier['priority1Ltl'] = $residential;
+        $this->resiCarrier['alwaysResi']['priority1Ltl'] = $alwaysResi;
+
+        $accessorial = [];
+        if ($liftGate == 'Y') {
+            array_push($accessorial, 'LGDEL');
+        }
+        if ($residential == 'Y' || $alwaysResi) {
+            array_push($accessorial, 'RESDEL');
+        }
+
+        $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
+        $apiArray = [
+            'apiKey' => isset($connSettings['creds']['api_key']) ? $connSettings['creds']['api_key'] : '',
+            'thresholdWeightLimit' => $weightThreshold,
+
+            'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
+            'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
+
+            'accessorial' => $accessorial,
         ];
 
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
