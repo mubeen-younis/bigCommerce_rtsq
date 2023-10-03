@@ -44,7 +44,7 @@ class PalletPackaging
      */
     public function getLtlCarriers()
     {
-        $ltlCarriers = ['wweLTL', 'wweLTLN', 'upsLTL', 'fedexLTL', 'globalTranz', 'cerasis', 'xpoLogistics', 'rnl', 'yrc', 'freightQuote', 'estes', 'dayross', 'odfl4me', 'saia', 'abf', 'southeastern', 'tql', 'echoLogistics', 'daylight', 'chr'];
+        $ltlCarriers = ['wweLTL', 'wweLTLN', 'upsLTL', 'fedexLTL', 'globalTranz', 'cerasis', 'xpoLogistics', 'rnl', 'yrc', 'freightQuote', 'estes', 'dayross', 'odfl4me', 'saia', 'abf', 'southeastern', 'tql', 'echoLogistics', 'daylight', 'chr', 'priority1'];
 
         return $ltlCarriers;
     }
@@ -612,7 +612,7 @@ class PalletPackaging
     {
         $charges = '';
 
-        $carriers = ['globalTranz' => $quote['LtlAmount'], 'freightQuote' => $quote['totalNetCharge'], 'saia' => $quote['totalNetCharge'], 'estes' => $quote['ratpricing']['rattotalPrice'], 'odfl4me' => $quote['rateEstimate']['netFreightCharge'], 'echoLogistics' => $quote['TotalCharge'], 'daylight' => $quote['totalNetCharge'], 'chr' => $quote['totalNetCharge'], 'tql' => $quote['customerRate']];
+        $carriers = ['globalTranz' => $quote['LtlAmount'], 'freightQuote' => $quote['totalNetCharge'], 'saia' => $quote['totalNetCharge'], 'estes' => $quote['ratpricing']['rattotalPrice'], 'odfl4me' => $quote['rateEstimate']['netFreightCharge'], 'echoLogistics' => $quote['TotalCharge'], 'daylight' => $quote['totalNetCharge'], 'chr' => $quote['totalNetCharge'], 'tql' => $quote['customerRate'], 'priority1' => $quote['totalNetCharge']];
 
         foreach ($carriers as $key => $value) {
             if ($key == $carrName) {
@@ -711,6 +711,11 @@ class PalletPackaging
             } elseif ($carName == 'wweLTLN') {                
                 foreach ($q['q'] as $key => $value) {
                     $quotesWithFee[$carName][$locId]['q'][$key]['totalOfferPrice']['value'] = $value['totalOfferPrice']['value'] + $palletFee[$locId];
+                }
+            } elseif ($carName == 'priority1') {
+                foreach ($q['q'] as $key => $value) {
+                    $quotePrice = isset($value['rateQuoteDetail']['total']) ? $value['rateQuoteDetail']['total'] : 0;
+                    $quotesWithFee[$carName][$locId]['q'][$key]['totalOfferPrice']['value'] = $quotePrice + $palletFee[$locId];
                 }
             } else {
                 $quotesWithFee = [];
