@@ -1033,7 +1033,8 @@ class GenerateRequestData
                     || isset($carriers['chr'])
                     || isset($carriers['tql'])
                     || isset($carriers['echoLogistics'])
-                    || isset($carriers['daylight']);
+                    || isset($carriers['daylight'])
+                    || isset($carriers['priority1']);
                 if ($isLtl) {
                     $itemsArr = $olditemsArr + $itemsArr;
                 }
