@@ -141,6 +141,13 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/delete_shipping_group', [\App\Http\Controllers\ShippingGroupController::class, 'deleteShippingGroup']);
     Route::get('/get_shipping_group_detail', [\App\Http\Controllers\ShippingGroupController::class, 'getShippingGroupDetail']);
 
+    //=========Shipping Rules
+    Route::get('/get_shipping_rules', [\App\Http\Controllers\ShippingRuleController::class, 'getShippingRules']);
+    Route::post('/save_shipping_rule', [\App\Http\Controllers\ShippingRuleController::class, 'saveShippingRule']);
+    Route::post('/delete_shipping_rule', [\App\Http\Controllers\ShippingRuleController::class, 'deleteShippingRule']);
+    Route::get('/get_shipping_rule_detail', [\App\Http\Controllers\ShippingRuleController::class, 'getShippingRuleDetail']);
+    Route::post('/updateAvaiableStatus', [\App\Http\Controllers\ShippingRuleController::class, 'updateAvaiableStatus']);
+
     //=========Addons
     Route::get('/getAllAddons', [AddonsController::class, 'index']);
     Route::get('/get_installed_addons', [AddonsController::class, 'getAddons']);

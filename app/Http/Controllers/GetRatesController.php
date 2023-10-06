@@ -20,6 +20,7 @@ use App\Models\Subscription\Subscription;
 use Illuminate\Support\Facades\Log;
 use App\CustomClasses\CompareRates;
 use App\Constants\Constant;
+use App\Models\ShippingRule;
 
 class GetRatesController extends Controller
 {
@@ -91,6 +92,11 @@ class GetRatesController extends Controller
                 return [];
             }
         }
+        
+        if($this->applyShippingRule($cartInfo['store_id'], $formatReq)){
+            return [];
+        }
+
         $quotes = $this->shipping->collectRates($formatReq, $storeData, $this->connectionSettings, $cartInfo, $this->isDbscInstalled);
 
         return $quotes;
@@ -576,5 +582,37 @@ class GetRatesController extends Controller
             $result = [];
         }
         return $result;
+    }
+
+    public function applyShippingRule($storeId, $formatReq)
+    {    
+        $shippingRules = ShippingRule::getStoreShippingRules($storeId);
+        if(!empty($shippingRules)){
+
+            $destination = isset($formatReq['lineItemData']['destination']) ? $formatReq['lineItemData']['destination'] : [];
+            $cartItems = isset($formatReq['lineItemData']['items']) ? $formatReq['lineItemData']['items'] : [];
+            
+            foreach($shippingRules as $key => $rule){
+                $restrictedProducts = isset($rule['filter_settings']) ? json_decode($rule['filter_settings']) : [];
+                
+                if(!empty($restrictedProducts)){
+                    foreach($restrictedProducts as $rpKey => $productId){
+
+                        $filterProducts = collect($cartItems)->where('product_id', $productId)->all() ?? [];
+                        
+                        if(!empty($filterProducts)){
+                            $isSameCountry = $destination['country'] == $rule['filter_name'] ?? false;
+                            $isAvailable = $rule['available'] ?? false;
+                            $isRestrictTrue =  $isSameCountry && $isAvailable ?? false;
+                            if($isRestrictTrue){
+                                Log::info('Shipping rule applied: ' . json_encode($filterProducts));
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return false;
     }
 }
