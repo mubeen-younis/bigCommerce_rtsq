@@ -8,7 +8,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    laravel8:
+    feature/bc-eniture-license-api:
       - step:
           caches:
             - composer
