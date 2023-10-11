@@ -35,6 +35,7 @@ use App\Http\Controllers\DBSC\ShippingOriginController;
 use App\Http\Controllers\DBSC\ShippingZoneController;
 use App\Http\Controllers\DBSC\ShippingRatesController;
 use App\Http\Controllers\DBSC\OtherSettingsController;
+use App\Http\Controllers\BigCommerceListingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -318,4 +319,8 @@ Route::get('/test_bin', [App\CustomClasses\Bin3D\Bin3D::class, 'getBinResponse']
 Route::get('/api_logs', [App\Http\Controllers\LogToDbController::class, 'index']);
 Route::get('/truncate_logs', [App\Http\Controllers\LogToDbController::class, 'truncateLogs']);
 
+// Eniture licenses routes
+Route::get('/get_customers_list', [BigCommerceListingController::class, 'listCustomers']);
+Route::get('/edit_subscription', [BigCommerceListingController::class, 'editBigCommerceSubscription']);
+Route::post('/update_subscription', [BigCommerceListingController::class, 'updateBCSubscription']);
 
