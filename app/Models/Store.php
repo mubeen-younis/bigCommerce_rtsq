@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Subscription\Subscription;
 
 class Store extends Model
 {
@@ -64,5 +65,26 @@ class Store extends Model
         return optional(self::where('app_status', 1)->select('id', 'url', 'hash', 'access_token')->with('storeOrderCronCount')->get())->toArray();
     }
 
+    /**
+     * Eniture licenses functions
+     * @return mixed
+     */
+
+    public function subscription()
+    {
+        return $this->hasOne(Subscription::class, 'store_id')->latestOfMany();
+    }
+
+    public static function getStoreListing($limit = 10, $search = null)
+    {
+        $dbSubscriptions = self::where('app_status', 1)
+            ->whereHas('subscription', function ($q) use ($search) {
+                $q->where('owner_email', 'LIKE', "%{$search}%")
+                    ->orWhere('url', 'LIKE', "%{$search}%");
+            })
+            ->select('id', 'url', 'hash', 'owner_email')
+            ->with(['subscription']);
+        return optional($dbSubscriptions->orderBy('created_at', 'desc')->paginate($limit))->toArray() ?? [];
+    }
 
 }
