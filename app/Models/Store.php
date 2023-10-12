@@ -80,7 +80,8 @@ class Store extends Model
         $dbSubscriptions = self::where('app_status', 1)
             ->whereHas('subscription', function ($q) use ($search) {
                 $q->where('owner_email', 'LIKE', "%{$search}%")
-                    ->orWhere('url', 'LIKE', "%{$search}%");
+                    ->orWhere('url', 'LIKE', "%{$search}%")
+                    ->orWhere('store_domain', 'LIKE', "%{$search}%");
             })
             ->select('id', 'url', 'hash', 'owner_email', 'store_domain')
             ->with(['subscription']);
