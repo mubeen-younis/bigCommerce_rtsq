@@ -75,7 +75,7 @@ class Subscription extends Model
     public static function getSubscriptionDetails($id)
     {
         return self::where('id', $id)->with(['store' => function ($query) {
-            $query->select('id', 'url', 'owner_email');
+            $query->select('id', 'url', 'owner_email', 'store_domain');
         }, 'plan' => function ($query) {
             $query->select('id', 'name');
         }])->first();
