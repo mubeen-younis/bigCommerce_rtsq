@@ -7,6 +7,7 @@ use App\Models\Subscription\Subscription;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Helpers\Helpers;
+use Illuminate\Support\Facades\Log;
 
 class BigCommerceListingController extends Controller
 {
@@ -17,6 +18,7 @@ class BigCommerceListingController extends Controller
      */
     public function listCustomers(Request $request)
     {
+        Log::info("List Customer" . json_encode($request->all()));
         $limit = $request->limit ?? 10;
         $search = $request->search ?? null;
         $customerListing = Store::getStoreListing($limit, $search);

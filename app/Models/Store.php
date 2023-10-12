@@ -82,7 +82,7 @@ class Store extends Model
                 $q->where('owner_email', 'LIKE', "%{$search}%")
                     ->orWhere('url', 'LIKE', "%{$search}%");
             })
-            ->select('id', 'url', 'hash', 'owner_email')
+            ->select('id', 'url', 'hash', 'owner_email', 'store_domain')
             ->with(['subscription']);
         return optional($dbSubscriptions->orderBy('created_at', 'desc')->paginate($limit))->toArray() ?? [];
     }
