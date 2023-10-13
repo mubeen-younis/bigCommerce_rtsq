@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use App\Helpers\Helpers;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Subscription\SubscriptionController;
+use Stripe\Charge;
+use Stripe\Stripe;
 
 class BigCommerceListingController extends Controller
 {
@@ -81,7 +83,7 @@ class BigCommerceListingController extends Controller
             Helpers::setStripeAPiKey($isTestStore);
 
             if (isset($request['cancel']) && $request['cancel'] == 1) {
-                $res = $Subscription->cencelStripeSubscription($dbSub->subscription_id);
+                $res = $this->cencelStripeSubscription($dbSub->subscription_id);
                 Log::info("Cencel Stripe Subscription" . json_encode($res));
                 if (isset($res['error']) && $res['error'] == false) {
                     //Because of simaltaneous execution of stripe and DB
@@ -94,7 +96,7 @@ class BigCommerceListingController extends Controller
                 $planId = (int)$dbSub->plan_id;
                 $plan = Plans::find($planId);
                 $stripePlanId = $isTestStore ? $plan->stripe_sandbox_plan_id : $plan->stripe_plan_id;
-                $res = $Subscription->reActivateSubscriptionPlan($subId, $stripePlanId);
+                $res = $this->reActivateSubscriptionPlan($subId, $stripePlanId);
                 Log::info("Reactivate Stripe Subscription Plan" . json_encode($res));
                 if (isset($res['error']) && $res['error'] == false) {
                     //Because of simaltaneous execution of stripe and DB
@@ -111,5 +113,57 @@ class BigCommerceListingController extends Controller
 
 
         return Helpers::sendJsonResponse($res['error'], $res['message'], $res['data']);
+    }
+
+    private function cencelStripeSubscription($subscriptionId)
+    {
+        try {
+
+            $responce = \Stripe\Subscription::update(
+                $subscriptionId, [
+                    'cancel_at_period_end' => true,
+                ]
+            );
+            //array('at_period_end' => true)
+            $ends_at = gmdate("M-d-Y", $responce->cancel_at);
+
+            $responce = [
+                'error' => false,
+                'message' => 'Your subscription will be cancelled automatically at the end of the period on ' . $ends_at . '.',
+                'data' => $responce,
+            ];
+
+            return $responce;
+        } catch (\Exception $e) {
+            $responce = [
+                'error' => true,
+                'data' => [],
+                'message' => $e->getMessage()
+            ];
+        }
+        return $responce;
+    }
+
+    private function reActivateSubscriptionPlan($subId, $planId)
+    {
+
+        try {
+            $subscription = \Stripe\Subscription::retrieve($subId);
+            $subscription->plan = $planId;
+            $subscription->cancel_at_period_end = false;
+            $subscriptionRes = $subscription->save();
+            $responce = [
+                'error' => false,
+                'data' => $subscriptionRes,
+                'message' => 'The subscription reactivated successfully.'
+            ];
+        } catch (\Exception $e) {
+            $responce = [
+                'error' => false,
+                'data' => [],
+                'message' => $e->getMessage()
+            ];
+        }
+        return $responce;
     }
 }
