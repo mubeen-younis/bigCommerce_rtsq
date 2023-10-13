@@ -1,3 +1,7 @@
+= 1.2.1 2023-10-13 =
+
+* Update - fixes shipping rules incorrect functioanlity in BC. (Ticket:1860430861)[#385](https://bitbucket.org/eniture/big-commerce/pull-requests/385)
+
 = 1.2.0 2023-10-03 =
 
 * Update - Introduce Shipping Rules Feature in BC. (Ticket:1860430861)[#383](https://bitbucket.org/eniture/big-commerce/pull-requests/383)
