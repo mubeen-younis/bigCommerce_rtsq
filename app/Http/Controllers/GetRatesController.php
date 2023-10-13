@@ -601,9 +601,9 @@ class GetRatesController extends Controller
                         $filterProducts = collect($cartItems)->where('product_id', $productId)->all() ?? [];
                         
                         if(!empty($filterProducts)){
-                            $isSameCountry = $destination['country'] == $rule['filter_name'] ?? false;
+                            $isDiffCountry = $destination['country'] != $rule['filter_name'] ?? false;
                             $isAvailable = $rule['available'] ?? false;
-                            $isRestrictTrue =  $isSameCountry && $isAvailable ?? false;
+                            $isRestrictTrue =  $isDiffCountry && $isAvailable ?? false;
                             if($isRestrictTrue){
                                 Log::info('Shipping rule applied: ' . json_encode($filterProducts));
                                 return true;
