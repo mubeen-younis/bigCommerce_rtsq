@@ -323,4 +323,5 @@ Route::get('/truncate_logs', [App\Http\Controllers\LogToDbController::class, 'tr
 Route::get('/get_customers_list', [BigCommerceListingController::class, 'listCustomers']);
 Route::get('/edit_subscription', [BigCommerceListingController::class, 'editBigCommerceSubscription']);
 Route::post('/update_subscription', [BigCommerceListingController::class, 'updateBCSubscription']);
+Route::post('/cancel_subscription', [BigCommerceListingController::class, 'cancelBCSubscription']);
 
