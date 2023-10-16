@@ -182,7 +182,7 @@ class BigCommerceListingController extends Controller
             $isTestStore = Helpers::checkIsTestStore($store['hash']);
             Helpers::setStripeAPiKey($isTestStore);
 
-            if (isset($request['cancel']) && $request['cancel'] == 1) {
+            if (isset($request['flag']) && $request['flag'] == 1) {
                 $res = $this->cencelStripeSubscription($dbSub->subscription_id);
                 Log::info("Cencel Stripe Subscription" . json_encode($res));
                 if (isset($res['status']) && $res['status'] == true) {
