@@ -1016,6 +1016,34 @@ class Functions
                             }
                         }
                     break;
+                     // Unishipper New API
+                     case "wweSmallN":
+                        foreach ($quote as $zipCode => $q) {
+                            if($zip == $zipCode){
+                                foreach ($q->q as $service) {
+                                    $serviceCode = isset($service->timeInTransit->upsServiceCode) ? $service->timeInTransit->upsServiceCode : ' ';
+                                    $isTrue = str_contains(strtolower($rateId), strtolower($serviceCode));
+                                    if($isTrue){
+                                        $carrierQuoteIds = $service->offerId ?? '';
+                                    }
+                                }
+                            }
+                        }
+                    break;
+                    // GTZ New API
+                    case "wweLTLN":
+                        foreach ($quote as $zipCode => $q) {
+                            if($zip == $zipCode){
+                                foreach ($q->q as $service) {
+                                    $serviceCode = isset($service->timeInTransit->scac) ? $service->timeInTransit->scac : ' ';
+                                    $isTrue = str_contains(strtolower($rateId), strtolower($serviceCode));
+                                    if($isTrue){
+                                        $carrierQuoteIds = $service->offerId ?? '';
+                                    }
+                                }
+                            }
+                        }
+                    break;
                     case "shipEngine":
                         $quoteResults = new upsShipEngineSmallQuotesResults();
                         foreach ($quote as $zipCode => $q) {
