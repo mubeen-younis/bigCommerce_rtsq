@@ -65,7 +65,7 @@ class BigCommerceListingController extends Controller
      * @return JsonResponse
      */
     public function updateBCSubscription(Request $request)
-    { Log::info('update BC Subscription request ' . $request->all());
+    { Log::info('update BC Subscription request ' . json_encode($request->all()));
         try { 
             $uuid = isset($request->uuid) ? $request->uuid : null;
             if (blank($uuid)) {
