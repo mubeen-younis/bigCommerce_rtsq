@@ -18,6 +18,7 @@ use App\Models\Subscription\CarrierCount;
 use App\Mail\PaymentFailedByWebHookEmail;
 use Stripe\Charge;
 use Stripe\Stripe;
+use Carbon\Carbon;
 
 
 class BigCommerceListingController extends Controller
@@ -26,6 +27,7 @@ class BigCommerceListingController extends Controller
     public static $plansData = [];
     public static $email = '';
     public static $trial = 1;
+    private $storeId = null;
 
     /**
      * List BigCOmmerce Stores
@@ -39,7 +41,7 @@ class BigCommerceListingController extends Controller
         $search = $request->search ?? null;
         $customerListing = Store::getStoreListing($limit, $search);
         
-        return Helpers::sendJsonResponse(true, '', $customerListing);
+        return Helpers::toSendJsonResponse(true, '', $customerListing);
     }
 
     /**
@@ -51,10 +53,10 @@ class BigCommerceListingController extends Controller
     {
         $uuid = $request->uuid;
         if (blank($uuid)) {
-            return Helpers::sendJsonResponse(false, 'No product id or uuid');
+            return Helpers::toSendJsonResponse(false, 'No product id or uuid.');
         }
 
-        return Helpers::sendJsonResponse(true, '', Subscription::getSubscriptionDetails($uuid));
+        return Helpers::toSendJsonResponse(true, '', Subscription::getSubscriptionDetails($uuid));
     }
 
     /**
@@ -64,20 +66,44 @@ class BigCommerceListingController extends Controller
      */
     public function updateBCSubscription(Request $request)
     {
-        try {
+        try { 
             $uuid = isset($request->uuid) ? $request->uuid : null;
-            $storeId = isset($request->store_id) ? $request->store_id : null;
-            $data['plan'] = isset($request['plan']) ? $request['plan'] : null;
-            $status = isset($request->status) ? $request->status : 1;
-            self::$email = $data['email'] = isset($request['email']) ? $request['email'] : null;
             if (blank($uuid)) {
-                return Helpers::sendJsonResponse(false, 'Invalid Request');
+                return Helpers::toSendJsonResponse(false, 'Invalid Request.');
             }
 
-            $hubSpotController = new HubSpotController();
-            //Check: If current carriers installed are more than the choosed plan then return with message
-            $currentSubscriptionDetail = $this->subscriptionDetailFromDB($storeId, $uuid);
-            $store = Store::getStoreDetailsFromStoreId($storeId);
+            $currentSubscriptionDetail = $this->subscriptionDetailFromDB($uuid);
+            $currentPlan = isset($currentSubscriptionDetail->plan_id) ? $currentSubscriptionDetail->plan_id : null;
+            $data['plan'] = isset($request['plan_id']) ? $request['plan_id'] : null;
+            self::$email = $data['email'] = isset($request['email']) ? $request['email'] : null;
+            $isSamePlan = $currentPlan == $data['plan'];
+            $inputDate = Carbon::parse($request->ends_at);
+            $currentDate = Carbon::now();
+            $isfuture = $inputDate->isFuture();
+            $isfuture ? $status = 1 : $status = $currentSubscriptionDetail->status;
+
+            //Added check: if plan is same but update ends date
+            if ($isSamePlan) {
+                $storeDetail = Store::where('id', $this->storeId)->first();
+                if (!blank($storeDetail)) {
+                        
+                    Subscription::where('id', $uuid)->update([
+                        'ends_at' => date('Y-m-d', strtotime($request->ends_at)),
+                        'status' => $status,
+                    ]);
+
+                    if($data['plan'] == 1){
+                        Store::where('id', $this->storeId)->update([
+                            'is_trial_completed' => 0
+                        ]);
+                    }
+
+                    return Helpers::toSendJsonResponse(true, 'Your subscription is updated successfully at the end of the period on ' . $request->ends_at . '.');
+                }
+            }
+            //END:Check
+            //Check: If current carriers installed are more than the choosed plan then return with message            
+            $store = Store::getStoreDetailsFromStoreId($this->storeId);
             $isTestStore = Helpers::checkIsTestStore($store['hash']);
             Helpers::setStripeAPiKey($isTestStore);
             self::getPlansDetails($data['plan'], $isTestStore);   //Getting Plan detail from DB
@@ -85,39 +111,19 @@ class BigCommerceListingController extends Controller
 
             
             if (!is_null($currentSubscriptionDetail) && $currentSubscriptionDetail->total_installed_carriers > $newPlanAllowedCarriers) {
-                return response()->json([
-                    'error' => true,
-                    'data' => [],
-                    'message' => 'You enabled more carriers than the allowed carriers limit (' . self::$plansData['carrier_count'] . ') in ' . self::$plansData['name'] . ' Plan. So, you need to disabled some carriers to downgrade your subscription plan'
-                ], 200);
+                return Helpers::toSendJsonResponse(false, 'You enabled more carriers than the allowed carriers limit (' . self::$plansData['carrier_count'] . ') in ' . self::$plansData['name'] . ' Plan. So, you need to disabled some carriers to downgrade your subscription plan.');
             }
-            /*Added check for trial plan
-            if the store already taken trial plan*/
-            if ($data['plan'] == self::$trial) {
-                $storeDetail = Store::where('id', $storeId)->first();
-                if (!blank($storeDetail)) {
-                    if ($storeDetail->is_trial_completed) {
-                        return response()->json([
-                            'error' => true,
-                            'data' => [],
-                            'message' => 'You have already taken trial plan! Please subscribe to a paid plan if you want to continue using our services.'
-                        ], 200);
-                    }
-                }
-            }
-            //END:Check
 
             $stripePlanId = self::$plansData['stripe_plan_id'];
 
             //If the payment method already exists then retrieve it
-            $paymentMethod = PaymentMethod::where('store_id', $storeId)->first();
+            $paymentMethod = PaymentMethod::where('store_id', $this->storeId)->first();
             $paymentMethodId = isset($paymentMethod->id) ? $paymentMethod->id : null;
             //If there is already a subscription exists for the store_id then retrieve it
-            $oldSubscription = Subscription::where('store_id', $storeId)->latest()->first();
+            $oldSubscription = Subscription::where('store_id', $this->storeId)->latest()->first();
 
             //Start: Upgrade or DownGrade Plans
             if (!is_null($paymentMethod) && !is_null($oldSubscription) && $stripePlanId != null && $oldSubscription->subscription_id != null) {
-                $oldPaymentMethod = PaymentMethod::where('store_id', $storeId)->first();
 
                 if ($oldSubscription->status == 2) { //If the previous subscription is expired
                     // TODO: We can remove previous subscription from here
@@ -127,14 +133,14 @@ class BigCommerceListingController extends Controller
                     $updateSubResponse = $this->updateSubscriptionPlan($oldSubscription->subscription_id, $stripePlanId);
                 }
 
-                if ($updateSubResponse['error'] == true) {
+                if ($updateSubResponse['status'] == false) {
                     return response()->json($updateSubResponse);
                 }
 
 
                 $uuid = $this->updateSubscriptionInDB($updateSubResponse['data'], $oldSubscription, $isTestStore, $status);
                 //Getting Current Plan Detail
-                $updateSubResponse['data'] = $this->subscriptionDetailFromDB($storeId, $uuid);
+                $updateSubResponse['data'] = $this->subscriptionDetailFromDB($uuid);
                 Log::info('Email of old subscription' . $oldSubscription->email);
                 $mailToSend = isset($data['email']) && !empty($data['email']) ? $data['email'] : (isset($oldSubscription->email) && !empty($oldSubscription->email) ? $oldSubscription->email : null);
                 if (!empty($mailToSend)) {
@@ -149,122 +155,10 @@ class BigCommerceListingController extends Controller
                 }
                 return response()->json($updateSubResponse, 200);
             }
-            return response()->json([
-                'error' => true,
-                'message' => 'Something went wrong.'
-            ], 200);
-            dd(1);
-            //END: Upgrade or DownGrade Plans
-            //If stripeplan (null) means, it is trial.
-            if ($stripePlanId != null) {
-                $customerResponse = $this->createCustomerOnStripe($data);
-            }
-            // if stripe customer is not created successfully then return the error
-            if (isset($customerResponse['error']) && $customerResponse['error'] == true) {
-                return response()->json($customerResponse);
-            }
-            //If the stripe customer is created and subscription is done
-            $customerId = isset($customerResponse['data']->id) ? $customerResponse['data']->id : null;
-            $subscriptions = isset($customerResponse['data']->subscriptions) ? $customerResponse['data']->subscriptions : null;
-            //If the stripe customer is created and plan is subscribed successfully then it means the PAID plan is subscribed.
-            //else, otherwise we consider it to be a trial
-            if (!is_null($customerId) && !is_null($subscriptions)) {
-                $paymentMethodId = $this->savePaymentMethodInDB($customerResponse['data'], $storeId);
-
-                $user = [
-                    'email' => $data['email'],
-                    'firstname' => $request['card_name'] ?? '',
-                    'lastname' => '',
-                    'city' => $request['city'] ?? '',
-                    'state' => $request['state'] ?? '',
-                    'zip' => $request['zip'] ?? '',
-                    'country' => $request['country'] ?? 'US',
-                    'address' => $request['address'] ?? '',
-                    'phone' => $request['phone'] ?? '',
-                ];
-                $status = ['products_purchased' => true];
-                $hubSpotController->createUpdateHubSpotUser($storeId, $user, $status);
-
-            } else {
-                //Else part will be executed in case of trial and we need to update the subscription table for a trial
-                /*This block of code will check if customer already subscribe trial plan
-                and is allowed to subscribe trial plan*/
-                $trialDays = Carbon::now()->addDays(14);
-                $trialSubscription = Subscription::where('store_id', $storeId)->where('plan_id', self::$plansData['plan_id'])->first();
-                if (!blank($trialSubscription)) {
-                    $dbTrialEndDate = $trialSubscription->ends_at;
-                    if (!blank($dbTrialEndDate)) {
-                        if (Carbon::now() >= Carbon::parse($dbTrialEndDate)) {
-                            return response()->json([
-                                'error' => true,
-                                'data' => [],
-                                'message' => 'You have already taken trial plan! Please subscribe to a paid plan if you want to continue using our services.'
-                            ], 200);
-                        }
-                        /*Setting remaining trial days for customer*/
-                        $trialDays = Functions::getDaysBwDates(Carbon::now(), $dbTrialEndDate);
-                    }
-                }
-
-                $subscription = new Subscription();
-                $subscription->store_id = $storeId;
-                $subscription->plan_id = self::$plansData['plan_id'];
-                $subscription->name = isset($data['card_name']) ? $data['card_name'] : '';
-                $subscription->email = self::$email;
-                $subscription->status = 1; //Active Status
-                $subscription->trial_ends_at = $trialDays;
-                $subscription->ends_at = $trialDays;
-                $subscription->save();
-
-                /*
-                 * Create Hub spot user and activate trial
-                 */
-                $user = ['email' => $data['email']];
-                $status = ['product_trials' => true];
-
-                $hubSpotController->createUpdateHubSpotUser($storeId, $user, $status);
-            }
-            //If the plan if subcribed successfully, then it must be a PAID Stripe plan
-            //Else, it is trial and $subscriptionId will be null.
-            if (!is_null($subscriptions)) {
-                $subscriptionId = $this->saveSubscriptionInDB($customerResponse['data'], $subscriptions, $paymentMethodId, $storeId, $oldSubscription);
-            } else {
-                $subscriptionId = isset($subscription->id) ? $subscription->id : null;
-            }
-            //Updating: carrier counts that will be allowed in case of trial of PAID plan
-            $this->updateCarrierCountsinDB($subscriptionId, $storeId);
-            $subscriptionDetail = $this->subscriptionDetailFromDB($storeId, $uuid);
-            $emailData = array(
-                'receiverEmail' => $data['email'],
-                'productName' => 'Real-time Shipping Quotes',
-                'planName' => self::$plansData['name'],
-                'endsAt' => $subscriptionDetail->ends_at,
-                'action' => 'IPF'       // Invoice Payment Failed
-            );
-            if ($data['plan'] == self::$trial) { // if planId is null then it's a trial and we need to send an email for trial
-
-                Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, 3));
-            } else {
-                Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, 1));
-
-            }
-            /*
-            * Update WS graph data
-            * */
-            SaleGraphController::updateGraphData();
-
-            return response()->json([
-                'error' => false,
-                'data' => $subscriptionDetail,
-                'message' => 'The plan subscribed successfully.'
-            ], 200);
+            return Helpers::toSendJsonResponse(false, 'Your subscription is not updated, Please verify again.');
         } catch (\Exception $exception) {
             Log::info('Exception on subscribing plan ' . json_encode($exception->getTraceAsString()));
-            return response()->json([
-                'error' => true,
-                'data' => [],
-                'message' => 'Something went wrong on subscribing plan.'
-            ], 200);
+            return Helpers::toSendJsonResponse(false, 'Something went wrong on subscribing plan.');
         }
     }
 
@@ -278,7 +172,7 @@ class BigCommerceListingController extends Controller
         $Subscription = new SubscriptionController();
         $uuid = $request->uuid ?? null;
         if (blank($uuid)) {
-            return Helpers::sendJsonResponse(false, 'Invalid Request');
+            return Helpers::toSendJsonResponse(false, 'Invalid Request.');
         }
 
         $dbSub = Subscription::where('id', $uuid)->latest()->first();
@@ -291,7 +185,7 @@ class BigCommerceListingController extends Controller
             if (isset($request['cancel']) && $request['cancel'] == 1) {
                 $res = $this->cencelStripeSubscription($dbSub->subscription_id);
                 Log::info("Cencel Stripe Subscription" . json_encode($res));
-                if (isset($res['error']) && $res['error'] == false) {
+                if (isset($res['status']) && $res['status'] == true) {
                     //Because of simaltaneous execution of stripe and DB
                     Subscription::where('id', $dbSub->id)->update([
                      'status' => 2
@@ -304,7 +198,7 @@ class BigCommerceListingController extends Controller
                 $stripePlanId = $isTestStore ? $plan->stripe_sandbox_plan_id : $plan->stripe_plan_id;
                 $res = $this->reActivateSubscriptionPlan($subId, $stripePlanId);
                 Log::info("Reactivate Stripe Subscription Plan" . json_encode($res));
-                if (isset($res['error']) && $res['error'] == false) {
+                if (isset($res['status']) && $res['status'] == true) {
                     //Because of simaltaneous execution of stripe and DB
                     Subscription::where('id', $dbSub->id)->update([
                         'status' => 1
@@ -314,11 +208,11 @@ class BigCommerceListingController extends Controller
         }
 
         
-        $subscriptionDetail = $this->subscriptionDetailFromDB($dbSub->store_id, $uuid);
+        $subscriptionDetail = $this->subscriptionDetailFromDB($uuid);
         $res['data'] = $subscriptionDetail;
 
 
-        return Helpers::sendJsonResponse($res['error'], $res['message'], $res['data']);
+        return Helpers::toSendJsonResponse($res['status'], $res['message'], $res['data']);
     }
 
     private function cencelStripeSubscription($subscriptionId)
@@ -334,7 +228,7 @@ class BigCommerceListingController extends Controller
             $ends_at = gmdate("M-d-Y", $responce->cancel_at);
 
             $responce = [
-                'error' => false,
+                'status' => true,
                 'message' => 'Your subscription will be cancelled automatically at the end of the period on ' . $ends_at . '.',
                 'data' => $responce,
             ];
@@ -342,7 +236,7 @@ class BigCommerceListingController extends Controller
             return $responce;
         } catch (\Exception $e) {
             $responce = [
-                'error' => true,
+                'status' => false,
                 'data' => [],
                 'message' => $e->getMessage()
             ];
@@ -359,13 +253,13 @@ class BigCommerceListingController extends Controller
             $subscription->cancel_at_period_end = false;
             $subscriptionRes = $subscription->save();
             $responce = [
-                'error' => false,
+                'status' => true,
                 'data' => $subscriptionRes,
                 'message' => 'The subscription reactivated successfully.'
             ];
         } catch (\Exception $e) {
             $responce = [
-                'error' => false,
+                'status' => false,
                 'data' => [],
                 'message' => $e->getMessage()
             ];
@@ -373,7 +267,7 @@ class BigCommerceListingController extends Controller
         return $responce;
     }
 
-    public function subscriptionDetailFromDB($storeId, $id)
+    public function subscriptionDetailFromDB($id)
     {
         $data = DB::table('subscriptions as s')
             ->leftJoin('carriers_counts as cc', 'cc.store_id', '=', 's.store_id')
@@ -390,9 +284,12 @@ class BigCommerceListingController extends Controller
             $data->last4 = '****';
             Log::info('Card Decrypt Exception' . $exception->getMessage());
         }
+
+        $this->storeId = isset($data->store_id) ? $data->store_id : null;
+
         // Added this block of code for the bug of carrier count issue
         // Bug of enabling carriers according to plan
-        $totalEnabledCarriersCount = InstalledCarrier::where('store_id', $storeId)->where('is_enabled', 1)->count();
+        $totalEnabledCarriersCount = InstalledCarrier::where('store_id', $this->storeId)->where('is_enabled', 1)->count();
         $data->total_remaining_carriers = $data->total_allowed_carriers - $totalEnabledCarriersCount;
         ////////////////////////////
         if (!is_null($data)) {
@@ -427,14 +324,14 @@ class BigCommerceListingController extends Controller
                 'plan' => $planId
             ));
             $responce = [
-                'error' => false,
+                'status' => true,
                 'message' => 'Plan is subscribed successfully.',
                 'data' => $subscription,
             ];
 
         } catch (\Exception $e) {
             $responce = [
-                'error' => true,
+                'status' => false,
                 'data' => [],
                 'message' => $e->getMessage()
             ];
@@ -454,13 +351,13 @@ class BigCommerceListingController extends Controller
             $subResponce = $subscription->save();
 
             $responce = [
-                'error' => false,
+                'status' => true,
                 'message' => 'Plan is updated successfully.',
                 'data' => $subResponce,
             ];
         } catch (\Exception $e) {
             $responce = [
-                'error' => true,
+                'status' => false,
                 'data' => [],
                 'message' => $e->getMessage()
             ];
