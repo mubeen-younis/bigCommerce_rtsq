@@ -381,6 +381,9 @@ class ProductSettingController extends Controller
                     'message' => 'No Products Available',
                 ], 200);
             }
+
+            $products = $this->isLtlParcelBothEnabled($products, $request->store_id);
+
             $resp = response()->json(['error' => false,
                 'data' => $products,
                 'meta' => ['total' => $count, 'current' => $page, 'perpage' => $perPage],
@@ -391,6 +394,45 @@ class ProductSettingController extends Controller
             Log::info('catch: ' . json_encode($exception->getMessage()));
         }
 
+    }
+
+    public function isLtlParcelBothEnabled($products, $storeId)
+    {
+        $freightEnabled = $parcelEnabled = false;
+        foreach($products as $key => $product){
+            if($product['variant_id'] == null){
+                $variants = ProductSetting::where('source_product_id', $product['source_product_id'])
+                ->where('store_id', $storeId)->get();
+                foreach($variants as $variant){
+                    if($variant->variant_id !== null){
+                        if(json_decode($variant['settings'])->freight_enabled){
+                            $freightEnabled = json_decode($variant['settings'])->freight_enabled;
+                        } elseif (json_decode($variant['settings'])->parcel_enabled){
+                            $parcelEnabled = json_decode($variant['settings'])->parcel_enabled;
+                        }
+                    }
+                }
+
+                if ($freightEnabled && $parcelEnabled){
+                    $settings = json_decode($product['settings']);
+                    $settings->freightParcelEnabled = true;
+                    $product['settings'] = json_encode($settings);
+                    $products[$key] = $product;
+                } elseif ($parcelEnabled){
+                    $settings = json_decode($product['settings']);
+                    $settings->parcel_enabled = true;
+                    $product['settings'] = json_encode($settings);
+                    $products[$key] = $product;
+                } elseif ($freightEnabled){
+                    $settings = json_decode($product['settings']);
+                    $settings->freight_enabled = true;
+                    $product['settings'] = json_encode($settings);
+                    $products[$key] = $product;
+                }
+            }
+        }
+
+        return $products;
     }
 
     public function editProduct(Request $request)
@@ -417,7 +459,7 @@ class ProductSettingController extends Controller
 
     public function updateProductDetail(Request $request)
     {
-
+        $productCount = isset($request->products) ? count($request->products) : null;
         foreach ($request->products as $prd) {
             $product = ProductSetting::where('source_product_id', $prd['source_product_id'])
                 ->where('variant_id', $prd['variant_id'])
@@ -463,15 +505,25 @@ class ProductSettingController extends Controller
             $prd['store_hash'] = $request['store_hash'];
             $this->updateSingleProductFromApi($prd);
         }
+
+        if($productCount > 1){
+            $products = $this->isLtlParcelBothEnabled($request->products, $request->store_id);
+            foreach($products as $prod){
+                if($prod['variant_id'] == null){
+                    $product = $prod;
+                }
+            }
+        }
+        
         return response()->json(['error' => false,
-            'data' => [],
+            'data' => $product,
             'message' => 'Product Updated Successfully',
         ], 200);
     }
 
     public function getSetting($product)
     {
-        $getOnly = ['freight_class',
+        $getOnly = ['freight_class', 'freightParcelEnabled',
             'hazardous_enabled', 'freight_enabled', 'parcel_enabled', 'quote_as_instore', 'quote_as_local', 'insurance', 'allow_vertical', 'ship_own_package', 'nmfc'];
         $settings = new \stdClass();
         foreach ($product as $key => $prd) {
