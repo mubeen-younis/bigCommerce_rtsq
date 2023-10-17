@@ -77,11 +77,22 @@ class GenerateRequestData
      */
     public function generateEnitureArray($origin, $destination, $lineItems)
     {
-        $this->destinationIsPOBox($destination);
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+        if ($this->checkIsPoBoxAndRADInstalled($rad_settings) && $destination['country'] == 'US') {
+            $this->checkRadStatus($this->storeData['store']['id'], $destination);
+            if (Functions::isPOBoxAddress($rad_settings, SmartyStreet::$isPoBOX)) {
+                return [];
+            }
+        } else {
+            $this->destinationIsPOBox($destination);
+            if (Functions::isPOBoxAddress($rad_settings, $this->isPoBOX)) {
+                return [];
+            }
+        }
+        
         $carriersArr['carriers'] = [];
         $enitOrigin = $this->getEnitOrigin($origin);
         $errorManagment = [];
-        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
         if (Functions::isPOBoxAddress($rad_settings, $this->isPoBOX)) {
             return [];
         }
@@ -1900,6 +1911,7 @@ class GenerateRequestData
     private function checkRadStatus($storeId, $address)
     {
         $hits = 1;
+        $poBox = false;
         $smarty = new SmartyStreet();
         $addressStatus = '';
         $completeAddress = $smarty->set_address($address);
@@ -1907,8 +1919,9 @@ class GenerateRequestData
         if (!empty($isSameDestination)) {
             $hits = 0;
             $addressStatus = $isSameDestination['status'] == 1 ? 'r' : ($isSameDestination['status'] == 2 ? 'c' : 'n');
+            $poBox = isset($isSameDestination['is_pobox']) ? $isSameDestination['is_pobox'] : false;
         }
-        return $smarty->getSmartyResponse($storeId, $address, $hits, $addressStatus);
+        return $smarty->getSmartyResponse($storeId, $address, $hits, $addressStatus, $poBox);
     }
 
     public function getApiInfoArrWweSmall($connSettings, $destination)
@@ -3428,6 +3441,11 @@ class GenerateRequestData
     public function checkIsAutoDetectedResDel($radSettings): bool
     {
         return $this->storeData['installed_addon_rad'] && ((isset($radSettings['autoDetectedResidentialAddresses']) && $radSettings['autoDetectedResidentialAddresses']));
+    }
+
+    public function checkIsPoBoxAndRADInstalled($radSettings): bool
+    {
+        return $this->storeData['installed_addon_rad'] && ((isset($radSettings['returRates']) && $radSettings['returRates']));
     }
 
     public function getStoreDateTime()
