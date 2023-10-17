@@ -5361,7 +5361,7 @@ class CompileQuotes
                         $isliftgateFee = isset($data['surcharges']['liftgateFee']);
                         $isnotifyDeliveryFee = isset($data['surcharges']['notifyBeforeDeliveryFee']);
 
-                        if (!($lgQuotes && $isliftgateFee || $notifyDelivery && $isnotifyDeliveryFee)) {
+                        if (($lgQuotes && !$isliftgateFee) || ($notifyDelivery && !$isnotifyDeliveryFee)) {
                             continue;
                         }
                         /*
