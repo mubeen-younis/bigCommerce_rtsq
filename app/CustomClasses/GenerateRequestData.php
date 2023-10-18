@@ -78,18 +78,24 @@ class GenerateRequestData
     public function generateEnitureArray($origin, $destination, $lineItems)
     {
         $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+        /**
+        *  Check: if RAD is installed and active, destination address is US 
+        *  then using Smarty Api to validate Po Box address
+        **/ 
         if ($this->checkIsPoBoxAndRADInstalled($rad_settings) && $destination['country'] == 'US') {
             $this->checkRadStatus($this->storeData['store']['id'], $destination);
             if (Functions::isPOBoxAddress($rad_settings, SmartyStreet::$isPoBOX)) {
                 return [];
             }
-        } else {
-            $this->destinationIsPOBox($destination);
-            if (Functions::isPOBoxAddress($rad_settings, $this->isPoBOX)) {
-                return [];
-            }
         }
-        
+        /**
+        *  Check: if RAD is not installed or inactive, then using keyword search to validate Po Box address
+        **/
+        $this->destinationIsPOBox($destination);
+        if (Functions::isPOBoxAddress($rad_settings, $this->isPoBOX)) {
+            return [];
+        }
+
         $carriersArr['carriers'] = [];
         $enitOrigin = $this->getEnitOrigin($origin);
         $errorManagment = [];
