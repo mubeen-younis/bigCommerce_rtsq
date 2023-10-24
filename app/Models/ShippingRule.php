@@ -23,7 +23,11 @@ class ShippingRule extends Model
      */
     public static function getStoreShippingRules($storeId): array
     {
-        return optional(self::where('store_id', $storeId)->get())->toArray() ?? [];
+        $rules = optional(self::where('store_id', $storeId)->get())->toArray() ?? [];
+        foreach($rules as $key => $rule){
+            $rules[$key] = self::shippingRuleMappingByRuleType($rule);
+        }
+        return $rules;
     }
 
 
@@ -31,9 +35,8 @@ class ShippingRule extends Model
     {
         $id = optional(self::where('uuid', $uuid)->first())->id;
         if (!blank($id)) {
-            //self::updateShippingRuleProduct($id);
+            self::where('uuid', $uuid)->delete();
         }
-        self::where('uuid', $uuid)->delete();
     }
 
 
@@ -136,14 +139,38 @@ class ShippingRule extends Model
             $message = 'added successfully.';
             $save = 1;
         }
+
+        $ruleType = $shippingRuleData['rule_type'] ?? '';
+        if (!empty($ruleType) && $ruleType == 1){
+            $shippingRule->filter_name = $shippingRuleData['filter_country'] ?? '';
+            $shippingRule->filter_settings = json_encode($shippingRuleData['filter_products']) ?? '';
+        } elseif (!empty($ruleType) && $ruleType == 2){
+            $shippingRule->filter_name = $shippingRuleData['filter_provider'] ?? '';
+            $settings = [
+                "isFilterWeight" => $shippingRuleData['isFilterWeight'] ?? '', 
+			    "isFilterPrice" => $shippingRuleData['isFilterPrice'] ?? false,
+			    "isFilterQuantity" => $shippingRuleData['isFilterQuantity'] ?? false,
+                "weightFrom" => $shippingRuleData['weight_from'] ?? '',
+                "weightTo" => $shippingRuleData['weight_to'] ?? '',
+                "priceFrom" => $shippingRuleData['price_from'] ?? '',
+                "priceTo" => $shippingRuleData['price_to'] ?? '',
+                "quantityFrom" => $shippingRuleData['quantity_from'] ?? '',
+                "quantityTo" => $shippingRuleData['quantity_to'] ?? '',
+            ];
+            $shippingRule->filter_settings = json_encode($settings) ?? '';
+        }
         $shippingRule->rule_name = $shippingRuleData['rule_name'] ?? '';
         $shippingRule->store_id = $shippingRuleData['store_id'];
-        $shippingRule->rule_type = $shippingRuleData['rule_type'] ?? '';
-        $shippingRule->filter_name = $shippingRuleData['filter_name'] ?? '';
         $shippingRule->apply_to = $shippingRuleData['apply_to'] ?? false;
         $shippingRule->available = $shippingRuleData['available'] ?? false;
-        $shippingRule->filter_settings = json_encode($shippingRuleData['filter_settings']) ?? '';
+        $shippingRule->rule_type = $ruleType ?? 0;
         $shippingRule->save();
+
+        /**
+        * Note: This is important step to update params according to rule type 
+        * using this function shippingRuleMappingByRuleType()
+        */
+        $shippingRule = self::shippingRuleMappingByRuleType($shippingRule);
 
         return [
             'error' => false,
@@ -171,6 +198,8 @@ class ShippingRule extends Model
         } 
         $shippingRule->available = !$shippingRuleData['available'] ?? false;
         $shippingRule->save();
+
+        $shippingRule = self::shippingRuleMappingByRuleType($shippingRule);
 
         return [
             'error' => false,
@@ -230,17 +259,43 @@ class ShippingRule extends Model
     }
 
     /**
-     * @param $id
-     * @return array
-     */
-    public static function getShippingRuleDetailTest($id): array
+    * params mapping according to rule type
+    */
+    public static function shippingRuleMappingByRuleType($shippingRule)
     {
-        // TODO: Need to get From DB
-        return ['nickname' => 'Rule 1',
-            'checkout_description' => 'Rule 1',
-            'rate' => 0,
-            'rate_x_quantity' => false,
-        ];
+        $ruleType = isset($shippingRule['rule_type']) && !empty($shippingRule['rule_type']) ? $shippingRule['rule_type'] : null;
+        switch ($ruleType) {
+            case 1:
+                $shippingRule['filter_country'] = $shippingRule['filter_name'];
+                $shippingRule['filter_products'] = json_decode($shippingRule['filter_settings']);
+                break;
+            case 2:
+                $shippingRule = self::updateHideMethodsParams($shippingRule);
+                break;
+    
+            default:
+                break;
+            
+        } 
+        
+        return $shippingRule ?? [];
+    }
+
+    public static function updateHideMethodsParams($shippingRule)
+    {
+        $shippingRule['filter_provider'] = $shippingRule['filter_name'];
+        $settings = json_decode($shippingRule['filter_settings'], true);
+        $shippingRule['isFilterWeight'] = $settings['isFilterWeight'];
+        $shippingRule['isFilterPrice'] = $settings['isFilterPrice'];
+        $shippingRule['isFilterQuantity'] = $settings['isFilterQuantity'];
+        $shippingRule['weight_from'] = $settings['weightFrom'];
+        $shippingRule['weight_to'] = $settings['weightTo'];
+        $shippingRule['price_from'] = $settings['priceFrom'];
+        $shippingRule['price_to'] = $settings['priceTo'];
+        $shippingRule['quantity_from'] = $settings['quantityFrom'];
+        $shippingRule['quantity_to'] = $settings['quantityTo'];
+
+        return $shippingRule;
     }
 
 }
