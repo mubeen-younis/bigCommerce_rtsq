@@ -593,15 +593,14 @@ class GetRatesController extends Controller
             $cartItems = isset($formatReq['lineItemData']['items']) ? $formatReq['lineItemData']['items'] : [];
             
             foreach($shippingRules as $key => $rule){
-                $restrictedProducts = isset($rule['filter_settings']) ? json_decode($rule['filter_settings']) : [];
-                
+                $restrictedProducts = isset($rule['filter_products']) ? $rule['filter_products'] : [];    
                 if(!empty($restrictedProducts)){
                     foreach($restrictedProducts as $rpKey => $productId){
 
                         $filterProducts = collect($cartItems)->where('product_id', $productId)->all() ?? [];
                         
                         if(!empty($filterProducts)){
-                            $isDiffCountry = $destination['country'] != $rule['filter_name'] ?? false;
+                            $isDiffCountry = $destination['country'] != $rule['filter_country'] ?? false;
                             $isAvailable = $rule['available'] ?? false;
                             $isRestrictTrue =  $isDiffCountry && $isAvailable ?? false;
                             if($isRestrictTrue){
