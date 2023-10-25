@@ -93,7 +93,7 @@ class GetRatesController extends Controller
             }
         }
         
-        if($this->applyShippingRule($cartInfo['store_id'], $formatReq)){
+        if($this->isShippingRule($cartInfo['store_id'], $formatReq)){
             return [];
         }
 
@@ -584,7 +584,7 @@ class GetRatesController extends Controller
         return $result;
     }
 
-    public function applyShippingRule($storeId, $formatReq)
+    public function isShippingRule($storeId, $formatReq)
     {    
         $shippingRules = ShippingRule::getStoreShippingRules($storeId);
         if(!empty($shippingRules)){
