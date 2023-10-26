@@ -421,16 +421,17 @@ class LocationsController extends Controller
             ], 200);
         }
         $country = $request->country;
-        $url = "https://maps.googleapis.com/maps/api/geocode/json";
-        $response = Http::get($url, [
-            'address' => $country,
-            'components' => 'country:' . strtoupper($country),
-            'key' => 'AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w',
-        ]);
-        dd($response->json());
+        // $url = "https://maps.googleapis.com/maps/api/geocode/json";
+        // $response = Http::get($url, [
+        //     'address' => $country,
+        //     'components' => 'country:' . strtoupper($country),
+        //     'key' => 'AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w',
+        // ]);
+        //dd($response->json());
         //$url = "https://maps.googleapis.com/maps/api/geocode/json?address=" . urlencode($country) . "&components=country:US" . "&key=AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w";
-        //dump($url);
-        //$zipcodeDetail = $this->curlRequest->enSingleCurlRequest($url, [], [], 'GET', false);
+        $url = 'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=UnitesStates&types=geocode&key=AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w';
+        dump($url);
+        $zipcodeDetail = $this->curlRequest->enSingleCurlRequest($url, [], [], 'GET', false);
         if ($zipcodeDetail['info']['http_code'] != 200) {
             return response()->json(['error' => true,
                 'data' => [],
