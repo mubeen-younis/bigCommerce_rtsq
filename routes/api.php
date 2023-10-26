@@ -114,6 +114,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::delete('warehouse/delete/{id}', 'LocationsController@delete_warehouse');
     Route::delete('dropship/delete/{id}', 'LocationsController@delete_dropships');
     Route::get('/get_loc_from_zip/{zip_code}', [LocationsController::class, 'getLocationFromZip']);
+    Route::get('/get_loc_from_country/{country}', [LocationsController::class, 'getLocationFromCountry']);
     Route::post('/save_location', [LocationsController::class, 'store']);
     Route::get('/get_location', [LocationsController::class, 'getSingleLocation']);
     Route::get('/get_locations', [LocationsController::class, 'getLocations']);
