@@ -421,7 +421,7 @@ class LocationsController extends Controller
         }
         $country = $request->country;
         
-        $url = "https://maps.googleapis.com/maps/api/geocode/json?address=" . urlencode($country) . "&components=country:" . urlencode(strtoupper($country)) . "&key=AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w";
+        $url = "https://maps.googleapis.com/maps/api/geocode/json?address=" . urlencode($country) . "&components=country:US" . "&key=AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w";
         dump($url);
         $zipcodeDetail = $this->curlRequest->enSingleCurlRequest($url, [], [], 'GET', false);
         if ($zipcodeDetail['info']['http_code'] != 200) {
