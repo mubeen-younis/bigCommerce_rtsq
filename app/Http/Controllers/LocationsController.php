@@ -420,8 +420,8 @@ class LocationsController extends Controller
             ], 200);
         }
         $country = $request->country;
-        //"https://maps.googleapis.com/maps/api/place/autocomplete/json?input={$country}&types=(regions)&key={$apiKey}
-        $url = "https://maps.googleapis.com/maps/api/place/autocomplete/json?input=" . urlencode($country) . "&types=(regions)&key=AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w";
+        
+        $url = "https://maps.googleapis.com/maps/api/geocode/json?address=" . urlencode($country) . "&components=country:" . urlencode(strtoupper($country)) . "&key=AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w";
         dump($url);
         $zipcodeDetail = $this->curlRequest->enSingleCurlRequest($url, [], [], 'GET', false);
         if ($zipcodeDetail['info']['http_code'] != 200) {
