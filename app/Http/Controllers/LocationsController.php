@@ -423,7 +423,6 @@ class LocationsController extends Controller
         
         $url = "https://maps.googleapis.com/maps/api/geocode/json?address=" . urlencode($country) . "&key=AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w";
         $zipcodeDetail = $this->curlRequest->enSingleCurlRequest($url, [], [], 'GET', false);
-        dd($zipcodeDetail);
         if ($zipcodeDetail['info']['http_code'] != 200) {
             return response()->json(['error' => true,
                 'data' => [],
@@ -432,7 +431,7 @@ class LocationsController extends Controller
         }
 
         $mapResult = json_decode($zipcodeDetail['response'], true);
-
+dump(1, $mapResult);
         if (isset($mapResult['error_message']) || $mapResult['status'] != 'OK') {
             return response()->json(['error' => true,
                 'data' => [],
@@ -445,6 +444,7 @@ class LocationsController extends Controller
         if (count($mapResult['results']) > 0) {
             //dd($mapResult['results']);
             $arrComponents = $mapResult['results'][0]['address_components'] ?? [];
+            dump(2,$arrComponents);
             if (isset($mapResult['results'][0]['postcode_localities'])) {
                 foreach ($mapResult['results'][0]['postcode_localities'] as $index => $component) {
                     $city[] = $component;
@@ -470,6 +470,7 @@ class LocationsController extends Controller
                     }
                 }
             }
+            dd($state);
             return response()->json(['error' => false,
                 'data' => ['postal_code' => $zipCode, 'city' => $city, 'state' => $state, 'country' => $country],
                 'message' => '',
