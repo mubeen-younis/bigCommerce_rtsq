@@ -421,15 +421,15 @@ class LocationsController extends Controller
             ], 200);
         }
         $country = $request->country;
+        $client = new Client();
 
-        $countryCode = "US"; // Replace with the desired country code
+        $countryName = "United States"; // Replace with the desired country code
         $apiKey = "AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w"; // Replace with your API key
 
-        $countryName = "United States"; // Replace with the desired country name
+        $url = "https://maps.googleapis.com/maps/api/geocode/json?address=$countryName&key=$apiKey";
 
-$url = "https://maps.googleapis.com/maps/api/geocode/json?address=$countryName&key=$apiKey";
-$response = file_get_contents($url);
-$data = json_decode($response, true);
+$response = $client->get($url);
+$data = json_decode($response->getBody(), true);
 dd($data);
         // $url = "https://maps.googleapis.com/maps/api/geocode/json";
         // $response = Http::get($url, [
