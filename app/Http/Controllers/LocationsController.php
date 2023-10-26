@@ -8,7 +8,7 @@ use App\Models\ProductSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Models\LocAssociatedAccountNo;
-use Illuminate\Support\Facades\Http;
+use GuzzleHttp\Client;
 
 class LocationsController extends Controller
 {
@@ -421,6 +421,16 @@ class LocationsController extends Controller
             ], 200);
         }
         $country = $request->country;
+        $client = new Client();
+
+        $countryCode = "US"; // Replace with the desired country code
+        $apiKey = "AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w"; // Replace with your API key
+
+        $url = "https://maps.googleapis.com/maps/api/geocode/json?components=country:$countryCode&key=$apiKey";
+
+$response = $client->get($url);
+$data = json_decode($response->getBody(), true);
+dd($data);
         // $url = "https://maps.googleapis.com/maps/api/geocode/json";
         // $response = Http::get($url, [
         //     'address' => $country,
@@ -429,9 +439,9 @@ class LocationsController extends Controller
         // ]);
         //dd($response->json());
         //$url = "https://maps.googleapis.com/maps/api/geocode/json?address=" . urlencode($country) . "&components=country:US" . "&key=AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w";
-        $url = 'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=UnitesStates&types=geocode&key=AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w';
-        dump($url);
-        $zipcodeDetail = $this->curlRequest->enSingleCurlRequest($url, [], [], 'GET', false);
+        // $url = 'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=UnitesStates&types=geocode&key=AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w';
+        // dump($url);
+        // $zipcodeDetail = $this->curlRequest->enSingleCurlRequest($url, [], [], 'GET', false);
         if ($zipcodeDetail['info']['http_code'] != 200) {
             return response()->json(['error' => true,
                 'data' => [],
