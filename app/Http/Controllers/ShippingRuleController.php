@@ -74,7 +74,7 @@ class ShippingRuleController extends Controller
                     switch ($rule['rule_type']) {
                         case 2:
                             $is_true = $this->hideMethods($rule, $cartItems);
-                            if($is_true){
+                            if(!$is_true){
                                 foreach($connectionSettings as $key => $carrier){
                                     if($key == $provider){
                                         unset($connectionSettings[$key]);
@@ -98,7 +98,7 @@ class ShippingRuleController extends Controller
                 return $item['lineItemWeight'] * $item['piecesOfLineItem'] ?? 0;
             }) ?? 0;
             $totalWeight = collect($weight)->sum();
-            if(isset($shippingRule['weight_from']) && $shippingRule['weight_to'] && $totalWeight >= $shippingRule['weight_from'] && $totalWeight <= $shippingRule['weight_to']){
+            if(isset($shippingRule['weight_from']) && $shippingRule['weight_to'] && $totalWeight >= $shippingRule['weight_from'] && $totalWeight < $shippingRule['weight_to']){
                 return false;
             }
             $isFilterEnables = true;
@@ -109,7 +109,7 @@ class ShippingRuleController extends Controller
                 return $item['lineItemPrice'] * $item['piecesOfLineItem'] ?? 0;
             }) ?? 0;
             $totalPrice = collect($price)->sum() ?? 0;
-            if(isset($shippingRule['price_from']) && $shippingRule['price_to'] && $totalPrice >= $shippingRule['price_from'] && $totalPrice <= $shippingRule['price_to']){
+            if(isset($shippingRule['price_from']) && $shippingRule['price_to'] && $totalPrice >= $shippingRule['price_from'] && $totalPrice < $shippingRule['price_to']){
                 return false;
             }
             $isFilterEnables = true;
@@ -117,7 +117,7 @@ class ShippingRuleController extends Controller
 
         if(isset($shippingRule['isFilterQuantity']) && $shippingRule['isFilterQuantity']){
             $totalQuantity = collect($items)->sum('piecesOfLineItem') ?? 0;
-            if(isset($shippingRule['quantity_from']) && $shippingRule['quantity_to'] && $totalQuantity >= $shippingRule['quantity_from'] && $totalQuantity <= $shippingRule['quantity_to']){
+            if(isset($shippingRule['quantity_from']) && $shippingRule['quantity_to'] && $totalQuantity >= $shippingRule['quantity_from'] && $totalQuantity < $shippingRule['quantity_to']){
                 return false;
             }
             $isFilterEnables = true;
