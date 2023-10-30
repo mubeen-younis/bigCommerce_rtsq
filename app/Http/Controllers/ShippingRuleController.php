@@ -58,4 +58,71 @@ class ShippingRuleController extends Controller
         $shippingRuleDetail = ShippingRule::getShippingRuleDetailByUuid($request->uuid);
         return Helpers::sendJsonResponse(false, null, $shippingRuleDetail);
     }
+
+    public function applyShippingRule($storeId, $lineItemData, $connectionSettings)
+    {    
+        $is_true = false;
+        $shippingRules = ShippingRule::getStoreShippingRules($storeId);
+
+        if(!empty($shippingRules)){
+            $cartItems = !empty($lineItemData) ? $lineItemData : [];
+
+            foreach($shippingRules as $key => $rule){
+                if(isset($rule['available']) && $rule['available']){
+                    $provider = isset($rule['filter_provider']) ? $rule['filter_provider'] : '';
+
+                    switch ($rule['rule_type']) {
+                        case 2:
+                            $is_true = $this->hideMethods($rule, $cartItems);
+                            if(!$is_true){
+                                foreach($connectionSettings as $key => $carrier){
+                                    if($key == $provider){
+                                        unset($connectionSettings[$key]);
+                                    }
+                                }
+                            }
+                        break;
+                    }
+                }
+            }
+        }
+
+        return $connectionSettings;
+    }
+
+    public function hideMethods($shippingRule, $items)
+    {
+        $isFilterEnables = false;
+        if(isset($shippingRule['isFilterWeight']) && $shippingRule['isFilterWeight']){
+            $weight = collect($items)->map(function ($item) {
+                return $item['lineItemWeight'] * $item['piecesOfLineItem'] ?? 0;
+            }) ?? 0;
+            $totalWeight = collect($weight)->sum();
+            if(isset($shippingRule['weight_from']) && $shippingRule['weight_to'] && $totalWeight >= $shippingRule['weight_from'] && $totalWeight < $shippingRule['weight_to']){
+                return false;
+            }
+            $isFilterEnables = true;
+        }
+
+        if(isset($shippingRule['isFilterPrice']) && $shippingRule['isFilterPrice']){
+            $price = collect($items)->map(function ($item) {
+                return $item['lineItemPrice'] * $item['piecesOfLineItem'] ?? 0;
+            }) ?? 0;
+            $totalPrice = collect($price)->sum() ?? 0;
+            if(isset($shippingRule['price_from']) && $shippingRule['price_to'] && $totalPrice >= $shippingRule['price_from'] && $totalPrice < $shippingRule['price_to']){
+                return false;
+            }
+            $isFilterEnables = true;
+        }
+
+        if(isset($shippingRule['isFilterQuantity']) && $shippingRule['isFilterQuantity']){
+            $totalQuantity = collect($items)->sum('piecesOfLineItem') ?? 0;
+            if(isset($shippingRule['quantity_from']) && $shippingRule['quantity_to'] && $totalQuantity >= $shippingRule['quantity_from'] && $totalQuantity < $shippingRule['quantity_to']){
+                return false;
+            }
+            $isFilterEnables = true;
+        }
+
+        return $isFilterEnables;
+    }
 }
