@@ -8,6 +8,7 @@ use App\Models\ProductSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Models\LocAssociatedAccountNo;
+use GuzzleHttp\Client;
 
 class LocationsController extends Controller
 {
@@ -398,6 +399,97 @@ class LocationsController extends Controller
                     }
                 }
             }
+            return response()->json(['error' => false,
+                'data' => ['postal_code' => $zipCode, 'city' => $city, 'state' => $state, 'country' => $country],
+                'message' => '',
+            ], 200);
+        } else {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'Something Went Wrong',
+            ], 500);
+
+        }
+    }
+
+    public function getLocationFromCountry(Request $request)
+    {
+        if (empty($request->country)) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'No Valid Zip Code Provided',
+            ], 200);
+        }
+        $country = $request->country;
+        $client = new Client();
+
+        $countryName = "United States"; // Replace with the desired country code
+        $apiKey = "AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w"; // Replace with your API key
+
+        $url = "https://maps.googleapis.com/maps/api/geocode/json?address=$countryName&key=$apiKey";
+
+$response = $client->get($url);
+$data = json_decode($response->getBody(), true);
+dd($data);
+        // $url = "https://maps.googleapis.com/maps/api/geocode/json";
+        // $response = Http::get($url, [
+        //     'address' => $country,
+        //     'components' => 'country:' . strtoupper($country),
+        //     'key' => 'AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w',
+        // ]);
+        //dd($response->json());
+        //$url = "https://maps.googleapis.com/maps/api/geocode/json?address=" . urlencode($country) . "&components=country:US" . "&key=AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w";
+        // $url = 'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=UnitesStates&types=geocode&key=AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w';
+        // dump($url);
+        // $zipcodeDetail = $this->curlRequest->enSingleCurlRequest($url, [], [], 'GET', false);
+        if ($zipcodeDetail['info']['http_code'] != 200) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'Unable to connect to server',
+            ], $zipcodeDetail['info']['http_code']);
+        }
+
+        $mapResult = json_decode($zipcodeDetail['response'], true);
+dump(1, $mapResult);
+        if (isset($mapResult['error_message']) || $mapResult['status'] != 'OK') {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => isset($mapResult['error_message']) ? $mapResult['error_message'] : " Error! Please enter valid US or Canada zip code.",
+            ], 200);
+        }
+        $city = [];
+        $state = "";
+        $country = "";
+        if (count($mapResult['results']) > 0) {
+            //dd($mapResult['results']);
+            $arrComponents = $mapResult['results'][0]['address_components'] ?? [];
+            dump(2,$arrComponents);
+            if (isset($mapResult['results'][0]['postcode_localities'])) {
+                foreach ($mapResult['results'][0]['postcode_localities'] as $index => $component) {
+                    $city[] = $component;
+                }
+            } elseif ($arrComponents) {
+                foreach ($arrComponents as $index => $component) {
+                    $type = $component['types'][0];
+                    if ($type == "sublocality_level_1" || $type == "locality") {
+                        $city[] = trim($component['long_name']);
+                    }
+                }
+            }
+            if ($arrComponents) {
+                $country = '';
+                $state = '';
+                foreach ($arrComponents as $index => $stateApp) {
+                    $type = $stateApp['types'][0];
+                    if ($state == "" && ($type == "administrative_area_level_1")) {
+                        $state = trim($stateApp['short_name']);
+                    }
+                    if ($country == "" && ($type == "country")) {
+                        $country = trim($stateApp['short_name']);
+                    }
+                }
+            }
+            dd($state);
             return response()->json(['error' => false,
                 'data' => ['postal_code' => $zipCode, 'city' => $city, 'state' => $state, 'country' => $country],
                 'message' => '',

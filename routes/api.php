@@ -115,6 +115,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::delete('warehouse/delete/{id}', 'LocationsController@delete_warehouse');
     Route::delete('dropship/delete/{id}', 'LocationsController@delete_dropships');
     Route::get('/get_loc_from_zip/{zip_code}', [LocationsController::class, 'getLocationFromZip']);
+    Route::get('/get_loc_from_country/{country}', [LocationsController::class, 'getLocationFromCountry']);
     Route::post('/save_location', [LocationsController::class, 'store']);
     Route::get('/get_location', [LocationsController::class, 'getSingleLocation']);
     Route::get('/get_locations', [LocationsController::class, 'getLocations']);
@@ -148,6 +149,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/delete_shipping_rule', [\App\Http\Controllers\ShippingRuleController::class, 'deleteShippingRule']);
     Route::get('/get_shipping_rule_detail', [\App\Http\Controllers\ShippingRuleController::class, 'getShippingRuleDetail']);
     Route::post('/updateAvaiableStatus', [\App\Http\Controllers\ShippingRuleController::class, 'updateAvaiableStatus']);
+    Route::post('/get_country_states', [\App\Http\Controllers\ShippingRuleController::class, 'getCountryStates']);
 
     //=========Addons
     Route::get('/getAllAddons', [AddonsController::class, 'index']);

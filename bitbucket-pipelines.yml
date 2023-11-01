@@ -20,7 +20,8 @@ pipelines:
                 MODE: 'command'
                 COMMAND: '/home/apx-bc-01/html/bc/remote-script.sh'
 
-    feature/bc-eniture-license-api:
+    feature/shipping-rules:
+    
       - step:
           caches:
             - composer
