@@ -170,6 +170,15 @@ class ShippingRule extends Model
 			            "filter_state_province" => $shippingRuleData['filter_state_province'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
+                    break;
+                case 4:
+                    $shippingRule->filter_name = $shippingRuleData['filter_country'] ?? '';
+                    $settings = [
+                        "filter_products" => $shippingRuleData['filter_products'] ?? '', 
+			            "filter_state_province" => $shippingRuleData['filter_state_province'] ?? '',
+                        "filter_postal_code" => $shippingRuleData['filter_postal_code'] ?? '',
+                    ];
+                    $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;        
             }
 
@@ -290,6 +299,9 @@ class ShippingRule extends Model
             case 3:
                 $shippingRule = self::updateRestrictStatesParams($shippingRule);
                 break;
+            case 4:
+                $shippingRule = self::updateRestrictfilterPostalCodeParams($shippingRule);
+                break;
     
             default:
                 break;
@@ -322,6 +334,17 @@ class ShippingRule extends Model
         $settings = json_decode($shippingRule['filter_settings'], true);
         $shippingRule['filter_products'] = $settings['filter_products'];
         $shippingRule['filter_state_province'] = $settings['filter_state_province'];
+
+        return $shippingRule;
+    }
+
+    public static function updateRestrictfilterPostalCodeParams($shippingRule)
+    {
+        $shippingRule['filter_country'] = $shippingRule['filter_name'];
+        $settings = json_decode($shippingRule['filter_settings'], true);
+        $shippingRule['filter_products'] = $settings['filter_products'];
+        $shippingRule['filter_state_province'] = $settings['filter_state_province'];
+        $shippingRule['filter_postal_code'] = $settings['filter_postal_code'];
 
         return $shippingRule;
     }
