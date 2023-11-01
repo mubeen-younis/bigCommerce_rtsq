@@ -87,9 +87,8 @@ class ShippingRuleController extends Controller
         return $connectionSettings;
     }
 
-    public function hideMethods($shippingRule, $items){
-        
-        $isFilterEnables = false;
+    public function hideMethods($shippingRule, $items)
+    {
         if(isset($shippingRule['isFilterWeight']) && $shippingRule['isFilterWeight']){
             $weight = collect($items)->map(function ($item) {
                 return $item['lineItemWeight'] * $item['piecesOfLineItem'] ?? 0;
@@ -98,7 +97,6 @@ class ShippingRuleController extends Controller
             if(isset($shippingRule['weight_from']) && $shippingRule['weight_to'] && $totalWeight >= $shippingRule['weight_from'] && $totalWeight < $shippingRule['weight_to']){
                 return false;
             }
-            $isFilterEnables = true;
         }
         if(isset($shippingRule['isFilterPrice']) && $shippingRule['isFilterPrice']){
             $price = collect($items)->map(function ($item) {
@@ -108,16 +106,15 @@ class ShippingRuleController extends Controller
             if(isset($shippingRule['price_from']) && $shippingRule['price_to'] && $totalPrice >= $shippingRule['price_from'] && $totalPrice < $shippingRule['price_to']){
                 return false;
             }
-            $isFilterEnables = true;
         }
         if(isset($shippingRule['isFilterQuantity']) && $shippingRule['isFilterQuantity']){
             $totalQuantity = collect($items)->sum('piecesOfLineItem') ?? 0;
             if(isset($shippingRule['quantity_from']) && $shippingRule['quantity_to'] && $totalQuantity >= $shippingRule['quantity_from'] && $totalQuantity < $shippingRule['quantity_to']){
                 return false;
             }
-            $isFilterEnables = true;
         }
-        return $isFilterEnables;
+
+        return true;
     }
 
     public function getCountryStates(Request $request)
