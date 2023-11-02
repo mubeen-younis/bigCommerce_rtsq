@@ -988,6 +988,7 @@ class Functions
 
         $carriers = isset($requestArr['requestArr']['carriers']) ? $requestArr['requestArr']['carriers'] : [];
         $binResp = isset($requestArr['binReponse']) ? $requestArr['binReponse'] : [];
+        $packingId = '';
         if(!blank($carriers)){
             $packingId = Helpers::getUuid();
             foreach($carriers as $carrName => $carrier){

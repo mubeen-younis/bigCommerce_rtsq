@@ -18,6 +18,7 @@ use App\CustomClasses\UpsSmall\QuotesResults as UpsSmallQuotesResults;
 use App\Models\Store;
 use Illuminate\Http\Request;
 use App\Models\DestinationAddresses;
+use App\Http\Controllers\ShippingRuleController;
 
 /**
  * class that generated request data
@@ -86,6 +87,9 @@ class GenerateRequestData
             return [];
         }
 
+        $shippingRule = new ShippingRuleController();
+        $this->connectionSettings = $shippingRule->applyShippingRule($this->storeData['store']['id'], $lineItems, $this->connectionSettings);
+                
         $this->storeDateTime = $this->getBCStoreDateTime();
         Log::info('Store Time' . $this->storeDateTime);
 

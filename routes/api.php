@@ -35,6 +35,7 @@ use App\Http\Controllers\DBSC\ShippingOriginController;
 use App\Http\Controllers\DBSC\ShippingZoneController;
 use App\Http\Controllers\DBSC\ShippingRatesController;
 use App\Http\Controllers\DBSC\OtherSettingsController;
+use App\Http\Controllers\BigCommerceListingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -140,6 +141,13 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/save_shipping_group', [\App\Http\Controllers\ShippingGroupController::class, 'saveShippingGroup']);
     Route::post('/delete_shipping_group', [\App\Http\Controllers\ShippingGroupController::class, 'deleteShippingGroup']);
     Route::get('/get_shipping_group_detail', [\App\Http\Controllers\ShippingGroupController::class, 'getShippingGroupDetail']);
+
+    //=========Shipping Rules
+    Route::get('/get_shipping_rules', [\App\Http\Controllers\ShippingRuleController::class, 'getShippingRules']);
+    Route::post('/save_shipping_rule', [\App\Http\Controllers\ShippingRuleController::class, 'saveShippingRule']);
+    Route::post('/delete_shipping_rule', [\App\Http\Controllers\ShippingRuleController::class, 'deleteShippingRule']);
+    Route::get('/get_shipping_rule_detail', [\App\Http\Controllers\ShippingRuleController::class, 'getShippingRuleDetail']);
+    Route::post('/updateAvaiableStatus', [\App\Http\Controllers\ShippingRuleController::class, 'updateAvaiableStatus']);
 
     //=========Addons
     Route::get('/getAllAddons', [AddonsController::class, 'index']);
@@ -311,4 +319,9 @@ Route::get('/test_bin', [App\CustomClasses\Bin3D\Bin3D::class, 'getBinResponse']
 Route::get('/api_logs', [App\Http\Controllers\LogToDbController::class, 'index']);
 Route::get('/truncate_logs', [App\Http\Controllers\LogToDbController::class, 'truncateLogs']);
 
+// Eniture licenses routes
+Route::get('/get_customers_list', [BigCommerceListingController::class, 'listCustomers']);
+Route::get('/edit_subscription', [BigCommerceListingController::class, 'editBigCommerceSubscription']);
+Route::post('/update_subscription', [BigCommerceListingController::class, 'updateBCSubscription']);
+Route::post('/cancel_subscription', [BigCommerceListingController::class, 'cancelBCSubscription']);
 
