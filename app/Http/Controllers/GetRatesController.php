@@ -588,7 +588,7 @@ class GetRatesController extends Controller
     public function isShippingRule($storeId, $formatReq)
     {    
         $shippingRules = ShippingRule::getStoreShippingRules($storeId);
-        if(!empty($shippingRules)){
+        if (!empty($shippingRules)){
 
             $destination = isset($formatReq['lineItemData']['destination']) ? $formatReq['lineItemData']['destination'] : [];
             $cartItems = isset($formatReq['lineItemData']['items']) ? $formatReq['lineItemData']['items'] : [];
@@ -597,25 +597,28 @@ class GetRatesController extends Controller
             foreach($shippingRules as $key => $rule){
                 $restrictedProducts = isset($rule['filter_products']) ? $rule['filter_products'] : [];
                 $stateProvince = isset($rule['filter_state_province']) ? $rule['filter_state_province'] : '';
+                $filterCountry = isset($rule['filter_country']) ? $rule['filter_country'] : '';
+                $postalCode = isset($rule['filter_postal_code']) ? $rule['filter_postal_code'] : '';
                 $stateCode = CountryState::getStateCode($statesProvinces, $stateProvince); 
-   
-                if(!empty($restrictedProducts)){
+                $isAvailable = $rule['available'] ?? false;
+
+                if (!empty($restrictedProducts) && $isAvailable){
                     foreach($restrictedProducts as $rpKey => $productId){
 
                         $filterProducts = collect($cartItems)->where('product_id', $productId)->all() ?? [];
                         
-                        if(!empty($filterProducts)){
-                            $isDiffCountry = $destination['country'] != $rule['filter_country'] ?? false;
-                            $isDiffState = $destination['state'] != $stateCode ?? false;
-                            $isAvailable = $rule['available'] ?? false;
-                            $isRestrictCountry =  $isDiffCountry && $isAvailable ?? false;
-                            $isRestrictState =  $isDiffState && $isAvailable ?? false;
+                        if (!empty($filterProducts)){
+                            $isSameCountry = $destination['country'] == $filterCountry ?? false;
+                            $isSameState = $destination['state'] == $stateCode ?? false;
+                            $isSamePostalCode = $destination['zip'] == $postalCode ?? false;
 
-                            if(((($isRestrictCountry && $isRestrictState) || (!$isRestrictCountry && $isRestrictState) || ($isRestrictCountry && !$isRestrictState)) && $rule['rule_type'] == 3)){
-                                return true;
-                            }
-
-                            if($isRestrictCountry && $rule['rule_type'] == 1){
+                            if ($isSameCountry && $isSameState && $isSamePostalCode && $rule['rule_type'] == 4){
+                                return false;
+                            } elseif ($isSameCountry && $isSameState && $rule['rule_type'] == 3){
+                                return false;
+                            } elseif ($isSameCountry && $rule['rule_type'] == 1){
+                                return false;
+                            } else {
                                 return true;
                             }
                             Log::info('Shipping rule applied: ' . json_encode($filterProducts));
