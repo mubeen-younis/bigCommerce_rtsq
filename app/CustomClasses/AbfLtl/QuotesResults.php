@@ -79,7 +79,7 @@ class QuotesResults
                 }
 
                 $formattedShipments[$shipment]['q'] = $this->formatShipments($quotesArr,
-                'Standard', $srvcDesc, $lineItems, $lgStatus, $radStatus, $quotesArr['CHARGE'] ?? null);
+                'Standard', $srvcDesc, $lineItems, $lgStatus, $radStatus, $quotesArr['CHARGE']);
 
                 if (isset($lgStatus) && $lgStatus != 'n') {
 
