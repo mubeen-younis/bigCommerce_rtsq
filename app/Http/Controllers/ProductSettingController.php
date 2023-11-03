@@ -421,11 +421,13 @@ class ProductSettingController extends Controller
                 } elseif ($parcelEnabled){
                     $settings = json_decode($product['settings']);
                     $settings->parcel_enabled = true;
+                    $settings->freight_enabled = false;
                     $product['settings'] = json_encode($settings);
                     $products[$key] = $product;
                 } elseif ($freightEnabled){
                     $settings = json_decode($product['settings']);
                     $settings->freight_enabled = true;
+                    $settings->parcel_enabled = false;
                     $product['settings'] = json_encode($settings);
                     $products[$key] = $product;
                 }
