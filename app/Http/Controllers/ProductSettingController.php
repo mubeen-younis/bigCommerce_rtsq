@@ -404,7 +404,7 @@ class ProductSettingController extends Controller
                 $variants = ProductSetting::where('source_product_id', $product['source_product_id'])
                 ->where('store_id', $storeId)->get();
                 foreach($variants as $variant){
-                    if($variant->variant_id !== null){
+                    if($variant->variant_id != null){
                         if(json_decode($variant['settings'])->freight_enabled){
                             $freightEnabled = json_decode($variant['settings'])->freight_enabled;
                         } elseif (json_decode($variant['settings'])->parcel_enabled){
