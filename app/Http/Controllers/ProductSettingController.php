@@ -364,6 +364,7 @@ class ProductSettingController extends Controller
             }
             if ($search === null || $search == '') {
                 $products = ProductSetting::where('store_id', $request->store_id)
+                    ->whereNotNull('variant_id')
                     ->groupBy('source_product_id')->orderBy('name', $sortProd)->skip(($page - 1) * $perPage)->take($perPage)->get();
             } else {
                 $products = ProductSetting::where(function ($query) use ($search) {
