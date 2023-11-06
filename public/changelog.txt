@@ -1,3 +1,7 @@
+= 1.2.3 2023-11-06 =
+
+* Update - fixes Real Time Shipping Quote Markup UPS 2nd day air AM. (Ticket:2050445937)[#388](https://bitbucket.org/eniture/big-commerce/pull-requests/388)
+
 = 1.2.2 2023-11-02 =
 
 * Update - introduce new shipping rule "Hide Methods" in BC. (Ticket:2002103171)[#387](https://bitbucket.org/eniture/big-commerce/pull-requests/387)
