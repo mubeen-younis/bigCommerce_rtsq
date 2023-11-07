@@ -172,6 +172,7 @@ class ProductSettingController extends Controller
                 $this->getVariants($product, $data, $scope);
             } else {
                 $this->saveProducts->saveProduct($product, $storeId);
+                $this->saveProducts->deleteNullVariantProduct($product, $storeId);
             }
             return response()->json(['error' => false,
                 'data' => [],

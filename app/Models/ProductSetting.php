@@ -117,6 +117,18 @@ class ProductSetting extends Model
             }
     }
 
+    public function deleteNullVariantProduct($product, $storeId)
+    {
+        if (ProductSetting::where('source_product_id', $product['id'])
+                ->where('store_id', $storeId)->exists()) 
+            {   
+                $updateproduct = ProductSetting::where('source_product_id', $product['id'])
+                    ->where('variant_id', null)
+                    ->where('store_id', $storeId)->delete();
+                Log::info(json_encode($updateproduct));
+            }
+    }
+
     public function saveProductFromSync($product, $storeId)
     {
         try {
