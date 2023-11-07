@@ -289,7 +289,6 @@ class ProductSettingController extends Controller
         }
         $products = ProductSetting::where('source_product_id', $request->product_id)
             ->where('store_id', $request->store_id)
-            ->whereNotNull('variant_id')
             ->get();
         if ($products->isEmpty()) {
             return response()->json(['error' => true,
