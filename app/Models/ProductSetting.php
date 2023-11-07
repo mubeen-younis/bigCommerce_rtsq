@@ -49,7 +49,7 @@ class ProductSetting extends Model
     {
         try {
             DB::beginTransaction();
-
+            $flag++;
             Log::info("1");
             if ($scope == "store/product/created" && ProductSetting::where('source_product_id', $product['id'])
                     ->where('variant_id', $product['base_variant_id'])
