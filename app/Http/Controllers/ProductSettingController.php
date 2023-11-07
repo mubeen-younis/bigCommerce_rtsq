@@ -170,7 +170,6 @@ class ProductSettingController extends Controller
             if ($product['base_variant_id'] == null) {
                 $this->saveProducts->saveProduct($product, $storeId, $scope);
                 $this->getVariants($product, $data, $scope);
-                $this->saveProducts->deleteNullVariantProduct($product, $storeId);
             } else {
                 $this->saveProducts->saveProduct($product, $storeId);
                 $this->saveProducts->deleteNullVariantProduct($product, $storeId);
