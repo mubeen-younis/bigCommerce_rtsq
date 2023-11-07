@@ -59,12 +59,14 @@ class ProductSetting extends Model
             Log::info("2");
             if ($flag && ProductSetting::where('source_product_id', $product['id'])
                 ->where('store_id', $storeId)->exists()) 
-            {   Log::info("3");
+            {   
                 $updateproduct = ProductSetting::where('source_product_id', $product['id'])
                     ->where('store_id', $storeId)->first();
+                    Log::info(json_encode($updateproduct));
                 $updateproduct->update([
                     'variant_id' => NULL,
                 ]);
+                Log::info(json_encode($updateproduct));
             }
             Log::info("4");
             if ($product['base_variant_id'] == null && ProductSetting::where('source_product_id', $product['id'])
