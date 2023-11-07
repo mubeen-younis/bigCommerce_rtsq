@@ -45,32 +45,22 @@ class ProductSetting extends Model
      * @param $storeId
      * @return void|null
      */
-    public function saveProduct($product, $storeId, $scope = null, $flag = 0)
+    public function saveProduct($product, $storeId, $scope = null)
     {
         try {
             DB::beginTransaction();
             
-            Log::info("1");
             if ($scope == "store/product/created" && ProductSetting::where('source_product_id', $product['id'])
                     ->where('variant_id', $product['base_variant_id'])
                     ->where('store_id', $storeId)->exists()) {
                 return null;
             }
-            Log::info("2");
-            if ($flag == 1 && ProductSetting::where('source_product_id', $product['id'])
-                ->where('store_id', $storeId)->exists()) 
-            {   
-                $updateproduct = ProductSetting::where('source_product_id', $product['id'])
-                    ->where('store_id', $storeId)->update(['variant_id' => null]);
-                Log::info(json_encode($updateproduct));
-            }
-            $flag++;
-            Log::info("4");
+
             if ($product['base_variant_id'] == null && ProductSetting::where('source_product_id', $product['id'])
                     ->where('store_id', $storeId)->exists()) {
                 return null;
             }
-            Log::info("5");
+            
             $saveProduct = ProductSetting::where('source_product_id', $product['id'])
                 ->where('variant_id', $product['base_variant_id'])
                 ->where('store_id', $storeId)->first();
@@ -114,6 +104,17 @@ class ProductSetting extends Model
             Log::info('Exception on saving Product Details ' . $exception->getMessage());
         }
 
+    }
+
+    public function setVariantNullProduct($product, $storeId)
+    {
+        if (ProductSetting::where('source_product_id', $product['id'])
+                ->where('store_id', $storeId)->exists()) 
+            {   
+                $updateproduct = ProductSetting::where('source_product_id', $product['id'])
+                    ->where('store_id', $storeId)->update(['variant_id' => null]);
+                Log::info(json_encode($updateproduct));
+            }
     }
 
     public function saveProductFromSync($product, $storeId)
