@@ -168,7 +168,7 @@ class ProductSettingController extends Controller
         if (isset($response['data']) && count($response['data'])) {
             $product = $response['data'];
             if ($product['base_variant_id'] == null) {
-                $this->saveProducts->saveProduct($product, $storeId, $scope, true);
+                $this->saveProducts->saveProduct($product, $storeId, $scope);
                 $this->getVariants($product, $data, $scope);
             } else {
                 $this->saveProducts->saveProduct($product, $storeId);
@@ -645,7 +645,7 @@ class ProductSettingController extends Controller
                 $product['sku'] = $variant['sku'];
                 $product['base_variant_id'] = $variant['id'];
                 $product['id'] = $variant['product_id'];
-                $this->saveProducts->saveProduct($product, $store->id);
+                $this->saveProducts->saveProduct($product, $store->id, null, true);
             }
 
         } catch (\Exception $exception) {
