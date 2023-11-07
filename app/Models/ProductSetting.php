@@ -50,28 +50,28 @@ class ProductSetting extends Model
         try {
             DB::beginTransaction();
 
-
+            Log::info("1");
             if ($scope == "store/product/created" && ProductSetting::where('source_product_id', $product['id'])
                     ->where('variant_id', $product['base_variant_id'])
                     ->where('store_id', $storeId)->exists()) {
                 return null;
             }
-
+            Log::info("2");
             if ($flag && ProductSetting::where('source_product_id', $product['id'])
                 ->where('store_id', $storeId)->exists()) 
-            {   
+            {   Log::info("3");
                 $updateproduct = ProductSetting::where('source_product_id', $product['id'])
                     ->where('store_id', $storeId)->first();
                 $updateproduct->update([
                     'variant_id' => NULL,
                 ]);
             }
-
+            Log::info("4");
             if ($product['base_variant_id'] == null && ProductSetting::where('source_product_id', $product['id'])
                     ->where('store_id', $storeId)->exists()) {
                 return null;
             }
-
+            Log::info("5");
             $saveProduct = ProductSetting::where('source_product_id', $product['id'])
                 ->where('variant_id', $product['base_variant_id'])
                 ->where('store_id', $storeId)->first();
