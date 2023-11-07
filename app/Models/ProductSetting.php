@@ -113,7 +113,6 @@ class ProductSetting extends Model
             {   
                 $updateproduct = ProductSetting::where('source_product_id', $product['id'])
                     ->where('store_id', $storeId)->update(['variant_id' => null]);
-                Log::info(json_encode($updateproduct));
             }
     }
 
@@ -125,7 +124,6 @@ class ProductSetting extends Model
                 $updateproduct = ProductSetting::where('source_product_id', $product['id'])
                     ->where('variant_id', null)
                     ->where('store_id', $storeId)->delete();
-                Log::info(json_encode($updateproduct));
             }
     }
 
