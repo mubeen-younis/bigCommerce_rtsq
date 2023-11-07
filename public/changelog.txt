@@ -1,3 +1,7 @@
+= 1.2.4 2023-11-07 =
+
+* Update - Remove unnecessary Logs from BC code. (Instruction from Azhar.)[#389](https://bitbucket.org/eniture/big-commerce/pull-requests/389)
+
 = 1.2.3 2023-11-06 =
 
 * Update - fixes Real Time Shipping Quote Markup UPS 2nd day air AM. (Ticket:2050445937)[#388](https://bitbucket.org/eniture/big-commerce/pull-requests/388)
