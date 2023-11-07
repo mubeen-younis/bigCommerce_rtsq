@@ -61,9 +61,7 @@ class ProductSetting extends Model
                 ->where('store_id', $storeId)->exists()) 
             {   
                 $updateproduct = ProductSetting::where('source_product_id', $product['id'])
-                    ->where('store_id', $storeId)->first();
-                    Log::info(json_encode($updateproduct));
-                $updateproduct->update(['variant_id' => null]);
+                    ->where('store_id', $storeId)->update(['variant_id' => null]);
                 Log::info(json_encode($updateproduct));
             }
             Log::info("4");
