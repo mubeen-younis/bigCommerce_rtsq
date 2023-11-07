@@ -49,7 +49,7 @@ class ProductSetting extends Model
     {
         try {
             DB::beginTransaction();
-            $flag++;
+            
             Log::info("1");
             if ($scope == "store/product/created" && ProductSetting::where('source_product_id', $product['id'])
                     ->where('variant_id', $product['base_variant_id'])
@@ -64,6 +64,7 @@ class ProductSetting extends Model
                     ->where('store_id', $storeId)->update(['variant_id' => null]);
                 Log::info(json_encode($updateproduct));
             }
+            $flag++;
             Log::info("4");
             if ($product['base_variant_id'] == null && ProductSetting::where('source_product_id', $product['id'])
                     ->where('store_id', $storeId)->exists()) {
