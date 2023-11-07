@@ -45,7 +45,7 @@ class ProductSetting extends Model
      * @param $storeId
      * @return void|null
      */
-    public function saveProduct($product, $storeId, $scope = null)
+    public function saveProduct($product, $storeId, $scope = null, $flag = false)
     {
         try {
             DB::beginTransaction();
@@ -55,6 +55,16 @@ class ProductSetting extends Model
                     ->where('variant_id', $product['base_variant_id'])
                     ->where('store_id', $storeId)->exists()) {
                 return null;
+            }
+
+            if ($flag && ProductSetting::where('source_product_id', $product['id'])
+                ->where('store_id', $storeId)->exists()) 
+            {   
+                $updateproduct = ProductSetting::where('source_product_id', $product['id'])
+                    ->where('store_id', $storeId)->first();
+                $updateproduct->update([
+                    'variant_id' => NULL,
+                ]);
             }
 
             if ($product['base_variant_id'] == null && ProductSetting::where('source_product_id', $product['id'])

@@ -168,7 +168,7 @@ class ProductSettingController extends Controller
         if (isset($response['data']) && count($response['data'])) {
             $product = $response['data'];
             if ($product['base_variant_id'] == null) {
-                $this->saveProducts->saveProduct($product, $storeId, $scope);
+                $this->saveProducts->saveProduct($product, $storeId, $scope, true);
                 $this->getVariants($product, $data, $scope);
             } else {
                 $this->saveProducts->saveProduct($product, $storeId);
