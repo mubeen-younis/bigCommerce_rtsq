@@ -604,6 +604,7 @@ class ProductSettingController extends Controller
     {
         try {
             Log::info('sku product data fall in process: ' . json_encode($postData));
+            $count = 0;
             // $postData = json_decode($postData, true);
             $storeHash = explode('/', $postData['producer']);
             $storeHash = $storeHash[1];
@@ -636,6 +637,7 @@ class ProductSettingController extends Controller
             Log::info('From SKU Get variant details-' . $store->id . json_encode($response));
 
             if (isset($response['data'])) {
+                $count++;
                 $variant = $response['data'];
                 $product['price'] = $variant['price'];
                 $product['weight'] = $variant['weight'];
@@ -645,7 +647,7 @@ class ProductSettingController extends Controller
                 $product['sku'] = $variant['sku'];
                 $product['base_variant_id'] = $variant['id'];
                 $product['id'] = $variant['product_id'];
-                $this->saveProducts->saveProduct($product, $store->id, null, true);
+                $this->saveProducts->saveProduct($product, $store->id, null, $count);
             }
 
         } catch (\Exception $exception) {

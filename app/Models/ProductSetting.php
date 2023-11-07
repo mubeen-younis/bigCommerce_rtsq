@@ -45,7 +45,7 @@ class ProductSetting extends Model
      * @param $storeId
      * @return void|null
      */
-    public function saveProduct($product, $storeId, $scope = null, $flag = false)
+    public function saveProduct($product, $storeId, $scope = null, $flag = 0)
     {
         try {
             DB::beginTransaction();
@@ -57,7 +57,7 @@ class ProductSetting extends Model
                 return null;
             }
             Log::info("2");
-            if ($flag && ProductSetting::where('source_product_id', $product['id'])
+            if ($flag == 1 && ProductSetting::where('source_product_id', $product['id'])
                 ->where('store_id', $storeId)->exists()) 
             {   
                 $updateproduct = ProductSetting::where('source_product_id', $product['id'])
