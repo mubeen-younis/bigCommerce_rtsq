@@ -1,3 +1,7 @@
+= 1.2.5 2023-11-09 =
+
+* Update - Fixes Variants product multiple settings issue. (Ticket:2052444459)[#390](https://bitbucket.org/eniture/big-commerce/pull-requests/390)
+
 = 1.2.4 2023-11-07 =
 
 * Update - Remove unnecessary Logs from BC code. (Instruction from Azhar.)[#389](https://bitbucket.org/eniture/big-commerce/pull-requests/389)
