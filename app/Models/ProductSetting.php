@@ -67,7 +67,6 @@ class ProductSetting extends Model
 
             if (blank($saveProduct)) {
                 $saveProduct = new ProductSetting();
-                Log::info("save product: " . json_encode($product));
                 $storeSettings = $this->getStoreSettings($storeId);
                 $prodWeight = $this->convertWeight(isset($product['weight']) ? $product['weight'] : '', isset($storeSettings['weight_units']) ? strtolower($storeSettings['weight_units']) : 'lbs') ?? 0;
                 /*Start - Added FOr Default Quoting Method*/
@@ -139,7 +138,6 @@ class ProductSetting extends Model
 
             if (blank($saveProduct)) {
                 $saveProduct = new ProductSetting();
-                Log::info("sync product: " . json_encode($product));
                 $storeSettings = $this->getStoreSettings($storeId);
                 $prodWeight = $this->convertWeight(isset($product['weight']) ? (float)$product['weight'] : '', isset($storeSettings['weight_units']) ? strtolower($storeSettings['weight_units']) : 'lbs') ?? 0;
                 /*Start - Added FOr Default Quoting Method*/
@@ -199,7 +197,7 @@ class ProductSetting extends Model
     }
 
     public function convertWeight($value, $unit)
-    {Log::info('convert weight ' . $value . " " . $unit);
+    {
         $value = (float)$value;
         switch ($unit) {
             case 'ounces' :

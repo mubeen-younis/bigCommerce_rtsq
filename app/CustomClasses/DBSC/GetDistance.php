@@ -29,12 +29,10 @@ class GetDistance
             // IF the nearest warehouse has already fetched so the route distance is also the nearest
             // So we can use that as well
             if (isset($origin['distance_m']) && !blank($origin['distance_m'])) {
-                Log::info('inside if condition ' . json_encode($origin));
                 return $origin;
             }
             $distance = $this->findRouteDistances($origin, $destination);
             $distance['distance_m'] = $distance[0]['distance_m'] ?? 0;
-            Log::info('route distance after if condition ' . json_encode($distance));
 
         } else {
             $distance = (new GetStraightDistance())->getStraightLineDistance($origin, $destination);
