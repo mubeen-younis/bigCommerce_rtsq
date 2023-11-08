@@ -166,9 +166,9 @@ class AddressValidationController extends Controller
         if (isset($curlResp['is_valid']) && $curlResp['is_valid'] == false) {
             return ['error' => true, 'message' => (isset($curlResp['message']) && !blank($curlResp['message']) ? $curlResp['message'] : 'Not a valid company ID')];
         }
-        Log::info('Before second call ' . json_encode($curlResp));
+        
         if (isset($curlResp['is_valid']) && $curlResp['is_valid'] == true) {
-            Log::info('Comming on second call');
+
             $request = ['store_url' => $storeUrl, 'action' => 'install', 'store_hash' => $storeHash, 'access_token' => $accessToken, 'company_id' => $avCompanyId];
             $endpoint = Endpoints::avCredsEndpoint();
             $curlResp = (new CurlRequest())->enSingleCurlRequest($endpoint, $request, [], 'POST');

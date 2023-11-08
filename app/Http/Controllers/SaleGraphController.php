@@ -32,7 +32,6 @@ class SaleGraphController extends Controller
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
             $output = curl_exec($ch);
             curl_close($ch);
-            Log::info('update data on graphs ' . json_encode($output));
         } catch (\Exception $exception) {
             Log::info('Graph Update Exception ' . json_encode($exception->getMessage()));
 
