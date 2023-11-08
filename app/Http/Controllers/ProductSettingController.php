@@ -399,8 +399,8 @@ class ProductSettingController extends Controller
 
     public function isLtlParcelBothEnabled($products, $storeId)
     {
-        $freightEnabled = $parcelEnabled = false;
         foreach($products as $key => $product){
+            $freightEnabled = $parcelEnabled = false;
             if($product['variant_id'] == null){
                 $variants = ProductSetting::where('source_product_id', $product['source_product_id'])
                 ->where('store_id', $storeId)->get();
