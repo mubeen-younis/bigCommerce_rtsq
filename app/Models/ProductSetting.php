@@ -49,8 +49,7 @@ class ProductSetting extends Model
     {
         try {
             DB::beginTransaction();
-
-
+            
             if ($scope == "store/product/created" && ProductSetting::where('source_product_id', $product['id'])
                     ->where('variant_id', $product['base_variant_id'])
                     ->where('store_id', $storeId)->exists()) {
@@ -61,7 +60,7 @@ class ProductSetting extends Model
                     ->where('store_id', $storeId)->exists()) {
                 return null;
             }
-
+            
             $saveProduct = ProductSetting::where('source_product_id', $product['id'])
                 ->where('variant_id', $product['base_variant_id'])
                 ->where('store_id', $storeId)->first();
@@ -104,6 +103,29 @@ class ProductSetting extends Model
             Log::info('Exception on saving Product Details ' . $exception->getMessage());
         }
 
+    }
+
+    public function setVariantNullProduct($product, $storeId)
+    {
+        if (ProductSetting::where('source_product_id', $product['id'])
+                ->where('store_id', $storeId)->exists() && !(ProductSetting::where('source_product_id', $product['id'])
+                ->where('variant_id', null)
+                ->where('store_id', $storeId)->exists())) 
+            {   
+                $updateproduct = ProductSetting::where('source_product_id', $product['id'])
+                    ->where('store_id', $storeId)->update(['variant_id' => null]);
+            }
+    }
+
+    public function deleteNullVariantProduct($product, $storeId)
+    {
+        if (ProductSetting::where('source_product_id', $product['id'])
+                ->where('store_id', $storeId)->exists()) 
+            {   
+                $updateproduct = ProductSetting::where('source_product_id', $product['id'])
+                    ->where('variant_id', null)
+                    ->where('store_id', $storeId)->delete();
+            }
     }
 
     public function saveProductFromSync($product, $storeId)

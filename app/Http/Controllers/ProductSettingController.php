@@ -172,6 +172,7 @@ class ProductSettingController extends Controller
                 $this->getVariants($product, $data, $scope);
             } else {
                 $this->saveProducts->saveProduct($product, $storeId);
+                $this->saveProducts->deleteNullVariantProduct($product, $storeId);
             }
             return response()->json(['error' => false,
                 'data' => [],
@@ -694,6 +695,7 @@ class ProductSettingController extends Controller
                 $product['sku'] = $variant['sku'];
                 $product['base_variant_id'] = $variant['id'];
                 $product['id'] = $variant['product_id'];
+                $this->saveProducts->setVariantNullProduct($product, $store->id);
                 $this->saveProducts->saveProduct($product, $store->id);
             }
 
