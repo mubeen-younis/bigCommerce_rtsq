@@ -1,4 +1,4 @@
-= 1.2.5 2023-11-09 =
+= 1.2.6 2023-11-09 =
 
 * Update - changes in Products Settings Page in BC. (Ticket:1939778691)[#391](https://bitbucket.org/eniture/big-commerce/pull-requests/391)
 
