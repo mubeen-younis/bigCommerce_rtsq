@@ -164,7 +164,7 @@ class ProductSettingController extends Controller
         $headers[] = 'Accept: application/json';
         $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
         $response = json_decode($response['response'], true);
-        Log::info('product settings from webhok 12' . json_encode($response));
+        
         if (isset($response['data']) && count($response['data'])) {
             $product = $response['data'];
             if ($product['base_variant_id'] == null) {
@@ -642,7 +642,6 @@ class ProductSettingController extends Controller
         try {
 
             $postData = file_get_contents("php://input");
-            Log::info('Webhook sku data: ' . $postData);
             $postData = json_decode($postData, true);
             return $this->skuWebhookProcess($postData);
 
@@ -656,8 +655,6 @@ class ProductSettingController extends Controller
     public function skuWebhookProcess($postData)
     {
         try {
-            Log::info('sku product data fall in process: ' . json_encode($postData));
-            // $postData = json_decode($postData, true);
             $storeHash = explode('/', $postData['producer']);
             $storeHash = $storeHash[1];
             $productId = $postData['data']['sku']['product_id'];
@@ -686,7 +683,6 @@ class ProductSettingController extends Controller
             $headers[] = 'Accept: application/json';
             $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
             $response = json_decode($response['response'], true);
-            Log::info('From SKU Get variant details-' . $store->id . json_encode($response));
 
             if (isset($response['data'])) {
                 $variant = $response['data'];

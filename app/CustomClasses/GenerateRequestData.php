@@ -736,16 +736,12 @@ class GenerateRequestData
 
         // if sbs is enabled then we are going to do the packaging for the small carriers line items
         if (isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs']) {
-            Log::info('Packaging enabled');
             $this->origins = $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ??
                 $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ??
                 $carriers['usps']['originAddress'] ?? $carriers['purolator']['originAddress'] ??
                 $carriers['shipEngine']['originAddress'] ?? $carriers['wweSmallN']['originAddress'] ?? [];
             $this->itemsArr = $itemsArr;
             $this->carriers = $carriers;
-
-            Log::info('Carriers '.json_encode($carriers));
-
 
             $hasSmall = isset($carriers['wweSmall'])
                 || isset($carriers['upsSmall'])
