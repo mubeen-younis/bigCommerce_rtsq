@@ -107,7 +107,7 @@ class ProductSetting extends Model
     }
 
     public function setVariantNullProduct($product, $storeId)
-    {Log::info("1setVariantNullProduct: " . json_encode($product));
+    {
         if (ProductSetting::where('source_product_id', $product['id'])
                 ->where('store_id', $storeId)->exists() && !(ProductSetting::where('source_product_id', $product['id'])
                 ->where('variant_id', null)
