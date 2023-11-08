@@ -109,6 +109,7 @@ class ProductSetting extends Model
     public function setVariantNullProduct($product, $storeId)
     {
         if (ProductSetting::where('source_product_id', $product['id'])
+                ->whereNotNull('variant_id')
                 ->where('store_id', $storeId)->exists()) 
             {   
                 $updateproduct = ProductSetting::where('source_product_id', $product['id'])
