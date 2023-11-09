@@ -8,7 +8,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    laravel8:
+    update-products-setting-UI:
       - step:
           caches:
             - composer
@@ -16,11 +16,12 @@ pipelines:
             - pipe: atlassian/ssh-run:0.2.2
               variables:
                 SSH_USER: 'apx-bc-01'
-                SERVER: '54.165.5.4'
+                SERVER: '44.207.204.55'
                 MODE: 'command'
                 COMMAND: '/home/apx-bc-01/html/bc/remote-script.sh'
 
     feature/shipping-rules:
+    
       - step:
           caches:
             - composer

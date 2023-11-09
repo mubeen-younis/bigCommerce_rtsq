@@ -57,7 +57,7 @@ class WweLtlConnectionSettings
         $queryString = http_build_query($params);
 
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
-        //Log::info('$params '. json_encode($params) . ' $output '. json_encode($output));
+        
         if (isset($output['status']) && $output['status'] == false) {
             $response = [
                 'error' => true,

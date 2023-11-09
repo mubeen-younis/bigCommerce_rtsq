@@ -49,8 +49,7 @@ class ProductSetting extends Model
     {
         try {
             DB::beginTransaction();
-
-
+            
             if ($scope == "store/product/created" && ProductSetting::where('source_product_id', $product['id'])
                     ->where('variant_id', $product['base_variant_id'])
                     ->where('store_id', $storeId)->exists()) {
@@ -61,14 +60,13 @@ class ProductSetting extends Model
                     ->where('store_id', $storeId)->exists()) {
                 return null;
             }
-
+            
             $saveProduct = ProductSetting::where('source_product_id', $product['id'])
                 ->where('variant_id', $product['base_variant_id'])
                 ->where('store_id', $storeId)->first();
 
             if (blank($saveProduct)) {
                 $saveProduct = new ProductSetting();
-                Log::info("save product: " . json_encode($product));
                 $storeSettings = $this->getStoreSettings($storeId);
                 $prodWeight = $this->convertWeight(isset($product['weight']) ? $product['weight'] : '', isset($storeSettings['weight_units']) ? strtolower($storeSettings['weight_units']) : 'lbs') ?? 0;
                 /*Start - Added FOr Default Quoting Method*/
@@ -107,6 +105,29 @@ class ProductSetting extends Model
 
     }
 
+    public function setVariantNullProduct($product, $storeId)
+    {
+        if (ProductSetting::where('source_product_id', $product['id'])
+                ->where('store_id', $storeId)->exists() && !(ProductSetting::where('source_product_id', $product['id'])
+                ->where('variant_id', null)
+                ->where('store_id', $storeId)->exists())) 
+            {   
+                $updateproduct = ProductSetting::where('source_product_id', $product['id'])
+                    ->where('store_id', $storeId)->update(['variant_id' => null]);
+            }
+    }
+
+    public function deleteNullVariantProduct($product, $storeId)
+    {
+        if (ProductSetting::where('source_product_id', $product['id'])
+                ->where('store_id', $storeId)->exists()) 
+            {   
+                $updateproduct = ProductSetting::where('source_product_id', $product['id'])
+                    ->where('variant_id', null)
+                    ->where('store_id', $storeId)->delete();
+            }
+    }
+
     public function saveProductFromSync($product, $storeId)
     {
         try {
@@ -117,7 +138,6 @@ class ProductSetting extends Model
 
             if (blank($saveProduct)) {
                 $saveProduct = new ProductSetting();
-                Log::info("sync product: " . json_encode($product));
                 $storeSettings = $this->getStoreSettings($storeId);
                 $prodWeight = $this->convertWeight(isset($product['weight']) ? (float)$product['weight'] : '', isset($storeSettings['weight_units']) ? strtolower($storeSettings['weight_units']) : 'lbs') ?? 0;
                 /*Start - Added FOr Default Quoting Method*/
@@ -177,7 +197,7 @@ class ProductSetting extends Model
     }
 
     public function convertWeight($value, $unit)
-    {Log::info('convert weight ' . $value . " " . $unit);
+    {
         $value = (float)$value;
         switch ($unit) {
             case 'ounces' :

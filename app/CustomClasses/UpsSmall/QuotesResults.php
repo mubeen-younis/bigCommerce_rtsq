@@ -26,6 +26,7 @@ class QuotesResults
             $amount = $data['NegotiatedRates']['Amount'] > 0 ? $data['NegotiatedRates']['Amount'] + $boxFee : $amount;
         }
         $markupIndex = strtolower(str_replace(' ', '_', $serviceDesc) . '_markup');
+        $markupIndex = strtolower(str_replace('.', '', $markupIndex));
         $markupValue = $quoteSettings['carrier_services'][$markupIndex] ?? '';
         if (empty($markupValue) || !is_numeric(str_replace('%', '', $markupValue))) {
             return $amount;

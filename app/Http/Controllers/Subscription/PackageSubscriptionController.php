@@ -394,7 +394,6 @@ class PackageSubscriptionController extends Controller
         $updateSubscription = 0;
         $previousPkgRemainingHits = 0;
         $histToBeConsumed = $data['hits'];
-        Log::info('hitsTo consume consumeAddonHits' . json_encode($histToBeConsumed));
         $currentPackageSub = DB::table('package_subscriptions as ps')
             ->leftjoin('package_sub_to_be_charge as pstbc', 'pstbc.subscription_id', '=', 'ps.id')
             ->leftjoin('packages as p', 'ps.package_id', '=', 'p.id')

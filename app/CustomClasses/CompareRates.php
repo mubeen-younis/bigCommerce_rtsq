@@ -75,7 +75,6 @@ class CompareRates
         $carriersArr['carriers'] = [];
         $GenerateRequestData = new GenerateRequestData();
         $this->storeDateTime = $GenerateRequestData->getBCStoreDateTime();
-        Log::info('Store Time' . $this->storeDateTime);
 
         foreach ($this->carriers as $key => $carr) {
             switch ($key) {
