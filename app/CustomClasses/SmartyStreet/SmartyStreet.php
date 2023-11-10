@@ -104,7 +104,6 @@ class SmartyStreet
 
         $response = file_get_contents($req);
         $data = json_decode($response, true);
-        Log::info('Smarty Api Response: ' . json_encode($data));
         //when address valid API return Address detail array
         if (!empty($data)) {
             if (isset( $data[0]['metadata']['rdi']) && $data[0]['metadata']['rdi'] == 'Commercial') {
