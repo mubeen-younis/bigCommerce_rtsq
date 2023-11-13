@@ -9,7 +9,7 @@ use App\Models\BinRequestLog;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Models\DestinationAddresses;
-use Illuminate\Support\Facades\Log;
+
 class SmartyStreet
 {
     private $authId = Constant::SMARTY_AUTH_ID;

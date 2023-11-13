@@ -100,9 +100,6 @@ class GenerateRequestData
         $carriersArr['carriers'] = [];
         $enitOrigin = $this->getEnitOrigin($origin);
         $errorManagment = [];
-        if (Functions::isPOBoxAddress($rad_settings, $this->isPoBOX)) {
-            return [];
-        }
 
         $shippingRule = new ShippingRuleController();
         $this->connectionSettings = $shippingRule->applyShippingRule($this->storeData['store']['id'], $lineItems, $this->connectionSettings);
