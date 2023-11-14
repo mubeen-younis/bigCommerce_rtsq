@@ -143,23 +143,20 @@ class LogToDbController extends Controller
                         $logsData[$key]['response'] = isset($data['status']) ? $data['status'] : '';
 
                         if (!empty($originKeys) && $this->isMulti){
-                            foreach($originKeys as $key1 => $code){
-                                if ($key1 == $count){
-                                    if (isset($lineitems['items']) && !empty($lineitems['items'])){
-                                        foreach($lineitems['items'] as $itemIndex => $item){
-                                            if ($itemIndex == $code){
-                                                $logsData[$key]['quantity'][] = isset($item['piecesOfLineItem']) ? $item['piecesOfLineItem'] : '';
-                                                $logsData[$key]['dimension'][] = floatval($item['lineItemLength']) . ' X ' . floatval($item['lineItemWidth']) . ' X ' . floatval($item['lineItemHeight']);
-                                                $logsData[$key]['Items'][] = isset($item['lineItemName']) ? $item['lineItemName'] : '';
-                                            }
-                                        }
+                            foreach($originKeys[$locationIds[$count]] as $key1 => $code){ 
+                                if (isset($lineitems['items']) && !empty($lineitems['items'])){
+                                    foreach($lineitems['items'] as $itemIndex => $item){
+                                        if ($itemIndex == $code){
+                                            $logsData[$key]['quantity'][] = isset($item['piecesOfLineItem']) ? $item['piecesOfLineItem'] : '';
+                                            $logsData[$key]['dimension'][] = floatval($item['lineItemLength']) . ' X ' . floatval($item['lineItemWidth']) . ' X ' . floatval($item['lineItemHeight']);
+                                            $logsData[$key]['Items'][] = isset($item['lineItemName']) ? $item['lineItemName'] : '';
+                                       }
                                     }
-
-                                    if (isset($lineitems['origin']) && !empty($lineitems['origin'])){
-                                        foreach($lineitems['origin'] as $origIndex => $origin){
-                                            if ($origIndex == $code){
-                                                $logsData[$key]['sender'] = $origin['senderCity'] . ', ' . $origin['senderState'] . ' ' . $origin['senderZip'] . ' ' . $origin['senderCountryCode'];
-                                            }
+                                }
+                                if (isset($lineitems['origin']) && !empty($lineitems['origin'])){
+                                    foreach($lineitems['origin'] as $origIndex => $origin){
+                                        if ($origIndex == $code){
+                                            $logsData[$key]['sender'] = $origin['senderCity'] . ', ' . $origin['senderState'] . ' ' . $origin['senderZip'] . ' ' . $origin['senderCountryCode'];
                                         }
                                     }
                                 }
@@ -239,15 +236,16 @@ class LogToDbController extends Controller
 
         if(isset($lineitems['origin']) && !empty($lineitems['origin'])){
             $countOrigin = count($lineitems['origin']) - 1;
-            $this->isMulti = $countOrigin > 0 ? true : false;
+
             foreach($lineitems['origin'] as $key => $origin){
-                $originKeys[$countOrigin] = $key;
-                $locationIds[$countOrigin] = $origin['locationId'];
-                if($origin['locationId'] !== $locationId){
-                    $countOrigin--;
-                    $locationId = $origin['locationId'];
+                $originKeys[$origin['locationId']][] = $key;
+                if(!in_array($origin['locationId'], $locationIds)){
+                    $locationIds[] = $origin['locationId'];
                 }
+                $countOrigin--;
             }
+            
+            $this->isMulti = count($locationIds) > 1 ? true : false;
         }
 
         return ['originKeys' => $originKeys, 'locationIds' => $locationIds];

@@ -8,7 +8,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    development:
+    update-products-setting-UI:
       - step:
           caches:
             - composer
@@ -20,8 +20,7 @@ pipelines:
                 MODE: 'command'
                 COMMAND: '/home/apx-bc-01/html/bc/remote-script.sh'
 
-    feature/shipping-rules:
-    
+    feature/priority-one-carrier:
       - step:
           caches:
             - composer
