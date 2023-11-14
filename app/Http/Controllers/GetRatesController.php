@@ -599,7 +599,7 @@ class GetRatesController extends Controller
                 $stateProvince = isset($rule['filter_state_province']) ? $rule['filter_state_province'] : '';
                 $filterCountry = isset($rule['filter_country']) ? $rule['filter_country'] : '';
                 $postalCode = isset($rule['filter_postal_code']) ? $rule['filter_postal_code'] : '';
-                $stateCode = CountryState::getStateCode($statesProvinces, $stateProvince); 
+                $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince); 
                 $isAvailable = $rule['available'] ?? false;
 
                 if (!empty($restrictedProducts) && $isAvailable){
@@ -609,7 +609,7 @@ class GetRatesController extends Controller
                         
                         if (!empty($filterProducts)){
                             $isSameCountry = $destination['country'] == $filterCountry ?? false;
-                            $isSameState = $destination['state'] == $stateCode ?? false;
+                            $isSameState = in_array($destination['state'] , $statesCode) ?? false;
                             $isSamePostalCode = $destination['zip'] == $postalCode ?? false;
 
                             if ($isSameCountry && $isSameState && $isSamePostalCode && $rule['rule_type'] == 4){

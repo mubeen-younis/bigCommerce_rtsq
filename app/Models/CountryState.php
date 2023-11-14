@@ -27,14 +27,16 @@ class CountryState extends Model
         return json_decode($rules['country_states']);
     }
 
-    public static function getStateCode($states, $stateName)
+    public static function getStateCode($states, $statesName)
     {
+        $statesCode = [];
         if(!empty($states)){
             foreach($states as $state){
-                if($state->name == $stateName){
-                    return $state->code;
+                if(in_array($state->name, $statesName)){
+                    $statesCode[] = $state->code;
                 }
             }
+            return $statesCode;
         }
         return [];
     }
