@@ -13,11 +13,12 @@ class DestinationAddresses extends Model
         'store_id',
     ];
 
-    public static function saveDestination($address, $storeId, $status)
+    public static function saveDestination($address, $storeId, $status, $poBox)
     {
         $destination = self::firstOrCreate(['store_id' => $storeId,'complete_Address' => $address]);
         $destination->complete_Address = $address;
         $destination->status = $status == 'r' ? 1 : ($status == 'c' ? 2 : 0);
+        $destination->is_pobox = $poBox;
         $destination->save();
     }
 

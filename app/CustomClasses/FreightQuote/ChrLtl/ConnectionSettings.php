@@ -32,7 +32,7 @@ class ConnectionSettings extends CarriersConnectionSettings
 
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
-        Log::info('FreightQuote CHR Test Con Response ' . $output['response']);
+        
         $output = json_decode($output['response'], true);
 
         if (isset($output['severity']) && $output['severity'] == "ERROR") {
