@@ -597,8 +597,8 @@ class GetRatesController extends Controller
             foreach($shippingRules as $key => $rule){
                 $restrictedProducts = isset($rule['filter_products']) ? $rule['filter_products'] : [];
                 $stateProvince = isset($rule['filter_state_province']) ? $rule['filter_state_province'] : '';
-                $stateCode = CountryState::getStateCode($statesProvinces, $stateProvince); 
-   
+                $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
+
                 if(!empty($restrictedProducts)){
                     foreach($restrictedProducts as $rpKey => $productId){
 
@@ -606,7 +606,7 @@ class GetRatesController extends Controller
                         
                         if(!empty($filterProducts)){
                             $isDiffCountry = $destination['country'] != $rule['filter_country'] ?? false;
-                            $isDiffState = $destination['state'] != $stateCode ?? false;
+                            $isDiffState = !in_array($destination['state'] , $statesCode) ?? false;
                             $isAvailable = $rule['available'] ?? false;
                             $isRestrictCountry =  $isDiffCountry && $isAvailable ?? false;
                             $isRestrictState =  $isDiffState && $isAvailable ?? false;
