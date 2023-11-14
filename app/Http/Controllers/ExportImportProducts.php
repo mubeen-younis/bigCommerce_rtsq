@@ -61,7 +61,7 @@ class ExportImportProducts extends Controller
         $weightDimensionUnits = $this->getweightDimensionUnits($storeHash);
         $weightUnit = isset($weightDimensionUnits['weight_units']) && !blank($weightDimensionUnits['weight_units']) ? strtolower($weightDimensionUnits['weight_units']) : 'lbs' ?? 'lbs';
         $dimensionsUnit = isset($weightDimensionUnits['dimension_units']) && $weightDimensionUnits['dimension_units'] === 'Centimeters' ? 'cm' : 'in' ?? 'in';
-        Log::info('Store hash ' . $storeHash . 'Weight dimesnions ' . json_encode($weightDimensionUnits));
+
         $dropShips = [];
         foreach ($locations as $location) {
             $dropShips[$location['id']] = $location;
@@ -296,7 +296,6 @@ class ExportImportProducts extends Controller
             $data['store_name'] = $request['store_name'];
             $data['path'] = public_path('import_files/' . $request['store_hash'] . '/' . $request['filename']);
 
-            Log::info('import Product Csv Request: ' . json_encode($data));
             ImportProductsJob::dispatch($data)->delay(Carbon::now()->addSeconds($delay));
             unset($data['path']);
 
@@ -349,7 +348,6 @@ class ExportImportProducts extends Controller
         });
 
         $csvChunks = array_chunk($csvArray, $this->csvChunksLength);
-        Log::info('CSV Products Chunks Array: ' . json_encode($csvChunks));
 
         foreach ($csvChunks as $chunkKey => $csv) {
             foreach ($csv as $key => $product) {
@@ -366,7 +364,7 @@ class ExportImportProducts extends Controller
                 }
             }
         }
-        Log::info('CSV Products Exception Array: ' . json_encode($exceptionProducts));
+
         $this->ImportNotifyEmail($emailNotify);
     }
 

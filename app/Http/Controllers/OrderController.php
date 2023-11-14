@@ -606,9 +606,7 @@ class OrderController extends Controller
 
         if ($reportingFlag) {
             $reportData = $this->bcReportingData($request, $order, $data, $isMulti, $orderWidget, $zip);
-            Log::info('Reporting Data Request' . json_encode($reportData));
             $reportDataResp = $this->curlRequest->reportingDataCurlRequest($reportData);
-            Log::info('Reporting Data Response' . json_encode($reportDataResp));
         }
 
 

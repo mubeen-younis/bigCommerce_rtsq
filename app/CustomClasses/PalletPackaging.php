@@ -152,7 +152,6 @@ class PalletPackaging
 
         // select specific pallet for packaging
         $palletResp = $this->getPallet();
-        Log::info('Pallet Resp: ', $palletResp);
 
         $pallet = $palletResp['pallet'] ?? [];
         // if no pallet, then all cart items are packed as their own pallet
@@ -194,15 +193,12 @@ class PalletPackaging
 
                     // format pallet bins
                     $palletBins = $this->formatPalletBins();
-                    Log::info('Formatted pallets: ', $palletBins);
 
                     // adding varaint id and pallet name to packed items
                     $palletResponse = $this->addPackagingID($palletResponse, $palletBins);
-                    Log::info('Pallet response after adding packaging id: ', $palletResponse);
 
                     // updating commodity details of packed items for WS request
                     $commodityResp = $this->getUpdatedCommodityDetails($palletResponse, $palletBins);
-                    Log::info('Updated commodity details: ', $commodityResp);
 
                     // Final reponse
                     $resp = $this->getFinalResponse($commodityResp, $palletResponse, $palletBins);
@@ -364,7 +360,6 @@ class PalletPackaging
                 $items = $pallet->items;
                 $item = $items[0] ?? null;
                 if (empty($item) || $item == null) {
-                    Log::info('Pallet items: ', $items);
                     continue;
                 }
 

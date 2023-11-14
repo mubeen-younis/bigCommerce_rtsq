@@ -37,7 +37,7 @@ class GetStraightDistance extends GetDistance
             $finalDistance = $this->calculateGeoCodeDistance($origin, $destination);
             $this->insertStraightLineDistanceDatabase($origin['zip'], $destinationZip, $finalDistance);
         }
-        Log::info('Final distance ' . $finalDistance);
+
         return array(
             'distance_m' => $finalDistance,
         );

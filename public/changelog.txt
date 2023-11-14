@@ -1,3 +1,31 @@
+= 1.2.7 2023-11-13 =
+
+* Update - update feature "Do not return rate if the shipping address appears to be a post office box". (Ticket:1931376670)[#392](https://bitbucket.org/eniture/big-commerce/pull-requests/392)
+
+= 1.2.6 2023-11-09 =
+
+* Update - changes in Products Settings Page in BC. (Ticket:1939778691)[#391](https://bitbucket.org/eniture/big-commerce/pull-requests/391)
+
+= 1.2.5 2023-11-09 =
+
+* Update - Fixes Variants product multiple settings issue. (Ticket:2052444459)[#390](https://bitbucket.org/eniture/big-commerce/pull-requests/390)
+
+= 1.2.4 2023-11-07 =
+
+* Update - Remove unnecessary Logs from BC code. (Instruction from Azhar.)[#389](https://bitbucket.org/eniture/big-commerce/pull-requests/389)
+
+= 1.2.3 2023-11-06 =
+
+* Update - fixes Real Time Shipping Quote Markup UPS 2nd day air AM. (Ticket:2050445937)[#388](https://bitbucket.org/eniture/big-commerce/pull-requests/388)
+
+= 1.2.2 2023-11-02 =
+
+* Update - introduce new shipping rule "Hide Methods" in BC. (Ticket:2002103171)[#387](https://bitbucket.org/eniture/big-commerce/pull-requests/387)
+
+= 1.2.1 2023-10-13 =
+
+* Update - fixes shipping rules incorrect functioanlity in BC. (Ticket:1860430861)[#385](https://bitbucket.org/eniture/big-commerce/pull-requests/385)
+
 = 1.2.0 2023-10-03 =
 
 * Update - Introduce Shipping Rules Feature in BC. (Ticket:1860430861)[#383](https://bitbucket.org/eniture/big-commerce/pull-requests/383)

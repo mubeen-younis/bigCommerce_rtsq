@@ -180,7 +180,6 @@ class QuotesResults
 
             if ((isset($quote['severity']) || (isset($quote['q']) && empty($quote['q'])) || (!isset($quote['q']) && !empty($quote['InstorPickupLocalDelivery'])))) {
                 $allQuotes = $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);
-                Log::info('All quotes inside local delivery ' . json_encode($allQuotes));
                 $returnResp['resp'] = $allQuotes;
                 return $returnResp;
             }

@@ -9,6 +9,7 @@ use App\Models\BinRequestLog;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Models\DestinationAddresses;
+
 class SmartyStreet
 {
     private $authId = Constant::SMARTY_AUTH_ID;
@@ -18,6 +19,7 @@ class SmartyStreet
      * @var string
      */
     private $token = Constant::SMARTY_TOKEN;
+    public static $isPoBOX = false;
 
     /**
      * Property contains URL we hit for 3dBin API.
@@ -25,15 +27,16 @@ class SmartyStreet
      */
     private $endURL = Constant::SMARTY_URL;
 
-    public function getSmartyResponse($storeId, $address, $hits, $addressStatus){
+    public function getSmartyResponse($storeId, $address, $hits, $addressStatus, $poBox){
         $radStatus = $this->consumeHits($storeId, $hits);
         if(!$radStatus['status']){
             return "N";
         }
+        self::$isPoBOX = $poBox ?? false;
         $addressStatus = empty($addressStatus) ? $this->address_validated($address) : $addressStatus;
         if($storeId != null){
             $completeAddress = $this->set_address($address);
-            DestinationAddresses::saveDestination($completeAddress, $storeId, $addressStatus);
+            DestinationAddresses::saveDestination($completeAddress, $storeId, $addressStatus, self::$isPoBOX);
         }
 
         if($addressStatus == "n"){
@@ -114,6 +117,11 @@ class SmartyStreet
 
                 $res = 'n';
             }
+
+            if (isset( $data[0]['metadata']['zip_type']) && $data[0]['metadata']['zip_type'] === 'POBox') {
+                self::$isPoBOX = true;
+            }
+
         } else {
             $res = 'n';
         }
