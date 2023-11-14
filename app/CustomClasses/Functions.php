@@ -158,7 +158,7 @@ class Functions
             'fedex-ltl' => 'fedex', 'gtz-new' => 'WWE LTL', 'gtz-ltl' => 'globaltranz', 'cltl' => 'cerasis', 'ups-ship-engine' => 'ShipEngine',
             'small-package' => 'WWE SmPkg', 'unishippers-small-new' => 'WWE SmPkg', 'ups-small' => 'UPS Small', 'fedex-small' => 'FedEx Small', 'unishippers-small' => 'unisheppers',
             'freightquote-ltl' => 'b2b', 'freightquote-chr-ltl' => 'b2b', 'purolator-small' => 'purolator', 'usps-small' => 'usps',
-            'tql-ltl' => 'tql', 'yrc-ltl' => 'yrc', 'odfl-ltl' => 'odfl4me', 'dayross-ltl' => 'dayross',
+            'tql-ltl' => 'tql', 'yrc-ltl' => 'yrc', 'odfl-ltl' => 'odfl4me', 'dayross-ltl' => 'dayross', 'priority-one-ltl' => 'priority1',
             'estes-ltl' => 'estes', 'echo-ltl' => 'echoLogistics', 'saia-ltl' => 'saia', 'abf-ltl' => 'abf', 'daylight-ltl' => 'daylight',
             'southeastern-ltl' => 'southeastern'];
 

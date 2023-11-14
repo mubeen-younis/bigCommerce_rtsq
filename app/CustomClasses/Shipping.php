@@ -785,7 +785,6 @@ class Shipping
         $request
     )
     {
-        Log::info('checkIndividualHazmat' . json_encode($request));
         // TODO: Need to Add small and Ltl Carriers Here as well
 
         $smallOrigins = $marketItemSmall = $request['carriers']['wweSmall']['originAddress'] ?? $request['carriers']['upsSmall']['originAddress'] ?? $request['carriers']['fedexSmall']['originAddress']

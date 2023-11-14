@@ -65,7 +65,8 @@ class BigCommerceListingController extends Controller
      * @return JsonResponse
      */
     public function updateBCSubscription(Request $request)
-    { Log::info('update BC Subscription request ' . json_encode($request->all()));
+    { 
+        Log::info('update BC Subscription request ' . json_encode($request->all()));
         try { 
             $uuid = isset($request->uuid) ? $request->uuid : null;
             if (blank($uuid)) {
@@ -141,7 +142,7 @@ class BigCommerceListingController extends Controller
                 $uuid = $this->updateSubscriptionInDB($updateSubResponse['data'], $oldSubscription, $isTestStore, $status);
                 //Getting Current Plan Detail
                 $updateSubResponse['data'] = $this->subscriptionDetailFromDB($uuid);
-                Log::info('Email of old subscription' . $oldSubscription->email);
+
                 $mailToSend = isset($data['email']) && !empty($data['email']) ? $data['email'] : (isset($oldSubscription->email) && !empty($oldSubscription->email) ? $oldSubscription->email : null);
                 if (!empty($mailToSend)) {
                     $emailData = array(
@@ -184,7 +185,7 @@ class BigCommerceListingController extends Controller
 
             if (isset($request['flag']) && $request['flag'] == 1) {
                 $res = $this->cencelStripeSubscription($dbSub->subscription_id);
-                Log::info("Cencel Stripe Subscription" . json_encode($res));
+                Log::info("Cancel Stripe Subscription" . json_encode($res));
                 if (isset($res['status']) && $res['status'] == true) {
                     //Because of simaltaneous execution of stripe and DB
                     Subscription::where('id', $dbSub->id)->update([

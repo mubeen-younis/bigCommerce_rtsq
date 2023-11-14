@@ -18,7 +18,6 @@ class ShippingRuleController extends Controller
     public function getShippingRules(Request $request)
     {
         $shippingRules = ShippingRule::getStoreShippingRules($request['store_id']);
-        Log::info('Shipping Rule Store Id '.$request['store_id']. ' Shipping Rules '.json_encode($shippingRules));
         return Helpers::sendJsonResponse(false, "", $shippingRules);
     }
 
