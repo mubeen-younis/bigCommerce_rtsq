@@ -1,3 +1,7 @@
+= 2.0.0 2023-11-14 =
+
+* Update - Add Priority one carrier in BC. (Ticket:1920692032)[#393](https://bitbucket.org/eniture/big-commerce/pull-requests/393)
+
 = 1.2.7 2023-11-13 =
 
 * Update - update feature "Do not return rate if the shipping address appears to be a post office box". (Ticket:1931376670)[#392](https://bitbucket.org/eniture/big-commerce/pull-requests/392)
