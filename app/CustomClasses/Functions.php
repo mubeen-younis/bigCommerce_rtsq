@@ -1204,7 +1204,7 @@ class Functions
                                     $length = strlen($serviceCode);
                                     $isTrue = str_contains(strtolower($rateId), strtolower($serviceCode));
                                     if($isTrue){
-                                        $carrierQuoteIds = $service->id ?? '';
+                                        $carrierQuoteIds = $service->carrierQuoteNumber ?? '';
                                     }
                                 }
                             }
