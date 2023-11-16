@@ -41,5 +41,49 @@ class CountryState extends Model
         return [];
     }
 
+    public static function isSamePostalCode($postalCode, $postalCodesArray)
+    {
+        $ispCodeExist = false;
+        if(!empty($postalCodesArray)){
+            foreach($postalCodesArray as $pCode){
+                
+                if (ctype_digit($pCode) && strlen($pCode) == 5){
+                // Checks: US postal code exist in shipping rule postal codes array
+                    $ispCodeExist = $postalCode == $pCode;
+                } elseif (ctype_alnum($pCode) && strlen($pCode) == 6){
+                // Checks: CA postal code exist in shipping rule postal codes array
+                    $ispCodeExist = $postalCode == $pCode;
+                } elseif (strpos($pCode, '...') !== false && substr_count($pCode, '.') == 3) {
+                // Checks: US and CA postal code exist in shipping rule postal code range like '10000...10009' , 'LK4M3C...LK4M4W'
+                    $range = explode('...', $pCode);
+                    if(ctype_digit($range[0]) && ctype_digit($range[1]) && strlen($range[0]) == 5 && strlen($range[1]) == 5){
+                        $ispCodeExist = self::isInNumricRange($postalCode, $range[0], $range[1]);
+                    }
+                    
+                    if(ctype_alnum($range[0]) && ctype_alnum($range[1]) && strlen($range[0]) == 6 && strlen($range[1]) == 6){
+                        $ispCodeExist = self::isInAlphaNumricRange($postalCode, $range[0], $range[1]);
+                    }
+                } elseif (strpos($pCode, '*') !== false && substr_count($pCode, '*') == 1) {
+                // Checks: US and CA postal code begins with define postal code in shipping rule like '1000*', 'Lk2*'
+                    $range = explode('*', $pCode);
+                    if(ctype_digit($range[0]) && strpos($postalCode, $range[0]) === 0 && strlen($range[0]) <= 5){
+                        $ispCodeExist = true;
+                    }
 
+                    if(ctype_alnum($range[0]) && strpos($postalCode, $range[0]) === 0 && strlen($range[0]) <= 6){
+                        $ispCodeExist = true;
+                    }
+                }
+            }
+        }
+        return $ispCodeExist;
+    }
+
+    public static function isInNumricRange($number, $start, $end) {
+        return $number >= $start && $number <= $end;
+    }
+
+    public static function isInAlphaNumricRange($value, $start, $end) {
+        return strcmp($value, $start) >= 0 && strcmp($value, $end) <= 0;
+    }
 }
