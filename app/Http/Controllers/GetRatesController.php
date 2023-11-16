@@ -615,7 +615,9 @@ class GetRatesController extends Controller
                                 $isSameState = in_array($destination['state'] , $statesCode) ?? false;
                                 $isSamePostalCode = CountryState::isSamePostalCode($destination['zip'], $postalCodes) ?? false;
     
-                                if ($isSameCountry && $isSameState && $rule['rule_type'] == 3){
+                                if ($isSameCountry && $isSameState && $isSamePostalCode && $rule['rule_type'] == 4){
+                                    return false;
+                                } elseif ($isSameCountry && $isSameState && $rule['rule_type'] == 3){
                                     return false;
                                 } elseif ($isSameCountry && $rule['rule_type'] == 1){
                                     return false;
