@@ -1,3 +1,7 @@
+= 2.1.0 2023-11-16 =
+
+* Update - Add Quote Details (quote id) on order detail widget in BC. (Ticket:906410261)[#394](https://bitbucket.org/eniture/big-commerce/pull-requests/394)
+
 = 2.0.0 2023-11-14 =
 
 * Update - Add Priority one carrier in BC. (Ticket:1920692032)[#393](https://bitbucket.org/eniture/big-commerce/pull-requests/393)
