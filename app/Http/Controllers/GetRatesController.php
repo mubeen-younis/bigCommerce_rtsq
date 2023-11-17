@@ -597,7 +597,7 @@ class GetRatesController extends Controller
             
             foreach($shippingRules as $key => $rule){
                 $restrictedProducts = isset($rule['filter_products']) ? $rule['filter_products'] : [];
-                $stateProvince = isset($rule['filter_state_province']) ? $rule['filter_state_province'] : '';
+                $stateProvince = isset($rule['filter_state_province']) ? $rule['filter_state_province'] : [];
                 $filterCountry = isset($rule['filter_country']) ? $rule['filter_country'] : '';
                 $isAvailable = $rule['available'] ?? false;
 
