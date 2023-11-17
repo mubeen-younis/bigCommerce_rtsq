@@ -47,12 +47,12 @@ class CountryState extends Model
         if(!empty($postalCodesArray)){
             foreach($postalCodesArray as $pCode){
                 
-                if (ctype_digit($pCode) && strlen($pCode) == 5){
+                if (ctype_digit($pCode) && strlen($pCode) == 5 && $postalCode == $pCode){
                 // Checks: US postal code exist in shipping rule postal codes array
-                    $ispCodeExist = $postalCode == $pCode;
-                } elseif (ctype_alnum($pCode) && strlen($pCode) == 6){
+                    $ispCodeExist = true;
+                } elseif (ctype_alnum($pCode) && strlen($pCode) == 6 && $postalCode == $pCode){
                 // Checks: CA postal code exist in shipping rule postal codes array
-                    $ispCodeExist = $postalCode == $pCode;
+                    $ispCodeExist = true;
                 } elseif (strpos($pCode, '...') !== false && substr_count($pCode, '.') == 3) {
                 // Checks: US and CA postal code exist in shipping rule postal code range like '10000...10009' , 'LK4M3C...LK4M4W'
                     $range = explode('...', $pCode);
