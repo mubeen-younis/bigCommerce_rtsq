@@ -66,11 +66,11 @@ class CountryState extends Model
                 } elseif (strpos($pCode, '*') !== false && substr_count($pCode, '*') == 1) {
                 // Checks: US and CA postal code begins with define postal code in shipping rule like '1000*', 'Lk2*'
                     $range = explode('*', $pCode);
-                    if(ctype_digit($range[0]) && strpos($postalCode, $range[0]) === 0 && strlen($range[0]) <= 5){
+                    if(ctype_digit($range[0]) && strpos($postalCode, $range[0]) === 0 && strlen($range[0]) < 5){
                         $ispCodeExist = true;
                     }
 
-                    if(ctype_alnum($range[0]) && strpos($postalCode, $range[0]) === 0 && strlen($range[0]) <= 6){
+                    if(ctype_alnum($range[0]) && strpos($postalCode, $range[0]) === 0 && strlen($range[0]) < 6){
                         $ispCodeExist = true;
                     }
                 }
