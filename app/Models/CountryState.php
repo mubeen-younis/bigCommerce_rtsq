@@ -70,7 +70,7 @@ class CountryState extends Model
                         $ispCodeExist = true;
                     }
 
-                    if(preg_match('/[a-zA-Z].*[0-9]|[0-9].*[a-zA-Z]/', $range[0]) && strpos($postalCode, $range[0]) === 0 && strlen($range[0]) < 6){
+                    if((preg_match('/[a-zA-Z].*[0-9]|[0-9].*[a-zA-Z]/', $range[0]) || preg_match('/[A-Za-z]/', $range[0]) || preg_match('/\d/', $range[0])) && strpos($postalCode, $range[0]) === 0 && strlen($range[0]) < 6){
                         $ispCodeExist = true;
                     }
                 }
