@@ -151,7 +151,7 @@ class ShippingRule extends Model
                 case 2:
                     $shippingRule->filter_name = $shippingRuleData['filter_provider'] ?? '';
                     $settings = [
-                        "isFilterWeight" => $shippingRuleData['isFilterWeight'] ?? '', 
+                        "isFilterWeight" => $shippingRuleData['isFilterWeight'] ?? false, 
 			            "isFilterPrice" => $shippingRuleData['isFilterPrice'] ?? false,
 			            "isFilterQuantity" => $shippingRuleData['isFilterQuantity'] ?? false,
                         "weightFrom" => $shippingRuleData['weight_from'] ?? '',
@@ -180,6 +180,23 @@ class ShippingRule extends Model
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;        
+                case 5:
+                    $shippingRule->filter_name = $shippingRuleData['filter_provider'] ?? '';
+                    $settings = [
+                        "isFilterWeight" => $shippingRuleData['isFilterWeight'] ?? false, 
+			            "isFilterPrice" => $shippingRuleData['isFilterPrice'] ?? false,
+			            "isFilterQuantity" => $shippingRuleData['isFilterQuantity'] ?? false,
+                        "weightFrom" => $shippingRuleData['weight_from'] ?? '',
+                        "weightTo" => $shippingRuleData['weight_to'] ?? '',
+                        "priceFrom" => $shippingRuleData['price_from'] ?? '',
+                        "priceTo" => $shippingRuleData['price_to'] ?? '',
+                        "quantityFrom" => $shippingRuleData['quantity_from'] ?? '',
+                        "quantityTo" => $shippingRuleData['quantity_to'] ?? '',
+                        "filter_services" => $shippingRuleData['filter_services'] ?? [],
+                        "service_rates" => $shippingRuleData['service_rates'] ?? '',
+                    ];
+                    $shippingRule->filter_settings = json_encode($settings) ?? '';
+                    break;
             }
 
             $shippingRule->rule_name = $shippingRuleData['rule_name'] ?? '';
@@ -302,6 +319,9 @@ class ShippingRule extends Model
             case 4:
                 $shippingRule = self::updateRestrictfilterPostalCodeParams($shippingRule);
                 break;
+            case 5:
+                $shippingRule = self::updateOverrideRatesParams($shippingRule);
+                break;
     
             default:
                 break;
@@ -311,7 +331,12 @@ class ShippingRule extends Model
         return $shippingRule ?? [];
     }
 
-    public static function updateHideMethodsParams($shippingRule)
+    public static function updateOverrideRatesParams($shippingRule)
+    {
+        return self::updateHideMethodsParams($shippingRule, true);
+    }
+
+    public static function updateHideMethodsParams($shippingRule, $isOverrideRates = false)
     {
         $shippingRule['filter_provider'] = $shippingRule['filter_name'];
         $settings = json_decode($shippingRule['filter_settings'], true);
@@ -324,6 +349,11 @@ class ShippingRule extends Model
         $shippingRule['price_to'] = $settings['priceTo'];
         $shippingRule['quantity_from'] = $settings['quantityFrom'];
         $shippingRule['quantity_to'] = $settings['quantityTo'];
+
+        if($isOverrideRates){
+            $shippingRule['filter_services'] = $settings['filter_services'];
+            $shippingRule['service_rates'] = $settings['service_rates'];
+        }
 
         return $shippingRule;
     }
