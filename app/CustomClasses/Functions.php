@@ -87,6 +87,11 @@ class Functions
         'ups_worldwide_express_plus',
     ];
 
+    public static function is3plCarrier($carrier){
+        $carriersArray = ['ltl-quotes', 'freightquote-ltl', 'tql-ltl', 'echo-ltl', 'freightquote-chr-ltl', 'priority-one-ltl', 'gtz-ltl'];
+        return in_array($carrier, $carriersArray);
+    }
+
     public static function hasInsureCarrier($code)
     {
         $insureCarriers = ['wweltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd'];
