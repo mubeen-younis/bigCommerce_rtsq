@@ -102,7 +102,7 @@ class GenerateRequestData
         $errorManagment = [];
 
         $shippingRule = new ShippingRuleController();
-        $this->connectionSettings = $shippingRule->applyShippingRule($this->storeData['store']['id'], $lineItems, $this->connectionSettings);
+        $this->connectionSettings = $shippingRule->applyHideMethodRule($this->storeData['store']['id'], $lineItems, $this->connectionSettings);
                 
         $this->storeDateTime = $this->getBCStoreDateTime();
         Log::info('Store Time' . $this->storeDateTime);

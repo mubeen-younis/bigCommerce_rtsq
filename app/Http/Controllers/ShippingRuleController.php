@@ -8,6 +8,10 @@ use App\Models\ShippingRule;
 use App\Models\CountryState;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use App\Models\AdditionalCarrierTabSetting;
+use App\Models\Connection;
+use App\CustomClasses\Functions;
+use App\Http\Controllers\AdditionalCarrierTabSettingController;
 
 class ShippingRuleController extends Controller
 {
@@ -59,7 +63,7 @@ class ShippingRuleController extends Controller
         return Helpers::sendJsonResponse(false, null, $shippingRuleDetail);
     }
 
-    public function applyShippingRule($storeId, $lineItemData, $connectionSettings)
+    public function applyHideMethodRule($storeId, $lineItemData, $connectionSettings)
     {    
         $is_true = false;
         $shippingRules = ShippingRule::getStoreShippingRules($storeId);
@@ -84,6 +88,82 @@ class ShippingRuleController extends Controller
             }
         }
         return $connectionSettings;
+    }
+
+    public function overrideRates($storeId, $lineItemData, $connectionSettings, $quote = [], $carrierName)
+    {
+        $isRuletrue = false;
+        $isOverrideRates = false;
+        $shippingRules = ShippingRule::getStoreShippingRules($storeId);
+        $carrierProviders = new AdditionalCarrierTabSettingController();
+        if(!empty($shippingRules)){
+            $cartItems = !empty($lineItemData) ? $lineItemData : [];
+            foreach($shippingRules as $key => $rule){
+                if(isset($rule['available']) && $rule['available']){
+
+                    $providerSlug = isset($rule['filter_provider']) ? $rule['filter_provider'] : '';
+                    $carrierId = isset($connectionSettings[$providerSlug]) ? $connectionSettings[$providerSlug]['creds']['installed_carrier_id'] : null;
+                    
+                    $request = new \Illuminate\Http\Request();
+                    $request->installed_carrier_id = $carrierId;
+                    $request->store_id = $storeId;
+                    if($rule['rule_type'] == 5 && $carrierId != null){
+                        
+                        $isRuletrue = $this->hideMethods($rule, $cartItems);
+                        if(!$isRuletrue){
+                            if(Functions::is3plCarrier($providerSlug)){
+                
+                                if ($providerSlug == 'gtz-ltl'){
+                                    $settings = Connection::join('installed_carriers', 'installed_carriers.id', 'connection_settings.installed_carrier_id')
+                                    ->join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
+                                    ->select('carriers.slug', 'connection_settings.id', 'connection_settings.installed_carrier_id',
+                                        'connection_settings.value')
+                                    ->where('connection_settings.installed_carrier_id', $carrierId)->first();
+                                    if ($settings !== null) {
+                                        $value = json_decode($settings->value, true);
+                                    }
+                                
+                                    $request->carrier_type = $value['api_type'] ?? '';
+                                    $request->store_id = $value['store_id'];
+                                    if ($value['api_type'] == 'NEWAPI'){
+                                        $providerSlug = 'gtz-new';
+                                    } elseif ($value['api_type'] == 'CRS'){
+                                        $providerSlug = 'cltl';
+                                    }
+                                }
+
+                                $carrIndexName = Functions::getCarrIndexBySlug($providerSlug);
+                                $carrierProviders = $carrierProviders->index($request);
+                                $serviceType = $quote['serviceType'] ?? "";
+                                $serviceType = $quote['scac'] ?? $quote['CarrierSCAC'] ?? $serviceType;
+                                $services = json_decode(json_encode($carrierProviders))->original->data ?? [];
+                                $service = array_values(array_filter($services, fn($service) => $service->speed_freight_carrierSCAC == $serviceType))[0] ?? [];
+
+                                if(isset($service->speed_freight_carrierName) && in_array($service->speed_freight_carrierName, $rule['filter_services']) && $carrierName == $carrIndexName){
+                                    $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                    $isOverrideRates = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return ['data' => $quote, 'isOverrideRates' => $isOverrideRates];
+    }
+
+    public function disableAllAccessorials($quoteSettings)
+    {
+        $quoteSettings['offer_inside_delivery'] = false;
+        $quoteSettings['offerLiftGateDelivery'] = false;
+        $quoteSettings['offer_limited_access_delivery'] = false;
+        $quoteSettings['offer_notify_as_option'] = false;
+        $quoteSettings['always_inside_delivery'] = false;
+        $quoteSettings['alwaysLiftGateDelivery'] = false;
+        $quoteSettings['always_quote_notify'] = false;
+        $quoteSettings['always_limited_access_delivery'] = false;
+        
+        return $quoteSettings;
     }
 
     public function hideMethods($shippingRule, $items)

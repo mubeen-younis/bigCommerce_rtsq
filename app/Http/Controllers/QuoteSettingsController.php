@@ -47,6 +47,7 @@ class QuoteSettingsController extends Controller
                     }
                 
                     $request->carrier_type = $settings['api_type'] ?? '';
+                    $request->store_id = $settings['store_id'];
                     $carrierServicesArray = $carrierServicesArray[$settings['api_type']] ?? [];
                 }
         

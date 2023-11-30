@@ -27,6 +27,7 @@ use App\CustomClasses\FreightQuote\Ltl\QuotesResults as FQQuotesResults;
 use App\CustomClasses\EstesLTL\QuotesResults as estesLtlQuotesResults;
 use App\CustomClasses\UpsShipEngineSmall\QuotesResults as upsShipEngineSmallQuotesResults;
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\ShippingRuleController;
 
 
 use App\Http\Controllers\RADController;
@@ -688,7 +689,9 @@ class CompileQuotes
         $quotesRes = [];
         $quotesTemp = [];
         $quotes = $this->filterShipmentsWithError($quotes);
+        $this->shippingRule = new ShippingRuleController();
         foreach ($quotes as $key => $shipment) {
+            $this->carrierName = $key;
             switch ($key) {
                 case "wweLTL":
                     $resp = $this->compileWweLtlQuotes($shipment, $connectionSettings, $allOrigins);
@@ -964,6 +967,19 @@ class CompileQuotes
         return $newQuotes;
     }
 
+    public function applyOverrideRatesRule($connectionSettings, $data){
+        $overrideRatesData = $this->shippingRule->overrideRates($this->storeId, $this->items, $connectionSettings, $data, $this->carrierName);
+        if(isset($overrideRatesData['isOverrideRates']) && $overrideRatesData['isOverrideRates']){
+            $data = $overrideRatesData['data'] ?? [];
+            unset($data['surcharges']);
+            $this->quoteSettings = $this->shippingRule->disableAllAccessorials($this->quoteSettings);
+            $this->alwaysResi = false;
+            $this->isResi = false;
+        }
+
+        return $data;
+    }
+
     public function compileWweLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
         if ($this->residential['wweLtl'] == 'Y') {
@@ -1031,7 +1047,7 @@ class CompileQuotes
                 foreach ($quote['q'] as $key => $data) {
 
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) && isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y') {
-
+                        $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         if ($limitedAccess && isset($this->quoteSettings['limited_access_fee'])) {
                             $data['totalNetCharge']['Amount'] += $this->quoteSettings['limited_access_fee'];
                             $data['surcharges']['limitedAccessDeliveryFee'] = (float) $this->quoteSettings['limited_access_fee'];
@@ -1207,6 +1223,7 @@ class CompileQuotes
                          * Date 01-07-22
                          * Adding Functionality of Delivery Estimate Options
                          * */
+                        $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         $date = $data['EstimatedDeliveryDate'] ?? null;
                         $days = $data['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
@@ -1612,6 +1629,7 @@ class CompileQuotes
                         if (($this->lgQuotes || $this->notifyDelivery) && !isset($data['surcharges'])) {
                             continue;
                         }
+                        $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         $isLgSurcharges = isset($data['surcharges']['liftgateFee']) && $data['surcharges']['liftgateFee'];
                         $isNbdSurcharges = isset($data['surcharges']['notifyDeliveryFee']) && $data['surcharges']['notifyDeliveryFee'];
                         $price = $this->calculatePrice($data);
@@ -2203,6 +2221,7 @@ class CompileQuotes
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) /*&& isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y' */) {
                         //$data['totalTransitTimeInDays'] = $data['LtlServiceDays'] ?? 0;
                         $access = $preCode . $this->GTZLtlQuotesResults->getAccessorialCode($isResi);
+                        $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings, false, false, false, $this->originKey, $this->items, $this->allOrigins);
 
                         /*
@@ -2447,6 +2466,7 @@ class CompileQuotes
                 foreach ($quote['q'] as $key => $data) {
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) /*&& isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y' */) {
                         $access = $preCode . $this->getAccessorialCode();
+                        $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         $price = $this->calculatePrice($data);
 
                         /*
@@ -4163,7 +4183,9 @@ class CompileQuotes
                             ),
                             'surcharges' => $data['surcharges'],
                         );
-                        $price = $this->calculatePrice($charges);
+                        $data = array_merge($data, $charges);
+                        $data = $this->applyOverrideRatesRule($connectionSettings, $data);
+                        $price = $this->calculatePrice($data);
 
                         /*
                          * Adding Functionality of Delivery Estimate Options
@@ -4180,7 +4202,7 @@ class CompileQuotes
 
                         if ($lgQuotes) {
                             $lgAccess = 'fqltl' . $this->getAccessorialCode(true) . $resiPickup;
-                            $lgPrice = $this->calculatePrice($charges, true);
+                            $lgPrice = $this->calculatePrice($data, true);
                             $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
                             $arraySorting['liftgate'][$key] = $lgPrice;
                             $originQuotes[$key]['liftgate']['code'] = $data['serviceType'] . $lgAccess;
@@ -4919,6 +4941,7 @@ class CompileQuotes
                         $data['totalNetCharge']['Amount'] = $data['TotalCharge'] ?? 0;
                         $data['surcharges']['liftgateFee'] = $echoLtl->getLGFee($data['Accessorials'] ?? []) ?? 0;
                         $data['surcharges']['notifyBeforeDeliveryFee'] = $echoLtl->getNBDFee($data['Accessorials'] ?? []) ?? 0;
+                        $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         $price = $this->calculatePrice($data);
 
                         $days = $data['totalTransitTimeInDays'] ?? null;
@@ -5197,8 +5220,9 @@ class CompileQuotes
                             ),
                             'surcharges' => $data['surcharges'],
                         );
-
-                        $price = $this->calculatePrice($charges);
+                        $data = array_merge($data, $charges);
+                        $data = $this->applyOverrideRatesRule($connectionSettings, $data);
+                        $price = $this->calculatePrice($data);
 
                         $dateAndDays = $fqChrQuotes->getShipmentDateAndDays($data);
                         $title = $this->getTitle($data['serviceDesc'], false, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
@@ -5210,7 +5234,7 @@ class CompileQuotes
 
                         if ($lgQuotes) {
                             $lgAccess = $data['serviceType'] . 'fqchrltl' . $this->getAccessorialCode(true);
-                            $lgPrice = $this->calculatePrice($charges, true);
+                            $lgPrice = $this->calculatePrice($data, true);
                             $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
 
                             $arraySorting['liftgate'][$key] = $lgPrice;
@@ -5361,6 +5385,7 @@ class CompileQuotes
                          * Date 01-07-22
                          * Adding Functionality of Delivery Estimate Options
                          * */
+                        $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         $date = $data['deliveryDate'] ?? null;
                         $days = $data['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
