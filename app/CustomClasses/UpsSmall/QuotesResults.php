@@ -7,6 +7,7 @@ namespace App\CustomClasses\UpsSmall;
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
 use App\CustomClasses\Functions;
+use App\Http\Controllers\ShippingRuleController;
 
 class QuotesResults
 {
@@ -107,8 +108,9 @@ class QuotesResults
     }
 
 
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items, $storeId = '')
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items, $storeId = '', $carrierName = '')
     {
+        $shippingRule = new ShippingRuleController();
         $shipments = $this->formateQuoteBeforeCompile($shipments);
         $this->quoteSettings = [];
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
@@ -198,6 +200,8 @@ class QuotesResults
                     }
 
                     // Adding Markup in services if enabled
+                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName);
+                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
                     $price = $this->getServiceRate($data, $description, $this->quoteSettings);
                     $quoteSettings = $this->quoteSettings;
                     $amount = $data['totalNetCharge']['Amount'];

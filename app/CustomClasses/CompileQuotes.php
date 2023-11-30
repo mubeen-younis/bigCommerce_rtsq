@@ -1800,7 +1800,7 @@ class CompileQuotes
         $this->alwaysResi = $this->residential['alwaysResi']['upsSmall'] ?? false;
         $access = $this->getAccessorialCodeSmall();
 
-        $res = $this->upsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items, $this->storeId);
+        $res = $this->upsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName);
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = $res['isMultiShipment'] ?? false;
         }
@@ -1825,7 +1825,7 @@ class CompileQuotes
         $this->alwaysResi = $this->residential['alwaysResi']['unishippersSmallNewApi'] ?? false;
         $access = $this->getAccessorialCodeSmall();
 
-        $res = $this->unishippersSmallQuotesResults->compileQuotesNewApi($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items, $this->storeId);
+        $res = $this->unishippersSmallQuotesResults->compileQuotesNewApi($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName);
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = $res['isMultiShipment'] ?? false;
         }
@@ -1862,7 +1862,7 @@ class CompileQuotes
         $access = $this->getAccessorialCodeSmall();
 
         try {
-            $res = $quoteResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items, $this->storeId);
+            $res = $quoteResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName);
         } catch (\Exception $exception) {
             Log::info('Exception on shipengine results ' . json_encode([
                 'line' => $exception->getLine(),
@@ -2141,7 +2141,7 @@ class CompileQuotes
         }
         $this->alwaysResi = $this->residential['alwaysResi']['fedexSmall'] ?? false;
         $access = $this->getAccessorialCodeSmall();
-        $res = $this->fedexSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $destination, $this->items, $this->storeId);
+        $res = $this->fedexSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $destination, $this->items, $this->storeId, $this->carrierName);
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = $res['isMultiShipment'] ?? false;
         }
@@ -3370,6 +3370,8 @@ class CompileQuotes
 
                     $access = $this->getAccessorialCodeSmall();
                     // Adding Markup in services if enabled
+                    $overrideRates = $this->shippingRule->overrideRates($this->storeId, $this->items, $connectionSettings, $data, $this->carrierName);
+                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
                     $price = $this->wweSmallQuoteRes->getServiceRate($data['totalNetCharge']['Amount'], $data['serviceType'], $this->quoteSettings);
                     $quoteSettings = $this->quoteSettings;
 
@@ -3638,7 +3640,7 @@ class CompileQuotes
         }
         $this->alwaysResi = $this->residential['alwaysResi']['unishippersSmall'] ?? false;
         $access = $this->getAccessorialCodeSmall();
-        $res = $this->unishippersSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items, $this->storeId);
+        $res = $this->unishippersSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName);
 
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = $res['isMultiShipment'] ?? false;
@@ -4868,7 +4870,7 @@ class CompileQuotes
         $this->alwaysResi = false;
 
         $access = $this->getAccessorialCodeSmall();
-        $res = $uspsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items, $this->storeId);
+        $res = $uspsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName);
 
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = $res['isMultiShipment'] ?? false;

@@ -8,6 +8,7 @@ use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
 use App\CustomClasses\Functions;
 use Illuminate\Support\Str;
+use App\Http\Controllers\ShippingRuleController;
 
 class QuotesResults
 {
@@ -137,8 +138,9 @@ class QuotesResults
     }
 
 
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $destination, $items, $storeId = '')
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $destination, $items, $storeId = '', $carrierName = '')
     {
+        $shippingRule = new ShippingRuleController();
         $this->allOrigins = $this->originIndexToShipment($allOrigins);
         $this->destination = $destination;
         $shipments = $this->formateQuoteBeforeCompile($shipments);
@@ -254,6 +256,8 @@ class QuotesResults
                     if (isset($this->quoteSettings['negotiated_rates']) && $this->quoteSettings['negotiated_rates'] == 1) {
                         $data['totalNetCharge']['Amount'] = $data['NegotiatedRates']['Amount'] ?? $data['totalNetCharge']['Amount'];
                     }
+                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName);
+                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
                     $price = $this->getServiceRate($data['totalNetCharge']['Amount'], $serviceName, $this->quoteSettings);
                     $quoteSettings = $this->quoteSettings;
 

@@ -112,12 +112,39 @@ class QuoteSettingsController extends Controller
                 $data[] = ['key' => $carrierSlug, 'value' => ucwords(str_replace('-', ' ' , $carrierSlug))];
             }
 
-        } else {
+        } else if($carrierSlug == 'purolator-small') {
+
             $settings = QuoteSetting::where('installed_carrier_id', $carrierId)->first();
             $services = isset($settings->value) ? json_decode($settings->value)->carrier_services : [];
             foreach($services as $key => $service){
+
                 if($service == true && strpos($key, 'markup') == false){
-                    $data[] = ['key' => $key, 'value' => ucwords(str_replace('_', ' ' , $key))];
+                    $key = str_replace('__', ' ' , $key);
+                    $key = str_replace('_', ' ' , $key);
+                    $key = str_replace('10 30AM', '10:30 AM' , $key);
+                    $key = str_replace('9AM', '9 AM' , $key);
+                    $key = str_replace('us 9 am', 'US 9 AM' , $key);
+                    $key = str_replace('us 10 30 am', 'US 10:30 AM' , $key);
+                    $key = str_replace('us', 'US' , $key);
+                    $key = str_replace('12 00', '12:00' , $key);
+                    $key = ucwords($key);
+                    
+                    $data[] = ['key' => $key, 'value' => $key];
+                }
+                
+            }
+
+        } else {
+            $settings = QuoteSetting::where('installed_carrier_id', $carrierId)->first();
+
+            $services = isset($settings->value) ? json_decode($settings->value)->carrier_services : [];
+            foreach($services as $key => $service){
+                if($service == true && strpos($key, 'markup') == false){
+                    $key = str_replace('_', ' ' , $key);
+                    $key = str_replace('am', 'A.M.' , $key);
+                    $key = str_replace('ups', 'UPS' , $key);
+                    $key = str_replace('2 day A.M.', '2 Day AM' , $key);
+                    $data[] = ['key' => $key, 'value' => ucwords($key)];
                 }
             }
         }

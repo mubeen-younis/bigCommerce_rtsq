@@ -12,9 +12,15 @@ use App\Models\AdditionalCarrierTabSetting;
 use App\Models\Connection;
 use App\CustomClasses\Functions;
 use App\Http\Controllers\AdditionalCarrierTabSettingController;
+use App\CustomClasses\Unishippers\small\QuotesResults;
 
 class ShippingRuleController extends Controller
 {
+
+    public function __construct()
+    {
+        $this->unishippers = new QuotesResults();
+    }
     /**
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
@@ -100,48 +106,76 @@ class ShippingRuleController extends Controller
             $cartItems = !empty($lineItemData) ? $lineItemData : [];
             foreach($shippingRules as $key => $rule){
                 if(isset($rule['available']) && $rule['available']){
-
+                    
                     $providerSlug = isset($rule['filter_provider']) ? $rule['filter_provider'] : '';
                     $carrierId = isset($connectionSettings[$providerSlug]) ? $connectionSettings[$providerSlug]['creds']['installed_carrier_id'] : null;
-                    
+
+                    $settings = Connection::join('installed_carriers', 'installed_carriers.id', 'connection_settings.installed_carrier_id')
+                        ->join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
+                        ->select('carriers.slug', 'connection_settings.id', 'connection_settings.installed_carrier_id',
+                            'connection_settings.value')
+                        ->where('connection_settings.installed_carrier_id', $carrierId)->first();
+                    if ($settings !== null) {
+                        $value = json_decode($settings->value, true);
+                    }
+
+                    if ($providerSlug == 'gtz-ltl'){
+                        $request->carrier_type = $value['api_type'] ?? '';
+                        $request->store_id = $value['store_id'];
+                        if ($value['api_type'] == 'NEWAPI'){
+                            $providerSlug = 'gtz-new';
+                        } elseif ($value['api_type'] == 'CRS'){
+                            $providerSlug = 'cltl';
+                        }
+                    } else if ($providerSlug == 'unishippers-small'){
+                        if ($value['api_type'] == 'new_api'){
+                            $providerSlug = 'unishippers-small-new';
+                        }
+                    }
+
+                    $carrIndexName = Functions::getCarrIndexBySlug($providerSlug);
                     $request = new \Illuminate\Http\Request();
                     $request->installed_carrier_id = $carrierId;
                     $request->store_id = $storeId;
-                    if($rule['rule_type'] == 5 && $carrierId != null){
+                    if($rule['rule_type'] == 5 && $carrierId != null && $carrierName == $carrIndexName){
                         
                         $isRuletrue = $this->hideMethods($rule, $cartItems);
                         if(!$isRuletrue){
                             if(Functions::is3plCarrier($providerSlug)){
-                
-                                if ($providerSlug == 'gtz-ltl'){
-                                    $settings = Connection::join('installed_carriers', 'installed_carriers.id', 'connection_settings.installed_carrier_id')
-                                    ->join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
-                                    ->select('carriers.slug', 'connection_settings.id', 'connection_settings.installed_carrier_id',
-                                        'connection_settings.value')
-                                    ->where('connection_settings.installed_carrier_id', $carrierId)->first();
-                                    if ($settings !== null) {
-                                        $value = json_decode($settings->value, true);
-                                    }
-                                
-                                    $request->carrier_type = $value['api_type'] ?? '';
-                                    $request->store_id = $value['store_id'];
-                                    if ($value['api_type'] == 'NEWAPI'){
-                                        $providerSlug = 'gtz-new';
-                                    } elseif ($value['api_type'] == 'CRS'){
-                                        $providerSlug = 'cltl';
-                                    }
-                                }
 
-                                $carrIndexName = Functions::getCarrIndexBySlug($providerSlug);
                                 $carrierProviders = $carrierProviders->index($request);
                                 $serviceType = $quote['serviceType'] ?? "";
                                 $serviceType = $quote['scac'] ?? $quote['CarrierSCAC'] ?? $serviceType;
                                 $services = json_decode(json_encode($carrierProviders))->original->data ?? [];
                                 $service = array_values(array_filter($services, fn($service) => $service->speed_freight_carrierSCAC == $serviceType))[0] ?? [];
 
-                                if(isset($service->speed_freight_carrierName) && in_array($service->speed_freight_carrierName, $rule['filter_services']) && $carrierName == $carrIndexName){
+                                if(isset($service->speed_freight_carrierName) && in_array($service->speed_freight_carrierName, $rule['filter_services'])){
                                     $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
                                     $isOverrideRates = true;
+                                }
+                            } else {
+                                $serviceDesc = isset($quote['timeInTransit']['serviceDescription']) ? $quote['timeInTransit']['serviceDescription'] : '';
+                                $serviceDesc = isset($quote['serviceDesc']) && !is_array($quote['serviceDesc']) ? str_replace('®', '' , $quote['serviceDesc']) : $serviceDesc;
+
+                                if (in_array($serviceDesc, $rule['filter_services'])){
+                                    $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                    $quote['NegotiatedRates']['Amount'] = $rule['service_rates'];
+                                    $quote['shipping_amount']['amount'] = $rule['service_rates'];
+                                    $isOverrideRates = true;
+                                } else if ($providerSlug == 'unishippers-small') { 
+                                    $serviceTitle = $this->unishippers->getServiceTitleFromServiceType($quote['serviceType']);
+                                    if(in_array(ucwords(str_replace('_', ' ' , $serviceTitle)), $rule['filter_services'])){                                    
+                                        $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                        $quote['NegotiatedRates']['Amount'] = $rule['service_rates'];
+                                        $isOverrideRates = true;
+                                    }
+                                } else {
+                                    $serviceType = 'Usps ' . $quote['serviceType'];
+
+                                    if(in_array($serviceType, $rule['filter_services'])){                                    
+                                        $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                        $isOverrideRates = true;
+                                    }
                                 }
                             }
                         }

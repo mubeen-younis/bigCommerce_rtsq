@@ -5,6 +5,7 @@ namespace App\CustomClasses\UspsSmall;
 use App\Constants\Constant;
 use App\CustomClasses\Functions;
 use App\CustomClasses\CompileQuotes;
+use App\Http\Controllers\ShippingRuleController;
 
 class QuotesResults
 {
@@ -13,8 +14,9 @@ class QuotesResults
         $this->CompileQuotes = new CompileQuotes();
     }
 
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items, $storeId = '')
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items, $storeId = '', $carrierName = '')
     {
+        $shippingRule = new ShippingRuleController();
         $shipments = $this->formateQuoteBeforeCompile($shipments);
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
         $this->quoteSettings = $connectionSettings['usps-small']['quote_settings'] ?? '';
@@ -62,6 +64,8 @@ class QuotesResults
                     }
 
                     // Getting markup values form quote settings
+                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName);
+                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
                     $price = $this->getServiceRate($data);
                     // Adding markup values if available
                     $price = $this->addHandlingMarkupOfHazmat($price);

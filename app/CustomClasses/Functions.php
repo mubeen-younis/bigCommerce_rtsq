@@ -173,9 +173,9 @@ class Functions
 
     public static function getCarrIndexBySlug($carrSlug): ?string
     {
-        $carrierIndexesArray = ['ltl-quotes' => 'wweLTL', 'ltl-quotes-new' => 'WWE LTL New API', 'ups-ltl' => 'ups', 'rl-ltl' => 'rnl', 'xpo-ltl' => 'xpoLogistics',
-            'fedex-ltl' => 'fedex', 'gtz-new' => 'wweLTLN', 'gtz-ltl' => 'globalTranz', 'cltl' => 'cerasis', 'ups-ship-engine' => 'ShipEngine',
-            'small-package' => 'WWE SmPkg', 'small-package-new' => 'WWE Small New API', 'unishippers-small-new' => 'Unishippers Small New API', 'ups-small' => 'UPS Small', 'fedex-small' => 'FedEx Small', 'unishippers-small' => 'unisheppers',
+        $carrierIndexesArray = ['ltl-quotes' => 'wweLTL', 'ups-ltl' => 'ups', 'rl-ltl' => 'rnl', 'xpo-ltl' => 'xpoLogistics',
+            'fedex-ltl' => 'fedex', 'gtz-new' => 'wweLTLN', 'gtz-ltl' => 'globalTranz', 'cltl' => 'cerasis', 'ups-ship-engine' => 'shipEngine',
+            'small-package' => 'wweSmall', 'unishippers-small-new' => 'wweSmallN', 'ups-small' => 'upsSmall', 'fedex-small' => 'fedexSmall', 'unishippers-small' => 'unishippersSmall',
             'freightquote-ltl' => 'freightQuote', 'freightquote-chr-ltl' => 'chr', 'purolator-small' => 'purolator', 'usps-small' => 'usps',
             'tql-ltl' => 'tql', 'yrc-ltl' => 'yrc', 'odfl-ltl' => 'odfl4me', 'dayross-ltl' => 'dayross', 'priority-one-ltl' => 'priority1',
             'estes-ltl' => 'estes', 'echo-ltl' => 'echoLogistics', 'saia-ltl' => 'saia', 'abf-ltl' => 'abf', 'daylight-ltl' => 'daylight',
