@@ -169,6 +169,16 @@ class ShippingRuleController extends Controller
                                         $quote['NegotiatedRates']['Amount'] = $rule['service_rates'];
                                         $isOverrideRates = true;
                                     }
+                                } else if ($providerSlug == 'purolator-small') {
+                                    $serviceDesc = preg_replace('/(?<=[a-zA-Z])(?=\d)|(?<=\d)(?=[a-zA-Z])|(?<=[a-z])(?=[A-Z])/', ' ', $quote['serviceType']);
+                                    $serviceDesc = str_replace('Am', 'AM' , $serviceDesc);
+
+                                    if (in_array($serviceDesc, $rule['filter_services'])){
+                                        $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                        $isOverrideRates = true;
+                                    }
+                                    
+
                                 } else {
                                     $serviceType = 'Usps ' . $quote['serviceType'];
 

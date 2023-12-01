@@ -1895,7 +1895,7 @@ class CompileQuotes
         $this->alwaysResi = $this->residential['alwaysResi']['purolatorSmall'] ?? false;
         $access = $this->getAccessorialCodeSmall();
 
-        $res = $this->purolatorSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items, $this->storeId);
+        $res = $this->purolatorSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName);
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = isset($res['isMultiShipment']) ? $res['isMultiShipment'] : [];
         }
