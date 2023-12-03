@@ -173,8 +173,8 @@ class Functions
 
     public static function getCarrIndexBySlug($carrSlug): ?string
     {
-        $carrierIndexesArray = ['ltl-quotes' => 'wweLTL', 'ups-ltl' => 'ups', 'rl-ltl' => 'rnl', 'xpo-ltl' => 'xpoLogistics',
-            'fedex-ltl' => 'fedex', 'gtz-new' => 'wweLTLN', 'gtz-ltl' => 'globalTranz', 'cltl' => 'cerasis', 'ups-ship-engine' => 'shipEngine',
+        $carrierIndexesArray = ['ltl-quotes' => 'wweLTL', 'ups-ltl' => 'upsLTL', 'rl-ltl' => 'rnl', 'xpo-ltl' => 'xpoLogistics',
+            'fedex-ltl' => 'fedexLTL', 'gtz-new' => 'wweLTLN', 'gtz-ltl' => 'globalTranz', 'cltl' => 'cerasis', 'ups-ship-engine' => 'shipEngine',
             'small-package' => 'wweSmall', 'unishippers-small-new' => 'wweSmallN', 'ups-small' => 'upsSmall', 'fedex-small' => 'fedexSmall', 'unishippers-small' => 'unishippersSmall',
             'freightquote-ltl' => 'freightQuote', 'freightquote-chr-ltl' => 'chr', 'purolator-small' => 'purolator', 'usps-small' => 'usps',
             'tql-ltl' => 'tql', 'yrc-ltl' => 'yrc', 'odfl-ltl' => 'odfl4me', 'dayross-ltl' => 'dayross', 'priority-one-ltl' => 'priority1',

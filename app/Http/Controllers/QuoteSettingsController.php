@@ -89,7 +89,7 @@ class QuoteSettingsController extends Controller
                             }
                         }
                     } else {
-                        $data[] = ['key' => $carrierSlug, 'value' => ucwords(str_replace('-', ' ' , $carrierSlug)) . ' ' .ucwords(str_replace('_', ' ' , $settings['api_type']))];
+                        $data[] = ['key' => $carrierSlug, 'value' => ucwords(str_replace('-', ' ' , $carrierSlug))];
                     }
                 } 
 

@@ -1373,6 +1373,7 @@ class CompileQuotes
                 }
 
                 $access = $this->getAccessorialCode();
+                $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                 $price = $this->calculatePrice($data);
 
                 $date = $data['deliveryDate'] ?? null;
@@ -1993,6 +1994,7 @@ class CompileQuotes
                             $data['totalNetCharge']['Amount'] = $chargeWithPalletFee;
                         }
                         $access = $this->getAccessorialCode() . $resiPickup;
+                        $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         $price = $this->calculatePrice($data);
 
                         /*
@@ -2670,6 +2672,7 @@ class CompileQuotes
                         }
 
                         $access = $this->getAccessorialCode();
+                        $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         $price = $this->calculatePrice($data);
 
                         if (isset($data['serviceType']) && $data['serviceType'] === 'FEDEX_FREIGHT_ECONOMY') {
@@ -2887,6 +2890,7 @@ class CompileQuotes
                     }
 
                     $access = $this->getAccessorialCode();
+                    $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                     $price = $this->calculatePrice($data);
 
                     /*
@@ -3099,6 +3103,7 @@ class CompileQuotes
                         $HAT[] = $data;
                         continue;
                     }
+                    $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                     $price = $this->calculatePrice($data);
 
                     $this->quoteSettings['label_as'] = (!empty($lableAs) ? $lableAs . ' ' : '') . $data['serviceDesc'];
@@ -3511,6 +3516,7 @@ class CompileQuotes
                 $data = $quote['q'];
 
                 $access = $this->getAccessorialCode();
+                $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                 $price = $this->calculatePrice($data, false, false, true);
 
                 /*
@@ -3718,6 +3724,7 @@ class CompileQuotes
                 foreach ($quotesArr as $key => $data) {
                     $srvcType = $data['serviceType'] ?? '';
                     if (isset($srvcType)) {
+                        $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         $price = $this->calculatePrice($data);
 
                         $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : 'Freight';
@@ -3938,6 +3945,7 @@ class CompileQuotes
                     $srvcType = $data['serviceType'] ?? '';
                     if (isset($srvcType)) {
                         $access = $this->getAccessorialCode();
+                        $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         $price = $this->calculatePrice($data);
 
                         $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : 'Freight';
@@ -4324,6 +4332,7 @@ class CompileQuotes
 
                     if (isset($srvcType)) {
                         $access = $this->getAccessorialCode();
+                        $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         $price = $this->calculatePrice($data);
 
                         $this->quoteSettings['label_as'] = $labelAs;
@@ -4526,6 +4535,7 @@ class CompileQuotes
                     $srvcType = $data['serviceType'] ?? '';
                     if (isset($srvcType)) {
                         $access = $this->getAccessorialCode();
+                        $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         $price = $this->calculatePrice($data);
 
                         $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : 'Freight';
@@ -4740,6 +4750,7 @@ class CompileQuotes
                     $srvcType = $data['serviceType'] ?? '';
                     if (isset($srvcType)) {
                         $access = $this->getAccessorialCode();
+                        $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         $price = $this->calculatePrice($data);
                         $isNbdSurcharges = isset($data['surcharges']['notifyDeliveryFee']);
 
@@ -5099,6 +5110,7 @@ class CompileQuotes
 
                 foreach ($quotesArr as $key => $data) {
                     $access = $this->getAccessorialCode();
+                    $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                     $price = $this->calculatePrice($data);
 
                     $this->quoteSettings['label_as'] = $labelAs;

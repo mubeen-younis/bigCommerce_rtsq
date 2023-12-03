@@ -697,7 +697,7 @@ class PalletPackaging
                 }
             } elseif ($carName == 'southeastern') {
                 if (!$this->seflError($q)) {
-                    $quotesWithFee[$carName][$locId]['q']['rateQuote'] = $q['q']['rateQuote'] + $palletFee[$locId];
+                    $quotesWithFee[$carName][$locId]['q']['rateQuote'] = (float) $q['q']['rateQuote'] + $palletFee[$locId];
                 }
             } elseif ($carName == 'tql') {
                 foreach ($q['q'] as $key => $value) {

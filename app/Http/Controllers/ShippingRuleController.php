@@ -98,7 +98,8 @@ class ShippingRuleController extends Controller
 
     public function overrideRates($storeId, $lineItemData, $connectionSettings, $quote = [], $carrierName)
     {
-        $isRuletrue = false;
+        $isRuletrue = $isSamedayApi = false;
+        $carrierType = 0;
         $isOverrideRates = false;
         $shippingRules = ShippingRule::getStoreShippingRules($storeId);
         $carrierProviders = new AdditionalCarrierTabSettingController();
@@ -112,11 +113,12 @@ class ShippingRuleController extends Controller
 
                     $settings = Connection::join('installed_carriers', 'installed_carriers.id', 'connection_settings.installed_carrier_id')
                         ->join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
-                        ->select('carriers.slug', 'connection_settings.id', 'connection_settings.installed_carrier_id',
+                        ->select('carriers.slug', 'carriers.carrier_type', 'connection_settings.id', 'connection_settings.installed_carrier_id',
                             'connection_settings.value')
                         ->where('connection_settings.installed_carrier_id', $carrierId)->first();
                     if ($settings !== null) {
                         $value = json_decode($settings->value, true);
+                        $carrierType = isset($settings['carrier_type']) ? $settings['carrier_type'] : null;
                     }
 
                     if ($providerSlug == 'gtz-ltl'){
@@ -131,6 +133,10 @@ class ShippingRuleController extends Controller
                         if ($value['api_type'] == 'new_api'){
                             $providerSlug = 'unishippers-small-new';
                         }
+                    } else if ($providerSlug == 'dayross-ltl') {
+                        if ($value['api_type'] == 'sameday'){
+                            $isSamedayApi = true;
+                        }
                     }
 
                     $carrIndexName = Functions::getCarrIndexBySlug($providerSlug);
@@ -141,7 +147,7 @@ class ShippingRuleController extends Controller
                         
                         $isRuletrue = $this->hideMethods($rule, $cartItems);
                         if(!$isRuletrue){
-                            if(Functions::is3plCarrier($providerSlug)){
+                            if(Functions::is3plCarrier($providerSlug) && $carrierType == 1){
 
                                 $carrierProviders = $carrierProviders->index($request);
                                 $serviceType = $quote['serviceType'] ?? "";
@@ -153,7 +159,7 @@ class ShippingRuleController extends Controller
                                     $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
                                     $isOverrideRates = true;
                                 }
-                            } else {
+                            } else if($carrierType == 2) {
                                 $serviceDesc = isset($quote['timeInTransit']['serviceDescription']) ? $quote['timeInTransit']['serviceDescription'] : '';
                                 $serviceDesc = isset($quote['serviceDesc']) && !is_array($quote['serviceDesc']) ? str_replace('®', '' , $quote['serviceDesc']) : $serviceDesc;
 
@@ -186,6 +192,26 @@ class ShippingRuleController extends Controller
                                         $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
                                         $isOverrideRates = true;
                                     }
+                                }
+                            } else if ($providerSlug == 'fedex-ltl') {
+                                $serviceType = ucwords(strtolower(str_replace('_', ' ' , $quote['serviceType'])));
+                                if(in_array($serviceType, $rule['filter_services'])){                                    
+                                    $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                    $isOverrideRates = true;
+                                }
+                            } else if ($isSamedayApi) {
+
+                            } else if ($providerSlug == 'rl-ltl') {
+                                $serviceDesc = isset($quote['serviceDesc']) ? ucwords(strtolower($quote['serviceDesc'])) : '';
+                                if(in_array($serviceDesc, $rule['filter_services'])){                                    
+                                    $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                    $isOverrideRates = true;
+                                }
+                            } else if($carrierType == 1) {
+                                $serviceType = ucwords(str_replace('-', ' ' , $providerSlug));
+                                if(in_array($serviceType, $rule['filter_services'])){                                    
+                                    $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                    $isOverrideRates = true;
                                 }
                             }
                         }
