@@ -543,6 +543,37 @@ class Functions
         $count = 0;
         $originFeeMarkup = 0;
 
+        if (!empty($allOrigins)) {
+            $variantKeys = collect($allOrigins)->filter(function ($origin) use ($shipmentKey) {
+            return $origin['locationId'] == $shipmentKey;})->keys()->all() ?? [];
+        }
+
+        // Calculate Products markup fee
+        if (!empty($items) && !empty($variantKeys)) {
+            foreach ($items as $item) {
+                $prodQuantity = ($item['piecesOfLineItem'] ?? 0);
+                foreach ($variantKeys as $variantId) {
+                    if ($variantId == $item['variant_id']) {
+                        if (isset($item['product_markup'])) {
+                            $productFeeMarkup = (float)$item['product_markup'] ?? 0;
+                            $symbolicHandlingFee = strpos($item['product_markup'], '%') ? '%' : '';
+                        }
+                        $prodcost = $prodQuantity * ($item['lineItemPrice'] ?? 0);
+
+                        if (strlen($productFeeMarkup) > 0) {
+                            if ($symbolicHandlingFee === '%') {
+                                $percentVal = $productFeeMarkup / 100 * $prodcost;
+                                $totalFeeMarkup += $percentVal;
+                            } else {
+                                $totalFeeMarkup += $productFeeMarkup * $prodQuantity;
+                            }
+                        }
+                    }
+                }
+            }
+            $cost = $cost + $totalFeeMarkup;
+        }
+
         // Calculate Origins markup fee
         if (!empty($allOrigins)) {
             foreach ($allOrigins as $key => $origin) {
@@ -570,30 +601,7 @@ class Functions
             }
             $symbolicHandlingFee = '';
         }
-        // Calculate Products markup fee
-        if (!empty($items) && !empty($variantKeys)) {
-            foreach ($items as $item) {
-                $prodQuantity = ($item['piecesOfLineItem'] ?? 0);
-                foreach ($variantKeys as $variantId) {
-                    if ($variantId == $item['variant_id']) {
-                        if (isset($item['product_markup'])) {
-                            $productFeeMarkup = (float)$item['product_markup'] ?? 0;
-                            $symbolicHandlingFee = strpos($item['product_markup'], '%') ? '%' : '';
-                        }
-                        $prodcost = $prodQuantity * ($item['lineItemPrice'] ?? 0);
-
-                        if (strlen($productFeeMarkup) > 0) {
-                            if ($symbolicHandlingFee === '%') {
-                                $percentVal = $productFeeMarkup / 100 * $prodcost;
-                                $totalFeeMarkup += $percentVal;
-                            } else {
-                                $totalFeeMarkup += $productFeeMarkup * $prodQuantity;
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        
         return $totalFeeMarkup;
     }
 

@@ -73,13 +73,14 @@ class QuotesResults
                     if ($this->onylQuoteGroundServices($isHazmat, $srvcType)) {
                         continue;
                     }
+                    // Adding Product and Origin Markup in services if added
+                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $this->originKey, $this->items, $this->allOrigins);
+                    $price = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
 
                     // Getting markup values form quote settings
-                    $price = $this->getServiceRate($data);
+                    $price = $this->getServiceRate($price, $srvcType);
                     // Adding markup values if available
                     $price = $this->addHandlingMarkupOfHazmat($price);
-                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
-                    $price = $price + $productOriginMarkupFee;
 
                     // Checking hazmat and adding hazmat amounts in services
                     if ($isHazmat) {
@@ -217,13 +218,14 @@ class QuotesResults
                     if ($this->onylQuoteGroundServices($isHazmat, $srvcType)) {
                         continue;
                     }
+                    // Adding Product and Origin Markup in services if added
+                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $this->originKey, $this->items, $this->allOrigins);
+                    $price = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
 
                     // Getting markup values form quote settings
-                    $price = $this->getServiceRate($data);
+                    $price = $this->getServiceRate($price, $srvcType);
                     // Adding markup values if available
                     $price = $this->addHandlingMarkupOfHazmat($price);
-                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
-                    $price = $price + $productOriginMarkupFee;
 
                     // Checking hazmat and adding hazmat amounts in services
                     if ($isHazmat) {
@@ -408,10 +410,10 @@ class QuotesResults
         return $islimited;
     }
 
-    public function getServiceRate($data)
+    public function getServiceRate($amount, $srvcType)
     {
-        $amount = $data['totalNetCharge']['Amount'];
-        $markupIndex = $this->getServiceIndexFromServiceType($data['serviceType']) . '_markup';
+        
+        $markupIndex = $this->getServiceIndexFromServiceType($srvcType) . '_markup';
         $markupValue = $this->quoteSettings['carrier_services'][$markupIndex] ?? '';
 
         if (empty($markupValue) || !is_numeric(str_replace('%', '', $markupValue))) {

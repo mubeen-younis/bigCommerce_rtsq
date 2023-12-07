@@ -3349,8 +3349,11 @@ class CompileQuotes
                     }
 
                     $access = $this->getAccessorialCodeSmall();
+                    // Adding Product and Origin Markup in services if added
+                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $this->originKey, $this->items, $this->allOrigins);
+                    $price = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
                     // Adding Markup in services if enabled
-                    $price = $this->wweSmallQuoteRes->getServiceRate($data['totalNetCharge']['Amount'], $data['serviceType'], $this->quoteSettings);
+                    $price = $this->wweSmallQuoteRes->getServiceRate($price, $data['serviceType'], $this->quoteSettings);
                     $quoteSettings = $this->quoteSettings;
 
                     $price = $this->wweSmallQuoteRes->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup'] ?? 0);
@@ -3368,8 +3371,6 @@ class CompileQuotes
                     $days = $data['totalTransitTimeInDays'] ?? null;
                     $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
                     $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $dateAndDays, $data['serviceType'], $this->quoteSettings, $this->isResi, $showRadNotation);
-                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $this->originKey, $this->items, $this->allOrigins);
-                    $price = $price + $productOriginMarkupFee;
                     $price = (float) str_replace(',', '', $price);
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12wwe' . $data['serviceType'] . $access;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
@@ -5902,8 +5903,8 @@ class CompileQuotes
         $basePrice = (float) $basePrice;
         $basePrice = $basePrice - $lgCost - $LADCost - $IDCost - $TMDCost - $APDCost - $NBDCost;
         $productOriginMarkupFee = Functions::calProductOriginMarkupFee($basePrice, $this->originKey ?? $originKey, $this->items ?? $items, $this->allOrigins ?? $allOrigins);
-        $basePrice = $this->calculateHandlingFee($basePrice, $quoteSettings);
         $basePrice = $basePrice + $productOriginMarkupFee;
+        $basePrice = $this->calculateHandlingFee($basePrice, $quoteSettings);
         return $basePrice;
     }
 
@@ -5913,8 +5914,8 @@ class CompileQuotes
         $basePrice = (float) $data['rateEstimate']['netFreightCharge'];
         $basePrice = $basePrice - $lgCost;
         $productOriginMarkupFee = Functions::calProductOriginMarkupFee($basePrice, $this->originKey, $this->items, $this->allOrigins);
-        $basePrice = $this->calculateHandlingFee($basePrice);
         $basePrice = $basePrice + $productOriginMarkupFee;
+        $basePrice = $this->calculateHandlingFee($basePrice);
         return $basePrice;
     }
 
@@ -5924,8 +5925,8 @@ class CompileQuotes
         $basePrice = (float) $data['ratpricing']['rattotalPrice'];
         $basePrice = $basePrice - $lgCost;
         $productOriginMarkupFee = Functions::calProductOriginMarkupFee($basePrice, $this->originKey, $this->items, $this->allOrigins);
-        $basePrice = $this->calculateHandlingFee($basePrice);
         $basePrice = $basePrice + $productOriginMarkupFee;
+        $basePrice = $this->calculateHandlingFee($basePrice);
         return $basePrice;
     }
 
