@@ -347,7 +347,7 @@ class CompileQuotes
                 ];
             }
         }
-        Log::info('quotes array after instore ' . json_encode($quotesArray));
+        
         return $quotesArray;
     }
 
@@ -5434,7 +5434,6 @@ class CompileQuotes
         $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? $quote['q']['InstorPickupLocalDelivery'] ?? $quote['fedexServices']['InstorPickupLocalDelivery'] ?? [];
         $ownArrangementQoutes = isset($quote['allowOwnArrangement']) && $quote['allowOwnArrangement'] ? $this->arrangeOwnFreight() : [];
         if (!$this->isMultiShipment && (!blank($inStoreLdData) || !blank($ownArrangementQoutes))) {
-            Log::info('getInsPicAndLocDelQuotes ' . json_encode($inStoreLdData));
             return $this->inStoreLocalDeliveryQuotes($ownArrangementQoutes, $inStoreLdData, $allOrigins);
         }
 

@@ -105,8 +105,6 @@ class GenerateRequestData
         $this->connectionSettings = $shippingRule->applyShippingRule($this->storeData['store']['id'], $lineItems, $this->connectionSettings);
                 
         $this->storeDateTime = $this->getBCStoreDateTime();
-        Log::info('Store Time' . $this->storeDateTime);
-
 
         foreach ($this->connectionSettings as $key => $con1) {
             switch ($key) {

@@ -88,11 +88,9 @@ class LogsRemovelController extends Controller
     public static function removeLogs()
     {
         // request_temp table
-        $reqTempRecords = RequestTempData::whereDate('created_at', '<=', now()->subDays(15))->delete();
-        Log::info('Number of records removed from request_temp table are: ' . $reqTempRecords);
+        $reqTempRecords = RequestTempData::whereDate('created_at', '<=', now()->subDays(5))->delete();
 
         // app_logs table
-        $appLogsRecords = AppLog::whereDate('created_at', '<=', now()->subDays(10))->delete();
-        Log::info('Number of records removed from app_logs table are: ' . $appLogsRecords);
+        $appLogsRecords = AppLog::whereDate('created_at', '<=', now()->subDays(5))->delete();
     }
 }
