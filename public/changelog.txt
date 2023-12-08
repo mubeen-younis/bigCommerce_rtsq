@@ -1,3 +1,7 @@
+= 2.1.2 2023-12-08 =
+
+* Update - Server utilization and storage  issue in BC. (Instruction from shafique sb + Amir + azhar)[#396](https://bitbucket.org/eniture/big-commerce/pull-requests/396)
+
 = 2.1.1 2023-11-20 =
 
 * Update - introduce Shipping Restrictions by State/Zipcode in BC. (Ticket:1955948122)[#395](https://bitbucket.org/eniture/big-commerce/pull-requests/395)
