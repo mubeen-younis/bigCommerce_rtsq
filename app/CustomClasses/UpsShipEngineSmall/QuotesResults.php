@@ -223,7 +223,7 @@ class QuotesResults
                         }
                     }
                     // Adding Product and Origin Markup in services if added
-                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['shipping_amount']['amount'], $this->originKey, $this->items, $this->allOrigins);
+                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['shipping_amount']['amount'], $origin, $items, $allOrigins);
                     $price = $data['shipping_amount']['amount'] + $productOriginMarkupFee;
 
 

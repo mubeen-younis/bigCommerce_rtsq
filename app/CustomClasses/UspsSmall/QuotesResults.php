@@ -61,7 +61,7 @@ class QuotesResults
                         continue;
                     }
                     // Adding Product and Origin Markup in services if added
-                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $this->originKey, $this->items, $this->allOrigins);
+                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
                     $price = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
 
                     // Getting markup values form quote settings
