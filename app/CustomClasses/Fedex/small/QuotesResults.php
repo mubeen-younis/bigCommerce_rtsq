@@ -255,7 +255,7 @@ class QuotesResults
                         $data['totalNetCharge']['Amount'] = $data['NegotiatedRates']['Amount'] ?? $data['totalNetCharge']['Amount'];
                     }
                     // Adding Product and Origin Markup in services if added
-                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $this->originKey, $this->items, $this->allOrigins);
+                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
                     $price = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
                     $price = $this->getServiceRate($price, $serviceName, $this->quoteSettings);
                     $quoteSettings = $this->quoteSettings;
