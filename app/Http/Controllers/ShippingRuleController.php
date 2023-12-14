@@ -8,9 +8,19 @@ use App\Models\ShippingRule;
 use App\Models\CountryState;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use App\CurlRequest;
 
 class ShippingRuleController extends Controller
 {
+    public $curlRequest;
+    public $mainController;
+
+    public function __construct()
+    {
+        $this->curlRequest = new CurlRequest();
+        $this->mainController = new MainController();
+    }
+
     /**
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
@@ -120,5 +130,73 @@ class ShippingRuleController extends Controller
     {
         $shippingRuleDetail = CountryState::getCountryStatesProvinces($request->countryCode);
         return Helpers::sendJsonResponse(false, null, $shippingRuleDetail);
+    }
+
+    public function getStoreCategories(Request $request)
+    {
+        $categoriesArray = [];
+        $storeCategories = [];
+        $storeId = $request['store_id'] ?? '';
+        $storeHash = $request['store_hash'] ?? '';
+        $storeToken = $this->mainController->getCustAccessTok($storeId);
+        $data['store_token'] = $storeToken;
+        $data['store_id'] = $storeId;
+        $data['store_hash'] = $storeHash;
+        if (isset($storeToken['status']) && $storeToken['status'] == false) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'Token Not Found',
+            ], 200);
+        }
+       
+        $storeUrl = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/categories';
+        $headers[] = 'X-Auth-Token: ' . $storeToken;
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
+        if(isset($response['status']) && $response['status'] == true){
+            $response = json_decode($response['response'], true);
+            $categoriesArray = isset($response['data']) && !empty($response['data']) ? $response['data'] : [];
+        }
+
+        foreach($categoriesArray as $category){
+            $storeCategories[] = ['id' => isset($category['id']) ? $category['id'] : '', 'name' => isset($category['name']) ? $category['name'] : ''];
+        }
+        
+        return Helpers::sendJsonResponse(false, null, $storeCategories);
+    }
+
+    public function getStoreBrands(Request $request)
+    {
+        $brandsArray = [];
+        $storeBrands = [];
+        $storeId = $request['store_id'] ?? '';
+        $storeHash = $request['store_hash'] ?? '';
+        $storeToken = $this->mainController->getCustAccessTok($storeId);
+        $data['store_token'] = $storeToken;
+        $data['store_id'] = $storeId;
+        $data['store_hash'] = $storeHash;
+        if (isset($storeToken['status']) && $storeToken['status'] == false) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'Token Not Found',
+            ], 200);
+        }
+       
+        $storeUrl = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/brands';
+        $headers[] = 'X-Auth-Token: ' . $storeToken;
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
+        if(isset($response['status']) && $response['status'] == true){
+            $response = json_decode($response['response'], true);
+            $brandsArray = isset($response['data']) && !empty($response['data']) ? $response['data'] : [];
+        }
+
+        foreach($brandsArray as $brand){
+            $storeBrands[] = ['id' => isset($brand['id']) ? $brand['id'] : '', 'name' => isset($brand['name']) ? $brand['name'] : ''];
+        }
+        
+        return Helpers::sendJsonResponse(false, null, $storeBrands);
     }
 }
