@@ -200,6 +200,7 @@ class QuotesResults
                     $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
                     $data['totalNetCharge']['Amount'] = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
                     if (isset($this->quoteSettings['rate_source']) && $this->quoteSettings['rate_source'] === 1) {
+                        $productOriginMarkupFee = Functions::calProductOriginMarkupFee((float)$data['NegotiatedRates']['Amount'], $origin, $items, $allOrigins);
                         $data['NegotiatedRates']['Amount'] = (float) $data['NegotiatedRates']['Amount'] + $productOriginMarkupFee;
                     }
 
