@@ -146,9 +146,10 @@ class ShippingRule extends Model
             switch ($ruleType) {
                 case 1:
                     $shippingRule->filter_name = $shippingRuleData['filter_country'] ?? '';
-                    $shippingRule->filter_settings = json_encode($shippingRuleData['filter_products']) ?? '';
                     $settings = [
-                        "filter_products" => $shippingRuleData['filter_products'] ?? '', 
+                        "filter_categories" => isset($shippingRuleData['filter_categories']) ? $shippingRuleData['filter_categories'] : [],
+                        "filter_brands" => isset($shippingRuleData['filter_brands']) ? $shippingRuleData['filter_brands'] : [],
+                        "filter_products" => isset($shippingRuleData['filter_products']) ? $shippingRuleData['filter_products'] : [],
 			            "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
@@ -171,7 +172,10 @@ class ShippingRule extends Model
                 case 3:
                     $shippingRule->filter_name = $shippingRuleData['filter_country'] ?? '';
                     $settings = [
-                        "filter_products" => $shippingRuleData['filter_products'] ?? '', 
+                        "filter_categories" => isset($shippingRuleData['filter_categories']) ? $shippingRuleData['filter_categories'] : [],
+                        "filter_brands" => isset($shippingRuleData['filter_brands']) ? $shippingRuleData['filter_brands'] : [],
+                        "filter_products" => isset($shippingRuleData['filter_products']) ? $shippingRuleData['filter_products'] : [],
+                        "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
 			            "filter_state_province" => $shippingRuleData['filter_state_province'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
@@ -179,9 +183,25 @@ class ShippingRule extends Model
                 case 4:
                     $shippingRule->filter_name = $shippingRuleData['filter_country'] ?? '';
                     $settings = [
-                        "filter_products" => $shippingRuleData['filter_products'] ?? '', 
+                        "filter_categories" => isset($shippingRuleData['filter_categories']) ? $shippingRuleData['filter_categories'] : [],
+                        "filter_brands" => isset($shippingRuleData['filter_brands']) ? $shippingRuleData['filter_brands'] : [],
+                        "filter_products" => isset($shippingRuleData['filter_products']) ? $shippingRuleData['filter_products'] : [],
+                        "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
 			            "filter_state_province" => $shippingRuleData['filter_state_province'] ?? '',
                         "filter_postal_code" => $shippingRuleData['filter_postal_code'] ?? '',
+                    ];
+                    $shippingRule->filter_settings = json_encode($settings) ?? '';
+                    break;
+                case 5:
+                    $shippingRule->filter_name = $shippingRuleData['filter_country'] ?? '';
+                    $settings = [
+                        "filter_categories" => isset($shippingRuleData['filter_categories']) ? $shippingRuleData['filter_categories'] : [],
+                        "filter_brands" => isset($shippingRuleData['filter_brands']) ? $shippingRuleData['filter_brands'] : [],
+                        "filter_products" => isset($shippingRuleData['filter_products']) ? $shippingRuleData['filter_products'] : [],
+                        "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
+			            "filter_state_province" => $shippingRuleData['filter_state_province'] ?? '',
+                        "filter_postal_code" => $shippingRuleData['filter_postal_code'] ?? '',
+                        "warehouses" => $shippingRuleData['warehouses'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;        
@@ -306,6 +326,9 @@ class ShippingRule extends Model
             case 4:
                 $shippingRule = self::updateRestrictfilterPostalCodeParams($shippingRule);
                 break;
+            case 5:
+                $shippingRule = self::updateRestrictOriginLocationsParams($shippingRule);
+                break;
     
             default:
                 break;
@@ -336,7 +359,10 @@ class ShippingRule extends Model
     {
         $shippingRule['filter_country'] = $shippingRule['filter_name'];
         $settings = json_decode($shippingRule['filter_settings'], true);
-        $shippingRule['filter_products'] = $settings['filter_products'];
+        $shippingRule['categories'] = isset($settings['filter_categories']) ? $settings['filter_categories'] : [];
+        $shippingRule['brands'] = isset($settings['filter_brands']) ? $settings['filter_brands'] : [];
+        $shippingRule['products'] = isset($settings['filter_products']) ? $settings['filter_products'] : [];
+        $shippingRule['apply_rule_to'] = $settings['apply_rule_to'];
         $shippingRule['filter_state_province'] = $settings['filter_state_province'];
 
         return $shippingRule;
@@ -346,7 +372,9 @@ class ShippingRule extends Model
     {
         $shippingRule['filter_country'] = $shippingRule['filter_name'];
         $settings = json_decode($shippingRule['filter_settings'], true);
-        $shippingRule['filter_products'] = $settings['filter_products'];
+        $shippingRule['categories'] = isset($settings['filter_categories']) ? $settings['filter_categories'] : [];
+        $shippingRule['brands'] = isset($settings['filter_brands']) ? $settings['filter_brands'] : [];
+        $shippingRule['products'] = isset($settings['filter_products']) ? $settings['filter_products'] : [];
         $shippingRule['apply_rule_to'] = $settings['apply_rule_to'];
 
         return $shippingRule;
@@ -356,9 +384,27 @@ class ShippingRule extends Model
     {
         $shippingRule['filter_country'] = $shippingRule['filter_name'];
         $settings = json_decode($shippingRule['filter_settings'], true);
-        $shippingRule['filter_products'] = $settings['filter_products'];
+        $shippingRule['categories'] = isset($settings['filter_categories']) ? $settings['filter_categories'] : [];
+        $shippingRule['brands'] = isset($settings['filter_brands']) ? $settings['filter_brands'] : [];
+        $shippingRule['products'] = isset($settings['filter_products']) ? $settings['filter_products'] : [];
+        $shippingRule['apply_rule_to'] = $settings['apply_rule_to'];
         $shippingRule['filter_state_province'] = $settings['filter_state_province'];
         $shippingRule['filter_postal_code'] = $settings['filter_postal_code'];
+
+        return $shippingRule;
+    }
+
+    public static function updateRestrictOriginLocationsParams($shippingRule)
+    {
+        $shippingRule['filter_country'] = $shippingRule['filter_name'];
+        $settings = json_decode($shippingRule['filter_settings'], true);
+        $shippingRule['categories'] = isset($settings['filter_categories']) ? $settings['filter_categories'] : [];
+        $shippingRule['brands'] = isset($settings['filter_brands']) ? $settings['filter_brands'] : [];
+        $shippingRule['products'] = isset($settings['filter_products']) ? $settings['filter_products'] : [];
+        $shippingRule['apply_rule_to'] = $settings['apply_rule_to'];
+        $shippingRule['filter_state_province'] = $settings['filter_state_province'];
+        $shippingRule['filter_postal_code'] = $settings['filter_postal_code'];
+        $shippingRule['warehouses'] = $settings['warehouses'];
 
         return $shippingRule;
     }
