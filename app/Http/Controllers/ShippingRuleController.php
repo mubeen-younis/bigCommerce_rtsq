@@ -160,7 +160,7 @@ class ShippingRuleController extends Controller
         }
 
         foreach($categoriesArray as $category){
-            $storeCategories[] = ['id' => isset($category['id']) ? $category['id'] : '', 'name' => isset($category['name']) ? $category['name'] : ''];
+            $storeCategories[] = ['key' => isset($category['id']) ? $category['id'] : '', 'value' => isset($category['name']) ? $category['name'] : ''];
         }
         
         return Helpers::sendJsonResponse(false, null, $storeCategories);
@@ -194,7 +194,7 @@ class ShippingRuleController extends Controller
         }
 
         foreach($brandsArray as $brand){
-            $storeBrands[] = ['id' => isset($brand['id']) ? $brand['id'] : '', 'name' => isset($brand['name']) ? $brand['name'] : ''];
+            $storeBrands[] = ['key' => isset($brand['id']) ? $brand['id'] : '', 'value' => isset($brand['name']) ? $brand['name'] : ''];
         }
         
         return Helpers::sendJsonResponse(false, null, $storeBrands);
