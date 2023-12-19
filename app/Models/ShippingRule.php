@@ -146,11 +146,7 @@ class ShippingRule extends Model
             switch ($ruleType) {
                 case 1:
                     $shippingRule->filter_name = $shippingRuleData['filter_country'] ?? '';
-                    $settings = [
-                        "filter_products" => $shippingRuleData['filter_products'] ?? '', 
-			            "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
-                    ];
-                    $shippingRule->filter_settings = json_encode($settings) ?? '';
+                    $shippingRule->filter_settings = json_encode($shippingRuleData['filter_products']) ?? '';
                     break;
                 case 2:
                     $shippingRule->filter_name = $shippingRuleData['filter_provider'] ?? '';
@@ -294,7 +290,8 @@ class ShippingRule extends Model
         $ruleType = isset($shippingRule['rule_type']) && !empty($shippingRule['rule_type']) ? $shippingRule['rule_type'] : null;
         switch ($ruleType) {
             case 1:
-                $shippingRule = self::updateRestrictCountryParams($shippingRule);
+                $shippingRule['filter_country'] = $shippingRule['filter_name'];
+                $shippingRule['filter_products'] = json_decode($shippingRule['filter_settings']);
                 break;
             case 2:
                 $shippingRule = self::updateHideMethodsParams($shippingRule);
@@ -337,16 +334,6 @@ class ShippingRule extends Model
         $settings = json_decode($shippingRule['filter_settings'], true);
         $shippingRule['filter_products'] = $settings['filter_products'];
         $shippingRule['filter_state_province'] = $settings['filter_state_province'];
-
-        return $shippingRule;
-    }
-
-    public static function updateRestrictCountryParams($shippingRule)
-    {
-        $shippingRule['filter_country'] = $shippingRule['filter_name'];
-        $settings = json_decode($shippingRule['filter_settings'], true);
-        $shippingRule['filter_products'] = $settings['filter_products'];
-        $shippingRule['apply_rule_to'] = $settings['apply_rule_to'];
 
         return $shippingRule;
     }

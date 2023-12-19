@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Log;
 
 class ShippingRuleController extends Controller
 {
-
     /**
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
