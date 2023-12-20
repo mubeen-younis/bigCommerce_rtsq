@@ -226,7 +226,6 @@ class Shipping
             unset($requestArr['requestArr']['carriers']['rnl']['freeShipment']);
             $freeRNL = true;
         }
-        Log::info('after addBinResponseToQuotes ' . json_encode($quotes));
 
         $quotesFromWs = $quotes ?? [];
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $package['items'], $SuppressParcelRates, $store_id);

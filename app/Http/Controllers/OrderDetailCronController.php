@@ -40,15 +40,12 @@ class OrderDetailCronController extends Controller
      */
     public function createOrderDetailData()
     {
-        Log::info('Cron Order webhook initalized - ' . date('Y-m-d'));
         set_time_limit(-1);
         $stores = Store::getActiveStores();
-        Log::info('Order webhook Active stores ' . json_encode($stores));
         foreach ($stores as $store) {
             try {
                 $this->setStoreDetails($store);
                 $this->processStoreCron();
-                Log::info('Cron Order webhook executed - ' . date('Y-m-d'));
             } catch (\Exception $exception) {
                 Log::info('Order Webhook cron exception date ' . date('Y-m-d') . json_encode([
                         'storedet' => $store, 'line' => $exception->getLine(),
