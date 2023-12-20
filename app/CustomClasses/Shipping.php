@@ -157,7 +157,7 @@ class Shipping
                 ];
             }
             if ($this->isInsurance === 'Y') {
-                if ($this->isSmall($key) && ($key == 'shipEngine' || $key == 'upsSmall')) {
+                if ($this->isSmall($key)) {
                     $carriersArray['carriers'][$key]['api']['includeDeclaredValue'] = 1;
                 } else {
                     if ($key == 'wweLTL') {
