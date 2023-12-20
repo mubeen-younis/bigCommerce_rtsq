@@ -95,6 +95,8 @@ class ProductSetting extends Model
             $saveProduct->height = $product['height'];
             $saveProduct->price = $product['price'];
             $saveProduct->store_id = $storeId;
+            $saveProduct->brand_id = $product['brand_id'] ?? '';
+            $saveProduct->categories_id = $product['categories'] ?? [];
             $saveProduct->save();
             DB::commit();
 
@@ -166,6 +168,8 @@ class ProductSetting extends Model
             $saveProduct->height = $product['height'];
             $saveProduct->price = $product['price'];
             $saveProduct->store_id = $storeId;
+            $saveProduct->brand_id = $product['brand_id'] ?? '';
+            $saveProduct->categories_id = $product['categories'] ?? [];
             $saveProduct->save();
 
         } catch (\Exception $exception) {
