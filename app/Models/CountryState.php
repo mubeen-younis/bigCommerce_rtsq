@@ -24,7 +24,7 @@ class CountryState extends Model
     public static function getCountryStatesProvinces($countryCode): array
     {
         $rules = optional(self::where('country_code', $countryCode)->first())->toArray() ?? [];
-        return json_decode($rules['country_states']);
+        return isset($rules['country_states']) ? json_decode($rules['country_states']) : [];
     }
 
     public static function getStateCode($states, $statesName)
