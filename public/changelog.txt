@@ -1,3 +1,7 @@
+= 2.1.3 2023-12-19 =
+
+* Update - Checkout Quotes title limit exceed then 100 characters. (Ticket:2187984696)[#397](https://bitbucket.org/eniture/big-commerce/pull-requests/397)
+
 = 2.1.2 2023-12-08 =
 
 * Update - Server utilization and storage  issue in BC. (Instruction from shafique sb + Amir + azhar)[#396](https://bitbucket.org/eniture/big-commerce/pull-requests/396)
