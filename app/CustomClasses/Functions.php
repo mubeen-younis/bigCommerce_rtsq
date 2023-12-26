@@ -31,8 +31,8 @@ class Functions
     public static $dbscSlug = 'dbsc';
     public static $insideDelLable = ' w/ inside delivery';
     public static $insideDelResiLable = ' w/ residential & inside delivery';
-    public static $insideDelLiftGateLable = ' w/ liftgate & inside delivery';
-    public static $insideDelLiftGateResiLable = ' w/ residential, liftgate & inside delivery';
+    public static $insideDelLiftGateLable = ' w/ LG & inside delivery';
+    public static $insideDelLiftGateResiLable = ' w/ residential, LG & inside delivery';
     public static $freeShipping = 'Free Shipping';
     public static $resiPickupTitle = '+pu';
     public static $lgPickupTitle = '+lfgpu';
@@ -40,10 +40,10 @@ class Functions
     public static $imageCompleteUrl = 'https://images.eniture.com/d549b90ece00d180c5b69a51b6354842/20221207/cd59328e85619fe6b0dc52aa4db034c7/1670418636-7316-1129122.png';
     public static $imageSeparatedUrl = 'https://us-east.api.3dbinpacking.com/images/70785010926d0cc360921e4541811a53/20181106/4c114cebfa2d61a0c8153b3170ab6663/1541503329-2391-8709331.png';
     public static $imageSbsUrl = 'https://us-east.api.3dbinpacking.com/images/70785010926d0cc360921e4541811a53/20181106/4c114cebfa2d61a0c8153b3170ab6663/1541503329-24-8612722.png';
-    public static $limitedAccesDelLabel = ' w/ limited access delivery';
-    public static $resiLimitedAccesDelLabel = ' w/ residential & limited access delivery';
-    public static $resiLimitedAccessLGDelLable = ' w/ residential, liftgate & limited access delivery';
-    public static $limitedAccessLGDelLable = ' w/ liftgate & limited access delivery';
+    public static $limitedAccesDelLabel = ' w/ LA delivery';
+    public static $resiLimitedAccesDelLabel = ' w/ residential & LA delivery';
+    public static $resiLimitedAccessLGDelLable = ' w/ residential, LG & LA delivery';
+    public static $limitedAccessLGDelLable = ' w/ LG & LA delivery';
     public static $twoManDeliveryLabel = ' w/ two man delivery';
     public static $appointmentDeliveryLabel = ' w/ appointment delivery';
     public static $twoManAppDelLabel = ' w/ two man & appointment delivery';
@@ -60,11 +60,11 @@ class Functions
     public static $repplaceWith3dUrl = 'https://images.eniture.com';
     public static $notifyBeforeDelLable = ' w/ notify before delivery';
     public static $notifyBeforeDelResiLable = ' w/ residential & notify before delivery';
-    public static $notifyBoforeDelLiftGateLable = ' w/ liftgate & notify before delivery';
-    public static $notifyBeforeDelLiftGateResiLable = ' w/ residential, liftgate & notify before delivery';
+    public static $notifyBoforeDelLiftGateLable = ' w/ LG & notify before delivery';
+    public static $notifyBeforeDelLiftGateResiLable = ' w/ residential, LG & notify before delivery';
     public static $notifyBeforeInsideDelResiLable = ' w/ residential, inside & notify before delivery';
     public static $notifyBeforeInsideDelLable = ' w/ inside & notify before delivery';
-    public static $notifyBeforeLgInsideDelLable = ' w/ inside, liftgate & notify before delivery';
+    public static $notifyBeforeLgInsideDelLable = ' w/ inside, LG & notify before delivery';
     public static $notifyDelLgAccess = '+LG+NBD';
     public static $insideNotifyDelAccess = '+ID+NBD';
     public static $laccessNotifyDelAccess = '+LAD+NBD';
@@ -755,9 +755,9 @@ class Functions
         $autoResiAdrrLfg = isset($quoteSettings['autoDetectedResidentialAddressesLfg']) ? $quoteSettings['autoDetectedResidentialAddressesLfg'] : false;
 
         $offerFeaturesAsOption = [
-            'offerLiftGateDelivery' => [$lgOption, 'liftgate,'],
+            'offerLiftGateDelivery' => [$lgOption, 'LG,'],
             'offer_inside_delivery' => [$insideDel, 'inside,'],
-            'offer_limited_access_delivery' => [$laccess, 'limited access,'],
+            'offer_limited_access_delivery' => [$laccess, 'LA,'],
             'offer_two_man_delivery' => [$twoManDel, 'two man,'],
             'offer_appointment_delivery' => [$appDel, 'appointment,'],
             'offer_notify_as_option' => [$notifyDelivery, 'notify before,'],

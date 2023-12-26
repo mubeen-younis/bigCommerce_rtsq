@@ -105,8 +105,6 @@ class GenerateRequestData
         $this->connectionSettings = $shippingRule->applyShippingRule($this->storeData['store']['id'], $lineItems, $this->connectionSettings);
                 
         $this->storeDateTime = $this->getBCStoreDateTime();
-        Log::info('Store Time' . $this->storeDateTime);
-
 
         foreach ($this->connectionSettings as $key => $con1) {
             switch ($key) {
@@ -1990,7 +1988,6 @@ class GenerateRequestData
             'ApiVersion' => '2.0',
             'residentials_delivery' => ($alwaysResi ? 'Y' : $residential == 'Y') ? 'yes' : 'no',
             'prefferedCurrency' => 'USD',
-            'includeDeclaredValue' => "1",
             'packagesType' => !$sbsEnabled ? $ratingMethod : '',
         ];
 
@@ -2271,7 +2268,6 @@ class GenerateRequestData
             'key' => $connSettings['creds']['api_access_key'],
             'AccountNumber' => $connSettings['creds']['account_number'],
             'prefferedCurrency' => 'USD',
-            'includeDeclaredValue' => '1', //insurance active with sbs active 0 or 1
             'pkgType' => '00',
             'saturdayDelivery' => 'on',
             'recipientPhoneNumber' => $phoneNumber,
@@ -2330,7 +2326,6 @@ class GenerateRequestData
                 'ApiVersion' => '2.0',
                 'residentials_delivery' => ($alwaysResi ? 'Y' : $residential == 'Y') ? 'yes' : 'no',
                 'prefferedCurrency' => 'USD',
-                'includeDeclaredValue' => "1",
                 'requestFromUnishippersSmall' => 1,
                 'isUnishipperNewApi' => true,
                 'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
@@ -2361,7 +2356,6 @@ class GenerateRequestData
                 'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
     
                 'prefferedCurrency' => 'USD',
-                'includeDeclaredValue' => '1',
                 'service' => 'ALL',
                 'accessorial' => $accessorial,
                 'residentials_delivery' => isset($accessorial) && !blank($accessorial) ? 'yes' : 'no',
@@ -2780,7 +2774,6 @@ class GenerateRequestData
 
         $apiArray = [
             'rateTier' => $connSettings['quote_settings']['rate_tier'] ?? 'retail',
-            'includeDeclaredValue' => '1',
             'activeServices' => $uspsSmallQuotesResutls->getUspsActiveServices($carrierServices),
             'residential_delivery' => 'no',
             'sbsPackaging' => $sbsEnabled ? '1' : '0',
