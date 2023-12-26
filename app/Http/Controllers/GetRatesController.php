@@ -83,10 +83,10 @@ class GetRatesController extends Controller
         // Getting installed carriers there quote settings and services
         $this->getCarrierSettings($storeData['installed_carriers']);
 
-        $formatReq = $this->formatRequest($request->all(), $storeData);
+        $this->formatReq = $this->formatRequest($request->all(), $storeData);
         if (
-            $formatReq['lineItemData']['destination']['zip'] == null ||
-            $formatReq['lineItemData']['destination']['country'] == null ||
+            $this->formatReq['lineItemData']['destination']['zip'] == null ||
+            $this->formatReq['lineItemData']['destination']['country'] == null ||
             count($this->connectionSettings) == 0
         ) {
             if (!$this->isDbscInstalled) {
@@ -94,11 +94,11 @@ class GetRatesController extends Controller
             }
         }
         
-        if($this->isShippingRule($cartInfo['store_id'], $formatReq)){
+        if($this->isShippingRule($storeData, $this->formatReq)){
             return [];
         }
 
-        $quotes = $this->shipping->collectRates($formatReq, $storeData, $this->connectionSettings, $cartInfo, $this->isDbscInstalled);
+        $quotes = $this->shipping->collectRates($this->formatReq, $storeData, $this->connectionSettings, $cartInfo, $this->isDbscInstalled);
 
         return $quotes;
 
@@ -282,7 +282,7 @@ class GetRatesController extends Controller
             }
         }
         if ($wareHouseShipmentExist) {
-            $originAddress = $this->shipmentPkg->getNearestWarehouse($details, $details['destination']['zip'], $storeData, $this->connectionSettings);
+            $originAddress = $this->shipmentPkg->getNearestWarehouse($details, $details['destination']['zip'], $storeData, $this->connectionSettings, []);
             if (blank($originAddress)) {
                 Log::info('No warehouse added');
                 return null;
@@ -613,9 +613,11 @@ class GetRatesController extends Controller
         return $result;
     }
 
-    public function isShippingRule($storeId, $formatReq)
+    public function isShippingRule($storeData, $formatReq)
     {    
         $isRestriction = false;
+        $storeId = $storeData['store']['id'];
+        $this->storeData = $storeData ?? [];
         $shippingRules = ShippingRule::getStoreShippingRules($storeId);
         if (!empty($shippingRules)){
 
@@ -653,17 +655,25 @@ class GetRatesController extends Controller
     {
         
         $restrictedCategories = isset($rule['categories']) ? $rule['categories'] : [];
-        $stateProvince = isset($rule['filter_state_province']) ? $rule['filter_state_province'] : [];
+        $stateProvince = isset($rule['filter_state_province']) && !empty($rule['filter_state_province']) ? $rule['filter_state_province'] : [];
 
         if(!empty($restrictedCategories)){
             $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
             $categoriesIds = array_column($cartItems, 'categories_id');
             $flattenedCategoriesIds = array_values(array_merge(...$categoriesIds)) ?? [];
-                
-            $filterCategories = collect($flattenedCategoriesIds)->intersect($restrictedCategories) ?? [];
-            if($filterCategories->isNotEmpty()){
-                return $this->checkRuleRestriction($rule, $origins, $destination, $statesCode);
+            $istrue = false;
+  
+            $filterCategories = collect($restrictedCategories)->intersect($flattenedCategoriesIds) ?? [];
+            foreach($filterCategories as $categoryId){
+                $categoriesProducts = collect($cartItems)->filter(function ($item) use ($categoryId) {
+                    return in_array($categoryId , $item['categories_id']);
+                })->toArray() ?? [];
+
+                if(!empty($categoriesProducts)){
+                    $istrue = $istrue || $this->checkRuleRestriction($rule, $origins, $destination, $statesCode, $categoriesProducts);
+                }
             }
+            return $istrue;
         }
         return false;
     }
@@ -671,8 +681,8 @@ class GetRatesController extends Controller
     public function applyRuleOnBrands($rule, $cartItems, $origins, $destination, $statesProvinces)
     {
         $restrictedBrands = isset($rule['brands']) ? $rule['brands'] : [];
-        $stateProvince = isset($rule['filter_state_province']) ? $rule['filter_state_province'] : [];
-
+        $stateProvince = isset($rule['filter_state_province']) && !empty($rule['filter_state_province']) ? $rule['filter_state_province'] : [];
+        $istrue = false;
         if(!empty($restrictedBrands)){
             $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
             foreach($restrictedBrands as $rpKey => $brandId){
@@ -680,9 +690,10 @@ class GetRatesController extends Controller
                 $filterBrands = collect($cartItems)->where('brand_id', $brandId)->all() ?? [];
                 
                 if(!empty($filterBrands)){
-                    return $this->checkRuleRestriction($rule, $origins, $destination, $statesCode);
+                    $istrue = $istrue || $this->checkRuleRestriction($rule, $origins, $destination, $statesCode, $filterBrands);
                 }
             }
+            return $istrue;
         }
         return false;
     }
@@ -690,7 +701,8 @@ class GetRatesController extends Controller
     public function applyRuleOnProducts($rule, $cartItems, $origins, $destination, $statesProvinces)
     {
         $restrictedProducts = isset($rule['products']) ? $rule['products'] : [];
-        $stateProvince = isset($rule['filter_state_province']) ? $rule['filter_state_province'] : [];
+        $stateProvince = isset($rule['filter_state_province']) && !empty($rule['filter_state_province']) ? $rule['filter_state_province'] : [];
+        $istrue = false;
 
         if(!empty($restrictedProducts)){
             $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
@@ -699,14 +711,15 @@ class GetRatesController extends Controller
                 $filterProducts = collect($cartItems)->where('product_id', $productId)->all() ?? [];
                 
                 if(!empty($filterProducts)){
-                    return $this->checkRuleRestriction($rule, $origins, $destination, $statesCode);
+                    $istrue = $istrue || $this->checkRuleRestriction($rule, $origins, $destination, $statesCode, $filterProducts);
                 }
             }
+            return $istrue;
         }
         return false;
     }
 
-    public function checkRuleRestriction($rule, $origins, $destination, $statesCode)
+    public function checkRuleRestriction($rule, $origins, $destination, $statesCode, $products)
     {
         $filterCountry = isset($rule['filter_country']) ? $rule['filter_country'] : '';
         $postalCodes = isset($rule['filter_postal_code']) ? $rule['filter_postal_code'] : '';
@@ -730,7 +743,22 @@ class GetRatesController extends Controller
             return false;
         } elseif ($isSameCountry && $rule['rule_type'] == 1){
             return false;
-        }  elseif ($isSameOrigin && $rule['rule_type'] == 5){
+        }  elseif ($rule['rule_type'] == 5){
+
+            $origins = isset($this->formatReq['lineItemData']['origin']) ? $this->formatReq['lineItemData']['origin'] : [];
+            $productKeys = array_keys($products);
+
+            foreach($origins as $key => $origin){
+                if(in_array($key , $productKeys) && $origin['location'] === 'warehouse'){
+                    $originAddress = $this->shipmentPkg->getNearestWarehouse($this->formatReq['lineItemData'], $destination['zip'], $this->storeData, [], $warehouses);
+                    if (blank($originAddress)) {
+                        Log::info('No warehouse added');
+                        return false;
+                    }
+                    $originAddress = $this->getAddressForQuotes($originAddress);
+                    $this->formatReq['lineItemData']['origin'][$key] = $originAddress;
+                }
+            }
             return false;
         } else {
             return true;
