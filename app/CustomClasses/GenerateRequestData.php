@@ -1966,14 +1966,7 @@ class GenerateRequestData
         }
 
         $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
-        $packagingRatingMethod = isset($connSettings['quote_settings']['packageRatingMethod']) ? $connSettings['quote_settings']['packageRatingMethod'] : null;
-        if ($packagingRatingMethod == 2){
-            $ratingMethod = 'ship_combine_and_alone';
-        } elseif($packagingRatingMethod == 3){
-            $ratingMethod = 'eniture_packaging';
-        } else {
-            $ratingMethod = 'ship_alone';
-        }
+        $ratingMethod = $this->getPackagingRatingMethod($connSettings);
 
         $this->resiCarrier['wweSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['wweSmall'] = $alwaysResi;
@@ -2028,14 +2021,7 @@ class GenerateRequestData
         }
 
         $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
-        $packagingRatingMethod = isset($connSettings['quote_settings']['packageRatingMethod']) ? $connSettings['quote_settings']['packageRatingMethod'] : null;
-        if ($packagingRatingMethod == 2){
-            $ratingMethod = 'ship_combine_and_alone';
-        } elseif($packagingRatingMethod == 3){
-            $ratingMethod = 'eniture_packaging';
-        } else {
-            $ratingMethod = 'ship_alone';
-        }
+        $ratingMethod = $this->getPackagingRatingMethod($connSettings);
 
         $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
         $this->resiCarrier['purolatorSmall'] = $residential;
@@ -2077,14 +2063,7 @@ class GenerateRequestData
         $this->resiCarrier['alwaysResi']['upsSmall'] = $alwaysResi;
 
         $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
-        $packagingRatingMethod = isset($connSettings['quote_settings']['packageRatingMethod']) ? $connSettings['quote_settings']['packageRatingMethod'] : null;
-        if ($packagingRatingMethod == 2){
-            $ratingMethod = 'ship_combine_and_alone';
-        } elseif($packagingRatingMethod == 3){
-            $ratingMethod = 'eniture_packaging';
-        } else {
-            $ratingMethod = 'ship_alone';
-        }
+        $ratingMethod = $this->getPackagingRatingMethod($connSettings);
 
         $upsSmall = new UpsSmallQuotesResults();
         $saturdayDelivery = $upsSmall->isSaturdayDeliveryEnabled($connSettings) ? '1' : '0';
@@ -2178,14 +2157,7 @@ class GenerateRequestData
         }
 
         $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
-        $packagingRatingMethod = isset($connSettings['quote_settings']['packageRatingMethod']) ? $connSettings['quote_settings']['packageRatingMethod'] : null;
-        if ($packagingRatingMethod == 2){
-            $ratingMethod = 'ship_combine_and_alone';
-        } elseif($packagingRatingMethod == 3){
-            $ratingMethod = 'eniture_packaging';
-        } else {
-            $ratingMethod = 'ship_alone';
-        }
+        $ratingMethod = $this->getPackagingRatingMethod($connSettings);
 
         $this->resiCarrier['shipEngine'] = $residential;
         $this->resiCarrier['alwaysResi']['shipEngine'] = $alwaysResi;
@@ -2231,14 +2203,7 @@ class GenerateRequestData
         $this->resiCarrier['alwaysResi']['fedexSmall'] = $alwaysResi;
 
         $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
-        $packagingRatingMethod = isset($connSettings['quote_settings']['packageRatingMethod']) ? $connSettings['quote_settings']['packageRatingMethod'] : null;
-        if ($packagingRatingMethod == 2){
-            $ratingMethod = 'ship_combine_and_alone';
-        } elseif($packagingRatingMethod == 3){
-            $ratingMethod = 'eniture_packaging';
-        } else {
-            $ratingMethod = 'ship_alone';
-        }
+        $ratingMethod = $this->getPackagingRatingMethod($connSettings);
 
         $hubIdindicia = isset($connSettings['creds']['hub_id']) ? explode('(', $connSettings['creds']['hub_id']) : '';
         $hubId = isset($hubIdindicia[0]) ? trim($hubIdindicia[0]) : '';
@@ -2305,14 +2270,7 @@ class GenerateRequestData
         $accessorial = ($alwaysResi ? 'Y' : $residential == 'Y') ? ['REP'] : [];
 
         $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
-        $packagingRatingMethod = isset($connSettings['quote_settings']['packageRatingMethod']) ? $connSettings['quote_settings']['packageRatingMethod'] : null;
-        if ($packagingRatingMethod == 2){
-            $ratingMethod = 'ship_combine_and_alone';
-        } elseif($packagingRatingMethod == 3){
-            $ratingMethod = 'eniture_packaging';
-        } else {
-            $ratingMethod = 'ship_alone';
-        }
+        $ratingMethod = $this->getPackagingRatingMethod($connSettings);
 
         if (isset($connSettings['creds']['api_type']) &&  $connSettings['creds']['api_type'] === 'new_api'){
             $this->resiCarrier['isUnishipperNewApi'] = true;
@@ -2770,7 +2728,6 @@ class GenerateRequestData
         $storeId = $this->storeData['store']['id'] ?? null;
         $radResp = $this->verifyRADStatus($connSettings, $destination);
         $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
-        $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
 
         $apiArray = [
             'rateTier' => $connSettings['quote_settings']['rate_tier'] ?? 'retail',
@@ -3178,24 +3135,6 @@ class GenerateRequestData
             return false;
         }
     }
-
-    private function checkSbsIsSuspend($storeId)
-    {
-        $currentPackageSub = DB::table('package_subscriptions as ps')
-            ->leftjoin('package_sub_to_be_charge as pstbc', 'pstbc.subscription_id', '=', 'ps.id')
-            ->leftjoin('packages as p', 'ps.package_id', '=', 'p.id')
-            ->select('ps.id', 'ps.package_id as package_id', 'ps.expiry_time', 'ps.status', 'ps.created_at', 'ps.total_count as consumed_hits', 'p.htis as total_hits', 'pstbc.status as package_to_to_charge_status', 'pstbc.package_id as to_be_charge_package_id')
-            ->where('store_id', $storeId)->where('p.addon_type', 'SBS')->latest()->first();
-        
-        if (!isset($currentPackageSub->status)) {
-            return true;
-        } else if ($currentPackageSub->status == 3) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
 
     public function getStoreBoxes($storeId, $itemsArr, $origins, $cartInfo, $isMultishipment)
     {
@@ -3647,5 +3586,19 @@ class GenerateRequestData
             return null;
         }
 
+    }
+
+    public function getPackagingRatingMethod($connSettings)
+    {
+        $packagingRatingMethod = isset($connSettings['quote_settings']['packageRatingMethod']) ? $connSettings['quote_settings']['packageRatingMethod'] : null;
+        if ($packagingRatingMethod == 2){
+            $ratingMethod = 'ship_combine_and_alone';
+        } elseif($packagingRatingMethod == 3){
+            $ratingMethod = 'eniture_packaging';
+        } else {
+            $ratingMethod = 'ship_alone';
+        }
+
+        return $ratingMethod;
     }
 }
