@@ -156,12 +156,14 @@ class Shipping
                     ],
                 ];
             }
-            if ($this->isInsurance === 'Y' && ($key == 'wweLTL' || $key == 'shipEngine' || $key == 'upsSmall')) {
+            if ($this->isInsurance === 'Y') {
                 if ($this->isSmall($key)) {
                     $carriersArray['carriers'][$key]['api']['includeDeclaredValue'] = 1;
                 } else {
                     if ($key == 'wweLTL') {
                         $carriersArray['carriers'][$key]['api']['insureShipment'] = 1;
+                    } else if ($key == 'saia') {
+                        $carriersArray['carriers'][$key]['api']['includeDeclaredValue'] = 1;
                     }
                 }
             }
