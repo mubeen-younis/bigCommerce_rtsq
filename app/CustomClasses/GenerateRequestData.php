@@ -2725,6 +2725,7 @@ class GenerateRequestData
         $uspsSmallQuotesResutls = new UspsSmallQuotesResults();
         $uspsSmallPkgReq = new UspsSmallPackagingRequest();
 
+        $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
         $storeId = $this->storeData['store']['id'] ?? null;
         $radResp = $this->verifyRADStatus($connSettings, $destination);
         $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
