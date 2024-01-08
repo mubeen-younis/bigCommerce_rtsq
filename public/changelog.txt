@@ -1,3 +1,23 @@
+= 2.1.6 2023-12-27 =
+
+* Update - change markup calculation functionality according to Shopify and woo. (Ticket:2126870659)[#398](https://bitbucket.org/eniture/big-commerce/pull-requests/398)
+
+= 2.1.5 2023-12-26 =
+
+* Update - add Packaging Rating Methods in BC. (Ticket:2086152515)[#401](https://bitbucket.org/eniture/big-commerce/pull-requests/401)
+
+= 2.1.4 2023-12-21 =
+
+* Update - add insurance in saia ltl carrier. (Ticket:2126870659)[#400](https://bitbucket.org/eniture/big-commerce/pull-requests/400)
+
+= 2.1.3 2023-12-19 =
+
+* Update - Checkout Quotes title limit exceed then 100 characters. (Ticket:2187984696)[#397](https://bitbucket.org/eniture/big-commerce/pull-requests/397)
+
+= 2.1.2 2023-12-08 =
+
+* Update - Server utilization and storage  issue in BC. (Instruction from shafique sb + Amir + azhar)[#396](https://bitbucket.org/eniture/big-commerce/pull-requests/396)
+
 = 2.1.1 2023-11-20 =
 
 * Update - introduce Shipping Restrictions by State/Zipcode in BC. (Ticket:1955948122)[#395](https://bitbucket.org/eniture/big-commerce/pull-requests/395)

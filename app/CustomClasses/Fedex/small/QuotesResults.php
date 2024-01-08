@@ -254,12 +254,13 @@ class QuotesResults
                     if (isset($this->quoteSettings['negotiated_rates']) && $this->quoteSettings['negotiated_rates'] == 1) {
                         $data['totalNetCharge']['Amount'] = $data['NegotiatedRates']['Amount'] ?? $data['totalNetCharge']['Amount'];
                     }
-                    $price = $this->getServiceRate($data['totalNetCharge']['Amount'], $serviceName, $this->quoteSettings);
+                    // Adding Product and Origin Markup in services if added
+                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
+                    $price = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
+                    $price = $this->getServiceRate($price, $serviceName, $this->quoteSettings);
                     $quoteSettings = $this->quoteSettings;
 
                     $price = $this->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup'] ?? 0);
-                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
-                    $price = $price + $productOriginMarkupFee;
                     // Checking hazmat and adding hazmat amounts in services
                     if ($isHazmat) {
                         if ($this->isMultiShipment) {

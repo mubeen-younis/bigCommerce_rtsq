@@ -128,14 +128,12 @@ class GetDistance
         if ($originUrl != '') {
             $distanceObj = (new self)->getDistanceFromGoogleApi($originUrl, $destinationUrl, $this->googleDistanceApiKey);
             if ($distanceObj == 'server_error') {
-                Log::info('Server error' . json_encode($distanceObj));
                 return ['error' => 'Server error'];
             } else {
                 // to change the array to object recursively
                 $apiResponse = json_decode($distanceObj);
             }
             if ($this->googleAPIErrorExist($apiResponse)) {
-                Log::info('Google API error' . json_encode($distanceObj));
                 return ['error' => 'Google API error.'];
             }
         }

@@ -101,7 +101,6 @@ class ProductSettingController extends Controller
         $headers[] = 'Accept: application/json';
         $metaResponse = $this->curlRequest->enSingleCurlRequest($metaEndPoint, [], $headers, 'GET', true);
         $metaResponse = json_decode($metaResponse['response'], true);
-        Log::info('get all product variants-productID:' . $product['id'] . json_encode($metaResponse));
         $total_pages = $metaResponse['meta']['pagination']['total_pages'] ?? null;
         if (blank($total_pages)) {
             return null;

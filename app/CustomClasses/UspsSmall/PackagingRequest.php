@@ -183,7 +183,6 @@ class PackagingRequest
         foreach ($this->uspsBoxes as $boxCode => $box) {
             if (in_array($boxCode, $this->uspsActiveServices)) {
                 $requestParams = $this->get3dBinRequest($itemsDetail, $box);
-                Log::info('3D BinResquest details' . json_encode($requestParams));
                 if (!blank($requestParams)) {
                     $this->packagingRequest[$locId . '-' . $boxCode] = $requestParams;
                 }

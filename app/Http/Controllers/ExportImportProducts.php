@@ -328,7 +328,6 @@ class ExportImportProducts extends Controller
         $exceptionProducts = [];
 
         if (!file_exists($path)) {
-            Log::info('File Not Found On Importing Csv' . $request['filename']);
             return false;
         }
 
@@ -355,7 +354,6 @@ class ExportImportProducts extends Controller
                     $this->getUpdateData($product, $indexes, $store_id, $store->access_token, $request['store_hash']);
 
                 } catch (\Exception $exception) {
-                    Log::info('Exception on Product: ' . $product['Product Id']);
                     $exceptionProducts[] = [
                         'productId' => $product['Product Id'],
                         'varientId' => $product['Variant Id'],

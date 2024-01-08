@@ -23,10 +23,8 @@ class QuotesResults
      * @param $quoteSettings
      * @return mixed|string
      */
-    public function getServiceRate($data, $serviceCode, $quoteSettings)
+    public function getServiceRate($amount, $serviceCode, $quoteSettings)
     {
-        $amount = $data['shipping_amount']['amount'];
-
         $markupIndex = strtolower(str_replace(' ', '_', $serviceCode) . '_markup');
         $markupValue = $quoteSettings['carrier_services'][$markupIndex] ?? '';
         if (empty($markupValue) || !is_numeric(str_replace('%', '', $markupValue))) {
@@ -224,16 +222,17 @@ class QuotesResults
                             continue;
                         }
                     }
+                    // Adding Product and Origin Markup in services if added
+                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['shipping_amount']['amount'], $origin, $items, $allOrigins);
+                    $price = $data['shipping_amount']['amount'] + $productOriginMarkupFee;
 
 
                     // Adding Markup in services if enabled
-                    $price = $this->getServiceRate($data, $serviceCode, $this->quoteSettings);
+                    $price = $this->getServiceRate($price, $serviceCode, $this->quoteSettings);
                     $quoteSettings = $this->quoteSettings;
                     $amount = $data['shipping_amount']['amount'];
 
                     $price = $this->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup'] ?? 0);
-                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($amount, $origin, $items, $allOrigins);
-                    $price = $price + $productOriginMarkupFee;
 
                     // Checking hazmat and adding hazmat amounts in services
                     if ($isHazmat) {
@@ -452,7 +451,7 @@ class QuotesResults
                     $serviceCode = $data['service_code'] ?? "";
 
                     // Adding Markup in services if enabled
-                    $price = $this->getServiceRate($data, $serviceCode, []);
+                    $price = $this->getServiceRate($data['shipping_amount']['amount'], $serviceCode, []);
 
                     $price = $this->addHandlingMarkupOfHazmat($price, 0);
                     $price = (float)str_replace(',', '', $price) ?? 0;

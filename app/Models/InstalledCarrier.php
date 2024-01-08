@@ -44,7 +44,6 @@ class InstalledCarrier extends Model
             return false;
         }
         if (!blank($promoCode)) {
-            Log::info('Promo code and Carrier Id'.$promoCode.'Carrier Id : '.$carrier->id);
             Connection::addPromoCodeInConnectionSettings($carrier->id, $promoCode);
         }
         return true;

@@ -196,18 +196,18 @@ class QuotesResults
                     if (!empty($description) && strpos($description, ' Saturday')) {
                         $description = str_replace(' Saturday', '', $description);
                     }
+                    // Adding Product and Origin Markup in services if added
+                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
+                    $data['totalNetCharge']['Amount'] = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
+                    if (isset($this->quoteSettings['rate_source']) && $this->quoteSettings['rate_source'] === 1) {
+                        $productOriginMarkupFee = Functions::calProductOriginMarkupFee((float)$data['NegotiatedRates']['Amount'], $origin, $items, $allOrigins);
+                        $data['NegotiatedRates']['Amount'] = (float) $data['NegotiatedRates']['Amount'] + $productOriginMarkupFee;
+                    }
 
                     // Adding Markup in services if enabled
                     $price = $this->getServiceRate($data, $description, $this->quoteSettings);
                     $quoteSettings = $this->quoteSettings;
-                    $amount = $data['totalNetCharge']['Amount'];
-                    if (isset($quoteSettings['rate_source']) && $quoteSettings['rate_source'] === 1) {
-                        $boxFee = $data['boxFees']['Amount'] ?? 0;
-                        $amount = $data['NegotiatedRates']['Amount'] > 0 ? $data['NegotiatedRates']['Amount'] + $boxFee : $amount;
-                    }
                     $price = $this->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup'] ?? 0);
-                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($amount, $origin, $items, $allOrigins);
-                    $price = $price + $productOriginMarkupFee;
                     // Checking hazmat and adding hazmat amounts in services
                     if ($isHazmat) {
                         if ($isMultiShipment) {

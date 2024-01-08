@@ -1022,7 +1022,6 @@ class OrderController extends Controller
     {
         $storeHash = explode('/', $postData['producer']);
         $storeHash = $storeHash[1];
-        Log::info('Order Webhook Data From BigCommerce ' . json_encode($postData));
         $orderId = $postData['data']['id'] ?? $postData['data']['order_id'];
         // Update,delete,create from  webhook
         $scope = $postData['scope'];
@@ -1214,7 +1213,7 @@ class OrderController extends Controller
 
     private function hasInsureCarrier($code)
     {
-        $insureCarriers = ['wweltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship', 'parcel_12shipEng'];
+        $insureCarriers = ['wweltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship', 'parcel_12shipEng', 'saialtl'];
         foreach ($insureCarriers as $insureCarrier) {
             if (strpos($code, $insureCarrier) !== false) {
                 return true;

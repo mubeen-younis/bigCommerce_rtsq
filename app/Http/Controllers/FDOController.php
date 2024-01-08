@@ -290,7 +290,6 @@ class FDOController extends Controller
     public function updateCouponDetailsFromFDOAV(Request $request): \Illuminate\Http\JsonResponse
     {
         $request = $request->all();
-        Log::info('Request to Update Coupon Detail ' . json_encode($request));
         if (isset($request['av_company_id'])) {
             $platformCompanyId = $request['av_company_id'] ?? '';
             $platform = 'av';

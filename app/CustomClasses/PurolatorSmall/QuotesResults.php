@@ -16,10 +16,8 @@ class QuotesResults
     }
 
 
-    public function getServiceRate($data, $serviceDesc, $quoteSettings)
+    public function getServiceRate($amount, $serviceDesc, $quoteSettings)
     {
-        $amount = $data['totalNetCharge']['Amount'];
-
         $serviceDesc = preg_replace("([A-Z])", " $0", $serviceDesc);
         $trim = ltrim($serviceDesc);
         $markupIndex = strtolower(str_replace(':', ' ', $trim) . '_markup');
@@ -170,13 +168,14 @@ class QuotesResults
                     if ($this->onylQuoteGroundServices($isHazmat, $srvcType)) {
                         continue;
                     }
+                    // Adding Product and Origin Markup in services if added
+                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
+                    $price = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
 
                     // Adding Markup in services if enabled
-                    $price = $this->getServiceRate($data, $data['serviceType'], $this->quoteSettings);
+                    $price = $this->getServiceRate($price, $data['serviceType'], $this->quoteSettings);
                     $quoteSettings = $this->quoteSettings;
-                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
-                    $price = $price + $productOriginMarkupFee;
-
+                    $price = $this->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup'] ?? 0);
                     // Checking hazmat and adding hazmat amounts in services
                     if ($isHazmat) {
                         if ($isMultiShipment) {
