@@ -748,15 +748,17 @@ class GetRatesController extends Controller
             $origins = isset($this->formatReq['lineItemData']['origin']) ? $this->formatReq['lineItemData']['origin'] : [];
             $productKeys = array_keys($products);
 
-            foreach($origins as $key => $origin){
-                if(in_array($key , $productKeys) && $origin['location'] === 'warehouse'){
-                    $originAddress = $this->shipmentPkg->getNearestWarehouse($this->formatReq['lineItemData'], $destination['zip'], $this->storeData, [], $warehouses);
-                    if (blank($originAddress)) {
-                        Log::info('No warehouse added');
-                        return false;
+            if(isset($this->connectionSettings['ups-ltl']) || $this->connectionSettings['xpo-ltl'] || $this->connectionSettings['odfl-ltl'] || $this->connectionSettings['ups-small']){
+                foreach($origins as $key => $origin){
+                    if(in_array($key , $productKeys) && $origin['location'] === 'warehouse'){
+                        $originAddress = $this->shipmentPkg->getNearestWarehouse($this->formatReq['lineItemData'], $destination['zip'], $this->storeData, [], $warehouses);
+                        if (blank($originAddress)) {
+                            Log::info('No warehouse added');
+                            return false;
+                        }
+                        $originAddress = $this->getAddressForQuotes($originAddress);
+                        $this->formatReq['lineItemData']['origin'][$key] = $originAddress;
                     }
-                    $originAddress = $this->getAddressForQuotes($originAddress);
-                    $this->formatReq['lineItemData']['origin'][$key] = $originAddress;
                 }
             }
             return false;
