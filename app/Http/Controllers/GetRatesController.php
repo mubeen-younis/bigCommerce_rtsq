@@ -748,7 +748,7 @@ class GetRatesController extends Controller
             $origins = isset($this->formatReq['lineItemData']['origin']) ? $this->formatReq['lineItemData']['origin'] : [];
             $productKeys = array_keys($products);
 
-            if(isset($this->connectionSettings['ups-ltl']) || $this->connectionSettings['xpo-ltl'] || $this->connectionSettings['odfl-ltl'] || $this->connectionSettings['ups-small']){
+            if(isset($this->connectionSettings['ups-ltl']) || isset($this->connectionSettings['xpo-ltl']) || isset($this->connectionSettings['odfl-ltl']) || isset($this->connectionSettings['ups-small'])){
                 foreach($origins as $key => $origin){
                     if(in_array($key , $productKeys) && $origin['location'] === 'warehouse'){
                         $originAddress = $this->shipmentPkg->getNearestWarehouse($this->formatReq['lineItemData'], $destination['zip'], $this->storeData, [], $warehouses);
