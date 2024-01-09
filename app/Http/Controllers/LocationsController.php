@@ -330,7 +330,7 @@ class LocationsController extends Controller
                     if(!empty($shippingRuleLocations)){
                         return response()->json(['error' => true,
                             'data' => [],
-                            'message' => 'Warehouse inclusion detected in the "Restruct to Origin Locations" shipping rule. Please remove it from the shipping rule to proceed.',
+                            'message' => 'Warehouse inclusion detected in the "Restrict to Origin Locations" shipping rule. Please remove it from the shipping rule to proceed.',
                         ], 200);
                     }
                 }
