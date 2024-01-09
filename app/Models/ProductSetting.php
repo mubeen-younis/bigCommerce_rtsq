@@ -102,7 +102,10 @@ class ProductSetting extends Model
 
         } catch (\Exception $exception) {
             DB::rollBack();
-            Log::info('Exception on saving Product Details ' . $exception->getMessage() . $exception->getLine());
+            Log::info('Exception on saving Products Detail ' . json_encode([
+                'line' => $exception->getLine(),
+                'message' => $exception->getMessage()
+            ]));
         }
 
     }
@@ -173,7 +176,10 @@ class ProductSetting extends Model
             $saveProduct->save();
 
         } catch (\Exception $exception) {
-            Log::info('Exception on saving Product Details ' . $exception->getMessage() . $exception->getLine());
+            Log::info('Exception on saving Products Detail ' . json_encode([
+                'line' => $exception->getLine(),
+                'message' => $exception->getMessage()
+            ]));
         }
 
     }
