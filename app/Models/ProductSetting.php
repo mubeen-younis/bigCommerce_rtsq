@@ -95,6 +95,7 @@ class ProductSetting extends Model
             $saveProduct->height = $product['height'];
             $saveProduct->price = $product['price'];
             $saveProduct->store_id = $storeId;
+            Log::info('Test logs');
             // $saveProduct->brand_id = $product['brand_id'] ?? null;
             // $saveProduct->categories_id = json_encode($product['categories']) ?? '';
             $saveProduct->save();
@@ -171,6 +172,7 @@ class ProductSetting extends Model
             $saveProduct->height = $product['height'];
             $saveProduct->price = $product['price'];
             $saveProduct->store_id = $storeId;
+            Log::info('Test logs');
             // $saveProduct->brand_id = $product['brand_id'] ?? null;
             // $saveProduct->categories_id = json_encode($product['categories']) ?? '';
             $saveProduct->save();
