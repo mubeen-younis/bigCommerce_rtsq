@@ -96,7 +96,7 @@ class ProductSetting extends Model
             $saveProduct->price = $product['price'];
             $saveProduct->store_id = $storeId;
             $saveProduct->brand_id = $product['brand_id'] ?? null;
-            $saveProduct->categories_id = json_encode($product['categories']) ?? null;
+            $saveProduct->categories_id = json_encode($product['categories']) ?? '';
             $saveProduct->save();
             DB::commit();
 
@@ -172,7 +172,7 @@ class ProductSetting extends Model
             $saveProduct->price = $product['price'];
             $saveProduct->store_id = $storeId;
             $saveProduct->brand_id = $product['brand_id'] ?? null;
-            $saveProduct->categories_id = json_encode($product['categories']) ?? null;
+            $saveProduct->categories_id = json_encode($product['categories']) ?? '';
             $saveProduct->save();
 
         } catch (\Exception $exception) {
