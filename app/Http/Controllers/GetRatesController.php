@@ -30,6 +30,7 @@ class GetRatesController extends Controller
     public $connectionSettings = [];
     public $installedCarriers = [];
     public $installedAddons = [];
+    public $updatedWarehouses = [];
 
     /**
      * @var WweLTLShipmentPackage
@@ -751,6 +752,7 @@ class GetRatesController extends Controller
             if(isset($this->connectionSettings['ups-ltl']) || isset($this->connectionSettings['xpo-ltl']) || isset($this->connectionSettings['odfl-ltl']) || isset($this->connectionSettings['ups-small'])){
                 foreach($origins as $key => $origin){
                     if(in_array($key , $productKeys) && $origin['location'] === 'warehouse'){
+                        // check: if multiple warehouses defined then find nearest origin from the warehouses list
                         $originAddress = $this->shipmentPkg->getNearestWarehouse($this->formatReq['lineItemData'], $destination['zip'], $this->storeData, [], $warehouses);
                         if (blank($originAddress)) {
                             Log::info('No warehouse added');
@@ -758,7 +760,18 @@ class GetRatesController extends Controller
                         }
                         $originAddress = $this->getAddressForQuotes($originAddress);
                         $this->formatReq['lineItemData']['origin'][$key] = $originAddress;
+                        $this->updatedWarehouses[] = $originAddress['senderZip'] ?? '';
                     }
+                }
+                // check: if multiple shipping rule defined then find nearest origin from the shipping rule list
+                if(!empty($this->updatedWarehouses) && $this->updatedWarehouses > 1){
+                    $originAddress = $this->shipmentPkg->getNearestWarehouse($this->formatReq['lineItemData'], $destination['zip'], $this->storeData, [], $this->updatedWarehouses);
+                    if (blank($originAddress)) {
+                        Log::info('No warehouse added');
+                        return false;
+                    }
+                    $originAddress = $this->getAddressForQuotes($originAddress);
+                    $this->formatReq['lineItemData']['origin'][$key] = $originAddress;
                 }
             }
             return false;
