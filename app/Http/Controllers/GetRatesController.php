@@ -764,14 +764,17 @@ class GetRatesController extends Controller
                     }
                 }
                 // check: if multiple shipping rule defined then find nearest origin from the shipping rule list
-                if(!empty($this->updatedWarehouses) && $this->updatedWarehouses > 1){
+                if(!empty($this->updatedWarehouses) && count($this->updatedWarehouses) > 1){
                     $originAddress = $this->shipmentPkg->getNearestWarehouse($this->formatReq['lineItemData'], $destination['zip'], $this->storeData, [], $this->updatedWarehouses);
                     if (blank($originAddress)) {
                         Log::info('No warehouse added');
                         return false;
                     }
                     $originAddress = $this->getAddressForQuotes($originAddress);
-                    $this->formatReq['lineItemData']['origin'][$key] = $originAddress;
+                    foreach($productKeys as $pkey){
+                        $this->formatReq['lineItemData']['origin'][$pkey] = $originAddress;
+                    }
+                    
                 }
             }
             return false;
