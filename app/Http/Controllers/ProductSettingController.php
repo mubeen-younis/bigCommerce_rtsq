@@ -432,8 +432,8 @@ class ProductSettingController extends Controller
                     $products[$key] = $product;
                 }
 
-                $products[$key]['brand_name'] = $this->productBrand($request, $product);
-                $products[$key]['category_name'] = $this->productCategory($request, $product);
+                $products[$key]['brand_name'] = $this->productBrand($request, $product) ?? '';
+                $products[$key]['category_name'] = $this->productCategory($request, $product) ?? '';
             }
         }
 
@@ -459,7 +459,9 @@ class ProductSettingController extends Controller
     }
 
     public function productCategory($request, $product)
-    {   $categories = json_decode($product['categories_id']) ?? [];
+    {   
+        $data = [];
+        $categories = json_decode($product['categories_id']) ?? [];
         $store = Store::where('hash', $request['store_hash'])->first();
         if (empty($store)) {
             return [];
@@ -476,7 +478,7 @@ class ProductSettingController extends Controller
                 $data[] = isset($response['data']['name']) ? $response['data']['name'] : null;
             }
         }
-        return json_encode($data) ?? []; 
+        return json_encode($data) ?? ''; 
     }
 
     public function editProduct(Request $request)
@@ -551,7 +553,7 @@ class ProductSettingController extends Controller
         }
 
         if($productCount > 1){
-            $products = $this->isLtlParcelBothEnabled($request->products, $request->store_id);
+            $products = $this->isLtlParcelBothEnabled($request->products, $request);
             foreach($products as $prod){
                 if($prod['variant_id'] == null){
                     $product = $prod;
