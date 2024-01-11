@@ -478,7 +478,7 @@ class ProductSettingController extends Controller
                 $data[] = isset($response['data']['name']) ? $response['data']['name'] : null;
             }
         }
-        return json_encode($data) ?? ''; 
+        return $data; 
     }
 
     public function editProduct(Request $request)
