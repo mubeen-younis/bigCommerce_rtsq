@@ -431,10 +431,9 @@ class ProductSettingController extends Controller
                     $product['settings'] = json_encode($settings);
                     $products[$key] = $product;
                 }
-
-                $products[$key]['brand_name'] = $this->productBrand($request, $product) ?? '';
-                $products[$key]['category_name'] = $this->productCategory($request, $product) ?? '';
-            }
+            } 
+            $products[$key]['brand_name'] = $this->productBrand($request, $product) ?? '';
+            $products[$key]['category_name'] = $this->productCategory($request, $product) ?? '';
         }
 
         return $products;
