@@ -1331,7 +1331,7 @@ class CompileQuotes
             $originQuotes = [];
             $arraySorting = [];
 
-            if (isset($quote['q'])) {
+            if (isset($quote['q']) && isset($quote['q']['success']) && $quote['q']['success'] == "true") {
                 if (isset($quote['hazardousStatus'])) {
                     $hazShipmentArr[$origin] = $quote['hazardousStatus'] == 'y' ? 'Y' : 'N';
                 }

@@ -173,7 +173,7 @@ class WweLTLShipmentPackage
             $address = $origin['address'] ?? '';
             $phone = $origin['phone'] ?? '';
             $originMarkup = $origin['origin_markup'] ?? '';
-            $country = ($origin['country'] == "United State") ? "US" : $origin['country'];
+            $country = (isset($origin['country']) && $origin['country'] == "United State") ? "US" : $origin['country'] ?? '';
             $location = isset($origin['type']) && $origin['type'] == 1 ? 'warehouse' : 'dropship';
             $locationId = $shortOrigin['warehouse_id'] ?? $shortOrigin['id'] ?? time();
             $data = [
