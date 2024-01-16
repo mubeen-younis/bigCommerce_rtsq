@@ -37,7 +37,7 @@ class ShippingRuleController extends Controller
     public function saveShippingRule(Request $request): \Illuminate\Http\JsonResponse
     {
         $res = ShippingRule::saveOrUpdateShippingRule($request->all());
-        return Helpers::sendJsonResponse($res['error'], "Shipping Rule is " . $res['message'], $res['data']);
+        return Helpers::sendJsonResponse($res['error'], $res['message'], $res['data']);
     }
 
     public function updateAvaiableStatus(Request $request): \Illuminate\Http\JsonResponse
