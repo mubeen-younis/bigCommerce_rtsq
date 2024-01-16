@@ -1,6 +1,6 @@
 = 2.1.7 2024-01-16 =
 
-* fix - ODFL retun incorrect rates in case of api return an error. (Ticket:2270265145)[#404](https://bitbucket.org/eniture/big-commerce/pull-requests/404)
+* fix - ODFL return incorrect rates in case of api return an error. (Ticket:2270265145)[#404](https://bitbucket.org/eniture/big-commerce/pull-requests/404)
 
 = 2.1.6 2023-12-27 =
 
