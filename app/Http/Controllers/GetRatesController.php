@@ -31,6 +31,7 @@ class GetRatesController extends Controller
     public $installedCarriers = [];
     public $installedAddons = [];
     public $updatedWarehouses = [];
+    public $setRulePriority = null;
 
     /**
      * @var WweLTLShipmentPackage
@@ -629,6 +630,16 @@ class GetRatesController extends Controller
 
             foreach($shippingRules as $key => $rule){
 
+                if(isset($rule['rule_type']) && isset($rule['apply_rule_to']) && $rule['rule_type'] == 5){
+                    if($this->setRulePriority == 3 && $rule['apply_rule_to'] != 3){
+                        continue;
+                    } else if($this->setRulePriority == 1 && ($rule['apply_rule_to'] != 3 || $rule['apply_rule_to'] == 2)){
+                        continue;
+                    } else if($this->setRulePriority == 2 && !($rule['apply_rule_to'] == 3 || $rule['apply_rule_to'] == 2 || $rule['apply_rule_to'] == 1)){
+                        continue;
+                    }
+                }
+
                 $isAvailable = $rule['available'] ?? false;
                 $applyRuleTo = $rule['apply_rule_to'] ?? 1;
                 if($isAvailable){
@@ -738,20 +749,22 @@ class GetRatesController extends Controller
 
         Log::info('Shipping rule applied: ' . json_encode($rule));
 
-        if ($isSameCountry && $isSameState && $isSamePostalCode && $rule['rule_type'] == 4){
+        if ($isSameCountry && $isSameState && $isSamePostalCode && isset($rule['rule_type']) && $rule['rule_type'] == 4){
             return false;
-        } elseif ($isSameCountry && $isSameState && $rule['rule_type'] == 3){
+        } elseif ($isSameCountry && $isSameState && isset($rule['rule_type']) && $rule['rule_type'] == 3){
             return false;
-        } elseif ($isSameCountry && $rule['rule_type'] == 1){
+        } elseif ($isSameCountry && isset($rule['rule_type']) && $rule['rule_type'] == 1){
             return false;
-        }  elseif ($rule['rule_type'] == 5){
+        }  elseif (isset($rule['rule_type']) && $rule['rule_type'] == 5){
+
+            $this->setRulePriority = isset($rule['apply_rule_to']) ? $rule['apply_rule_to'] : null;
 
             $origins = isset($this->formatReq['lineItemData']['origin']) ? $this->formatReq['lineItemData']['origin'] : [];
             $productKeys = array_keys($products);
 
             if(isset($this->connectionSettings['ups-ltl']) || isset($this->connectionSettings['xpo-ltl']) || isset($this->connectionSettings['odfl-ltl']) || isset($this->connectionSettings['ups-small'])){
                 foreach($origins as $key => $origin){
-                    if(in_array($key , $productKeys) && $origin['location'] === 'warehouse'){
+                    if(in_array($key , $productKeys) && isset($origin['location']) && $origin['location'] === 'warehouse'){
                         // check: if multiple warehouses defined then find nearest origin from the warehouses list
                         $originAddress = $this->shipmentPkg->getNearestWarehouse($this->formatReq['lineItemData'], $destination['zip'], $this->storeData, [], $warehouses);
                         if (blank($originAddress)) {

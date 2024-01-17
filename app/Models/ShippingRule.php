@@ -444,7 +444,6 @@ class ShippingRule extends Model
                     }
                 } elseif(isset($shippingRuleData['apply_rule_to']) && $shippingRuleData['apply_rule_to'] == 1){
                     $filterSettings = isset($rule['filter_settings']) ? json_decode($rule['filter_settings'], true) : [];
-                   // dd($filterSettings);
                     if(isset($filterSettings['apply_rule_to']) && $filterSettings['apply_rule_to'] == $shippingRuleData['apply_rule_to'] && isset($shippingRuleData['rule_type']) && $shippingRuleData['rule_type'] == $rule['rule_type']){
                         $getDBProducts = isset($filterSettings['filter_categories']) && !empty($filterSettings['filter_categories']) ? $filterSettings['filter_categories'] : [];
                         $commonValues = array_intersect(($shippingRuleData['filter_categories']), $getDBProducts);  
