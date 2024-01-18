@@ -761,11 +761,12 @@ class Functions
         $accessTitles = '';
         $accessLabel = '';
         $autoResiAdrrLfg = isset($quoteSettings['autoDetectedResidentialAddressesLfg']) ? $quoteSettings['autoDetectedResidentialAddressesLfg'] : false;
+        $isAllAccessorials = ($lgOption && $insideDel && $laccess && $notifyDelivery) ?? false;
 
         $offerFeaturesAsOption = [
-            'offerLiftGateDelivery' => [$lgOption, 'LG,'],
+            'offerLiftGateDelivery' => [$lgOption, 'liftgate,'],
             'offer_inside_delivery' => [$insideDel, 'inside,'],
-            'offer_limited_access_delivery' => [$laccess, 'LA,'],
+            'offer_limited_access_delivery' => [$laccess, 'limited access,'],
             'offer_two_man_delivery' => [$twoManDel, 'two man,'],
             'offer_appointment_delivery' => [$appDel, 'appointment,'],
             'offer_notify_as_option' => [$notifyDelivery, 'notify before,'],
@@ -804,7 +805,13 @@ class Functions
 
         if ($isResi && !empty($accessLabel) && $showRadNotation) {
             $expolodAccess = explode('w/', $accessLabel);
-            $accessLabel = $isResi && $count <= 2 ? ' w/ residential &' . $expolodAccess[1] : ' w/ residential,' . $expolodAccess[1];
+
+            if($isAllAccessorials){
+                $accessLabel = $isResi && $count <= 2 ? ' w/ residential &' . $expolodAccess[1] : ' w/ resi,' . $expolodAccess[1];    
+            } else{
+                $accessLabel = $isResi && $count <= 2 ? ' w/ residential &' . $expolodAccess[1] : ' w/ residential,' . $expolodAccess[1];
+            }
+            
         }
 
         $accessLabel = $isResi && empty($accessLabel) && $showRadNotation ? Constant::RESI_LABEL : $accessLabel;
