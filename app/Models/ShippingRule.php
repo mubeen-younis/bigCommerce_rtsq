@@ -21,9 +21,14 @@ class ShippingRule extends Model
      * @param $storeId
      * @return array
      */
-    public static function getStoreShippingRules($storeId): array
+    public static function getStoreShippingRules($storeId, $ruleType = ''): array
     {
-        $rules = optional(self::where('store_id', $storeId)->get())->toArray() ?? [];
+        if(!empty($ruleType)){
+            $rules = optional(self::where(['store_id' => $storeId, 'rule_type' => $ruleType])->get())->toArray() ?? [];
+        } else {
+            $rules = optional(self::where('store_id', $storeId)->get())->toArray() ?? [];
+        }
+
         foreach($rules as $key => $rule){
             $rules[$key] = self::shippingRuleMappingByRuleType($rule);
         }
@@ -139,17 +144,6 @@ class ShippingRule extends Model
             $shippingRule->uuid = Helpers::getUuid();
             $message = 'Shipping Rule is added successfully.';
             $save = 1;
-        }
-
-        $alreadyAddedProducts = self::checkIsProductsAdded($shippingRuleData);
-
-        if(!empty($alreadyAddedProducts)){
-            $applyRuleToName = $shippingRuleData['apply_rule_to'] == 1 ? 'categories' : ($shippingRuleData['apply_rule_to'] == 2 ? 'brands' : 'products'); 
-            return [
-                'error' => true,
-                'message' => 'Some of ' . $applyRuleToName . ' is added in already defined rules.',
-                'data' => [],
-            ];
         }
 
         $ruleType = isset($shippingRuleData['rule_type']) && !empty($shippingRuleData['rule_type']) ? $shippingRuleData['rule_type'] : null;
@@ -414,46 +408,5 @@ class ShippingRule extends Model
         $shippingRule['warehouses'] = $settings['warehouses'] ?? 1;
 
         return $shippingRule;
-    }
-
-    public static function checkIsProductsAdded($shippingRuleData = [])
-    {
-        $rules = optional(self::where('store_id', $shippingRuleData['store_id'])->get())->toArray() ?? [];
-        
-        if(isset($shippingRuleData['uuid']) && isset($shippingRuleData['uuid'])){
-            $rules = optional(self::where('store_id', $shippingRuleData['store_id'])->whereNotIn('uuid', [$shippingRuleData['uuid']])->get())->toArray() ?? [];
-        }
-
-        if(!empty($rules)){
-            $getAlreadyAddedProducts = collect($rules)->filter(function ($rule) use ($shippingRuleData) {
-                    
-                if(isset($shippingRuleData['apply_rule_to']) && $shippingRuleData['apply_rule_to'] == 3){
-                    $filterSettings = isset($rule['filter_settings']) ? json_decode($rule['filter_settings'], true) : [];
-
-                    if(isset($filterSettings['apply_rule_to']) && $filterSettings['apply_rule_to'] == $shippingRuleData['apply_rule_to'] && isset($shippingRuleData['rule_type']) && $shippingRuleData['rule_type'] == $rule['rule_type']){
-                        $getDBProducts = isset($filterSettings['filter_products']) && !empty($filterSettings['filter_products']) ? $filterSettings['filter_products'] : [];
-                        $commonValues = array_intersect(($shippingRuleData['filter_products']), $getDBProducts); 
-                        return !empty($commonValues) ? true : false;
-                    }
-                } elseif(isset($shippingRuleData['apply_rule_to']) && $shippingRuleData['apply_rule_to'] == 2){
-                    $filterSettings = isset($rule['filter_settings']) ? json_decode($rule['filter_settings'], true) : [];
-                    if(isset($filterSettings['apply_rule_to']) && $filterSettings['apply_rule_to'] == $shippingRuleData['apply_rule_to'] && isset($shippingRuleData['rule_type']) && $shippingRuleData['rule_type'] == $rule['rule_type']){
-                        $getDBProducts = isset($filterSettings['filter_brands']) && !empty($filterSettings['filter_brands']) ? $filterSettings['filter_brands'] : [];
-                        $commonValues = array_intersect(($shippingRuleData['filter_brands']), $getDBProducts); 
-                        return $shippingRuleData['rule_type'] == $rule['rule_type'] && !empty($commonValues) ? true : false;
-                    }
-                } elseif(isset($shippingRuleData['apply_rule_to']) && $shippingRuleData['apply_rule_to'] == 1){
-                    $filterSettings = isset($rule['filter_settings']) ? json_decode($rule['filter_settings'], true) : [];
-                    if(isset($filterSettings['apply_rule_to']) && $filterSettings['apply_rule_to'] == $shippingRuleData['apply_rule_to'] && isset($shippingRuleData['rule_type']) && $shippingRuleData['rule_type'] == $rule['rule_type']){
-                        $getDBProducts = isset($filterSettings['filter_categories']) && !empty($filterSettings['filter_categories']) ? $filterSettings['filter_categories'] : [];
-                        $commonValues = array_intersect(($shippingRuleData['filter_categories']), $getDBProducts);  
-                        return !empty($commonValues) ? true : false;
-                    }
-                }
-            })->toArray() ?? [];
-
-            return $getAlreadyAddedProducts;
-        }
-        return [];    
     }
 }

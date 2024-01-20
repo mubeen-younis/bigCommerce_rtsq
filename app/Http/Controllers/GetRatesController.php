@@ -620,6 +620,9 @@ class GetRatesController extends Controller
         $isRestriction = false;
         $storeId = $storeData['store']['id'];
         $this->storeData = $storeData ?? [];
+        
+        $this->applyRestrictOriginLocationsRule($storeId, $formatReq);
+
         $shippingRules = ShippingRule::getStoreShippingRules($storeId);
         if (!empty($shippingRules)){
 
@@ -630,14 +633,8 @@ class GetRatesController extends Controller
 
             foreach($shippingRules as $key => $rule){
 
-                if(isset($rule['rule_type']) && isset($rule['apply_rule_to']) && $rule['rule_type'] == 5){
-                    if($this->setRulePriority == 3 && $rule['apply_rule_to'] != 3){
-                        continue;
-                    } else if($this->setRulePriority == 1 && ($rule['apply_rule_to'] != 3 || $rule['apply_rule_to'] == 2)){
-                        continue;
-                    } else if($this->setRulePriority == 2 && !($rule['apply_rule_to'] == 3 || $rule['apply_rule_to'] == 2 || $rule['apply_rule_to'] == 1)){
-                        continue;
-                    }
+                if(isset($rule['rule_type']) && $rule['rule_type'] == 5){
+                    continue;
                 }
 
                 $isAvailable = $rule['available'] ?? false;
@@ -755,30 +752,63 @@ class GetRatesController extends Controller
             return false;
         } elseif ($isSameCountry && isset($rule['rule_type']) && $rule['rule_type'] == 1){
             return false;
-        }  elseif (isset($rule['rule_type']) && $rule['rule_type'] == 5){
-
-            $this->setRulePriority = isset($rule['apply_rule_to']) ? $rule['apply_rule_to'] : null;
-
-            $origins = isset($this->formatReq['lineItemData']['origin']) ? $this->formatReq['lineItemData']['origin'] : [];
-            $productKeys = array_keys($products);
-
-            if(isset($this->connectionSettings['ups-ltl']) || isset($this->connectionSettings['xpo-ltl']) || isset($this->connectionSettings['odfl-ltl']) || isset($this->connectionSettings['ups-small'])){
-                foreach($origins as $key => $origin){
-                    if(in_array($key , $productKeys) && isset($origin['location']) && $origin['location'] === 'warehouse'){
-                        // check: if multiple warehouses defined then find nearest origin from the warehouses list
-                        $originAddress = $this->shipmentPkg->getNearestWarehouse($this->formatReq['lineItemData'], $destination['zip'], $this->storeData, [], $warehouses);
-                        if (blank($originAddress)) {
-                            Log::info('No warehouse added');
-                            return false;
-                        }
-                        $originAddress = $this->getAddressForQuotes($originAddress);
-                        $this->formatReq['lineItemData']['origin'][$key] = $originAddress;
-                    }
-                }
-            }
-            return false;
         } else {
             return true;
         }
     }
+
+    public function applyRestrictOriginLocationsRule($storeId, $formatReq){
+        $shippingRules = ShippingRule::getStoreShippingRules($storeId, 5);
+        $cartItems = isset($formatReq['lineItemData']['items']) ? $formatReq['lineItemData']['items'] : [];
+        $destination = isset($formatReq['lineItemData']['destination']) ? $formatReq['lineItemData']['destination'] : [];
+
+        if (!empty($shippingRules) && !empty($cartItems)){
+            foreach($cartItems as $item){
+                $warehouses = [];
+                foreach($shippingRules as $rule){
+                    $isAvailable = $rule['available'] ?? false;
+
+                    if($isAvailable){
+                        if(isset($rule['apply_rule_to']) && $rule['apply_rule_to'] == 3 && isset($item['product_id']) && !empty($item['product_id'])){
+                            $isProductExist = in_array($item['product_id'], $rule['products']);
+                        
+                            if($isProductExist){
+                                $warehouses = array_merge($warehouses, $rule['warehouses']);
+                            }
+                        } else if(isset($rule['apply_rule_to']) && $rule['apply_rule_to'] == 2 && isset($item['brand_id']) && !empty($item['brand_id'])){
+                            $isProductExist = in_array($item['brand_id'], $rule['brands']);
+    
+                            if($isProductExist){
+                                $warehouses = array_merge($warehouses, $rule['warehouses']);
+                            }
+                        } else if(isset($rule['apply_rule_to']) && $rule['apply_rule_to'] == 1 && isset($item['categories_id']) && !empty($item['categories_id'])){
+                            $isProductExist = array_intersect($item['categories_id'], $rule['categories']);
+    
+                            if($isProductExist){
+                                $warehouses = array_merge($warehouses, $rule['warehouses']);
+                            }
+                        }
+                    }
+                }
+
+                if(!empty($warehouses) && isset($this->connectionSettings['ups-ltl']) || isset($this->connectionSettings['xpo-ltl']) || isset($this->connectionSettings['odfl-ltl']) || isset($this->connectionSettings['ups-small'])){
+
+                    $origins = isset($this->formatReq['lineItemData']['origin']) ? $this->formatReq['lineItemData']['origin'] : [];
+                    foreach($origins as $key => $origin){
+                        if($key == $item['variant_id'] && isset($origin['location']) && $origin['location'] === 'warehouse'){
+                            // check: if multiple warehouses defined then find nearest origin from the warehouses list
+                            $originAddress = $this->shipmentPkg->getNearestWarehouse($this->formatReq['lineItemData'], $destination['zip'], $this->storeData, [], $warehouses);
+                            if (blank($originAddress)) {
+                                Log::info('No warehouse added');
+                                return false;
+                            }
+                            $originAddress = $this->getAddressForQuotes($originAddress);
+                            $this->formatReq['lineItemData']['origin'][$key] = $originAddress;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
+ 
