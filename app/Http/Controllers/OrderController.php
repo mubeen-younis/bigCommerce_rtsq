@@ -62,14 +62,16 @@ class OrderController extends Controller
         try {
             $order = $this->getBCOrderByID($request);
             if (empty($order)) {
-                return response()->json(['error' => true,
+                return response()->json([
+                    'error' => true,
                     'data' => [],
                     'message' => 'No Order Found',
                 ], 404);
             }
             $orderWidget = $this->createOrderWidget($request, $order, $reportingFlag);
             if (empty($orderWidget)) {
-                return response()->json(['error' => true,
+               return response()->json([
+                    'error' => true,
                     'data' => [],
                     'message' => 'No Order Widget Found',
                 ], 404);
@@ -81,7 +83,8 @@ class OrderController extends Controller
                 ]
             );
         } catch (\Exception $exception) {
-            return response()->json(['error' => true,
+            return response()->json([
+                'error' => true,
                 'data' => [],
                 'debug' => [$exception->getMessage(), $exception->getFile(), $exception->getLine()],
                 'message' => 'No Order Widget Found',
@@ -385,6 +388,7 @@ class OrderController extends Controller
             $city = $origin->senderCity ? $origin->senderCity . ',' : '';
             $state = $origin->senderState ?? '';
             $senderZip = $origin->senderZip ?? '';
+            $origin_markup = $origin->origin_markup ?? '';
             if (!$isMultiShipment && $isInspOrLocal) {
                 $origDetails = $this->getOriginForInsAndLocal($zip);
                 if (!blank($origDetails)) {
@@ -397,6 +401,12 @@ class OrderController extends Controller
             $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
             $sRate = $order['shipping_rate'];
+            $orderWidget[$zip]['originMarkup'] = $origin_markup;
+            
+            // calculate product markup
+            $products = $lineItem->items;
+            $productMarkup = $this->calculateProductMarkup($products);
+            $orderWidget[$zip]['productsMarkup'] = number_format($productMarkup, 2);
 
             if ($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement) {
                 if ($isHAT) {
@@ -469,19 +479,19 @@ class OrderController extends Controller
 
             /** 
              * Add Quote ID
-             * */ 
-            if (!$isSmallLtlrate && empty($multiShipmentresponse)){
+             * */
+            if (!$isSmallLtlrate && empty($multiShipmentresponse)) {
                 $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($rateId, $responseFromWS, $zip);
             } elseif (!$isSmallLtlrate && $isMultiShipment) {
                 $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($code, $responseFromWS, $zip);
             }
 
-            if (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Expected')){
+            if (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Expected')) {
                 $sName = explode('(Expected', $order['shipping_name'])[0] ?? '';
                 $sName = explode('w/', $sName)[0] ?? '';
                 $estimate = explode('(Expected', $order['shipping_name'])[1] ?? '';
                 $sMethod = '(Expected' . $estimate;
-            } elseif (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Intransit')){
+            } elseif (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Intransit')) {
                 $sName = explode('(Intransit', $order['shipping_name'])[0] ?? '';
                 $sName = explode('w/', $sName)[0] ?? '';
                 $estimate = explode('(Intransit', $order['shipping_name'])[1] ?? '';
@@ -490,7 +500,7 @@ class OrderController extends Controller
                 $sName = $order['shipping_name'] ?? '';
                 $sName = explode('w/', $sName)[0] ?? '';
                 $sMethod = '';
-            }            
+            }
 
             $orderWidget[$zip]['shipping_method'] = $sName . $sMethod;
             $orderWidget[$zip]['shipping_rate'] = '$' . number_format((float)$sRate, 2,);
@@ -601,13 +611,13 @@ class OrderController extends Controller
             }
             $orderWidget[$zip]['accessories'] = array_values(array_unique($orderWidget[$zip]['accessories']));
             $count++;
-
         }
 
         if ($reportingFlag) {
             $reportData = $this->bcReportingData($request, $order, $data, $isMulti, $orderWidget, $zip);
             $reportDataResp = $this->curlRequest->reportingDataCurlRequest($reportData);
         }
+
 
 
         /*
@@ -632,16 +642,15 @@ class OrderController extends Controller
         }
 
         $fdoShipmenst = json_decode($data['fdo_shipments_data'], true) ?? [];
-
         $sbs = '';
+
         $resp = [
             'widget' => $this->objectToArray($orderWidget),
             'sbs' => $sbs,
-            'fdoShipments' =>$fdoShipmenst, 
+            'fdoShipments' => $fdoShipmenst,
         ];
         return $resp;
     }
-
 
     public function getOriginForInsAndLocal($locationId)
     {
@@ -653,9 +662,35 @@ class OrderController extends Controller
         return $items->$sbsItemKey ?? [];
     }
 
+    public function calculateProductMarkup($item)
+    {
+        $totalFeeMarkup = 0;
+        if (!empty($item)) {
+            foreach ($item as $key => $product) {
+                if ($key == $product->variant_id) {
+                    $prodQuantity = $product->piecesOfLineItem;
+                    $prodcost = $prodQuantity * ($product->lineItemPrice ?? 0);
 
-    public
-    function shippingGroupOrderWidget($data, $order)
+                    if (isset($product->product_markup)) {
+                        $productFeeMarkup = (float)($product->product_markup);
+                        $symbolicHandlingFee = strpos($product->product_markup, '%') ? '%' : '';
+                    }
+
+                    if (strlen($productFeeMarkup) > 0) {
+                        if ($symbolicHandlingFee === '%') {
+                            $percentVal = $productFeeMarkup / 100 * $prodcost;
+                            $totalFeeMarkup += $percentVal;
+                        } else {
+                            $totalFeeMarkup += $productFeeMarkup * $prodQuantity;
+                        }
+                    }
+                }
+            }
+        }
+        return $totalFeeMarkup;
+    }
+
+    public function shippingGroupOrderWidget($data, $order)
     {
         $orderWidget = ShippingGroup::shippingGroupOrderWidget($data, $order);
         $resp = [
@@ -768,7 +803,6 @@ class OrderController extends Controller
             } else {
                 $endpoint = "https://api.bigcommerce.com/stores/" . $request['store_hash'] . "/v2/orders/" . $search . "?status_id=" . $status;
             }
-
         } else {
             if ($status == '') {
                 $countEndPoint = "https://api.bigcommerce.com/stores/" . $request['store_hash'] . "/v2/orders/count";
@@ -785,7 +819,6 @@ class OrderController extends Controller
                 /*$endpoint = "https://api.bigcommerce.com/stores/".$request['store_hash']."/v2/orders?sort=id:desc&limit=".$perPage."&page=".$page;*/
                 $endpoint = "https://api.bigcommerce.com/stores/" . $request['store_hash'] . "/v2/orders?sort=id:" . $sortProd . "&limit=" . $perPage . "&page=" . $page;
             }
-
         }
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
 
@@ -926,7 +959,8 @@ class OrderController extends Controller
     function edit(Orders $order, Request $request)
     {
         if (empty($request->order_id)) {
-            return response()->json(['error' => true,
+            return response()->json([
+                'error' => true,
                 'data' => [],
                 'message' => 'No Order Id',
             ], 404);
@@ -937,17 +971,23 @@ class OrderController extends Controller
 
         if ($order === null) {
             return response()->json(
-                ['error' => true,
+                [
+                    'error' => true,
                     'data' => [],
                     'message' => 'No Order Found Against This Id',
-                ], 404);
+                ],
+                404
+            );
         }
 
         return response()->json(
-            ['error' => false,
+            [
+                'error' => false,
                 'data' => $order,
                 'message' => 'Product Info',
-            ], 200);
+            ],
+            200
+        );
     }
 
     /**
@@ -961,7 +1001,8 @@ class OrderController extends Controller
     function update(Request $request, Orders $order)
     {
         if (!$request->order_id || empty($request->order_id)) {
-            return response()->json(['error' => true,
+            return response()->json([
+                'error' => true,
                 'data' => [],
                 'message' => 'No Product Id',
             ], 404);
@@ -970,7 +1011,8 @@ class OrderController extends Controller
         $order = Orders::find($request->order_id);
 
         if ($order === null) {
-            return response()->json(['error' => true,
+            return response()->json([
+                'error' => true,
                 'data' => [],
                 'message' => 'No Product Found Against This Id',
             ], 404);
@@ -981,11 +1023,11 @@ class OrderController extends Controller
 
         $this->updateSingleProductFromApi($request);
 
-        return response()->json(['error' => false,
+        return response()->json([
+            'error' => false,
             'data' => Orders::find($request->order_id),
             'message' => 'Order Updated Successfully',
         ], 200);
-
     }
 
     /**
@@ -1178,11 +1220,11 @@ class OrderController extends Controller
                         unset($reqData['id']);
                         RequestData::insert($reqData);
                         // TODO :  Need to check why we are doing this
-//                        $request['store_name'] = $toRequest['store_name'];
-//                        $request['store_id'] = $toRequest['store_id'];
-//                        $request['store_hash'] = $toRequest['store_hash'];
-//                        $request['order_id'] = $toRequest['order_id'];
-//                        $this->getOrderWidget($request, true);
+                        //                        $request['store_name'] = $toRequest['store_name'];
+                        //                        $request['store_id'] = $toRequest['store_id'];
+                        //                        $request['store_hash'] = $toRequest['store_hash'];
+                        //                        $request['order_id'] = $toRequest['order_id'];
+                        //                        $this->getOrderWidget($request, true);
                     }
                 }
             }
@@ -1316,7 +1358,6 @@ class OrderController extends Controller
                     $rate['label'] = $owrate['shipping_method'] ?? '';
                     $rate['cost'] = $owrate['shipping_rate'] ?? null;
                     $orderMeta['rate'] = $rate ?? [];
-
                 }
             }
 
@@ -1333,7 +1374,6 @@ class OrderController extends Controller
             ];
             unset($orderMeta, $accessorials);
             $serviceId++;
-
         }
 
         $data = [
@@ -1347,5 +1387,4 @@ class OrderController extends Controller
 
         return $data;
     }
-
 }
