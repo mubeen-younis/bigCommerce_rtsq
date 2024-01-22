@@ -45,14 +45,16 @@ class ExportImportProducts extends Controller
                     'message' => 'Products not available for import template',
                 ], 200);
             } else {
+
+                $hash = md5($request['store_id'] . time());
+                $this->CsvNotifyEmail($request['email'], $hash);
+
                 return response()->json(['error' => false,
                     'data' => [],
                     'message' => 'The import CSV template will be emailed to ' . $request['email'],
                 ], 200);
             }
         } else {
-            $hash = md5($request['store_id'] . time());
-            $this->CsvNotifyEmail($request['email'], $hash);
             return $this->createExportData($request);
         }
     }
@@ -159,11 +161,11 @@ class ExportImportProducts extends Controller
                     fputcsv($fp, $productLine);
                 }
             });
-            $ispdate = ExportProductsModel::find($request['exportProductsId'])->update(['status' => 1]);
+            $isupdate = ExportProductsModel::find($request['exportProductsId'])->update(['status' => 1]);
             $this->makeZipWithFiles($folderName);
             $this->sendEmail($request['email'], $hash);
-            if($ispdate){
-              return  $this->getDownloadLink($request['exportProductsId'],$hash);
+            if($isupdate){
+              return  $this->createCSVDownloadLink($request['exportProductsId'],$hash);
             }
         } catch (RequestException $e) {
             $statusCode = $e->getResponse()->getStatusCode();
@@ -177,15 +179,51 @@ class ExportImportProducts extends Controller
         }
     }
 
-    public function getDownloadLink($exportProductId,$hash)
+    public function createCSVDownloadLink($exportProductId,$hash)
     {  
         $available = ExportProductsModel::where(['id' => $exportProductId,'status' => 1])->exists();
         if($available){
            $url = URL::to('api/downloadcsv/'.$hash);
-           $link =  "The export CSV template has been finished <a href='$url'> Click here to download it </a>";
+           $message =  "The export CSV template has been finished.";
            return response()->json([
             "error" => false,
-            'response' => $link
+            'message' => $message,
+            'data' => $url,
+           ],200); 
+        }
+    }
+
+    public function getCSVDownloadLink(Request $request)
+    {
+        $status = ExportProductsModel::where('store_id', $request['store_id'])->latest()->first() ?? [];
+
+        if(isset($request['is_link_invisible']) && $request['is_link_invisible'] == 'true' ){
+            $status->is_link_invisible = 1;
+            $status->save();
+            return response()->json([
+                "error" => false,
+                'message' => 'Download link has been invisible',
+                'data' => '',
+               ], 200
+            );
+        }
+
+        if (empty($status) || $status->status == 0 || $status->is_link_invisible == 1 || ($status->request_time <= time() - 24 * 3600)) {
+            return response()->json([
+                "error" => true,
+                'message' => 'Download link has been expired',
+                'data' => '',
+               ], 200
+            );
+        }
+        
+        if(!empty($status)){
+           $url = URL::to('api/downloadcsv/'.$status['hash']);
+           $message =  "The export CSV template has been finished.";
+           return response()->json([
+            "error" => false,
+            'message' => $message,
+            'data' => $url,
            ],200); 
         }
     }

@@ -1,7 +1,8 @@
 <div>
-   Your Request for a CSV file export of your product shipping parameters is being processed. Depending on
-   the number and size of the files currently being processed by our servers, the file should appear in you
-   inbox in less than 30 minutes. Most of the time, the exported file is delivered within a few minutes. 
+    Your request for a CSV file export of your product shipping parameters is being processed. 
+    Depending on the number and size of the files currently being processed by our servers, 
+    the file should appear in your inbox in less than 30 minutes. Most of the time, 
+    the exported file is delivered within a few minutes.
     <br/>
     <p>Sincerely,<br />
     Customer Support<br />

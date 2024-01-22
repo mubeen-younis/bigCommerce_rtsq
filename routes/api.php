@@ -186,6 +186,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/exportProductsTemplate', [ExportImportProducts::class, 'exportProductsTemplate']);
     Route::get('/getRowHeaderImportedFile', [ExportImportProducts::class, 'getRowHeaderImportedFile']);
     Route::post('/importProducts', [ExportImportProducts::class, 'importProductsCsv']);
+    Route::get('/get_csv_download_link', [ExportImportProducts::class, 'getCSVDownloadLink']);
 
     //subscription
     Route::post('/create_subscription', [Subscriptions::class, 'createSubscription']);
