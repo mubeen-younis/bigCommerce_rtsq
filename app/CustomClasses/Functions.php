@@ -761,7 +761,6 @@ class Functions
         $accessTitles = '';
         $accessLabel = '';
         $autoResiAdrrLfg = isset($quoteSettings['autoDetectedResidentialAddressesLfg']) ? $quoteSettings['autoDetectedResidentialAddressesLfg'] : false;
-        $isAllAccessorials = ($lgOption && $insideDel && $laccess && $notifyDelivery) ?? false;
 
         $offerFeaturesAsOption = [
             'offerLiftGateDelivery' => [$lgOption, 'liftgate,'],
@@ -805,13 +804,7 @@ class Functions
 
         if ($isResi && !empty($accessLabel) && $showRadNotation) {
             $expolodAccess = explode('w/', $accessLabel);
-
-            if($isAllAccessorials){
-                $accessLabel = $isResi && $count <= 2 ? ' w/ residential &' . $expolodAccess[1] : ' w/ resi,' . $expolodAccess[1];    
-            } else{
-                $accessLabel = $isResi && $count <= 2 ? ' w/ residential &' . $expolodAccess[1] : ' w/ residential,' . $expolodAccess[1];
-            }
-            
+            $accessLabel = $isResi && $count <= 2 ? ' w/ residential &' . $expolodAccess[1] : ' w/ residential,' . $expolodAccess[1];            
         }
 
         $accessLabel = $isResi && empty($accessLabel) && $showRadNotation ? Constant::RESI_LABEL : $accessLabel;

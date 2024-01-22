@@ -476,11 +476,11 @@ class OrderController extends Controller
                 $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($code, $responseFromWS, $zip);
             }
 
-            if (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Expected')){
-                $sName = explode('(Expected', $order['shipping_name'])[0] ?? '';
+            if (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Delivery')){
+                $sName = explode('(Delivery', $order['shipping_name'])[0] ?? '';
                 $sName = explode('w/', $sName)[0] ?? '';
-                $estimate = explode('(Expected', $order['shipping_name'])[1] ?? '';
-                $sMethod = '(Expected' . $estimate;
+                $estimate = explode('(Delivery', $order['shipping_name'])[1] ?? '';
+                $sMethod = '(Delivery' . $estimate;
             } elseif (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Intransit')){
                 $sName = explode('(Intransit', $order['shipping_name'])[0] ?? '';
                 $sName = explode('w/', $sName)[0] ?? '';
