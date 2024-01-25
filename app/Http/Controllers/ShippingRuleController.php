@@ -121,6 +121,8 @@ class ShippingRuleController extends Controller
                         $carrierType = isset($settings['carrier_type']) ? $settings['carrier_type'] : null;
                     }
 
+                    $request = new \Illuminate\Http\Request();
+
                     if ($providerSlug == 'gtz-ltl'){
                         $request->carrier_type = $value['api_type'] ?? '';
                         $request->store_id = $value['store_id'];
@@ -140,7 +142,6 @@ class ShippingRuleController extends Controller
                     }
 
                     $carrIndexName = Functions::getCarrIndexBySlug($providerSlug);
-                    $request = new \Illuminate\Http\Request();
                     $request->installed_carrier_id = $carrierId;
                     $request->store_id = $storeId;
                     if($rule['rule_type'] == 5 && $carrierId != null && $carrierName == $carrIndexName){
@@ -154,10 +155,18 @@ class ShippingRuleController extends Controller
                                 $serviceType = $quote['scac'] ?? $quote['CarrierSCAC'] ?? $serviceType;
                                 $services = json_decode(json_encode($carrierProviders))->original->data ?? [];
                                 $service = array_values(array_filter($services, fn($service) => $service->speed_freight_carrierSCAC == $serviceType))[0] ?? [];
-
+                                
                                 if(isset($service->speed_freight_carrierName) && in_array($service->speed_freight_carrierName, $rule['filter_services'])){
                                     $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
                                     $isOverrideRates = true;
+                                }
+                                // Check: if GTZ cerasis API is selected
+                                if($providerSlug == 'cltl'){
+                                    $service = array_values(array_filter($services, fn($service) => $service->speed_freight_carrierName == $serviceType))[0] ?? [];
+                                    if(isset($service->speed_freight_carrierSCAC) && in_array($service->speed_freight_carrierSCAC, $rule['filter_services'])){
+                                        $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                        $isOverrideRates = true;
+                                    }
                                 }
                             } else if($carrierType == 2) {
                                 $serviceDesc = isset($quote['timeInTransit']['serviceDescription']) ? $quote['timeInTransit']['serviceDescription'] : '';
@@ -208,7 +217,7 @@ class ShippingRuleController extends Controller
                                     $isOverrideRates = true;
                                 }
                             } else if($carrierType == 1) {
-                                $serviceType = ucwords(str_replace('-', ' ' , $providerSlug));
+                                $serviceType = ucwords(str_replace('-ltl', ' LTL' , $providerSlug));
                                 if(in_array($serviceType, $rule['filter_services'])){                                    
                                     $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
                                     $isOverrideRates = true;

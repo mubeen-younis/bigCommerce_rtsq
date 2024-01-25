@@ -88,7 +88,7 @@ class Functions
     ];
 
     public static function is3plCarrier($carrier){
-        $carriersArray = ['ltl-quotes', 'freightquote-ltl', 'tql-ltl', 'echo-ltl', 'freightquote-chr-ltl', 'priority-one-ltl', 'gtz-ltl'];
+        $carriersArray = ['ltl-quotes', 'freightquote-ltl', 'tql-ltl', 'echo-ltl', 'freightquote-chr-ltl', 'priority-one-ltl', 'gtz-ltl', 'gtz-new', 'cltl'];
         return in_array($carrier, $carriersArray);
     }
 

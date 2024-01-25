@@ -56,9 +56,10 @@ class QuoteSettingsController extends Controller
                 $services = json_decode(json_encode($carrierProviders))->original->data ?? [];
 
                 foreach($services as $key => $service){
-                    if(in_array($service->speed_freight_carrierSCAC, $carrierServicesArray)){
-                        $data[$key]['key'] = $service->speed_freight_carrierSCAC;
-                        $data[$key]['value'] = $service->speed_freight_carrierName;
+                    if(in_array($service->speed_freight_carrierName, $carrierServicesArray) && $request->carrier_type == 'CRS'){
+                        $data[] = ['key' => $service->speed_freight_carrierName, 'value' => $service->speed_freight_carrierSCAC];
+                    } else if(in_array($service->speed_freight_carrierSCAC, $carrierServicesArray)){
+                        $data[] = ['key' => $service->speed_freight_carrierSCAC, 'value' => $service->speed_freight_carrierName];
                     }
                 }
             } else if($carrierSlug == 'fedex-ltl') {
@@ -89,7 +90,7 @@ class QuoteSettingsController extends Controller
                             }
                         }
                     } else {
-                        $data[] = ['key' => $carrierSlug, 'value' => ucwords(str_replace('-', ' ' , $carrierSlug))];
+                        $data[] = ['key' => $carrierSlug, 'value' => ucwords(str_replace('-ltl', ' LTL' , $carrierSlug))];
                     }
                 } 
 
@@ -109,7 +110,7 @@ class QuoteSettingsController extends Controller
                     $data[] = ['key' => 'guaranteed_hourly_window', 'value' => ucwords(str_replace('_', ' ' , 'guaranteed_hourly_window'))];
                 }
             } else {
-                $data[] = ['key' => $carrierSlug, 'value' => ucwords(str_replace('-', ' ' , $carrierSlug))];
+                $data[] = ['key' => $carrierSlug, 'value' => ucwords(str_replace('-ltl', ' LTL' , $carrierSlug))];
             }
 
         } else if($carrierSlug == 'purolator-small') {
