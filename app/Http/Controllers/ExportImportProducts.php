@@ -77,16 +77,18 @@ class ExportImportProducts extends Controller
             return [];
         }
         $comma = ",";
-        if (!isset($request['rerunrequest'])) {
-            $fileName = '/export_files/' . $request['store_hash'] . '/' . time();
-            $request['folderName'] = public_path() . $fileName;
-            $hash = md5($request['store_id'] . time());
-            $this->makeDirectory($request['folderName'], $mode = 0777, true, true);
-            $request['exportProductsId'] = ExportProductsModel::insertGetId(['store_id' => $request['store_id'], 'foldername' => $fileName . '.zip', 'hash' => $hash, 'request_time' => time(), 'email' => $request['email'], 'status' => 0]);
-        }
-        $folderName = $request['folderName'];
-        $folderNamePath = [];
+        
         try {
+            if (!isset($request['rerunrequest'])) {
+                $fileName = '/export_files/' . $request['store_hash'] . '/' . time();
+                $request['folderName'] = public_path() . $fileName;
+                $hash = md5($request['store_id'] . time());
+                $this->makeDirectory($request['folderName'], $mode = 0777, true, true);
+                $request['exportProductsId'] = ExportProductsModel::insertGetId(['store_id' => $request['store_id'], 'foldername' => $fileName . '.zip', 'hash' => $hash, 'request_time' => time(), 'email' => $request['email'], 'status' => 0]);
+            }
+            $folderName = $request['folderName'];
+            $folderNamePath = [];
+            
             $productsChunk->chunk(2500, function ($products, $chunkCount = 0) use ($comma, $folderName, $dropShips, $weightUnit, $dimensionsUnit) {
                 $fileName = $chunkCount++ . '-export.csv';
                 $filename = $folderName . '/' . $fileName;
