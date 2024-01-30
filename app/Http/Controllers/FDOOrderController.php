@@ -169,6 +169,10 @@ class FDOOrderController extends Controller
 
         $shippingGroupResp = !blank($data['shipping_group_resp']) ? json_decode($data['shipping_group_resp']) : [];
         $requestToWS = json_decode($data['request']);
+
+        $handlingUnitWeight = $requestToWS->requestArr->carriers->$wsCarrierCode->api->handlingUnitWeight ?? 0;
+        $maxWeightPerHandlingUnit = $requestToWS->requestArr->carriers->$wsCarrierCode->api->maxWeightPerHandlingUnit ?? 0;
+
         $lineItem->items = $this->formatItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
         $lineItem->origin = $this->formatOrigins($requestToWS->requestArr->carriers);
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
@@ -334,6 +338,8 @@ class FDOOrderController extends Controller
             $orderWidget[$zip]['carrier_type'] = 'small';
             if (!$isSmall) {
                 $orderWidget[$zip]['carrier_type'] = 'ltl';
+                $orderWidget[$zip]['handlingUnitWeight'] = $handlingUnitWeight;
+                $orderWidget[$zip]['maxWeightPerHandlingUnit'] = $maxWeightPerHandlingUnit;
                 $orderWidget[$zip]['handling_unit_details'] = $handlingUnitDetails;
             }
 
