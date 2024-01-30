@@ -116,7 +116,7 @@ class QuotesResults
                 isset($data['estimated_delivery_date']) && $data['estimated_delivery_date'] !== '' &&
                 isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3
             ) {
-                $title = $title . ' (Expected delivery by ' . date('h:i A m-d-Y', strtotime($data['estimated_delivery_date'])) . ')';
+                $title = $title . ' (Delivery by ' . date('h:i A m-d-Y', strtotime($data['estimated_delivery_date'])) . ')';
             }
             return $title;
         } catch (\Exception $exception) {
