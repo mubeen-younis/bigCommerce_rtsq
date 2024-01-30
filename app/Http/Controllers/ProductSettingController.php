@@ -111,12 +111,12 @@ class ProductSettingController extends Controller
             $response = json_decode($response['response'], true);
             if (isset($response['data']) && count($response['data'])) {
                 foreach ($response['data'] as $variant) {
-                    $product['price'] = $variant['price'];
-                    $product['weight'] = $variant['weight'];
-                    $product['depth'] = $variant['depth'];
-                    $product['width'] = $variant['width'];
-                    $product['height'] = $variant['height'];
-                    $product['sku'] = $variant['sku'];
+                    $product['price'] = $variant['price'] ?? $product['price'];
+                    $product['weight'] = $variant['weight'] ?? $product['weight'];
+                    $product['depth'] = $variant['depth'] ?? $product['depth'];
+                    $product['width'] = $variant['width'] ?? $product['width'];
+                    $product['height'] = $variant['height'] ?? $product['height'];
+                    $product['sku'] = $variant['sku'] ?? $product['sku'];
                     $product['base_variant_id'] = $variant['id'];
 
                     !$useTransaction ? $this->saveProducts->saveProductFromSync($product, $data['store_id']) :
@@ -281,13 +281,14 @@ class ProductSettingController extends Controller
     {
         $this->deleteDuplicateProducts($request);
 
-        if (empty($request->product_id)) {
+        if (empty($request->product_id) && $request->variant_id) {
             return response()->json(['error' => true,
                 'data' => [],
                 'message' => 'No Product Id',
             ], 404);
         }
         $products = ProductSetting::where('source_product_id', $request->product_id)
+            ->where('variant_id', $request->variant_id)
             ->where('store_id', $request->store_id)
             ->get();
         if ($products->isEmpty()) {
@@ -339,6 +340,7 @@ class ProductSettingController extends Controller
             $perPage = $request['perpage'] ?? 50;
             $search = $request['search'] ?? null;
             $sortProd = $request['sortProd'] == "true" ? 'DESC' : 'ASC';
+            $count = 0;
             /*$count = ProductSetting::where('store_id', $request->store_id)
                 ->where('name','LIKE','%'.$search.'%')->orderBy('name', $sortProd)->get()->groupBy('source_product_id')->count();*/
 
@@ -357,23 +359,17 @@ class ProductSettingController extends Controller
                     ->get();
             }
 
-            if ($count->count()) {
-                $count = $count->groupBy('source_product_id')->count();
-            } else {
-                $count = 0;
-            }
             if ($search === null || $search == '') {
-                $products = ProductSetting::where('store_id', $request->store_id)
-                    ->groupBy('source_product_id')->orderBy('name', $sortProd)->skip(($page - 1) * $perPage)->take($perPage)->get();
+                $products = ProductSetting::where('store_id', $request->store_id)->whereNotNull('variant_id')
+                    ->orderBy('name', $sortProd)->skip(($page - 1) * $perPage)->take($perPage)->get();
             } else {
                 $products = ProductSetting::where(function ($query) use ($search) {
                     $query->where('name', 'LIKE', '%' . $search . '%')
                         ->orWhere('sku', 'LIKE', '%' . $search . '%')
                         ->orWhere('variant_id', $search)
                         ->orWhere('source_product_id', $search);
-                })->where('store_id', $request->store_id)
+                })->where('store_id', $request->store_id)->whereNotNull('variant_id')
                     ->orderBy('name', $sortProd)
-                    ->groupBy('source_product_id')
                     ->skip(($page - 1) * $perPage)->take($perPage)->get();
             }
             if ($products->isEmpty()) {
@@ -730,12 +726,12 @@ class ProductSettingController extends Controller
 
             if (isset($response['data'])) {
                 $variant = $response['data'];
-                $product['price'] = $variant['price'];
-                $product['weight'] = $variant['weight'];
-                $product['depth'] = $variant['depth'];
-                $product['width'] = $variant['width'];
-                $product['height'] = $variant['height'];
-                $product['sku'] = $variant['sku'];
+                $product['price'] = $variant['price'] ?? $product['price'];
+                $product['weight'] = $variant['weight'] ?? $product['weight'];
+                $product['depth'] = $variant['depth'] ?? $product['depth'];
+                $product['width'] = $variant['width'] ?? $product['width'];
+                $product['height'] = $variant['height'] ?? $product['height'];
+                $product['sku'] = $variant['sku'] ?? $product['sku'];
                 $product['base_variant_id'] = $variant['id'];
                 $product['id'] = $variant['product_id'];
                 $this->saveProducts->setVariantNullProduct($product, $store->id);
