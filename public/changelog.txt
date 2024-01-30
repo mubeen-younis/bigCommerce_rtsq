@@ -1,3 +1,7 @@
+= 2.1.8 2024-01-23 =
+
+* Update - introduce Shipping Restrictions to origin locations in BC (Ticket:2101243204)[#406](https://bitbucket.org/eniture/big-commerce/pull-requests/406)
+
 = 2.1.7 2024-01-16 =
 
 * fix - ODFL return incorrect rates in case of api return an error. (Ticket:2270265145)[#404](https://bitbucket.org/eniture/big-commerce/pull-requests/404)

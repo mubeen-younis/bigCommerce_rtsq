@@ -92,12 +92,18 @@ class WweLTLShipmentPackage
      * @param $storeData
      * @return array
      */
-    public function getNearestWarehouse($request, $receiverZipCode, $storeData, $connectionSettings)
+    public function getNearestWarehouse($request, $receiverZipCode, $storeData, $connectionSettings, $shippingRuleOrigins)
     {
         $this->request = $request;
         $this->storeData = $storeData;
         $this->connectionSettings = $connectionSettings;
         $origin = LocationsController::getAllLocations($storeData['store']->id, 1);
+        if(!empty($shippingRuleOrigins)){
+            foreach($shippingRuleOrigins as $w){
+                    $shippingOrigins[] = collect($origin)->where('zip_code', $w)->all() ?? [];
+            }
+            $origin = array_reduce($shippingOrigins, 'array_merge', []);
+        }
         if (blank($origin)) {
             return null;
         }
