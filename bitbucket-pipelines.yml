@@ -8,7 +8,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    fixes-markups-calculation:
+    update-products-setting-UI:
       - step:
           caches:
             - composer
