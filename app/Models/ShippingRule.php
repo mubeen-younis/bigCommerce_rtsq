@@ -405,7 +405,7 @@ class ShippingRule extends Model
         $shippingRule['categories'] = $settings['filter_categories'] ?? [];
         $shippingRule['brands'] = $settings['filter_brands'] ?? [];
         $shippingRule['apply_rule_to'] = $settings['apply_rule_to'] ?? 1;
-        $shippingRule['warehouses'] = $settings['warehouses'] ?? 1;
+        $shippingRule['warehouses'] = $settings['warehouses'] ?? [];
 
         return $shippingRule;
     }
