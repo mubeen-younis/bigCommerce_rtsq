@@ -146,8 +146,7 @@ class ShippingRuleController extends Controller
                     $carrIndexName = Functions::getCarrIndexBySlug($providerSlug);
                     $request->installed_carrier_id = $carrierId;
                     $request->store_id = $storeId;
-                    if($rule['rule_type'] == 5 && $carrierId != null && $carrierName == $carrIndexName){
-                        
+                    if($rule['rule_type'] == 6 && $carrierId != null && $carrierName == $carrIndexName){
                         $isRuletrue = $this->hideMethods($rule, $cartItems);
                         if(!$isRuletrue){
                             if(Functions::is3plCarrier($providerSlug) && $carrierType == 1){
