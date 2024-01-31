@@ -62,15 +62,17 @@ class QuotesResults
                     if (!$this->isActiveService($srvcType)) {
                         continue;
                     }
+                    // Adding Product and Origin Markup in services if added
+                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
+                    $data['totalNetCharge']['Amount'] = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
 
-                    // Getting markup values form quote settings
+                    // Adding markup values if available
+                    $data['totalNetCharge']['Amount'] = $this->addHandlingMarkupOfHazmat($data['totalNetCharge']['Amount']);
+
                     $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName);
                     $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
-                    $price = $this->getServiceRate($data);
-                    // Adding markup values if available
-                    $price = $this->addHandlingMarkupOfHazmat($price);
-                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
-                    $price = $price + $productOriginMarkupFee;
+                    $price = $this->getServiceRate($data['totalNetCharge']['Amount'], $srvcType);
+                    
                     // Get service title
                     $title = $this->getServiceTitle($data, $srvcType, $this->quoteSettings, $residential, $showRadNotation);
                     $price = (float) str_replace(',', '', $price);
@@ -168,10 +170,9 @@ class QuotesResults
         return $indexesArr[$srvcType] ?? '';
     }
 
-    public function getServiceRate($data)
+    public function getServiceRate($amount, $srvcType)
     {
-        $amount = $data['totalNetCharge']['Amount'];
-        $markupIndex = $this->getServiceIndexFromServiceType($data['serviceType']) . '_markup';
+        $markupIndex = $this->getServiceIndexFromServiceType($srvcType) . '_markup';
         $markupValue = $this->quoteSettings['carrier_services'][$markupIndex] ?? '';
 
         if (empty($markupValue) || !is_numeric(str_replace('%', '', $markupValue))) {
@@ -234,7 +235,7 @@ class QuotesResults
         if (isset($data['totalTransitTimeInDays']) && $data['totalTransitTimeInDays'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2) {
             $title = $title . ' (Intransit days: ' . $data['totalTransitTimeInDays'] . ')';
         } else if (isset($data['transitDate']) && $data['transitDate'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3) {
-            $title = $title . ' (Expected delivery by ' . date('m-d-Y', strtotime($data['transitDate'])) . ')';
+            $title = $title . ' (Delivery by ' . date('m-d-Y', strtotime($data['transitDate'])) . ')';
         }
 
         return $title;

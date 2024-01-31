@@ -220,17 +220,45 @@ class FDOOrderController extends Controller
             $sRate = $order['shipping_rate'];
             //print_r($multiShipmentresponse); exit;
             if ($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement) {
-                if ($isHAT) {
-                    $sRate = $multiShipmentresponse->$index->hat->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
-                    $order['shipping_name'] = $multiShipmentresponse->$index->hat->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
-                } else if ($isLG) {
-                    $sRate = $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
-                    $order['shipping_name'] = $multiShipmentresponse->$index->liftgate->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
-                    $code = $multiShipmentresponse->$index->liftgate->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
-                } else {
-                    $sRate = $multiShipmentresponse->$index->simple->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? 0.00;
-                    $order['shipping_name'] = $multiShipmentresponse->$index->simple->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? '';
-                    $code = $multiShipmentresponse->$index->simple->$zip->code ?? $multiShipmentresponse->$index->liftgate->$zip->code ?? '';
+                $enableFeaturesArray = Functions::getEnableFeaturesArr($isLG, $insideDelivery == 'Y', $notifyBeforeDelivery == 'Y', $LimitedAccessDel == 'Y');
+                $enableFeaturesArray = array_reverse($enableFeaturesArray);
+                foreach($enableFeaturesArray as $key => $feature){
+                    if ($isHAT) {
+                        $sRate = $multiShipmentresponse->$index->hat->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
+                        $order['shipping_name'] = $multiShipmentresponse->$index->hat->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
+                        $code = $multiShipmentresponse->$index->hat->$zip->code ?? $multiShipmentresponse->$index->liftgate->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
+                        break;
+                    } else if ($feature['isEnable']) {
+                        $sRate = $multiShipmentresponse->$index->$key->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
+                        $order['shipping_name'] = $multiShipmentresponse->$index->$key->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
+                        $code = $multiShipmentresponse->$index->$key->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
+                        break;
+                    } else if ($isFreightTruckLoad == 'Y') {
+                        $sRate = $multiShipmentresponse->$index->Truckload->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? 0.00;
+                        $order['shipping_name'] = $multiShipmentresponse->$index->Truckload->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? '';
+                        $code = $multiShipmentresponse->$index->Truckload->$zip->code ?? $multiShipmentresponse->$index->liftgate->$zip->code ?? '';
+                        break;
+                    } else if ($isTruckLoad == 'Y') {
+                        $sRate = $multiShipmentresponse->$index->Truckload->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? 0.00;
+                        $order['shipping_name'] = $multiShipmentresponse->$index->Truckload->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? '';
+                        $code = $multiShipmentresponse->$index->Truckload->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? $multiShipmentresponse->$index->liftgate->$zip->code ?? '';
+                        break;
+                    } else if ($isTwoManDel == 'Y' && $isAppointmentDel == 'Y') {
+                        $sRate = $multiShipmentresponse->$index->twoManAptDelivery->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
+                        $order['shipping_name'] = $multiShipmentresponse->$index->twoManAptDelivery->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
+                        $code = $multiShipmentresponse->$index->twoManAptDelivery->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
+                        break;
+                    } else if ($isTwoManDel == 'Y') {
+                        $sRate = $multiShipmentresponse->$index->twoMan->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
+                        $order['shipping_name'] = $multiShipmentresponse->$index->twoMan->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
+                        $code = $multiShipmentresponse->$index->twoMan->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
+                        break;
+                    } else if ($isAppointmentDel == 'Y') {
+                        $sRate = $multiShipmentresponse->$index->appointment->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
+                        $order['shipping_name'] = $multiShipmentresponse->$index->appointment->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
+                        $code = $multiShipmentresponse->$index->appointment->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
+                        break;
+                    }
                 }
                 $carrierHasInsurance = $code ? Functions::hasInsureCarrier($code) : false;
                 $carrierName = $code ? Functions::getCarrierNameOrCode($code) : "Multi Carrier";
@@ -250,11 +278,11 @@ class FDOOrderController extends Controller
                 $handlingUnitDetails = optional($responseFromWS)->$wsCarrierCode->$zip->DEBUG ?? [];
             }
 
-            if (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Expected')){
-                $sName = explode('(Expected', $order['shipping_name'])[0] ?? '';
+            if (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Delivery')){
+                $sName = explode('(Delivery', $order['shipping_name'])[0] ?? '';
                 $sName = explode('w/', $sName)[0] ?? '';
-                $estimate = explode('(Expected', $order['shipping_name'])[1] ?? '';
-                $sMethod = '(Expected' . $estimate;
+                $estimate = explode('(Delivery', $order['shipping_name'])[1] ?? '';
+                $sMethod = '(Delivery' . $estimate;
             } elseif (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Intransit')){
                 $sName = explode('(Intransit', $order['shipping_name'])[0] ?? '';
                 $sName = explode('w/', $sName)[0] ?? '';

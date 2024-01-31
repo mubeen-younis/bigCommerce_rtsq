@@ -17,10 +17,8 @@ class QuotesResults
     }
 
 
-    public function getServiceRate($data, $serviceDesc, $quoteSettings)
+    public function getServiceRate($amount, $serviceDesc, $quoteSettings)
     {
-        $amount = $data['totalNetCharge']['Amount'];
-
         $serviceDesc = preg_replace("([A-Z])", " $0", $serviceDesc);
         $trim = ltrim($serviceDesc);
         $markupIndex = strtolower(str_replace(':', ' ', $trim) . '_markup');
@@ -85,7 +83,7 @@ class QuotesResults
         if (isset($data['totalTransitTimeInDays']) && $data['totalTransitTimeInDays'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2) {
             $title = $title . ' (Intransit days: ' . $data['totalTransitTimeInDays'] . ')';
         } else if (isset($data['deliveryTimestamp']) && $data['deliveryTimestamp'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3) {
-            $title = $title . ' (Expected delivery by ' . date('m-d-Y', strtotime($data['deliveryTimestamp'])) . ')';
+            $title = $title . ' (Delivery by ' . date('m-d-Y', strtotime($data['deliveryTimestamp'])) . ')';
         }
         return $title;
     }
@@ -172,14 +170,17 @@ class QuotesResults
                     if ($this->onylQuoteGroundServices($isHazmat, $srvcType)) {
                         continue;
                     }
+                    // Adding Product and Origin Markup in services if added
+                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
+                    $data['totalNetCharge']['Amount'] = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
 
                     // Adding Markup in services if enabled
+                    $quoteSettings = $this->quoteSettings;
+                    $data['totalNetCharge']['Amount'] = $this->addHandlingMarkupOfHazmat($data['totalNetCharge']['Amount'], $quoteSettings['handling_fee_markup'] ?? 0);
+
                     $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName);
                     $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
-                    $price = $this->getServiceRate($data, $data['serviceType'], $this->quoteSettings);
-                    $quoteSettings = $this->quoteSettings;
-                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
-                    $price = $price + $productOriginMarkupFee;
+                    $price = $this->getServiceRate($data['totalNetCharge']['Amount'], $data['serviceType'], $this->quoteSettings);
 
                     // Checking hazmat and adding hazmat amounts in services
                     if ($isHazmat) {

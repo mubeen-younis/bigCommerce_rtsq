@@ -348,7 +348,7 @@ class CompileQuotes
                 ];
             }
         }
-        Log::info('quotes array after instore ' . json_encode($quotesArray));
+        
         return $quotesArray;
     }
 
@@ -1348,7 +1348,7 @@ class CompileQuotes
             $originQuotes = [];
             $arraySorting = [];
 
-            if (isset($quote['q'])) {
+            if (isset($quote['q']) && isset($quote['q']['success']) && $quote['q']['success'] == "true") {
                 if (isset($quote['hazardousStatus'])) {
                     $hazShipmentArr[$origin] = $quote['hazardousStatus'] == 'y' ? 'Y' : 'N';
                 }
@@ -3376,13 +3376,17 @@ class CompileQuotes
                     }
 
                     $access = $this->getAccessorialCodeSmall();
+                    // Adding Product and Origin Markup in services if added
+                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $this->originKey, $this->items, $this->allOrigins);
+                    $data['totalNetCharge']['Amount'] = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
                     // Adding Markup in services if enabled
+                    $quoteSettings = $this->quoteSettings;
+
+                    $data['totalNetCharge']['Amount'] = $this->wweSmallQuoteRes->addHandlingMarkupOfHazmat($data['totalNetCharge']['Amount'], $quoteSettings['handling_fee_markup'] ?? 0);
+
                     $overrideRates = $this->shippingRule->overrideRates($this->storeId, $this->items, $connectionSettings, $data, $this->carrierName);
                     $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
                     $price = $this->wweSmallQuoteRes->getServiceRate($data['totalNetCharge']['Amount'], $data['serviceType'], $this->quoteSettings);
-                    $quoteSettings = $this->quoteSettings;
-
-                    $price = $this->wweSmallQuoteRes->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup'] ?? 0);
                     // Checking hazmat and adding hazmat amounts in services
                     if ($isHazmat) {
                         if ($this->isMultiShipment) {
@@ -3397,8 +3401,6 @@ class CompileQuotes
                     $days = $data['totalTransitTimeInDays'] ?? null;
                     $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
                     $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $dateAndDays, $data['serviceType'], $this->quoteSettings, $this->isResi, $showRadNotation);
-                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $this->originKey, $this->items, $this->allOrigins);
-                    $price = $price + $productOriginMarkupFee;
                     $price = (float) str_replace(',', '', $price);
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12wwe' . $data['serviceType'] . $access;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
@@ -5482,7 +5484,6 @@ class CompileQuotes
         $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? $quote['q']['InstorPickupLocalDelivery'] ?? $quote['fedexServices']['InstorPickupLocalDelivery'] ?? [];
         $ownArrangementQoutes = isset($quote['allowOwnArrangement']) && $quote['allowOwnArrangement'] ? $this->arrangeOwnFreight() : [];
         if (!$this->isMultiShipment && (!blank($inStoreLdData) || !blank($ownArrangementQoutes))) {
-            Log::info('getInsPicAndLocDelQuotes ' . json_encode($inStoreLdData));
             return $this->inStoreLocalDeliveryQuotes($ownArrangementQoutes, $inStoreLdData, $allOrigins);
         }
 
@@ -5950,8 +5951,8 @@ class CompileQuotes
         $basePrice = (float) $basePrice;
         $basePrice = $basePrice - $lgCost - $LADCost - $IDCost - $TMDCost - $APDCost - $NBDCost;
         $productOriginMarkupFee = Functions::calProductOriginMarkupFee($basePrice, $this->originKey ?? $originKey, $this->items ?? $items, $this->allOrigins ?? $allOrigins);
-        $basePrice = $this->calculateHandlingFee($basePrice, $quoteSettings);
         $basePrice = $basePrice + $productOriginMarkupFee;
+        $basePrice = $this->calculateHandlingFee($basePrice, $quoteSettings);
         return $basePrice;
     }
 
@@ -5961,8 +5962,8 @@ class CompileQuotes
         $basePrice = (float) $data['rateEstimate']['netFreightCharge'];
         $basePrice = $basePrice - $lgCost;
         $productOriginMarkupFee = Functions::calProductOriginMarkupFee($basePrice, $this->originKey, $this->items, $this->allOrigins);
-        $basePrice = $this->calculateHandlingFee($basePrice);
         $basePrice = $basePrice + $productOriginMarkupFee;
+        $basePrice = $this->calculateHandlingFee($basePrice);
         return $basePrice;
     }
 
@@ -5972,8 +5973,8 @@ class CompileQuotes
         $basePrice = (float) $data['ratpricing']['rattotalPrice'];
         $basePrice = $basePrice - $lgCost;
         $productOriginMarkupFee = Functions::calProductOriginMarkupFee($basePrice, $this->originKey, $this->items, $this->allOrigins);
-        $basePrice = $this->calculateHandlingFee($basePrice);
         $basePrice = $basePrice + $productOriginMarkupFee;
+        $basePrice = $this->calculateHandlingFee($basePrice);
         return $basePrice;
     }
 
@@ -6113,7 +6114,7 @@ class CompileQuotes
         if (isset($this->quoteSettings['delivery_estimate_options']) && $this->quoteSettings['delivery_estimate_options'] == 2) {
             $deliveryEstimates = !blank($days) ? " (Intransit days: " . $days . ")" : "";
         } elseif (isset($this->quoteSettings['delivery_estimate_options']) && $this->quoteSettings['delivery_estimate_options'] == 3) {
-            $deliveryEstimates = !blank($date) ? " (Expected delivery by " . date('m-d-Y', strtotime($date)) . ")" : "";
+            $deliveryEstimates = !blank($date) ? " (Delivery by " . date('M d', strtotime($date)) . ")" : "";
         }
 
         return $deliveryEstimates;

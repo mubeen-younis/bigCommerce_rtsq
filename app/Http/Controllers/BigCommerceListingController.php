@@ -36,7 +36,6 @@ class BigCommerceListingController extends Controller
      */
     public function listCustomers(Request $request)
     {
-        Log::info("List Customer" . json_encode($request->all()));
         $limit = $request->limit ?? 10;
         $search = $request->search ?? null;
         $customerListing = Store::getStoreListing($limit, $search);
@@ -66,7 +65,6 @@ class BigCommerceListingController extends Controller
      */
     public function updateBCSubscription(Request $request)
     { 
-        Log::info('update BC Subscription request ' . json_encode($request->all()));
         try { 
             $uuid = isset($request->uuid) ? $request->uuid : null;
             if (blank($uuid)) {
@@ -185,7 +183,6 @@ class BigCommerceListingController extends Controller
 
             if (isset($request['flag']) && $request['flag'] == 1) {
                 $res = $this->cencelStripeSubscription($dbSub->subscription_id);
-                Log::info("Cancel Stripe Subscription" . json_encode($res));
                 if (isset($res['status']) && $res['status'] == true) {
                     //Because of simaltaneous execution of stripe and DB
                     Subscription::where('id', $dbSub->id)->update([
@@ -198,7 +195,6 @@ class BigCommerceListingController extends Controller
                 $plan = Plan::find($planId);
                 $stripePlanId = $isTestStore ? $plan->stripe_sandbox_plan_id : $plan->stripe_plan_id;
                 $res = $this->reActivateSubscriptionPlan($subId, $stripePlanId);
-                Log::info("Reactivate Stripe Subscription Plan" . json_encode($res));
                 if (isset($res['status']) && $res['status'] == true) {
                     //Because of simaltaneous execution of stripe and DB
                     Subscription::where('id', $dbSub->id)->update([
@@ -371,7 +367,6 @@ class BigCommerceListingController extends Controller
     //*************************************
     public function updateSubscriptionInDB($subscriptionReponse, $oldSubscription, $testStore = false, $status)
     {
-        Log::info('Is Test Store on adding plan to DB ' . $testStore . json_encode($subscriptionReponse));
         if (isset($oldSubscription->status) && $oldSubscription->status == 2) {
             $subscription = [
                 'store_id' => $oldSubscription->store_id,

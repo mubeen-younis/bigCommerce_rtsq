@@ -141,7 +141,6 @@ class PalletPackaging
     public function setAndGetPackagingResp($carriers = [])
     {
         if (!$this->isLtlCarrierExists($carriers)) {
-            Log::info('No Ltl carrier found in the request. Req Carriers: ', $carriers);
             return [];
         }
 
@@ -202,7 +201,6 @@ class PalletPackaging
 
                     // Final reponse
                     $resp = $this->getFinalResponse($commodityResp, $palletResponse, $palletBins);
-                    Log::info('Final formatted respones:  ', $resp);
                 }
             } catch (\Throwable$th) {
                 Log::info('No repsonse from 3D Bin ' . $th->getMessage());

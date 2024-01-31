@@ -156,12 +156,14 @@ class Shipping
                     ],
                 ];
             }
-            if ($this->isInsurance === 'Y' && ($key == 'wweLTL' || $key == 'shipEngine' || $key == 'upsSmall')) {
+            if ($this->isInsurance === 'Y') {
                 if ($this->isSmall($key)) {
                     $carriersArray['carriers'][$key]['api']['includeDeclaredValue'] = 1;
                 } else {
                     if ($key == 'wweLTL') {
                         $carriersArray['carriers'][$key]['api']['insureShipment'] = 1;
+                    } else if ($key == 'saia') {
+                        $carriersArray['carriers'][$key]['api']['includeDeclaredValue'] = 1;
                     }
                 }
             }
@@ -226,7 +228,6 @@ class Shipping
             unset($requestArr['requestArr']['carriers']['rnl']['freeShipment']);
             $freeRNL = true;
         }
-        Log::info('after addBinResponseToQuotes ' . json_encode($quotes));
 
         $quotesFromWs = $quotes ?? [];
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $package['items'], $SuppressParcelRates, $store_id);
@@ -898,9 +899,9 @@ class Shipping
             if ((empty($quote['rate']) || $quote['rate'] == '0.00') && isset($quote['code']) && $quote['code'] !== 'own_arrangement') {
                 $title = '';
 
-                if (isset($quote['title']) && strpos($quote['title'], '(Expected')){
-                    $estimate = explode('(Expected', $quote['title'])[1] ?? '';
-                    $title = Functions::$freeShipping . ' (Expected' . $estimate;
+                if (isset($quote['title']) && strpos($quote['title'], '(Delivery')){
+                    $estimate = explode('(Delivery', $quote['title'])[1] ?? '';
+                    $title = Functions::$freeShipping . ' (Delivery' . $estimate;
                 } elseif (isset($quote['title']) && strpos($quote['title'], '(Intransit')){
                     $estimate = explode('(Intransit', $quote['title'])[1] ?? '';
                     $title = Functions::$freeShipping . ' (Intransit' . $estimate;
@@ -1051,7 +1052,8 @@ class Shipping
 
         if (strlen($quote['title']) > 100) {
             $res = explode("w/", $quote['title']);
-            $res = Functions::$simpleLTLTitle . ' w/' . $res[1];
+            $string = str_replace('residential', 'resi', $res[1]);
+            $res = Functions::$simpleLTLTitle . ' w/' . $string;
         } else if ($quote['title'] == "") {
             $res = $quote['code'];
         }

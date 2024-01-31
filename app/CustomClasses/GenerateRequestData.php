@@ -105,8 +105,6 @@ class GenerateRequestData
         $this->connectionSettings = $shippingRule->applyHideMethodRule($this->storeData['store']['id'], $lineItems, $this->connectionSettings);
                 
         $this->storeDateTime = $this->getBCStoreDateTime();
-        Log::info('Store Time' . $this->storeDateTime);
-
 
         foreach ($this->connectionSettings as $key => $con1) {
             switch ($key) {
@@ -1967,6 +1965,9 @@ class GenerateRequestData
             $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
+        $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
+        $ratingMethod = $this->getPackagingRatingMethod($connSettings);
+
         $this->resiCarrier['wweSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['wweSmall'] = $alwaysResi;
 
@@ -1980,7 +1981,7 @@ class GenerateRequestData
             'ApiVersion' => '2.0',
             'residentials_delivery' => ($alwaysResi ? 'Y' : $residential == 'Y') ? 'yes' : 'no',
             'prefferedCurrency' => 'USD',
-            'includeDeclaredValue' => "1",
+            'packagesType' => !$sbsEnabled ? $ratingMethod : '',
         ];
 
         if (isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api'){
@@ -2019,6 +2020,9 @@ class GenerateRequestData
             $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
+        $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
+        $ratingMethod = $this->getPackagingRatingMethod($connSettings);
+
         $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
         $this->resiCarrier['purolatorSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['purolatorSmall'] = $alwaysResi;
@@ -2031,6 +2035,7 @@ class GenerateRequestData
             'accessLevel' => 'pro',
             'quoteType' => 'Domestic',
             'serviceID' => 'PurolatorGround',
+            'packagesType' => !$sbsEnabled ? $ratingMethod : '',
         ];
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
@@ -2057,6 +2062,9 @@ class GenerateRequestData
         $this->resiCarrier['upsSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['upsSmall'] = $alwaysResi;
 
+        $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
+        $ratingMethod = $this->getPackagingRatingMethod($connSettings);
+
         $upsSmall = new UpsSmallQuotesResults();
         $saturdayDelivery = $upsSmall->isSaturdayDeliveryEnabled($connSettings) ? '1' : '0';
 
@@ -2074,6 +2082,7 @@ class GenerateRequestData
             'storeDateTime' => $this->storeDateTime,
             'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
             'saturdayDeliveryFlag' => $saturdayDelivery,
+            'packagesType' => !$sbsEnabled ? $ratingMethod : '',
 
             'ups_small_pkg_resid_delivery' => ($alwaysResi ? 'Y' : $residential == 'Y') ? 'yes' : 'no',
             'prefferedCurrency' => 'USD',
@@ -2147,6 +2156,8 @@ class GenerateRequestData
             $alwaysResi = $this->checkIsALwaysQuoteResDel($radSettings);
         }
 
+        $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
+        $ratingMethod = $this->getPackagingRatingMethod($connSettings);
 
         $this->resiCarrier['shipEngine'] = $residential;
         $this->resiCarrier['alwaysResi']['shipEngine'] = $alwaysResi;
@@ -2161,6 +2172,7 @@ class GenerateRequestData
             'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
             'residentialDelivery' => ($alwaysResi || $residential == 'Y') ? 'yes' : 'no',
             'prefferedCurrency' => 'USD',
+            'packagesType' => !$sbsEnabled ? $ratingMethod : '',
 
         ];
 
@@ -2190,6 +2202,9 @@ class GenerateRequestData
         $this->resiCarrier['fedexSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['fedexSmall'] = $alwaysResi;
 
+        $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
+        $ratingMethod = $this->getPackagingRatingMethod($connSettings);
+
         $hubIdindicia = isset($connSettings['creds']['hub_id']) ? explode('(', $connSettings['creds']['hub_id']) : '';
         $hubId = isset($hubIdindicia[0]) ? trim($hubIdindicia[0]) : '';
         $indicia = 'PARCEL_SELECT'; //trim(explode(')',$hubIdindicia[1])[0]);
@@ -2218,11 +2233,11 @@ class GenerateRequestData
             'key' => $connSettings['creds']['api_access_key'],
             'AccountNumber' => $connSettings['creds']['account_number'],
             'prefferedCurrency' => 'USD',
-            'includeDeclaredValue' => '1', //insurance active with sbs active 0 or 1
             'pkgType' => '00',
             'saturdayDelivery' => 'on',
             'recipientPhoneNumber' => $phoneNumber,
             'homeDeliveryPremiumType' => $premiumType,
+            'packagesType' => !$sbsEnabled ? $ratingMethod : '',
         ];
         if ($this->smartPost) {
             $apiArray['smartPostData'] = [
@@ -2254,6 +2269,9 @@ class GenerateRequestData
 
         $accessorial = ($alwaysResi ? 'Y' : $residential == 'Y') ? ['REP'] : [];
 
+        $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
+        $ratingMethod = $this->getPackagingRatingMethod($connSettings);
+
         if (isset($connSettings['creds']['api_type']) &&  $connSettings['creds']['api_type'] === 'new_api'){
             $this->resiCarrier['isUnishipperNewApi'] = true;
             $this->resiCarrier['unishippersSmallNewApi'] = $residential;
@@ -2266,7 +2284,6 @@ class GenerateRequestData
                 'ApiVersion' => '2.0',
                 'residentials_delivery' => ($alwaysResi ? 'Y' : $residential == 'Y') ? 'yes' : 'no',
                 'prefferedCurrency' => 'USD',
-                'includeDeclaredValue' => "1",
                 'requestFromUnishippersSmall' => 1,
                 'isUnishipperNewApi' => true,
                 'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
@@ -2274,6 +2291,7 @@ class GenerateRequestData
                 'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
                 'storeDateTime' => $this->storeDateTime,
                 'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
+                'packagesType' => !$sbsEnabled ? $ratingMethod : '',
             ];
 
         } else {
@@ -2296,10 +2314,10 @@ class GenerateRequestData
                 'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
     
                 'prefferedCurrency' => 'USD',
-                'includeDeclaredValue' => '1',
                 'service' => 'ALL',
                 'accessorial' => $accessorial,
-                'residentials_delivery' => isset($accessorial) && !blank($accessorial) ? 'yes' : 'no'
+                'residentials_delivery' => isset($accessorial) && !blank($accessorial) ? 'yes' : 'no',
+                'packagesType' => !$sbsEnabled ? $ratingMethod : '',
             ];
         }
         return $apiArray;
@@ -2707,14 +2725,14 @@ class GenerateRequestData
         $uspsSmallQuotesResutls = new UspsSmallQuotesResults();
         $uspsSmallPkgReq = new UspsSmallPackagingRequest();
 
+        $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
+        
         $storeId = $this->storeData['store']['id'] ?? null;
         $radResp = $this->verifyRADStatus($connSettings, $destination);
         $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
-        $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
 
         $apiArray = [
             'rateTier' => $connSettings['quote_settings']['rate_tier'] ?? 'retail',
-            'includeDeclaredValue' => '1',
             'activeServices' => $uspsSmallQuotesResutls->getUspsActiveServices($carrierServices),
             'residential_delivery' => 'no',
             'sbsPackaging' => $sbsEnabled ? '1' : '0',
@@ -3119,7 +3137,6 @@ class GenerateRequestData
             return false;
         }
     }
-
 
     public function getStoreBoxes($storeId, $itemsArr, $origins, $cartInfo, $isMultishipment)
     {
@@ -3571,5 +3588,19 @@ class GenerateRequestData
             return null;
         }
 
+    }
+
+    public function getPackagingRatingMethod($connSettings)
+    {
+        $packagingRatingMethod = isset($connSettings['quote_settings']['packageRatingMethod']) ? $connSettings['quote_settings']['packageRatingMethod'] : null;
+        if ($packagingRatingMethod == 2){
+            $ratingMethod = 'ship_combine_and_alone';
+        } elseif($packagingRatingMethod == 3){
+            $ratingMethod = 'eniture_packaging';
+        } else {
+            $ratingMethod = 'ship_alone';
+        }
+
+        return $ratingMethod;
     }
 }

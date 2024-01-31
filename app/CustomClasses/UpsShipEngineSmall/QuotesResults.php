@@ -24,10 +24,8 @@ class QuotesResults
      * @param $quoteSettings
      * @return mixed|string
      */
-    public function getServiceRate($data, $serviceCode, $quoteSettings)
+    public function getServiceRate($amount, $serviceCode, $quoteSettings)
     {
-        $amount = $data['shipping_amount']['amount'];
-
         $markupIndex = strtolower(str_replace(' ', '_', $serviceCode) . '_markup');
         $markupValue = $quoteSettings['carrier_services'][$markupIndex] ?? '';
         if (empty($markupValue) || !is_numeric(str_replace('%', '', $markupValue))) {
@@ -119,7 +117,7 @@ class QuotesResults
                 isset($data['estimated_delivery_date']) && $data['estimated_delivery_date'] !== '' &&
                 isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3
             ) {
-                $title = $title . ' (Expected delivery by ' . date('h:i A m-d-Y', strtotime($data['estimated_delivery_date'])) . ')';
+                $title = $title . ' (Delivery by ' . date('h:i A m-d-Y', strtotime($data['estimated_delivery_date'])) . ')';
             }
             return $title;
         } catch (\Exception $exception) {
@@ -226,18 +224,19 @@ class QuotesResults
                             continue;
                         }
                     }
+                    // Adding Product and Origin Markup in services if added
+                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['shipping_amount']['amount'], $origin, $items, $allOrigins);
+                    $data['shipping_amount']['amount'] = $data['shipping_amount']['amount'] + $productOriginMarkupFee;
 
-
-                    // Adding Markup in services if enabled
-                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName);
-                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
-                    $price = $this->getServiceRate($data, $serviceCode, $this->quoteSettings);
                     $quoteSettings = $this->quoteSettings;
                     $amount = $data['shipping_amount']['amount'];
 
-                    $price = $this->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup'] ?? 0);
-                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($amount, $origin, $items, $allOrigins);
-                    $price = $price + $productOriginMarkupFee;
+                    $data['shipping_amount']['amount'] = $this->addHandlingMarkupOfHazmat($data['shipping_amount']['amount'], $quoteSettings['handling_fee_markup'] ?? 0);
+
+                    
+                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName);
+                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
+                    $price = $this->getServiceRate($data['shipping_amount']['amount'], $serviceCode, $this->quoteSettings);
 
                     // Checking hazmat and adding hazmat amounts in services
                     if ($isHazmat) {
@@ -456,7 +455,7 @@ class QuotesResults
                     $serviceCode = $data['service_code'] ?? "";
 
                     // Adding Markup in services if enabled
-                    $price = $this->getServiceRate($data, $serviceCode, []);
+                    $price = $this->getServiceRate($data['shipping_amount']['amount'], $serviceCode, []);
 
                     $price = $this->addHandlingMarkupOfHazmat($price, 0);
                     $price = (float)str_replace(',', '', $price) ?? 0;

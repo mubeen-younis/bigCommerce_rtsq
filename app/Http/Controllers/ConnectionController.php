@@ -290,7 +290,6 @@ class ConnectionController extends Controller
         $endPoint = Endpoints::applyPromoCodeFdoEndpoint() . $queryParams;
         $curlResponse = (new CurlRequest())->enSingleCurlRequest($endPoint, [], [], 'GET');
         $response = json_decode($curlResponse['response'], true);
-        Log::info('Fdo Coupon Response of Carrier ' . json_encode($response) . "Endpoint " . json_encode($endPoint));
 
         if (isset($response['promo'])) {
             Store::where('id', $storeId)->update(['freightdesk_company_id' => $response['fdo_company_id']]);

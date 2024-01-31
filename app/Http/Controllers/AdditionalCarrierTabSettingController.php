@@ -226,7 +226,7 @@ class AdditionalCarrierTabSettingController extends Controller
 
     public function isInusreCarrier($slug)
     {
-        $insureCarrier = ['ltl-quotes', 'small-package', 'ups-small', 'fedex-small', 'unishippers-small', 'ups-ship-engine'];
+        $insureCarrier = ['ltl-quotes', 'small-package', 'ups-small', 'fedex-small', 'unishippers-small', 'ups-ship-engine', 'saia-ltl'];
         return in_array($slug, $insureCarrier);
     }
 }
