@@ -899,9 +899,9 @@ class Shipping
             if ((empty($quote['rate']) || $quote['rate'] == '0.00') && isset($quote['code']) && $quote['code'] !== 'own_arrangement') {
                 $title = '';
 
-                if (isset($quote['title']) && strpos($quote['title'], '(Expected')){
-                    $estimate = explode('(Expected', $quote['title'])[1] ?? '';
-                    $title = Functions::$freeShipping . ' (Expected' . $estimate;
+                if (isset($quote['title']) && strpos($quote['title'], '(Delivery')){
+                    $estimate = explode('(Delivery', $quote['title'])[1] ?? '';
+                    $title = Functions::$freeShipping . ' (Delivery' . $estimate;
                 } elseif (isset($quote['title']) && strpos($quote['title'], '(Intransit')){
                     $estimate = explode('(Intransit', $quote['title'])[1] ?? '';
                     $title = Functions::$freeShipping . ' (Intransit' . $estimate;
@@ -1052,7 +1052,8 @@ class Shipping
 
         if (strlen($quote['title']) > 100) {
             $res = explode("w/", $quote['title']);
-            $res = Functions::$simpleLTLTitle . ' w/' . $res[1];
+            $string = str_replace('residential', 'resi', $res[1]);
+            $res = Functions::$simpleLTLTitle . ' w/' . $string;
         } else if ($quote['title'] == "") {
             $res = $quote['code'];
         }
