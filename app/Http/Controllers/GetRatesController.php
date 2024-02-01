@@ -770,9 +770,9 @@ class GetRatesController extends Controller
 
                     if($isAvailable){
                         if(isset($rule['apply_rule_to']) && $rule['apply_rule_to'] == 3 && isset($item['product_id']) && !empty($item['product_id'])){
-                            $isProductExist = in_array($item['product_id'], $rule['products']);
+                            $isProductExist = collect($rule['products'])->where('value', $item['product_id'])->all() ?? [];
                         
-                            if($isProductExist){
+                            if(!(empty($isProductExist))){
                                 $warehouses = array_merge($warehouses, $rule['warehouses']);
                             }
                         } else if(isset($rule['apply_rule_to']) && $rule['apply_rule_to'] == 2 && isset($item['brand_id']) && !empty($item['brand_id'])){
