@@ -184,6 +184,7 @@ class ShippingRuleController extends Controller
         try {
             
             $search = $request['search'] ?? null;
+            $perPage = 50;
             
             if ($search != null || $search == '') {
                 $count = ProductSetting::where('store_id', $request->store_id)
@@ -212,7 +213,7 @@ class ShippingRuleController extends Controller
                 })->where('store_id', $request->store_id)
                     ->orderBy('name', 'ASC')
                     ->groupBy('source_product_id')
-                    ->get();
+                    ->take($perPage)->get();
             }
 
             if ($products->isEmpty()) {
