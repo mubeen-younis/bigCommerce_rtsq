@@ -587,6 +587,9 @@ class ProductSettingController extends Controller
                     $product = $prod;
                 }
             }
+        } else { 
+            $products = $this->isLtlParcelBothEnabled($request->products, $request);
+            $product = $products[0] ?? [];
         }
         
         return response()->json(['error' => false,
