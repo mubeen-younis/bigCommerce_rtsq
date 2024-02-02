@@ -1,3 +1,11 @@
+= 2.1.10 2024-02-01 =
+
+* Fix - update display products on shipping rule functionality (Ticket:2209854879)[#408](https://bitbucket.org/eniture/big-commerce/pull-requests/408)
+
+= 2.1.9 2024-01-30 =
+
+* Fix - Update checkout titles string due to meaningless title in BC (Ticket:2257786184)[#407](https://bitbucket.org/eniture/big-commerce/pull-requests/407)
+
 = 2.1.8 2024-01-23 =
 
 * Update - introduce Shipping Restrictions to origin locations in BC (Ticket:2101243204)[#406](https://bitbucket.org/eniture/big-commerce/pull-requests/406)
