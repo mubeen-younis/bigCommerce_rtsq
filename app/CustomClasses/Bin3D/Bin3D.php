@@ -178,6 +178,7 @@ class Bin3D
 
     public function appendNotPackedItems($responseFromSBS, $items = [])
     {
+        $data = [];
         foreach ($responseFromSBS as $key => $SBSResp) {
             $response = json_decode($SBSResp)->response;
             if (isset($response->bins_packed)) {

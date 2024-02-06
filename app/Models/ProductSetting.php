@@ -95,12 +95,17 @@ class ProductSetting extends Model
             $saveProduct->height = $product['height'];
             $saveProduct->price = $product['price'];
             $saveProduct->store_id = $storeId;
+            $saveProduct->brand_id = $product['brand_id'] ?? null;
+            $saveProduct->categories_id = json_encode($product['categories']) ?? null;
             $saveProduct->save();
             DB::commit();
 
         } catch (\Exception $exception) {
             DB::rollBack();
-            Log::info('Exception on saving Product Details ' . $exception->getMessage());
+            Log::info('Exception on saving Products Detail ' . json_encode([
+                'line' => $exception->getLine(),
+                'message' => $exception->getMessage()
+            ]));
         }
 
     }
@@ -166,10 +171,15 @@ class ProductSetting extends Model
             $saveProduct->height = $product['height'];
             $saveProduct->price = $product['price'];
             $saveProduct->store_id = $storeId;
+            $saveProduct->brand_id = $product['brand_id'] ?? null;
+            $saveProduct->categories_id = json_encode($product['categories']) ?? null;
             $saveProduct->save();
 
         } catch (\Exception $exception) {
-            Log::info('Exception on saving Product Details ' . $exception->getMessage());
+            Log::info('Exception on saving Products Detail ' . json_encode([
+                'line' => $exception->getLine(),
+                'message' => $exception->getMessage()
+            ]));
         }
 
     }

@@ -21,12 +21,14 @@ class ProductSettingController extends Controller
     public $curlRequest;
     public $mainController;
     public $saveProducts;
+    public $categoryArray;
 
     public function __construct()
     {
         $this->curlRequest = new CurlRequest();
         $this->mainController = new MainController();
         $this->saveProducts = new ProductSetting();
+        $this->categoryArray = [];
     }
 
     public function importProducts(Request $request)
@@ -383,7 +385,7 @@ class ProductSettingController extends Controller
                 ], 200);
             }
 
-            $products = $this->isLtlParcelBothEnabled($products, $request->store_id);
+            $products = $this->isLtlParcelBothEnabled($products, $request);
 
             $resp = response()->json(['error' => false,
                 'data' => $products,
@@ -397,13 +399,24 @@ class ProductSettingController extends Controller
 
     }
 
-    public function isLtlParcelBothEnabled($products, $storeId)
+    public function isLtlParcelBothEnabled($products, $request)
     {
+        $brandArray = [];
+        
+        $uniqueBrandIds = collect($products)->unique('brand_id')->values()->all();
+            
+            foreach($uniqueBrandIds as $product){
+                
+                $brandName = $this->productBrand($request, $product) ?? '';
+                $brandArray['brand_' . $product['brand_id']] = $brandName;
+                
+            }
+
         foreach($products as $key => $product){
             $freightEnabled = $parcelEnabled = false;
             if($product['variant_id'] == null){
                 $variants = ProductSetting::where('source_product_id', $product['source_product_id'])
-                ->where('store_id', $storeId)->get();
+                ->where('store_id', $request->store_id)->get();
                 foreach($variants as $variant){
                     if($variant->variant_id != null){
                         if(json_decode($variant['settings'])->freight_enabled){
@@ -433,9 +446,67 @@ class ProductSettingController extends Controller
                     $products[$key] = $product;
                 }
             }
+
+            $products[$key]['brand_name'] = $brandArray['brand_' . $product['brand_id']] ?? '';
+            $products[$key]['category_name'] = $this->productCategory($request, $product) ?? '';
         }
 
         return $products;
+    }
+
+    public function productBrand($request, $product)
+    {
+        $store = Store::where('hash', $request['store_hash'])->first();
+        if (empty($store)) {
+            return [];
+        }
+        $headers[] = 'X-Auth-Token: ' . $store->access_token;
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $endpoint = "https://api.bigcommerce.com/stores/" . $store->hash . "/v3/catalog/brands/" . $product['brand_id'];
+        $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
+        
+        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+            $brand = json_decode($response['response'], true);
+            return $brand['data']['name'] ?? '';
+        }
+    }
+
+    public function productCategory($request, $product)
+    {
+        $categoriesNames = [];
+        $categories = json_decode($product['categories_id']) ?? [];
+        $store = Store::where('hash', $request['store_hash'])->first();
+
+        if (empty($store)) {
+            return [];
+        }
+
+        foreach ($categories as $category) {
+
+            if (isset($this->categoryArray['category_' . $category])) {
+                
+                $categoriesNames[] = $this->categoryArray['category_' . $category];
+                continue;
+            }
+
+            $headers[] = 'X-Auth-Token: ' . $store->access_token;
+            $headers[] = 'Content-Type: application/json';
+            $headers[] = 'Accept: application/json';
+            $endpoint = "https://api.bigcommerce.com/stores/" . $store->hash . "/v3/catalog/categories/" . $category;
+            $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
+
+            $name = null;
+            if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+                $response = json_decode($response['response'], true);
+                $name = $response['data']['name'] ?? null;
+                $categoriesNames[] = $name;
+            }
+            $this->categoryArray['category_' . $category] = $name;
+
+        }
+
+        return $categoriesNames;
     }
 
     public function editProduct(Request $request)
@@ -510,12 +581,15 @@ class ProductSettingController extends Controller
         }
 
         if($productCount > 1){
-            $products = $this->isLtlParcelBothEnabled($request->products, $request->store_id);
+            $products = $this->isLtlParcelBothEnabled($request->products, $request);
             foreach($products as $prod){
                 if($prod['variant_id'] == null){
                     $product = $prod;
                 }
             }
+        } else { 
+            $products = $this->isLtlParcelBothEnabled($request->products, $request);
+            $product = $products[0] ?? [];
         }
         
         return response()->json(['error' => false,
