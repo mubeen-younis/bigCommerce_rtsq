@@ -8,7 +8,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    feature/quote-id:
+    feature/restrict-origin-locations:
       - step:
           caches:
             - composer
