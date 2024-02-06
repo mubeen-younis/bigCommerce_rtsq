@@ -31,6 +31,7 @@ use App\CustomClasses\EchoLogisticsLtl\ConnectionSettings as EchoLogisticsLtlCon
 use App\CustomClasses\DayLightLtl\ConnectionSettings as DayLightLtlConnectionSettings;
 use App\CustomClasses\FreightQuote\ChrLtl\ConnectionSettings as FreightQuoteChrConnectionSettings;
 use App\CustomClasses\Priority1Ltl\ConnectionSettings as Priority1LtlConnectionSettings;
+use App\CustomClasses\UnishipperLtl\UnishipperLtlConnectionSettings;
 use App\Endpoints\Endpoints;
 
 use App\Models\Connection;
@@ -83,6 +84,7 @@ class ConnectionController extends Controller
         $this->dayLightLtlTestCon = new DayLightLtlConnectionSettings();
         $this->freightQuoteChrLtlTestCon = new FreightQuoteChrConnectionSettings();
         $this->Priority1LtlTestCon = new Priority1LtlConnectionSettings();
+        $this->UnishipperLtlTestCon = new UnishipperLtlConnectionSettings(); 
         $this->curlRequest = new connCurlRequest();
     }
 
@@ -212,6 +214,9 @@ class ConnectionController extends Controller
                 case "priority-one-ltl":
                     $response = $this->Priority1LtlTestCon->testLtlConnection($request, $storeName);
                     return response()->json($response);
+                case "unishipper-ltl":
+                    $response = $this->UnishipperLtlTestCon->testLtlConnection($request, $storeName);
+                    return response()->json($response);
                 default:
                     return response()->json([
                         "error" => true, "data" => [],
@@ -247,7 +252,7 @@ class ConnectionController extends Controller
         }
 
         $message = 'Connection settings has been saved successfully';
-        $carriersArr = ['ltl-quotes', 'small-package', 'gtz-ltl', 'unishippers-small'];
+        $carriersArr = ['ltl-quotes', 'small-package', 'gtz-ltl', 'unishippers-small', 'unishipper-ltl'];
         if (!blank($request['promo_code']) &&
             in_array($checkCarrierType->slug, $carriersArr) &&
             ((isset($request['is_enabled']) && $request['is_enabled'] == false) || !isset($request['is_enabled']))
