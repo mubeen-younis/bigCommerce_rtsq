@@ -184,7 +184,6 @@ class Shipping
         if (empty($requestArr)) {
             return [];
         }
-
         $SuppressParcelRates = isset($requestArr['SuppressParcelRates']) ? $requestArr['SuppressParcelRates'] : false;
         unset($requestArr['SuppressParcelRates']);
         $url = Constant::QUOTES_URL;
@@ -878,7 +877,7 @@ class Shipping
                     'code' => $quote['code'],
                     'rate_id' => $quote['rate_id'],
                     'display_name' => $this->limitTitle($quote),
-                    'cost' => ['currency' => 'USD', 'amount' => str_replace(',', '', $quote['rate'])],
+                    'cost' => ['currency' => 'USD', 'amount' => str_replace(',', '',number_format((float)$quote['rate'], 2) )],
                     'dispatch_date' => "$current",
                 ];
             }
@@ -896,18 +895,18 @@ class Shipping
             if (isset($quote['code']) && ($quote['code'] == 'INSP' || $quote['code'] == 'LOCDEL')) {
                 continue;
             }
-            if ((empty($quote['rate']) || $quote['rate'] == '0.00') && isset($quote['code']) && $quote['code'] !== 'own_arrangement') {
+            if ((empty($quote['rate']) || $quote['rate'] <= '0.00') && isset($quote['code']) && $quote['code'] !== 'own_arrangement') {
                 $title = '';
 
                 if (isset($quote['title']) && strpos($quote['title'], '(Delivery')){
-                    $estimate = explode('(Delivery', $quote['title'])[1] ?? '';
-                    $title = Functions::$freeShipping . ' (Delivery' . $estimate;
+                    // $estimate = explode('(Delivery', $quote['title'])[1] ?? '';
+                    $title =$quote['title'];
                 } elseif (isset($quote['title']) && strpos($quote['title'], '(Intransit')){
-                    $estimate = explode('(Intransit', $quote['title'])[1] ?? '';
-                    $title = Functions::$freeShipping . ' (Intransit' . $estimate;
+                    // $estimate = explode('(Intransit', $quote['title'])[1] ?? '';
+                    $title = $quote['title'];
                 }
 
-                $finalQuotes[$key]['title'] = empty($title) ? Functions::$freeShipping : $title;
+                $finalQuotes[$key]['title'] = empty($title) ? $quote['title'] : $title;
             }
         }
 

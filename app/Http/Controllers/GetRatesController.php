@@ -63,7 +63,6 @@ class GetRatesController extends Controller
         */
         $isTestStore = Helpers::checkIsTestStore($storeHash);
         Helpers::setStripeAPiKey($isTestStore);
-
         if ($storeData == null) {
             return [];
         }
