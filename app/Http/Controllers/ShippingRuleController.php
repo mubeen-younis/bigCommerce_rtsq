@@ -212,6 +212,12 @@ class ShippingRuleController extends Controller
                                     $isOverrideRates = true;
                                 }
                             } else if ($isSamedayApi) {
+                                $serviceCode = isset($quote['ServiceLevelCode']) ? $quote['ServiceLevelCode'] : '';
+                                $serviceDesc = Functions::$dayRossServices[$serviceCode] ?? '';
+                                if(in_array($serviceDesc, $rule['filter_services'])){                                    
+                                    $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                    $isOverrideRates = true;
+                                }
 
                             } else if ($providerSlug == 'rl-ltl') {
                                 $serviceCode = isset($quote['Code']) ? $quote['Code'] : '';

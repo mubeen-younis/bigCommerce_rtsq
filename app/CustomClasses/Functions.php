@@ -94,6 +94,21 @@ class Functions
         'GSHW' => 'Guaranteed Hourly Window'
     ];
 
+    public static $dayRossServices = [
+        'AM' => 'AM Service',
+        'EG' => 'Ground Service',
+        'UP' => 'Urgent PAC',
+        'AD' => 'US Next PM',
+        'A2' => 'US 2nd Day',
+        'AG' => 'US Ground',
+        'H1' => 'Deliver to threshold',
+        'H2' => 'Deliver to room of choice',
+        'H3' => 'Deliver & packaging removal',
+        'H4' => 'Deliver to threshold - 2 man',
+        'H5' => 'Deliver to room of choice - 2 man',
+        'H6' => 'Deliver & packaging removal - 2 man',
+    ];
+
     public static function is3plCarrier($carrier){
         $carriersArray = ['ltl-quotes', 'freightquote-ltl', 'tql-ltl', 'echo-ltl', 'freightquote-chr-ltl', 'priority-one-ltl', 'gtz-ltl', 'gtz-new', 'cltl'];
         return in_array($carrier, $carriersArray);

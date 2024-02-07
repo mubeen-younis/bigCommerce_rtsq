@@ -87,9 +87,29 @@ class QuoteSettingsController extends Controller
                     if($settings['api_type'] == 'sameday'){
                         $settings = QuoteSetting::where('installed_carrier_id', $carrierId)->first();
                         $services = isset($settings->value) ? json_decode($settings->value)->carrier_services : [];
+                        
+                        $value = json_decode($settings->value);
+                        $services->deliver_to_threshold = $value->deliver_to_threshold;
+                        $services->deliver_to_room_of_choice = $value->deliver_to_room_of_choice;
+                        $services->deliver_and_packaging_removal = $value->deliver_and_packaging_removal;
+                        $services->deliver_to_threshold_two_man = $value->deliver_to_threshold_two_man;
+                        $services->deliver_to_room_of_choice_two_man = $value->deliver_to_room_of_choice_two_man;
+                        $services->deliver_and_packaging_removal_two_man = $value->deliver_and_packaging_removal_two_man;
+
                         foreach($services as $key => $service){
                             if($service == true && strpos($key, 'markup') == false){
-                                $data[] = ['key' => $key, 'value' => ucwords(str_replace('_', ' ' , $key))];
+                                
+                                if(strpos($key, 'deliver_') !== false){
+                                    $key = str_replace('and', '&' , $key);
+                                    $key = str_replace('two', '- 2' , $key);
+                                    $data[] = ['key' => $key, 'value' => ucfirst(str_replace('_', ' ' , $key))];
+                                } else {
+                                    $key = str_replace('am', 'AM' , $key);
+                                    $key = str_replace('pm', 'PM' , $key);
+                                    $key = str_replace('pac', 'PAC' , $key);
+                                    $key = str_replace('us', 'US' , $key);
+                                    $data[] = ['key' => $key, 'value' => ucwords(str_replace('_', ' ' , $key))];
+                                }
                             }
                         }
                     } else {
