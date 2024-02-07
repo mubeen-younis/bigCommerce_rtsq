@@ -10,6 +10,7 @@ use App\Http\Controllers\AdditionalCarrierTabSettingController;
 use App\Models\AdditionalCarrierTabSetting;
 use App\Models\Connection;
 use App\CustomClasses\Functions;
+use App\Models\Carrier;
 
 class QuoteSettingsController extends Controller
 {
@@ -30,6 +31,8 @@ class QuoteSettingsController extends Controller
         $isLTL = $request->isLTL ?? false;
         $data = [];
         
+        $carrierName = optional(Carrier::where('slug', $carrierSlug)->first())->toArray() ?? [];
+
         if ($isLTL == 1){
             
             if(Functions::is3plCarrier($carrierSlug)){
@@ -90,7 +93,9 @@ class QuoteSettingsController extends Controller
                             }
                         }
                     } else {
-                        $data[] = ['key' => $carrierSlug, 'value' => ucwords(str_replace('-ltl', ' LTL' , $carrierSlug))];
+                        if(isset($carrierName['name'])){
+                            $data[] = ['key' => $carrierSlug, 'value' => $carrierName['name'] . ' LTL'];
+                        }
                     }
                 } 
 
@@ -101,16 +106,18 @@ class QuoteSettingsController extends Controller
                     $data[] = ['key' => 'standard_service', 'value' => ucwords(str_replace('_', ' ' , 'standard_service'))];
                 }
                 if ($service->guaranteed_pm){
-                    $data[] = ['key' => 'guaranteed_pm', 'value' => ucwords(str_replace('_', ' ' , 'guaranteed_pm'))];
+                    $data[] = ['key' => 'guaranteed_pm', 'value' => ucwords(str_replace('_pm', ' PM' , 'guaranteed_pm'))];
                 }
                 if ($service->guaranteed_am){
-                    $data[] = ['key' => 'guaranteed_am', 'value' => ucwords(str_replace('_', ' ' , 'guaranteed_am'))];
+                    $data[] = ['key' => 'guaranteed_am', 'value' => ucwords(str_replace('_am', ' AM' , 'guaranteed_am'))];
                 }
                 if ($service->guaranteed_hourly_window){
                     $data[] = ['key' => 'guaranteed_hourly_window', 'value' => ucwords(str_replace('_', ' ' , 'guaranteed_hourly_window'))];
                 }
             } else {
-                $data[] = ['key' => $carrierSlug, 'value' => ucwords(str_replace('-ltl', ' LTL' , $carrierSlug))];
+                if(isset($carrierName['name'])){
+                    $data[] = ['key' => $carrierSlug, 'value' => $carrierName['name'] . ' LTL'];
+                }
             }
 
         } else if($carrierSlug == 'purolator-small') {

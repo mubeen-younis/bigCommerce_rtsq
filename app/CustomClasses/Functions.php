@@ -87,6 +87,13 @@ class Functions
         'ups_worldwide_express_plus',
     ];
 
+    public static $rnlServices = [
+        'STD' => 'Standard Service',
+        'GSDS' => 'Guaranteed PM',
+        'GSAM' => 'Guaranteed AM',
+        'GSHW' => 'Guaranteed Hourly Window'
+    ];
+
     public static function is3plCarrier($carrier){
         $carriersArray = ['ltl-quotes', 'freightquote-ltl', 'tql-ltl', 'echo-ltl', 'freightquote-chr-ltl', 'priority-one-ltl', 'gtz-ltl', 'gtz-new', 'cltl'];
         return in_array($carrier, $carriersArray);

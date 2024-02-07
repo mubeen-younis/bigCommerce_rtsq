@@ -15,6 +15,7 @@ use App\CustomClasses\Unishippers\small\QuotesResults;
 use App\Models\Store;
 use App\CurlRequest;
 use App\Models\ProductSetting;
+use App\Models\Carrier;
 
 class ShippingRuleController extends Controller
 {
@@ -128,18 +129,18 @@ class ShippingRuleController extends Controller
 
                     if ($providerSlug == 'gtz-ltl'){
                         $request->carrier_type = $value['api_type'] ?? '';
-                        $request->store_id = $value['store_id'];
-                        if ($value['api_type'] == 'NEWAPI'){
+                        $request->store_id = $value['store_id'] ?? '';
+                        if (isset($value['api_type']) && $value['api_type'] == 'NEWAPI'){
                             $providerSlug = 'gtz-new';
-                        } elseif ($value['api_type'] == 'CRS'){
+                        } elseif (isset($value['api_type']) && $value['api_type'] == 'CRS'){
                             $providerSlug = 'cltl';
                         }
                     } else if ($providerSlug == 'unishippers-small'){
-                        if ($value['api_type'] == 'new_api'){
+                        if (isset($value['api_type']) && $value['api_type'] == 'new_api'){
                             $providerSlug = 'unishippers-small-new';
                         }
                     } else if ($providerSlug == 'dayross-ltl') {
-                        if ($value['api_type'] == 'sameday'){
+                        if (isset($value['api_type']) && $value['api_type'] == 'sameday'){
                             $isSamedayApi = true;
                         }
                     }
@@ -213,7 +214,8 @@ class ShippingRuleController extends Controller
                             } else if ($isSamedayApi) {
 
                             } else if ($providerSlug == 'rl-ltl') {
-                                $serviceDesc = isset($quote['serviceDesc']) ? ucwords(strtolower($quote['serviceDesc'])) : '';
+                                $serviceCode = isset($quote['Code']) ? $quote['Code'] : '';
+                                $serviceDesc = Functions::$rnlServices[$serviceCode] ?? '';
                                 if(in_array($serviceDesc, $rule['filter_services'])){                                    
                                     $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
                                     $isOverrideRates = true;
@@ -249,13 +251,16 @@ class ShippingRuleController extends Controller
 
     public function hideMethods($shippingRule, $items)
     {
+        $isFilterWeight = $isFilterPrice = $isFilterQuantity = false;
         if(isset($shippingRule['isFilterWeight']) && $shippingRule['isFilterWeight']){
             $weight = collect($items)->map(function ($item) {
                 return $item['lineItemWeight'] * $item['piecesOfLineItem'] ?? 0;
             }) ?? 0;
             $totalWeight = collect($weight)->sum();
             if(isset($shippingRule['weight_from']) && $shippingRule['weight_to'] && $totalWeight >= $shippingRule['weight_from'] && $totalWeight < $shippingRule['weight_to']){
-                return false;
+                $isFilterWeight = true;
+            } else {
+                return true;
             }
         }
         if(isset($shippingRule['isFilterPrice']) && $shippingRule['isFilterPrice']){
@@ -264,14 +269,22 @@ class ShippingRuleController extends Controller
             }) ?? 0;
             $totalPrice = collect($price)->sum() ?? 0;
             if(isset($shippingRule['price_from']) && $shippingRule['price_to'] && $totalPrice >= $shippingRule['price_from'] && $totalPrice < $shippingRule['price_to']){
-                return false;
+                $isFilterPrice = true;
+            } else {
+                return true;
             }
         }
         if(isset($shippingRule['isFilterQuantity']) && $shippingRule['isFilterQuantity']){
             $totalQuantity = collect($items)->sum('piecesOfLineItem') ?? 0;
             if(isset($shippingRule['quantity_from']) && $shippingRule['quantity_to'] && $totalQuantity >= $shippingRule['quantity_from'] && $totalQuantity < $shippingRule['quantity_to']){
-                return false;
+                $isFilterQuantity = true;
+            } else {
+                return true;
             }
+        }
+
+        if($isFilterWeight || $isFilterPrice || $isFilterQuantity){
+            return false;
         }
 
         return true;
