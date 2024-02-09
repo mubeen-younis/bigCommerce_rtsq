@@ -174,7 +174,7 @@ class ShippingRuleController extends Controller
                             } else if($carrierType == 2) {
                                 $serviceDesc = isset($quote['timeInTransit']['serviceDescription']) ? $quote['timeInTransit']['serviceDescription'] : '';
                                 $serviceDesc = isset($quote['serviceDesc']) && !is_array($quote['serviceDesc']) ? str_replace('®', '' , $quote['serviceDesc']) : $serviceDesc;
-
+                                
                                 if (in_array($serviceDesc, $rule['filter_services'])){
                                     $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
                                     $quote['NegotiatedRates']['Amount'] = $rule['service_rates'];
@@ -197,8 +197,8 @@ class ShippingRuleController extends Controller
                                     }
                                     
 
-                                } else {
-                                    $serviceType = 'Usps ' . $quote['serviceType'];
+                                } else if ($providerSlug == 'usps-small') { 
+                                    $serviceType = 'USPS ' . $quote['serviceType'];
 
                                     if(in_array($serviceType, $rule['filter_services'])){                                    
                                         $quote['totalNetCharge']['Amount'] = $rule['service_rates'];

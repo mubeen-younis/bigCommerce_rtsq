@@ -149,7 +149,7 @@ class QuotesResults
         $allConfigServices['services'] = $allConfigServices = [];
 
         $rad_settings = Functions::getRADsettings($storeId) ?? [];
-        $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
+        $isRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
 
         if (isset($this->quoteSettings['carrier_services'])) {
             foreach ($this->quoteSettings['carrier_services'] as $key => $serviceName) {
@@ -268,17 +268,29 @@ class QuotesResults
                     $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName);
                     $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
                     
-                    $price = $this->getServiceRate($data['totalNetCharge']['Amount'], $serviceName, $this->quoteSettings);
-                    // Checking hazmat and adding hazmat amounts in services
-                    if ($isHazmat) {
-                        if ($this->isMultiShipment) {
-                            if ($hazmatAllItems[$origin] == 'Y') {
+                    $price = $data['totalNetCharge']['Amount'];
+                    // check: is override rule is applied, if yes then skip to add other features fee
+                    if(isset($overrideRates['isOverrideRates']) && $overrideRates['isOverrideRates']){
+                        $access2 = '';
+                        $showRadNotation = false;
+                    } else {
+                        $access2 = $access;
+                        $showRadNotation = $isRadNotation;
+                        // Checking hazmat and adding hazmat amounts in services
+                        if ($isHazmat) {
+                            if ($this->isMultiShipment) {
+                                if ($hazmatAllItems[$origin] == 'Y') {
+                                    $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
+                                }
+                            } else {
                                 $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
                             }
-                        } else {
-                            $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
                         }
+
+                        $price = $this->getServiceRate($price, $serviceName, $this->quoteSettings);
                     }
+
+                    
                     $data['serviceDesc'] = $this->checkAndAppendFedex($data['serviceDesc']);
                     $title = $this->getServiceTitle($data['serviceDesc'], $data, $data['serviceType'], $this->quoteSettings, $residential, $showRadNotation);
                     $price = (float)str_replace(',', '', $price);
@@ -286,13 +298,13 @@ class QuotesResults
                     * Generate random code to limit rate_id to 50 chars
                      */
                     if ($serviceName == "FEDEX_GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "FEDEX_GROUND_HOME_DELIVERY") {
-                        $access2 = $access . '+gd';
+                        $access2 = $access2 . '+gd';
                     } elseif (strpos($data['serviceType'], '_AIR_SERVICE')) {
-                        $access2 = $access . '+as';
+                        $access2 = $access2 . '+as';
                     } else if (strpos($data['serviceType'], '_ONE_RATE')) {
-                        $access2 = $access . '+or';
+                        $access2 = $access2 . '+or';
                     } else {
-                        $access2 = $access . '+gd';
+                        $access2 = $access2 . '+gd';
                     }
 
                     $data['serviceType'] = $this->generateRandomString(5);

@@ -33,7 +33,7 @@ class QuotesResults
         }
 
         $rad_settings = Functions::getRADsettings($storeId) ?? [];
-        $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
+        $isRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
 
         $returnResp = [
             'isMultiShipment' => $isMultiShipment,
@@ -67,17 +67,24 @@ class QuotesResults
                     $data['totalNetCharge']['Amount'] = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
 
                     // Adding markup values if available
-                    $data['totalNetCharge']['Amount'] = $this->addHandlingMarkupOfHazmat($data['totalNetCharge']['Amount']);
+                    $price = $this->addHandlingMarkupOfHazmat($data['totalNetCharge']['Amount']);
 
                     $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName);
+                    if(isset($overrideRates['isOverrideRates']) && $overrideRates['isOverrideRates']){
+                        $access2 = '';
+                        $showRadNotation = false;
+                    } else {
+                        $access2 = $access;
+                        $showRadNotation = $isRadNotation;
+                        $price = $this->getServiceRate($price, $srvcType);
+                    }
                     $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
-                    $price = $this->getServiceRate($data['totalNetCharge']['Amount'], $srvcType);
                     
                     // Get service title
                     $title = $this->getServiceTitle($data, $srvcType, $this->quoteSettings, $residential, $showRadNotation);
                     $price = (float) str_replace(',', '', $price);
 
-                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12usps' . $access;
+                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12usps' . $access2;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
 

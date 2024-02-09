@@ -3368,7 +3368,7 @@ class CompileQuotes
        
 
         $rad_settings = Functions::getRADsettings($this->storeId) ?? [];
-        $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
+        $isRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
 
         $numberOfShipments = 0;
         foreach ($shipments as $key => $ship) {
@@ -3428,23 +3428,34 @@ class CompileQuotes
 
                     $overrideRates = $this->shippingRule->overrideRates($this->storeId, $this->items, $connectionSettings, $data, $this->carrierName);
                     $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
-                    $price = $this->wweSmallQuoteRes->getServiceRate($data['totalNetCharge']['Amount'], $data['serviceType'], $this->quoteSettings);
-                    // Checking hazmat and adding hazmat amounts in services
-                    if ($isHazmat) {
-                        if ($this->isMultiShipment) {
-                            if ($hazmatAllItems[$origin] == 'Y') {
+                    $price = $data['totalNetCharge']['Amount'];
+                    // check: is override rule is applied, if yes then skip to add other features fee
+                    if(isset($overrideRates['isOverrideRates']) && $overrideRates['isOverrideRates']){
+                        $access2 = '';
+                        $showRadNotation = false;
+                    } else {
+                        $access2 = $access;
+                        $showRadNotation = $isRadNotation;
+                        // Checking hazmat and adding hazmat amounts in services
+                        if ($isHazmat) {
+                            if ($this->isMultiShipment) {
+                                if ($hazmatAllItems[$origin] == 'Y') {
+                                    $price = $this->wweSmallQuoteRes->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
+                                }
+                            } else {
                                 $price = $this->wweSmallQuoteRes->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
                             }
-                        } else {
-                            $price = $this->wweSmallQuoteRes->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
                         }
+
+                        $price = $this->wweSmallQuoteRes->getServiceRate($price, $data['serviceType'], $this->quoteSettings);
                     }
+                
                     $date = $data['deliveryTimestamp'] ?? null;
                     $days = $data['totalTransitTimeInDays'] ?? null;
                     $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
                     $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $dateAndDays, $data['serviceType'], $this->quoteSettings, $this->isResi, $showRadNotation);
                     $price = (float) str_replace(',', '', $price);
-                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12wwe' . $data['serviceType'] . $access;
+                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12wwe' . $data['serviceType'] . $access2;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
                     $multiShipmentQuotes[$origin][$key] = $originQuotes[$shipmentCount]['shipment'][$key]['simple'];

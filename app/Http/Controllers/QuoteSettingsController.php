@@ -170,9 +170,22 @@ class QuoteSettingsController extends Controller
                 if($service == true && strpos($key, 'markup') == false){
                     $key = str_replace('_', ' ' , $key);
                     $key = str_replace('am', 'A.M.' , $key);
+                    if($carrierSlug == 'ups-ship-engine') {
+                        $key = str_replace('early A.M.', 'early' , $key);
+                    }
                     $key = str_replace('ups', 'UPS' , $key);
+                    $key = str_replace('usps', 'USPS' , $key);
+                    $key = str_replace('flat rate', 'flat rate*' , $key);
+                    $key = str_replace('flat rate* box', 'flat rate box*' , $key);
+                    $key = str_replace('first class', 'First-Class' , $key);
                     $key = str_replace('2 day A.M.', '2 Day AM' , $key);
-                    $data[] = ['key' => $key, 'value' => ucwords($key)];
+                    $key = str_replace('surepost', 'SurePost' , $key);
+                    $key = str_replace('1lb', '1LB' , $key);
+                    $key = ucwords($key);
+                    $key = str_replace('Or Greater', 'or greater' , $key);
+                    $key = str_replace('Than', 'than' , $key);
+                    $key = str_replace('With', 'with' , $key);
+                    $data[] = ['key' => $key, 'value' => $key];
                 }
             }
         }
