@@ -1,3 +1,7 @@
+= 2.1.11 2024-02-12 =
+
+* Update - show CSV export download link in the App (Ticket:2257786184)[#411](https://bitbucket.org/eniture/big-commerce/pull-requests/411)
+
 = 2.1.10 2024-02-01 =
 
 * Fix - update display products on shipping rule functionality (Ticket:2209854879)[#408](https://bitbucket.org/eniture/big-commerce/pull-requests/408)
