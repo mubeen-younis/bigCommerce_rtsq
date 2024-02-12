@@ -8,7 +8,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    update-checkout-titles:
+    feature/restrict-origin-locations:
       - step:
           caches:
             - composer

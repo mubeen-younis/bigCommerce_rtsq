@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Models\Store;
 use App\CurlRequest;
+use App\Models\ProductSetting;
 
 class ShippingRuleController extends Controller
 {
@@ -176,5 +177,60 @@ class ShippingRuleController extends Controller
             };
         }
         return Helpers::sendJsonResponse(false, null, $brands);
+    }
+
+    public function getshippingRuleProductsFromDb(Request $request)
+    {
+        try {
+            
+            $search = $request['search'] ?? null;
+            $perPage = 50;
+            
+            if ($search != null || $search == '') {
+                $count = ProductSetting::where('store_id', $request->store_id)
+                    ->where(function ($query) use ($search) {
+                        $query->where('name', 'LIKE', '%' . $search . '%')
+                            ->orWhere('sku', 'LIKE', '%' . $search . '%')
+                            ->orWhere('variant_id', $search)
+                            ->orWhere('source_product_id', $search);
+                    })
+                    ->orderBy('name', 'ASC')
+                    ->get();
+            }
+
+            if ($count->count()) {
+                $count = $count->groupBy('source_product_id')->count();
+            } else {
+                $count = 0;
+            }
+            
+            if ($search != null || $search == '') {
+                $products = ProductSetting::where(function ($query) use ($search) {
+                    $query->where('name', 'LIKE', '%' . $search . '%')
+                        ->orWhere('sku', 'LIKE', '%' . $search . '%')
+                        ->orWhere('variant_id', $search)
+                        ->orWhere('source_product_id', $search);
+                })->where('store_id', $request->store_id)
+                    ->orderBy('name', 'ASC')
+                    ->groupBy('source_product_id')
+                    ->take($perPage)->get();
+            }
+
+            if ($products->isEmpty()) {
+                return response()->json(['error' => true,
+                    'data' => [],
+                    'message' => 'No Products Available',
+                ], 200);
+            }
+
+            $resp = response()->json(['error' => false,
+                'data' => $products,
+                'message' => '',
+            ], 200);
+            return $resp;
+        } catch (\Exception $exception) {
+            Log::info('catch: ' . json_encode($exception->getMessage()));
+        }
+
     }
 }
