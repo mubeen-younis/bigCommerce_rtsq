@@ -180,7 +180,7 @@ class ExportImportProducts extends Controller
             }
         }
     }
-
+    // Create CSV export download link for display on the dashboard of the app
     public function createCSVDownloadLink($exportProductId,$hash)
     {  
         $available = ExportProductsModel::where(['id' => $exportProductId,'status' => 1])->exists();
