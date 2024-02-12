@@ -100,7 +100,7 @@ class ShippingRuleController extends Controller
         return $connectionSettings;
     }
 
-    public function overrideRates($storeId, $lineItemData, $connectionSettings, $quote = [], $carrierName)
+    public function overrideRates($storeId, $lineItemData, $connectionSettings, $quote = [], $carrierName, $originKey = '', $allOrigins = [])
     {
         $isRuletrue = $isSamedayApi = false;
         $carrierType = 0;
@@ -149,7 +149,7 @@ class ShippingRuleController extends Controller
                     $request->installed_carrier_id = $carrierId;
                     $request->store_id = $storeId;
                     if($rule['rule_type'] == 6 && $carrierId != null && $carrierName == $carrIndexName){
-                        $isRuletrue = $this->hideMethods($rule, $cartItems);
+                        $isRuletrue = $this->checkIsOverrideRuleApply($rule, $cartItems, $originKey, $allOrigins);
                         if(!$isRuletrue){
                             if(Functions::is3plCarrier($providerSlug) && $carrierType == 1){
 
@@ -227,8 +227,8 @@ class ShippingRuleController extends Controller
                                     $isOverrideRates = true;
                                 }
                             } else if($carrierType == 1) {
-                                $carrierName = optional(Carrier::where('slug', $providerSlug)->first())->toArray() ?? [];
-                                $serviceType = isset($carrierName['name']) ? $carrierName['name'] . ' LTL' : '';
+                                $carrier = optional(Carrier::where('slug', $providerSlug)->first())->toArray() ?? [];
+                                $serviceType = isset($carrier['name']) ? $carrier['name'] . ' LTL' : '';
                                 if(in_array($serviceType, $rule['filter_services'])){                                    
                                     $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
                                     $isOverrideRates = true;
@@ -283,6 +283,62 @@ class ShippingRuleController extends Controller
         }
         if(isset($shippingRule['isFilterQuantity']) && $shippingRule['isFilterQuantity']){
             $totalQuantity = collect($items)->sum('piecesOfLineItem') ?? 0;
+            if(isset($shippingRule['quantity_from']) && $totalQuantity >= $shippingRule['quantity_from'] && isset($shippingRule['quantity_to']) && ($totalQuantity < $shippingRule['quantity_to'] || $shippingRule['quantity_to'] === '')){
+                $isFilterQuantity = true;
+            } else {
+                return true;
+            }
+        }
+
+        if($isFilterWeight || $isFilterPrice || $isFilterQuantity){
+            return false;
+        }
+
+        return true;
+    }
+
+    public function checkIsOverrideRuleApply($shippingRule, $items, $shipmentKey, $allOrigins)
+    {
+        $variants = [];
+        $totalWeight = 0;
+        $totalQuantity = 0;
+        $totalPrice = 0;
+        $isFilterWeight = $isFilterPrice = $isFilterQuantity = false;
+
+        if (!empty($allOrigins)) {
+            $variants = collect($allOrigins)->filter(function ($origin) use ($shipmentKey) {
+            return $origin['locationId'] == $shipmentKey;})->keys()->all() ?? [];
+        }
+
+        if (!empty($variants)) {
+            foreach($variants as $variantId){
+                if(isset($items[$variantId])){
+                    $item = $items[$variantId];
+                    
+                    $totalWeight += $item['lineItemWeight'] * $item['piecesOfLineItem'] ?? 0;
+                    $totalPrice += $item['lineItemPrice'] * $item['piecesOfLineItem'] ?? 0;
+                    $totalQuantity += $item['piecesOfLineItem'] ?? 0;
+                }
+                
+            }
+        }
+
+        
+        if(isset($shippingRule['isFilterWeight']) && $shippingRule['isFilterWeight']){
+            if(isset($shippingRule['weight_from']) && $totalWeight >= $shippingRule['weight_from'] && isset($shippingRule['weight_to']) && ($totalWeight < $shippingRule['weight_to'] || $shippingRule['weight_to'] === '')){
+                $isFilterWeight = true;
+            } else {
+                return true;
+            }
+        }
+        if(isset($shippingRule['isFilterPrice']) && $shippingRule['isFilterPrice']){
+            if(isset($shippingRule['price_from']) && $totalPrice >= $shippingRule['price_from'] && isset($shippingRule['price_to']) && ($totalPrice < $shippingRule['price_to'] || $shippingRule['price_to'] === '')){
+                $isFilterPrice = true;
+            } else {
+                return true;
+            }
+        }
+        if(isset($shippingRule['isFilterQuantity']) && $shippingRule['isFilterQuantity']){
             if(isset($shippingRule['quantity_from']) && $totalQuantity >= $shippingRule['quantity_from'] && isset($shippingRule['quantity_to']) && ($totalQuantity < $shippingRule['quantity_to'] || $shippingRule['quantity_to'] === '')){
                 $isFilterQuantity = true;
             } else {
