@@ -379,7 +379,7 @@ class ShippingRule extends Model
         return $shippingRule;
     }
 
-    public static function updateHideMethodsParams($shippingRule, $isOverrideRates)
+    public static function updateHideMethodsParams($shippingRule, $isOverrideRates = false)
     {
         $shippingRule['filter_provider'] = $shippingRule['filter_name'];
         $settings = json_decode($shippingRule['filter_settings'], true);
