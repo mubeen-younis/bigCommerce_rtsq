@@ -228,7 +228,7 @@ class ShippingRuleController extends Controller
                                 }
                             } else if($carrierType == 1) {
                                 $carrier = optional(Carrier::where('slug', $providerSlug)->first())->toArray() ?? [];
-                                $serviceType = isset($carrier['name']) ? $carrier['name'] . ' LTL' : '';
+                                $serviceType = isset($carrier['name']) ? $carrier['name'] . ' LTL Freight' : '';
                                 if(in_array($serviceType, $rule['filter_services'])){                                    
                                     $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
                                     $isOverrideRates = true;

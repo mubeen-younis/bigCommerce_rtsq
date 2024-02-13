@@ -114,7 +114,7 @@ class QuoteSettingsController extends Controller
                         }
                     } else {
                         if(isset($carrierName['name'])){
-                            $data[] = ['key' => $carrierSlug, 'value' => $carrierName['name'] . ' LTL'];
+                            $data[] = ['key' => $carrierSlug, 'value' => $carrierName['name'] . ' LTL Freight'];
                         }
                     }
                 } 
@@ -136,7 +136,7 @@ class QuoteSettingsController extends Controller
                 }
             } else {
                 if(isset($carrierName['name'])){
-                    $data[] = ['key' => $carrierSlug, 'value' => $carrierName['name'] . ' LTL'];
+                    $data[] = ['key' => $carrierSlug, 'value' => $carrierName['name'] . ' LTL Freight'];
                 }
             }
 
