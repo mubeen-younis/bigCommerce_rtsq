@@ -68,10 +68,10 @@ class QuoteSettingsController extends Controller
             } else if($carrierSlug == 'fedex-ltl') {
                 $settings = QuoteSetting::where('installed_carrier_id', $carrierId)->first();
                 $service = isset($settings->value) ? json_decode($settings->value) : [];
-                if ($service->fedex_freight_economy){
+                if (isset($service->fedex_freight_economy) && $service->fedex_freight_economy){
                     $data[] = ['key' => 'fedex_freight_economy', 'value' => ucwords(str_replace('_', ' ' , 'fedex_freight_economy'))];
                 } 
-                if ($service->fedex_freight_priority){
+                if (isset($service->fedex_freight_priority) && $service->fedex_freight_priority){
                     $data[] = ['key' => 'fedex_freight_priority', 'value' => ucwords(str_replace('_', ' ' , 'fedex_freight_priority'))];
                 }
                 

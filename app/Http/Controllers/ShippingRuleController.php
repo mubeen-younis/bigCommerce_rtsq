@@ -375,10 +375,11 @@ class ShippingRuleController extends Controller
             $allCategories = json_decode($response['response'], true);
 
             $categories = [];
-            
-            foreach ($allCategories['data'] as $key => $category) {
-                $categories[] = ['key' => $category['id'], 'value' => $category['name']];
-            };
+            if(isset($allCategories['data']) && !empty($allCategories['data'])){
+                foreach ($allCategories['data'] as $key => $category) {
+                    $categories[] = ['key' => $category['id'], 'value' => $category['name']];
+                };
+            }
         }
         return Helpers::sendJsonResponse(false, null, $categories);;
     }
@@ -399,10 +400,11 @@ class ShippingRuleController extends Controller
             $allBrands = json_decode($response['response'], true);
     
             $brands = [];
-            
-            foreach ($allBrands['data'] as $key => $brand) {
-                $brands[] = ['key' => $brand['id'], 'value' => $brand['name']];
-            };
+            if(isset($allBrands['data']) && !empty($allBrands['data'])){
+                foreach ($allBrands['data'] as $key => $brand) {
+                    $brands[] = ['key' => $brand['id'], 'value' => $brand['name']];
+                };
+            }
         }
         return Helpers::sendJsonResponse(false, null, $brands);
     }
