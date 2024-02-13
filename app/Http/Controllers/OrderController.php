@@ -210,6 +210,7 @@ class OrderController extends Controller
         $LimitedAccessDel = strpos($rateId, '+LAD') ? 'Y' : 'n';
         $isTruckLoad = strpos($rateId, '+TL') ? 'Y' : 'n';
         $isFreightTruckLoad = strpos($rateId, '+FLGTL') ? 'Y' : 'n';
+        $isOverrideRates = strpos($rateId, '+override') ? true : false;
         $isTwoManDel = strpos($rateId, Functions::$twoManDelAccess) ? 'Y' : 'n';
         $isAppointmentDel = strpos($rateId, Functions::$appointmentDelAccess) ? 'Y' : 'n';
         $rateId = strtolower($rateId);
@@ -368,7 +369,7 @@ class OrderController extends Controller
         $origins = $lineItem->origin;
         $items = $lineItem->items;
         $count = 0;
-        $addedInsurance = $addHazmat = false;
+        $addedInsurance = $addHazmat = $isOriginMarkup = $isProductMarkup = false;
         $isMulti = false;
         $insertedIds = $insertedNames = [];
         $code = '';
@@ -378,8 +379,8 @@ class OrderController extends Controller
             if (blank($item)) {
                 continue;
             }
-            $isOriginMarkup = isset($origin->origin_markup) && !empty($origin->origin_markup);
-            $isProductMarkup = isset($item->product_markup) && !empty($item->product_markup);
+            $isOriginMarkup = isset($origin->origin_markup) && !empty($origin->origin_markup) && !$isOverrideRates;
+            $isProductMarkup = isset($item->product_markup) && !empty($item->product_markup) && !$isOverrideRates;
 
             $zip = $origin->locationId != '' ? $origin->locationId : $origin->senderZip;
             $city = $origin->senderCity ? $origin->senderCity . ',' : '';
@@ -529,17 +530,17 @@ class OrderController extends Controller
                     }
                 }
 
-                if (isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') {
+                if (isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y' && !$isOverrideRates) {
                     array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
                     $addHazmat = true;
-                } else if ($addHazmat) {
+                } else if ($addHazmat && !$isOverrideRates) {
                     array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
                 }
             } else {
                 if ((isset($item->product_insurance_active) && $item->product_insurance_active == 1 && $carrierHasInsurance) || in_array('Insurance', $oldAccessorial)) {
                     array_push($orderWidget[$zip]['accessories'], 'Insurance');
                 }
-                if ((isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') || $addedHazmat) {
+                if ((isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y' && !$isOverrideRates) || $addedHazmat) {
                     array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
                     $addHazmat = true;
                 }

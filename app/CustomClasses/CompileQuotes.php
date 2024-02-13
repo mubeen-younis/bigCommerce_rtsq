@@ -2015,6 +2015,7 @@ class CompileQuotes
                         $price = $this->calculatePrice($data);
                         if($this->isOverrideRates){
                             $overrideRuleCount++;
+                            $access = '+override';
                         }
 
                         /*
@@ -2721,6 +2722,7 @@ class CompileQuotes
                         $price = $this->calculatePrice($data);
                         if($this->isOverrideRates){
                             $overrideRuleCount++;
+                            $access = '+override';
                         }
 
                         if (isset($data['serviceType']) && $data['serviceType'] === 'FEDEX_FREIGHT_ECONOMY') {
@@ -2959,6 +2961,7 @@ class CompileQuotes
                     $price = $this->calculatePrice($data);
                     if($this->isOverrideRates){
                         $overrideRuleCount++;
+                        $access = '+override';
                     }
 
                     /*
@@ -3627,6 +3630,7 @@ class CompileQuotes
                 $price = $this->calculatePrice($data, false, false, true);
                 if($this->isOverrideRates){
                     $overrideRuleCount++;
+                    $access = '+override';
                 }
 
                 /*
@@ -4476,6 +4480,7 @@ class CompileQuotes
                         $price = $this->calculatePrice($data);
                         if($this->isOverrideRates){
                             $overrideRuleCount++;
+                            $access = '+override';
                         }
 
                         $this->quoteSettings['label_as'] = $labelAs;
@@ -4695,6 +4700,7 @@ class CompileQuotes
                         $price = $this->calculatePrice($data);
                         if($this->isOverrideRates){
                             $overrideRuleCount++;
+                            $access = '+override';
                         }
 
                         $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : 'Freight';
