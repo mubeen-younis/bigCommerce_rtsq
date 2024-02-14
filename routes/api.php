@@ -285,8 +285,11 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
 });
 //Webhook
 Route::post('/bc-subscription-update', [SubscriptionController::class, 'paymentByStripeWebHook']);
-//Route::post('/bc-payment-succeeded', [SubscriptionController::class, 'invoicePaymentSucceeded']);
-//Route::post('/update-subscription', [SubscriptionController::class, 'updateSubscriptionFromStripe']);
+// Route::post('/bc-payment-succeeded', [SubscriptionController::class, 'invoicePaymentSucceeded']);
+// Route::post('/update-subscription', [SubscriptionController::class, 'updateSubscriptionFromStripe']);
+
+//Payments 
+Route::get('/get_payments',[SubscriptionController::class,'getPayments']);
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);
 Route::get('/get_conn_settings', [ConnectionController::class, 'index']);

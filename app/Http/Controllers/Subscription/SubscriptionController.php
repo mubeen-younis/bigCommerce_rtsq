@@ -15,6 +15,8 @@ use App\Models\Subscription\CarrierCount;
 use App\Models\Subscription\PaymentMethod;
 use App\Models\Subscription\Plan;
 use App\Models\Subscription\Subscription;
+use App\Models\SubscriptionStripePayments;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -370,7 +372,12 @@ class SubscriptionController extends Controller
             //Start: Upgrade or DownGrade Plans
             if (!is_null($paymentMethod) && !is_null($oldSubscription) && $stripePlanId != null && $oldSubscription->subscription_id != null) {
                 $oldPaymentMethod = PaymentMethod::where('store_id', $data['store_id'])->first();
-                $last4 = decrypt($oldPaymentMethod->last4);
+                try {
+                    $last4 = decrypt($oldPaymentMethod->last4);
+                } catch (\Exception $exception) {
+                    $last4 = '****';
+                    Log::info('Card Decrypt Exception' . $exception->getMessage());
+                }
                 //Update: the customer card if the defaultpayment is false OR the last4 digits of the current card does not match with the new given card
                 if ((isset($data['defaultpayment']) && $data['defaultpayment'] == false) && substr($data['cNumber'], -4) != $last4) {
                     $customerId = $oldSubscription->stripe_id;
@@ -386,9 +393,13 @@ class SubscriptionController extends Controller
 
                     // TODO: We can remove previous subscription from here
                     $updateSubResponse = $this->createnewSubscriptionPlan($oldSubscription->stripe_id, $stripePlanId);
+                    // $this->createAmountChargeOnStripe( $updateSubResponse['data']);
+                    // return response()->json($amountCharge, 200);
 
                 } else { //If the previous subscription is active
                     $updateSubResponse = $this->updateSubscriptionPlan($oldSubscription->subscription_id, $stripePlanId);
+                    // $this->createAmountChargeOnStripe( $updateSubResponse['data']);
+                    // return response()->json($amountCharge, 200);
                 }
 
                 if ($updateSubResponse['error'] == true) {
@@ -397,6 +408,8 @@ class SubscriptionController extends Controller
 
 
                 $this->updateSubscriptionInDB($updateSubResponse['data'], $oldSubscription, $isTestStore);
+                $this->createAmountChargeOnStripe( $updateSubResponse['data']);
+
                 //Getting Current Plan Detail
                 $updateSubResponse['data'] = $this->subscriptionDetailFromDB($data['store_id']);
 
@@ -701,6 +714,36 @@ class SubscriptionController extends Controller
             ];
         }
         return $responce;
+    }
+
+    public function createAmountChargeOnStripe($data)
+    {   
+        $cId = isset($data['customer']) ? $data['customer'] : '';
+        $amount = isset($data['items']['data'][0]['plan']['amount']) ? $data['items']['data'][0]['plan']['amount'] : '';
+        try {
+            $responce = \Stripe\Charge::create([
+                'customer' => $cId,
+                'amount' => $amount,
+                'currency' => 'usd',
+            ]);
+
+            $responce = [
+                'error' => false,
+                'data' => $responce,
+                'message' => ''
+            ];
+            // $is_exist = SubscriptionStripePayments::where('invoice_id',$data['latest_invoice'])->first();
+            $this->addOrUpdateSubscriptionPayment($data,$responce);
+
+        } catch (\Exception $e) {
+            error_log('Create Card Error: ' . $e->getMessage());
+            $responce = [
+                'error' => true,
+                'data' => [],
+                'message' => $e->getMessage()
+            ];
+        }
+         return $responce;
     }
 
     public function reActivateSubscriptionPlan($subId, $planId)
@@ -1138,5 +1181,52 @@ class SubscriptionController extends Controller
         ], 200);
     }
 
+    public function addOrUpdateSubscriptionPayment($stripeObjectData, $paymentData)
+    {
+        //  dd($paymentData['data']['id']);
+        $invoiceID = $stripeObjectData->latest_invoice ?? null;
+        $receiptNumber = $paymentData['data']['id'] ?? null;
+        if (blank($invoiceID) || blank($receiptNumber)) {
+            return null;
+        }
+
+        $subscriptionPayment = SubscriptionStripePayments::where('invoice_id',$invoiceID)->first();
+        
+        if (blank($subscriptionPayment)) {
+            $subscriptionPayment = new SubscriptionStripePayments();
+        }
+            $invoiceUrl = $paymentData['data']['receipt_url'] ?? "";
+            $search = ["https://pay.stripe.com/invoice", "/pdf?s=ap", "/pdf"];
+            $replace = ["https://invoicedata.stripe.com/invoice_receipt_file_url", "", ""];
+            $receiptUrl = str_replace($search, $replace, $invoiceUrl);
+            $subscrbedBy = Subscription::where('subscription_id',$stripeObjectData->id)->first();
+            $subscriptionPayment->invoice_id = $invoiceID;
+            $subscriptionPayment->receipt_number = $receiptNumber;
+            $amount = $paymentData['data']['amount'] / 100;
+            $subscriptionPayment->amount = $amount;
+            $subscriptionPayment->is_addon = 0; 
+            $subscriptionPayment->product_id = $subscrbedBy->plan_id;
+            $subscriptionPayment->store_id = $subscrbedBy->store_id;
+            $subscriptionPayment->invoice_download_url = $paymentData['data']['receipt_url']  ?? "";
+            $subscriptionPayment->receipt_url = $receiptUrl;
+            $subscriptionPayment->save();
+        }
+
+    
+    public function getPayments(){
+        // $getPayments = DB::table('subscription_stripe_payments')->get()->toArray() ?? [];
+        $getPayments = DB::table('subscription_stripe_payments')
+        ->leftJoin('plans', function ($join) {
+            $join->on('subscription_stripe_payments.product_id', '=', 'plans.id')
+                ->where('subscription_stripe_payments.is_addon', '=', 0);
+        })
+        ->leftJoin('addons', function ($join) {
+            $join->on('subscription_stripe_payments.product_id', '=', 'addons.id')
+                ->where('subscription_stripe_payments.is_addon', '=', 1);
+        })
+        ->select('subscription_stripe_payments.*', 'plans.name as product_name', 'addons.name as addon_name')
+        ->get();
+        return Helpers::sendJsonResponse(false, "", $getPayments);
+    }
 
 }
