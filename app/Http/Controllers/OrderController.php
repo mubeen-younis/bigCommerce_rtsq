@@ -441,6 +441,9 @@ class OrderController extends Controller
                     }
                 }
                 $carrierHasInsurance = $code ? $this->hasInsureCarrier($code) : false;
+                $isOverrideRates = strpos($code, '+override') ? true : false;
+                $isOriginMarkup = isset($origin->origin_markup) && !empty($origin->origin_markup) && !$isOverrideRates;
+                $isProductMarkup = isset($item->product_markup) && !empty($item->product_markup) && !$isOverrideRates;
 
                 /*Added condition if in case of multi shipment
                 The rate of shipping group will be added to warehouse rate*/
