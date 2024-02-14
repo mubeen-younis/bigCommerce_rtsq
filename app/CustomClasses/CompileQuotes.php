@@ -1921,7 +1921,7 @@ class CompileQuotes
     {
         $estesLtl = new estesLtlQuotesResults();
 
-        $this->isResi = $this->residential['estesLtl'] == 'Y';
+        $this->isResi = $autoDetectResi = $this->residential['estesLtl'] == 'Y';
         $this->residentialDlvry = $this->residential['estesLtl'] == 'Y' ? 1 : 0;
         $this->alwaysResi = $this->residential['alwaysResi']['estesLtl'] ?? false;
         $this->quoteSettings = $connectionSettings['estes-ltl']['quote_settings'] ?? [];
@@ -2009,11 +2009,14 @@ class CompileQuotes
                         }
 
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data);
-                        $access = $this->getAccessorialCode() . $resiPickup;
                         $price = $this->calculatePrice($data);
                         if($this->isOverrideRates){
                             $overrideRuleCount++;
                             $access = '+override';
+                            $this->isResi = false;
+                        } else{
+                            $this->isResi = $autoDetectResi;
+                            $access = $this->getAccessorialCode() . $resiPickup;
                         }
 
                         /*
@@ -2024,6 +2027,7 @@ class CompileQuotes
                         $days = $data['ratdelivery']['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
                         $title = $this->getTitle($labelAs, false, false, $data['ratdelivery']['totalTransitTimeInDays'], [], $dateAndDays);
+                        $this->isResi = $autoDetectResi;
                         $arraySorting['simple'][$key] = $price;
                         $originQuotes[$key]['simple']['code'] = 'estesltl' . $data['ratquoteNumber'] . $access;
                         $originQuotes[$key]['simple']['rate'] = $price;
@@ -2122,6 +2126,7 @@ class CompileQuotes
             $allQuotes['simple'] = $simpleQuotes;
             $multiShipmentQuotes['simple'] = $multiShipmentQuote;
             $this->quoteSettings = $this->shippingRule->disableAllAccessorials($this->quoteSettings);
+            $this->isResi = $overrideRuleCount > 1 ? false : $this->isResi;
         }
 
         $allQuotes = $this->getFinalQuotesArray($allQuotes, $overrideRuleCount);
@@ -2639,7 +2644,7 @@ class CompileQuotes
             $this->isResi = false;
             $this->residentialDlvry = 0;
         }
-
+        $autoDetectResi = $this->isResi;
         $this->alwaysResi = $this->residential['alwaysResi']['fedexLtl'] ?? false;
         $this->quoteSettings = $connectionSettings['fedex-ltl']['quote_settings'] ?? [];
         $shipments = $fedexLtl->formateQuoteBeforeCompile($shipments, $this->quoteSettings);
@@ -2716,11 +2721,14 @@ class CompileQuotes
                         }
 
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data);
-                        $access = $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
                         if($this->isOverrideRates){
                             $overrideRuleCount++;
                             $access = '+override';
+                            $this->isResi = false;
+                        } else{
+                            $this->isResi = $autoDetectResi;
+                            $access = $this->getAccessorialCode();
                         }
 
                         if (isset($data['serviceType']) && $data['serviceType'] === 'FEDEX_FREIGHT_ECONOMY') {
@@ -2737,7 +2745,7 @@ class CompileQuotes
                         $days = $data['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
                         $title = $this->getTitle($data['serviceDesc'], false, false, $data['transitTime'], [], $dateAndDays);
-
+                        $this->isResi = $autoDetectResi;
                         $holdAtTerminal = false;
                         $holdAtTerminalQuotes = [];
                         if (isset($data['holdAtTerminalResponse']) && !empty($data['holdAtTerminalResponse'])) {
@@ -2849,6 +2857,7 @@ class CompileQuotes
             $allQuotes['simple'] = $simpleQuotes;
             $multiShipmentQuotes['simple'] = $multiShipmentQuote;
             $this->quoteSettings = $this->shippingRule->disableAllAccessorials($this->quoteSettings);
+            $this->isResi = $overrideRuleCount > 1 ? false : $this->isResi;
         }
 
         $allQuotes = $this->getFinalQuotesArray($allQuotes, $overrideRuleCount);
@@ -2899,6 +2908,7 @@ class CompileQuotes
             $this->isResi = false;
             $this->residentialDlvry = 0;
         }
+        $autoDetectResi = $this->isResi;
         $this->alwaysResi = $this->residential['alwaysResi']['xpoLtl'] ?? false;
         $this->quoteSettingsData();
         $this->quoteSettings = $connectionSettings['xpo-ltl']['quote_settings'] ?? [];
@@ -2955,11 +2965,15 @@ class CompileQuotes
                     }
 
                     $data = $this->applyOverrideRatesRule($connectionSettings, $data);
-                    $access = $this->getAccessorialCode();
+
                     $price = $this->calculatePrice($data);
                     if($this->isOverrideRates){
                         $overrideRuleCount++;
                         $access = '+override';
+                        $this->isResi = false;
+                    } else{
+                        $this->isResi = $autoDetectResi;
+                        $access = $this->getAccessorialCode();
                     }
 
                     /*
@@ -2970,7 +2984,7 @@ class CompileQuotes
                     $days = $data['totalTransitTimeInDays'] ?? null;
                     $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
                     $title = $this->getTitle($data['serviceDesc'], false, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
-
+                    $this->isResi = $autoDetectResi;
                     $arraySorting['simple'][$key] = $price;
                     $originQuotes[$key]['simple']['code'] = 'xpoltl' . $access;
                     $originQuotes[$key]['simple']['rate'] = $price;
@@ -3062,6 +3076,7 @@ class CompileQuotes
             $allQuotes['simple'] = $simpleQuotes;
             $multiShipmentQuotes['simple'] = $multiShipmentQuote;
             $this->quoteSettings = $this->shippingRule->disableAllAccessorials($this->quoteSettings);
+            $this->isResi = $overrideRuleCount > 1 ? false : $this->isResi;
         }
 
         $allQuotes = $this->getFinalQuotesArray($allQuotes, $overrideRuleCount);
@@ -3570,6 +3585,7 @@ class CompileQuotes
             $this->isResi = false;
             $this->residentialDlvry = 0;
         }
+        $autoDetectResi = $this->isResi;
         $this->alwaysResi = $this->residential['alwaysResi']['upsLtl'] ?? false;
         $this->quoteSettings = $connectionSettings['ups-ltl']['quote_settings'] ?? [];
         $this->quoteSettingsData();
@@ -3624,11 +3640,15 @@ class CompileQuotes
                 $data = $quote['q'];
 
                 $data = $this->applyOverrideRatesRule($connectionSettings, $data);
-                $access = $this->getAccessorialCode();
+
                 $price = $this->calculatePrice($data, false, false, true);
                 if($this->isOverrideRates){
                     $overrideRuleCount++;
                     $access = '+override';
+                    $this->isResi = false;
+                } else{
+                    $this->isResi = $autoDetectResi;
+                    $access = $this->getAccessorialCode();
                 }
 
                 /*
@@ -3640,6 +3660,7 @@ class CompileQuotes
                 $days = $data['totalTransitTimeInDays'] ?? null;
                 $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
                 $title = $this->getTitle($lableAs, false, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
+                $this->isResi = $autoDetectResi;
                 $arraySorting['simple'][$key] = $price;
                 $originQuotes[$key]['simple']['code'] = 'upsltl' . $access;
                 $originQuotes[$key]['simple']['rate'] = $price;
@@ -3735,9 +3756,10 @@ class CompileQuotes
             $allQuotes['simple'] = $simpleQuotes;
             $multiShipmentQuotes['simple'] = $multiShipmentQuote;
             $this->quoteSettings = $this->shippingRule->disableAllAccessorials($this->quoteSettings);
+            $this->isResi = $overrideRuleCount > 1 ? false : $this->isResi;
         }
 
-        $allQuotes = $this->getFinalQuotesArray($allQuotes);
+        $allQuotes = $this->getFinalQuotesArray($allQuotes, $overrideRuleCount);
 
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
@@ -4433,7 +4455,7 @@ class CompileQuotes
         $this->alwaysResi = $this->residential['alwaysResi']['saiaLtl'] ?? false;
         $this->quoteSettings = $connectionSettings['saia-ltl']['quote_settings'] ?? [];
         $this->quoteSettingsData();
-
+        $autoDetectResi = $this->isResi;
         $shipments = $saiaLtl->formatQuotesBeforeCompilation($shipments);
         $allQuotes = $odwArr = $multiShipmentQuotes = [];
         $count = 0;
@@ -4464,7 +4486,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['offer_notify_as_option']) && $this->quoteSettings['offer_notify_as_option']);
             }
 
-            $originQuotes = $arraySorting = [];
+            $originQuotes = $arraySorting = $quotesArr = [];
 
             if (isset($quote['q'])) {
                 $quotesArr[] = $quote['q'];
@@ -4474,11 +4496,14 @@ class CompileQuotes
 
                     if (isset($srvcType)) {                   
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data);
-                        $access = $this->getAccessorialCode();
                         $price = $this->calculatePrice($data);
                         if($this->isOverrideRates){
                             $overrideRuleCount++;
                             $access = '+override';
+                            $this->isResi = false;
+                        } else {
+                            $this->isResi = $autoDetectResi;
+                            $access = $this->getAccessorialCode();
                         }
 
                         $this->quoteSettings['label_as'] = $labelAs;
@@ -4486,7 +4511,7 @@ class CompileQuotes
                         $days = $data['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = $saiaLtl->getShipmentDateAndDays($data);
                         $title = $this->getTitle($data['serviceDesc'], false, false, $days, [], $dateAndDays);
-
+                        $this->isResi = $autoDetectResi;
                         $arraySorting['simple'][$origin] = $price;
                         $originQuotes[$origin]['simple']['code'] = 'saialtl' . $access;
                         $originQuotes[$origin]['simple']['rate'] = $price;
@@ -4585,10 +4610,10 @@ class CompileQuotes
             $allQuotes['simple'] = $simpleQuotes;
             $multiShipmentQuotes['simple'] = $multiShipmentQuote;
             $this->quoteSettings = $this->shippingRule->disableAllAccessorials($this->quoteSettings);
+            $this->isResi = $overrideRuleCount > 1 ? false : $this->isResi;
         }
 
-        $allQuotes = $this->getFinalQuotesArray($allQuotes);
-
+        $allQuotes = $this->getFinalQuotesArray($allQuotes, $overrideRuleCount);
         /* Quotes for instore delivery */
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
@@ -4620,7 +4645,7 @@ class CompileQuotes
             $this->isResi = false;
             $this->residentialDlvry = 0;
         }
-
+        $autoDetectResi = $this->isResi;
         $this->alwaysResi = $this->residential['alwaysResi']['abfLtl'] ?? false;
         $shipments = $abfLtl->formateQuoteBeforeCompile($shipments, $connectionSettings['abf-ltl']);
         $this->quoteSettings = $connectionSettings['abf-ltl']['quote_settings'] ?? [];
@@ -4694,11 +4719,15 @@ class CompileQuotes
                     if (isset($srvcType)) {
 
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data);
-                        $access = $this->getAccessorialCode();
+
                         $price = $this->calculatePrice($data);
                         if($this->isOverrideRates){
                             $overrideRuleCount++;
                             $access = '+override';
+                            $this->isResi = false;
+                        } else{
+                            $this->isResi = $autoDetectResi;
+                            $access = $this->getAccessorialCode();
                         }
 
                         $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : 'Freight';
@@ -4710,7 +4739,7 @@ class CompileQuotes
                         $days = $quote['q']['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
                         $title = $this->getTitle($data['serviceDesc'], false, false, $days, [], $dateAndDays);
-
+                        $this->isResi = $autoDetectResi;
                         $arraySorting['simple'][$origin] = $price;
                         $originQuotes[$origin]['simple']['code'] = 'abfltl' . $access;
                         $originQuotes[$origin]['simple']['rate'] = $price;
@@ -4810,6 +4839,7 @@ class CompileQuotes
             $allQuotes['simple'] = $simpleQuotes;
             $multiShipmentQuotes['simple'] = $multiShipmentQuote;
             $this->quoteSettings = $this->shippingRule->disableAllAccessorials($this->quoteSettings);
+            $this->isResi = $overrideRuleCount > 1 ? false : $this->isResi;
         }
 
         $allQuotes = $this->getFinalQuotesArray($allQuotes, $overrideRuleCount);
@@ -6282,9 +6312,6 @@ class CompileQuotes
         // Here  Making Access title
         $accessTitle = '';
         $isResi = $isResi ? $isResi : $this->isResi;
-        if($this->isOverrideRates){
-            $isResi = false;
-        }
 
         // Get Access Title
         $accessTitle = Functions::getAccessTitle($this->quoteSettings, $isResi, $lgOption, $insideDel, $notifyDelivery, $laccess, $twoManDel, $appDel, $this->storeId ?? $storeId);
