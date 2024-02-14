@@ -252,6 +252,9 @@ class ShippingRuleController extends Controller
         $quoteSettings['alwaysLiftGateDelivery'] = false;
         $quoteSettings['always_quote_notify'] = false;
         $quoteSettings['always_limited_access_delivery'] = false;
+        $quoteSettings['autoDetectedResidentialAddressesLfg'] = false;
+        $quoteSettings['always_two_man_delivery'] = false;
+        $quoteSettings['always_appointment_delivery'] = false;
         
         return $quoteSettings;
     }
