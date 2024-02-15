@@ -187,7 +187,6 @@ class OrderController extends Controller
         }
 
         $rateId = str_contains($rateId, 'idx+') ? $rateId : $order['full_rate_id'];
-        $carrierHasInsurance = $this->hasInsureCarrier($rateId);
         $index = explode('idx+', $rateId);
         if (is_string($index[0]) && $index[0] == "shippingGroup") {
             return $this->shippingGroupOrderWidget($data, $order);
@@ -219,6 +218,7 @@ class OrderController extends Controller
         $isLG = strpos($rateId, '+lg') != false;
         $isOwnArrangement = strpos($rateId, 'own_arrangement') === 0 || strpos($rateId, 'freernlltl') === 0 ? true : false;
         $isLtlRate = $isSmallLtlrate || (substr($rateId, 0, 9) != 'parcel_12') || (strpos($rateId, 'ltl') != false);
+        $carrierHasInsurance = $this->hasInsureCarrier($rateId) && !$isOverrideRates;
         /*
         * Stored Response from WS */
         $lineItem = json_decode($data['lineitems'])->lineItemData;
@@ -440,8 +440,8 @@ class OrderController extends Controller
                         break;
                     }
                 }
-                $carrierHasInsurance = $code ? $this->hasInsureCarrier($code) : false;
                 $isOverrideRates = strpos($code, '+override') ? true : false;
+                $carrierHasInsurance = $code && !$isOverrideRates ? $this->hasInsureCarrier($code) : false;
                 $isOriginMarkup = isset($origin->origin_markup) && !empty($origin->origin_markup) && !$isOverrideRates;
                 $isProductMarkup = isset($item->product_markup) && !empty($item->product_markup) && !$isOverrideRates;
 
