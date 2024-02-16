@@ -19,6 +19,7 @@ use function GuzzleHttp\Promise\all;
 use App\Models\InstalledAddon;
 use App\Models\AddonSettings;
 use App\CustomClasses\Functions;
+use App\Models\SubscriptionStripePayments;
 
 class PackageSubscriptionController extends Controller
 {
@@ -342,7 +343,7 @@ class PackageSubscriptionController extends Controller
                 'source' => $mainSubscription->payment_method
             ];
             $charge = Charge::create($chargeData);
-
+            $this->addOrUpdateSubscriptionPayment($charge,$stripeCustomerId);
             $response = [
                 'chargeId' => $charge->id
             ];
@@ -631,4 +632,34 @@ class PackageSubscriptionController extends Controller
 
         return isset($getSBSAddonSettings->bins_pack_mode) ? $getSBSAddonSettings->bins_pack_mode : 0;
     }
+
+    public function addOrUpdateSubscriptionPayment($stripeObjectData,$stripeCustomerId)
+    {
+        $invoiceID = $stripeObjectData->id ?? null;
+        $receiptNumber = $stripeObjectData->id ?? null;
+        if (blank($invoiceID) || blank($receiptNumber)) {
+            return null;
+        }
+
+        $subscriptionPayment = SubscriptionStripePayments::where('invoice_id',$invoiceID)->first();
+        
+        if (blank($subscriptionPayment)) {
+            $subscriptionPayment = new SubscriptionStripePayments();
+        }
+            $invoiceUrl = $stripeObjectData->receipt_url ?? "";
+            $search = ["https://pay.stripe.com/invoice", "/pdf?s=ap", "/pdf"];
+            $replace = ["https://invoicedata.stripe.com/invoice_receipt_file_url", "", ""];
+            $receiptUrl = str_replace($search, $replace, $invoiceUrl);
+            $subscrbedBy = Subscription::where('stripe_id', $stripeCustomerId)->first();
+            $subscriptionPayment->invoice_id = $invoiceID;
+            $subscriptionPayment->receipt_number = $receiptNumber;
+            $amount = $stripeObjectData->amount/100;
+            $subscriptionPayment->amount = $amount;
+            $subscriptionPayment->is_addon = 1; 
+            $subscriptionPayment->product_id = $subscrbedBy->plan_id;
+            $subscriptionPayment->store_id = $subscrbedBy->store_id;
+            $subscriptionPayment->invoice_download_url = $invoiceUrl  ?? "";
+            $subscriptionPayment->receipt_url = $receiptUrl;
+            $subscriptionPayment->save();
+        }
 }

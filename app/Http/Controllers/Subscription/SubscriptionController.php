@@ -393,22 +393,17 @@ class SubscriptionController extends Controller
 
                     // TODO: We can remove previous subscription from here
                     $updateSubResponse = $this->createnewSubscriptionPlan($oldSubscription->stripe_id, $stripePlanId);
-                    // $this->createAmountChargeOnStripe( $updateSubResponse['data']);
-                    // return response()->json($amountCharge, 200);
 
                 } else { //If the previous subscription is active
                     $updateSubResponse = $this->updateSubscriptionPlan($oldSubscription->subscription_id, $stripePlanId);
-                    // $this->createAmountChargeOnStripe( $updateSubResponse['data']);
-                    // return response()->json($amountCharge, 200);
+
                 }
 
                 if ($updateSubResponse['error'] == true) {
                     return response()->json($updateSubResponse);
                 }
 
-
                 $this->updateSubscriptionInDB($updateSubResponse['data'], $oldSubscription, $isTestStore);
-                $this->createAmountChargeOnStripe( $updateSubResponse['data']);
 
                 //Getting Current Plan Detail
                 $updateSubResponse['data'] = $this->subscriptionDetailFromDB($data['store_id']);
@@ -716,36 +711,6 @@ class SubscriptionController extends Controller
         return $responce;
     }
 
-    public function createAmountChargeOnStripe($data)
-    {   
-        $cId = isset($data['customer']) ? $data['customer'] : '';
-        $amount = isset($data['items']['data'][0]['plan']['amount']) ? $data['items']['data'][0]['plan']['amount'] : '';
-        try {
-            $responce = \Stripe\Charge::create([
-                'customer' => $cId,
-                'amount' => $amount,
-                'currency' => 'usd',
-            ]);
-
-            $responce = [
-                'error' => false,
-                'data' => $responce,
-                'message' => ''
-            ];
-            // $is_exist = SubscriptionStripePayments::where('invoice_id',$data['latest_invoice'])->first();
-            $this->addOrUpdateSubscriptionPayment($data,$responce);
-
-        } catch (\Exception $e) {
-            error_log('Create Card Error: ' . $e->getMessage());
-            $responce = [
-                'error' => true,
-                'data' => [],
-                'message' => $e->getMessage()
-            ];
-        }
-         return $responce;
-    }
-
     public function reActivateSubscriptionPlan($subId, $planId)
     {
 
@@ -1006,7 +971,7 @@ class SubscriptionController extends Controller
                 'updated_date' => $paymentDetail->data->object->webhooks_delivered_at,
                 'subscriptionId' => $paymentDetail->data->object->subscription
             );
-
+            $this->addOrUpdateSubscriptionPayment($subscriptionPlanObj,$paymentDetail);
         } else {
             $params = array(
                 'subscriptionId' => $paymentDetail->data->object->items->data[0]->subscription
@@ -1184,8 +1149,8 @@ class SubscriptionController extends Controller
     public function addOrUpdateSubscriptionPayment($stripeObjectData, $paymentData)
     {
         //  dd($paymentData['data']['id']);
-        $invoiceID = $stripeObjectData->latest_invoice ?? null;
-        $receiptNumber = $paymentData['data']['id'] ?? null;
+        $invoiceID = $paymentData->data->object->id ?? null;
+        $receiptNumber = $paymentData->id ?? null;
         if (blank($invoiceID) || blank($receiptNumber)) {
             return null;
         }
@@ -1195,19 +1160,18 @@ class SubscriptionController extends Controller
         if (blank($subscriptionPayment)) {
             $subscriptionPayment = new SubscriptionStripePayments();
         }
-            $invoiceUrl = $paymentData['data']['receipt_url'] ?? "";
+            $invoiceUrl = $paymentData->data->object->invoice_pdf ?? "";
             $search = ["https://pay.stripe.com/invoice", "/pdf?s=ap", "/pdf"];
             $replace = ["https://invoicedata.stripe.com/invoice_receipt_file_url", "", ""];
             $receiptUrl = str_replace($search, $replace, $invoiceUrl);
             $subscrbedBy = Subscription::where('subscription_id',$stripeObjectData->id)->first();
             $subscriptionPayment->invoice_id = $invoiceID;
             $subscriptionPayment->receipt_number = $receiptNumber;
-            $amount = $paymentData['data']['amount'] / 100;
-            $subscriptionPayment->amount = $amount;
+            $subscriptionPayment->amount = ($stripeObjectData->amount) / 100;
             $subscriptionPayment->is_addon = 0; 
             $subscriptionPayment->product_id = $subscrbedBy->plan_id;
             $subscriptionPayment->store_id = $subscrbedBy->store_id;
-            $subscriptionPayment->invoice_download_url = $paymentData['data']['receipt_url']  ?? "";
+            $subscriptionPayment->invoice_download_url = $paymentData->data->object->invoice_pdf   ?? "";
             $subscriptionPayment->receipt_url = $receiptUrl;
             $subscriptionPayment->save();
         }
