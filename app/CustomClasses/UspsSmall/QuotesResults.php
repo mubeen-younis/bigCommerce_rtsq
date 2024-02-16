@@ -233,6 +233,9 @@ class QuotesResults
         } else if (isset($data['transitDate']) && $data['transitDate'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3) {
             $title = $title . ' (Delivery by ' . date('m-d-Y', strtotime($data['transitDate'])) . ')';
         }
+        if(isset($quoteSettings['carrier_services']['usps_label_as']) && $quoteSettings['carrier_services']['usps_label_as'] != '' ){
+            $title = $quoteSettings['carrier_services']['usps_label_as'];
+        }
 
         return $title;
     }
