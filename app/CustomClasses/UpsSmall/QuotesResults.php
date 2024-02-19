@@ -139,6 +139,7 @@ class QuotesResults
         $originQuotes = $multiShipmentQuotes = $multiShipmentQuote = [];
         $shipmentCount = 0;
         $count = 0;
+        $overrideRuleCount = 0;
         $access2 = $access;
 
         $rad_settings = Functions::getRADsettings($storeId) ?? [];
@@ -206,18 +207,19 @@ class QuotesResults
                     $data['totalNetCharge']['Amount'] = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
                     if (isset($this->quoteSettings['rate_source']) && $this->quoteSettings['rate_source'] === 1) {
                         $productOriginMarkupFee = Functions::calProductOriginMarkupFee((float)$data['NegotiatedRates']['Amount'], $origin, $items, $allOrigins);
-                        $data['NegotiatedRates']['Amount'] = (float) $data['NegotiatedRates']['Amount'] + $productOriginMarkupFee;
+                        $data['NegotiatedRates']['Amount'] = $data['NegotiatedRates']['Amount'] > 0 ? (float) $data['NegotiatedRates']['Amount'] + $productOriginMarkupFee : 0;
                     }
 
                     // Adding Markup in services if enabled
-                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName);
+                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
                     $isOverrideRate = isset($overrideRates['isOverrideRates']) && $overrideRates['isOverrideRates'];
                     $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
                     $price = $this->getServiceRate($data, $description, $this->quoteSettings, $isOverrideRate);
                     $quoteSettings = $this->quoteSettings;                    
                     // check: is override rule is applied, if yes then skip to add other features fee
                     if($isOverrideRate){
-                        $access2 = '';
+                        $access2 = '+override';
+                        $overrideRuleCount++;
                         $showRadNotation = false;
                     } else {
                         $access2 = $access;

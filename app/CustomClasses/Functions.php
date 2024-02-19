@@ -762,7 +762,7 @@ class Functions
         $quickLabelAs = isset($quoteSettings['quickest_service_label']) && !empty($quoteSettings['quickest_service_label']) ? $quoteSettings['quickest_service_label'] : $serviceName;
 
         $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, $insideDelivery, $resiPickup, $lgPickup, $laccess, false, false, $notifyDelivery, $isResi, $isAlwaysResi);
-        $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, $isUpsLtl, $insideDelivery, $laccess, false, false, $notifyDelivery, $originKey, $items, $allOrigins, $quoteSettings);
+        $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, $isUpsLtl, $insideDelivery, $laccess, false, false, $notifyDelivery, $originKey, $items, $allOrigins, $quoteSettings, $isOverrideRates);
         $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, $insideDelivery, $laccess, false, false, false, false, $notifyDelivery, $isResi, $storeId);
         $ndAccess = $isOverrideRates ? '+override' : $ndAccess;
         if ($isQuickestSer) {
