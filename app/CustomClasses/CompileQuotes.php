@@ -1133,9 +1133,9 @@ class CompileQuotes
             $multiShipmentQuotes['simple'] = $multiShipmentQuote;
             $this->quoteSettings = $this->shippingRule->disableAllAccessorials($this->quoteSettings);
             $quotes = collect($allQuotes['simple'])->filter(function ($quote) {
-                return strpos($quote['title'], 'w/ residential delivery') !== false;
+                return strpos($quote['code'], '+override') !== false;
             })->toArray() ?? [];
-            $this->isResi = count($quotes) < 1 ? false : $this->isResi;
+            $this->isResi = count($quotes) == $numberOfShipments ? false : $this->isResi;
         }
         // Check: end
 
@@ -3250,7 +3250,7 @@ class CompileQuotes
                         $HAT[] = $data;
                         continue;
                     }
-                    // Below commit use for future.
+                    // Apply Override rates shipping rule functionality
                     $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                     $price = $this->calculatePrice($data);
                     if($this->isOverrideRates){
@@ -3420,7 +3420,7 @@ class CompileQuotes
             }
             $count++;
         }
-
+        // Check: if override rates shipping rule is applied then disable all accessorials from the multi-shipments.
         if($overrideRuleCount > 0 && $this->isMultiShipment){
             $simpleQuotes = $allQuotes['simple'];
             $multiShipmentQuote = $multiShipmentQuotes['simple'];
@@ -3431,8 +3431,9 @@ class CompileQuotes
             $quotes = collect($allQuotes['simple'])->filter(function ($quote) {
                 return strpos($quote['code'], '+override') !== false;
             })->toArray() ?? [];
-            $this->isResi = count($quotes) > 1 ? false : $this->isResi;
+            $this->isResi = count($quotes) == $numberOfShipments ? false : $this->isResi;
         }
+        // Check: end
 
         $allQuotes = $this->getFinalQuotesArray($allQuotes, $overrideRuleCount);
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
