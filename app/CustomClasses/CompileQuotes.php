@@ -3428,7 +3428,10 @@ class CompileQuotes
             $allQuotes['simple'] = $simpleQuotes;
             $multiShipmentQuotes['simple'] = $multiShipmentQuote;
             $this->quoteSettings = $this->shippingRule->disableAllAccessorials($this->quoteSettings);
-            $this->isResi = $overrideRuleCount > 1 ? false : $this->isResi;
+            $quotes = collect($allQuotes['simple'])->filter(function ($quote) {
+                return strpos($quote['code'], '+override') !== false;
+            })->toArray() ?? [];
+            $this->isResi = count($quotes) > 1 ? false : $this->isResi;
         }
 
         $allQuotes = $this->getFinalQuotesArray($allQuotes, $overrideRuleCount);
