@@ -233,6 +233,9 @@ class QuotesResults
         } else if (isset($data['transitDate']) && $data['transitDate'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3) {
             $title = $title . ' (Delivery by ' . date('m-d-Y', strtotime($data['transitDate'])) . ')';
         }
+        if($data['serviceId'] == 'Retail Ground' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2 && $quoteSettings['estimate_date'] != ''){
+            $title = $title . ' (Intransit days: ' . $quoteSettings['estimate_date'] . ')';
+        }
         return $title;
     }
 
