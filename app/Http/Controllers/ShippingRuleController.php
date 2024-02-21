@@ -156,7 +156,14 @@ class ShippingRuleController extends Controller
                                 $services = Functions::index($request) ?? [];
                                 $serviceType = $quote['serviceType'] ?? "";
                                 $serviceType = $quote['scac'] ?? $quote['CarrierSCAC'] ?? $serviceType;
-                                
+                                if(isset($quote['serviceType']) && $quote['serviceType'] == 'Van'){
+                                    $serviceType  = 'FQTL';
+                                } elseif(isset($quote['serviceType']) && $quote['serviceType'] == 'Flatbed'){
+                                    $serviceType  = 'FQFL';
+                                } elseif(isset($quote['serviceType']) && $quote['serviceType'] == 'Refrigerated'){
+                                    $serviceType  = 'FQRL';
+                                }
+
                                 $service = array_values(array_filter($services, fn($service) => $service['speed_freight_carrierSCAC'] == $serviceType))[0] ?? [];
 
                                 if(isset($service['speed_freight_carrierName']) && in_array($service['speed_freight_carrierName'], $rule['filter_services'])){
