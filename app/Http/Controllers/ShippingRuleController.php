@@ -153,20 +153,20 @@ class ShippingRuleController extends Controller
                         if(!$isRuletrue){
                             if(Functions::is3plCarrier($providerSlug) && $carrierType == 1){
 
-                                $carrierProviders = $carrierProviders->index($request);
+                                $services = Functions::index($request) ?? [];
                                 $serviceType = $quote['serviceType'] ?? "";
                                 $serviceType = $quote['scac'] ?? $quote['CarrierSCAC'] ?? $serviceType;
-                                $services = json_decode(json_encode($carrierProviders))->original->data ?? [];
-                                $service = array_values(array_filter($services, fn($service) => $service->speed_freight_carrierSCAC == $serviceType))[0] ?? [];
                                 
-                                if(isset($service->speed_freight_carrierName) && in_array($service->speed_freight_carrierName, $rule['filter_services'])){
+                                $service = array_values(array_filter($services, fn($service) => $service['speed_freight_carrierSCAC'] == $serviceType))[0] ?? [];
+
+                                if(isset($service['speed_freight_carrierName']) && in_array($service['speed_freight_carrierName'], $rule['filter_services'])){
                                     $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
                                     $isOverrideRates = true;
                                 }
                                 // Check: if GTZ cerasis API is selected
                                 if($providerSlug == 'cltl'){
-                                    $service = array_values(array_filter($services, fn($service) => $service->speed_freight_carrierName == $serviceType))[0] ?? [];
-                                    if(isset($service->speed_freight_carrierSCAC) && in_array($service->speed_freight_carrierSCAC, $rule['filter_services'])){
+                                    $service = array_values(array_filter($services, fn($service) => $service['speed_freight_carrierName'] == $serviceType))[0] ?? [];
+                                    if(isset($service['speed_freight_carrierSCAC']) && in_array($service['speed_freight_carrierSCAC'], $rule['filter_services'])){
                                         $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
                                         $isOverrideRates = true;
                                     }

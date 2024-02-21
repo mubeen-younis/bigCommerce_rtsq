@@ -13,7 +13,8 @@ use App\CustomClasses\UpsShipEngineSmall\QuotesResults as upsShipEngineSmallQuot
 use App\Http\Controllers\OrderController;
 use App\Models\PackagingDetail;
 use App\Helpers\Helpers;
-
+use Illuminate\Support\Facades\DB;
+use App\Models\CarrierServices;
 use App\Constants\Constant;
 
 class Functions
@@ -748,7 +749,7 @@ class Functions
     }
 
     // Create Origin Quotes Array in case of notify before delivery enable
-    public static function getOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi, $insideDelivery = false, $laccess = false, $notifyDelivery = false, $resiPickup = false, $lgPickup = false, $storeId = null)
+    public static function getOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi, $insideDelivery = false, $laccess = false, $notifyDelivery = false, $resiPickup = false, $lgPickup = false, $storeId = null, $isOverrideRates = false)
     {
         $CompileQuotes = new CompileQuotes();
         $serviceCode = !($carrName == 'SouthEastern' || $carrName == 'yrcltl' || $carrName == 'upsltl' || $carrName == 'saialtl' || $carrName == 'fedexltl' || $carrName == 'tqlltl' || $carrName == 'abfltl' || $carrName == 'daylightltl' || $carrName == 'dayrossltl') && isset($data['serviceType']) ? $data['serviceType'] : '';
@@ -762,9 +763,9 @@ class Functions
         $quickLabelAs = isset($quoteSettings['quickest_service_label']) && !empty($quoteSettings['quickest_service_label']) ? $quoteSettings['quickest_service_label'] : $serviceName;
 
         $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, $insideDelivery, $resiPickup, $lgPickup, $laccess, false, false, $notifyDelivery, $isResi, $isAlwaysResi);
-        $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, $isUpsLtl, $insideDelivery, $laccess, false, false, $notifyDelivery, $originKey, $items, $allOrigins, $quoteSettings);
+        $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, $isUpsLtl, $insideDelivery, $laccess, false, false, $notifyDelivery, $originKey, $items, $allOrigins, $quoteSettings, $isOverrideRates);
         $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, $insideDelivery, $laccess, false, false, false, false, $notifyDelivery, $isResi, $storeId);
-
+        $ndAccess = $isOverrideRates ? '+override' : $ndAccess;
         if ($isQuickestSer) {
             $explodTitle = explode('w/', $ndTitle);
             if (!isset($explodTitle[1])) {
@@ -1419,5 +1420,42 @@ class Functions
             $resp[] = $widget;
         }
         return $resp;
+    }
+
+    public static function index($request)
+    {
+        $installed_carrier = $request->installed_carrier_id;
+        $services = [];
+
+        $carrier = DB::table('installed_carriers')
+            ->select('slug')
+            ->join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
+            ->where('installed_carriers.id', $installed_carrier)->first();
+
+        if ($carrier->slug == 'ltl-quotes' || $carrier->slug == 'freightquote-ltl' || $carrier->slug == 'tql-ltl' || $carrier->slug == "echo-ltl" || $carrier->slug == 'freightquote-chr-ltl' || $carrier->slug == 'priority-one-ltl') {
+            $services = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
+                ->where('installed_carriers.id', $installed_carrier)
+                ->orderBy('speed_freight_carrierName')->select('speed_freight_carrierName', 'speed_freight_carrierSCAC')->get();
+        } else if ($carrier->slug == 'gtz-ltl') {
+            $storeId = null;
+            $carrierType = $request->carrier_type ?? 'gtz';
+
+            if ($carrierType === 'CRS') {
+                $storeId = $request['store_id'] ?? $request->store_id ?? null;
+                $services = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
+                    ->where('installed_carriers.id', $installed_carrier)
+                    ->where('shopify_freights.store_id', $storeId)
+                    ->orderBy('speed_freight_carrierSCAC')->select('speed_freight_carrierName', 'speed_freight_carrierSCAC')->get();
+            } elseif ($carrierType === 'NEWAPI') {
+                $services = CarrierServices::where('app_id', '=', 1)->orderBy('speed_freight_carrierName')->select('speed_freight_carrierName', 'speed_freight_carrierSCAC')->get();
+            } else {
+                $services = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
+                    ->where('installed_carriers.id', $installed_carrier)
+                    ->whereNull('shopify_freights.store_id')
+                    ->orderBy('speed_freight_carrierName')->select('speed_freight_carrierName', 'speed_freight_carrierSCAC')->get();
+            }
+        }
+
+        return $services->toArray() ?? [];
     }
 }

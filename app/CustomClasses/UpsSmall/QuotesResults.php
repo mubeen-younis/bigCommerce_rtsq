@@ -23,7 +23,7 @@ class QuotesResults
 
 
         if (isset($quoteSettings['rate_source']) && $quoteSettings['rate_source'] === 1) {
-            $boxFee = $data['boxFees']['Amount'] ?? 0;
+            $boxFee = !$isOverrideRate && isset($data['boxFees']['Amount']) ? $data['boxFees']['Amount'] : 0 ?? 0;
             $amount = $data['NegotiatedRates']['Amount'] > 0 ? $data['NegotiatedRates']['Amount'] + $boxFee : $amount;
         }
 
@@ -119,6 +119,7 @@ class QuotesResults
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
         $this->quoteSettings = $connectionSettings['ups-small']['quote_settings'] ?? '';
         $numberOfShipments = 0;
+        $overrideRuleCount = 0;
         foreach ($shipments as $ship) {
             if(isset($ship['tnt']['faultstring'])){
                 continue;
@@ -206,22 +207,20 @@ class QuotesResults
                     $data['totalNetCharge']['Amount'] = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
                     if (isset($this->quoteSettings['rate_source']) && $this->quoteSettings['rate_source'] === 1) {
                         $productOriginMarkupFee = Functions::calProductOriginMarkupFee((float)$data['NegotiatedRates']['Amount'], $origin, $items, $allOrigins);
-                        $data['NegotiatedRates']['Amount'] = (float) $data['NegotiatedRates']['Amount'] + $productOriginMarkupFee;
+                        $data['NegotiatedRates']['Amount'] = $data['NegotiatedRates']['Amount'] > 0 ? (float) $data['NegotiatedRates']['Amount'] + $productOriginMarkupFee : 0;
                     }
 
                     // Adding Markup in services if enabled
-                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName);
+                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
                     $isOverrideRate = isset($overrideRates['isOverrideRates']) && $overrideRates['isOverrideRates'];
                     $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
                     $price = $this->getServiceRate($data, $description, $this->quoteSettings, $isOverrideRate);
                     $quoteSettings = $this->quoteSettings;                    
                     // check: is override rule is applied, if yes then skip to add other features fee
                     if($isOverrideRate){
-                        $access2 = '';
-                        $showRadNotation = false;
+                        $access2 = '+override';
                     } else {
                         $access2 = $access;
-                        $showRadNotation = $isRadNotation;
                         $price = $this->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup'] ?? 0);
                         // Checking hazmat and adding hazmat amounts in services
                         if ($isHazmat) {
@@ -241,7 +240,7 @@ class QuotesResults
                         $access2 = $access2 . '+sr'; 
                     } 
 
-                    $title = $this->getServiceTitle($data['serviceDesc'], $data, $data['serviceType'], $this->quoteSettings, $residential, $showRadNotation);
+                    $title = $this->getServiceTitle($data['serviceDesc'], $data, $data['serviceType'], $this->quoteSettings, $residential, $isRadNotation);
                     $price = (float)str_replace(',', '', $price);
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12ups' . $data['serviceType'] . $access2;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
@@ -266,11 +265,18 @@ class QuotesResults
             foreach ($originQuotes as $shipmentKey => $shipment) {
                 $netChargeArray = array_column($shipment['shipment'], 'simple');
                 $minValueFromNetChargeArr = min(array_column($netChargeArray, 'rate'));
+                $rates = array_column($netChargeArray, 'rate');
+                $minRateIndex = array_search($minValueFromNetChargeArr, $rates);
+                $minRateArray = $netChargeArray[$minRateIndex];
 
+                if(isset($minRateArray['code']) && strpos($minRateArray['code'], '+override') !== false){
+                    $overrideRuleCount++;
+                }  
+                $access2  = $overrideRuleCount > 0 ? '+override' : $access2;
                 $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
                 $originQuotesMulti[0]['code'] = 'Multiups' . $access2;
                 $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
-                $originQuotesMulti[0]['title'] = $residential && $showRadNotation ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
+                $originQuotesMulti[0]['title'] = $overrideRuleCount != count($originQuotes) && $residential && $isRadNotation ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
             }
             foreach ($multiShipmentQuotes as $shipmentKey => $shipment) {
                 $keys = array_column($shipment, 'rate');
