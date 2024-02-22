@@ -1158,10 +1158,10 @@ class OrderController extends Controller
      * Move row from request_temp to request table after order placing
      * delete all rows from request_temp relevant to cart_id
      */
-    public function moveQuotesTempToReq($toRequest, $request,$scope)
+    public function moveQuotesTempToReq($toRequest, $request, $scope)
     {
 
-        Log::info("scope inside moveQoutesTempToReq",$scope);
+        Log::info("scope inside moveQoutesTempToReq", $scope);
         $headers[] = 'X-Auth-Token: ' . $this->accessToken;
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
@@ -1200,45 +1200,44 @@ class OrderController extends Controller
                         unset($reqData['id']);
                         // $reqData['order_id'] = $order['id'];
                         RequestData::insert($reqData);
-                        Log::info('checking order',$reqData);
+                        Log::info('checking order', $reqData);
 
-                        if($scope=='store/order/created')
-                        {
+                        if ($scope == 'store/order/created') {
                             $order_id = RequestData::where('order_id', $order['id'])->first();
-                            Log::info('checking order',$order_id);
+                            Log::info('checking order', $order_id);
 
 
-                             if(!$order_id)
-                             {
-                                $reportingFlag="false";
+                            if (!$order_id) {
+                                $reportingFlag = "false";
                                 $orderWidget = $this->createOrderWidget($request, $order, $reportingFlag);
-                                $formated_shipment=$this->formatShipment($orderWidget);
-                                log::info("formated shipment",$formated_shipment);
-                                $staff_note=$this->update_staff_note($formated_shipment,$toRequest);
-                                log::info("staff_note",$staff_note);
+                                $formated_shipment = $this->formatShipment($orderWidget);
+                                log::info("formated shipment", $formated_shipment);
+                                $staff_note = $this->update_staff_note($formated_shipment, $toRequest);
+                                log::info("staff_note", $staff_note);
 
 
 
 
-                                RequestData::where('store_id', $storeId)
-                                ->orWhere('cart_id', $cartId)
-                                ->orWhere('rate_id', $rateId)
-                                ->update([
-                                    'order_id' => $order['id']
-                                ]);
-
+                                RequestData::where('store_id', $toRequest['store_id'])
+                                    ->orWhere('cart_id', $cartId)
+                                    ->orWhere('rate_id', $rateId)
+                                    ->update([
+                                        'order_id' => $order['id']
+                                    ]);
+                            }
+                            // TODO :  Need to check why we are doing this
+                            //                        $request['store_name'] = $toRequest['store_name'];
+                            //                        $request['store_id'] = $toRequest['store_id'];
+                            //                        $request['store_hash'] = $toRequest['store_hash'];
+                            //                        $request['order_id'] = $toRequest['order_id'];
+                            //                        $this->getOrderWidget($request, true);
                         }
-                        // TODO :  Need to check why we are doing this
-//                        $request['store_name'] = $toRequest['store_name'];
-//                        $request['store_id'] = $toRequest['store_id'];
-//                        $request['store_hash'] = $toRequest['store_hash'];
-//                        $request['order_id'] = $toRequest['order_id'];
-//                        $this->getOrderWidget($request, true);
                     }
                 }
             }
         }
     }
+
     private function formatShipment($data)
     {
 
