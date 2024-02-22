@@ -137,25 +137,20 @@ class OrderController extends Controller
 
     public function getRequestDataFromDB($tableName, $request, $rateId, $cartId, $order)
     {
-        log::info("data inside the order".json_encode($order));
+
         $modelName = $tableName === 'RequestData' ? new RequestData() : new RequestTempData();
         $source = $order['order_source'] ?? "www";
-
         $data = optional($modelName::where('rate_id', $rateId)
             ->where('cart_id', $cartId)
             ->where('store_id', $request['store_id'])
             ->first())->toArray() ?? null;
 
-        if(isset($order['full_rate_id']))
-        {
         if (blank($data) && !blank($order['full_rate_id'])) {
             $data = optional($modelName::where('rate_id', $order['full_rate_id'])
                 ->where('cart_id', $cartId)
                 ->where('store_id', $request['store_id'])
                 ->first())->toArray() ?? null;
         }
-       }
-
         // Get data for draft order from DB
         if (blank($data) && $source === "manual") {
             $data = optional($modelName::where('rate_id', $rateId)
@@ -187,8 +182,6 @@ class OrderController extends Controller
                 RequestData::insert($data);
 
             } else {
-                Log::info("inside create order return empty");
-
                 return [];
             }
         }
@@ -405,7 +398,7 @@ class OrderController extends Controller
             $orderWidget[$zip]['locationtype'] = $item->dropship_enabled == 'N' ? 'Warehouse' : 'Dropship';
             $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
-            $sRate = $order['shipping_rate'];
+            $sRate = $order['shipping_rate'] ?? null;
 
             if ($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement) {
                 $enableFeaturesArray = Functions::getEnableFeaturesArr($isLG, $insideDelivery == 'Y', $notifyBeforeDelivery == 'Y', $LimitedAccessDel == 'Y');
@@ -740,7 +733,7 @@ class OrderController extends Controller
 
     private function update_staff_note($data,$toRequest)
     {
-        Log::info("inside staff note" . ' ' . json_encode($toRequest));
+
         // Combine array elements into a single string with two line breaks between them
         $staffNoteContent = implode("\n\n", $data);
 
@@ -1048,7 +1041,6 @@ class OrderController extends Controller
         $orderId = $postData['data']['id'] ?? $postData['data']['order_id'];
         // Update,delete,create from  webhook
         $scope = $postData['scope'];
-        Log::info("scope: $scope");
         $store = Store::where('hash', $storeHash)->first();
         //allow only create/update orders actions
         $onlyScopes = ['store/order/created', 'store/order/updated'];
@@ -1164,11 +1156,9 @@ class OrderController extends Controller
      * Move row from request_temp to request table after order placing
      * delete all rows from request_temp relevant to cart_id
      */
-    public function moveQuotesTempToReq($toRequest, $request, $scope)
+    public function moveQuotesTempToReq($toRequest, $request,$scope)
     {
-
-        Log::info("to request moveQoutesTempToReq: " . json_encode($toRequest));
-
+        $order=[];
         $headers[] = 'X-Auth-Token: ' . $this->accessToken;
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
@@ -1176,18 +1166,19 @@ class OrderController extends Controller
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
             $cartId = json_decode($response['response'])->cart_id;
-            $order = json_decode($response['response'], true);
+            $order= json_decode($response['response'],true);
             $endpoint = json_decode($response['response'])->shipping_addresses->url;
             $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
             if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
                 $endpoint = json_decode($response['response'])[0]->shipping_quotes->url;
-
                 $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
                 if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
                     $response = json_decode($response['response']);
+                    $order['rate_id'] = optional($response)->rate_id ?? null;
+                    $order['full_rate_id'] = optional($response)->shipping_provider_quote->rateId ?? '';
+                    $order['shipping_name'] = optional($response)->shipping_provider_quote->name ?? '';
+                    $order['shipping_rate'] = optional($response)->shipping_provider_quote->rate->value ?? '';
                     $rateId = optional($response)->rate_id ?? null;
-                    log::info("response from 1189".json_encode($response,true));
-
                     /*
                      * Added this if in case of rate ID characters exceed 36
                      * Big commerce truncate other characters
@@ -1196,44 +1187,31 @@ class OrderController extends Controller
                      * */
                     $fullRateId = optional($response)->shipping_provider_quote->rateId ?? null;
                     $reqData = optional(RequestTempData::where('rate_id', $rateId)->where('cart_id', $cartId)->first())->toArray();
-
                     if (blank($reqData)) {
                         $reqData = optional(RequestTempData::where('rate_id', $fullRateId)->where('cart_id', $cartId)->first())->toArray();
                     }
-
                     if (blank($reqData)) {
                         $reqData = optional(RequestTempData::where('rate_id', $fullRateId)->where('store_id', $toRequest['store_id'])->latest()->first())->toArray();
                     }
-                    Log::info('Order Data DB: ' . json_encode($reqData) . ' RateID: ' . $rateId . ' CartId: ' . $cartId);
                     if (!blank($reqData)) {
                         unset($reqData['id']);
                         $orderId= $order['id'];
                         RequestData::insert($reqData);
-                        Log::info('checking order' . ' reqData: ' . json_encode($reqData));
-
-
+                        $scope="store/order/created";
                         if ($scope == 'store/order/created') {
                             $orderCheck = RequestData::where('order_id', $orderId)->first();
-
-                            Log::info('checking order' . ' order_id: ' . json_encode($orderCheck));
                             if (!$orderCheck) {
                                 $reportingFlag = "false";
-                                Log::info("request: " . json_encode($request));
-                                Log::info("order: " . json_encode($order));
                                 $orderWidget = $this->createOrderWidget($request, $order, $reportingFlag);
-                                Log::info("response from order widget" . json_encode($orderWidget));
-
                                 $formated_shipment = $this->formatShipment($orderWidget);
-                                Log::info("formatted shipment" . json_encode($formated_shipment));
-                                $staff_note = $this->update_staff_note($formated_shipment, $toRequest);
-                                Log::info("staff_note" . json_encode($staff_note));
-
+                                $this->update_staff_note($formated_shipment, $request);
                                 RequestData::where('store_id', $toRequest['store_id'])
                                     ->orWhere('cart_id', $cartId)
                                     ->orWhere('rate_id', $rateId)
                                     ->update([
                                         'order_id' => $orderId
                                     ]);
+
                             }
                             // TODO :  Need to check why we are doing this
                             //                        $request['store_name'] = $toRequest['store_name'];
