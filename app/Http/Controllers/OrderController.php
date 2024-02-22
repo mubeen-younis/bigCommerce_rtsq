@@ -1209,10 +1209,8 @@ class OrderController extends Controller
 
                         if ($scope == 'store/order/created') {
                             $orderCheck = RequestData::where('order_id', $orderId)->first();
-                            Log::info('checking order' . ' order_id: ' . json_encode(RequestData::where('order_id', $order['id'])->first()?->toArray()));
 
-
-
+                            Log::info('checking order' . ' order_id: ' . json_encode($orderCheck));
                             if (!$orderCheck) {
                                 $reportingFlag = "false";
                                 Log::info("request: " . json_encode($request));
