@@ -1042,7 +1042,7 @@ class OrderController extends Controller
         $orderId = $postData['data']['id'] ?? $postData['data']['order_id'];
         // Update,delete,create from  webhook
         $scope = $postData['scope'];
-        Log::info("scope: " . $scope);
+        Log::info("scope: $scope");
         $store = Store::where('hash', $storeHash)->first();
         //allow only create/update orders actions
         $onlyScopes = ['store/order/created', 'store/order/updated'];
@@ -1162,6 +1162,7 @@ class OrderController extends Controller
     {
 
         Log::info("scope inside moveQoutesTempToReq: " . $scope);
+        Log::info("to request moveQoutesTempToReq: " . $toRequest);
         $headers[] = 'X-Auth-Token: ' . $this->accessToken;
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
@@ -1211,14 +1212,15 @@ class OrderController extends Controller
 
                             if (!$order_id) {
                                 $reportingFlag = "false";
+                                Log::info("request" . ' ' . json_encode($request));
+                                Log::info("order" . ' ' . json_encode($order));
                                 $orderWidget = $this->createOrderWidget($request, $order, $reportingFlag);
+                                Log::info("response from order widget" . ' ' . json_encode($orderWidget));
+
                                 $formated_shipment = $this->formatShipment($orderWidget);
                                 Log::info("formatted shipment" . ' ' . json_encode($formated_shipment));
                                 $staff_note = $this->update_staff_note($formated_shipment, $toRequest);
                                 Log::info("staff_note" . ' ' . json_encode($staff_note));
-
-
-
 
                                 RequestData::where('store_id', $toRequest['store_id'])
                                     ->orWhere('cart_id', $cartId)
