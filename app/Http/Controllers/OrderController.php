@@ -137,6 +137,7 @@ class OrderController extends Controller
 
     public function getRequestDataFromDB($tableName, $request, $rateId, $cartId, $order)
     {
+        log::info("data inside the order".json_encode($order));
         $modelName = $tableName === 'RequestData' ? new RequestData() : new RequestTempData();
         $source = $order['order_source'] ?? "www";
 
@@ -1201,18 +1202,18 @@ class OrderController extends Controller
                     Log::info('Order Data DB: ' . json_encode($reqData) . ' RateID: ' . $rateId . ' CartId: ' . $cartId);
                     if (!blank($reqData)) {
                         unset($reqData['id']);
-                        // $reqData['order_id'] = $order['id'];
+                        $orderId= $order['id'];
                         RequestData::insert($reqData);
                         Log::info('checking order' . ' reqData: ' . json_encode($reqData));
 
 
                         if ($scope == 'store/order/created') {
-                            $order_id = RequestData::where('order_id', $order['id'])->first();
+                            $orderCheck = RequestData::where('order_id', $orderId)->first();
                             Log::info('checking order' . ' order_id: ' . json_encode(RequestData::where('order_id', $order['id'])->first()?->toArray()));
 
 
 
-                            if (!$order_id) {
+                            if (!$orderCheck) {
                                 $reportingFlag = "false";
                                 Log::info("request: " . json_encode($request));
                                 Log::info("order: " . json_encode($order));
@@ -1228,7 +1229,7 @@ class OrderController extends Controller
                                     ->orWhere('cart_id', $cartId)
                                     ->orWhere('rate_id', $rateId)
                                     ->update([
-                                        'order_id' => $order['id']
+                                        'order_id' => $orderId
                                     ]);
                             }
                             // TODO :  Need to check why we are doing this
