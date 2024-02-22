@@ -1186,7 +1186,7 @@ class OrderController extends Controller
                 if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
                     $response = json_decode($response['response']);
                     $rateId = optional($response)->rate_id ?? null;
-                    log::info("response from 1189",json_encode($response,true));
+                    log::info("response from 1189".json_encode($response,true));
 
                     /*
                      * Added this if in case of rate ID characters exceed 36
