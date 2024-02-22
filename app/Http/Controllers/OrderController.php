@@ -183,6 +183,8 @@ class OrderController extends Controller
                 RequestData::insert($data);
 
             } else {
+                Log::info("inside create order return empty");
+
                 return [];
             }
         }
@@ -1161,8 +1163,8 @@ class OrderController extends Controller
     public function moveQuotesTempToReq($toRequest, $request, $scope)
     {
 
-        Log::info("scope inside moveQoutesTempToReq: " . $scope);
-        Log::info("to request moveQoutesTempToReq: " . $toRequest);
+        Log::info("to request moveQoutesTempToReq: " . json_encode($toRequest));
+
         $headers[] = 'X-Auth-Token: ' . $this->accessToken;
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
@@ -1212,15 +1214,15 @@ class OrderController extends Controller
 
                             if (!$order_id) {
                                 $reportingFlag = "false";
-                                Log::info("request" . ' ' . json_encode($request));
-                                Log::info("order" . ' ' . json_encode($order));
+                                Log::info("request: " . json_encode($request));
+                                Log::info("order: " . json_encode($order));
                                 $orderWidget = $this->createOrderWidget($request, $order, $reportingFlag);
-                                Log::info("response from order widget" . ' ' . json_encode($orderWidget));
+                                Log::info("response from order widget" . json_encode($orderWidget));
 
                                 $formated_shipment = $this->formatShipment($orderWidget);
-                                Log::info("formatted shipment" . ' ' . json_encode($formated_shipment));
+                                Log::info("formatted shipment" . json_encode($formated_shipment));
                                 $staff_note = $this->update_staff_note($formated_shipment, $toRequest);
-                                Log::info("staff_note" . ' ' . json_encode($staff_note));
+                                Log::info("staff_note" . json_encode($staff_note));
 
                                 RequestData::where('store_id', $toRequest['store_id'])
                                     ->orWhere('cart_id', $cartId)
