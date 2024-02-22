@@ -734,6 +734,7 @@ class OrderController extends Controller
 
     private function update_staff_note($data,$toRequest)
     {
+        log::info("inside staff note",$toRequest);
         // Combine array elements into a single string with two line breaks between them
         $staffNoteContent = implode("\n\n", $data);
 
@@ -1041,6 +1042,7 @@ class OrderController extends Controller
         $orderId = $postData['data']['id'] ?? $postData['data']['order_id'];
         // Update,delete,create from  webhook
         $scope = $postData['scope'];
+        Log::info("scope",$scope);
         $store = Store::where('hash', $storeHash)->first();
         //allow only create/update orders actions
         $onlyScopes = ['store/order/created', 'store/order/updated'];
@@ -1158,6 +1160,8 @@ class OrderController extends Controller
      */
     public function moveQuotesTempToReq($toRequest, $request,$scope)
     {
+
+        Log::info("scope inside moveQoutesTempToReq",$scope);
         $headers[] = 'X-Auth-Token: ' . $this->accessToken;
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
@@ -1194,13 +1198,14 @@ class OrderController extends Controller
                     Log::info('Order Data DB: ' . json_encode($reqData) . ' RateID: ' . $rateId . ' CartId: ' . $cartId);
                     if (!blank($reqData)) {
                         unset($reqData['id']);
-                        $reqData['order_id'] = $order['id'];
+                        // $reqData['order_id'] = $order['id'];
                         RequestData::insert($reqData);
-
+                        Log::info('checking order',$reqData);
 
                         if($scope=='store/order/created')
                         {
-                            $order_id=DB::Table('request')->where('order_id',$order['id'])->first();
+                            $order_id = RequestData::where('order_id', $order['id'])->first();
+                            Log::info('checking order',$order_id);
 
 
                              if(!$order_id)
@@ -1208,11 +1213,19 @@ class OrderController extends Controller
                                 $reportingFlag="false";
                                 $orderWidget = $this->createOrderWidget($request, $order, $reportingFlag);
                                 $formated_shipment=$this->formatShipment($orderWidget);
-                                $this->update_staff_note($formated_shipment,$toRequest,);
-                                DB::table('request')->where('store_id')->orWhere('cart_id',$cartId)->orWhere('rate_id',$rateId)->update([
+                                log::info("formated shipment",$formated_shipment);
+                                $staff_note=$this->update_staff_note($formated_shipment,$toRequest);
+                                log::info("staff_note",$staff_note);
+
+
+
+
+                                RequestData::where('store_id', $storeId)
+                                ->orWhere('cart_id', $cartId)
+                                ->orWhere('rate_id', $rateId)
+                                ->update([
                                     'order_id' => $order['id']
                                 ]);
-                             }
 
                         }
                         // TODO :  Need to check why we are doing this

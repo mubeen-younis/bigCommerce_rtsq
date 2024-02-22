@@ -8,7 +8,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    feature/restrict-origin-locations:
+    staff-note-2:
       - step:
           caches:
             - composer
@@ -21,7 +21,7 @@ pipelines:
                 COMMAND: '/home/apx-bc-01/html/bc/remote-script.sh'
 
     update-checkout-titles:
-    
+
       - step:
           caches:
             - composer
