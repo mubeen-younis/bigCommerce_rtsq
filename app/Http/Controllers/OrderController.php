@@ -1197,7 +1197,6 @@ class OrderController extends Controller
                         unset($reqData['id']);
                         $orderId= $order['id'];
                         RequestData::insert($reqData);
-                        $scope="store/order/created";
                         if ($scope == 'store/order/created') {
                             $orderCheck = RequestData::where('order_id', $orderId)->first();
                             if (!$orderCheck) {
