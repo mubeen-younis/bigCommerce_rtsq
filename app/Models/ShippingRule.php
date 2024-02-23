@@ -223,6 +223,9 @@ class ShippingRule extends Model
                         "quantityTo" => $shippingRuleData['quantity_to'] ?? '',
                         "filter_services" => $shippingRuleData['filter_services'] ?? [],
                         "service_rates" => $shippingRuleData['service_rates'] ?? '',
+                        "service_residential_fee" => $shippingRuleData['service_residential_fee'] ?? '',
+                        "service_liftgate_fee" => $shippingRuleData['service_liftgate_fee'] ?? '',
+                        "service_notify_fee" => $shippingRuleData['service_notify_fee'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
@@ -396,6 +399,9 @@ class ShippingRule extends Model
         if($isOverrideRates){
             $shippingRule['filter_services'] = $settings['filter_services'];
             $shippingRule['service_rates'] = $settings['service_rates'];
+            $shippingRule['service_residential_fee'] = $settings['service_residential_fee'];
+            $shippingRule['service_liftgate_fee'] = $settings['service_liftgate_fee'];
+            $shippingRule['service_notify_fee'] = $settings['service_notify_fee'];
         }
 
         return $shippingRule;
