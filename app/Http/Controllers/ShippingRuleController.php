@@ -161,6 +161,7 @@ class ShippingRuleController extends Controller
                                 
                                 if(isset($service->speed_freight_carrierName) && in_array($service->speed_freight_carrierName, $rule['filter_services'])){
                                     $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                    $quote = $this->overrideAccessorialsfee($quote, $rule);
                                     $isOverrideRates = true;
                                 }
                                 // Check: if GTZ cerasis API is selected
@@ -168,6 +169,7 @@ class ShippingRuleController extends Controller
                                     $service = array_values(array_filter($services, fn($service) => $service->speed_freight_carrierName == $serviceType))[0] ?? [];
                                     if(isset($service->speed_freight_carrierSCAC) && in_array($service->speed_freight_carrierSCAC, $rule['filter_services'])){
                                         $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                        $quote = $this->overrideAccessorialsfee($quote, $rule);
                                         $isOverrideRates = true;
                                     }
                                 }
@@ -209,6 +211,7 @@ class ShippingRuleController extends Controller
                                 $serviceType = ucwords(strtolower(str_replace('_', ' ' , $quote['serviceType'])));
                                 if(in_array($serviceType, $rule['filter_services'])){                                    
                                     $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                    $quote = $this->overrideAccessorialsfee($quote, $rule);
                                     $isOverrideRates = true;
                                 }
                             } else if ($isSamedayApi) {
@@ -216,6 +219,7 @@ class ShippingRuleController extends Controller
                                 $serviceDesc = Functions::$dayRossServices[$serviceCode] ?? '';
                                 if(in_array($serviceDesc, $rule['filter_services'])){                                    
                                     $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                    $quote = $this->overrideAccessorialsfee($quote, $rule);
                                     $isOverrideRates = true;
                                 }
 
@@ -224,13 +228,15 @@ class ShippingRuleController extends Controller
                                 $serviceDesc = Functions::$rnlServices[$serviceCode] ?? '';
                                 if(in_array($serviceDesc, $rule['filter_services'])){                                    
                                     $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                    $quote = $this->overrideAccessorialsfee($quote, $rule);
                                     $isOverrideRates = true;
                                 }
                             } else if($carrierType == 1) {
                                 $carrier = optional(Carrier::where('slug', $providerSlug)->first())->toArray() ?? [];
                                 $serviceType = isset($carrier['name']) ? $carrier['name'] . ' LTL Freight' : '';
-                                if(in_array($serviceType, $rule['filter_services'])){                                    
+                                if(in_array($serviceType, $rule['filter_services'])){             
                                     $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                    $quote = $this->overrideAccessorialsfee($quote, $rule);
                                     $isOverrideRates = true;
                                 }
                             }
@@ -240,6 +246,42 @@ class ShippingRuleController extends Controller
             }
         }
         return ['data' => $quote, 'isOverrideRates' => $isOverrideRates];
+    }
+
+    public function overrideAccessorialsfee($quote, $rule)
+    {
+        if(isset($rule['service_residential_fee']) && !empty($rule['service_residential_fee'])){
+            $quote['surcharges']['residentialFee'] = $rule['service_residential_fee'];
+            $quote['totalNetCharge']['Amount'] += $rule['service_residential_fee'] ?? 0;
+        } elseif(isset($quote['surcharges']['residentialFee']) && !empty($quote['surcharges']['residentialFee'])){
+            $quote['totalNetCharge']['Amount'] += $quote['surcharges']['residentialFee'] ?? 0;
+        }
+
+        if(isset($rule['service_liftgate_fee']) && !empty($rule['service_liftgate_fee'])){
+            $quote['surcharges']['liftgateFee'] = $rule['service_liftgate_fee'];
+            $quote['totalNetCharge']['Amount'] += $rule['service_liftgate_fee'] ?? 0;
+        } elseif(isset($quote['surcharges']['liftgateFee']) && !empty($quote['surcharges']['liftgateFee'])){
+            $quote['totalNetCharge']['Amount'] += $quote['surcharges']['liftgateFee'] ?? 0;
+        }
+
+        if(isset($rule['service_notify_fee']) && !empty($rule['service_notify_fee'])){
+            $quote['surcharges']['notifyDeliveryFee'] = $rule['service_notify_fee'];
+            $quote['totalNetCharge']['Amount'] += $rule['service_notify_fee'] ?? 0;
+        } elseif(isset($quote['surcharges']['notifyDeliveryFee']) && !empty($quote['surcharges']['notifyDeliveryFee'])){
+            $quote['totalNetCharge']['Amount'] += $quote['surcharges']['notifyDeliveryFee'] ?? 0;
+        } elseif(isset($quote['surcharges']['notifyBeforeDeliveryFee']) && !empty($quote['surcharges']['notifyBeforeDeliveryFee'])){
+            $quote['totalNetCharge']['Amount'] += $quote['surcharges']['notifyBeforeDeliveryFee'] ?? 0;
+        }
+
+        if(isset($quote['surcharges']['insuranceFee']) && !empty($quote['surcharges']['insuranceFee'])){
+            $quote['totalNetCharge']['Amount'] += $quote['surcharges']['insuranceFee'] ?? 0;
+        }
+
+        if(isset($quote['surcharges']['hazardousMaterialsFee']) && !empty($quote['surcharges']['hazardousMaterialsFee'])){
+            $quote['totalNetCharge']['Amount'] += $quote['surcharges']['hazardousMaterialsFee'] ?? 0;
+        }
+
+        return $quote;
     }
 
     public function disableAllAccessorials($quoteSettings)
