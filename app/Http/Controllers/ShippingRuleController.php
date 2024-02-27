@@ -250,13 +250,6 @@ class ShippingRuleController extends Controller
 
     public function overrideAccessorialsfee($quote, $rule)
     {
-        if(isset($rule['service_residential_fee']) && !empty($rule['service_residential_fee'])){
-            $quote['surcharges']['residentialFee'] = $rule['service_residential_fee'];
-            $quote['totalNetCharge']['Amount'] += $rule['service_residential_fee'] ?? 0;
-        } elseif(isset($quote['surcharges']['residentialFee']) && !empty($quote['surcharges']['residentialFee'])){
-            $quote['totalNetCharge']['Amount'] += $quote['surcharges']['residentialFee'] ?? 0;
-        }
-
         if(isset($rule['service_liftgate_fee']) && !empty($rule['service_liftgate_fee'])){
             $quote['surcharges']['liftgateFee'] = $rule['service_liftgate_fee'];
             $quote['totalNetCharge']['Amount'] += $rule['service_liftgate_fee'] ?? 0;
@@ -271,14 +264,6 @@ class ShippingRuleController extends Controller
             $quote['totalNetCharge']['Amount'] += $quote['surcharges']['notifyDeliveryFee'] ?? 0;
         } elseif(isset($quote['surcharges']['notifyBeforeDeliveryFee']) && !empty($quote['surcharges']['notifyBeforeDeliveryFee'])){
             $quote['totalNetCharge']['Amount'] += $quote['surcharges']['notifyBeforeDeliveryFee'] ?? 0;
-        }
-
-        if(isset($quote['surcharges']['insuranceFee']) && !empty($quote['surcharges']['insuranceFee'])){
-            $quote['totalNetCharge']['Amount'] += $quote['surcharges']['insuranceFee'] ?? 0;
-        }
-
-        if(isset($quote['surcharges']['hazardousMaterialsFee']) && !empty($quote['surcharges']['hazardousMaterialsFee'])){
-            $quote['totalNetCharge']['Amount'] += $quote['surcharges']['hazardousMaterialsFee'] ?? 0;
         }
 
         return $quote;
