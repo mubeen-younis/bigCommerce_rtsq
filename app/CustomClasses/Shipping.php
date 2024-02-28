@@ -865,6 +865,7 @@ class Shipping
             $resp['messages'] = []; // need to change
 
             if (!$onlyDbscEnabled) {
+                $quotes = $this->freeShippingTitle($quotes);
                 $quotes = $this->formatCheapestFinalQuotes($quotes);
                 $quotes = $this->addDbscRates($quotes);
             }
@@ -876,7 +877,7 @@ class Shipping
                     'code' => $quote['code'],
                     'rate_id' => $quote['rate_id'],
                     'display_name' => $this->limitTitle($quote),
-                    'cost' => ['currency' => 'USD', 'amount' => str_replace(',', '',number_format((float)$quote['rate'], 2) )],
+                    'cost' => ['currency' => 'USD', 'amount' => str_replace(',', '', $quote['rate'])],
                     'dispatch_date' => "$current",
                 ];
             }
@@ -888,29 +889,15 @@ class Shipping
         return $resp;
     }
 
-    // public function freeShippingTitle($finalQuotes)
-    // {
-    //     foreach ($finalQuotes as $key => $quote) {
-    //         if (isset($quote['code']) && ($quote['code'] == 'INSP' || $quote['code'] == 'LOCDEL')) {
-    //             continue;
-    //         }
-    //         if ((empty($quote['rate']) || $quote['rate'] == '0.00') && isset($quote['code']) && $quote['code'] !== 'own_arrangement') {
-    //             $title = '';
-
-    //             if (isset($quote['title']) && strpos($quote['title'], '(Delivery')){
-    //                 $estimate = explode('(Delivery', $quote['title'])[1] ?? '';
-    //                 $title = Functions::$freeShipping . ' (Delivery' . $estimate;
-    //             } elseif (isset($quote['title']) && strpos($quote['title'], '(Intransit')){
-    //                 $estimate = explode('(Intransit', $quote['title'])[1] ?? '';
-    //                 $title = Functions::$freeShipping . ' (Intransit' . $estimate;
-    //             }
-
-    //             $finalQuotes[$key]['title'] = empty($title) ? Functions::$freeShipping : $title;
-    //         }
-    //     }
-
-    //     return $finalQuotes;
-    // }
+    public function freeShippingTitle($finalQuotes)
+    {
+        foreach ($finalQuotes as $key => $quote) {
+            if (isset($quote['rate']) && ($quote['rate'] <= 0 )) {
+                $finalQuotes[$key]['rate'] = 0;
+            }
+        }
+        return $finalQuotes;
+    }
 
     private function formatCheapestFinalQuotes($quotes): array
     {
