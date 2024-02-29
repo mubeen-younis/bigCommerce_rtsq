@@ -31,11 +31,18 @@ class QuotesResults
                     $charges = $this->formatCharges($value['q']['TotalAmount']);
                     $charges = $value['q']['TotalAmount'];
 
-                    $shipmentCharges = $value['q']['ShipmentCharges']['ShipmentCharge'];
+                    $shipmentCharges = isset($value['quotesWithLiftgate']['soapBody']['GetRate2Response']['GetRate2Result']['ServiceLevels']['ShipmentCharges']['ShipmentCharge']) ? $value['quotesWithLiftgate']['soapBody']['GetRate2Response']['GetRate2Result']['ServiceLevels']['ShipmentCharges']['ShipmentCharge'] : [];
                     foreach ($shipmentCharges as $k => $value) {
                         if (isset($value['ChargeCode']) && $value['ChargeCode'] == 'TLGDEL' && isset($value['Description']) && $value['Description'] == 'TAILGATE DELIVERY') {
                             $formattedShipments[$key]['q']['surcharges']['liftgateFee'] = $this->formatCharges($value['Amount']);
                             $formattedShipments[$key]['q']['surcharges']['liftgateFee'] = $value['Amount'];
+                            // add index liftgateSurcharge for HAT quotes
+                            $formattedShipments[$key]['q']['liftgateSurcharge'] = $value['Amount'];
+                        }
+
+                        if (isset($value['ChargeCode']) && $value['ChargeCode'] == 'PRESDL' && isset($value['Description']) && $value['Description'] == 'PRIVATE RES DELIVERY') {
+                            // add index residentialFee for HAT quotes
+                            $formattedShipments[$key]['q']['residentialFee'] = $value['Amount'];
                         }
                     }
 
@@ -60,8 +67,8 @@ class QuotesResults
                     $charges = $this->formatCharges($value['q']['TotalCharges']);
                     $charges = $value['q']['TotalCharges'];
 
-                    if ($this->isLGQuotes($quoteSettings) && isset($value['q']['FuelSurCharge'])) {
-                        $formattedShipments[$key]['q']['surcharges']['liftgateFee'] = $value['q']['FuelSurCharge'];
+                    if ($this->isLGQuotes($quoteSettings) && isset($value['q']['liftgateSurcharge'])) {
+                        $formattedShipments[$key]['q']['surcharges']['liftgateFee'] = $value['q']['liftgateSurcharge'];
                     }
                 }
 
@@ -225,6 +232,13 @@ class QuotesResults
 
             $code = $ship['q']['DestinationTerminal'] ?? 'CLG';
             $charges = $ship['q']['TotalAmount'] ?? $ship['q']['TotalCharges'] ?? 0.00;
+            if ($this->isLGQuotes($quoteSettings) && isset($ship['q']['liftgateSurcharge'])) {
+                $charges = $charges - $ship['q']['liftgateSurcharge'];
+            }
+
+            if (isset($ship['q']['residentialFee'])) {
+                $charges = $charges - $ship['q']['residentialFee'];
+            }
 
             foreach ($terminals as $terminal) {
                 if ($terminal['terminal_code'] == $code) {

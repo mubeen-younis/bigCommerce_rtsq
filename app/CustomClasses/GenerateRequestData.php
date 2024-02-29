@@ -102,7 +102,7 @@ class GenerateRequestData
         $errorManagment = [];
 
         $shippingRule = new ShippingRuleController();
-        $this->connectionSettings = $shippingRule->applyShippingRule($this->storeData['store']['id'], $lineItems, $this->connectionSettings);
+        $this->connectionSettings = $shippingRule->applyHideMethodRule($this->storeData['store']['id'], $lineItems, $this->connectionSettings);
                 
         $this->storeDateTime = $this->getBCStoreDateTime();
 
@@ -584,7 +584,7 @@ class GenerateRequestData
             'quotestType' => 'ltl',
             'version' => '1.0.0',
             'returnQuotesOnExceedWeight' => 1,
-            'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
+            'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ? '1' : '0',
             'api' => $this->getApiInfoArrRossdayLtl($connSettings, $destination),
         ];
     }
