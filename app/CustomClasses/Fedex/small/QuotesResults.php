@@ -227,6 +227,7 @@ class QuotesResults
                     // Check if service type is checked to show
                     $serviceName = str_replace('_ONE_RATE', '', $data['serviceType']);
                     $serviceName = str_replace('_AIR_SERVICE', '', $serviceName);
+                    $serviceName = str_replace('FEDEX_', '', $serviceName);
                     // Added to check one rate service check
                     $tocheckServiceName = Str::contains($data['serviceType'], '_ONE_RATE') ? "ONE_RATE_" . $serviceName : $serviceName;
                     $checkService = $this->checkServiceIsEnabled($origin, $tocheckServiceName, $allConfigServices['services']);
