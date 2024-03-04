@@ -1,3 +1,15 @@
+= 2.1.13 2024-02-29 =
+
+* Fix - Update Dropship Nickname (Ticket:2302999298) [#413] (https://bitbucket.org/eniture/big-commerce/pull-requests/413)
+
+= 2.1.12 2024-02-12 =
+
+* Update - show CSV export download link in the App (Ticket:2257786184)[#411](https://bitbucket.org/eniture/big-commerce/pull-requests/411)
+
+= 2.1.11 2024-02-19 =
+
+* Update - introduce Shipping Override Rates in BC (Ticket:2007189654)[#412](https://bitbucket.org/eniture/big-commerce/pull-requests/412)
+
 = 2.1.10 2024-02-01 =
 
 * Fix - update display products on shipping rule functionality (Ticket:2209854879)[#408](https://bitbucket.org/eniture/big-commerce/pull-requests/408)

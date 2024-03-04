@@ -7,6 +7,7 @@ namespace App\CustomClasses\UpsSmall;
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
 use App\CustomClasses\Functions;
+use App\Http\Controllers\ShippingRuleController;
 
 class QuotesResults
 {
@@ -16,25 +17,28 @@ class QuotesResults
     }
 
 
-    public function getServiceRate($data, $serviceDesc, $quoteSettings)
+    public function getServiceRate($data, $serviceDesc, $quoteSettings, $isOverrideRate = false)
     {
         $amount = $data['totalNetCharge']['Amount'];
 
-        //dd($quoteSettings['rate_source']);
+
         if (isset($quoteSettings['rate_source']) && $quoteSettings['rate_source'] === 1) {
             $boxFee = $data['boxFees']['Amount'] ?? 0;
             $amount = $data['NegotiatedRates']['Amount'] > 0 ? $data['NegotiatedRates']['Amount'] + $boxFee : $amount;
         }
-        $markupIndex = strtolower(str_replace(' ', '_', $serviceDesc) . '_markup');
-        $markupIndex = strtolower(str_replace('.', '', $markupIndex));
-        $markupValue = $quoteSettings['carrier_services'][$markupIndex] ?? '';
-        if (empty($markupValue) || !is_numeric(str_replace('%', '', $markupValue))) {
-            return $amount;
-        }
-        if (strpbrk($markupValue, '%') !== FALSE) {
-            $amount = $this->getvalueFromPercent($amount, str_replace('%', '', $markupValue));
-        } else {
-            $amount = $amount + $markupValue;
+
+        if(!$isOverrideRate){
+            $markupIndex = strtolower(str_replace(' ', '_', $serviceDesc) . '_markup');
+            $markupIndex = strtolower(str_replace('.', '', $markupIndex));
+            $markupValue = $quoteSettings['carrier_services'][$markupIndex] ?? '';
+            if (empty($markupValue) || !is_numeric(str_replace('%', '', $markupValue))) {
+                return $amount;
+            }
+            if (strpbrk($markupValue, '%') !== FALSE) {
+                $amount = $this->getvalueFromPercent($amount, str_replace('%', '', $markupValue));
+            } else {
+                $amount = $amount + $markupValue;
+            }
         }
         return number_format($amount, 2);
 
@@ -107,8 +111,9 @@ class QuotesResults
     }
 
 
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items, $storeId = '')
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items, $storeId = '', $carrierName = '')
     {
+        $shippingRule = new ShippingRuleController();
         $shipments = $this->formateQuoteBeforeCompile($shipments);
         $this->quoteSettings = [];
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
@@ -137,7 +142,7 @@ class QuotesResults
         $access2 = $access;
 
         $rad_settings = Functions::getRADsettings($storeId) ?? [];
-        $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
+        $isRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
         
         unset($shipments['air'],$shipments['ground']);
         foreach ($shipments as $origin => $quote) {
@@ -205,17 +210,28 @@ class QuotesResults
                     }
 
                     // Adding Markup in services if enabled
-                    $price = $this->getServiceRate($data, $description, $this->quoteSettings);
-                    $quoteSettings = $this->quoteSettings;
-                    $price = $this->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup'] ?? 0);
-                    // Checking hazmat and adding hazmat amounts in services
-                    if ($isHazmat) {
-                        if ($isMultiShipment) {
-                            if ($hazmatAllItems[$origin] == 'Y') {
+                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName);
+                    $isOverrideRate = isset($overrideRates['isOverrideRates']) && $overrideRates['isOverrideRates'];
+                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
+                    $price = $this->getServiceRate($data, $description, $this->quoteSettings, $isOverrideRate);
+                    $quoteSettings = $this->quoteSettings;                    
+                    // check: is override rule is applied, if yes then skip to add other features fee
+                    if($isOverrideRate){
+                        $access2 = '';
+                        $showRadNotation = false;
+                    } else {
+                        $access2 = $access;
+                        $showRadNotation = $isRadNotation;
+                        $price = $this->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup'] ?? 0);
+                        // Checking hazmat and adding hazmat amounts in services
+                        if ($isHazmat) {
+                            if ($isMultiShipment) {
+                                if ($hazmatAllItems[$origin] == 'Y') {
+                                    $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
+                                }
+                            } else {
                                 $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
                             }
-                        } else {
-                            $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
                         }
                     }
 
