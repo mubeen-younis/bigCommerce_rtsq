@@ -204,12 +204,7 @@ class QuotesResults
                     // Apply override rates shipping rule
                     $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
                     $isOverrideRate = isset($overrideRates['isOverrideRates']) && $overrideRates['isOverrideRates'];
-                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
-
-                    if($isOverrideRate){
-                        $access2 = '';
-                        $residential = false;
-                    }
+                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;                    
 
                     // Adding Product and Origin Markup in services if added
                     $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);

@@ -94,6 +94,14 @@ class Functions
         'GSHW' => 'Guaranteed Hourly Window'
     ];
 
+    public static $accessorialServices = [
+        'liftgate' => 'liftgateFee',
+        'notify' => 'notifyDeliveryFee',
+        'limitedAccess' => 'limitedAccessDeliveryFee',
+        'insideDelivery' => 'insideDeliveryFee',
+        'residential' => 'residentialFee',
+    ];
+
     public static $dayRossServices = [
         'AM' => 'AM Service',
         'EG' => 'Ground Service',
