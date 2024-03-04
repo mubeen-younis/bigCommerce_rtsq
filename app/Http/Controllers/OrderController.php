@@ -741,7 +741,7 @@ class OrderController extends Controller
         return $resp;
     }
 
-    private function update_staff_note($data,$toRequest)
+    private function updateStaffNote($data,$toRequest)
     {
 
         // Combine array elements into a single string with two line breaks between them
@@ -756,19 +756,16 @@ class OrderController extends Controller
         $headers[] = 'Accept: application/json';
 
         // Set the endpoint for the BigCommerce API
-               $endpoint = 'https://api.bigcommerce.com/stores/' . $toRequest['store_hash'] . '/v2/orders/' . $toRequest['order_id'];
+        $endPoint = 'https://api.bigcommerce.com/stores/' . $toRequest['store_hash'] . '/v2/orders/' . $toRequest['order_id'];
 
 
         // Make the PUT request
-        $response = $this->curlRequest->enSingleCurlRequest($endpoint, $staffNotesJson, $headers, 'PUT', true);
+        $response = $this->curlRequest->enSingleCurlRequest($endPoint, $staffNotesJson, $headers, 'PUT', true);
 
         // Check the response and handle it accordingly
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
-            $response_Data = json_decode($response['response'], true);
-            return $response_Data;
-
-            // Handle the response or store it as needed
-            // For example: $this->handleUpdateResponse($response_Data);
+            $responseData = json_decode($response['response'], true);
+            return $responseData;
         }
     }
 
@@ -1207,28 +1204,29 @@ class OrderController extends Controller
                         unset($reqData['id']);
                         $orderId= $order['id'];
                         RequestData::insert($reqData);
+                        // Check: if order is newly created then update staff note
                         if ($scope == 'store/order/created') {
                             $orderCheck = RequestData::where('order_id', $orderId)->first();
                             if (!$orderCheck) {
                                 $reportingFlag = "false";
                                 $orderWidget = $this->createOrderWidget($request, $order, $reportingFlag);
-                                $formated_shipment = $this->formatShipment($orderWidget);
-                                $this->update_staff_note($formated_shipment, $request);
+                                $formateStaffNote = $this->formatShipment($orderWidget);
+                                $this->updateStaffNote($formateStaffNote, $request);
                                 RequestData::where('store_id', $toRequest['store_id'])
                                     ->orWhere('cart_id', $cartId)
                                     ->orWhere('rate_id', $rateId)
                                     ->update([
                                         'order_id' => $orderId
-                                    ]);
-
+                                    ]
+                                );
                             }
-                            // TODO :  Need to check why we are doing this
-                            //                        $request['store_name'] = $toRequest['store_name'];
-                            //                        $request['store_id'] = $toRequest['store_id'];
-                            //                        $request['store_hash'] = $toRequest['store_hash'];
-                            //                        $request['order_id'] = $toRequest['order_id'];
-                            //                        $this->getOrderWidget($request, true);
                         }
+                        // TODO :  Need to check why we are doing this
+                        //  $request['store_name'] = $toRequest['store_name'];
+                        //  $request['store_id'] = $toRequest['store_id'];
+                        //  $request['store_hash'] = $toRequest['store_hash'];
+                        //  $request['order_id'] = $toRequest['order_id'];
+                        //  $this->getOrderWidget($request, true);
                     }
                 }
             }
