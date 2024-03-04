@@ -386,6 +386,8 @@ class OrderController extends Controller
             $city = $origin->senderCity ? $origin->senderCity . ',' : '';
             $state = $origin->senderState ?? '';
             $senderZip = $origin->senderZip ?? '';
+            $origDetails = $this->getOriginForInsAndLocal($zip);
+            $nickname = $origDetails['nickname']; 
             if (!$isMultiShipment && $isInspOrLocal) {
                 $origDetails = $this->getOriginForInsAndLocal($zip);
                 if (!blank($origDetails)) {
@@ -395,7 +397,11 @@ class OrderController extends Controller
                 }
             }
             $orderWidget[$zip]['locationtype'] = $item->dropship_enabled == 'N' ? 'Warehouse' : 'Dropship';
-            $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
+            if($nickname == $city . ' ' . $state . ' ' . $senderZip){
+                $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
+            }else {
+                $orderWidget[$zip]['address'] = $nickname . ' - ' . $city . ' ' . $state . ' ' . $senderZip;
+            }
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
             $sRate = $order['shipping_rate'];
 
