@@ -1027,6 +1027,7 @@ class OrderController extends Controller
     public function orderFromWebhook(Request $request)
     {
         try {
+            Log::info('orderFromWebhook');
             $postData = file_get_contents("php://input");
             $postData = json_decode($postData, true);
             return $this->orderWebhookProcess($request, $postData);
