@@ -389,7 +389,7 @@ class OrderController extends Controller
             $state = $origin->senderState ?? '';
             $senderZip = $origin->senderZip ?? '';
             $origDetails = $this->getOriginForInsAndLocal($zip);
-            $nickname = $origDetails['nickname']; 
+            $nickname = isset($origDetails['nickname']) ? $origDetails['nickname'] : ''; 
             if (!$isMultiShipment && $isInspOrLocal) {
                 $origDetails = $this->getOriginForInsAndLocal($zip);
                 if (!blank($origDetails)) {
@@ -765,6 +765,7 @@ class OrderController extends Controller
         // Check the response and handle it accordingly
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
             $responseData = json_decode($response['response'], true);
+            Log::info('Staff note updated successfully: ' . json_encode($responseData['staff_notes']));
             return $responseData;
         }
     }
