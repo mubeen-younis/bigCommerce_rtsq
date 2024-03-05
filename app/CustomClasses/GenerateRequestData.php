@@ -1838,7 +1838,7 @@ class GenerateRequestData
         $apiArray = [
             'UserName' => $connSettings['creds']['username'] ?? '',
             'Password' => $connSettings['creds']['password'] ?? '',
-            'APIKey' => $connSettings['creds']['authentication_key'] ?? '',
+            'APIKey' => $connSettings['creds']['api_key'] ?? '',
             'thresholdWeightLimit' => $weightThreshold,
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
@@ -1851,7 +1851,7 @@ class GenerateRequestData
             'CODAmount' => '0',
             'collectOnDeliveryAmount' => '0',
             'DeclaredValue' => '0',
-
+            'ApiVersion' => '2.0',
             'holdAtTerminal' => $connSettings['quote_settings']['hold_at_terminal'] ?? 0,
             'palletCode' => $palletCode ?? '',
             'palletWeight' => $palletWeight ?? '',

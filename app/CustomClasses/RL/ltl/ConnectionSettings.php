@@ -29,12 +29,11 @@ class ConnectionSettings extends CarriersConnectionSettings
             'dont_auth' => '1',
             'carrierName' => 'rnl',
             'serverName' => $storeName ?? '',
-
+            'APIVersion' =>  '2.0',
             'UserName' => $data['username'] ?? '',
             'Password' => $data['password'] ?? '',
-            'APIKey' => $data['authentication_key'] ?? '',
+            'APIKey' => $data['api_key'] ?? '',
         ];
-
 
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
