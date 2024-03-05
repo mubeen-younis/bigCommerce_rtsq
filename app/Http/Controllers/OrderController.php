@@ -766,7 +766,7 @@ class OrderController extends Controller
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
             $responseData = json_decode($response['response'], true);
             Log::info('Staff note updated successfully: ' . json_encode($responseData['staff_notes']));
-            return $responseData;
+            return $response['status'];
         }
     }
 
@@ -1214,18 +1214,17 @@ class OrderController extends Controller
                             Log::info('orderCheck ');
                             if (!$orderCheck) {
                                 $reportingFlag = "false";
-                                $orderWidget = $this->createOrderWidget($request, $order, $reportingFlag);
-                                Log::info('orderWidget: ' . json_encode($orderWidget));
+                                $orderWidget = $this->createOrderWidget($toRequest, $order, $reportingFlag);
                                 $formateStaffNote = $this->formatShipment($orderWidget);
-                                Log::info('formateStaffNote: ' . json_encode($formateStaffNote));
-                                $this->updateStaffNote($formateStaffNote, $request);
-                                RequestData::where('store_id', $toRequest['store_id'])
+                                $isStatus = $this->updateStaffNote($formateStaffNote, $toRequest);
+                                if($isStatus){
+                                    RequestData::where('store_id', $toRequest['store_id'])
                                     ->orWhere('cart_id', $cartId)
                                     ->orWhere('rate_id', $rateId)
                                     ->update([
                                         'order_id' => $orderId
-                                    ]
-                                );
+                                    ]);
+                                }
                             }
                         }
                         // TODO :  Need to check why we are doing this
