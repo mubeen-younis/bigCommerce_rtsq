@@ -1216,6 +1216,7 @@ class OrderController extends Controller
                                 $reportingFlag = "false";
                                 $orderWidget = $this->createOrderWidget($request, $order, $reportingFlag);
                                 $formateStaffNote = $this->formatShipment($orderWidget);
+                                Log::info('formateStaffNote: ' . json_encode($formateStaffNote));
                                 $this->updateStaffNote($formateStaffNote, $request);
                                 RequestData::where('store_id', $toRequest['store_id'])
                                     ->orWhere('cart_id', $cartId)
