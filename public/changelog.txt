@@ -1,3 +1,7 @@
+= 2.1.14 2024-03-05 =
+
+* Fix - Update Free Shipping Title (Ticket:1823356479) [#414] (https://bitbucket.org/eniture/big-commerce/pull-requests/414)
+
 = 2.1.13 2024-02-29 =
 
 * Fix - Update Dropship Nickname (Ticket:2302999298) [#413] (https://bitbucket.org/eniture/big-commerce/pull-requests/413)
