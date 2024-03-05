@@ -1259,7 +1259,7 @@ class OrderController extends Controller
                 // Build the formatted string for each shipment
                 $formattedString = "Shipment " . ($index + 1) . " > Origin and Services-";
                 $formattedString .= "$locationType - $address (Expected Delivery By $expectedDelivery) $shippingRate";
-                $formattedString .= " -Accessorials: $accessories";
+                $formattedString .= !empty($accessories) ? " -Accessorials: $accessories" : '';
 
                 // Add the formatted string to the array
                 $formattedShipments[] = $formattedString;
