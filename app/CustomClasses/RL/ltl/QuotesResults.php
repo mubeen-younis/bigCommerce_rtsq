@@ -127,7 +127,7 @@ class QuotesResults
             }
             if(isset($quotes['q']) || isset($quotes['holdAtTerminalResponse']) || isset($quotes['InstorPickupLocalDelivery'])) {
                 unset($shipments[$shipment]);
-                if(isset($quotes['q']['ServiceLevel'])){
+                if(isset($quotes['q']['ServiceLevels'])){
                     if(!isset($quotes['q']['ServiceLevels'][0])){
                         $services = $quotes['q']['ServiceLevels'];
                         unset($quotes['q']['ServiceLevels']);
