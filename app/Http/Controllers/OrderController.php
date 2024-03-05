@@ -742,10 +742,10 @@ class OrderController extends Controller
     }
 
     private function updateStaffNote($data,$toRequest)
-    {Log::info('in staff not function');
+    {Log::info('in staff not function' . $data);
 
         // Combine array elements into a single string with two line breaks between them
-        $staffNoteContent = implode("\n\n", $data);
+        $staffNoteContent = implode("\n\n", json_decode($data));
 
         // Create a JSON string for the staff_notes field
         $staffNotesJson = json_encode(['staff_notes' => $staffNoteContent]);
