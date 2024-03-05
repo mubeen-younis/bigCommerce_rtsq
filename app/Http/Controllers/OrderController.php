@@ -1215,6 +1215,7 @@ class OrderController extends Controller
                             if (!$orderCheck) {
                                 $reportingFlag = "false";
                                 $orderWidget = $this->createOrderWidget($request, $order, $reportingFlag);
+                                Log::info('orderWidget: ' . json_encode($orderWidget));
                                 $formateStaffNote = $this->formatShipment($orderWidget);
                                 Log::info('formateStaffNote: ' . json_encode($formateStaffNote));
                                 $this->updateStaffNote($formateStaffNote, $request);
