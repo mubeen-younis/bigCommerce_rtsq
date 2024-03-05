@@ -190,6 +190,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/exportProductsTemplate', [ExportImportProducts::class, 'exportProductsTemplate']);
     Route::get('/getRowHeaderImportedFile', [ExportImportProducts::class, 'getRowHeaderImportedFile']);
     Route::post('/importProducts', [ExportImportProducts::class, 'importProductsCsv']);
+    Route::get('/get_csv_download_link', [ExportImportProducts::class, 'getCSVDownloadLink']);
 
     //subscription
     Route::post('/create_subscription', [Subscriptions::class, 'createSubscription']);
@@ -292,6 +293,7 @@ Route::get('/get_carriers', [CarrierController::class, 'index']);
 Route::get('/get_conn_settings', [ConnectionController::class, 'index']);
 Route::get('/get_qoute_settings/{carrierId}', [QuoteSettingsController::class, 'getSettings']);
 Route::post('/submit_quote_settings', [QuoteSettingsController::class, 'saveSettings']);
+Route::post('/getCarrierServices', [QuoteSettingsController::class, 'getCarrierServices']);
 
 /*------Services tab-------*/
 

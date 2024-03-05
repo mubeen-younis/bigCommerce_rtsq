@@ -802,6 +802,10 @@ class GetRatesController extends Controller
                                 return false;
                             }
                             $originAddress = $this->getAddressForQuotes($originAddress);
+                            // Check: if origin already assign then skip the origin assignment
+                            if($originAddress['senderZip'] == $this->formatReq['lineItemData']['origin'][$key]['senderZip']){
+                                continue;
+                            }
                             $this->formatReq['lineItemData']['origin'][$key] = $originAddress;
                         }
                     }
