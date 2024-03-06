@@ -37,17 +37,12 @@ class QuotesResults
                     unset($data['totalNetCharge']);
                     $data = array_merge($data, $charges);
 
-                    // Apply Override rates shipping rule functionality
+                    // Apply Override rates shipping rule
                     $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
                     $isOverrideRate = isset($overrideRates['isOverrideRates']) && $overrideRates['isOverrideRates'] ?? false;
                     $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
-                    if($isOverrideRate){
-                        $access = '+override';
-                    } else{
-                        $access = '';
-                    }
 
-                    $price = $this->CompileQuotes->calculatePrice($data, false, false, false, false, false, false, false, false, $origin, $items, $allOrigins, [], $isOverrideRate);
+                    $price = $this->CompileQuotes->calculatePrice($data, false, false, false, false, false, false, false, false, $origin, $items, $allOrigins, $quoteSettings);
                     /*
                      * Adding Functionality of Delivery Estimate Options
                      * */
