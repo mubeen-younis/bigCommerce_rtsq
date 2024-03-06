@@ -11,6 +11,7 @@ use App\Models\AdditionalCarrierTabSetting;
 use App\Models\Connection;
 use App\CustomClasses\Functions;
 use App\Models\Carrier;
+use App\Models\accessorialServicesByCarrier as CarrierAccessorials;
 
 class QuoteSettingsController extends Controller
 {
@@ -32,6 +33,8 @@ class QuoteSettingsController extends Controller
         $data = [];
         
         $carrierName = optional(Carrier::where('slug', $carrierSlug)->first())->toArray() ?? [];
+
+        $carrierAccessorials = $this->getCarrierAccessorials($carrierName['id']);
 
         if ($isLTL == 1){
             
@@ -190,7 +193,12 @@ class QuoteSettingsController extends Controller
             }
         }
         
-        return response()->json(['error' => false, 'data' =>$data, 'debug' => $request->all()], 200);
+        return response()->json(['error' => false, 'data' =>$data, 'carrierAccessorials' => $carrierAccessorials], 200);
+    }
+
+    public function getCarrierAccessorials($carrierId)
+    {
+        return optional(CarrierAccessorials::where(['carrier_id' => $carrierId])->select('accessorial_service_sac', 'status')->get())->toArray() ?? [];
     }
 
     public function saveSettings(Request $request)
