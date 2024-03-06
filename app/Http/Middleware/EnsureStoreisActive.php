@@ -21,7 +21,6 @@ class EnsureStoreisActive
     public function handle(Request $request, Closure $next)
     {
         $postData = file_get_contents("php://input");
-        Log::info('orderFromWebhook postData: ' . $postData);
         $postData = json_decode($postData, true);   
         $storeHash = explode('/', $postData['producer']);
         $storeHash = $storeHash[1];

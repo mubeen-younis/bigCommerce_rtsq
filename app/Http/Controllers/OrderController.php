@@ -742,8 +742,7 @@ class OrderController extends Controller
     }
 
     private function updateStaffNote($data,$toRequest)
-    {Log::info('in staff not function');
-        
+    {   
         // Combine array elements into a single string with two line breaks between them
         $staffNoteContent = implode("\n\n", $data);
 
@@ -765,7 +764,6 @@ class OrderController extends Controller
         // Check the response and handle it accordingly
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
             $responseData = json_decode($response['response'], true);
-            Log::info('Staff note updated successfully: ' . json_encode($responseData['staff_notes']));
             return $response['status'];
         }
     }
@@ -1027,7 +1025,6 @@ class OrderController extends Controller
     public function orderFromWebhook(Request $request)
     {
         try {
-            Log::info('orderFromWebhook');
             $postData = file_get_contents("php://input");
             $postData = json_decode($postData, true);
             return $this->orderWebhookProcess($request, $postData);
@@ -1166,7 +1163,7 @@ class OrderController extends Controller
      * delete all rows from request_temp relevant to cart_id
      */
     public function moveQuotesTempToReq($toRequest, $request,$scope)
-    {Log::info('in moveQuotesTempToReq function');
+    {
         $order=[];
         $headers[] = 'X-Auth-Token: ' . $this->accessToken;
         $headers[] = 'Content-Type: application/json';
@@ -1202,16 +1199,14 @@ class OrderController extends Controller
                     if (blank($reqData)) {
                         $reqData = optional(RequestTempData::where('rate_id', $fullRateId)->where('store_id', $toRequest['store_id'])->latest()->first())->toArray();
                     }
-                    Log::info('request data: ' . json_encode($reqData));
+
                     if (!blank($reqData)) {
                         unset($reqData['id']);
                         $orderId= $order['id'];
                         RequestData::insert($reqData);
                         // Check: if order is newly created then update staff note
-                        Log::info('Order scope: ' . $scope);
                         if ($scope == 'store/order/created') {
                             $orderCheck = RequestData::where('order_id', $orderId)->first();
-                            Log::info('orderCheck ');
                             if (!$orderCheck) {
                                 $reportingFlag = "false";
                                 $orderWidget = $this->createOrderWidget($toRequest, $order, $reportingFlag);
