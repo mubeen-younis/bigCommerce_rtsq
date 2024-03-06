@@ -330,7 +330,6 @@ class OrderController extends Controller
                                 $orderWidgetData['items'][$count]['h'] = $item->h;
                                 $orderWidgetData['items'][$count]['d'] = $item->d;
                                 $orderWidgetData['items'][$count]['wg'] = $item->wg;
-                                $boxWeight = $lineItem->items->$productid->lineItemWeight ?? 0;
 
                                 $orderWidgetData['items'][$count]['image_separated'] = $item->image_separated;
                                 $orderWidgetData['items'][$count]['image_sbs'] = $item->image_sbs;
@@ -339,7 +338,7 @@ class OrderController extends Controller
                                 ++$count;
 
                             }
-                            $orderWidget[$zip]['sbs'][$key]['weight'] = $boxWeight;
+                            $orderWidget[$zip]['sbs'][$key]['weight'] = optional($binPacked->bin_data)->totalBoxWeight ?? 0;
                             unset($orderWidgetData);
                             if ($count) {
                                 $orderWidget[$zip]['sbs'][$key]['number_of_items'] = $count;
