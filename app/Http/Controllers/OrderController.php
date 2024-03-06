@@ -305,16 +305,15 @@ class OrderController extends Controller
                                 $itemCount++;
                             }
                             $count = 0;
+                            $boxWeight = 0;
                             $orderWidgetData['type'] = $type;
                             $orderWidgetData['image_complete'] = $binPacked->image_complete;
                             $orderWidgetData['quantity'] = $quantity;
-                            $orderWidgetData['weight'] = $binPacked->bin_data->weight ?? '';
                             /*For Weight Based Products*/
                             if ($type == 'weight_based') {
                                 $orderWidgetData['d'] = '';
                                 $orderWidgetData['w'] = '';
                                 $orderWidgetData['h'] = '';
-                                $orderWidgetData['weight'] = $binPacked->bin_data->weight ?? '';
                             } else {
                                 $orderWidgetData['d'] = $binPacked->bin_data->d . ' x ';
                                 $orderWidgetData['w'] = $binPacked->bin_data->w . ' x ';
@@ -331,6 +330,7 @@ class OrderController extends Controller
                                 $orderWidgetData['items'][$count]['h'] = $item->h;
                                 $orderWidgetData['items'][$count]['d'] = $item->d;
                                 $orderWidgetData['items'][$count]['wg'] = $item->wg;
+                                $boxWeight = $lineItem->items->$productid->lineItemWeight ?? 0;
 
                                 $orderWidgetData['items'][$count]['image_separated'] = $item->image_separated;
                                 $orderWidgetData['items'][$count]['image_sbs'] = $item->image_sbs;
@@ -339,6 +339,7 @@ class OrderController extends Controller
                                 ++$count;
 
                             }
+                            $orderWidget[$zip]['sbs'][$key]['weight'] = $boxWeight;
                             unset($orderWidgetData);
                             if ($count) {
                                 $orderWidget[$zip]['sbs'][$key]['number_of_items'] = $count;
