@@ -251,8 +251,6 @@ class ShippingRuleController extends Controller
             $totalWeight = collect($weight)->sum();
             if(isset($shippingRule['weight_from']) && $totalWeight >= $shippingRule['weight_from'] && isset($shippingRule['weight_to']) && ($totalWeight < $shippingRule['weight_to'] || $shippingRule['weight_to'] === '')){
                 $isFilterWeight = true;
-            } else {
-                return true;
             }
         }
         if(isset($shippingRule['isFilterPrice']) && $shippingRule['isFilterPrice']){
@@ -262,16 +260,12 @@ class ShippingRuleController extends Controller
             $totalPrice = collect($price)->sum() ?? 0;
             if(isset($shippingRule['price_from']) && $totalPrice >= $shippingRule['price_from'] && isset($shippingRule['price_to']) && ($totalPrice < $shippingRule['price_to'] || $shippingRule['price_to'] === '')){
                 $isFilterPrice = true;
-            } else {
-                return true;
             }
         }
         if(isset($shippingRule['isFilterQuantity']) && $shippingRule['isFilterQuantity']){
             $totalQuantity = collect($items)->sum('piecesOfLineItem') ?? 0;
             if(isset($shippingRule['quantity_from']) && $totalQuantity >= $shippingRule['quantity_from'] && isset($shippingRule['quantity_to']) && ($totalQuantity < $shippingRule['quantity_to'] || $shippingRule['quantity_to'] === '')){
                 $isFilterQuantity = true;
-            } else {
-                return true;
             }
         }
 
@@ -312,22 +306,16 @@ class ShippingRuleController extends Controller
         if(isset($shippingRule['isFilterWeight']) && $shippingRule['isFilterWeight']){
             if(isset($shippingRule['weight_from']) && $totalWeight >= $shippingRule['weight_from'] && isset($shippingRule['weight_to']) && ($totalWeight < $shippingRule['weight_to'] || $shippingRule['weight_to'] === '')){
                 $isFilterWeight = true;
-            } else {
-                return true;
             }
         }
         if(isset($shippingRule['isFilterPrice']) && $shippingRule['isFilterPrice']){
             if(isset($shippingRule['price_from']) && $totalPrice >= $shippingRule['price_from'] && isset($shippingRule['price_to']) && ($totalPrice < $shippingRule['price_to'] || $shippingRule['price_to'] === '')){
                 $isFilterPrice = true;
-            } else {
-                return true;
             }
         }
         if(isset($shippingRule['isFilterQuantity']) && $shippingRule['isFilterQuantity']){
             if(isset($shippingRule['quantity_from']) && $totalQuantity >= $shippingRule['quantity_from'] && isset($shippingRule['quantity_to']) && ($totalQuantity < $shippingRule['quantity_to'] || $shippingRule['quantity_to'] === '')){
                 $isFilterQuantity = true;
-            } else {
-                return true;
             }
         }
 
