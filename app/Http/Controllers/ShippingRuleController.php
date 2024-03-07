@@ -154,6 +154,7 @@ class ShippingRuleController extends Controller
                                 // Update Parcel carriers WS rate with override rate shipping rule
                                 $serviceDesc = isset($quote['timeInTransit']['serviceDescription']) ? $quote['timeInTransit']['serviceDescription'] : '';
                                 $serviceDesc = isset($quote['serviceDesc']) && !is_array($quote['serviceDesc']) ? str_replace('®', '' , $quote['serviceDesc']) : $serviceDesc;
+                                $serviceDesc = str_replace(' Saturday', '' , $serviceDesc) ?? $serviceDesc;
                                 if ($serviceDesc == $rule['filter_services']){
                                     $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
                                     $quote['NegotiatedRates']['Amount'] = $rule['service_rates'];
