@@ -227,7 +227,7 @@ class PackageSubscriptionController extends Controller
             $updateSubscription = self::$updateFullSubscription;
         }
         if (($data['package'] != self::$dynamicTrial && $data['package'] != self::$disableAddon) || $updateSubscription == self::$updateFullSubscription) {
-            if ($updateSubscription == self::$updateFullSubscription) {
+            if ($updateSubscription != self::$updateFullSubscription) {
                 $chargeResponse = $this->createStripeChargeForPackage($package, $mainSubscription, $addonType);
             }
         }
@@ -343,7 +343,7 @@ class PackageSubscriptionController extends Controller
                 'source' => $mainSubscription->payment_method
             ];
             $charge = Charge::create($chargeData);
-            $this->addOrUpdateSubscriptionPayment($charge,$stripeCustomerId);
+            $this->addOrUpdatePackagesPayment($package,$charge,$stripeCustomerId);
             $response = [
                 'chargeId' => $charge->id
             ];
@@ -633,7 +633,7 @@ class PackageSubscriptionController extends Controller
         return isset($getSBSAddonSettings->bins_pack_mode) ? $getSBSAddonSettings->bins_pack_mode : 0;
     }
 
-    public function addOrUpdateSubscriptionPayment($stripeObjectData,$stripeCustomerId)
+    public function addOrUpdatePackagesPayment($package,$stripeObjectData,$stripeCustomerId)
     {
         $invoiceID = $stripeObjectData->id ?? null;
         $receiptNumber = $stripeObjectData->id ?? null;
@@ -656,7 +656,7 @@ class PackageSubscriptionController extends Controller
             $amount = $stripeObjectData->amount/100;
             $subscriptionPayment->amount = $amount;
             $subscriptionPayment->is_addon = 1; 
-            $subscriptionPayment->product_id = $subscrbedBy->plan_id;
+            $subscriptionPayment->product_id = $package->id;
             $subscriptionPayment->store_id = $subscrbedBy->store_id;
             $subscriptionPayment->invoice_download_url = $invoiceUrl  ?? "";
             $subscriptionPayment->receipt_url = $receiptUrl;

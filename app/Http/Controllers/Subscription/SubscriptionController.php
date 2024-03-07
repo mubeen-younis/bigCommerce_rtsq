@@ -1149,7 +1149,8 @@ class SubscriptionController extends Controller
     public function addOrUpdateSubscriptionPayment($stripeObjectData, $paymentData)
     {
         //  dd($paymentData['data']['id']);
-        $invoiceID = $paymentData->data->object->id ?? null;
+        try{
+         $invoiceID = $paymentData->data->object->id ?? null;
         $receiptNumber = $paymentData->id ?? null;
         if (blank($invoiceID) || blank($receiptNumber)) {
             return null;
@@ -1174,6 +1175,13 @@ class SubscriptionController extends Controller
             $subscriptionPayment->invoice_download_url = $paymentData->data->object->invoice_pdf   ?? "";
             $subscriptionPayment->receipt_url = $receiptUrl;
             $subscriptionPayment->save();
+        } catch (Exception $e){
+           return response()->json([
+           'error' => true,
+           'message' => $e->getMessage(),
+           ]);
+        }
+       
         }
 
     
@@ -1184,9 +1192,12 @@ class SubscriptionController extends Controller
             $join->on('subscription_stripe_payments.product_id', '=', 'plans.id')
                 ->where('subscription_stripe_payments.is_addon', '=', 0);
         })
-        ->leftJoin('addons', function ($join) {
-            $join->on('subscription_stripe_payments.product_id', '=', 'addons.id')
+        ->leftJoin('packages', function ($join) {
+            $join->on('subscription_stripe_payments.product_id', '=', 'packages.id')
                 ->where('subscription_stripe_payments.is_addon', '=', 1);
+        })
+        ->leftJoin('addons', function ($join) {
+            $join->on('packages.addon_type', '=', 'addons.short_code');
         })
         ->select('subscription_stripe_payments.*', 'plans.name as product_name', 'addons.name as addon_name')
         ->get();
