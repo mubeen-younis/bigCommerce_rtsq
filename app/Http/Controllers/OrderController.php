@@ -1246,15 +1246,17 @@ class OrderController extends Controller
                 $address = $shipmentData['address'];
                 $items = implode(', ', $shipmentData['items']);
                 $accessories = implode(' | ', $shipmentData['accessories']);
+                $items = implode(' | ', $shipmentData['items']);
                 $shippingRate = $shipmentData['shipping_rate'];
                 $expectedDelivery = isset($shipmentData['shipping_method']) && !empty($shipmentData['shipping_method'])
                     ? $shipmentData['shipping_method']
                     : 'N/A';
 
                 // Build the formatted string for each shipment
-                $formattedString = "Shipment " . ($index + 1) . " > Origin and Services-";
-                $formattedString .= "$locationType - $address (Expected Delivery By $expectedDelivery) $shippingRate";
-                $formattedString .= !empty($accessories) ? " -Accessorials: $accessories" : '';
+                $formattedString = "Shipment " . ($index + 1) . " > Origin and Services > ";
+                $formattedString .= "$locationType : $address, $expectedDelivery : $shippingRate";
+                $formattedString .= !empty($accessories) ? ", Accessorials: $accessories" : '';
+                $formattedString .= !empty($items) ? ", Items: $items" : '';
 
                 // Add the formatted string to the array
                 $formattedShipments[] = $formattedString;
