@@ -3582,6 +3582,8 @@ class CompileQuotes
                     }
                     if (isset($surcharge['Type']['Code']) && $surcharge['Type']['Code'] === 'LIFTGATE') {
                         $data['surcharges']['liftgateFee'] = $surcharge['Factor']['Value'] ?? 0;
+                    } else {
+                        $data['surcharges']['liftgateFee'] = 0;
                     }
                     if (isset($surcharge['Type']['Code']) && $surcharge['Type']['Code'] === 'ADV_NOTF') {
                         $data['surcharges']['notifyDeliveryFee'] = $surcharge['Factor']['Value'] ?? 0;
