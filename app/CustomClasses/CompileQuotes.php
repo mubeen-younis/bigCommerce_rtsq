@@ -3573,6 +3573,7 @@ class CompileQuotes
 
                 $surcharges = $data['surcharges'] ?? [];
                 unset($data['surcharges']);
+                $data['surcharges']['liftgateFee'] = 0;
                 foreach ($surcharges as $surcharge) {
                     if (isset($surcharge['Type']['Code']) && $surcharge['Type']['Code'] === 'RESI_PU_DEL') {
                         $data['surcharges']['residentialFee'] = $surcharge['Factor']['Value'] ?? 0;
@@ -3582,8 +3583,6 @@ class CompileQuotes
                     }
                     if (isset($surcharge['Type']['Code']) && $surcharge['Type']['Code'] === 'LIFTGATE') {
                         $data['surcharges']['liftgateFee'] = $surcharge['Factor']['Value'] ?? 0;
-                    } else {
-                        $data['surcharges']['liftgateFee'] = 0;
                     }
                     if (isset($surcharge['Type']['Code']) && $surcharge['Type']['Code'] === 'ADV_NOTF') {
                         $data['surcharges']['notifyDeliveryFee'] = $surcharge['Factor']['Value'] ?? 0;
