@@ -1242,20 +1242,22 @@ class OrderController extends Controller
 
             foreach ($data['widget'] as $index => $shipmentData) {
                 // Extract relevant information
-                $locationType = $shipmentData['locationtype'];
-                $address = $shipmentData['address'];
-                $items = implode(', ', $shipmentData['items']);
-                $accessories = implode(' | ', $shipmentData['accessories']);
-                $items = implode(' | ', $shipmentData['items']);
-                $shippingRate = $shipmentData['shipping_rate'];
+                $locationType = isset($shipmentData['locationtype']) ? $shipmentData['locationtype'] : '';
+                $address = isset($shipmentData['address']) ? $shipmentData['address'] : '';
+                $items = isset($shipmentData['items']) ? implode(', ', $shipmentData['items']) : '';
+                $accessories = isset($shipmentData['accessories']) ? implode(' | ', $shipmentData['accessories']) : '';
+                $items = isset($shipmentData['items']) ? implode(' | ', $shipmentData['items']) : ''; 
+                $shippingRate = isset($shipmentData['shipping_rate']) ? $shipmentData['shipping_rate'] : '';
+                $quoteId = isset($shipmentData['quoteId']) ? $shipmentData['quoteId'] : '';
                 $expectedDelivery = isset($shipmentData['shipping_method']) && !empty($shipmentData['shipping_method'])
                     ? $shipmentData['shipping_method']
-                    : 'N/A';
+                    : '';
 
                 // Build the formatted string for each shipment
                 $formattedString = "Shipment " . ($index + 1) . " > Origin and Services > ";
                 $formattedString .= "$locationType : $address, $expectedDelivery : $shippingRate";
                 $formattedString .= !empty($accessories) ? ", Accessorials: $accessories" : '';
+                $formattedString .= !empty($quoteId) ? ", Quote Id: $quoteId" : '';
                 $formattedString .= !empty($items) ? ", Items: $items" : '';
 
                 // Add the formatted string to the array
