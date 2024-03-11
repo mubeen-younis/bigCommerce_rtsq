@@ -63,6 +63,7 @@ class QuotesResults
                         $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $this->liftGateFees($quotes);
                         $shipments[$shipment]['q'][$key]['surcharges']['notifyDeliveryFee'] = $this->notifyDeliveryFees($quotes);
                         $shipments[$shipment]['q'][$key]['surcharges']['insideDeliveryFee'] = $this->insideFees($quotes);
+                        $shipments[$shipment]['q'][$key]['surcharges']['residentialFee'] = $this->residentialFees($quotes);
                     }
                 }else{
                     //if(isset($quotes['q'])) {
@@ -83,6 +84,7 @@ class QuotesResults
                                 $shipments[$shipment]['q'][$key]['totalTransitTimeInDays'] = $quote['totalTransitTimeInDays'] ?? '';
                                 $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $this->liftGateFees($quotes);
                                 $shipments[$shipment]['q'][$key]['surcharges']['notifyDeliveryFee'] = $this->notifyDeliveryFees($quotes);
+                                $shipments[$shipment]['q'][$key]['surcharges']['residentialFee'] = $this->residentialFees($quotes);
                             }
                         }
                         if (isset($quotes['InstorPickupLocalDelivery'])) {
@@ -167,6 +169,19 @@ class QuotesResults
         if(isset($quotes['q']['Charges']['Charge'])){
             foreach ($quotes['q']['Charges']['Charge'] as $charge){
                 if(isset($charge['Type']) && $charge['Type'] == 'NOT'){
+                    $fees = (float) str_replace('$', '',$charge['Amount']);
+                    break;
+                }
+            }
+        }
+        return $fees;
+    }
+
+    function residentialFees($quotes){
+        $fees = 0;
+        if(isset($quotes['q']['Charges']['Charge'])){
+            foreach ($quotes['q']['Charges']['Charge'] as $charge){
+                if(isset($charge['Type']) && $charge['Type'] == 'RC'){
                     $fees = (float) str_replace('$', '',$charge['Amount']);
                     break;
                 }

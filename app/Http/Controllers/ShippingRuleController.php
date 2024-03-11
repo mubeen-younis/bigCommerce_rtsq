@@ -185,23 +185,6 @@ class ShippingRuleController extends Controller
                                         $isOverrideRates = true;
                                     }
                                 }
-                            } else if ($isSamedayApi) {
-                                $serviceCode = isset($quote['ServiceLevelCode']) ? $quote['ServiceLevelCode'] : '';
-                                $serviceDesc = Functions::$dayRossServices[$serviceCode] ?? '';
-                                if(in_array($serviceDesc, $rule['filter_services'])){                                    
-                                    $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
-                                    $quote = $this->overrideAccessorialsfee($quote, $rule);
-                                    $isOverrideRates = true;
-                                }
-
-                            } else if ($providerSlug == 'rl-ltl') {
-                                $serviceCode = isset($quote['Code']) ? $quote['Code'] : '';
-                                $serviceDesc = Functions::$rnlServices[$serviceCode] ?? '';
-                                if(in_array($serviceDesc, $rule['filter_services'])){                                    
-                                    $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
-                                    $quote = $this->overrideAccessorialsfee($quote, $rule);
-                                    $isOverrideRates = true;
-                                }
                             } else if($carrierType == 1) {
                                 // Update LTL carriers WS rate with override rate shipping rule
                                 $quote = $this->overrideAccessorialsfee($quote, $rule);
