@@ -23,7 +23,7 @@ class QuotesResults
 
 
         if (isset($quoteSettings['rate_source']) && $quoteSettings['rate_source'] === 1) {
-            $boxFee = !$isOverrideRate && isset($data['boxFees']['Amount']) ? $data['boxFees']['Amount'] : 0 ?? 0;
+            $boxFee = isset($data['boxFees']['Amount']) ? $data['boxFees']['Amount'] : 0 ?? 0;
             $amount = $data['NegotiatedRates']['Amount'] > 0 ? $data['NegotiatedRates']['Amount'] + $boxFee : $amount;
         }
 
@@ -204,7 +204,6 @@ class QuotesResults
 
                     // Apply override rates shipping rule
                     $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
-                    $isOverrideRate = isset($overrideRates['isOverrideRates']) && $overrideRates['isOverrideRates'];
                     $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;                    
 
                     // Adding Product and Origin Markup in services if added
