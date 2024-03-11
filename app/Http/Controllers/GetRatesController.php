@@ -716,7 +716,7 @@ class GetRatesController extends Controller
             $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
             foreach($restrictedProducts as $rpKey => $productId){
 
-                $filterProducts = collect($cartItems)->where('product_id', $productId)->all() ?? [];
+                $filterProducts = collect($cartItems)->where('product_id', $productId['key'])->all() ?? [];
                 
                 if(!empty($filterProducts)){
                     $istrue = $istrue || $this->checkRuleRestriction($rule, $origins, $destination, $statesCode, $filterProducts);
@@ -733,7 +733,10 @@ class GetRatesController extends Controller
         $postalCodes = isset($rule['filter_postal_code']) ? $rule['filter_postal_code'] : '';
         $warehouses = isset($rule['warehouses']) ? $rule['warehouses'] : [];
         $isSameOrigin = false;
-
+        if($rule['rule_type'] == 7){
+            $this->applyHideDeliveryEstimatesRule($rule);
+            return false;
+        }
         $isSameCountry = $destination['country'] == $filterCountry ?? false;
         $isSameState = in_array($destination['state'] , $statesCode) ?? false;
         $isSamePostalCode = CountryState::isSamePostalCode($destination['zip'], $postalCodes) ?? false;
@@ -754,6 +757,16 @@ class GetRatesController extends Controller
         } else {
             return true;
         }
+    }
+
+    public function applyHideDeliveryEstimatesRule($rule){
+       
+        if(isset($rule['filter_provider']) && $rule['filter_provider'] != null && isset($this->connectionSettings[$rule['filter_provider']]['quote_settings'])){
+            $quoteSettings = $this->connectionSettings[$rule['filter_provider']]['quote_settings'];
+            $quoteSettings['delivery_estimate_options'] = 1;
+            $this->connectionSettings[$rule['filter_provider']]['quote_settings'] = $quoteSettings; 
+        }
+
     }
 
     public function applyRestrictOriginLocationsRule($storeId, $formatReq){
