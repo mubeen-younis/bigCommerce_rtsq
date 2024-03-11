@@ -1018,7 +1018,7 @@ class SubscriptionController extends Controller
                 'planName' => $planDetail->name,
                 'action' => 'OCE'
             );
-            Log::info('Email data ' . json_encode($emailData));
+            Log::info('Email dataaa ' . json_encode($emailData));
 
             /*Date - 7 March 2024
             Added this block of code because of stripe sending a webhook of remaining payment
