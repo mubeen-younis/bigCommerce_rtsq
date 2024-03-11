@@ -970,9 +970,11 @@ class SubscriptionController extends Controller
                 'subscriptionId' => $paymentDetail->data->object->items->data[0]->subscription
             );
         }
-
+        Log::info('Customer ID ' . $customerId);
 
         if (!Subscription::where('stripe_id', $customerId)->exists()) {
+            Log::info('Not exists Customer ID ' . $customerId);
+
             return [
                 'error' => true,
                 'msg' => 'Customer does not exists.'
@@ -980,6 +982,8 @@ class SubscriptionController extends Controller
         }
 
         $subscriptionDetail = Subscription::where('stripe_id', $customerId)->latest()->first();
+        Log::info('Sub detail ' . json_encode($subscriptionDetail));
+
         /*Added this condition due to webhook failure of stripe*/
         if ($subscriptionDetail->is_test_subscription == 1) {
             Helpers::setStripeAPiKey(true);
