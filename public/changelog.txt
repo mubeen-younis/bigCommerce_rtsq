@@ -1,3 +1,7 @@
+= 2.1.17 2024-03-12 =
+
+* Fix - Subscription stripe bug (Ticket:2441985381 and Ticket:2448380825) [#417] (https://bitbucket.org/eniture/big-commerce/pull-requests/417)
+
 = 2.1.15 2024-03-11 =
 
 * Fix - Update override rates feature (1st chunk) (Ticket:2007189654) [#415] (https://bitbucket.org/eniture/big-commerce/pull-requests/415)
