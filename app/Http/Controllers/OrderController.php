@@ -187,7 +187,6 @@ class OrderController extends Controller
         }
 
         $rateId = str_contains($rateId, 'idx+') ? $rateId : $order['full_rate_id'];
-        $carrierHasInsurance = $this->hasInsureCarrier($rateId);
         $index = explode('idx+', $rateId);
         if (is_string($index[0]) && $index[0] == "shippingGroup") {
             return $this->shippingGroupOrderWidget($data, $order);
@@ -218,6 +217,7 @@ class OrderController extends Controller
         $isLG = strpos($rateId, '+lg') != false;
         $isOwnArrangement = strpos($rateId, 'own_arrangement') === 0 || strpos($rateId, 'freernlltl') === 0 ? true : false;
         $isLtlRate = $isSmallLtlrate || (substr($rateId, 0, 9) != 'parcel_12') || (strpos($rateId, 'ltl') != false);
+        $carrierHasInsurance = $this->hasInsureCarrier($rateId);
         /*
         * Stored Response from WS */
         $lineItem = json_decode($data['lineitems'])->lineItemData;
@@ -368,7 +368,7 @@ class OrderController extends Controller
         $origins = $lineItem->origin;
         $items = $lineItem->items;
         $count = 0;
-        $addedInsurance = $addHazmat = false;
+        $addedInsurance = $addHazmat = $isOriginMarkup = $isProductMarkup = false;
         $isMulti = false;
         $insertedIds = $insertedNames = [];
         $code = '';
@@ -385,6 +385,8 @@ class OrderController extends Controller
             $city = $origin->senderCity ? $origin->senderCity . ',' : '';
             $state = $origin->senderState ?? '';
             $senderZip = $origin->senderZip ?? '';
+            $origDetails = $this->getOriginForInsAndLocal($zip);
+            $nickname = $origDetails['nickname']; 
             if (!$isMultiShipment && $isInspOrLocal) {
                 $origDetails = $this->getOriginForInsAndLocal($zip);
                 if (!blank($origDetails)) {
@@ -394,7 +396,11 @@ class OrderController extends Controller
                 }
             }
             $orderWidget[$zip]['locationtype'] = $item->dropship_enabled == 'N' ? 'Warehouse' : 'Dropship';
-            $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
+            if($nickname == $city . ' ' . $state . ' ' . $senderZip){
+                $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
+            }else {
+                $orderWidget[$zip]['address'] = $nickname . ' - ' . $city . ' ' . $state . ' ' . $senderZip;
+            }
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
             $sRate = $order['shipping_rate'];
 

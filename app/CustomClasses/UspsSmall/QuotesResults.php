@@ -5,6 +5,7 @@ namespace App\CustomClasses\UspsSmall;
 use App\Constants\Constant;
 use App\CustomClasses\Functions;
 use App\CustomClasses\CompileQuotes;
+use App\Http\Controllers\ShippingRuleController;
 
 class QuotesResults
 {
@@ -13,8 +14,9 @@ class QuotesResults
         $this->CompileQuotes = new CompileQuotes();
     }
 
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items, $storeId = '')
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items, $storeId = '', $carrierName = '')
     {
+        $shippingRule = new ShippingRuleController();
         $shipments = $this->formateQuoteBeforeCompile($shipments);
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
         $this->quoteSettings = $connectionSettings['usps-small']['quote_settings'] ?? '';
@@ -31,7 +33,7 @@ class QuotesResults
         }
 
         $rad_settings = Functions::getRADsettings($storeId) ?? [];
-        $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
+        $isRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
 
         $returnResp = [
             'isMultiShipment' => $isMultiShipment,
@@ -62,18 +64,27 @@ class QuotesResults
                     }
                     // Adding Product and Origin Markup in services if added
                     $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
-                    $price = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
+                    $data['totalNetCharge']['Amount'] = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
 
-                    // Getting markup values form quote settings
-                    $price = $this->getServiceRate($price, $srvcType);
                     // Adding markup values if available
-                    $price = $this->addHandlingMarkupOfHazmat($price);
+                    $price = $this->addHandlingMarkupOfHazmat($data['totalNetCharge']['Amount']);
+
+                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName);
+                    if(isset($overrideRates['isOverrideRates']) && $overrideRates['isOverrideRates']){
+                        $access2 = '';
+                        $showRadNotation = false;
+                    } else {
+                        $access2 = $access;
+                        $showRadNotation = $isRadNotation;
+                        $price = $this->getServiceRate($price, $srvcType);
+                    }
+                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
                     
                     // Get service title
                     $title = $this->getServiceTitle($data, $srvcType, $this->quoteSettings, $residential, $showRadNotation);
                     $price = (float) str_replace(',', '', $price);
 
-                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12usps' . $access;
+                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12usps' . $access2;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
 

@@ -20,7 +20,7 @@ pipelines:
                 MODE: 'command'
                 COMMAND: '/home/apx-bc-01/html/bc/remote-script.sh'
 
-    feature/export-csv-notification:
+    update-override-rates-feature:
     
       - step:
           caches:

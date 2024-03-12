@@ -293,6 +293,7 @@ Route::get('/get_carriers', [CarrierController::class, 'index']);
 Route::get('/get_conn_settings', [ConnectionController::class, 'index']);
 Route::get('/get_qoute_settings/{carrierId}', [QuoteSettingsController::class, 'getSettings']);
 Route::post('/submit_quote_settings', [QuoteSettingsController::class, 'saveSettings']);
+Route::post('/getCarrierServices', [QuoteSettingsController::class, 'getCarrierServices']);
 
 /*------Services tab-------*/
 
