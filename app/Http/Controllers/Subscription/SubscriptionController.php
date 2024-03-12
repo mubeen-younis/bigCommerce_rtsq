@@ -963,17 +963,14 @@ class SubscriptionController extends Controller
                 'updated_date' => $paymentDetail->data->object->webhooks_delivered_at,
                 'subscriptionId' => $paymentDetail->data->object->subscription
             );
-            Log::info('Params' . json_encode($params));
 
         } else {
             $params = array(
                 'subscriptionId' => $paymentDetail->data->object->items->data[0]->subscription
             );
         }
-        Log::info('Customer ID ' . $customerId);
 
         if (!Subscription::where('stripe_id', $customerId)->exists()) {
-            Log::info('Not exists Customer ID ' . $customerId);
 
             return [
                 'error' => true,
@@ -982,7 +979,6 @@ class SubscriptionController extends Controller
         }
 
         $subscriptionDetail = Subscription::where('stripe_id', $customerId)->latest()->first();
-        Log::info('Sub detail ' . json_encode($subscriptionDetail));
 
         /*Added this condition due to webhook failure of stripe*/
         if ($subscriptionDetail->is_test_subscription == 1) {
@@ -1009,7 +1005,6 @@ class SubscriptionController extends Controller
 
         //Gets the latest subscription of store
         $oldSubscription = Subscription::where('subscription_id', $subscriptionId)->latest()->first();
-        Log::info('Old subscription ' . json_encode($oldSubscription));
 
         $email = $customer->email ?? $oldSubscription->email ?? "";
         $name = $customer->name ?? $oldSubscription->name ?? "";
@@ -1022,7 +1017,6 @@ class SubscriptionController extends Controller
                 'planName' => $planDetail->name,
                 'action' => 'OCE'
             );
-            Log::info('Email dataaa ' . json_encode($emailData));
 
             /*Date - 7 March 2024
             Added this block of code because of stripe sending a webhook of remaining payment
@@ -1113,7 +1107,6 @@ class SubscriptionController extends Controller
                 $msg = $re['msg'] ?? $msg;
             }
         } elseif ($eventType == 'invoice.payment_succeeded') {
-            Log::info('here in succeded event');
             $msg = 'Subscription successful';
             $this->invoicePaymentActionByWebHook($paymentDetail, 1);
         } elseif ($eventType == 'invoice.payment_failed') {
