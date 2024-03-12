@@ -2,6 +2,10 @@
 
 * Update - Add staff note and show box weight.  (Ticket:2329677373) [#418] (https://bitbucket.org/eniture/big-commerce/pull-requests/418)
 
+= 2.1.17 2024-03-12 =
+
+* Fix - Subscription stripe bug (Ticket:2441985381 and Ticket:2448380825) [#417] (https://bitbucket.org/eniture/big-commerce/pull-requests/417)
+
 = 2.1.16 2024-03-12 =
 
 * Fix - USPS Give ease to customize label (Ticket:2355944059) [#416] (https://bitbucket.org/eniture/big-commerce/pull-requests/416)
