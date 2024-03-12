@@ -20,8 +20,8 @@ pipelines:
                 MODE: 'command'
                 COMMAND: '/home/apx-bc-01/html/bc/remote-script.sh'
 
-    subscription-stripe-bug:
-
+    update-override-rates-feature:
+    
       - step:
           caches:
             - composer
