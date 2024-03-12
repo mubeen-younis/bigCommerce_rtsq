@@ -235,19 +235,79 @@ class QuotesResults
         return $amountWithMarkup;
     }
 
-    public function getServiceTitle($data, $title, $quoteSettings, $isResi = false, $showRadNotation = false): string
+    public function getServiceTitle($data, $title, $quoteSettings, $isResi = false, $showRadNotation = false) : string
     {
+        $title = $this->getServiceLabel($data['serviceId'], $quoteSettings);
         $title = ($isResi && $showRadNotation) ? $title . Constant::RESI_LABEL : $title;
-
         if (isset($data['totalTransitTimeInDays']) && $data['totalTransitTimeInDays'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2) {
             $title = $title . ' (Intransit days: ' . $data['totalTransitTimeInDays'] . ')';
         } else if (isset($data['transitDate']) && $data['transitDate'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3) {
             $title = $title . ' (Delivery by ' . date('m-d-Y', strtotime($data['transitDate'])) . ')';
         }
-
+        if($data['serviceId'] == 'Retail Ground' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2 && $quoteSettings['estimate_date'] != '' && $data['totalTransitTimeInDays'] == ''){
+            $title = $title . ' (Intransit days: ' . $quoteSettings['estimate_date'] . ')';
+        }
         return $title;
     }
 
+    public function getServiceLabel($serviceType, $quote) {
+        switch ($serviceType) {
+            case 'Priority Mail Express': 
+                if(isset($quote['carrier_services']['usps_priority_mail_express_label']) && $quote['carrier_services']['usps_priority_mail_express_label'] != '' ){
+                    return $quote['carrier_services']['usps_priority_mail_express_label'];
+                } else {
+                    return $serviceType;
+                }
+            case 'Priority Mail': 
+                if(isset($quote['carrier_services']['usps_priority_mail_label']) && $quote['carrier_services']['usps_priority_mail_label'] != '' ){
+                    return $quote['carrier_services']['usps_priority_mail_label'];
+                } else {
+                    return $serviceType;
+                }
+            case 'First Class Mail':
+                if(isset($quote['carrier_services']['usps_first_class_mail_label']) && $quote['carrier_services']['usps_first_class_mail_label'] != '' ){
+                    return $quote['carrier_services']['usps_first_class_mail_label'];
+                } else {
+                    return $serviceType;
+                }   
+            case 'Priority Mail Flat Rate':
+                if(isset($quote['carrier_services']['usps_priority_mail_flat_rate_label']) && $quote['carrier_services']['usps_priority_mail_flat_rate_label'] != '' ){
+                    return $quote['carrier_services']['usps_priority_mail_flat_rate_label'];
+                } else {
+                    return $serviceType;
+                }   
+            case 'Retail Ground':
+                if(isset($quote['carrier_services']['usps_retail_ground_label']) && $quote['carrier_services']['usps_retail_ground_label'] != '' ){
+                    return $quote['carrier_services']['usps_retail_ground_label'];
+                } else {
+                    return $serviceType;
+                }   
+            case 'Priority Mail International Express':
+                if(isset($quote['carrier_services']['usps_priority_mail_international_express_label']) && $quote['carrier_services']['usps_priority_mail_international_express_label'] != '' ){
+                    return $quote['carrier_services']['usps_priority_mail_international_express_label'];
+                } else {
+                    return $serviceType;
+                }   
+            case 'Priority Mail International':
+                if(isset($quote['carrier_services']['usps_priority_mail_international_label']) && $quote['carrier_services']['usps_priority_mail_international_label'] != '' ){
+                    return $quote['carrier_services']['usps_priority_mail_international_label'];
+                } else {
+                    return $serviceType;
+                }   
+            case 'Priority Mail International Flat Rate Box':
+                if(isset($quote['carrier_services']['usps_priority_mail_international_flat_rate_box_label']) && $quote['carrier_services']['usps_priority_mail_international_flat_rate_box_label'] != '' ){
+                    return $quote['carrier_services']['usps_priority_mail_international_flat_rate_box_label'];
+                } else {
+                    return $serviceType;
+                }   
+            case 'First-Class Package International Service':
+                if(isset($quote['carrier_services']['usps_first_class_package_international_service_label']) && $quote['carrier_services']['usps_first_class_package_international_service_label'] != '' ){
+                    return $quote['carrier_services']['usps_first_class_package_international_service_label'];
+                } else {
+                    return $serviceType;
+                }   
+        }
+    }
     public function checkGroundTransit($quote, $srvcType): bool
     {
         $islimited = false;
