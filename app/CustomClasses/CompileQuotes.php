@@ -3556,6 +3556,7 @@ class CompileQuotes
 
                 $surcharges = $data['surcharges'] ?? [];
                 unset($data['surcharges']);
+                $data['surcharges']['liftgateFee'] = 0;
                 foreach ($surcharges as $surcharge) {
                     if (isset($surcharge['Type']['Code']) && $surcharge['Type']['Code'] === 'RESI_PU_DEL') {
                         $data['surcharges']['residentialFee'] = $surcharge['Factor']['Value'] ?? 0;
