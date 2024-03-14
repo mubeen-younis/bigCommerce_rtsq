@@ -102,7 +102,7 @@ class GenerateRequestData
         $errorManagment = [];
 
         $shippingRule = new ShippingRuleController();
-        $this->connectionSettings = $shippingRule->applyShippingRule($this->storeData['store']['id'], $lineItems, $this->connectionSettings);
+        $this->connectionSettings = $shippingRule->applyHideMethodRule($this->storeData['store']['id'], $lineItems, $this->connectionSettings);
                 
         $this->storeDateTime = $this->getBCStoreDateTime();
 
@@ -584,7 +584,7 @@ class GenerateRequestData
             'quotestType' => 'ltl',
             'version' => '1.0.0',
             'returnQuotesOnExceedWeight' => 1,
-            'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
+            'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ? '1' : '0',
             'api' => $this->getApiInfoArrRossdayLtl($connSettings, $destination),
         ];
     }
@@ -3325,6 +3325,9 @@ class GenerateRequestData
 
                         $newOrigins[$newkey] = $origins[$origin];
                         $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins, $itemsArr);
+                        $boxWeight = $boxBins[$bin->bin_data->id]['box_weight'] ?? 0;
+                        $totalBoxWeight = $bin->bin_data->weight + $boxWeight ?? 0;
+                        $binResponse[$locationId]->bins_packed[$key]->bin_data->totalBoxWeight = $totalBoxWeight;
                     }
                 }
             } else {

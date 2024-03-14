@@ -90,6 +90,14 @@ class QuotesResults
                     $formattedShipments[$shipment]['q']['surcharges']['notifyDeliveryFee'] = $quotes['q']['INCLUDEDCHARGES']['ARRIVALNOTIFICATION'] ?? 0;
                 }
 
+                if(isset($quotes['q']['INCLUDEDCHARGES']['RESIDENTIALDELIVERY']) && !empty($quotes['q']['INCLUDEDCHARGES']['RESIDENTIALDELIVERY'])){
+                    $formattedShipments[$shipment]['q']['surcharges']['residentialFee'] = $quotes['q']['INCLUDEDCHARGES']['RESIDENTIALDELIVERY'] ?? 0;
+                }
+
+                if(isset($quotes['q']['INCLUDEDCHARGES']['HAZARDOUSSHIPMENT']) && !empty($quotes['q']['INCLUDEDCHARGES']['HAZARDOUSSHIPMENT'])){
+                    $formattedShipments[$shipment]['q']['surcharges']['hazardousMaterialsFee'] = $quotes['q']['INCLUDEDCHARGES']['HAZARDOUSSHIPMENT'] ?? 0;
+                }
+
             }else{
 
                 $formattedShipments = [];

@@ -63,7 +63,6 @@ class GetRatesController extends Controller
         */
         $isTestStore = Helpers::checkIsTestStore($storeHash);
         Helpers::setStripeAPiKey($isTestStore);
-
         if ($storeData == null) {
             return [];
         }
@@ -803,6 +802,10 @@ class GetRatesController extends Controller
                                 return false;
                             }
                             $originAddress = $this->getAddressForQuotes($originAddress);
+                            // Check: if origin already assign then skip the origin assignment
+                            if($originAddress['senderZip'] == $this->formatReq['lineItemData']['origin'][$key]['senderZip']){
+                                continue;
+                            }
                             $this->formatReq['lineItemData']['origin'][$key] = $originAddress;
                         }
                     }
