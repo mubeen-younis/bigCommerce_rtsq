@@ -5689,6 +5689,11 @@ class CompileQuotes
                  * Condition for Always lift gate, limited access and notify before delivery (Single Shipment)
                  * */
                 return array_merge($quotes['lglaccessinsideNotifydelivery'] ?? [], $quotes['Truckload'] ?? [], $quotes['lglaccessinsidedelivery'] ?? []) ?? $quotes['simple'];
+            } elseif ($alwaysNotifyDel && $alwaysLimitedDel && $alwaysInsideDel) {
+                /**
+                 * Condition for Always lift gate, limited access and notify before delivery (Single Shipment)
+                 * */
+                return array_merge($quotes['lglaccessinsideNotifydelivery'] ?? [], $quotes['laccessinsideNotifydelivery'] ?? [], $quotes['Truckload'] ?? []) ?? $quotes['simple'];
             } elseif ($lfg && $alwaysInsideDel) {
                 /**
                  * Condition for Always lift gate, inside delivery (Single Shipment)
@@ -5709,6 +5714,11 @@ class CompileQuotes
                  * Condition for Always inside and notify before delivery (Single Shipment)
                  * */
                 return array_merge($quotes['insidenotifydelivery'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['Truckload'] ?? []) ?? $quotes['simple'];
+            }  elseif ($alwaysLimitedDel && $alwaysInsideDel) {
+                /**
+                 * Condition for Always inside and notify before delivery (Single Shipment)
+                 * */
+                return array_merge($quotes['laccessinsidedelivery'] ?? [], $quotes['laccessinsideNotifydelivery'] ?? [], $quotes['limitedaccessLG'] ?? [], $quotes['Truckload'] ?? []) ?? $quotes['simple'];
             } elseif ($alwaysNotifyDel && $alwaysLimitedDel) {
                 /**
                  * Condition for Always limited access and notify before delivery (Single Shipment)
@@ -5733,7 +5743,7 @@ class CompileQuotes
                 /**
                  * Condition for Always limited (Single Shipment)
                  * */
-                return array_merge($quotes['liftgate'] ?? [], $quotes['insideLiftGateDelivery'] ?? [], $quotes['limitedaccess'] ?? [], $quotes['Truckload'] ?? [], $quotes['lgnotifydelivery'] ?? [], $quotes['lginsidenotifydelivery'] ?? [], $quotes['lglaccessnotifydelivery'] ?? []) ?? $quotes['simple'];
+                return array_merge($quotes['laccessnotifydelivery'] ?? [], $quotes['laccessinsidedelivery'] ?? [], $quotes['liftgate'] ?? [], $quotes['insideLiftGateDelivery'] ?? [], $quotes['limitedaccess'] ?? [], $quotes['Truckload'] ?? [], $quotes['lgnotifydelivery'] ?? [], $quotes['lginsidenotifydelivery'] ?? [], $quotes['lglaccessnotifydelivery'] ?? []) ?? $quotes['simple'];
             } elseif ($TMD_and_APD) {
                 /**
                  * Condition for Always two man and appointment delivery (Single Shipment)
