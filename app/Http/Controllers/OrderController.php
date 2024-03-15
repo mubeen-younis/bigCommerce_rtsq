@@ -1256,9 +1256,34 @@ class OrderController extends Controller
                 $formattedString .= !empty($quoteId) ? ", Quote Id: $quoteId" : '';
                 $formattedString .= !empty($items) ? ", Items: $items" : '';
 
+                // Add SBS details in the staff note
+                $sbs = isset($shipmentData['sbs']) ? $shipmentData['sbs'] : [];
+                if(!empty($sbs)){
+                    $boxes = array_filter($sbs, function($bin) {
+                        return $bin['type'] != 'item' && $bin['type'] != 'weight_based';
+                    }) ?? [];
+                    
+                    $totalBoxes = count($boxes) > 0 ? count($boxes) : 1;
+
+                    foreach($sbs as $key => $bin){
+                        if(isset($bin['type']) && $bin['type'] == 'item' && isset($bin['quantity']) && !empty($bin['quantity'])){
+                            $totalBoxes = $bin['quantity'];
+                            for ($i=1; $i <= $bin['quantity']; $i++) { 
+                                $weight = isset($bin['weight']) ? $bin['weight'] : 0;
+                                $sbsDetails = "Box $i of $totalBoxes : $weight lbs";
+                                $formattedString .= !empty($sbsDetails) ? ", $sbsDetails" : '';
+                            }
+                        } else {
+                            $count = $key + 1;
+                            $weight = isset($bin['weight']) ? $bin['weight'] : 0;
+                            $sbsDetails = "Box $count of $totalBoxes : $weight lbs";
+                            $formattedString .= !empty($sbsDetails) ? ", $sbsDetails" : '';
+                        }
+                    }
+                }
                 // Add the formatted string to the array
                 $formattedShipments[] = $formattedString;
-            }
+            } 
 
             return $formattedShipments;
         }
