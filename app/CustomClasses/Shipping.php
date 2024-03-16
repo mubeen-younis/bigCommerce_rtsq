@@ -866,14 +866,10 @@ class Shipping
             $resp['messages'] = []; // need to change
 
             if (!$onlyDbscEnabled) {
-                $quotes = $this->freeShippingTitle($quotes);
+                $quotes = $this->freeShippingTitle($quotes,$freeRNL);
                 $quotes = $this->formatCheapestFinalQuotes($quotes);
                 $quotes = $this->addDbscRates($quotes);
             }
-   
-            if($freeRNL){
-                $quotes = $this->orderDiscountFreeShipping($quotes);
-             }
 
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'eniture_quotes', 'display_name' => $this->limitTitle($quotes[0])]];
 
@@ -894,21 +890,17 @@ class Shipping
         return $resp;
     }
 
-    public function orderDiscountFreeShipping($finalQuotes)
+    public function freeShippingTitle($finalQuotes,$freeRNL)
     {
         foreach ($finalQuotes as $key => $quote) {
             if (isset($quote['rate'])) {
-                $finalQuotes[$key]['rate'] = 0;
-            }
-        }
-        return $finalQuotes;
-    }
+                if(($quote['rate'] <= 0)){
+                    $finalQuotes[$key]['rate'] = 0;
+                }
 
-    public function freeShippingTitle($finalQuotes)
-    {
-        foreach ($finalQuotes as $key => $quote) {
-            if (isset($quote['rate']) && ($quote['rate'] <= 0 )) {
-                $finalQuotes[$key]['rate'] = 0;
+                if($freeRNL){
+                    $finalQuotes[$key]['rate'] = 0;
+                }
             }
         }
         return $finalQuotes;
