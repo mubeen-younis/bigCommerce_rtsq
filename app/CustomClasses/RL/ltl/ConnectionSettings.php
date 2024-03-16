@@ -42,7 +42,7 @@ class ConnectionSettings extends CarriersConnectionSettings
         if (isset($output['error'])) {
             $response = [
                 'error' => true,
-                'message' => 'Invalid authentication info',
+                'message' => 'Error! The credentials entered did not result in a successful test. Confirm your credentials and try again. ',
             ];
         } else {
             $response = [

@@ -230,6 +230,7 @@ class Shipping
 
         $quotesFromWs = $quotes ?? [];
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $package['items'], $SuppressParcelRates, $store_id);
+        // dd(233,$finalQuotes);
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];
@@ -298,7 +299,7 @@ class Shipping
         }
 
         $finalQuotes = $this->addRateId($finalQuotes);
-        $resp = $this->generateQuoteFormatResponse($finalQuotes);
+        $resp = $this->generateQuoteFormatResponse($finalQuotes,$freeRNL);
         $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
         return $resp;
     }
@@ -849,7 +850,7 @@ class Shipping
     }
 
     public function generateQuoteFormatResponse(
-        $quotes
+        $quotes,$freeRNL
     )
     {
         $onlyDbscEnabled = false;
@@ -869,6 +870,10 @@ class Shipping
                 $quotes = $this->formatCheapestFinalQuotes($quotes);
                 $quotes = $this->addDbscRates($quotes);
             }
+   
+            if($freeRNL){
+                $quotes = $this->orderDiscountFreeShipping($quotes);
+             }
 
             $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'eniture_quotes', 'display_name' => $this->limitTitle($quotes[0])]];
 
@@ -887,6 +892,16 @@ class Shipping
 
         Log::info('Last response for quotes ' . json_encode($resp));
         return $resp;
+    }
+
+    public function orderDiscountFreeShipping($finalQuotes)
+    {
+        foreach ($finalQuotes as $key => $quote) {
+            if (isset($quote['rate'])) {
+                $finalQuotes[$key]['rate'] = 0;
+            }
+        }
+        return $finalQuotes;
     }
 
     public function freeShippingTitle($finalQuotes)
