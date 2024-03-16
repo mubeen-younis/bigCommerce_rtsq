@@ -40,6 +40,8 @@ class QuotesResults
                 $charges = $formattedShipments[$key]['q']['totalNetCharge'];
                 unset($formattedShipments[$key]['q']['totalNetCharge']);
                 $formattedShipments[$key]['q']['totalNetCharge']['Amount'] = $charges;
+                $formattedShipments[$key]['q']['surcharges']['notifyDeliveryFee'] = $quote['q']['surcharges']['notifyBeforeDeliveryFee'] ?? 0;
+                unset($formattedShipments[$key]['q']['surcharges']['notifyBeforeDeliveryFee']);
             }
         }
 

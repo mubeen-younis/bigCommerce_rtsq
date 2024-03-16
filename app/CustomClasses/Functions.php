@@ -87,6 +87,41 @@ class Functions
         'ups_worldwide_express_plus',
     ];
 
+    public static $rnlServices = [
+        'STD' => 'Standard Service',
+        'GSDS' => 'Guaranteed PM',
+        'GSAM' => 'Guaranteed AM',
+        'GSHW' => 'Guaranteed Hourly Window'
+    ];
+
+    public static $accessorialServices = [
+        'liftgate' => 'liftgateFee',
+        'notify' => 'notifyDeliveryFee',
+        'limitedAccess' => 'limitedAccessDeliveryFee',
+        'insideDelivery' => 'insideDeliveryFee',
+        'residential' => 'residentialFee',
+    ];
+
+    public static $dayRossServices = [
+        'AM' => 'AM Service',
+        'EG' => 'Ground Service',
+        'UP' => 'Urgent PAC',
+        'AD' => 'US Next PM',
+        'A2' => 'US 2nd Day',
+        'AG' => 'US Ground',
+        'H1' => 'Deliver to threshold',
+        'H2' => 'Deliver to room of choice',
+        'H3' => 'Deliver & packaging removal',
+        'H4' => 'Deliver to threshold - 2 man',
+        'H5' => 'Deliver to room of choice - 2 man',
+        'H6' => 'Deliver & packaging removal - 2 man',
+    ];
+
+    public static function is3plCarrier($carrier){
+        $carriersArray = ['ltl-quotes', 'freightquote-ltl', 'tql-ltl', 'echo-ltl', 'freightquote-chr-ltl', 'priority-one-ltl', 'gtz-ltl', 'gtz-new', 'cltl'];
+        return in_array($carrier, $carriersArray);
+    }
+
     public static function hasInsureCarrier($code)
     {
         $insureCarriers = ['wweltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd'];
@@ -164,6 +199,19 @@ class Functions
             'southeastern-ltl' => 'southeastern'];
 
         return $carrierCodesWithName[$carrSlug] ?? null;
+    }
+
+    public static function getCarrIndexBySlug($carrSlug): ?string
+    {
+        $carrierIndexesArray = ['ltl-quotes' => 'wweLTL', 'ups-ltl' => 'upsLTL', 'rl-ltl' => 'rnl', 'xpo-ltl' => 'xpoLogistics',
+            'fedex-ltl' => 'fedexLTL', 'gtz-new' => 'wweLTLN', 'gtz-ltl' => 'globalTranz', 'cltl' => 'cerasis', 'ups-ship-engine' => 'shipEngine',
+            'small-package' => 'wweSmall', 'unishippers-small-new' => 'wweSmallN', 'ups-small' => 'upsSmall', 'fedex-small' => 'fedexSmall', 'unishippers-small' => 'unishippersSmall',
+            'freightquote-ltl' => 'freightQuote', 'freightquote-chr-ltl' => 'chr', 'purolator-small' => 'purolator', 'usps-small' => 'usps',
+            'tql-ltl' => 'tql', 'yrc-ltl' => 'yrc', 'odfl-ltl' => 'odfl4me', 'dayross-ltl' => 'dayross', 'priority-one-ltl' => 'priority1',
+            'estes-ltl' => 'estes', 'echo-ltl' => 'echoLogistics', 'saia-ltl' => 'saia', 'abf-ltl' => 'abf', 'daylight-ltl' => 'daylight',
+            'southeastern-ltl' => 'southeastern'];
+
+        return $carrierIndexesArray[$carrSlug] ?? null;
     }
 
     public static function getLiftResidentialStatus($rateId)
@@ -715,14 +763,12 @@ class Functions
         $serviceCode = $data['ratquoteNumber'] ?? $data['scac'] ?? $data['CarrierSCAC'] ?? $serviceCode;
 
         $isUpsLtl = false;
-        if ($carrName === 'upsltl') {
-            $isUpsLtl = true;
-        }
         $isQuickestSer = isset($quoteSettings['quickest_service']) && $quoteSettings['quickest_service'] && $carrName === 'gtzltl';
-        $quickLabelAs = isset($quoteSettings['quickest_service_label']) && !empty($quoteSettings['quickest_service_label']) ? $quoteSettings['quickest_service_label'] : self::$simpleLTLTitle;
+        $quickLabelAs = isset($quoteSettings['quickest_service_label']) && !empty($quoteSettings['quickest_service_label']) ? $quoteSettings['quickest_service_label'] : $serviceName;
+        $isResidential = ($isResi || $isAlwaysResi) ?? false; 
 
         $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, $insideDelivery, $resiPickup, $lgPickup, $laccess, false, false, $notifyDelivery, $isResi, $isAlwaysResi);
-        $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, $isUpsLtl, $insideDelivery, $laccess, false, false, $notifyDelivery, $originKey, $items, $allOrigins, $quoteSettings);
+        $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, $isUpsLtl, $insideDelivery, $laccess, false, false, $notifyDelivery, $originKey, $items, $allOrigins, $quoteSettings, $isResidential);
         $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, $insideDelivery, $laccess, false, false, false, false, $notifyDelivery, $isResi, $storeId);
 
         if ($isQuickestSer) {

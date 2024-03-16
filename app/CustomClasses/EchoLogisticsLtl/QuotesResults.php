@@ -145,4 +145,38 @@ class QuotesResults
 
         return $nbdFee;
     }
+
+    public function getResiFee($accessorials)
+    {
+        $resiFee = 0;
+        if (isset($accessorials) && !empty($accessorials)) {
+            $lgAccessType = 'RESIDENTIALDELIVERYFEE';
+
+            foreach ($accessorials as $acc) {
+                if (isset($acc['Type']) && $acc['Type'] == $lgAccessType) {
+                    $resiFee = number_format($acc['Charge'], 2, '.', '');
+                    break;
+                }
+            }
+        }
+
+        return $resiFee;
+    }
+
+    public function getHazardousMaterialsFee($accessorials)
+    {
+        $hazardousMaterialsFee = 0;
+        if (isset($accessorials) && !empty($accessorials)) {
+            $lgAccessType = 'HAZARDOUSMATERIAL';
+
+            foreach ($accessorials as $acc) {
+                if (isset($acc['Type']) && $acc['Type'] == $lgAccessType) {
+                    $hazardousMaterialsFee = number_format($acc['Charge'], 2, '.', '');
+                    break;
+                }
+            }
+        }
+
+        return $hazardousMaterialsFee;
+    }
 }

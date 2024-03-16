@@ -8,6 +8,7 @@ use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
 use App\CustomClasses\Functions;
 use Illuminate\Support\Str;
+use App\Http\Controllers\ShippingRuleController;
 
 class QuotesResults
 {
@@ -137,8 +138,9 @@ class QuotesResults
     }
 
 
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $destination, $items, $storeId = '')
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $destination, $items, $storeId = '', $carrierName = '')
     {
+        $shippingRule = new ShippingRuleController();
         $this->allOrigins = $this->originIndexToShipment($allOrigins);
         $this->destination = $destination;
         $shipments = $this->formateQuoteBeforeCompile($shipments);
@@ -147,7 +149,7 @@ class QuotesResults
         $allConfigServices['services'] = $allConfigServices = [];
 
         $rad_settings = Functions::getRADsettings($storeId) ?? [];
-        $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
+        $isRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
 
         if (isset($this->quoteSettings['carrier_services'])) {
             foreach ($this->quoteSettings['carrier_services'] as $key => $serviceName) {
@@ -227,6 +229,7 @@ class QuotesResults
                     // Check if service type is checked to show
                     $serviceName = str_replace('_ONE_RATE', '', $data['serviceType']);
                     $serviceName = str_replace('_AIR_SERVICE', '', $serviceName);
+                    $serviceName = str_replace('FEDEX_', '', $serviceName);
                     // Added to check one rate service check
                     $tocheckServiceName = Str::contains($data['serviceType'], '_ONE_RATE') ? "ONE_RATE_" . $serviceName : $serviceName;
                     $checkService = $this->checkServiceIsEnabled($origin, $tocheckServiceName, $allConfigServices['services']);
@@ -254,23 +257,41 @@ class QuotesResults
                     if (isset($this->quoteSettings['negotiated_rates']) && $this->quoteSettings['negotiated_rates'] == 1) {
                         $data['totalNetCharge']['Amount'] = $data['NegotiatedRates']['Amount'] ?? $data['totalNetCharge']['Amount'];
                     }
+
                     // Adding Product and Origin Markup in services if added
                     $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
-                    $price = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
-                    $price = $this->getServiceRate($price, $serviceName, $this->quoteSettings);
+                    $data['totalNetCharge']['Amount'] = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
+
                     $quoteSettings = $this->quoteSettings;
 
-                    $price = $this->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup'] ?? 0);
-                    // Checking hazmat and adding hazmat amounts in services
-                    if ($isHazmat) {
-                        if ($this->isMultiShipment) {
-                            if ($hazmatAllItems[$origin] == 'Y') {
+                    $data['totalNetCharge']['Amount'] = $this->addHandlingMarkupOfHazmat($data['totalNetCharge']['Amount'], $quoteSettings['handling_fee_markup'] ?? 0);
+
+                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName);
+                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
+                    
+                    $price = $data['totalNetCharge']['Amount'];
+                    // check: is override rule is applied, if yes then skip to add other features fee
+                    if(isset($overrideRates['isOverrideRates']) && $overrideRates['isOverrideRates']){
+                        $access2 = '';
+                        $showRadNotation = false;
+                    } else {
+                        $access2 = $access;
+                        $showRadNotation = $isRadNotation;
+                        // Checking hazmat and adding hazmat amounts in services
+                        if ($isHazmat) {
+                            if ($this->isMultiShipment) {
+                                if ($hazmatAllItems[$origin] == 'Y') {
+                                    $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
+                                }
+                            } else {
                                 $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
                             }
-                        } else {
-                            $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
                         }
+
+                        $price = $this->getServiceRate($price, $serviceName, $this->quoteSettings);
                     }
+
+                    
                     $data['serviceDesc'] = $this->checkAndAppendFedex($data['serviceDesc']);
                     $title = $this->getServiceTitle($data['serviceDesc'], $data, $data['serviceType'], $this->quoteSettings, $residential, $showRadNotation);
                     $price = (float)str_replace(',', '', $price);
@@ -278,13 +299,13 @@ class QuotesResults
                     * Generate random code to limit rate_id to 50 chars
                      */
                     if ($serviceName == "FEDEX_GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "FEDEX_GROUND_HOME_DELIVERY") {
-                        $access2 = $access . '+gd';
+                        $access2 = $access2 . '+gd';
                     } elseif (strpos($data['serviceType'], '_AIR_SERVICE')) {
-                        $access2 = $access . '+as';
+                        $access2 = $access2 . '+as';
                     } else if (strpos($data['serviceType'], '_ONE_RATE')) {
-                        $access2 = $access . '+or';
+                        $access2 = $access2 . '+or';
                     } else {
-                        $access2 = $access . '+gd';
+                        $access2 = $access2 . '+gd';
                     }
 
                     $data['serviceType'] = $this->generateRandomString(5);
