@@ -3,38 +3,46 @@
 namespace App\Http\Controllers;
 
 use App\Constants\Constant;
-use App\Models\Store;
+use App\CustomClasses\CurlRequest;
 use App\Models\Subscription\Subscription;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class SaleGraphController extends Controller
 {
 
-    static function updateGraphData()
+    /**
+     * @return void
+     */
+    public static function updateGraphData(): void
     {
         try {
             $url = Constant::GRAPH_UPDATE_DATA;
-            $activeStores = Subscription::where('status', 1)->where('plan_id', '>', 1)->where('is_test_subscription', 0)->get()->count();
+            $activeStoresCount = Subscription::where('status', 1)->where('plan_id', '>', 1)->where('is_test_subscription', 0)->get()->count();
             $totalRevenue = Subscription::where('status', 1)->where('plan_id', '>', 1)->where('is_test_subscription', 0)->sum('amount_charged');
-            $data = array(
-                'platform' => 'bigcommerce',
-                'licenseKey' => 'V1T9ZBIG-COMMERCE-01MMZZ3W-O0TOJAQG',
-                'totalInstallCount' => $activeStores, // total active apps count
-                'totalRevenue' => $totalRevenue
-            );
-
-            $field_string = http_build_query($data);
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_POST, 1);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $field_string);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-            $output = curl_exec($ch);
-            curl_close($ch);
-        } catch (\Exception $exception) {
+            $request = self::getRequest($activeStoresCount, $totalRevenue);
+            $curlResponse = (new CurlRequest())->enSingleCurlRequest($url, $request, [], 'POST');
+            Log::info('Graph Cron executed successfully ' . json_encode($curlResponse));
+        } catch (\Exception|\Throwable $exception) {
             Log::info('Graph Update Exception ' . json_encode($exception->getMessage()));
 
         }
+    }
+
+
+    /**
+     * @param $activeStores
+     * @param $totalRevenue
+     * @return string
+     */
+    public static function getRequest($activeStores, $totalRevenue): string
+    {
+        $requestArray = [
+            'platform' => 'bigcommerce',
+            'licenseKey' => 'V1T9ZEOG-RTSQAPPS-01MMZZ3W-O0TOJAQG',
+            'totalInstallCount' => $activeStores, // total active apps count
+            'totalRevenue' => $totalRevenue
+        ];
+
+        return http_build_query($requestArray);
     }
 }

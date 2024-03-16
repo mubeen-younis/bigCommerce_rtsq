@@ -39,6 +39,8 @@ class QuotesResults
                 $shipments[$shipment]['q'][$key]['transitTime'] = $quote['TransitTime'][0] ?? '';
                 $shipments[$shipment]['q'][$key]['totalTransitTimeInDays'] = $quote['totalTransitTimeInDays'] ?? '';
                 $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $quote['AccessorialCharges']['OtherAccessorialChargesFormated']['DLG'] ?? 0;
+                $shipments[$shipment]['q'][$key]['surcharges']['residentialFee'] = $quote['AccessorialCharges']['OtherAccessorialChargesFormated']['RSD'] ?? 0;
+                $shipments[$shipment]['q'][$key]['surcharges']['hazardousMaterialsFee'] = $quote['AccessorialCharges']['OtherAccessorialChargesFormated']['ZHM'] ?? 0;
             }else{
                 unset($shipments[$shipment]['q']);
                 $shipments[$shipment]['q'][$key] = $quote;

@@ -3325,6 +3325,9 @@ class GenerateRequestData
 
                         $newOrigins[$newkey] = $origins[$origin];
                         $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins, $itemsArr);
+                        $boxWeight = $boxBins[$bin->bin_data->id]['box_weight'] ?? 0;
+                        $totalBoxWeight = $bin->bin_data->weight + $boxWeight ?? 0;
+                        $binResponse[$locationId]->bins_packed[$key]->bin_data->totalBoxWeight = $totalBoxWeight;
                     }
                 }
             } else {
