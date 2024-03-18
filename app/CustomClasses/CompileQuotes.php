@@ -1050,6 +1050,15 @@ class CompileQuotes
                             $data['totalNetCharge']['Amount'] += $this->quoteSettings['limited_access_fee'];
                             $data['surcharges']['limitedAccessDeliveryFee'] = (float) $this->quoteSettings['limited_access_fee'];
                         }
+                        // Check : if API not return surcharge rates or array
+                        if(!isset($data['surcharges'])){
+                            $data['surcharges'] = [
+                                'liftgateFee' => 0,
+                                'limitedAccessDeliveryFee' => 0,
+                                'notifyDeliveryFee' => 0,
+                                'insideDeliveryFee' => 0,
+                            ];
+                        }
                         // Apply Override rates shipping rule
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         
