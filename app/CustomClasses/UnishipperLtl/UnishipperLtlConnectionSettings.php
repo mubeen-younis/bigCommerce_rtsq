@@ -58,7 +58,7 @@ class UnishipperLtlConnectionSettings
         } elseif (isset($output['severity']) && $output['severity'] === 'ERROR') {
             $response = [
                 'error' => true,
-                'message' => $output['Message'],
+                'message' => "Invalid authentication info.",
             ];
         } elseif (isset($output['success']) || (isset($output['severity']) && $output['severity'] === 'SUCCESS')) {
             $response = [

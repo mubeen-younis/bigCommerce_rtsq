@@ -1332,7 +1332,8 @@ class CompileQuotes
         $this->quoteSettingsData();
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
-        $lgQuotes = $notifyDelivery = $limitedAccess = $insideDelivery = $isResi = false;
+        $lgQuotes = $notifyDelivery = $limitedAccess = $insideDelivery = $isResi = $allowOwnArrangement  = false;
+
         if ($this->residentialDlvry == '1' || $this->isResi || $this->alwaysResi) {
             $isResi = '+R';
         }
@@ -1383,6 +1384,7 @@ class CompileQuotes
                 if (isset($quote['hazardousStatus'])) {
                     $hazShipmentArr[$origin] = $quote['hazardousStatus'] == 'y' ? 'Y' : 'N';
                 }
+                $allowOwnArrangement = isset($quote['allowOwnArrangement']) && $quote['allowOwnArrangement'] ?? false;
                 foreach ($quote['q'] as $key => $data) {
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices)) {
                         if ($limitedAccess && isset($this->quoteSettings['limited_access_fee'])) {
@@ -1453,7 +1455,9 @@ class CompileQuotes
         }
 
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
-
+         if ($allowOwnArrangement) {
+            $allQuotes = $this->arrangeOwnFreight($allQuotes);
+        }
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
