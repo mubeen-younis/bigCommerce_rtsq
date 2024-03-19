@@ -1026,7 +1026,7 @@ class CompileQuotes
                 $resiPickup = isset($this->quoteSettings['residentialPickup']) && $this->quoteSettings['residentialPickup'] ? '+pu' : '';
                 $insideDelivery = (isset($this->quoteSettings['offer_inside_delivery']) && $this->quoteSettings['offer_inside_delivery']) ||
                     (isset($this->quoteSettings['always_inside_delivery']) && $this->quoteSettings['always_inside_delivery']);
-                $lgPickup = isset($this->quoteSettings['liftGatePickup']) && $this->quoteSettings['liftGatePickup'] ? '+lfgpu' : '';
+                $lgPickup = isset($this->quoteSettings['liftGatePickup']) && $this->quoteSettings['liftGatePickup'] ? '+lgpu' : '';
 
                 $notifyDelivery =
                     (isset($this->quoteSettings['always_quote_notify']) && $this->quoteSettings['always_quote_notify']) ||
@@ -1203,7 +1203,7 @@ class CompileQuotes
                 $resiPickup = isset($this->quoteSettings['residentialPickup']) && $this->quoteSettings['residentialPickup'] ? '+pu' : '';
                 $insideDelivery = (isset($this->quoteSettings['offer_inside_delivery']) && $this->quoteSettings['offer_inside_delivery']) ||
                     (isset($this->quoteSettings['always_inside_delivery']) && $this->quoteSettings['always_inside_delivery']);
-                $lgPickup = isset($this->quoteSettings['liftGatePickup']) && $this->quoteSettings['liftGatePickup'] ? '+lfgpu' : '';
+                $lgPickup = isset($this->quoteSettings['liftGatePickup']) && $this->quoteSettings['liftGatePickup'] ? '+lgpu' : '';
 
                 $notifyDelivery =
                     (isset($this->quoteSettings['always_quote_notify']) && $this->quoteSettings['always_quote_notify']) ||

@@ -671,7 +671,7 @@ class OrderController extends Controller
         $response['resi'] = strpos($rateId, '+r') ? 'Y' : 'n';
         $response['liftG'] = strpos($rateId, '+lg') ? 'Y' : 'n';
         $response['resiPickup'] = strpos($rateId, '+pu') ? 'Y' : 'n';
-        $response['lgPickup'] = strpos($rateId, '+lfgpu') ? 'Y' : 'n';
+        $response['lgPickup'] = strpos($rateId, '+lgpu') ? 'Y' : 'n';
         return $response;
     }
 
