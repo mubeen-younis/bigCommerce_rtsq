@@ -8,7 +8,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    feature/add_product_origin_markup:
+    feature/RL-carrier-new-api:
       - step:
           caches:
             - composer
