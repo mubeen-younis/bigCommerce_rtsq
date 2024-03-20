@@ -716,7 +716,7 @@ class GetRatesController extends Controller
             $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
             foreach($restrictedProducts as $rpKey => $productId){
 
-                $filterProducts = collect($cartItems)->where('product_id', $productId)->all() ?? [];
+                $filterProducts = collect($cartItems)->where('product_id', $productId['key'])->all() ?? [];
                 
                 if(!empty($filterProducts)){
                     $istrue = $istrue || $this->checkRuleRestriction($rule, $origins, $destination, $statesCode, $filterProducts);
