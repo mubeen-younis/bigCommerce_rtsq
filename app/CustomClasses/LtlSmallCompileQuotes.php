@@ -428,7 +428,7 @@ class LtlSmallCompileQuotes
                     } else {
                         $quotesCarrier['ltl']['SouthEastern']['simple'][] = $quote;
                     }
-                } else if (strpos($quote['code'], 'uniltl_new') !== false) {
+                } else if (strpos($quote['code'], 'uniltl') !== false) {
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
                     $quote['isResi'] = $residential['uniltl'] == 'Y';
                     $quote['isLG'] = isset($connectionSettings['unishipper-ltl']['quote_settings']['offerLiftGateDelivery']) && $connectionSettings['unishipper-ltl']['quote_settings']['offerLiftGateDelivery'];
