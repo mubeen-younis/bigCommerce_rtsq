@@ -29,7 +29,7 @@ class UnishipperLtlConnectionSettings
             'plugin_domain_name' => $storeName ?? '',
             'dont_auth' => 1,
             'carrier_mode' => 'test',
-            'carrierName' => 'Unishipper Ltl',
+            'carrierName' => 'Unishippers Ltl',
             // New Api Test Connection Params
             'clientId' => $data->clientId,
             'clientSecret' => $data->clientSecret,
