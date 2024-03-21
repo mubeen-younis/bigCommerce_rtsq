@@ -5,6 +5,7 @@ namespace App\CustomClasses\FreightQuote\Ltl;
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes as compileQuotes;
 use App\CustomClasses\Functions;
+use App\Http\Controllers\ShippingRuleController;
 
 class QuotesResults
 {
@@ -14,9 +15,14 @@ class QuotesResults
         $this->CompileQuotes = new CompileQuotes();
     }
 
-    public function truckLoadQuotes($quote, $allConfigServices, $quoteSettings = [], $origin, $items, $allOrigins){
+    public function truckLoadQuotes($quote, $allConfigServices, $connectionSettings = [], $origin, $items, $allOrigins, $carrierName)
+    {
+        $shippingRule = new ShippingRuleController();
         $originQuotes = [];
         $arraySorting = [];
+        $access = '';
+        $quoteSettings = $connectionSettings['freightquote-ltl']['quote_settings'] ?? [];
+        $storeId = $connectionSettings['freightquote-ltl']['creds']['store_id'] ?? '';
         if(isset($quote['Truckload'])){
             
             foreach($quote['Truckload'] as $key => $data){
@@ -28,9 +34,15 @@ class QuotesResults
                         ),
                         'surcharges' => $data['surcharges'],
                     );
-                    $price = $this->CompileQuotes->calculatePrice($charges);
-                    $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge'], $origin, $items, $allOrigins);
-                    $price = $price + $productOriginMarkupFee;
+                    unset($data['totalNetCharge']);
+                    $data = array_merge($data, $charges);
+
+                    // Apply Override rates shipping rule
+                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
+                    $isOverrideRate = isset($overrideRates['isOverrideRates']) && $overrideRates['isOverrideRates'] ?? false;
+                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
+
+                    $price = $this->CompileQuotes->calculatePrice($data, false, false, false, false, false, false, false, false, $origin, $items, $allOrigins, $quoteSettings);
                     /*
                      * Adding Functionality of Delivery Estimate Options
                      * */
@@ -40,7 +52,7 @@ class QuotesResults
                     
                     $title = $this->getTruckLoadTitle($data['serviceDesc'], $quoteSettings, $data['totalTransitTimeInDays'], $dateAndDays, $data['serviceType']);
                     $arraySorting['simple'][$key] = $price;
-                    $originQuotes[$key]['Truckload']['code'] = 'fqltl' . $data['serviceType'] . '+TL';
+                    $originQuotes[$key]['Truckload']['code'] = 'fqltl' . $data['serviceType'] . '+TL' . $access;
                     $originQuotes[$key]['Truckload']['rate'] = $price;
                     $originQuotes[$key]['Truckload']['title'] = $title;
                 }

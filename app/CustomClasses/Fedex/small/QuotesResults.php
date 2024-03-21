@@ -251,12 +251,13 @@ class QuotesResults
                             continue;
                         }
                     }
-
-                    //$access = $this->getAccessorialCodeSmall();
                     // Adding Markup in services if enabled
                     if (isset($this->quoteSettings['negotiated_rates']) && $this->quoteSettings['negotiated_rates'] == 1) {
                         $data['totalNetCharge']['Amount'] = $data['NegotiatedRates']['Amount'] ?? $data['totalNetCharge']['Amount'];
                     }
+                    // Apply override rates shipping rule
+                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
+                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
 
                     // Adding Product and Origin Markup in services if added
                     $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
@@ -265,35 +266,26 @@ class QuotesResults
                     $quoteSettings = $this->quoteSettings;
 
                     $data['totalNetCharge']['Amount'] = $this->addHandlingMarkupOfHazmat($data['totalNetCharge']['Amount'], $quoteSettings['handling_fee_markup'] ?? 0);
-
-                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName);
-                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
                     
                     $price = $data['totalNetCharge']['Amount'];
-                    // check: is override rule is applied, if yes then skip to add other features fee
-                    if(isset($overrideRates['isOverrideRates']) && $overrideRates['isOverrideRates']){
-                        $access2 = '';
-                        $showRadNotation = false;
-                    } else {
-                        $access2 = $access;
-                        $showRadNotation = $isRadNotation;
-                        // Checking hazmat and adding hazmat amounts in services
-                        if ($isHazmat) {
-                            if ($this->isMultiShipment) {
-                                if ($hazmatAllItems[$origin] == 'Y') {
-                                    $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
-                                }
-                            } else {
+
+                    $access2 = $access;
+                    // Checking hazmat and adding hazmat amounts in services
+                    if ($isHazmat) {
+                        if ($this->isMultiShipment) {
+                            if ($hazmatAllItems[$origin] == 'Y') {
                                 $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
                             }
+                        } else {
+                            $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
                         }
-
-                        $price = $this->getServiceRate($price, $serviceName, $this->quoteSettings);
                     }
+
+                    $price = $this->getServiceRate($price, $serviceName, $this->quoteSettings);
 
                     
                     $data['serviceDesc'] = $this->checkAndAppendFedex($data['serviceDesc']);
-                    $title = $this->getServiceTitle($data['serviceDesc'], $data, $data['serviceType'], $this->quoteSettings, $residential, $showRadNotation);
+                    $title = $this->getServiceTitle($data['serviceDesc'], $data, $data['serviceType'], $this->quoteSettings, $residential, $isRadNotation);
                     $price = (float)str_replace(',', '', $price);
                     /*
                     * Generate random code to limit rate_id to 50 chars
@@ -337,7 +329,7 @@ class QuotesResults
                     $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
                     $originQuotesMulti[0]['code'] = 'Multifedexsmall' . $access2;
                     $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
-                    $originQuotesMulti[0]['title'] = $residential && $showRadNotation ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
+                    $originQuotesMulti[0]['title'] = $residential ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
                 }
             }
             $resp = [

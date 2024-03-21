@@ -188,6 +188,7 @@ class QuoteSettingsController extends Controller
                     $key = str_replace('Or Greater', 'or greater' , $key);
                     $key = str_replace('Than', 'than' , $key);
                     $key = str_replace('With', 'with' , $key);
+                    $key = str_replace('Fedex ', '' , $key);
                     $data[] = ['key' => $key, 'value' => $key];
                 }
             }
