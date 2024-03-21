@@ -1,3 +1,7 @@
+= 2.1.19 2024-03-20 =
+
+* Update - Add SBS details in the staff note text  (Ticket:2329677373) [#420] (https://bitbucket.org/eniture/big-commerce/pull-requests/420)
+
 = 2.1.18 2024-03-12 =
 
 * Update - Add staff note and show box weight.  (Ticket:2329677373) [#418] (https://bitbucket.org/eniture/big-commerce/pull-requests/418)
