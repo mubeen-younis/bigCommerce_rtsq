@@ -54,7 +54,7 @@ class GetRatesController extends Controller
      */
 
     public function returnRates(Request $request, $count = null)
-    {
+    {   Log::info('new Request');
         Log::info('Request ' . json_encode($request->all()));
         $storeHash = $request->base_options['store_id'] ?? null;
         $storeData = $this->getStoreData($storeHash);
