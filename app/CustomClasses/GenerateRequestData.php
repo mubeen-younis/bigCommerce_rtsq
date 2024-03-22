@@ -2175,7 +2175,12 @@ class GenerateRequestData
             'packagesType' => !$sbsEnabled ? $ratingMethod : '',
 
         ];
-
+        // Check: if shipEngine connection setting set then use the connection setting creds in the quotes api request
+        if(isset($connSettings['creds']['shipengine_carrier_id']) && !empty($connSettings['creds']['shipengine_carrier_id']) &&isset($connSettings['creds']['shipengine_api_key']) && !empty($connSettings['creds']['shipengine_api_key'])){
+            $apiArray['shipEngineCarrierIds'] = [$connSettings['creds']['shipengine_carrier_id']];
+            $apiArray['apiKey'] = $connSettings['creds']['shipengine_api_key'];
+            $apiArray['myCarriersInShipengine'] = 1;
+        }
 
         return $apiArray;
     }
