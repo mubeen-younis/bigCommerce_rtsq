@@ -3054,9 +3054,9 @@ class CompileQuotes
     public function compileRNLLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL)
     {
         $this->isOverrideRates = false;
-        // if ($freeRNL) {
-        //     return $this->arrangeFreeRNL([]);
-        // }
+        if ($freeRNL) {
+            return $this->arrangeFreeRNL([]);
+        }
         $rnlLtl = new rnlLtlQuotesResults();
         if ($residential['rnlLtl'] == 'Y') {
             $this->isResi = true;

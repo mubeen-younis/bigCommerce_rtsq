@@ -298,7 +298,7 @@ class Shipping
         }
 
         $finalQuotes = $this->addRateId($finalQuotes);
-        $resp = $this->generateQuoteFormatResponse($finalQuotes,$freeRNL);
+        $resp = $this->generateQuoteFormatResponse($finalQuotes);
         $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
         return $resp;
     }
@@ -849,7 +849,7 @@ class Shipping
     }
 
     public function generateQuoteFormatResponse(
-        $quotes,$freeRNL
+        $quotes
     )
     {
         $onlyDbscEnabled = false;
@@ -865,7 +865,7 @@ class Shipping
             $resp['messages'] = []; // need to change
 
             if (!$onlyDbscEnabled) {
-                $quotes = $this->freeShippingTitle($quotes,$freeRNL);
+                $quotes = $this->freeShippingTitle($quotes);
                 $quotes = $this->formatCheapestFinalQuotes($quotes);
                 $quotes = $this->addDbscRates($quotes);
             }
@@ -889,18 +889,12 @@ class Shipping
         return $resp;
     }
 
-    public function freeShippingTitle($finalQuotes,$freeRNL)
+    public function freeShippingTitle($finalQuotes)
     {
         foreach ($finalQuotes as $key => $quote) {
             if (isset($quote['rate'])) {
                 if(($quote['rate'] <= 0)){
                     $finalQuotes[$key]['rate'] = 0;
-                }
-
-                if($freeRNL){
-                    $title = Functions::$freeShipping;
-                    $finalQuotes[$key]['rate'] = 0;
-                    $finalQuotes[$key]['title'] = $title;
                 }
             }
         }
