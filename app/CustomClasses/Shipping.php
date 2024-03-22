@@ -230,7 +230,6 @@ class Shipping
 
         $quotesFromWs = $quotes ?? [];
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $package['items'], $SuppressParcelRates, $store_id);
-        // dd(233,$finalQuotes);
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];
@@ -899,7 +898,9 @@ class Shipping
                 }
 
                 if($freeRNL){
+                    $title = Functions::$freeShipping;
                     $finalQuotes[$key]['rate'] = 0;
+                    $finalQuotes[$key]['title'] = $title;
                 }
             }
         }
