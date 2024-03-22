@@ -20,17 +20,15 @@ class ConnectionSettings extends CarriersConnectionSettings
             'message' => 'Something went wrong!',
         ];
         $url = $this->testConnectionUrl;
-        // $params = array(
-        //     'dont_auth' => '1',
-        //     'licence_key' => '',
-        //     'serverName' => $storeName,
-        //     'carrierName' => 'usps',
-        //     'carrier_mode' => 'test',
-        //     'apiVersion' => '1.0',
-        //     'platform' => 'bigcommerce',
-        // );
+        $params = [];
+
         if(isset($data['shipengine_carrier_id']) && !empty($data['shipengine_carrier_id']) &&isset($data['shipengine_api_key']) && !empty($data['shipengine_api_key'])){
             $params = array(
+                'dont_auth' => '1',
+                'server_name' => $storeName,
+                'carrierName' => 'shipEngine',
+                'carrier_mode' => 'test',
+                'platform' => 'bigcommerce',
                 'shipEngineCarrierIds' => [$data['shipengine_carrier_id']],
                 'apiKey' => $data['shipengine_api_key'],
                 'myCarriersInShipengine' => 1,
@@ -39,7 +37,7 @@ class ConnectionSettings extends CarriersConnectionSettings
 
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
-return $output;
+
         if (isset($output['status']) && $output['status'] == false) {
             $response = [
                 'error' => true,
