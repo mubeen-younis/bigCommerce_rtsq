@@ -149,12 +149,14 @@ class ShippingRuleController extends Controller
                     $request->store_id = $storeId;
                     if($rule['rule_type'] == 6 && $carrierId != null && $carrierName == $carrIndexName){
                         $isRuletrue = $this->checkIsOverrideRuleApply($rule, $cartItems, $originKey, $allOrigins);
+                        Log::info('isRuletrue: ' . $isRuletrue);
                         if(!$isRuletrue){
                             if($carrierType == 2) {
                                 // Update Parcel carriers WS rate with override rate shipping rule
                                 $serviceDesc = isset($quote['timeInTransit']['serviceDescription']) ? $quote['timeInTransit']['serviceDescription'] : '';
                                 $serviceDesc = isset($quote['serviceDesc']) && !is_array($quote['serviceDesc']) ? str_replace('®', '' , $quote['serviceDesc']) : $serviceDesc;
                                 $serviceDesc = str_replace(' Saturday', '' , $serviceDesc) ?? $serviceDesc;
+                                Log::info('serviceDesc: ' . $serviceDesc . 'rule : ' . json_encode($rule));
                                 if ($serviceDesc == $rule['filter_services']){
                                     $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
                                     $quote['NegotiatedRates']['Amount'] = $rule['service_rates'];
