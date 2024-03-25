@@ -153,7 +153,10 @@ class ShippingRuleController extends Controller
                             if($carrierType == 2) {
                                 // Update Parcel carriers WS rate with override rate shipping rule
                                 $serviceDesc = isset($quote['timeInTransit']['serviceDescription']) ? $quote['timeInTransit']['serviceDescription'] : '';
-                                $serviceDesc = isset($quote['serviceDesc']) && !is_array($quote['serviceDesc']) ? str_replace('®', '' , $quote['serviceDesc']) : $serviceDesc;
+                                $serviceDesc = isset($quote['serviceDesc']) && !is_array($quote['serviceDesc']) ? $quote['serviceDesc'] : $serviceDesc;
+                                $serviceDesc = isset($quote['service_code']) && $quote['service_code'] == 'ups_standard_international' ? $serviceDesc . ' International' : $serviceDesc;
+                                $serviceDesc = str_replace(' AM®', ' A.M.' , $serviceDesc) ?? $serviceDesc;
+                                $serviceDesc = str_replace('®', '' , $serviceDesc) ?? $serviceDesc;
                                 $serviceDesc = str_replace(' Saturday', '' , $serviceDesc) ?? $serviceDesc;
 
                                 if ($serviceDesc == $rule['filter_services']){
