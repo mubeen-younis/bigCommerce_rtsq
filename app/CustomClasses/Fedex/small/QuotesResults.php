@@ -237,7 +237,7 @@ class QuotesResults
                         continue;
                     }
                     //  CHeck FOr Ups ground transit days
-                    if ($serviceName == "FEDEX_GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "FEDEX_GROUND_HOME_DELIVERY" || $serviceName == "FEDEX_APPOINTMENT_HOME_DELIVERY" || $serviceName == "FEDEX_DATE_CERTAIN_HOME_DELIVERY" || $serviceName == "FEDEX_EVENING_HOME_DELIVERY") {
+                    if ($serviceName == "GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "APPOINTMENT_HOME_DELIVERY" || $serviceName == "DATE_CERTAIN_HOME_DELIVERY" || $serviceName == "EVENING_HOME_DELIVERY") {
                         if (isset($this->quoteSettings['number_of_transit_days']) && $this->quoteSettings['number_of_transit_days'] != null && isset($this->quoteSettings['ground_metric']) && $this->quoteSettings['ground_metric'] != null) {
                             $islimited = $this->checkGroundTransit($data, $this->quoteSettings);
                             if ($islimited) {
@@ -247,7 +247,7 @@ class QuotesResults
                     }
                     //  CHecks FOr Only quote ground service if hazardous
                     if ($isHazmat && isset($this->quoteSettings['ground_service_for_hazardous_material']) && $this->quoteSettings['ground_service_for_hazardous_material']) {
-                        if (!($serviceName == "FEDEX_GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "FEDEX_GROUND_HOME_DELIVERY" || $serviceName == "FEDEX_APPOINTMENT_HOME_DELIVERY" || $serviceName == "FEDEX_DATE_CERTAIN_HOME_DELIVERY" || $serviceName == "FEDEX_EVENING_HOME_DELIVERY")) {
+                        if (!($serviceName == "GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "APPOINTMENT_HOME_DELIVERY" || $serviceName == "DATE_CERTAIN_HOME_DELIVERY" || $serviceName == "EVENING_HOME_DELIVERY")) {
                             continue;
                         }
                     }
@@ -290,7 +290,7 @@ class QuotesResults
                     /*
                     * Generate random code to limit rate_id to 50 chars
                      */
-                    if ($serviceName == "FEDEX_GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "FEDEX_GROUND_HOME_DELIVERY") {
+                    if ($serviceName == "GROUND" || $serviceName == "GROUND_HOME_DELIVERY") {
                         $access2 = $access2 . '+gd';
                     } elseif (strpos($data['serviceType'], '_AIR_SERVICE')) {
                         $access2 = $access2 . '+as';
