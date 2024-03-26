@@ -1,3 +1,7 @@
+= 2.1.21 2024-03-25 =
+
+* Update - R+L Carrier New API (Ticket:1870032478) [#423] (https://bitbucket.org/eniture/big-commerce/pull-requests/423)
+
 = 2.1.20 2024-03-21 =
 
 * Fix - Update override rates feature (2nd chunk) (Ticket:2007189654) [#421] (https://bitbucket.org/eniture/big-commerce/pull-requests/421)
