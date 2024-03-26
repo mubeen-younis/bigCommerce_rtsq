@@ -483,38 +483,6 @@ class GenerateRequestData
         ];
     }
 
-    // function rnlLtlEnitArr($connSettings, $destination, $enitOrigin, $lineItems)
-    // {
-    //     $shipmentPrice = $this->calculatePrice($lineItems);
-    //     if (isset($connSettings['quote_settings']['free_shipping_on_orders']) && $connSettings['quote_settings']['free_shipping_on_orders'] < $shipmentPrice) {
-    //         return [
-    //             'licenseKey' => '',
-    //             'serverName' => Functions::getServerName($this->storeData),
-    //             'carrierMode' => 'pro',
-    //             'quotestType' => 'ltl', // ltl / small
-    //             'version' => '1.0.0',
-    //             'returnQuotesOnExceedWeight' => 1,
-    //             'api' => $this->getApiInfoArrRNLLtl($connSettings, $destination, $enitOrigin),
-    //             'getDistance' => 0,
-    //             'freeShipment' => true
-    //         ];
-    //     } else{
-    //         return [
-    //             'licenseKey' => '',
-    //             'serverName' => Functions::getServerName($this->storeData),
-    //             'carrierMode' => 'pro',
-    //             'quotestType' => 'ltl', // ltl / small
-    //             'version' => '1.0.0',
-    //             'returnQuotesOnExceedWeight' => 1,
-    //             'api' => $this->getApiInfoArrRNLLtl($connSettings, $destination, $enitOrigin),
-    //             'getDistance' => 0,
-    //             'freeShipment' => false
-    //         ];
-    //     }
-
-      
-    // }
-
     function rnlLtlEnitArr($connSettings, $destination, $enitOrigin, $lineItems)
     {
         $shipmentPrice = $this->calculatePrice($lineItems);
