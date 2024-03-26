@@ -136,6 +136,19 @@ class QuotesResults
         return $fees;
     }
 
+    function residentialFees($quotes){
+        $fees = 0;
+        if(isset($quotes['q']['Charges']['Charge'])){
+            foreach ($quotes['q']['Charges']['Charge'] as $charge){
+                if(isset($charge['Type']) && $charge['Type'] == 'RC'){
+                    $fees = (float) str_replace('$', '',$charge['Amount']);
+                    break;
+                }
+            }
+        }
+        return $fees;
+    }
+
     function insideFees($quotes){
         $fees = 0;
         if(isset($quotes['q']['Charges'])){
