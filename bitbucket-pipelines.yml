@@ -8,7 +8,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    staff-note-2:
+    feature/RL-carrier-new-api:
       - step:
           caches:
             - composer

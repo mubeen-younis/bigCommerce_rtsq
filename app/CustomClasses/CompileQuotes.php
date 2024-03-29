@@ -6911,7 +6911,7 @@ class CompileQuotes
     {
         $hatQuotes[] = [
             'code' => 'freernlltl',
-            'title' => 'Free',
+            'title' => 'Free Shipping',
             'rate' => 0,
         ];
         return array_merge($finalQuotes, $hatQuotes);

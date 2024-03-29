@@ -486,13 +486,7 @@ class GenerateRequestData
     function rnlLtlEnitArr($connSettings, $destination, $enitOrigin, $lineItems)
     {
         $shipmentPrice = $this->calculatePrice($lineItems);
-        if (isset($connSettings['quote_settings']['free_shipping_on_orders']) && $connSettings['quote_settings']['free_shipping_on_orders'] < $shipmentPrice) {
-            return [
-                'freeShipment' => true
-            ];
-        }
-
-        return [
+        $requestArr = [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
@@ -502,6 +496,10 @@ class GenerateRequestData
             'api' => $this->getApiInfoArrRNLLtl($connSettings, $destination, $enitOrigin),
             'getDistance' => 0
         ];
+    
+        return array_merge($requestArr, [
+            'freeShipment' => isset($connSettings['quote_settings']['free_shipping_on_orders']) && $connSettings['quote_settings']['free_shipping_on_orders'] < $shipmentPrice
+        ]);
     }
 
     public function unishippersSmallEnitArr($connSettings, $destination)
@@ -1838,7 +1836,7 @@ class GenerateRequestData
         $apiArray = [
             'UserName' => $connSettings['creds']['username'] ?? '',
             'Password' => $connSettings['creds']['password'] ?? '',
-            'APIKey' => $connSettings['creds']['authentication_key'] ?? '',
+            'APIKey' => $connSettings['creds']['api_key'] ?? '',
             'thresholdWeightLimit' => $weightThreshold,
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
@@ -1851,7 +1849,7 @@ class GenerateRequestData
             'CODAmount' => '0',
             'collectOnDeliveryAmount' => '0',
             'DeclaredValue' => '0',
-
+            'ApiVersion' => '2.0',
             'holdAtTerminal' => $connSettings['quote_settings']['hold_at_terminal'] ?? 0,
             'palletCode' => $palletCode ?? '',
             'palletWeight' => $palletWeight ?? '',
