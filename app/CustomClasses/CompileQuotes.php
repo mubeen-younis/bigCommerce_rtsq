@@ -106,8 +106,10 @@ class CompileQuotes
     private $cacheManager;
 
     public $isMultiShipment = false;
+    public $multiOrigins = false;
 
     private $quoteSettings = [];
+    public $carriers = [];
 
     /*
      * @var configSettings
@@ -776,6 +778,7 @@ class CompileQuotes
                     }
                     break;
                 case "xpoLogistics":
+                    $this->multiOrigins = $this->carriers[$key]['shipmentsCount'] > 1 ? true : false;
                     $resp = $this->compileXPOLtlQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential);
                     $quotesTemp['xpoLTL'] = $resp;
                     if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
@@ -905,9 +908,16 @@ class CompileQuotes
         }
 
         // Removing duplicate respone of quotes
+        //dd($quotesRes);
         $quotesRes = $this->handleMultiCarrResp($quotesTemp);
+        //dump($quotesRes, $quotesTemp);
         $quotesRes = array_map("unserialize", array_unique(array_map("serialize", $quotesRes)));
-
+        
+        if (isset($quotesRes['multiShipmentQuotes']) && !empty($quotesRes['multiShipmentQuotes']) && isset($quotesRes['checkoutQuotes']) && !empty($quotesRes['checkoutQuotes'])) {
+            $quotesRes = Functions::addUpCheapestQuotes($quotesRes);
+            dd($quotesRes);
+        }
+//dd(1, $quotes);
         return $quotesRes;
     }
 
@@ -917,6 +927,7 @@ class CompileQuotes
         $newQuotes = $quotes ?? [];
 
         foreach ($newQuotes as $carrier => $shipments) {
+            $this->carriers[$carrier]['shipmentsCount'] = count($shipments) ?? 0;
             foreach ($shipments as $locId => $quote) {
                 if (isset($quote['severity']) && $quote['severity'] == 'ERROR' && isset($quote['Message']) && in_array($quote['Message'], $errorMsgs)) {
                     unset($newQuotes[$carrier][$locId]);
@@ -2250,7 +2261,7 @@ class CompileQuotes
                         //$data['totalTransitTimeInDays'] = $data['LtlServiceDays'] ?? 0;
                         // Below commit use for future.
                         //$data = $this->applyOverrideRatesRule($connectionSettings, $data);
-                        $access = $preCode . $this->GTZLtlQuotesResults->getAccessorialCode($isResi);
+                            $access = $preCode . $this->GTZLtlQuotesResults->getAccessorialCode($isResi);
                         $price = $this->GTZLtlQuotesResults->calculatePrice($data, $this->quoteSettings, false, false, false, $this->originKey, $this->items, $this->allOrigins);
 
                         /*
@@ -3026,8 +3037,8 @@ class CompileQuotes
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
             $hatShipments = Functions::setEmptyHATQuotesArray($allOrigins, $inStoreLdData, $hatShipments);
         }
-
-        if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1)) {
+//dd($multiShipmentQuotes);
+        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
 
             if (!empty($hatShipments)) {
                 $allQuotes = $this->forceChangeTitle($allQuotes);
@@ -3432,18 +3443,18 @@ class CompileQuotes
                     // } else {
                         $access2 = $access;
                         $showRadNotation = $isRadNotation;
-                        // Checking hazmat and adding hazmat amounts in services
-                        if ($isHazmat) {
-                            if ($this->isMultiShipment) {
-                                if ($hazmatAllItems[$origin] == 'Y') {
-                                    $price = $this->wweSmallQuoteRes->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
-                                }
-                            } else {
+                    // Checking hazmat and adding hazmat amounts in services
+                    if ($isHazmat) {
+                        if ($this->isMultiShipment) {
+                            if ($hazmatAllItems[$origin] == 'Y') {
                                 $price = $this->wweSmallQuoteRes->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
                             }
+                        } else {
+                            $price = $this->wweSmallQuoteRes->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
                         }
+                    }
 
-                        $price = $this->wweSmallQuoteRes->getServiceRate($price, $data['serviceType'], $this->quoteSettings);
+                    $price = $this->wweSmallQuoteRes->getServiceRate($price, $data['serviceType'], $this->quoteSettings);
                     //}
                 
                     $date = $data['deliveryTimestamp'] ?? null;
@@ -4283,7 +4294,7 @@ class CompileQuotes
                         $data = array_merge($data, $charges);
                         // Below commit use for future.
                         //$data = $this->applyOverrideRatesRule($connectionSettings, $data);
-                        
+
                         $access = $this->getAccessorialCode() . $resiPickup;
                         $price = $this->calculatePrice($data);
 
@@ -5398,7 +5409,7 @@ class CompileQuotes
             $multiShipmentQuotes = !empty($ltlTruckloadQuotes) ? $ltlTruckloadQuotes[1] : null;
 
         }
-
+        
         $allQuotes = $this->getFinalQuotesArray($allQuotes);
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);

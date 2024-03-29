@@ -1464,4 +1464,51 @@ class Functions
 
         return $services->toArray() ?? [];
     }
+
+    public static function addUpCheapestQuotes($quotes){
+        $multiShipmentQuotes = $quotes['multiShipmentQuotes'] ?? [];
+        $checkoutQuotes = $quotes['checkoutQuotes'] ?? [];
+        $finalCHeapestQuotes = [];
+        
+        if(count($multiShipmentQuotes) >= 2 && count($checkoutQuotes) >= 2){
+            foreach ($multiShipmentQuotes as $shipment) {
+                $simpleQuotes[] = $shipment['simple'];
+            }
+            $finalCHeapestQuotes = self::findCheapestQuotes($simpleQuotes);
+            $totalRates = $finalCHeapestQuotes['totalRates'] ?? 0;
+            $checkoutQuote = array_values(collect($quotes['checkoutQuotes'])->filter(function ($quote) {
+                return strpos($quote['code'], 'Multi') === 0;
+            })->toArray() ?? []);
+            unset($quotes['multiShipmentQuotes'], $finalCHeapestQuotes['totalRates'], $quotes['checkoutQuotes']);
+            $checkoutQuote[0]['rate'] = $totalRates;
+            $quotes['multiShipmentQuotes'][0] = $finalCHeapestQuotes;
+            $quotes['checkoutQuotes'] = $checkoutQuote ?? [];
+
+        }
+
+        return $quotes;
+    }
+
+    public static function findCheapestQuotes($quotes){
+       // $quotes[0]['84']['rate'] = 9;
+     // Initialize an array to store the minimum rates
+$minRates = $cheapestQuotes = [];
+$totalRates = 0;
+
+// Iterate over the array and find the minimum rate for each index
+foreach ($quotes as $shipment) {
+    foreach ($shipment as $index => $values) {
+        if (!isset($minRates[$index]) || $values['rate'] < $minRates[$index]) {
+            
+            $minRates[$index] = $values['rate'];
+            $cheapestQuotes[$index] = $values;
+        }
+    }
+}
+foreach($minRates as $rate){
+    $totalRates += $rate ?? 0;
+}
+//dd($minRates, $quotes, $cheapestQuotes);
+return ['simple' => $cheapestQuotes, 'totalRates' => $totalRates];
+    }
 }
