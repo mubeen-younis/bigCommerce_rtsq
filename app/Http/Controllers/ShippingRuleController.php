@@ -215,6 +215,201 @@ class ShippingRuleController extends Controller
         return ['data' => $quote, 'isOverrideRates' => $isOverrideRates];
     }
 
+    public function surchargeRates($storeId, $lineItemData, $connectionSettings, $quote = [], $carrierName, $originKey = '', $allOrigins = [])
+    {
+        $isRuletrue = false;
+        $carrierType = 0;
+        $surchargeServiceRate = 0;
+        $isSurchargeRates = false;
+        $shippingRules = ShippingRule::getStoreShippingRules($storeId);
+        if(!empty($shippingRules)){
+            $cartItems = !empty($lineItemData) ? $lineItemData : [];
+            foreach($shippingRules as $key => $rule){
+                if(isset($rule['available']) && $rule['available']){
+                    $providers = array_keys($connectionSettings);
+                    foreach($providers as  $index){
+                        $providerSlug = isset($index) ? $index: " ";
+                        $carrierId = isset($connectionSettings[$providerSlug]) ? $connectionSettings[$providerSlug]['creds']['installed_carrier_id'] : null;
+                        $settings = Connection::join('installed_carriers', 'installed_carriers.id', 'connection_settings.installed_carrier_id')
+                            ->join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
+                            ->select('carriers.slug', 'carriers.carrier_type', 'connection_settings.id', 'connection_settings.installed_carrier_id',
+                                'connection_settings.value')
+                            ->where('connection_settings.installed_carrier_id', $carrierId)->first();
+                        if ($settings !== null) {
+                            $value = json_decode($settings->value, true);
+                            $carrierType = isset($settings['carrier_type']) ? $settings['carrier_type'] : null;
+                        }
+                        
+                        $request = new \Illuminate\Http\Request();
+    
+                        $carrIndexName = Functions::getCarrIndexBySlug($providerSlug);
+                        $request->installed_carrier_id = $carrierId;
+                        $request->store_id = $storeId;
+                        if ($providerSlug == 'gtz-ltl'){
+                            $request->carrier_type = $value['api_type'] ?? '';
+                            $request->store_id = $value['store_id'] ?? '';
+                            if (isset($value['api_type']) && $value['api_type'] == 'NEWAPI'){
+                                $providerSlug = 'gtz-new';
+                            } elseif (isset($value['api_type']) && $value['api_type'] == 'CRS'){
+                                $providerSlug = 'cltl';
+                            }
+                        }
+                        
+                        if($carrierType == 2){
+                            switch ($rule['apply_to']) {
+                                case 0:
+                                    $isRuletrue = $this->checkIsSurchargeRuleApply($rule, $cartItems, $originKey, $allOrigins);
+                                    break;
+                                case 1:
+                                    $isRuletrue = $this->hideMethods($rule, $cartItems);
+                                    break;
+                                case 2:
+                                    $applyRuleTo = $rule['apply_rule_to'] ?? 1;
+                                    switch ($applyRuleTo) {
+                                        case 1:
+                                            $isRuletrue = $this->applyRuleOnCategories($rule, $cartItems, $originKey, $allOrigins);
+                                            break;
+                                        case 2:
+                                            $isRuletrue = $this->applyRuleOnBrands($rule, $cartItems, $originKey, $allOrigins);
+                                            break;
+                                        case 3:
+                                            $isRuletrue = $this->applyRuleOnProducts($rule, $cartItems, $originKey, $allOrigins);
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                            if(!$isRuletrue){
+                                $serviceDesc = isset($quote['timeInTransit']['serviceDescription']) ? $quote['timeInTransit']['serviceDescription'] : '';
+                                $serviceDesc = isset($quote['serviceDesc']) && !is_array($quote['serviceDesc']) ? str_replace('®', '' , $quote['serviceDesc']) : $serviceDesc;
+                                $serviceDesc = str_replace(' Saturday', '' , $serviceDesc) ?? $serviceDesc;
+                                if(isset($quote['serviceDesc'])){
+                                    if ($serviceDesc == $quote['serviceDesc']){
+                                        $quote['totalNetCharge']['Amount'] += (float) $rule['service_rates'] ?? 0;
+                                        $quote['NegotiatedRates']['Amount'] += (float) $rule['service_rates'] ?? 0;
+                                        $isSurchargeRates = true;
+                                    } 
+                                } else if ($providerSlug == 'usps-small') { 
+                                    $quote['totalNetCharge']['Amount'] += (float) $rule['service_rates'] ?? 0;
+                                    $isSurchargeRates = true;
+                                } 
+                            }
+                        }
+                        if ($rule['rule_type'] == 8 && $carrierId !== null && $carrierName == $carrIndexName) {
+                            switch ($rule['apply_to']) {
+                                case 0:
+                                    $isRuletrue = $this->checkIsSurchargeRuleApply($rule, $cartItems, $originKey, $allOrigins);
+                                    if (!$isRuletrue && $carrierType == 1) {
+                                        $quote = $this->surchargeRatesAccessorialsfee($quote, $rule);
+                                        $isSurchargeRates = true;
+                                    }
+                                    break;
+                                case 1:
+                                    $isRuletrue = $this->hideMethods($rule, $cartItems);
+                                    if (!$isRuletrue && $carrierType == 1) {
+                                        $quote = $this->surchargeRatesAccessorialsfee($quote, $rule);
+                                        $isSurchargeRates = true;
+                                    }
+                                    break;
+                                case 2:
+                                    $applyRuleTo = $rule['apply_rule_to'] ?? 1;
+                                    switch ($applyRuleTo) {
+                                        case 1:
+                                            $isRuletrue = $this->applyRuleOnCategories($rule, $cartItems, $originKey, $allOrigins);
+                                            break;
+                                        case 2:
+                                            $isRuletrue = $this->applyRuleOnBrands($rule, $cartItems, $originKey, $allOrigins);
+                                            break;
+                                        case 3:
+                                            $isRuletrue = $this->applyRuleOnProducts($rule, $cartItems, $originKey, $allOrigins);
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    if (!$isRuletrue && $carrierType == 1) {
+                                        $quote = $this->surchargeRatesAccessorialsfee($quote, $rule);
+                                        $isSurchargeRates = true;
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }  
+                    }
+                    $surchargeServiceRate = $isSurchargeRates? $rule['service_rates'] : 0;
+                }
+            }
+        }  
+        return ['data' => $quote, 'isSurchargeRates' => $isSurchargeRates, 'surchargeServiceRate' => $surchargeServiceRate ];
+    }
+    
+
+    public function applyRuleOnCategories($rule, $cartItems, $originKey, $allOrigins)
+    {
+        
+        $restrictedCategories = isset($rule['categories']) ? $rule['categories'] : [];
+
+        if(!empty($restrictedCategories)){
+            $categoriesIds = array_column($cartItems, 'categories_id');
+            $flattenedCategoriesIds = array_values(array_merge(...$categoriesIds)) ?? [];
+            $istrue = true;
+  
+            $filterCategories = collect($restrictedCategories)->intersect($flattenedCategoriesIds) ?? [];
+            foreach($filterCategories as $categoryId){
+                $categoriesProducts = collect($cartItems)->filter(function ($item) use ($categoryId) {
+                    return in_array($categoryId , $item['categories_id']);
+                })->toArray() ?? [];
+
+                if(!empty($categoriesProducts)){
+                    $istrue = $this->checkIsSurchargeRuleApply($rule, $categoriesProducts, $originKey, $allOrigins);
+                    return $istrue;
+                }
+            }
+            return $istrue;
+        }
+        return true;
+    }
+
+    public function applyRuleOnBrands($rule, $cartItems, $originKey, $allOrigins)
+    {
+        $restrictedBrands = isset($rule['brands']) ? $rule['brands'] : [];
+        $istrue = true;
+        if(!empty($restrictedBrands)){
+            foreach($restrictedBrands as $rpKey => $brandId){
+
+                $filterBrands = collect($cartItems)->where('brand_id', $brandId)->all() ?? [];
+                if(!empty($filterBrands)){
+                    $istrue = $this->checkIsSurchargeRuleApply($rule, $filterBrands, $originKey, $allOrigins);
+                    return $istrue;
+                }
+            }
+            return $istrue;
+        }
+        return true;
+    }
+
+    public function applyRuleOnProducts($rule, $cartItems, $originKey, $allOrigins)
+    {
+        $restrictedProducts = isset($rule['products']) ? $rule['products'] : [];
+        $istrue = true;
+
+        if(!empty($restrictedProducts)){
+            foreach($restrictedProducts as $rpKey => $productId){
+                $filterProducts = collect($cartItems)->where('product_id', $productId['key'])->all() ?? [];
+                if(!empty($filterProducts)){
+                    $istrue = $this->checkIsSurchargeRuleApply($rule, $cartItems, $originKey, $allOrigins);
+                    return $istrue;
+                }
+            }
+            return $istrue;
+        }
+        return true;
+    }
+
+
     public function overrideAccessorialsfee($quote, $rule)
     {
         $updateCount = 0;
@@ -237,6 +432,23 @@ class ShippingRuleController extends Controller
                 $quote['totalNetCharge']['Amount'] += isset($quote['surcharges'][$index]) ? (float) $quote['surcharges'][$index] : 0;
             }
             $updateCount++;
+        }
+
+        return $quote;
+    }
+
+    public function surchargeRatesAccessorialsfee($quote, $rule)
+    {
+        $updateCount = 0;
+        $serviceIndex = Functions::$accessorialServices;
+        // Update WS accessorials rate with Surcharge rates shipping rule accessorials rate
+        foreach($serviceIndex as $index){
+            if (isset($rule['service_rates']) && $rule['service_rates'] >= 0 && isset($quote['surcharges'][$index])){
+                if($updateCount < 1) {
+                    $quote['totalNetCharge']['Amount'] += (float) $rule['service_rates'] ?? 0;
+                }
+                $updateCount++;
+            }
         }
 
         return $quote;
@@ -320,6 +532,54 @@ class ShippingRuleController extends Controller
             }
         }
 
+        
+        if(isset($shippingRule['isFilterWeight']) && $shippingRule['isFilterWeight']){
+            if(isset($shippingRule['weight_from']) && $totalWeight >= $shippingRule['weight_from'] && isset($shippingRule['weight_to']) && ($totalWeight < $shippingRule['weight_to'] || $shippingRule['weight_to'] === '')){
+                $isFilterWeight = true;
+            }
+        }
+        if(isset($shippingRule['isFilterPrice']) && $shippingRule['isFilterPrice']){
+            if(isset($shippingRule['price_from']) && $totalPrice >= $shippingRule['price_from'] && isset($shippingRule['price_to']) && ($totalPrice < $shippingRule['price_to'] || $shippingRule['price_to'] === '')){
+                $isFilterPrice = true;
+            }
+        }
+        if(isset($shippingRule['isFilterQuantity']) && $shippingRule['isFilterQuantity']){
+            if(isset($shippingRule['quantity_from']) && $totalQuantity >= $shippingRule['quantity_from'] && isset($shippingRule['quantity_to']) && ($totalQuantity < $shippingRule['quantity_to'] || $shippingRule['quantity_to'] === '')){
+                $isFilterQuantity = true;
+            }
+        }
+
+        if($isFilterWeight || $isFilterPrice || $isFilterQuantity){
+            return false;
+        }
+
+        return true;
+    }
+
+    public function checkIsSurchargeRuleApply($shippingRule, $items, $shipmentKey, $allOrigins)
+    {
+        $variants = [];
+        $totalWeight = 0;
+        $totalQuantity = 0;
+        $totalPrice = 0;
+        $isFilterWeight = $isFilterPrice = $isFilterQuantity = false;
+        
+        if (!empty($allOrigins)) {
+            $variants = collect($allOrigins)->filter(function ($origin) use ($shipmentKey) {
+            return $origin['locationId'] == $shipmentKey;})->keys()->all() ?? [];
+        }
+        
+        if (!empty($variants)) {
+            foreach($variants as $variantId){
+                if(isset($items[$variantId])){
+                    $item = $items[$variantId];
+                    $totalWeight += $item['lineItemWeight'] * $item['piecesOfLineItem'] ?? 0;
+                    $totalPrice += $item['lineItemPrice'] * $item['piecesOfLineItem'] ?? 0;
+                    $totalQuantity += $item['piecesOfLineItem'] ?? 0;
+                }
+                
+            }
+        }
         
         if(isset($shippingRule['isFilterWeight']) && $shippingRule['isFilterWeight']){
             if(isset($shippingRule['weight_from']) && $totalWeight >= $shippingRule['weight_from'] && isset($shippingRule['weight_to']) && ($totalWeight < $shippingRule['weight_to'] || $shippingRule['weight_to'] === '')){

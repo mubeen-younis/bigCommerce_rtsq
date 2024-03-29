@@ -632,7 +632,7 @@ class GetRatesController extends Controller
 
             foreach($shippingRules as $key => $rule){
 
-                if(isset($rule['rule_type']) && $rule['rule_type'] == 5){
+                if(isset($rule['rule_type']) && $rule['rule_type'] == 5 || $rule['rule_type'] == 8){
                     continue;
                 }
 
@@ -716,7 +716,7 @@ class GetRatesController extends Controller
             $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
             foreach($restrictedProducts as $rpKey => $productId){
 
-                $filterProducts = collect($cartItems)->where('product_id', $productId)->all() ?? [];
+                $filterProducts = collect($cartItems)->where('product_id', $productId['key'])->all() ?? [];
                 
                 if(!empty($filterProducts)){
                     $istrue = $istrue || $this->checkRuleRestriction($rule, $origins, $destination, $statesCode, $filterProducts);

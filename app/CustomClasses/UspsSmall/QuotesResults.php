@@ -62,6 +62,12 @@ class QuotesResults
                     if (!$this->isActiveService($srvcType)) {
                         continue;
                     }
+
+                     // Apply Surcharge rates shipping rule
+                     $surchargeRates = $shippingRule->surchargeRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
+                     $isSurchargeRates = isset($surchargeRates['isSurchargeRates']) && $surchargeRates['isSurchargeRates'];
+                     $data = isset($surchargeRates['data']) ? $surchargeRates['data'] : $data;    
+                     
                     // Adding Product and Origin Markup in services if added
                     $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
                     $data['totalNetCharge']['Amount'] = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
