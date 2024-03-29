@@ -32,7 +32,7 @@ class QuotesResults
                         'totalNetCharge' => array(
                             'Amount' => $data['totalNetCharge'],
                         ),
-                        'surcharges' => $data['surcharges'],
+                        'surcharges' => [],
                     );
                     unset($data['totalNetCharge']);
                     $data = array_merge($data, $charges);
