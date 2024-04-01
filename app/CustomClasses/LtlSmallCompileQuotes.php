@@ -544,8 +544,7 @@ class LtlSmallCompileQuotes
                     $newQuotes[] = [
                         'code' => 'multi' . $rCode,
                         'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
-                        'title' => 'Freight' . $rtitl
-                        e
+                        'title' => 'Freight' . $rtitle
                     ];
                 } else if ($simpleLg === 'LG') {
                     $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, $ltlQuot['isLG'], false, false, false, false, false, $storeId);
