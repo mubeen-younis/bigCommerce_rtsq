@@ -1,3 +1,15 @@
+= 2.1.21 2024-03-25 =
+
+* Update - R+L Carrier New API (Ticket:1870032478) [#423] (https://bitbucket.org/eniture/big-commerce/pull-requests/423)
+
+= 2.1.20 2024-03-21 =
+
+* Fix - Update override rates feature (2nd chunk) (Ticket:2007189654) [#421] (https://bitbucket.org/eniture/big-commerce/pull-requests/421)
+
+= 2.1.19 2024-03-20 =
+
+* Update - Add SBS details in the staff note text  (Ticket:2329677373) [#420] (https://bitbucket.org/eniture/big-commerce/pull-requests/420)
+
 = 2.1.18 2024-03-12 =
 
 * Update - Add staff note and show box weight.  (Ticket:2329677373) [#418] (https://bitbucket.org/eniture/big-commerce/pull-requests/418)
