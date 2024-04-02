@@ -631,6 +631,12 @@ class PalletPackaging
             $quotesWithFee[$carName][$locId]['q']['palletFees']['Amount'] = $palletFee[$locId];
 
             if ($carName == 'upsLTL') {
+                foreach($q['q'] as $quote){
+                    if(is_array($quote) && isset($quote['totalNetCharge']['Amount'])){
+                        unset($q);
+                        $q['q'] = $quote;
+                    }
+                }
                 $quotesWithFee[$carName][$locId]['q']['totalNetCharge']['Amount'] = $q['q']['totalNetCharge']['Amount'] + $palletFee[$locId];
             } elseif ($carName == 'globalTranz') {
                 foreach ($q['q'] as $key => $value) {

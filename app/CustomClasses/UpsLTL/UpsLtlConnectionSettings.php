@@ -30,7 +30,7 @@ class UpsLtlConnectionSettings extends CarriersConnectionSettings
             $params['AccountNumber'] = $data->new_api_account_number ?? '';
             $params['clientId'] = $data->clientId ?? '';
             $params['clientSecret'] = $data->clientSecret ?? '';
-            $params['ApiVersion'] = '2.0';
+            $params['requestForTForceQuotes'] = '1';
             $params['licenseKey'] = $data->license_key ?? '';
             $params['serverName'] = $storeName ?? '';
 
@@ -71,7 +71,7 @@ class UpsLtlConnectionSettings extends CarriersConnectionSettings
         } else if(isset($output['severity']) && $output['severity'] === 'ERROR'){
             $response = [
                 'error' => true,
-                'message' => $output['message'],
+                'message' => $output['message'] ?? $output['ApiResponse']['error'],
             ];
         }
 

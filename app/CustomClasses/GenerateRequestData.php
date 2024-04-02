@@ -2948,7 +2948,7 @@ class GenerateRequestData
             'Password' => isset($connSettings['creds']['password']) ? $connSettings['creds']['password'] : '',
             'clientId' => isset($connSettings['creds']['clientId']) ? $connSettings['creds']['clientId'] : '',
             'clientSecret' => isset($connSettings['creds']['clientSecret']) ? $connSettings['creds']['clientSecret'] : '',
-            'ApiVersion' => '2.0',
+            'requestForTForceQuotes' => '1',
             'paymentCode' => '10',
             'paymentDescription' => 'PREPAID',
             'paymentType' => $paymentType,
@@ -2987,7 +2987,7 @@ class GenerateRequestData
             unset(
                 $apiArray['clientId'],
                 $apiArray['clientSecret'],
-                $apiArray['ApiVersion'],
+                $apiArray['requestForTForceQuotes'],
             );
         }
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
