@@ -908,16 +908,14 @@ class CompileQuotes
         }
 
         // Removing duplicate respone of quotes
-        //dd($quotesRes);
         $quotesRes = $this->handleMultiCarrResp($quotesTemp);
-        //dump($quotesRes, $quotesTemp);
         $quotesRes = array_map("unserialize", array_unique(array_map("serialize", $quotesRes)));
         
         if (isset($quotesRes['multiShipmentQuotes']) && !empty($quotesRes['multiShipmentQuotes']) && isset($quotesRes['checkoutQuotes']) && !empty($quotesRes['checkoutQuotes'])) {
             $quotesRes = Functions::addUpCheapestQuotes($quotesRes);
             dd($quotesRes);
         }
-//dd(1, $quotes);
+
         return $quotesRes;
     }
 
@@ -3037,8 +3035,8 @@ class CompileQuotes
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
             $hatShipments = Functions::setEmptyHATQuotesArray($allOrigins, $inStoreLdData, $hatShipments);
         }
-//dd($multiShipmentQuotes);
-        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
+////dd($multiShipmentQuotes);
+        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) >= 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
 
             if (!empty($hatShipments)) {
                 $allQuotes = $this->forceChangeTitle($allQuotes);

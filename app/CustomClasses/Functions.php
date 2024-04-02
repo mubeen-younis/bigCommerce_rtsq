@@ -1469,12 +1469,87 @@ class Functions
         $multiShipmentQuotes = $quotes['multiShipmentQuotes'] ?? [];
         $checkoutQuotes = $quotes['checkoutQuotes'] ?? [];
         $finalCHeapestQuotes = [];
+        $accessorialServices = [];
         
         if(count($multiShipmentQuotes) >= 2 && count($checkoutQuotes) >= 2){
             foreach ($multiShipmentQuotes as $shipment) {
-                $simpleQuotes[] = $shipment['simple'];
+                $simpleQuotes[] = isset($shipment['simple']) ? $shipment['simple'] : [];
+                //$accessorialServices = isset($shipment) ? $shipment : [];
             }
-            $finalCHeapestQuotes = self::findCheapestQuotes($simpleQuotes);
+            //dd($simpleQuotes);
+            // Extract unique indexes
+            $indexes = [];
+            foreach ($simpleQuotes as $item) {
+                foreach (array_keys($item) as $index) {
+                    $indexes[$index] = true;
+                }
+            }
+            $shipments = array_keys($indexes);
+            //dd($shipments, $simpleQuotes);
+            foreach($shipments as $shipNumber){
+                $data[$shipNumber] = array_map(function ($item) use ($shipNumber) {
+                    return isset($item[$shipNumber]) ? $item[$shipNumber] : [];
+                }, $simpleQuotes);
+            }
+            
+            foreach ($data as $index => $items) {
+                $data[$index] = array_values(array_filter($items));
+            }
+            
+            $finalCHeapestQuotes = self::findCheapestQuotes($data);
+
+            $isLtlSmallShipments = self::checkIsLtlSmall($finalCHeapestQuotes);
+
+            $newArray = [];
+            $count = 0;
+            if($isLtlSmallShipments){
+                foreach($finalCHeapestQuotes['simple'] as $origin => $quote){
+                    $isLtlRate = isset($quote['code']) ? (strpos($quote['code'], 'ltl') != false) : false;
+                    $newArray[] = $quote;
+                    if($isLtlRate){
+                        $data1['liftgate'][$origin] = array_map(function ($item) use ($origin) {
+                            //dd($item);
+                            return isset($item['liftgate']) ? $item['liftgate'][$origin] : [];
+                        }, $multiShipmentQuotes);
+                        //dd($data1);
+                        // Extract rates from the array
+                        //$rates = array_filter(array_column($data1['liftgate'][141], 'rate'));
+                        // Filter out empty arrays and extract rates
+$filteredRates = array_filter($data1['liftgate'][141], function($item) {
+    return is_array($item) && !empty($item);
+});
+// Get the minimum rate value
+//$minRate = min(array_column($filteredRates, 'rate'));
+// Initialize an associative array to store unique rates
+$uniqueRates = [];
+
+// Iterate through the filtered rates and store unique rates
+foreach ($filteredRates as $rateData) {
+    $rate = $rateData['rate'];
+    if (!isset($uniqueRates[$rate])) {
+        $uniqueRates[$rate] = $rateData;
+    }
+}
+// Get the minimum rate value
+$minRate = min(array_keys($uniqueRates));
+
+// Find the array with the minimum rate value
+$minRateArray = $uniqueRates[$minRate];
+
+// // Find the array(s) with the minimum rate value
+// $minRateArray = array_filter($filteredRates, function($item) use ($minRate) {
+//     return $item['rate'] === $minRate;
+// });
+                        dd($minRateArray, $finalCHeapestQuotes);
+                        foreach ($multiShipmentQuotes as $shipment) {
+                            $code = isset($shipment['liftgate'][$origin]['code']) ? $shipment['liftgate'][$origin]['code'] : '';
+                            $newArray[] = isset($shipment['liftgate']) && substr($code, 0, 6) == $quote['code'] ? $shipment['liftgate'][$origin] : [];
+                        }
+                    }
+                    $count++;
+                }
+                return array_values(array_filter($newArray));
+            }
             $totalRates = $finalCHeapestQuotes['totalRates'] ?? 0;
             $checkoutQuote = array_values(collect($quotes['checkoutQuotes'])->filter(function ($quote) {
                 return strpos($quote['code'], 'Multi') === 0;
@@ -1489,26 +1564,38 @@ class Functions
         return $quotes;
     }
 
-    public static function findCheapestQuotes($quotes){
-       // $quotes[0]['84']['rate'] = 9;
-     // Initialize an array to store the minimum rates
-$minRates = $cheapestQuotes = [];
-$totalRates = 0;
-
-// Iterate over the array and find the minimum rate for each index
-foreach ($quotes as $shipment) {
-    foreach ($shipment as $index => $values) {
-        if (!isset($minRates[$index]) || $values['rate'] < $minRates[$index]) {
-            
-            $minRates[$index] = $values['rate'];
-            $cheapestQuotes[$index] = $values;
+    public static function checkIsLtlSmall($quotes)
+    {
+        $isSmallRate = $isLtlRate = false;
+        foreach($quotes['simple'] as $origin => $quote){
+            $isSmallRate = isset($quote['code']) ? ($isSmallRate || substr($quote['code'], 0, 9) == 'parcel_12') : false;
+            $isLtlRate = isset($quote['code']) ? ($isLtlRate || strpos($quote['code'], 'ltl') != false) : false;
         }
+
+        return ($isLtlRate && $isSmallRate);
     }
-}
-foreach($minRates as $rate){
-    $totalRates += $rate ?? 0;
-}
-//dd($minRates, $quotes, $cheapestQuotes);
-return ['simple' => $cheapestQuotes, 'totalRates' => $totalRates];
+
+    public static function findCheapestQuotes($quotes){
+        $quotes[141][0]['rate'] = 10;
+        // Calculate min rate for each index
+        $minRates = $cheapestQuotes = [];
+        $totalRates = 0;
+        
+        foreach ($quotes as $index => $items) {
+            $minRate = null;
+            foreach ($items as $item) {
+                if ($minRate === null || $item['rate'] < $minRate) {
+                    $minRate = $item['rate'];
+                    $cheapestQuotes[$index] = $item;
+                }
+            }
+            $minRates[$index] = $minRate;
+        }
+    
+        foreach($minRates as $rate){
+            $totalRates += $rate ?? 0;
+        }
+
+        return ['simple' => $cheapestQuotes, 'totalRates' => $totalRates];
     }
 }
