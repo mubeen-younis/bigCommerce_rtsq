@@ -337,7 +337,7 @@ class OrderController extends Controller
                                 ++$count;
 
                             }
-                            $orderWidget[$zip]['sbs'][$key]['weight'] = optional($binPacked->bin_data)->totalBoxWeight ?? 0;
+                            isset($binPacked->bin_data->totalBoxWeight) ? $orderWidget[$zip]['sbs'][$key]['weight'] = optional($binPacked->bin_data)->totalBoxWeight : null;
                             unset($orderWidgetData);
                             if ($count) {
                                 $orderWidget[$zip]['sbs'][$key]['number_of_items'] = $count;
