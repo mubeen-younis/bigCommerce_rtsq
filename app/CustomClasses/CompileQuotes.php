@@ -910,10 +910,9 @@ class CompileQuotes
         // Removing duplicate respone of quotes
         $quotesRes = $this->handleMultiCarrResp($quotesTemp);
         $quotesRes = array_map("unserialize", array_unique(array_map("serialize", $quotesRes)));
-        
+
         if (isset($quotesRes['multiShipmentQuotes']) && !empty($quotesRes['multiShipmentQuotes']) && isset($quotesRes['checkoutQuotes']) && !empty($quotesRes['checkoutQuotes'])) {
             $quotesRes = Functions::addUpCheapestQuotes($quotesRes);
-            dd($quotesRes);
         }
 
         return $quotesRes;
