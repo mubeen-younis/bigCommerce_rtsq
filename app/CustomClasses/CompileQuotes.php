@@ -3458,6 +3458,13 @@ class CompileQuotes
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
+            foreach($quote['q'] as $q){
+                // Check: Tforce new api
+                if(isset($q['serviceType'])){
+                    $quote['q'] = $q;
+                }
+            }
+
             if ($count == 0) { //To be checked only once
                 $isRad = $quote['autoResidentialsStatus'] ?? '';
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
@@ -5804,6 +5811,11 @@ class CompileQuotes
                         $lgCost = $surcharge['Factor']['Value'] ?? 0;
                         break;
                     }
+                    //check : Tforce new api
+                    if (isset($surcharge['code']) && $surcharge['code'] === 'LIFD') {
+                        $lgCost = $surcharge['value'] ?? 0;
+                        break;
+                    }
                 }
             }
         }
@@ -5836,6 +5848,11 @@ class CompileQuotes
             foreach ($surcharges as $surcharge) {
                 if (isset($surcharge['Type']['Code']) && $surcharge['Type']['Code'] === 'ADV_NOTF') {
                     $ndCost = $surcharge['Factor']['Value'] ?? 0;
+                    break;
+                }
+                //check : Tforce new api
+                if (isset($surcharge['code']) && $surcharge['code'] === 'NTFN') {
+                    $ndCost = $surcharge['value'] ?? 0;
                     break;
                 }
             }

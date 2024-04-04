@@ -632,9 +632,11 @@ class PalletPackaging
 
             if ($carName == 'upsLTL') {
                 foreach($q['q'] as $quote){
+                    //check: for Tforce new api
                     if(is_array($quote) && isset($quote['totalNetCharge']['Amount'])){
                         unset($q);
                         $q['q'] = $quote;
+                        $quotesWithFee[$carName][$locId] = $q;
                     }
                 }
                 $quotesWithFee[$carName][$locId]['q']['totalNetCharge']['Amount'] = $q['q']['totalNetCharge']['Amount'] + $palletFee[$locId];
