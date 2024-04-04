@@ -5480,10 +5480,6 @@ class CompileQuotes
                         $isnotifyDeliveryFee = isset($data['surcharges']['notifyDeliveryFee']);
                         $isResidentialFee = !isset($data['surcharges']['residentialFee']) && ($this->isResi || $this->alwaysResi);
 
-                        if($isResidentialFee){
-                            continue;
-                        }
-
                         /*
                          * Date 01-07-22
                          * Adding Functionality of Delivery Estimate Options
