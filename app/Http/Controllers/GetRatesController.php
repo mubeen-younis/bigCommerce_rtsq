@@ -12,6 +12,7 @@ use App\Models\InstalledCarrier;
 use App\Models\Locations;
 use App\Models\QuoteSetting;
 use App\Models\Store;
+use App\Models\CountryState;
 use App\Models\Subscription\PackageSubscription;
 use Illuminate\Http\Request;
 use App\Models\ProductSetting;
@@ -20,6 +21,7 @@ use App\Models\Subscription\Subscription;
 use Illuminate\Support\Facades\Log;
 use App\CustomClasses\CompareRates;
 use App\Constants\Constant;
+use App\Models\ShippingRule;
 
 class GetRatesController extends Controller
 {
@@ -28,6 +30,8 @@ class GetRatesController extends Controller
     public $connectionSettings = [];
     public $installedCarriers = [];
     public $installedAddons = [];
+    public $updatedWarehouses = [];
+    public $setRulePriority = null;
 
     /**
      * @var WweLTLShipmentPackage
@@ -59,7 +63,6 @@ class GetRatesController extends Controller
         */
         $isTestStore = Helpers::checkIsTestStore($storeHash);
         Helpers::setStripeAPiKey($isTestStore);
-
         if ($storeData == null) {
             return [];
         }
@@ -81,18 +84,22 @@ class GetRatesController extends Controller
         // Getting installed carriers there quote settings and services
         $this->getCarrierSettings($storeData['installed_carriers']);
 
-        $formatReq = $this->formatRequest($request->all(), $storeData);
+        $this->formatReq = $this->formatRequest($request->all(), $storeData);
         if (
-            $formatReq['lineItemData']['destination']['zip'] == null ||
-            $formatReq['lineItemData']['destination']['state'] == null ||
-            $formatReq['lineItemData']['destination']['country'] == null ||
+            $this->formatReq['lineItemData']['destination']['zip'] == null ||
+            $this->formatReq['lineItemData']['destination']['country'] == null ||
             count($this->connectionSettings) == 0
         ) {
             if (!$this->isDbscInstalled) {
                 return [];
             }
         }
-        $quotes = $this->shipping->collectRates($formatReq, $storeData, $this->connectionSettings, $cartInfo, $this->isDbscInstalled);
+        
+        if($this->isShippingRule($storeData, $this->formatReq)){
+            return [];
+        }
+
+        $quotes = $this->shipping->collectRates($this->formatReq, $storeData, $this->connectionSettings, $cartInfo, $this->isDbscInstalled);
 
         return $quotes;
 
@@ -192,6 +199,8 @@ class GetRatesController extends Controller
         if (count($data['base_options']['items'])) {
             foreach ($data['base_options']['items'] as $productKey => $product) {
                 $product_settings = $this->getProductSetting($product['product_id'], $product['variant_id'], $storeId);
+                $productBrandId = $this->getProductBrand($product['product_id'], $product['variant_id'], $storeId);
+                $categoriesId = $this->getProductCategories($product['product_id'], $product['variant_id'], $storeId);
                 $product_price = $this->getProductPrice($product['product_id'], $product['variant_id'], $storeId);
                 $weight = (isset($product['weight']['value']) && isset($product['weight']['units'])) ? $this->convertWeight($product['weight']['value'], strtolower($product['weight']['units'])) : 0;
                 $length = (isset($product['length']['value']) && isset($product['length']['units'])) ? $this->convertDimensionUnit($product['length']['value'], strtolower($product['length']['units'])) : 0;
@@ -227,6 +236,8 @@ class GetRatesController extends Controller
                     'id' => $product_settings['id'] ?? '',
                     'product_id' => $product['product_id'] ?? '',
                     'variant_id' => $product['variant_id'] ?? '',
+                    'brand_id' => $productBrandId ?? '',
+                    'categories_id' => json_decode($categoriesId) ?? [],
                     'sku' => $product['sku'] ?? '',
                     'piecesOfLineItem' => $product['quantity'] ?? '',
                     'originalPiecesOfLineItem' => $product['quantity'] ?? '',
@@ -272,7 +283,7 @@ class GetRatesController extends Controller
             }
         }
         if ($wareHouseShipmentExist) {
-            $originAddress = $this->shipmentPkg->getNearestWarehouse($details, $details['destination']['zip'], $storeData, $this->connectionSettings);
+            $originAddress = $this->shipmentPkg->getNearestWarehouse($details, $details['destination']['zip'], $storeData, $this->connectionSettings, []);
             if (blank($originAddress)) {
                 Log::info('No warehouse added');
                 return null;
@@ -382,6 +393,30 @@ class GetRatesController extends Controller
             $settings['product_markup'] = $productSetting['product_markup'] ?? 0;
         }
         return $settings;
+    }
+
+    public function getProductBrand($productId, $variantId, $storeId)
+    {
+        $productBrand = ProductSetting::select('brand_id')
+            ->where(['source_product_id' => $productId, 'variant_id' => $variantId, 'store_id' => $storeId])
+            ->first();
+            
+        if (!empty($productBrand->toArray())) {
+            return $productBrand['brand_id'];
+        }
+        return null;
+    }
+
+    public function getProductCategories($productId, $variantId, $storeId)
+    {
+        $productCategories = ProductSetting::select('categories_id')
+            ->where(['source_product_id' => $productId, 'variant_id' => $variantId, 'store_id' => $storeId])
+            ->first();
+
+        if (!empty($productCategories->toArray())) {
+            return $productCategories['categories_id'];
+        }
+        return [];
     }
 
     private function getProductPrice($productId, $variantId, $storeId)
@@ -578,4 +613,205 @@ class GetRatesController extends Controller
         }
         return $result;
     }
+
+    public function isShippingRule($storeData, $formatReq)
+    {    
+        $isRestriction = false;
+        $storeId = $storeData['store']['id'];
+        $this->storeData = $storeData ?? [];
+        
+        $this->applyRestrictOriginLocationsRule($storeId, $formatReq);
+
+        $shippingRules = ShippingRule::getStoreShippingRules($storeId);
+        if (!empty($shippingRules)){
+
+            $destination = isset($formatReq['lineItemData']['destination']) ? $formatReq['lineItemData']['destination'] : [];
+            $origins = isset($formatReq['lineItemData']['origin']) ? $formatReq['lineItemData']['origin'] : [];
+            $cartItems = isset($formatReq['lineItemData']['items']) ? $formatReq['lineItemData']['items'] : [];
+            $statesProvinces = CountryState::getCountryStatesProvinces($destination['country']);
+
+            foreach($shippingRules as $key => $rule){
+
+                if(isset($rule['rule_type']) && $rule['rule_type'] == 5){
+                    continue;
+                }
+
+                $isAvailable = $rule['available'] ?? false;
+                $applyRuleTo = $rule['apply_rule_to'] ?? 1;
+                if($isAvailable){
+                    switch ($applyRuleTo) {
+                        case 1:
+                            $isRestriction = $this->applyRuleOnCategories($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            break;
+                        case 2:
+                            $isRestriction = $this->applyRuleOnBrands($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            break;
+                        case 3:
+                            $isRestriction = $this->applyRuleOnProducts($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+            return $isRestriction;
+        }
+        return false;
+    }
+
+    public function applyRuleOnCategories($rule, $cartItems, $origins, $destination, $statesProvinces)
+    {
+        
+        $restrictedCategories = isset($rule['categories']) ? $rule['categories'] : [];
+        $stateProvince = isset($rule['filter_state_province']) && !empty($rule['filter_state_province']) ? $rule['filter_state_province'] : [];
+
+        if(!empty($restrictedCategories)){
+            $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
+            $categoriesIds = array_column($cartItems, 'categories_id');
+            $flattenedCategoriesIds = array_values(array_merge(...$categoriesIds)) ?? [];
+            $istrue = false;
+  
+            $filterCategories = collect($restrictedCategories)->intersect($flattenedCategoriesIds) ?? [];
+            foreach($filterCategories as $categoryId){
+                $categoriesProducts = collect($cartItems)->filter(function ($item) use ($categoryId) {
+                    return in_array($categoryId , $item['categories_id']);
+                })->toArray() ?? [];
+
+                if(!empty($categoriesProducts)){
+                    $istrue = $istrue || $this->checkRuleRestriction($rule, $origins, $destination, $statesCode, $categoriesProducts);
+                }
+            }
+            return $istrue;
+        }
+        return false;
+    }
+
+    public function applyRuleOnBrands($rule, $cartItems, $origins, $destination, $statesProvinces)
+    {
+        $restrictedBrands = isset($rule['brands']) ? $rule['brands'] : [];
+        $stateProvince = isset($rule['filter_state_province']) && !empty($rule['filter_state_province']) ? $rule['filter_state_province'] : [];
+        $istrue = false;
+        if(!empty($restrictedBrands)){
+            $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
+            foreach($restrictedBrands as $rpKey => $brandId){
+
+                $filterBrands = collect($cartItems)->where('brand_id', $brandId)->all() ?? [];
+                
+                if(!empty($filterBrands)){
+                    $istrue = $istrue || $this->checkRuleRestriction($rule, $origins, $destination, $statesCode, $filterBrands);
+                }
+            }
+            return $istrue;
+        }
+        return false;
+    }
+
+    public function applyRuleOnProducts($rule, $cartItems, $origins, $destination, $statesProvinces)
+    {
+        $restrictedProducts = isset($rule['products']) ? $rule['products'] : [];
+        $stateProvince = isset($rule['filter_state_province']) && !empty($rule['filter_state_province']) ? $rule['filter_state_province'] : [];
+        $istrue = false;
+
+        if(!empty($restrictedProducts)){
+            $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
+            foreach($restrictedProducts as $rpKey => $productId){
+
+                $filterProducts = collect($cartItems)->where('product_id', $productId)->all() ?? [];
+                
+                if(!empty($filterProducts)){
+                    $istrue = $istrue || $this->checkRuleRestriction($rule, $origins, $destination, $statesCode, $filterProducts);
+                }
+            }
+            return $istrue;
+        }
+        return false;
+    }
+
+    public function checkRuleRestriction($rule, $origins, $destination, $statesCode, $products)
+    {
+        $filterCountry = isset($rule['filter_country']) ? $rule['filter_country'] : '';
+        $postalCodes = isset($rule['filter_postal_code']) ? $rule['filter_postal_code'] : '';
+        $warehouses = isset($rule['warehouses']) ? $rule['warehouses'] : [];
+        $isSameOrigin = false;
+
+        $isSameCountry = $destination['country'] == $filterCountry ?? false;
+        $isSameState = in_array($destination['state'] , $statesCode) ?? false;
+        $isSamePostalCode = CountryState::isSamePostalCode($destination['zip'], $postalCodes) ?? false;
+        if(!empty($origins)){
+            foreach($origins as $origin){         
+                $isSameOrigin = in_array($origin['senderZip'] , $warehouses) ?? false;
+            }
+        }
+
+        Log::info('Shipping rule applied: ' . json_encode($rule));
+
+        if ($isSameCountry && $isSameState && $isSamePostalCode && isset($rule['rule_type']) && $rule['rule_type'] == 4){
+            return false;
+        } elseif ($isSameCountry && $isSameState && isset($rule['rule_type']) && $rule['rule_type'] == 3){
+            return false;
+        } elseif ($isSameCountry && isset($rule['rule_type']) && $rule['rule_type'] == 1){
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    public function applyRestrictOriginLocationsRule($storeId, $formatReq){
+        $shippingRules = ShippingRule::getStoreShippingRules($storeId, 5);
+        $cartItems = isset($formatReq['lineItemData']['items']) ? $formatReq['lineItemData']['items'] : [];
+        $destination = isset($formatReq['lineItemData']['destination']) ? $formatReq['lineItemData']['destination'] : [];
+
+        if (!empty($shippingRules) && !empty($cartItems)){
+            foreach($cartItems as $item){
+                $warehouses = [];
+                foreach($shippingRules as $rule){
+                    $isAvailable = $rule['available'] ?? false;
+
+                    if($isAvailable){
+                        if(isset($rule['apply_rule_to']) && $rule['apply_rule_to'] == 3 && isset($item['product_id']) && !empty($item['product_id'])){
+                            $isProductExist = collect($rule['products'])->where('value', $item['product_id'])->all() ?? [];
+                        
+                            if(!(empty($isProductExist))){
+                                $warehouses = array_merge($warehouses, $rule['warehouses']);
+                            }
+                        } else if(isset($rule['apply_rule_to']) && $rule['apply_rule_to'] == 2 && isset($item['brand_id']) && !empty($item['brand_id'])){
+                            $isProductExist = in_array($item['brand_id'], $rule['brands']);
+    
+                            if($isProductExist){
+                                $warehouses = array_merge($warehouses, $rule['warehouses']);
+                            }
+                        } else if(isset($rule['apply_rule_to']) && $rule['apply_rule_to'] == 1 && isset($item['categories_id']) && !empty($item['categories_id'])){
+                            $isProductExist = array_intersect($item['categories_id'], $rule['categories']);
+    
+                            if($isProductExist){
+                                $warehouses = array_merge($warehouses, $rule['warehouses']);
+                            }
+                        }
+                    }
+                }
+
+                if(!empty($warehouses) && isset($this->connectionSettings['ups-ltl']) || isset($this->connectionSettings['xpo-ltl']) || isset($this->connectionSettings['odfl-ltl']) || isset($this->connectionSettings['ups-small'])){
+
+                    $origins = isset($this->formatReq['lineItemData']['origin']) ? $this->formatReq['lineItemData']['origin'] : [];
+                    foreach($origins as $key => $origin){
+                        if($key == $item['variant_id'] && isset($origin['location']) && $origin['location'] === 'warehouse'){
+                            // check: if multiple warehouses defined then find nearest origin from the warehouses list
+                            $originAddress = $this->shipmentPkg->getNearestWarehouse($this->formatReq['lineItemData'], $destination['zip'], $this->storeData, [], $warehouses);
+                            if (blank($originAddress)) {
+                                Log::info('No warehouse added');
+                                return false;
+                            }
+                            $originAddress = $this->getAddressForQuotes($originAddress);
+                            // Check: if origin already assign then skip the origin assignment
+                            if($originAddress['senderZip'] == $this->formatReq['lineItemData']['origin'][$key]['senderZip']){
+                                continue;
+                            }
+                            $this->formatReq['lineItemData']['origin'][$key] = $originAddress;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
+ 

@@ -49,8 +49,7 @@ class ProductSetting extends Model
     {
         try {
             DB::beginTransaction();
-
-
+            
             if ($scope == "store/product/created" && ProductSetting::where('source_product_id', $product['id'])
                     ->where('variant_id', $product['base_variant_id'])
                     ->where('store_id', $storeId)->exists()) {
@@ -61,14 +60,13 @@ class ProductSetting extends Model
                     ->where('store_id', $storeId)->exists()) {
                 return null;
             }
-
+            
             $saveProduct = ProductSetting::where('source_product_id', $product['id'])
                 ->where('variant_id', $product['base_variant_id'])
                 ->where('store_id', $storeId)->first();
 
             if (blank($saveProduct)) {
                 $saveProduct = new ProductSetting();
-                Log::info("save product: " . json_encode($product));
                 $storeSettings = $this->getStoreSettings($storeId);
                 $prodWeight = $this->convertWeight(isset($product['weight']) ? $product['weight'] : '', isset($storeSettings['weight_units']) ? strtolower($storeSettings['weight_units']) : 'lbs') ?? 0;
                 /*Start - Added FOr Default Quoting Method*/
@@ -97,14 +95,42 @@ class ProductSetting extends Model
             $saveProduct->height = $product['height'];
             $saveProduct->price = $product['price'];
             $saveProduct->store_id = $storeId;
+            $saveProduct->brand_id = $product['brand_id'] ?? null;
+            $saveProduct->categories_id = json_encode($product['categories']) ?? null;
             $saveProduct->save();
             DB::commit();
 
         } catch (\Exception $exception) {
             DB::rollBack();
-            Log::info('Exception on saving Product Details ' . $exception->getMessage());
+            Log::info('Exception on saving Products Detail ' . json_encode([
+                'line' => $exception->getLine(),
+                'message' => $exception->getMessage()
+            ]));
         }
 
+    }
+
+    public function setVariantNullProduct($product, $storeId)
+    {
+        if (ProductSetting::where('source_product_id', $product['id'])
+                ->where('store_id', $storeId)->exists() && !(ProductSetting::where('source_product_id', $product['id'])
+                ->where('variant_id', null)
+                ->where('store_id', $storeId)->exists())) 
+            {   
+                $updateproduct = ProductSetting::where('source_product_id', $product['id'])
+                    ->where('store_id', $storeId)->update(['variant_id' => null]);
+            }
+    }
+
+    public function deleteNullVariantProduct($product, $storeId)
+    {
+        if (ProductSetting::where('source_product_id', $product['id'])
+                ->where('store_id', $storeId)->exists()) 
+            {   
+                $updateproduct = ProductSetting::where('source_product_id', $product['id'])
+                    ->where('variant_id', null)
+                    ->where('store_id', $storeId)->delete();
+            }
     }
 
     public function saveProductFromSync($product, $storeId)
@@ -117,7 +143,6 @@ class ProductSetting extends Model
 
             if (blank($saveProduct)) {
                 $saveProduct = new ProductSetting();
-                Log::info("sync product: " . json_encode($product));
                 $storeSettings = $this->getStoreSettings($storeId);
                 $prodWeight = $this->convertWeight(isset($product['weight']) ? (float)$product['weight'] : '', isset($storeSettings['weight_units']) ? strtolower($storeSettings['weight_units']) : 'lbs') ?? 0;
                 /*Start - Added FOr Default Quoting Method*/
@@ -146,10 +171,15 @@ class ProductSetting extends Model
             $saveProduct->height = $product['height'];
             $saveProduct->price = $product['price'];
             $saveProduct->store_id = $storeId;
+            $saveProduct->brand_id = $product['brand_id'] ?? null;
+            $saveProduct->categories_id = json_encode($product['categories']) ?? null;
             $saveProduct->save();
 
         } catch (\Exception $exception) {
-            Log::info('Exception on saving Product Details ' . $exception->getMessage());
+            Log::info('Exception on saving Products Detail ' . json_encode([
+                'line' => $exception->getLine(),
+                'message' => $exception->getMessage()
+            ]));
         }
 
     }
@@ -177,7 +207,7 @@ class ProductSetting extends Model
     }
 
     public function convertWeight($value, $unit)
-    {Log::info('convert weight ' . $value . " " . $unit);
+    {
         $value = (float)$value;
         switch ($unit) {
             case 'ounces' :

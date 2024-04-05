@@ -30,6 +30,7 @@ use App\CustomClasses\SouthEasternLtl\ConnectionSettings as SouthEasternLtlConne
 use App\CustomClasses\EchoLogisticsLtl\ConnectionSettings as EchoLogisticsLtlConnectionSettings;
 use App\CustomClasses\DayLightLtl\ConnectionSettings as DayLightLtlConnectionSettings;
 use App\CustomClasses\FreightQuote\ChrLtl\ConnectionSettings as FreightQuoteChrConnectionSettings;
+use App\CustomClasses\Priority1Ltl\ConnectionSettings as Priority1LtlConnectionSettings;
 use App\Endpoints\Endpoints;
 
 use App\Models\Connection;
@@ -41,6 +42,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\CustomClasses\CurlRequest as connCurlRequest;
 
 class ConnectionController extends Controller
 {
@@ -80,6 +82,8 @@ class ConnectionController extends Controller
         $this->echoLogisticsLtlTestCon = new EchoLogisticsLtlConnectionSettings();
         $this->dayLightLtlTestCon = new DayLightLtlConnectionSettings();
         $this->freightQuoteChrLtlTestCon = new FreightQuoteChrConnectionSettings();
+        $this->Priority1LtlTestCon = new Priority1LtlConnectionSettings();
+        $this->curlRequest = new connCurlRequest();
     }
 
     public function index(Request $request)
@@ -205,12 +209,41 @@ class ConnectionController extends Controller
                 case 'freightquote-chr-ltl':
                     $response = $this->freightQuoteChrLtlTestCon->testConnection($request, $storeName);
                     return response()->json($response);
+                case "priority-one-ltl":
+                    $response = $this->Priority1LtlTestCon->testLtlConnection($request, $storeName);
+                    return response()->json($response);
                 default:
                     return response()->json([
                         "error" => true, "data" => [],
                         'message' => 'No carrier Matches'
                     ]);
             }
+        }
+        
+        $getPalletsOutput = [];
+        if ($checkCarrierType->slug === 'rl-ltl') {
+            $url = Endpoints::testConnectionEndpoint();
+            $getPalletsParams  = [
+                'platform' => 'bigcommerce',
+                'carrier_mode' => 'getPallets',
+                'dont_auth' => '1',
+                'carrierName' => 'rnl',
+                'serverName' => $storeName ?? '',
+                'APIVersion' => '2.0',
+                'UserName' => $request['username'] ?? '',
+                'Password' => $request['password'] ?? '',
+                'APIKey' => $request['api_key'] ?? '',
+            ];
+    
+            $getPalletsQueryString = http_build_query($getPalletsParams);
+            $getPalletsOutput = $this->curlRequest->enSingleCurlRequest($url, $getPalletsQueryString, [], 'POST');
+            $getPalletsOutput = json_decode($getPalletsOutput['response'], true) ?? [];
+        }
+
+        if(isset($getPalletsOutput['severity']) && $getPalletsOutput['severity'] == 'success'){
+            $request['pallets'] = isset($getPalletsOutput['pallets']) ? $getPalletsOutput['pallets'] : [] ?? [];
+        } else {
+            $request['pallets'] = [];
         }
 
         $message = 'Connection settings has been saved successfully';
@@ -257,7 +290,6 @@ class ConnectionController extends Controller
         $endPoint = Endpoints::applyPromoCodeFdoEndpoint() . $queryParams;
         $curlResponse = (new CurlRequest())->enSingleCurlRequest($endPoint, [], [], 'GET');
         $response = json_decode($curlResponse['response'], true);
-        Log::info('Fdo Coupon Response of Carrier ' . json_encode($response) . "Endpoint " . json_encode($endPoint));
 
         if (isset($response['promo'])) {
             Store::where('id', $storeId)->update(['freightdesk_company_id' => $response['fdo_company_id']]);

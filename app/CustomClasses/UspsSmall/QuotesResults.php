@@ -5,6 +5,7 @@ namespace App\CustomClasses\UspsSmall;
 use App\Constants\Constant;
 use App\CustomClasses\Functions;
 use App\CustomClasses\CompileQuotes;
+use App\Http\Controllers\ShippingRuleController;
 
 class QuotesResults
 {
@@ -13,8 +14,9 @@ class QuotesResults
         $this->CompileQuotes = new CompileQuotes();
     }
 
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items, $storeId = '')
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items, $storeId = '', $carrierName = '')
     {
+        $shippingRule = new ShippingRuleController();
         $shipments = $this->formateQuoteBeforeCompile($shipments);
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
         $this->quoteSettings = $connectionSettings['usps-small']['quote_settings'] ?? '';
@@ -31,7 +33,7 @@ class QuotesResults
         }
 
         $rad_settings = Functions::getRADsettings($storeId) ?? [];
-        $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
+        $isRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
 
         $returnResp = [
             'isMultiShipment' => $isMultiShipment,
@@ -60,18 +62,29 @@ class QuotesResults
                     if (!$this->isActiveService($srvcType)) {
                         continue;
                     }
-
-                    // Getting markup values form quote settings
-                    $price = $this->getServiceRate($data);
-                    // Adding markup values if available
-                    $price = $this->addHandlingMarkupOfHazmat($price);
+                    // Adding Product and Origin Markup in services if added
                     $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
-                    $price = $price + $productOriginMarkupFee;
+                    $data['totalNetCharge']['Amount'] = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
+
+                    // Adding markup values if available
+                    $price = $this->addHandlingMarkupOfHazmat($data['totalNetCharge']['Amount']);
+
+                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName);
+                    if(isset($overrideRates['isOverrideRates']) && $overrideRates['isOverrideRates']){
+                        $access2 = '';
+                        $showRadNotation = false;
+                    } else {
+                        $access2 = $access;
+                        $showRadNotation = $isRadNotation;
+                        $price = $this->getServiceRate($price, $srvcType);
+                    }
+                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
+                    
                     // Get service title
                     $title = $this->getServiceTitle($data, $srvcType, $this->quoteSettings, $residential, $showRadNotation);
                     $price = (float) str_replace(',', '', $price);
 
-                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12usps' . $access;
+                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12usps' . $access2;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
 
@@ -164,10 +177,9 @@ class QuotesResults
         return $indexesArr[$srvcType] ?? '';
     }
 
-    public function getServiceRate($data)
+    public function getServiceRate($amount, $srvcType)
     {
-        $amount = $data['totalNetCharge']['Amount'];
-        $markupIndex = $this->getServiceIndexFromServiceType($data['serviceType']) . '_markup';
+        $markupIndex = $this->getServiceIndexFromServiceType($srvcType) . '_markup';
         $markupValue = $this->quoteSettings['carrier_services'][$markupIndex] ?? '';
 
         if (empty($markupValue) || !is_numeric(str_replace('%', '', $markupValue))) {
@@ -223,19 +235,79 @@ class QuotesResults
         return $amountWithMarkup;
     }
 
-    public function getServiceTitle($data, $title, $quoteSettings, $isResi = false, $showRadNotation = false): string
+    public function getServiceTitle($data, $title, $quoteSettings, $isResi = false, $showRadNotation = false) : string
     {
+        $title = $this->getServiceLabel($data['serviceId'], $quoteSettings);
         $title = ($isResi && $showRadNotation) ? $title . Constant::RESI_LABEL : $title;
-
         if (isset($data['totalTransitTimeInDays']) && $data['totalTransitTimeInDays'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2) {
             $title = $title . ' (Intransit days: ' . $data['totalTransitTimeInDays'] . ')';
         } else if (isset($data['transitDate']) && $data['transitDate'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3) {
-            $title = $title . ' (Expected delivery by ' . date('m-d-Y', strtotime($data['transitDate'])) . ')';
+            $title = $title . ' (Delivery by ' . date('m-d-Y', strtotime($data['transitDate'])) . ')';
         }
-
+        if($data['serviceId'] == 'Retail Ground' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2 && $quoteSettings['estimate_date'] != '' && $data['totalTransitTimeInDays'] == ''){
+            $title = $title . ' (Intransit days: ' . $quoteSettings['estimate_date'] . ')';
+        }
         return $title;
     }
 
+    public function getServiceLabel($serviceType, $quote) {
+        switch ($serviceType) {
+            case 'Priority Mail Express': 
+                if(isset($quote['carrier_services']['usps_priority_mail_express_label']) && $quote['carrier_services']['usps_priority_mail_express_label'] != '' ){
+                    return $quote['carrier_services']['usps_priority_mail_express_label'];
+                } else {
+                    return $serviceType;
+                }
+            case 'Priority Mail': 
+                if(isset($quote['carrier_services']['usps_priority_mail_label']) && $quote['carrier_services']['usps_priority_mail_label'] != '' ){
+                    return $quote['carrier_services']['usps_priority_mail_label'];
+                } else {
+                    return $serviceType;
+                }
+            case 'First Class Mail':
+                if(isset($quote['carrier_services']['usps_first_class_mail_label']) && $quote['carrier_services']['usps_first_class_mail_label'] != '' ){
+                    return $quote['carrier_services']['usps_first_class_mail_label'];
+                } else {
+                    return $serviceType;
+                }   
+            case 'Priority Mail Flat Rate':
+                if(isset($quote['carrier_services']['usps_priority_mail_flat_rate_label']) && $quote['carrier_services']['usps_priority_mail_flat_rate_label'] != '' ){
+                    return $quote['carrier_services']['usps_priority_mail_flat_rate_label'];
+                } else {
+                    return $serviceType;
+                }   
+            case 'Retail Ground':
+                if(isset($quote['carrier_services']['usps_retail_ground_label']) && $quote['carrier_services']['usps_retail_ground_label'] != '' ){
+                    return $quote['carrier_services']['usps_retail_ground_label'];
+                } else {
+                    return $serviceType;
+                }   
+            case 'Priority Mail International Express':
+                if(isset($quote['carrier_services']['usps_priority_mail_international_express_label']) && $quote['carrier_services']['usps_priority_mail_international_express_label'] != '' ){
+                    return $quote['carrier_services']['usps_priority_mail_international_express_label'];
+                } else {
+                    return $serviceType;
+                }   
+            case 'Priority Mail International':
+                if(isset($quote['carrier_services']['usps_priority_mail_international_label']) && $quote['carrier_services']['usps_priority_mail_international_label'] != '' ){
+                    return $quote['carrier_services']['usps_priority_mail_international_label'];
+                } else {
+                    return $serviceType;
+                }   
+            case 'Priority Mail International Flat Rate Box':
+                if(isset($quote['carrier_services']['usps_priority_mail_international_flat_rate_box_label']) && $quote['carrier_services']['usps_priority_mail_international_flat_rate_box_label'] != '' ){
+                    return $quote['carrier_services']['usps_priority_mail_international_flat_rate_box_label'];
+                } else {
+                    return $serviceType;
+                }   
+            case 'First-Class Package International Service':
+                if(isset($quote['carrier_services']['usps_first_class_package_international_service_label']) && $quote['carrier_services']['usps_first_class_package_international_service_label'] != '' ){
+                    return $quote['carrier_services']['usps_first_class_package_international_service_label'];
+                } else {
+                    return $serviceType;
+                }   
+        }
+    }
     public function checkGroundTransit($quote, $srvcType): bool
     {
         $islimited = false;

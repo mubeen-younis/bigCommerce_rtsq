@@ -58,7 +58,6 @@ class PackagingRequest
                 $uspsGroupedBoxes['customBoxes'][$boxId] = $this->formatBoxFields($uspsBox);
             }
         }
-        Log::info('USPS Grouped Boxes ' . json_encode($uspsGroupedBoxes));
 
         return $uspsGroupedBoxes;
     }
@@ -135,7 +134,7 @@ class PackagingRequest
 
         $this->getAndSet3dBinResponse();
         $sbsPackedBoxes = $this->getSbsPackedBoxes(true, $itemLocId);
-        Log::info('sbs Packed Boxes ' . json_encode($sbsPackedBoxes));
+
         $resp = [
             'packedBoxes' => $sbsPackedBoxes,
             'owdBoxes' => $this->finalBoxesForWs,
@@ -181,11 +180,9 @@ class PackagingRequest
 
     public function setUspsPackagingRequest($itemsDetail, $locId)
     {
-        Log::info('USPS boxes' . json_encode($this->uspsBoxes));
         foreach ($this->uspsBoxes as $boxCode => $box) {
             if (in_array($boxCode, $this->uspsActiveServices)) {
                 $requestParams = $this->get3dBinRequest($itemsDetail, $box);
-                Log::info('3D BinResquest details' . json_encode($requestParams));
                 if (!blank($requestParams)) {
                     $this->packagingRequest[$locId . '-' . $boxCode] = $requestParams;
                 }
@@ -310,7 +307,6 @@ class PackagingRequest
         }
 
         $curlResponse = $this->boxingMultiCurl($this->packagingRequest);
-        Log::info('after 3D curl binResponse' . json_encode($curlResponse));
         $this->formatResponse($curlResponse);
     }
 

@@ -22,6 +22,7 @@ class ConnectionSettings extends CarriersConnectionSettings
         ];
         $url = $this->testConnectionUrl;
         $params  = [
+            'platform' => 'bigcommerce',
             'license_key' => '',
             'carrierName' => 'odfl4me',
             'carrier_mode' => 'test',

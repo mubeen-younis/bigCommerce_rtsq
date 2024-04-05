@@ -156,12 +156,14 @@ class Shipping
                     ],
                 ];
             }
-            if ($this->isInsurance === 'Y' && ($key == 'wweLTL' || $key == 'shipEngine' || $key == 'upsSmall')) {
+            if ($this->isInsurance === 'Y') {
                 if ($this->isSmall($key)) {
                     $carriersArray['carriers'][$key]['api']['includeDeclaredValue'] = 1;
                 } else {
                     if ($key == 'wweLTL') {
                         $carriersArray['carriers'][$key]['api']['insureShipment'] = 1;
+                    } else if ($key == 'saia') {
+                        $carriersArray['carriers'][$key]['api']['includeDeclaredValue'] = 1;
                     }
                 }
             }
@@ -173,10 +175,15 @@ class Shipping
 
         $requestArr = (new Customizations())->eniturePackagingCustomization($requestArr, $storeData['store']['hash']);
 
+        // adding packing id if sbs or pallet packaging is occure
+        $requestArr = Functions::addPackagingId($requestArr, $package, $store_id);
+        $packagingId = isset($requestArr['packaging_id']) ? $requestArr['packaging_id'] : '';
+        unset($requestArr['packaging_id']);
+        $requestArr = $requestArr['requestArr'] ?? [];
+
         if (empty($requestArr)) {
             return [];
         }
-
         $SuppressParcelRates = isset($requestArr['SuppressParcelRates']) ? $requestArr['SuppressParcelRates'] : false;
         unset($requestArr['SuppressParcelRates']);
         $url = Constant::QUOTES_URL;
@@ -220,7 +227,6 @@ class Shipping
             unset($requestArr['requestArr']['carriers']['rnl']['freeShipment']);
             $freeRNL = true;
         }
-        Log::info('after addBinResponseToQuotes ' . json_encode($quotes));
 
         $quotesFromWs = $quotes ?? [];
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $package['items'], $SuppressParcelRates, $store_id);
@@ -779,7 +785,6 @@ class Shipping
         $request
     )
     {
-        Log::info('checkIndividualHazmat' . json_encode($request));
         // TODO: Need to Add small and Ltl Carriers Here as well
 
         $smallOrigins = $marketItemSmall = $request['carriers']['wweSmall']['originAddress'] ?? $request['carriers']['upsSmall']['originAddress'] ?? $request['carriers']['fedexSmall']['originAddress']
@@ -887,24 +892,10 @@ class Shipping
     public function freeShippingTitle($finalQuotes)
     {
         foreach ($finalQuotes as $key => $quote) {
-            if (isset($quote['code']) && ($quote['code'] == 'INSP' || $quote['code'] == 'LOCDEL')) {
-                continue;
-            }
-            if ((empty($quote['rate']) || $quote['rate'] == '0.00') && isset($quote['code']) && $quote['code'] !== 'own_arrangement') {
-                $title = '';
-
-                if (isset($quote['title']) && strpos($quote['title'], '(Expected')){
-                    $estimate = explode('(Expected', $quote['title'])[1] ?? '';
-                    $title = Functions::$freeShipping . ' (Expected' . $estimate;
-                } elseif (isset($quote['title']) && strpos($quote['title'], '(Intransit')){
-                    $estimate = explode('(Intransit', $quote['title'])[1] ?? '';
-                    $title = Functions::$freeShipping . ' (Intransit' . $estimate;
-                }
-
-                $finalQuotes[$key]['title'] = empty($title) ? Functions::$freeShipping : $title;
+            if (isset($quote['rate']) && ($quote['rate'] <= 0 )){
+                $finalQuotes[$key]['rate'] = 0;
             }
         }
-
         return $finalQuotes;
     }
 
@@ -1044,9 +1035,10 @@ class Shipping
             $res = str_replace(Functions::$smallPrefix, '', $res);
         }
 
-        if (strlen($quote['title']) > 100) {
+        if (strlen($quote['title']) >= 100) {
             $res = explode("w/", $quote['title']);
-            $res = Functions::$simpleLTLTitle . ' w/' . $res[1];
+            $string = str_replace('residential', 'resi', $res[1]);
+            $res = Functions::$simpleLTLTitle . ' w/' . $string;
         } else if ($quote['title'] == "") {
             $res = $quote['code'];
         }

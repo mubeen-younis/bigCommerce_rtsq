@@ -21,7 +21,6 @@ class DbscShippingZone extends Model
     public static function getZoneIdFromDestinationAndProfile($destination, $profileId)
     {
         $profileZones = optional(self::where('profile_id', $profileId)->get())->toArray() ?? [];
-        Log::info('Profile Zones ' . json_encode($profileZones));
         if (blank($profileZones)) {
             return [];
         }
@@ -29,7 +28,6 @@ class DbscShippingZone extends Model
             $selectedRegion = preg_replace('/\\\"/',"\"", $profileZone['selected_region']);
             $selectedZones = json_decode($selectedRegion, true);
             $zonesDetail = BcZones::getZonesDetail($selectedZones);
-            Log::info('Zones Details ' . json_encode($zonesDetail));
             if (blank($zonesDetail)) {
                 continue;
             }

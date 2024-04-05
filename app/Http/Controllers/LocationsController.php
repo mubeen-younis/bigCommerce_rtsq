@@ -8,6 +8,7 @@ use App\Models\ProductSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Models\LocAssociatedAccountNo;
+use App\Models\ShippingRule;
 
 class LocationsController extends Controller
 {
@@ -16,7 +17,7 @@ class LocationsController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public $googleURL = 'https://eniture.com/ws/addon/google-location.php';
+    public $googleURL = 'https://ws001.eniture.com/addon/google-location.php';
     public $curlRequest;
 
     public function __construct()
@@ -193,7 +194,7 @@ class LocationsController extends Controller
     public function saveLocationRequest($location, $request, $method, $callBy)
     {
         if (empty($request->nickname)) {
-            $nickname = $request->zip_code . '_' . $request->city . '_' . $request->state;
+            $nickname =  $request->city. ', ' . $request->state . ' ' . $request->zip_code;
         } else {
             $nickname = $request->nickname;
         }
@@ -317,6 +318,23 @@ class LocationsController extends Controller
                     $this->deleteDropshippedProduct($request->location_id);
                 }
                 Locations::where('default_location_id', $request->location_id)->update(['default_location_id' => 'default']);
+                // Check: is warehouse added in shipping rule or not
+                if($request->location_type == 'Warehouse'){
+                    $location = Locations::where(['id' => $request->location_id, 'type' => 1])->first()->toArray() ?? [];
+                    $shippigRule = ShippingRule::getStoreShippingRules($request->store_id);
+    
+                    $shippingRuleLocations = collect($shippigRule)->filter(function ($rule) use ($location) {
+                        return $rule['rule_type'] == 5 && in_array($location['zip_code'] , $rule['warehouses']);
+                    })->toArray() ?? [];
+    
+                    if(!empty($shippingRuleLocations)){
+                        return response()->json(['error' => true,
+                            'data' => [],
+                            'message' => 'Warehouse inclusion detected in the "Restrict to Origin Locations" shipping rule. Please remove it from the shipping rule to proceed.',
+                        ], 200);
+                    }
+                }
+
                 Locations::where('id', $request->location_id)->delete();
                 return response()->json(['error' => false,
                     'data' => [],

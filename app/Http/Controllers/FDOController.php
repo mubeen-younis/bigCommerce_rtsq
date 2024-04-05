@@ -290,7 +290,6 @@ class FDOController extends Controller
     public function updateCouponDetailsFromFDOAV(Request $request): \Illuminate\Http\JsonResponse
     {
         $request = $request->all();
-        Log::info('Request to Update Coupon Detail ' . json_encode($request));
         if (isset($request['av_company_id'])) {
             $platformCompanyId = $request['av_company_id'] ?? '';
             $platform = 'av';
@@ -463,12 +462,10 @@ class FDOController extends Controller
         }
         Log::info('Curl Response for company validation ' . json_encode($curlResp));
         if (isset($curlResp['error']) && $curlResp['error'] == false) {
-            Log::info('Before second call fdo ');
             $request = ['store_url' => $storeUrl, 'action' => 'install', 'store_hash' => $storeHash, 'access_token' => $accessToken, 'company_id' => $fdoCompanyId];
             $endpoint = Endpoints::fdoCredsEndpoint();
             $curlResp = (new CurlRequest())->enSingleCurlRequest($endpoint, $request, [], 'POST');
             $curlResp = json_decode($curlResp['response'], true);
-            Log::info('After second call fdo ' . json_encode($curlResp));
             if (isset($curlResp['error']) && $curlResp['error'] == false) {
                 return ['error' => false, 'message' => 'Successfully connected to FreightDesk Online'];
             }

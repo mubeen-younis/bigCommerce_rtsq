@@ -21,12 +21,14 @@ class ProductSettingController extends Controller
     public $curlRequest;
     public $mainController;
     public $saveProducts;
+    public $categoryArray;
 
     public function __construct()
     {
         $this->curlRequest = new CurlRequest();
         $this->mainController = new MainController();
         $this->saveProducts = new ProductSetting();
+        $this->categoryArray = [];
     }
 
     public function importProducts(Request $request)
@@ -101,7 +103,6 @@ class ProductSettingController extends Controller
         $headers[] = 'Accept: application/json';
         $metaResponse = $this->curlRequest->enSingleCurlRequest($metaEndPoint, [], $headers, 'GET', true);
         $metaResponse = json_decode($metaResponse['response'], true);
-        Log::info('get all product variants-productID:' . $product['id'] . json_encode($metaResponse));
         $total_pages = $metaResponse['meta']['pagination']['total_pages'] ?? null;
         if (blank($total_pages)) {
             return null;
@@ -164,14 +165,16 @@ class ProductSettingController extends Controller
         $headers[] = 'Accept: application/json';
         $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
         $response = json_decode($response['response'], true);
-        Log::info('product settings from webhok 12' . json_encode($response));
+        
         if (isset($response['data']) && count($response['data'])) {
             $product = $response['data'];
             if ($product['base_variant_id'] == null) {
                 $this->saveProducts->saveProduct($product, $storeId, $scope);
                 $this->getVariants($product, $data, $scope);
             } else {
-                $this->saveProducts->saveProduct($product, $storeId);
+                Log::info('Check Product Scope ' . $scope);
+                $this->saveProducts->saveProduct($product, $storeId, $scope);
+                $this->saveProducts->deleteNullVariantProduct($product, $storeId);
             }
             return response()->json(['error' => false,
                 'data' => [],
@@ -381,6 +384,9 @@ class ProductSettingController extends Controller
                     'message' => 'No Products Available',
                 ], 200);
             }
+
+            $products = $this->isLtlParcelBothEnabled($products, $request);
+
             $resp = response()->json(['error' => false,
                 'data' => $products,
                 'meta' => ['total' => $count, 'current' => $page, 'perpage' => $perPage],
@@ -391,6 +397,116 @@ class ProductSettingController extends Controller
             Log::info('catch: ' . json_encode($exception->getMessage()));
         }
 
+    }
+
+    public function isLtlParcelBothEnabled($products, $request)
+    {
+        $brandArray = [];
+        
+        $uniqueBrandIds = collect($products)->unique('brand_id')->values()->all();
+            
+            foreach($uniqueBrandIds as $product){
+                
+                $brandName = $this->productBrand($request, $product) ?? '';
+                $brandArray['brand_' . $product['brand_id']] = $brandName;
+                
+            }
+
+        foreach($products as $key => $product){
+            $freightEnabled = $parcelEnabled = false;
+            if($product['variant_id'] == null){
+                $variants = ProductSetting::where('source_product_id', $product['source_product_id'])
+                ->where('store_id', $request->store_id)->get();
+                foreach($variants as $variant){
+                    if($variant->variant_id != null){
+                        if(json_decode($variant['settings'])->freight_enabled){
+                            $freightEnabled = json_decode($variant['settings'])->freight_enabled;
+                        } elseif (json_decode($variant['settings'])->parcel_enabled){
+                            $parcelEnabled = json_decode($variant['settings'])->parcel_enabled;
+                        }
+                    }
+                }
+
+                if ($freightEnabled && $parcelEnabled){
+                    $settings = json_decode($product['settings']);
+                    $settings->freightParcelEnabled = true;
+                    $product['settings'] = json_encode($settings);
+                    $products[$key] = $product;
+                } elseif ($parcelEnabled){
+                    $settings = json_decode($product['settings']);
+                    $settings->parcel_enabled = true;
+                    $settings->freight_enabled = false;
+                    $product['settings'] = json_encode($settings);
+                    $products[$key] = $product;
+                } elseif ($freightEnabled){
+                    $settings = json_decode($product['settings']);
+                    $settings->freight_enabled = true;
+                    $settings->parcel_enabled = false;
+                    $product['settings'] = json_encode($settings);
+                    $products[$key] = $product;
+                }
+            }
+
+            $products[$key]['brand_name'] = $brandArray['brand_' . $product['brand_id']] ?? '';
+            $products[$key]['category_name'] = $this->productCategory($request, $product) ?? '';
+        }
+
+        return $products;
+    }
+
+    public function productBrand($request, $product)
+    {
+        $store = Store::where('hash', $request['store_hash'])->first();
+        if (empty($store)) {
+            return [];
+        }
+        $headers[] = 'X-Auth-Token: ' . $store->access_token;
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $endpoint = "https://api.bigcommerce.com/stores/" . $store->hash . "/v3/catalog/brands/" . $product['brand_id'];
+        $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
+        
+        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+            $brand = json_decode($response['response'], true);
+            return $brand['data']['name'] ?? '';
+        }
+    }
+
+    public function productCategory($request, $product)
+    {
+        $categoriesNames = [];
+        $categories = json_decode($product['categories_id']) ?? [];
+        $store = Store::where('hash', $request['store_hash'])->first();
+
+        if (empty($store)) {
+            return [];
+        }
+
+        foreach ($categories as $category) {
+
+            if (isset($this->categoryArray['category_' . $category])) {
+                
+                $categoriesNames[] = $this->categoryArray['category_' . $category];
+                continue;
+            }
+
+            $headers[] = 'X-Auth-Token: ' . $store->access_token;
+            $headers[] = 'Content-Type: application/json';
+            $headers[] = 'Accept: application/json';
+            $endpoint = "https://api.bigcommerce.com/stores/" . $store->hash . "/v3/catalog/categories/" . $category;
+            $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
+
+            $name = null;
+            if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+                $response = json_decode($response['response'], true);
+                $name = $response['data']['name'] ?? null;
+                $categoriesNames[] = $name;
+            }
+            $this->categoryArray['category_' . $category] = $name;
+
+        }
+
+        return $categoriesNames;
     }
 
     public function editProduct(Request $request)
@@ -417,7 +533,7 @@ class ProductSettingController extends Controller
 
     public function updateProductDetail(Request $request)
     {
-
+        $productCount = isset($request->products) ? count($request->products) : null;
         foreach ($request->products as $prd) {
             $product = ProductSetting::where('source_product_id', $prd['source_product_id'])
                 ->where('variant_id', $prd['variant_id'])
@@ -463,15 +579,28 @@ class ProductSettingController extends Controller
             $prd['store_hash'] = $request['store_hash'];
             $this->updateSingleProductFromApi($prd);
         }
+
+        if($productCount > 1){
+            $products = $this->isLtlParcelBothEnabled($request->products, $request);
+            foreach($products as $prod){
+                if($prod['variant_id'] == null){
+                    $product = $prod;
+                }
+            }
+        } else { 
+            $products = $this->isLtlParcelBothEnabled($request->products, $request);
+            $product = $products[0] ?? [];
+        }
+        
         return response()->json(['error' => false,
-            'data' => [],
+            'data' => $product,
             'message' => 'Product Updated Successfully',
         ], 200);
     }
 
     public function getSetting($product)
     {
-        $getOnly = ['freight_class',
+        $getOnly = ['freight_class', 'freightParcelEnabled',
             'hazardous_enabled', 'freight_enabled', 'parcel_enabled', 'quote_as_instore', 'quote_as_local', 'insurance', 'allow_vertical', 'ship_own_package', 'nmfc'];
         $settings = new \stdClass();
         foreach ($product as $key => $prd) {
@@ -588,7 +717,6 @@ class ProductSettingController extends Controller
         try {
 
             $postData = file_get_contents("php://input");
-            Log::info('Webhook sku data: ' . $postData);
             $postData = json_decode($postData, true);
             return $this->skuWebhookProcess($postData);
 
@@ -602,8 +730,6 @@ class ProductSettingController extends Controller
     public function skuWebhookProcess($postData)
     {
         try {
-            Log::info('sku product data fall in process: ' . json_encode($postData));
-            // $postData = json_decode($postData, true);
             $storeHash = explode('/', $postData['producer']);
             $storeHash = $storeHash[1];
             $productId = $postData['data']['sku']['product_id'];
@@ -632,7 +758,6 @@ class ProductSettingController extends Controller
             $headers[] = 'Accept: application/json';
             $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
             $response = json_decode($response['response'], true);
-            Log::info('From SKU Get variant details-' . $store->id . json_encode($response));
 
             if (isset($response['data'])) {
                 $variant = $response['data'];
@@ -644,6 +769,7 @@ class ProductSettingController extends Controller
                 $product['sku'] = $variant['sku'];
                 $product['base_variant_id'] = $variant['id'];
                 $product['id'] = $variant['product_id'];
+                $this->saveProducts->setVariantNullProduct($product, $store->id);
                 $this->saveProducts->saveProduct($product, $store->id);
             }
 

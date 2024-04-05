@@ -92,12 +92,18 @@ class WweLTLShipmentPackage
      * @param $storeData
      * @return array
      */
-    public function getNearestWarehouse($request, $receiverZipCode, $storeData, $connectionSettings)
+    public function getNearestWarehouse($request, $receiverZipCode, $storeData, $connectionSettings, $shippingRuleOrigins)
     {
         $this->request = $request;
         $this->storeData = $storeData;
         $this->connectionSettings = $connectionSettings;
         $origin = LocationsController::getAllLocations($storeData['store']->id, 1);
+        if(!empty($shippingRuleOrigins)){
+            foreach($shippingRuleOrigins as $w){
+                    $shippingOrigins[] = collect($origin)->where('zip_code', $w)->all() ?? [];
+            }
+            $origin = array_reduce($shippingOrigins, 'array_merge', []);
+        }
         if (blank($origin)) {
             return null;
         }
@@ -173,7 +179,7 @@ class WweLTLShipmentPackage
             $address = $origin['address'] ?? '';
             $phone = $origin['phone'] ?? '';
             $originMarkup = $origin['origin_markup'] ?? '';
-            $country = ($origin['country'] == "United State") ? "US" : $origin['country'];
+            $country = (isset($origin['country']) && $origin['country'] == "United State") ? "US" : $origin['country'] ?? '';
             $location = isset($origin['type']) && $origin['type'] == 1 ? 'warehouse' : 'dropship';
             $locationId = $shortOrigin['warehouse_id'] ?? $shortOrigin['id'] ?? time();
             $data = [

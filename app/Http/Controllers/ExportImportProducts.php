@@ -10,6 +10,7 @@ use App\Models\ProductSetting;
 use App\Models\ExportProducts as ExportProductsModel;
 use App\Mail\ExportProducts as ExportProductsEmail;
 use App\Mail\ImportProducts as ImportProductsEmail;
+use App\Mail\ExportCsvNotification as CsvNotifyEmail;
 use App\Models\Store;
 use Illuminate\Support\Facades\File;
 use Illuminate\Http\Request;
@@ -44,13 +45,17 @@ class ExportImportProducts extends Controller
                     'message' => 'Products not available for import template',
                 ], 200);
             } else {
+
+                $hash = md5($request['store_id'] . time());
+                $this->CsvNotifyEmail($request['email'], $hash);
+
                 return response()->json(['error' => false,
                     'data' => [],
                     'message' => 'The import CSV template will be emailed to ' . $request['email'],
                 ], 200);
             }
         } else {
-            $this->createExportData($request);
+            return $this->createExportData($request);
         }
     }
 
@@ -61,27 +66,29 @@ class ExportImportProducts extends Controller
         $weightDimensionUnits = $this->getweightDimensionUnits($storeHash);
         $weightUnit = isset($weightDimensionUnits['weight_units']) && !blank($weightDimensionUnits['weight_units']) ? strtolower($weightDimensionUnits['weight_units']) : 'lbs' ?? 'lbs';
         $dimensionsUnit = isset($weightDimensionUnits['dimension_units']) && $weightDimensionUnits['dimension_units'] === 'Centimeters' ? 'cm' : 'in' ?? 'in';
-        Log::info('Store hash ' . $storeHash . 'Weight dimesnions ' . json_encode($weightDimensionUnits));
+        
         $dropShips = [];
         foreach ($locations as $location) {
             $dropShips[$location['id']] = $location;
         }
-
+        
         $productsChunk = ProductSetting::where('store_id', $request['store_id']);
         if (!$productsChunk->count()) {
             return [];
         }
         $comma = ",";
-        if (!isset($request['rerunrequest'])) {
-            $fileName = '/export_files/' . $request['store_hash'] . '/' . time();
-            $request['folderName'] = public_path() . $fileName;
-            $hash = md5($request['store_id'] . time());
-            $this->makeDirectory($request['folderName'], $mode = 0777, true, true);
-            $request['exportProductsId'] = ExportProductsModel::insertGetId(['store_id' => $request['store_id'], 'foldername' => $fileName . '.zip', 'hash' => $hash, 'request_time' => time(), 'email' => $request['email'], 'status' => 0]);
-        }
-        $folderName = $request['folderName'];
-        $folderNamePath = [];
+        
         try {
+            if (!isset($request['rerunrequest'])) {
+                $fileName = '/export_files/' . $request['store_hash'] . '/' . time();
+                $request['folderName'] = public_path() . $fileName;
+                $hash = md5($request['store_id'] . time());
+                $this->makeDirectory($request['folderName'], $mode = 0777, true, true);
+                $request['exportProductsId'] = ExportProductsModel::insertGetId(['store_id' => $request['store_id'], 'foldername' => $fileName . '.zip', 'hash' => $hash, 'request_time' => time(), 'email' => $request['email'], 'status' => 0]);
+            }
+            $folderName = $request['folderName'];
+            $folderNamePath = [];
+            
             $productsChunk->chunk(2500, function ($products, $chunkCount = 0) use ($comma, $folderName, $dropShips, $weightUnit, $dimensionsUnit) {
                 $fileName = $chunkCount++ . '-export.csv';
                 $filename = $folderName . '/' . $fileName;
@@ -156,9 +163,12 @@ class ExportImportProducts extends Controller
                     fputcsv($fp, $productLine);
                 }
             });
-            ExportProductsModel::find($request['exportProductsId'])->update(['status' => 1]);
+            $isupdate = ExportProductsModel::find($request['exportProductsId'])->update(['status' => 1]);
             $this->makeZipWithFiles($folderName);
             $this->sendEmail($request['email'], $hash);
+            if($isupdate){
+              return  $this->createCSVDownloadLink($request['exportProductsId'],$hash);
+            }
         } catch (RequestException $e) {
             $statusCode = $e->getResponse()->getStatusCode();
             $errorMessage = "An error occurred.";
@@ -168,6 +178,55 @@ class ExportImportProducts extends Controller
                     echo $errorMessage = Psr7\str($e->getResponse());
                 }
             }
+        }
+    }
+    // Create CSV export download link for display on the dashboard of the app
+    public function createCSVDownloadLink($exportProductId,$hash)
+    {  
+        $available = ExportProductsModel::where(['id' => $exportProductId,'status' => 1])->exists();
+        if($available){
+           $url = URL::to('api/downloadcsv/'.$hash);
+           $message =  "The export CSV template has been finished.";
+           return response()->json([
+            "error" => false,
+            'message' => $message,
+            'data' => $url,
+           ],200); 
+        }
+    }
+
+    public function getCSVDownloadLink(Request $request)
+    {
+        $status = ExportProductsModel::where('store_id', $request['store_id'])->latest()->first() ?? [];
+
+        if(isset($request['is_link_invisible']) && $request['is_link_invisible'] == 'true' ){
+            $status->is_link_invisible = 1;
+            $status->save();
+            return response()->json([
+                "error" => false,
+                'message' => 'Download link has been invisible',
+                'data' => '',
+               ], 200
+            );
+        }
+
+        if (empty($status) || $status->status == 0 || $status->is_link_invisible == 1 || ($status->request_time <= time() - 24 * 3600)) {
+            return response()->json([
+                "error" => true,
+                'message' => 'Download link has been expired',
+                'data' => '',
+               ], 200
+            );
+        }
+        
+        if(!empty($status)){
+           $url = URL::to('api/downloadcsv/'.$status['hash']);
+           $message =  "The export CSV template has been finished.";
+           return response()->json([
+            "error" => false,
+            'message' => $message,
+            'data' => $url,
+           ],200); 
         }
     }
 
@@ -198,6 +257,11 @@ class ExportImportProducts extends Controller
     {
         //$to = 'gula47141@gmail.com';
         Mail::to($email)->send(new ExportProductsEmail($hash));
+    }
+
+    public function CsvNotifyEmail($email, $hash)
+    {
+        Mail::to($email)->send(new CsvNotifyEmail($hash));
     }
 
     public function ImportNotifyEmail($email)
@@ -296,7 +360,6 @@ class ExportImportProducts extends Controller
             $data['store_name'] = $request['store_name'];
             $data['path'] = public_path('import_files/' . $request['store_hash'] . '/' . $request['filename']);
 
-            Log::info('import Product Csv Request: ' . json_encode($data));
             ImportProductsJob::dispatch($data)->delay(Carbon::now()->addSeconds($delay));
             unset($data['path']);
 
@@ -329,7 +392,6 @@ class ExportImportProducts extends Controller
         $exceptionProducts = [];
 
         if (!file_exists($path)) {
-            Log::info('File Not Found On Importing Csv' . $request['filename']);
             return false;
         }
 
@@ -349,7 +411,6 @@ class ExportImportProducts extends Controller
         });
 
         $csvChunks = array_chunk($csvArray, $this->csvChunksLength);
-        Log::info('CSV Products Chunks Array: ' . json_encode($csvChunks));
 
         foreach ($csvChunks as $chunkKey => $csv) {
             foreach ($csv as $key => $product) {
@@ -357,7 +418,6 @@ class ExportImportProducts extends Controller
                     $this->getUpdateData($product, $indexes, $store_id, $store->access_token, $request['store_hash']);
 
                 } catch (\Exception $exception) {
-                    Log::info('Exception on Product: ' . $product['Product Id']);
                     $exceptionProducts[] = [
                         'productId' => $product['Product Id'],
                         'varientId' => $product['Variant Id'],
@@ -366,7 +426,7 @@ class ExportImportProducts extends Controller
                 }
             }
         }
-        Log::info('CSV Products Exception Array: ' . json_encode($exceptionProducts));
+
         $this->ImportNotifyEmail($emailNotify);
     }
 

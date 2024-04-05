@@ -35,7 +35,6 @@ class UpdateSubscriptionStatus implements ShouldQueue
     public function handle()
     {
         sleep(5);
-        Log::info('Dispatch executed');
         DB::statement("UPDATE subscriptions SET status = 2 where id = 36");
     }
 }

@@ -2,21 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use App\Constants\Constant;
 use App\CurlRequest;
-use App\CustomClasses\Functions;
-use App\CustomClasses\PalletPackaging;
-use App\Models\BoxSize;
-use App\Models\DBSC\DbscShippingProfile;
-use App\Models\Locations;
-use App\Models\Orders;
-use App\Models\RequestData;
-use App\Models\RequestTempData;
-use App\Models\ShippingGroup;
 use App\Models\Store;
-use Illuminate\Http\JsonResponse;
+use App\Models\Orders;
+use App\Models\BoxSize;
+use App\Models\Locations;
+use App\Constants\Constant;
+use App\Models\RequestData;
 use Illuminate\Http\Request;
+use App\Models\ShippingGroup;
+use App\Models\RequestTempData;
+use App\CustomClasses\Functions;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\CustomClasses\PalletPackaging;
+use App\Models\DBSC\DbscShippingProfile;
 
 class OrderController extends Controller
 {
@@ -136,9 +137,9 @@ class OrderController extends Controller
 
     public function getRequestDataFromDB($tableName, $request, $rateId, $cartId, $order)
     {
+
         $modelName = $tableName === 'RequestData' ? new RequestData() : new RequestTempData();
         $source = $order['order_source'] ?? "www";
-
         $data = optional($modelName::where('rate_id', $rateId)
             ->where('cart_id', $cartId)
             ->where('store_id', $request['store_id'])
@@ -150,7 +151,6 @@ class OrderController extends Controller
                 ->where('store_id', $request['store_id'])
                 ->first())->toArray() ?? null;
         }
-
         // Get data for draft order from DB
         if (blank($data) && $source === "manual") {
             $data = optional($modelName::where('rate_id', $rateId)
@@ -187,7 +187,6 @@ class OrderController extends Controller
         }
 
         $rateId = str_contains($rateId, 'idx+') ? $rateId : $order['full_rate_id'];
-        $carrierHasInsurance = $this->hasInsureCarrier($rateId);
         $index = explode('idx+', $rateId);
         if (is_string($index[0]) && $index[0] == "shippingGroup") {
             return $this->shippingGroupOrderWidget($data, $order);
@@ -218,6 +217,7 @@ class OrderController extends Controller
         $isLG = strpos($rateId, '+lg') != false;
         $isOwnArrangement = strpos($rateId, 'own_arrangement') === 0 || strpos($rateId, 'freernlltl') === 0 ? true : false;
         $isLtlRate = $isSmallLtlrate || (substr($rateId, 0, 9) != 'parcel_12') || (strpos($rateId, 'ltl') != false);
+        $carrierHasInsurance = $this->hasInsureCarrier($rateId);
         /*
         * Stored Response from WS */
         $lineItem = json_decode($data['lineitems'])->lineItemData;
@@ -304,6 +304,7 @@ class OrderController extends Controller
                                 $itemCount++;
                             }
                             $count = 0;
+                            $boxWeight = 0;
                             $orderWidgetData['type'] = $type;
                             $orderWidgetData['image_complete'] = $binPacked->image_complete;
                             $orderWidgetData['quantity'] = $quantity;
@@ -312,7 +313,6 @@ class OrderController extends Controller
                                 $orderWidgetData['d'] = '';
                                 $orderWidgetData['w'] = '';
                                 $orderWidgetData['h'] = '';
-                                $orderWidgetData['weight'] = $binPacked->bin_data->weight ?? '';
                             } else {
                                 $orderWidgetData['d'] = $binPacked->bin_data->d . ' x ';
                                 $orderWidgetData['w'] = $binPacked->bin_data->w . ' x ';
@@ -328,6 +328,7 @@ class OrderController extends Controller
                                 $orderWidgetData['items'][$count]['w'] = $item->w;
                                 $orderWidgetData['items'][$count]['h'] = $item->h;
                                 $orderWidgetData['items'][$count]['d'] = $item->d;
+                                $orderWidgetData['items'][$count]['wg'] = $item->wg;
 
                                 $orderWidgetData['items'][$count]['image_separated'] = $item->image_separated;
                                 $orderWidgetData['items'][$count]['image_sbs'] = $item->image_sbs;
@@ -336,6 +337,7 @@ class OrderController extends Controller
                                 ++$count;
 
                             }
+                            $orderWidget[$zip]['sbs'][$key]['weight'] = optional($binPacked->bin_data)->totalBoxWeight ?? 0;
                             unset($orderWidgetData);
                             if ($count) {
                                 $orderWidget[$zip]['sbs'][$key]['number_of_items'] = $count;
@@ -368,7 +370,7 @@ class OrderController extends Controller
         $origins = $lineItem->origin;
         $items = $lineItem->items;
         $count = 0;
-        $addedInsurance = $addHazmat = false;
+        $addedInsurance = $addHazmat = $isOriginMarkup = $isProductMarkup = false;
         $isMulti = false;
         $insertedIds = $insertedNames = [];
         $code = '';
@@ -385,6 +387,8 @@ class OrderController extends Controller
             $city = $origin->senderCity ? $origin->senderCity . ',' : '';
             $state = $origin->senderState ?? '';
             $senderZip = $origin->senderZip ?? '';
+            $origDetails = $this->getOriginForInsAndLocal($zip);
+            $nickname = isset($origDetails['nickname']) ? $origDetails['nickname'] : ''; 
             if (!$isMultiShipment && $isInspOrLocal) {
                 $origDetails = $this->getOriginForInsAndLocal($zip);
                 if (!blank($origDetails)) {
@@ -394,66 +398,54 @@ class OrderController extends Controller
                 }
             }
             $orderWidget[$zip]['locationtype'] = $item->dropship_enabled == 'N' ? 'Warehouse' : 'Dropship';
-            $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
+            if($nickname == $city . ' ' . $state . ' ' . $senderZip){
+                $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
+            }else {
+                $orderWidget[$zip]['address'] = $nickname . ' - ' . $city . ' ' . $state . ' ' . $senderZip;
+            }
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
-            $sRate = $order['shipping_rate'];
+            $sRate = $order['shipping_rate'] ?? null;
 
             if ($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement) {
-                if ($isHAT) {
-                    $sRate = $multiShipmentresponse->$index->hat->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
-                    $order['shipping_name'] = $multiShipmentresponse->$index->hat->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
-                } else if ($isLG && $insideDelivery == 'Y') {
-                    $sRate = $multiShipmentresponse->$index->insideLiftGateDelivery->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
-                    $order['shipping_name'] = $multiShipmentresponse->$index->insideLiftGateDelivery->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
-                    $code = $multiShipmentresponse->$index->insideLiftGateDelivery->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
-                } else if ($isLG && $notifyBeforeDelivery == 'Y') {
-                    $sRate = $multiShipmentresponse->$index->lgnotifydelivery->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
-                    $order['shipping_name'] = $multiShipmentresponse->$index->lgnotifydelivery->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
-                    $code = $multiShipmentresponse->$index->lgnotifydelivery->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
-                } else if ($LimitedAccessDel == 'Y' && $isLG) {
-                    $sRate = $multiShipmentresponse->$index->limitedaccessLG->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
-                    $order['shipping_name'] = $multiShipmentresponse->$index->limitedaccessLG->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
-                    $code = $multiShipmentresponse->$index->limitedaccessLG->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
-                } else if ($isLG) {
-                    $sRate = $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
-                    $order['shipping_name'] = $multiShipmentresponse->$index->liftgate->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
-                    $code = $multiShipmentresponse->$index->liftgate->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
-                } else if ($isFreightTruckLoad == 'Y') {
-                    $sRate = $multiShipmentresponse->$index->Truckload->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? 0.00;
-                    $order['shipping_name'] = $multiShipmentresponse->$index->Truckload->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? '';
-                    $code = $multiShipmentresponse->$index->Truckload->$zip->code ?? $multiShipmentresponse->$index->liftgate->$zip->code ?? '';
-                } else if ($isTruckLoad == 'Y') {
-                    $sRate = $multiShipmentresponse->$index->Truckload->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? 0.00;
-                    $order['shipping_name'] = $multiShipmentresponse->$index->Truckload->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? '';
-                    $code = $multiShipmentresponse->$index->Truckload->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? $multiShipmentresponse->$index->liftgate->$zip->code ?? '';
-                } else if ($insideDelivery == 'Y') {
-                    $sRate = $multiShipmentresponse->$index->insideDelivery->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
-                    $order['shipping_name'] = $multiShipmentresponse->$index->insideDelivery->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
-                    $code = $multiShipmentresponse->$index->insideDelivery->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
-                } else if ($notifyBeforeDelivery == 'Y') {
-                    $sRate = $multiShipmentresponse->$index->notifydelivery->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
-                    $order['shipping_name'] = $multiShipmentresponse->$index->notifydelivery->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
-                    $code = $multiShipmentresponse->$index->notifydelivery->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
-                } else if ($LimitedAccessDel == 'Y') {
-                    $sRate = $multiShipmentresponse->$index->limitedaccess->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
-                    $order['shipping_name'] = $multiShipmentresponse->$index->limitedaccess->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
-                    $code = $multiShipmentresponse->$index->limitedaccess->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
-                } else if ($isTwoManDel == 'Y' && $isAppointmentDel == 'Y') {
-                    $sRate = $multiShipmentresponse->$index->twoManAptDelivery->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
-                    $order['shipping_name'] = $multiShipmentresponse->$index->twoManAptDelivery->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
-                    $code = $multiShipmentresponse->$index->twoManAptDelivery->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
-                } else if ($isTwoManDel == 'Y') {
-                    $sRate = $multiShipmentresponse->$index->twoMan->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
-                    $order['shipping_name'] = $multiShipmentresponse->$index->twoMan->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
-                    $code = $multiShipmentresponse->$index->twoMan->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
-                } else if ($isAppointmentDel == 'Y') {
-                    $sRate = $multiShipmentresponse->$index->appointment->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
-                    $order['shipping_name'] = $multiShipmentresponse->$index->appointment->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
-                    $code = $multiShipmentresponse->$index->appointment->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
-                } else {
-                    $sRate = $multiShipmentresponse->$index->simple->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? 0.00;
-                    $order['shipping_name'] = $multiShipmentresponse->$index->simple->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? '';
-                    $code = $multiShipmentresponse->$index->simple->$zip->code ?? $multiShipmentresponse->$index->liftgate->$zip->code ?? '';
+                $enableFeaturesArray = Functions::getEnableFeaturesArr($isLG, $insideDelivery == 'Y', $notifyBeforeDelivery == 'Y', $LimitedAccessDel == 'Y');
+                $enableFeaturesArray = array_reverse($enableFeaturesArray);
+                foreach($enableFeaturesArray as $key => $feature){
+                    if ($isHAT) {
+                        $sRate = $multiShipmentresponse->$index->hat->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
+                        $order['shipping_name'] = $multiShipmentresponse->$index->hat->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
+                        $code = $multiShipmentresponse->$index->hat->$zip->code ?? $multiShipmentresponse->$index->liftgate->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
+                        break;
+                    } else if ($feature['isEnable']) {
+                        $sRate = $multiShipmentresponse->$index->$key->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
+                        $order['shipping_name'] = $multiShipmentresponse->$index->$key->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
+                        $code = $multiShipmentresponse->$index->$key->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
+                        break;
+                    } else if ($isFreightTruckLoad == 'Y') {
+                        $sRate = $multiShipmentresponse->$index->Truckload->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? 0.00;
+                        $order['shipping_name'] = $multiShipmentresponse->$index->Truckload->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? '';
+                        $code = $multiShipmentresponse->$index->Truckload->$zip->code ?? $multiShipmentresponse->$index->liftgate->$zip->code ?? '';
+                        break;
+                    } else if ($isTruckLoad == 'Y') {
+                        $sRate = $multiShipmentresponse->$index->Truckload->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? 0.00;
+                        $order['shipping_name'] = $multiShipmentresponse->$index->Truckload->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? '';
+                        $code = $multiShipmentresponse->$index->Truckload->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? $multiShipmentresponse->$index->liftgate->$zip->code ?? '';
+                        break;
+                    } else if ($isTwoManDel == 'Y' && $isAppointmentDel == 'Y') {
+                        $sRate = $multiShipmentresponse->$index->twoManAptDelivery->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
+                        $order['shipping_name'] = $multiShipmentresponse->$index->twoManAptDelivery->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
+                        $code = $multiShipmentresponse->$index->twoManAptDelivery->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
+                        break;
+                    } else if ($isTwoManDel == 'Y') {
+                        $sRate = $multiShipmentresponse->$index->twoMan->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
+                        $order['shipping_name'] = $multiShipmentresponse->$index->twoMan->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
+                        $code = $multiShipmentresponse->$index->twoMan->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
+                        break;
+                    } else if ($isAppointmentDel == 'Y') {
+                        $sRate = $multiShipmentresponse->$index->appointment->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
+                        $order['shipping_name'] = $multiShipmentresponse->$index->appointment->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
+                        $code = $multiShipmentresponse->$index->appointment->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? '';
+                        break;
+                    }
                 }
                 $carrierHasInsurance = $code ? $this->hasInsureCarrier($code) : false;
 
@@ -466,10 +458,30 @@ class OrderController extends Controller
                 $isMulti = true;
             }
 
-            $shipping_name = explode('(', $order['shipping_name']);
-            $sName = $shipping_name[0] ?? '';
-            $sName = explode('w/', $sName)[0] ?? '';
-            $sMethod = isset($shipping_name[1]) ? '(' . $shipping_name[1] : '';
+            /**
+             * Add Quote ID
+             * */
+            if (!$isSmallLtlrate && empty($multiShipmentresponse)){
+                $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($rateId, $responseFromWS, $zip);
+            } elseif (!$isSmallLtlrate && $isMultiShipment) {
+                $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($code, $responseFromWS, $zip);
+            }
+
+            if (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Delivery')){
+                $sName = explode('(Delivery', $order['shipping_name'])[0] ?? '';
+                $sName = explode('w/', $sName)[0] ?? '';
+                $estimate = explode('(Delivery', $order['shipping_name'])[1] ?? '';
+                $sMethod = '(Delivery' . $estimate;
+            } elseif (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Intransit')){
+                $sName = explode('(Intransit', $order['shipping_name'])[0] ?? '';
+                $sName = explode('w/', $sName)[0] ?? '';
+                $estimate = explode('(Intransit', $order['shipping_name'])[1] ?? '';
+                $sMethod = '(Intransit' . $estimate;
+            } else {
+                $sName = $order['shipping_name'] ?? '';
+                $sName = explode('w/', $sName)[0] ?? '';
+                $sMethod = '';
+            }
 
             $orderWidget[$zip]['shipping_method'] = $sName . $sMethod;
             $orderWidget[$zip]['shipping_rate'] = '$' . number_format((float)$sRate, 2,);
@@ -585,9 +597,7 @@ class OrderController extends Controller
 
         if ($reportingFlag) {
             $reportData = $this->bcReportingData($request, $order, $data, $isMulti, $orderWidget, $zip);
-            Log::info('Reporting Data Request' . json_encode($reportData));
             $reportDataResp = $this->curlRequest->reportingDataCurlRequest($reportData);
-            Log::info('Reporting Data Response' . json_encode($reportDataResp));
         }
 
 
@@ -618,7 +628,7 @@ class OrderController extends Controller
         $resp = [
             'widget' => $this->objectToArray($orderWidget),
             'sbs' => $sbs,
-            'fdoShipments' =>$fdoShipmenst, 
+            'fdoShipments' =>$fdoShipmenst,
         ];
         return $resp;
     }
@@ -661,7 +671,7 @@ class OrderController extends Controller
         $response['resi'] = strpos($rateId, '+r') ? 'Y' : 'n';
         $response['liftG'] = strpos($rateId, '+lg') ? 'Y' : 'n';
         $response['resiPickup'] = strpos($rateId, '+pu') ? 'Y' : 'n';
-        $response['lgPickup'] = strpos($rateId, '+lfgpu') ? 'Y' : 'n';
+        $response['lgPickup'] = strpos($rateId, '+lgpu') ? 'Y' : 'n';
         return $response;
     }
 
@@ -725,6 +735,33 @@ class OrderController extends Controller
             }
         }
         return $resp;
+    }
+
+    private function updateStaffNote($data,$toRequest)
+    {   
+        // Combine array elements into a single string with two line breaks between them
+        $staffNoteContent = implode("\n\n", $data);
+
+        // Create a JSON string for the staff_notes field
+        $staffNotesJson = json_encode(['staff_notes' => $staffNoteContent]);
+
+        // Set up headers for the request
+        $headers[] = 'X-Auth-Token: ' . $this->accessToken;
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+
+        // Set the endpoint for the BigCommerce API
+        $endPoint = 'https://api.bigcommerce.com/stores/' . $toRequest['store_hash'] . '/v2/orders/' . $toRequest['order_id'];
+
+
+        // Make the PUT request
+        $response = $this->curlRequest->enSingleCurlRequest($endPoint, $staffNotesJson, $headers, 'PUT', true);
+
+        // Check the response and handle it accordingly
+        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+            $responseData = json_decode($response['response'], true);
+            return $response['status'];
+        }
     }
 
     public function getBCOrders($request)
@@ -1003,7 +1040,6 @@ class OrderController extends Controller
     {
         $storeHash = explode('/', $postData['producer']);
         $storeHash = $storeHash[1];
-        Log::info('Order Webhook Data From BigCommerce ' . json_encode($postData));
         $orderId = $postData['data']['id'] ?? $postData['data']['order_id'];
         // Update,delete,create from  webhook
         $scope = $postData['scope'];
@@ -1019,7 +1055,7 @@ class OrderController extends Controller
         $toRequest['order_id'] = $orderId;
         $this->accessToken = $store->access_token;
         $this->storeHash = $storeHash;
-        $this->moveQuotesTempToReq($toRequest, $request);
+        $this->moveQuotesTempToReq($toRequest, $request,$scope);
         return response()->json(true, 200);
     }
 
@@ -1122,8 +1158,9 @@ class OrderController extends Controller
      * Move row from request_temp to request table after order placing
      * delete all rows from request_temp relevant to cart_id
      */
-    public function moveQuotesTempToReq($toRequest, $request)
+    public function moveQuotesTempToReq($toRequest, $request,$scope)
     {
+        $order=[];
         $headers[] = 'X-Auth-Token: ' . $this->accessToken;
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
@@ -1131,6 +1168,7 @@ class OrderController extends Controller
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
             $cartId = json_decode($response['response'])->cart_id;
+            $order= json_decode($response['response'],true);
             $endpoint = json_decode($response['response'])->shipping_addresses->url;
             $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
             if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
@@ -1138,6 +1176,10 @@ class OrderController extends Controller
                 $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
                 if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
                     $response = json_decode($response['response']);
+                    $order['rate_id'] = optional($response)->rate_id ?? null;
+                    $order['full_rate_id'] = optional($response)->shipping_provider_quote->rateId ?? '';
+                    $order['shipping_name'] = optional($response)->shipping_provider_quote->name ?? '';
+                    $order['shipping_rate'] = optional($response)->shipping_provider_quote->rate->value ?? '';
                     $rateId = optional($response)->rate_id ?? null;
                     /*
                      * Added this if in case of rate ID characters exceed 36
@@ -1147,30 +1189,105 @@ class OrderController extends Controller
                      * */
                     $fullRateId = optional($response)->shipping_provider_quote->rateId ?? null;
                     $reqData = optional(RequestTempData::where('rate_id', $rateId)->where('cart_id', $cartId)->first())->toArray();
-
                     if (blank($reqData)) {
                         $reqData = optional(RequestTempData::where('rate_id', $fullRateId)->where('cart_id', $cartId)->first())->toArray();
                     }
-
                     if (blank($reqData)) {
                         $reqData = optional(RequestTempData::where('rate_id', $fullRateId)->where('store_id', $toRequest['store_id'])->latest()->first())->toArray();
                     }
-                    Log::info('Order Data DB: ' . json_encode($reqData) . ' RateID: ' . $rateId . ' CartId: ' . $cartId);
+
                     if (!blank($reqData)) {
                         unset($reqData['id']);
+                        $orderId= $order['id'];
                         RequestData::insert($reqData);
+                        // Check: if order is newly created then update staff note
+                        if ($scope == 'store/order/created') {
+                            $orderCheck = RequestData::where('order_id', $orderId)->first();
+                            if (!$orderCheck) {
+                                $reportingFlag = "false";
+                                $orderWidget = $this->createOrderWidget($toRequest, $order, $reportingFlag);
+                                $formateStaffNote = $this->formatShipment($orderWidget);
+                                $isStatus = $this->updateStaffNote($formateStaffNote, $toRequest);
+                                if($isStatus){
+                                    RequestData::where('store_id', $toRequest['store_id'])
+                                    ->orWhere('cart_id', $cartId)
+                                    ->orWhere('rate_id', $rateId)
+                                    ->update([
+                                        'order_id' => $orderId
+                                    ]);
+                                }
+                            }
+                        }
                         // TODO :  Need to check why we are doing this
-//                        $request['store_name'] = $toRequest['store_name'];
-//                        $request['store_id'] = $toRequest['store_id'];
-//                        $request['store_hash'] = $toRequest['store_hash'];
-//                        $request['order_id'] = $toRequest['order_id'];
-//                        $this->getOrderWidget($request, true);
+                        //  $request['store_name'] = $toRequest['store_name'];
+                        //  $request['store_id'] = $toRequest['store_id'];
+                        //  $request['store_hash'] = $toRequest['store_hash'];
+                        //  $request['order_id'] = $toRequest['order_id'];
+                        //  $this->getOrderWidget($request, true);
                     }
                 }
             }
         }
     }
 
+    private function formatShipment($data)
+    {
+
+        if (isset($data['widget']) && is_array($data['widget']) && count($data['widget']) > 0) {
+            $formattedShipments = [];
+
+            foreach ($data['widget'] as $index => $shipmentData) {
+                // Extract relevant information
+                $locationType = isset($shipmentData['locationtype']) ? $shipmentData['locationtype'] : '';
+                $address = isset($shipmentData['address']) ? $shipmentData['address'] : '';
+                $items = isset($shipmentData['items']) ? implode(', ', $shipmentData['items']) : '';
+                $accessories = isset($shipmentData['accessories']) ? implode(' | ', $shipmentData['accessories']) : '';
+                $items = isset($shipmentData['items']) ? implode(' | ', $shipmentData['items']) : ''; 
+                $shippingRate = isset($shipmentData['shipping_rate']) ? $shipmentData['shipping_rate'] : '';
+                $quoteId = isset($shipmentData['quoteId']) ? $shipmentData['quoteId'] : '';
+                $expectedDelivery = isset($shipmentData['shipping_method']) && !empty($shipmentData['shipping_method'])
+                    ? $shipmentData['shipping_method']
+                    : '';
+
+                // Build the formatted string for each shipment
+                $formattedString = "Shipment " . ($index + 1) . " > Origin and Services > ";
+                $formattedString .= "$locationType : $address, $expectedDelivery : $shippingRate";
+                $formattedString .= !empty($accessories) ? ", Accessorials: $accessories" : '';
+                $formattedString .= !empty($quoteId) ? ", Quote Id: $quoteId" : '';
+                $formattedString .= !empty($items) ? ", Items: $items" : '';
+
+                // Add SBS details in the staff note
+                $sbs = isset($shipmentData['sbs']) ? $shipmentData['sbs'] : [];
+                if(!empty($sbs)){
+                    $boxes = array_filter($sbs, function($bin) {
+                        return $bin['type'] != 'item' && $bin['type'] != 'weight_based';
+                    }) ?? [];
+                    
+                    $totalBoxes = count($boxes) > 0 ? count($boxes) : 1;
+
+                    foreach($sbs as $key => $bin){
+                        if(isset($bin['type']) && $bin['type'] == 'item' && isset($bin['quantity']) && !empty($bin['quantity'])){
+                            $totalBoxes = $bin['quantity'];
+                            for ($i=1; $i <= $bin['quantity']; $i++) { 
+                                $weight = isset($bin['weight']) ? $bin['weight'] : 0;
+                                $sbsDetails = "Box $i of $totalBoxes : $weight lbs";
+                                $formattedString .= !empty($sbsDetails) ? ", $sbsDetails" : '';
+                            }
+                        } else {
+                            $count = $key + 1;
+                            $weight = isset($bin['weight']) ? $bin['weight'] : 0;
+                            $sbsDetails = "Box $count of $totalBoxes : $weight lbs";
+                            $formattedString .= !empty($sbsDetails) ? ", $sbsDetails" : '';
+                        }
+                    }
+                }
+                // Add the formatted string to the array
+                $formattedShipments[] = $formattedString;
+            } 
+
+            return $formattedShipments;
+        }
+    }
     private function isSmallQuote($quote)
     {
         $quote = explode('(', $quote)[0];
@@ -1195,7 +1312,7 @@ class OrderController extends Controller
 
     private function hasInsureCarrier($code)
     {
-        $insureCarriers = ['wweltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship', 'parcel_12shipEng'];
+        $insureCarriers = ['wweltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship', 'parcel_12shipEng', 'saialtl'];
         foreach ($insureCarriers as $insureCarrier) {
             if (strpos($code, $insureCarrier) !== false) {
                 return true;

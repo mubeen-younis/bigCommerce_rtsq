@@ -46,7 +46,8 @@ class ConnectionSettings extends CarriersConnectionSettings
                 // New Api Test Connection Params
                 'clientId' => $data['clientId'],
                 'clientSecret' => $data['clientSecret'],
-                'ApiVersion' => '2.0'
+                'ApiVersion' => '2.0',
+                'requestFromGlobalTranz' => 1
             ];
         }else{
             $params  = [

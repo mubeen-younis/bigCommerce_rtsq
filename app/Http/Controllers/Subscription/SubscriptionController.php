@@ -206,7 +206,7 @@ class SubscriptionController extends Controller
     //*************************************
     // This function is used to create new subscription in case of previous subscription is cancelled
     //*************************************
-    public function createnewSubscriptionPlan($customerId, $planId)
+    public function createNewSubscriptionPlan($customerId, $planId)
     {
         try {
             $subscription = \Stripe\Subscription::create(array(
@@ -381,11 +381,10 @@ class SubscriptionController extends Controller
                     }
                     $this->savePaymentMethodInDB($updateCustomerCardRes['data'], $data['store_id']);
                 }
-
-                if ($oldSubscription->status == 2) { //If the previous subscription is expired
-
-                    // TODO: We can remove previous subscription from here
-                    $updateSubResponse = $this->createnewSubscriptionPlan($oldSubscription->stripe_id, $stripePlanId);
+                //Added this isExpiredSubscription because of the bug it creates of creating new subscription when status was 2
+                if ($oldSubscription->status == 2 && Functions::isExpiredSubscription($oldSubscription->ends_at)) { //If the previous subscription is expired
+                    // TODO: We can remove previous subscription from here, but we have it there for history records
+                    $updateSubResponse = $this->createNewSubscriptionPlan($oldSubscription->stripe_id, $stripePlanId);
 
                 } else { //If the previous subscription is active
                     $updateSubResponse = $this->updateSubscriptionPlan($oldSubscription->subscription_id, $stripePlanId);
@@ -399,7 +398,7 @@ class SubscriptionController extends Controller
                 $this->updateSubscriptionInDB($updateSubResponse['data'], $oldSubscription, $isTestStore);
                 //Getting Current Plan Detail
                 $updateSubResponse['data'] = $this->subscriptionDetailFromDB($data['store_id']);
-                Log::info('Email of old subscription' . $oldSubscription->email);
+
                 $mailToSend = isset($data['email']) && !empty($data['email']) ? $data['email'] : (isset($oldSubscription->email) && !empty($oldSubscription->email) ? $oldSubscription->email : null);
                 if (!empty($mailToSend)) {
                     $emailData = array(
@@ -956,8 +955,9 @@ class SubscriptionController extends Controller
     public function invoicePaymentActionByWebHook($paymentDetail, $paymentStatus)
     {
         $customerId = $paymentDetail->data->object->customer;
+
         if ($paymentStatus == 1 || $paymentStatus == 0) {
-            $subscriptionPlanObj = $paymentDetail->data->object->lines->data[0];
+            $subscriptionPlanObj = end($paymentDetail->data->object->lines->data);
             $params = array(
                 'period_end' => $paymentDetail->data->object->period_end,
                 'updated_date' => $paymentDetail->data->object->webhooks_delivered_at,
@@ -969,13 +969,17 @@ class SubscriptionController extends Controller
                 'subscriptionId' => $paymentDetail->data->object->items->data[0]->subscription
             );
         }
+
         if (!Subscription::where('stripe_id', $customerId)->exists()) {
+
             return [
                 'error' => true,
                 'msg' => 'Customer does not exists.'
             ];
         }
-        $subscriptionDetail = Subscription::where('stripe_id', $customerId)->first();
+
+        $subscriptionDetail = Subscription::where('stripe_id', $customerId)->latest()->first();
+
         /*Added this condition due to webhook failure of stripe*/
         if ($subscriptionDetail->is_test_subscription == 1) {
             Helpers::setStripeAPiKey(true);
@@ -983,9 +987,15 @@ class SubscriptionController extends Controller
             Helpers::setStripeAPiKey(false);
         }
 
-        $customer = \Stripe\Customer::retrieve($customerId);
-
-        $email = $customer->email;
+        try {
+            $customer = \Stripe\Customer::retrieve($customerId);
+        } catch (\Exception|\Throwable $exception) {
+            Log::info('Exception on getting customer ' . json_encode(Functions::returnFormExceptionArray($exception)));
+            return [
+                'error' => true,
+                'msg' => 'Customer does not exists.'
+            ];
+        }
 
 
         $subscriptionId = $params['subscriptionId'];
@@ -993,27 +1003,48 @@ class SubscriptionController extends Controller
             ->leftJoin('plans as p', 'p.id', '=', 's.plan_id')
             ->select('s.stripe_id', 's.plan_id', 'p.name')->where('s.subscription_id', $subscriptionId)->first();
 
-        //If there is already a subscription exists for the store_id then retrieve it
+        //Gets the latest subscription of store
         $oldSubscription = Subscription::where('subscription_id', $subscriptionId)->latest()->first();
+
+        $email = $customer->email ?? $oldSubscription->email ?? "";
+        $name = $customer->name ?? $oldSubscription->name ?? "";
         $userLost = false;
         if ($paymentStatus == 1) {
             $emailData = array(
                 'receiverEmail' => $email,
-                'receiverName' => $customer->name,
+                'receiverName' => $name,
                 'productName' => 'Real-time Shipping Quotes',
                 'planName' => $planDetail->name,
                 'action' => 'OCE'
             );
-            //status 3, means subscription expired from the stripe due to payment failed.
-            $oldSubscription->update([
-                'status' => 1,
-                'ends_at' => gmdate("Y-m-d\TH:i:s\Z", $subscriptionPlanObj->period->end)
-            ]);
-            Mail::to($email)->send(new PaymentFailedByWebHookEmail($emailData, $paymentStatus));
+
+            /*Date - 7 March 2024
+            Added this block of code because of stripe sending a webhook of remaining payment
+            Whose expiry date is not the actual recurring charge date
+            */
+            $updateSubscriptionExpiry = true;
+            try {
+                $dateFromStripe = Carbon::parse(gmdate("Y-m-d\TH:i:s\Z", $subscriptionPlanObj->period->end));
+                $dateFromDB = Carbon::parse($oldSubscription->ends_at);
+                $updateSubscriptionExpiry = $dateFromStripe->gt($dateFromDB);
+            } catch (\Exception|\Throwable $exception) {
+                Log::info('Exception in parsing date through carbon ' . json_encode(Functions::returnFormExceptionArray($exception)));
+            }
+
+            if ($updateSubscriptionExpiry) {
+                $oldSubscription->update([
+                    'status' => 1,
+                    'ends_at' => gmdate("Y-m-d\TH:i:s\Z", $subscriptionPlanObj->period->end)
+                ]);
+                Mail::to($email)->send(new PaymentFailedByWebHookEmail($emailData, $paymentStatus));
+            }
+            ////////////////-----END BLOCK OF CODE-------//////////////
+
+
         } elseif ($paymentStatus == 2) {
             $emailData = array(
                 'receiverEmail' => $email,
-                'receiverName' => $customer->name,
+                'receiverName' => $name,
                 'productName' => 'Real-time Shipping Quotes',
                 'planName' => $planDetail->name,
                 'action' => 'IPF'       // Invoice Payment Failed
@@ -1026,7 +1057,7 @@ class SubscriptionController extends Controller
         } elseif ($paymentStatus == 0) {
             $emailData = array(
                 'receiverEmail' => $email,
-                'receiverName' => $customer->name,
+                'receiverName' => $name,
                 'productName' => 'Real-time Shipping Quotes',
                 'planName' => $planDetail->name,
                 'action' => 'IPF'       // Invoice Payment Failed
@@ -1064,6 +1095,7 @@ class SubscriptionController extends Controller
         $paymentDetail = json_decode($input);
         $eventType = $paymentDetail->type;
 
+
         if ($eventType != 'customer.subscription.deleted' && $eventType != 'invoice.payment_succeeded' && $eventType != 'invoice.payment_failed') {
             return '';
         }
@@ -1075,7 +1107,6 @@ class SubscriptionController extends Controller
                 $msg = $re['msg'] ?? $msg;
             }
         } elseif ($eventType == 'invoice.payment_succeeded') {
-
             $msg = 'Subscription successful';
             $this->invoicePaymentActionByWebHook($paymentDetail, 1);
         } elseif ($eventType == 'invoice.payment_failed') {

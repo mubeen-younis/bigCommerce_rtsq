@@ -23,6 +23,7 @@ class UpsLtlConnectionSettings extends CarriersConnectionSettings
         $params = array(
             'carrierName' => 'ups',
             'carrier_mode' => 'test',
+            'platform' => 'bigcommerce',
             'dont_auth' => 1
         );
 

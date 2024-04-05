@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 
 class ConnectionSettings
 {
-    private $testConnectionUrl = Constant::BASEURL . '/ws/index.php';
+    private $testConnectionUrl = Constant::BASEURL . '/index.php';
 
     public function __construct()
     {
@@ -47,7 +47,7 @@ class ConnectionSettings
 
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($this->testConnectionUrl, $queryString, [], 'POST');
-        Log::info('FreightQuote Test Con Response ' . $output['response']);
+        
         $output = json_decode($output['response'], true);
         if (isset($output['severity']) && $output['severity'] == "ERROR") {
             $response = [

@@ -263,6 +263,12 @@ class QuotesResults
                             if (isset($surcharge['SurchargeType']) && $surcharge['SurchargeType'] === 'LIFTGATE_DELIVERY') {
                                 $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $surcharge['Amount']['Amount'] ?? 0;
                             }
+                            if (isset($surcharge['SurchargeType']) && $surcharge['SurchargeType'] === 'RESIDENTIAL_DELIVERY') {
+                                $shipments[$shipment]['q'][$key]['surcharges']['residentialFee'] = $surcharge['Amount']['Amount'] ?? 0;
+                            }
+                            if (isset($surcharge['SurchargeType']) && $surcharge['SurchargeType'] === 'DANGEROUS_GOODS') {
+                                $shipments[$shipment]['q'][$key]['surcharges']['hazardousMaterialsFee'] = $surcharge['Amount']['Amount'] ?? 0;
+                            }
                             if (isset($surcharge['SurchargeType']) && $surcharge['SurchargeType'] === 'APPOINTMENT_DELIVERY') {
                                 $shipments[$shipment]['q'][$key]['surcharges']['notifyDeliveryFee'] = $surcharge['Amount']['Amount'] ?? 0;
                                 if (isset($quote['holdAtTerminalResponse']) && !empty($quote['holdAtTerminalResponse'])) {

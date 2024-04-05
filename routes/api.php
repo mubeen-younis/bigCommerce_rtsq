@@ -35,6 +35,7 @@ use App\Http\Controllers\DBSC\ShippingOriginController;
 use App\Http\Controllers\DBSC\ShippingZoneController;
 use App\Http\Controllers\DBSC\ShippingRatesController;
 use App\Http\Controllers\DBSC\OtherSettingsController;
+use App\Http\Controllers\BigCommerceListingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -95,6 +96,10 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     //========Delete duplicate variants
     Route::post('/delete_duplicate_variants', [ProductSettingController::class, 'deleteDuplicateVariants']);
 
+    //=======Logs Routes
+    Route::get('/get_logs', [App\Http\Controllers\LogToDbController::class, 'getStoreLogs']);
+    Route::get('/get_packaging', [App\Http\Controllers\LogToDbController::class, 'getSingleLogDetail']);
+
     //=======Carriers
     Route::get('/get_add_tab_sett', [AdditionalCarrierTabSettingController::class, 'getAddTabSett']);
     Route::get('/get_add_tab_sett_store/{carrierId}', [AdditionalCarrierTabSettingController::class, 'getAddTabSettByCarrierID']);
@@ -110,6 +115,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::delete('warehouse/delete/{id}', 'LocationsController@delete_warehouse');
     Route::delete('dropship/delete/{id}', 'LocationsController@delete_dropships');
     Route::get('/get_loc_from_zip/{zip_code}', [LocationsController::class, 'getLocationFromZip']);
+    Route::get('/get_loc_from_country/{country}', [LocationsController::class, 'getLocationFromCountry']);
     Route::post('/save_location', [LocationsController::class, 'store']);
     Route::get('/get_location', [LocationsController::class, 'getSingleLocation']);
     Route::get('/get_locations', [LocationsController::class, 'getLocations']);
@@ -136,6 +142,18 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/save_shipping_group', [\App\Http\Controllers\ShippingGroupController::class, 'saveShippingGroup']);
     Route::post('/delete_shipping_group', [\App\Http\Controllers\ShippingGroupController::class, 'deleteShippingGroup']);
     Route::get('/get_shipping_group_detail', [\App\Http\Controllers\ShippingGroupController::class, 'getShippingGroupDetail']);
+
+    //=========Shipping Rules
+    Route::get('/get_shipping_rules', [\App\Http\Controllers\ShippingRuleController::class, 'getShippingRules']);
+    Route::post('/save_shipping_rule', [\App\Http\Controllers\ShippingRuleController::class, 'saveShippingRule']);
+    Route::post('/delete_shipping_rule', [\App\Http\Controllers\ShippingRuleController::class, 'deleteShippingRule']);
+    Route::get('/get_shipping_rule_detail', [\App\Http\Controllers\ShippingRuleController::class, 'getShippingRuleDetail']);
+    Route::post('/updateAvaiableStatus', [\App\Http\Controllers\ShippingRuleController::class, 'updateAvaiableStatus']);
+    Route::post('/get_country_states', [\App\Http\Controllers\ShippingRuleController::class, 'getCountryStates']);
+    Route::get('/get_shipping_rule_products', [App\Http\Controllers\ShippingRuleController::class, 'getshippingRuleProductsFromDb']);
+    
+    Route::post('/get_store_categories', [\App\Http\Controllers\ShippingRuleController::class, 'getProductsCategories']);
+    Route::post('/get_store_brands', [\App\Http\Controllers\ShippingRuleController::class, 'getProductsBrands']);
 
     //=========Addons
     Route::get('/getAllAddons', [AddonsController::class, 'index']);
@@ -172,6 +190,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/exportProductsTemplate', [ExportImportProducts::class, 'exportProductsTemplate']);
     Route::get('/getRowHeaderImportedFile', [ExportImportProducts::class, 'getRowHeaderImportedFile']);
     Route::post('/importProducts', [ExportImportProducts::class, 'importProductsCsv']);
+    Route::get('/get_csv_download_link', [ExportImportProducts::class, 'getCSVDownloadLink']);
 
     //subscription
     Route::post('/create_subscription', [Subscriptions::class, 'createSubscription']);
@@ -274,6 +293,7 @@ Route::get('/get_carriers', [CarrierController::class, 'index']);
 Route::get('/get_conn_settings', [ConnectionController::class, 'index']);
 Route::get('/get_qoute_settings/{carrierId}', [QuoteSettingsController::class, 'getSettings']);
 Route::post('/submit_quote_settings', [QuoteSettingsController::class, 'saveSettings']);
+Route::post('/getCarrierServices', [QuoteSettingsController::class, 'getCarrierServices']);
 
 /*------Services tab-------*/
 
@@ -307,4 +327,9 @@ Route::get('/test_bin', [App\CustomClasses\Bin3D\Bin3D::class, 'getBinResponse']
 Route::get('/api_logs', [App\Http\Controllers\LogToDbController::class, 'index']);
 Route::get('/truncate_logs', [App\Http\Controllers\LogToDbController::class, 'truncateLogs']);
 
+// Eniture licenses routes
+Route::get('/get_customers_list', [BigCommerceListingController::class, 'listCustomers']);
+Route::get('/edit_subscription', [BigCommerceListingController::class, 'editBigCommerceSubscription']);
+Route::post('/update_subscription', [BigCommerceListingController::class, 'updateBCSubscription']);
+Route::post('/cancel_subscription', [BigCommerceListingController::class, 'cancelBCSubscription']);
 
