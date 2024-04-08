@@ -3541,13 +3541,6 @@ class CompileQuotes
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
-            foreach($quote['q'] as $q){
-                // Check: Tforce new api
-                if(isset($q['serviceType'])){
-                    $quote['q'] = $q;
-                }
-            }
-
             if ($count == 0) { //To be checked only once
                 $isRad = $quote['autoResidentialsStatus'] ?? '';
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
