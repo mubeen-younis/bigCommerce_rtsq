@@ -24,7 +24,8 @@ class UpsLtlConnectionSettings extends CarriersConnectionSettings
             'carrierName' => 'ups',
             'carrier_mode' => 'test',
             'platform' => 'bigcommerce',
-            'dont_auth' => 1
+            'dont_auth' => 1,
+            'dimWeightBaseAccount' => $data->rates_my_freight_based ?? 0,
         );
 
         if(isset($data->api_type) && $data->api_type === 'new_api'){
