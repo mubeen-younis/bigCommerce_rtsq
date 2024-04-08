@@ -893,7 +893,7 @@ class Shipping
     public function freeShippingTitle($finalQuotes)
     {
         foreach ($finalQuotes as $key => $quote) {
-            if (isset($quote['rate']) && ($quote['rate'] <= 0 )) {
+            if (isset($quote['rate']) && ($quote['rate'] <= 0 )){
                 $finalQuotes[$key]['rate'] = 0;
             }
         }
@@ -1036,7 +1036,7 @@ class Shipping
             $res = str_replace(Functions::$smallPrefix, '', $res);
         }
 
-        if (strlen($quote['title']) > 100) {
+        if (strlen($quote['title']) >= 100) {
             $res = explode("w/", $quote['title']);
             $string = str_replace('residential', 'resi', $res[1]);
             $res = Functions::$simpleLTLTitle . ' w/' . $string;

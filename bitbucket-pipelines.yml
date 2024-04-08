@@ -21,7 +21,6 @@ pipelines:
                 COMMAND: '/home/apx-bc-01/html/bc/remote-script.sh'
 
     update-override-rates-feature:
-    
       - step:
           caches:
             - composer

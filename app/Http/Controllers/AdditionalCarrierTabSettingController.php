@@ -19,6 +19,7 @@ class AdditionalCarrierTabSettingController extends Controller
     public function index(Request $request)
     {
         $installed_carrier = $request->installed_carrier_id;
+        $services = [];
 
         $carrier = DB::table('installed_carriers')
             ->select('slug')
