@@ -36,7 +36,7 @@ class Functions
     public static $insideDelLiftGateResiLable = ' w/ residential, LG & inside delivery';
     public static $freeShipping = 'Free Shipping';
     public static $resiPickupTitle = '+pu';
-    public static $lgPickupTitle = '+lgpu';
+    public static $lgPickupTitle = '+lfgp';
     public static $palletPkgUrl = 'https://us-east.api.3dbinpacking.com/packer/palletPack';
     public static $imageCompleteUrl = 'https://images.eniture.com/d549b90ece00d180c5b69a51b6354842/20221207/cd59328e85619fe6b0dc52aa4db034c7/1670418636-7316-1129122.png';
     public static $imageSeparatedUrl = 'https://us-east.api.3dbinpacking.com/images/70785010926d0cc360921e4541811a53/20181106/4c114cebfa2d61a0c8153b3170ab6663/1541503329-2391-8709331.png';
@@ -197,7 +197,7 @@ class Functions
             'freightquote-ltl' => 'b2b', 'freightquote-chr-ltl' => 'b2b', 'purolator-small' => 'purolator', 'usps-small' => 'usps',
             'tql-ltl' => 'tql', 'yrc-ltl' => 'yrc', 'odfl-ltl' => 'odfl4me', 'dayross-ltl' => 'dayross', 'priority-one-ltl' => 'priority1',
             'estes-ltl' => 'estes', 'echo-ltl' => 'echoLogistics', 'saia-ltl' => 'saia', 'abf-ltl' => 'abf', 'daylight-ltl' => 'daylight',
-            'southeastern-ltl' => 'southeastern'];
+            'southeastern-ltl' => 'southeastern', 'unishipper-ltl' => 'Unishippers LTL New API'];
 
         return $carrierCodesWithName[$carrSlug] ?? null;
     }
@@ -221,7 +221,7 @@ class Functions
         $response['resi'] = strpos($rateId, '+r') ? 'Y' : 'n';
         $response['liftG'] = strpos($rateId, '+lg') ? 'Y' : 'n';
         $response['resiPickup'] = strpos($rateId, '+pu') ? 'Y' : 'n';
-        $response['lgPickup'] = strpos($rateId, '+lgpu') ? 'Y' : 'n';
+        $response['lgPickup'] = strpos($rateId, '+lfgp') ? 'Y' : 'n';
         return $response;
     }
 

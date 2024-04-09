@@ -1032,7 +1032,7 @@ class CompileQuotes
                 $resiPickup = isset($this->quoteSettings['residentialPickup']) && $this->quoteSettings['residentialPickup'] ? '+pu' : '';
                 $insideDelivery = (isset($this->quoteSettings['offer_inside_delivery']) && $this->quoteSettings['offer_inside_delivery']) ||
                     (isset($this->quoteSettings['always_inside_delivery']) && $this->quoteSettings['always_inside_delivery']);
-                $lgPickup = isset($this->quoteSettings['liftGatePickup']) && $this->quoteSettings['liftGatePickup'] ? '+lgpu' : '';
+                $lgPickup = isset($this->quoteSettings['liftGatePickup']) && $this->quoteSettings['liftGatePickup'] ? '+lfgp' : '';
 
                 $notifyDelivery =
                     (isset($this->quoteSettings['always_quote_notify']) && $this->quoteSettings['always_quote_notify']) ||
@@ -1180,6 +1180,7 @@ class CompileQuotes
             $isResi = '+R';
         }
         $numberOfShipments = 0;
+        $resiPickup = $lgPickup = '';
         foreach ($shipments as $ship) {
             if (!isset($ship['severity'])) {
                 $numberOfShipments++;
@@ -1194,7 +1195,6 @@ class CompileQuotes
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
-            $resiPickup = $lgPickup = '';
             if ($count == 0) { //To be checked only once
                 $isRad = $quote['autoResidentialsStatus'] ?? '';
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
@@ -1209,7 +1209,7 @@ class CompileQuotes
                 $resiPickup = isset($this->quoteSettings['residentialPickup']) && $this->quoteSettings['residentialPickup'] ? '+pu' : '';
                 $insideDelivery = (isset($this->quoteSettings['offer_inside_delivery']) && $this->quoteSettings['offer_inside_delivery']) ||
                     (isset($this->quoteSettings['always_inside_delivery']) && $this->quoteSettings['always_inside_delivery']);
-                $lgPickup = isset($this->quoteSettings['liftGatePickup']) && $this->quoteSettings['liftGatePickup'] ? '+lgpu' : '';
+                $lgPickup = isset($this->quoteSettings['liftGatePickup']) && $this->quoteSettings['liftGatePickup'] ? '+lfgp' : '';
 
                 $notifyDelivery =
                     (isset($this->quoteSettings['always_quote_notify']) && $this->quoteSettings['always_quote_notify']) ||
@@ -1347,6 +1347,7 @@ class CompileQuotes
             $isResi = '+R';
         }
         $numberOfShipments = 0;
+        $resiPickup = $lgPickup = '';
         foreach ($shipments as $ship) {
             if (!isset($ship['severity'])) {
                 $numberOfShipments++;
@@ -1361,7 +1362,6 @@ class CompileQuotes
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
 
-            $resiPickup = $lgPickup = '';
             if ($count == 0) { //To be checked only once
                 $isRad = $quote['autoResidentialsStatus'] ?? '';
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
@@ -1376,7 +1376,7 @@ class CompileQuotes
                 $resiPickup = isset($this->quoteSettings['residentialPickup']) && $this->quoteSettings['residentialPickup'] ? '+pu' : '';
                 $insideDelivery = (isset($this->quoteSettings['offer_inside_delivery']) && $this->quoteSettings['offer_inside_delivery']) ||
                     (isset($this->quoteSettings['always_inside_delivery']) && $this->quoteSettings['always_inside_delivery']);
-                $lgPickup = isset($this->quoteSettings['liftGatePickup']) && $this->quoteSettings['liftGatePickup'] ? '+lfgpu' : '';
+                $lgPickup = isset($this->quoteSettings['liftGatePickup']) && $this->quoteSettings['liftGatePickup'] ? '+lfgp' : '';
 
                 $notifyDelivery =
                     (isset($this->quoteSettings['always_quote_notify']) && $this->quoteSettings['always_quote_notify']) ||
@@ -6832,6 +6832,7 @@ class CompileQuotes
         if (empty($arraySorting) || empty($services)) {
             return [];
         }
+        $sliced = [];
         asort($arraySorting['simple']);
         $this->quoteSettings['method'] = $this->quoteSettings['method'] ?? 1;
         if ($this->quoteSettings['method'] == 2 && $this->isMultiShipment == false) { //Cheapest method
@@ -6841,7 +6842,10 @@ class CompileQuotes
         } else {
             $options = 1;
         }
-        $sliced = array_slice($arraySorting['simple'], 0, $options, true);
+
+        foreach ($arraySorting as $key => $value) {
+            $sliced =  array_slice($arraySorting[$key], 0, $options, true);
+        }
 
         if ($this->quoteSettings['method'] == 3) {
             $services = array_values($services);
@@ -6912,10 +6916,10 @@ class CompileQuotes
         $prefix = isset($this->EchoLogistics) && $this->EchoLogistics ? 'AVGecholtl' : $prefix;
         $prefix = isset($this->TQL) && $this->TQL ? 'AVGTqlltl' : $prefix;
         $prefix = isset($this->isGTZNewApi) && $this->isGTZNewApi ? 'AvgGTZNewApi' : $prefix;
-        $prefix = isset($this->isUsNewApi) && $this->isUsNewApi ? 'AvgUNINewApi' : $prefix;
+        $prefix = isset($this->isUsNewApi) && $this->isUsNewApi ? 'avgUSLtl' : $prefix;
         $prefix = isset($this->isPriority1) && $this->isPriority1 ? 'AvgPriority1' : $prefix;
         $serviceName = isset($this->TQL) && $this->TQL && !empty($labelAs) ? $labelAs : $this->customLabel(Functions::$simpleLTLTitle);
-        
+
         foreach ($ratesArray as $key => $rates) {
             $lgQuotes = $key == 'liftgate' || $key == 'insideLiftGateDelivery' || $key == 'lgnotifydelivery' || $key == 'lginsidenotifydelivery' || 
                         $key == 'limitedaccessLG' || $key == 'lglaccessnotifydelivery' || $key == 'lglaccessinsidedelivery' || $key == 'lglaccessinsideNotifydelivery' ?? false;
