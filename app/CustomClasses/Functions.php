@@ -1163,7 +1163,14 @@ class Functions
                     case 'freightQuote':
                         foreach ($quote as $zipCode => $q) {
                             if($zip == $zipCode){
-                                foreach ($q->q as $service) {
+                                if(isset($q->q)){
+                                    $quotes = $q->q ?? [];
+                                } elseif (isset($q->Truckload)){
+                                    $quotes = $q->Truckload ?? [];
+                                } else {
+                                    $quotes = [];
+                                }
+                                foreach ($quotes as $service) {
                                     $serviceCode = isset($service->serviceType) ? $service->serviceType : ' ';
                                     $length = strlen($serviceCode);
                                     $isTrue = str_contains(strtolower($rateId), strtolower($serviceCode));
@@ -1240,7 +1247,14 @@ class Functions
                     case 'chr':
                         foreach ($quote as $zipCode => $q) {
                             if($zip == $zipCode){
-                                foreach ($q->q as $service) {
+                                if(isset($q->q)){
+                                    $quotes = $q->q ?? [];
+                                } elseif (isset($q->Truckload)){
+                                    $quotes = $q->Truckload ?? [];
+                                } else {
+                                    $quotes = [];
+                                }
+                                foreach ($quotes as $service) {
                                     $serviceCode = isset($service->serviceType) ? $service->serviceType : ' ';
                                     $length = strlen($serviceCode);
                                     $isTrue = str_contains(strtolower($rateId), strtolower($serviceCode));
