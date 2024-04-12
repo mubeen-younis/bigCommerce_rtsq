@@ -96,7 +96,7 @@ class ProductSetting extends Model
             $saveProduct->price = $product['price'];
             $saveProduct->store_id = $storeId;
             $saveProduct->brand_id = $product['brand_id'] ?? null;
-            $saveProduct->categories_id = json_encode($product['categories']) ?? null;
+            $saveProduct->categories_id = isset($product['categories']) && !empty($product['categories']) ? json_encode($product['categories']) : null ?? null;
             $saveProduct->save();
             DB::commit();
 
