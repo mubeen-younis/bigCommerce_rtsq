@@ -113,7 +113,6 @@ class ProductSettingController extends Controller
             $response = $this->curlRequest->enSingleCurlRequest($variantEndPoint, [], $headers, 'GET', true);
             $response = json_decode($response['response'], true);
             if (isset($response['data']) && count($response['data'])) {
-                Log::info('Variants : ' . json_encode($response['data']));
                 foreach ($response['data'] as $variant) {
                     $product['price'] = $variant['price'];
                     $product['weight'] = $variant['weight'];
