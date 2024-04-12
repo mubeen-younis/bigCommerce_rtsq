@@ -83,19 +83,19 @@ class ProductSetting extends Model
             }
 
 
-            $saveProduct->name = $product['name'] ?? '';
-            $saveProduct->source_product_id = $product['id'];
-            $saveProduct->variant_id = $product['base_variant_id'];
+            $saveProduct->name = isset($product['name']) ? $product['name'] : '' ?? '';
+            $saveProduct->source_product_id = isset($product['id']) ? $product['id'] : '' ?? '';
+            $saveProduct->variant_id = isset($product['base_variant_id']) ? $product['base_variant_id'] : null ?? null;
             $saveProduct->image_src = '';
-            $saveProduct->product_type = $product['type'] ?? '';
-            $saveProduct->sku = $product['sku'];
-            $saveProduct->weight = $product['weight'];
-            $saveProduct->length = $product['depth'];
-            $saveProduct->width = $product['width'];
-            $saveProduct->height = $product['height'];
-            $saveProduct->price = $product['price'];
+            $saveProduct->product_type = isset($product['type']) ? $product['type'] : '' ?? '';
+            $saveProduct->sku = isset($product['sku']) ? $product['sku'] : null ?? null;
+            $saveProduct->weight = isset($product['weight']) ? $product['weight'] : null ?? null;
+            $saveProduct->length = isset($product['depth']) ? $product['depth'] : null ?? null;
+            $saveProduct->width = isset($product['width']) ? $product['width'] : null ?? null;
+            $saveProduct->height = isset($product['height']) ? $product['height'] : null ?? null;
+            $saveProduct->price = isset($product['price']) ? $product['price'] : null ?? null;
             $saveProduct->store_id = $storeId;
-            $saveProduct->brand_id = $product['brand_id'] ?? null;
+            $saveProduct->brand_id = isset($product['brand_id']) && !empty($product['brand_id']) ? $product['brand_id'] : null ?? null;
             $saveProduct->categories_id = isset($product['categories']) && !empty($product['categories']) ? json_encode($product['categories']) : null ?? null;
             $saveProduct->save();
             DB::commit();
@@ -159,20 +159,20 @@ class ProductSetting extends Model
             }
 
 
-            $saveProduct->name = $product['name'] ?? '';
-            $saveProduct->source_product_id = $product['id'];
-            $saveProduct->variant_id = $product['base_variant_id'];
+            $saveProduct->name = isset($product['name']) ? $product['name'] : '' ?? '';
+            $saveProduct->source_product_id = isset($product['id']) ? $product['id'] : '' ?? '';
+            $saveProduct->variant_id = isset($product['base_variant_id']) ? $product['base_variant_id'] : null ?? null;
             $saveProduct->image_src = '';
-            $saveProduct->product_type = $product['type'] ?? '';
-            $saveProduct->sku = $product['sku'];
-            $saveProduct->weight = $product['weight'];
-            $saveProduct->length = $product['depth'];
-            $saveProduct->width = $product['width'];
-            $saveProduct->height = $product['height'];
-            $saveProduct->price = $product['price'];
+            $saveProduct->product_type = isset($product['type']) ? $product['type'] : '' ?? '';
+            $saveProduct->sku = isset($product['sku']) ? $product['sku'] : null ?? null;
+            $saveProduct->weight = isset($product['weight']) ? $product['weight'] : null ?? null;
+            $saveProduct->length = isset($product['depth']) ? $product['depth'] : null ?? null;
+            $saveProduct->width = isset($product['width']) ? $product['width'] : null ?? null;
+            $saveProduct->height = isset($product['height']) ? $product['height'] : null ?? null;
+            $saveProduct->price = isset($product['price']) ? $product['price'] : null ?? null;
             $saveProduct->store_id = $storeId;
-            $saveProduct->brand_id = $product['brand_id'] ?? null;
-            $saveProduct->categories_id = json_encode($product['categories']) ?? null;
+            $saveProduct->brand_id = isset($product['brand_id']) && !empty($product['brand_id']) ? $product['brand_id'] : null ?? null;
+            $saveProduct->categories_id = isset($product['categories']) && !empty($product['categories']) ? json_encode($product['categories']) : null ?? null;
             $saveProduct->save();
 
         } catch (\Exception $exception) {
