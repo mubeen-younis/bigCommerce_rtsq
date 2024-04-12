@@ -84,7 +84,6 @@ class ProductSettingController extends Controller
                  * otherwise base product is as a variant product
                  * */
                 if ($product['base_variant_id'] == null) {
-                    Log::info('Variant Product: ' . json_encode($product));
                     $this->saveProducts->saveProductFromSync($product, $data['store_id']);
                     $this->getVariants($product, $data, '', false);
                 } else {
@@ -113,8 +112,8 @@ class ProductSettingController extends Controller
             $variantEndPoint = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products/' . $product['id'] . '/variants?limit=250&page=' . $count;
             $response = $this->curlRequest->enSingleCurlRequest($variantEndPoint, [], $headers, 'GET', true);
             $response = json_decode($response['response'], true);
-            Log::info('Variants : ' . json_encode($response['data']));
             if (isset($response['data']) && count($response['data'])) {
+                Log::info('Variants : ' . json_encode($response['data']));
                 foreach ($response['data'] as $variant) {
                     $product['price'] = $variant['price'];
                     $product['weight'] = $variant['weight'];
