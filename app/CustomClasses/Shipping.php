@@ -892,7 +892,7 @@ class Shipping
     public function freeShippingTitle($finalQuotes)
     {
         foreach ($finalQuotes as $key => $quote) {
-            if (isset($quote['rate']) && ($quote['rate'] <= 0 )) {
+            if (isset($quote['rate']) && ($quote['rate'] <= 0 )){
                 $finalQuotes[$key]['rate'] = 0;
             }
         }

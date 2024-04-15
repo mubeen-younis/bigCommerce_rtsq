@@ -8,7 +8,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    staff-note-2:
+    feature/RL-carrier-new-api:
       - step:
           caches:
             - composer
@@ -21,7 +21,6 @@ pipelines:
                 COMMAND: '/home/apx-bc-01/html/bc/remote-script.sh'
 
     update-override-rates-feature:
-    
       - step:
           caches:
             - composer

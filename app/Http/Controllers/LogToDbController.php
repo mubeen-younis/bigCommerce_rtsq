@@ -53,7 +53,6 @@ class LogToDbController extends Controller
 
     public function sendCurlRequest($url, $postData)
     {
-        Log::info('Logs $postData: ' . json_encode($postData));
         $fieldString = http_build_query($postData);
         try {
             $ch = curl_init();
@@ -63,7 +62,6 @@ class LogToDbController extends Controller
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
             $output = curl_exec($ch);
             curl_close($ch);
-            Log::info('Logs $output: ' . $output);
             return json_decode($output, true);
         } catch (\Throwable $e) {
             $result = [];

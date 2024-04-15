@@ -172,10 +172,14 @@ class QuoteSettingsController extends Controller
             foreach($services as $key => $service){
                 if($service == true && strpos($key, 'markup') == false){
                     $key = str_replace('_', ' ' , $key);
-                    $key = str_replace('am', 'A.M.' , $key);
+
                     if($carrierSlug == 'ups-ship-engine') {
                         $key = str_replace('early A.M.', 'early' , $key);
                     }
+                    if($carrierSlug == 'small-package') {
+                        $key = str_replace('am', 'Early' , $key);
+                    }
+                    $key = str_replace('am', 'A.M.' , $key);
                     $key = str_replace('ups', 'UPS' , $key);
                     $key = str_replace('usps', 'USPS' , $key);
                     $key = str_replace('flat rate', 'flat rate*' , $key);
@@ -188,6 +192,7 @@ class QuoteSettingsController extends Controller
                     $key = str_replace('Or Greater', 'or greater' , $key);
                     $key = str_replace('Than', 'than' , $key);
                     $key = str_replace('With', 'with' , $key);
+                    $key = str_replace('Fedex ', '' , $key);
                     $data[] = ['key' => $key, 'value' => $key];
                 }
             }
