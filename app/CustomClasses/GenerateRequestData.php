@@ -3107,7 +3107,7 @@ class GenerateRequestData
             unset(
                 $apiArray['accessLevel'],
                 $apiArray['APIKey'],
-                $apiArray['Password'],
+                $apiArray['AccountNumber'],
             );
         } else {
             unset(
