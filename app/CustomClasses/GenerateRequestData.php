@@ -3070,7 +3070,7 @@ class GenerateRequestData
         $apiArray = [
             'accessLevel' => 'pro', // set accessLevel to be pro mentioned in Ticket#1846800919
             'APIKey' => isset($connSettings['creds']['ups_api_access_key']) ? $connSettings['creds']['ups_api_access_key'] : '',
-            'AccountNumber' => isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api' && isset($connSettings['creds']['new_api_account_number']) ? $connSettings['creds']['new_api_account_number'] : $connSettings['creds']['account_number'] ?? '',
+            'AccountNumber' => isset($connSettings['creds']['account_number']) ? $connSettings['creds']['account_number'] : '',
             'UserName' => isset($connSettings['creds']['username']) ? $connSettings['creds']['username'] : '',
             'Password' => isset($connSettings['creds']['password']) ? $connSettings['creds']['password'] : '',
             'clientId' => isset($connSettings['creds']['clientId']) ? $connSettings['creds']['clientId'] : '',
@@ -3107,7 +3107,6 @@ class GenerateRequestData
             unset(
                 $apiArray['accessLevel'],
                 $apiArray['APIKey'],
-                $apiArray['UserName'],
                 $apiArray['Password'],
             );
         } else {

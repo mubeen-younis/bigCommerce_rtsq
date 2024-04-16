@@ -26,10 +26,11 @@ class UpsLtlConnectionSettings extends CarriersConnectionSettings
             'platform' => 'bigcommerce',
             'dont_auth' => 1,
             'dimWeightBaseAccount' => $data->rates_my_freight_based ?? 0,
+            'AccountNumber' => $data->account_number ?? '',
+            'UserName' => $data->username ?? '',
         );
 
         if(isset($data->api_type) && $data->api_type === 'new_api'){
-            $params['AccountNumber'] = $data->new_api_account_number ?? '';
             $params['clientId'] = $data->clientId ?? '';
             $params['clientSecret'] = $data->clientSecret ?? '';
             $params['requestForTForceQuotes'] = '1';
@@ -38,8 +39,6 @@ class UpsLtlConnectionSettings extends CarriersConnectionSettings
 
         } else{
             $params['accessLevel'] = $data->access_level; //test or pro
-            $params['AccountNumber'] = $data->account_number ?? '';
-            $params['UserName'] = $data->username ?? '';
             $params['Password'] = $data->password ?? '';
             $params['APIKey'] = $data->ups_api_access_key ?? '';
             $params['licence_key'] = $data->license_key ?? '';
