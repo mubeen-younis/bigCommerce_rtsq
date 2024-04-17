@@ -36,6 +36,8 @@ class SmartyStreet
         self::$isPoBOX = $poBox ?? false;
         self::$isStandAddress = $poBox ? false : true;
         $addressStatus = empty($addressStatus) ? $this->address_validated($address) : $addressStatus;
+        self::$isStandAddress = $addressStatus == "n" ? false : self::$isStandAddress;
+
         if($storeId != null){
             $completeAddress = $this->set_address($address);
             DestinationAddresses::saveDestination($completeAddress, $storeId, $addressStatus, self::$isPoBOX);
