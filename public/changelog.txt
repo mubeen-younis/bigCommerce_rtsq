@@ -1,3 +1,7 @@
+= 2.1.23 2024-04-12 =
+
+* Fix - fixes issue on product settings save (Ticket:2593063812) [#426] (https://bitbucket.org/eniture/big-commerce/pull-requests/426)
+
 = 2.1.22 2024-04-08 =
 
 * Update - Update override rates feature (3rd chunk) (Ticket:2007189654) [#425] (https://bitbucket.org/eniture/big-commerce/pull-requests/425)
