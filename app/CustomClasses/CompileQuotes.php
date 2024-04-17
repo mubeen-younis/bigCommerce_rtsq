@@ -3739,19 +3739,19 @@ class CompileQuotes
 
                 $surcharges = $data['surcharges'] ?? [];
                 unset($data['surcharges']);
-                $data['surcharges']['liftgateFee'] = 0;
+                $data['surcharges'] = ['residentialFee' => 0, 'liftgateFee' => 0, 'notifyDeliveryFee' => 0];
                 foreach ($surcharges as $surcharge) {
-                    if (isset($surcharge['Type']['Code']) && $surcharge['Type']['Code'] === 'RESI_PU_DEL') {
-                        $data['surcharges']['residentialFee'] = $surcharge['Factor']['Value'] ?? 0;
+                    if ((isset($surcharge['Type']['Code']) && $surcharge['Type']['Code'] === 'RESI_PU_DEL') || (isset($surcharge['code']) && $surcharge['code'] == 'RESD')) {
+                        $data['surcharges']['residentialFee'] = $surcharge['Factor']['Value'] ?? $surcharge['value'] ?? 0;
                     }
                     if (isset($surcharge['Type']['Code']) && $surcharge['Type']['Code'] === 'HAZMAT') {
                         $data['surcharges']['hazardousMaterialsFee'] = $surcharge['Factor']['Value'] ?? 0;
                     }
-                    if (isset($surcharge['Type']['Code']) && $surcharge['Type']['Code'] === 'LIFTGATE') {
-                        $data['surcharges']['liftgateFee'] = $surcharge['Factor']['Value'] ?? 0;
+                    if ((isset($surcharge['Type']['Code']) && $surcharge['Type']['Code'] === 'LIFTGATE') || (isset($surcharge['code']) && $surcharge['code'] == 'LIFD')) {
+                        $data['surcharges']['liftgateFee'] = $surcharge['Factor']['Value'] ?? $surcharge['value'] ?? 0;
                     }
-                    if (isset($surcharge['Type']['Code']) && $surcharge['Type']['Code'] === 'ADV_NOTF') {
-                        $data['surcharges']['notifyDeliveryFee'] = $surcharge['Factor']['Value'] ?? 0;
+                    if ((isset($surcharge['Type']['Code']) && $surcharge['Type']['Code'] === 'ADV_NOTF') || (isset($surcharge['code']) && $surcharge['code'] == 'NTFN')) {
+                        $data['surcharges']['notifyDeliveryFee'] = $surcharge['Factor']['Value'] ?? $surcharge['value'] ?? 0;
                     }
                 }
                 // Apply override rates shipping rule
@@ -6240,6 +6240,11 @@ class CompileQuotes
                         $lgCost = $surcharge['Factor']['Value'] ?? 0;
                         break;
                     }
+                    //check : Tforce new api
+                    if (isset($surcharge['code']) && $surcharge['code'] === 'LIFD') {
+                        $lgCost = $surcharge['value'] ?? 0;
+                        break;
+                    }
                 }
             }
         }
@@ -6271,6 +6276,11 @@ class CompileQuotes
             foreach ($surcharges as $surcharge) {
                 if (isset($surcharge['Type']['Code']) && $surcharge['Type']['Code'] === 'ADV_NOTF') {
                     $ndCost = $surcharge['Factor']['Value'] ?? 0;
+                    break;
+                }
+                //check : Tforce new api
+                if (isset($surcharge['code']) && $surcharge['code'] === 'NTFN') {
+                    $ndCost = $surcharge['value'] ?? 0;
                     break;
                 }
             }
