@@ -91,9 +91,10 @@ class GenerateRequestData
         }
         /**
         *  Check: if RAD is not installed or inactive, then using keyword search to validate Po Box address
+        *  Also Check: if Address is standard then keyword search not applied.
         **/
         $this->destinationIsPOBox($destination);
-        if (Functions::isPOBoxAddress($rad_settings, $this->isPoBOX)) {
+        if (Functions::isPOBoxAddress($rad_settings, $this->isPoBOX) && !SmartyStreet::$isStandAddress) {
             return [];
         }
 

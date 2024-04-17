@@ -20,6 +20,7 @@ class SmartyStreet
      */
     private $token = Constant::SMARTY_TOKEN;
     public static $isPoBOX = false;
+    public static $isStandAddress = false;
 
     /**
      * Property contains URL we hit for 3dBin API.
@@ -33,6 +34,7 @@ class SmartyStreet
             return "N";
         }
         self::$isPoBOX = $poBox ?? false;
+        self::$isStandAddress = $poBox ? false : true;
         $addressStatus = empty($addressStatus) ? $this->address_validated($address) : $addressStatus;
         if($storeId != null){
             $completeAddress = $this->set_address($address);
@@ -120,6 +122,8 @@ class SmartyStreet
 
             if (isset( $data[0]['metadata']['zip_type']) && $data[0]['metadata']['zip_type'] === 'POBox') {
                 self::$isPoBOX = true;
+            } elseif (isset( $data[0]['metadata']['zip_type']) && $data[0]['metadata']['zip_type'] === 'Standard') {
+                self::$isStandAddress = true;
             }
 
         } else {
