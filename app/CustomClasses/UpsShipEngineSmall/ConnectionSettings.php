@@ -22,7 +22,24 @@ class ConnectionSettings extends CarriersConnectionSettings
         $url = $this->testConnectionUrl;
         $params = [];
 
-        if(isset($data['shipengine_carrier_id']) && !empty($data['shipengine_carrier_id']) &&isset($data['shipengine_api_key']) && !empty($data['shipengine_api_key'])){
+        if (isset($data['shipengine_carrier_id']) && empty($data['shipengine_carrier_id']) && isset($data['shipengine_api_key']) && !empty($data['shipengine_api_key'])){
+            $response = [
+                'error' => true,
+                'message' => 'ShipEngine Carrier ID is required.',
+            ];
+        } elseif(isset($data['shipengine_carrier_id']) && !empty($data['shipengine_carrier_id']) && isset($data['shipengine_api_key']) && empty($data['shipengine_api_key'])){
+            $response = [
+                'error' => true,
+                'message' => 'ShipEngine API Key is required.',
+            ];
+        } elseif(isset($data['shipengine_carrier_id']) && empty($data['shipengine_carrier_id']) && isset($data['shipengine_api_key']) && empty($data['shipengine_api_key'])){
+            $response = [
+                'error' => false,
+                'message' => 'Test connection successful.',
+            ];
+        }
+
+        if(isset($data['shipengine_carrier_id']) && !empty($data['shipengine_carrier_id']) && isset($data['shipengine_api_key']) && !empty($data['shipengine_api_key'])){
             $params = array(
                 'dont_auth' => '1',
                 'server_name' => $storeName,
