@@ -1,3 +1,7 @@
+= 2.1.24 2024-04-17 =
+
+* Update - Add Tforce New API in BC (Ticket:2537259103 and 2541618719) [#430] (https://bitbucket.org/eniture/big-commerce/pull-requests/430)
+
 = 2.1.23 2024-04-12 =
 
 * Fix - fixes issue on product settings save (Ticket:2593063812) [#426] (https://bitbucket.org/eniture/big-commerce/pull-requests/426)
