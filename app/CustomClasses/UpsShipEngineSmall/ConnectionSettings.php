@@ -16,8 +16,8 @@ class ConnectionSettings extends CarriersConnectionSettings
     public function testConnection($data, $storeName)
     {
         $response = [
-            'error' => true,
-            'message' => 'Something went wrong!',
+            'error' => false,
+            'message' => 'Test connection successful.',
         ];
         $url = $this->testConnectionUrl;
         $params = [];
@@ -31,11 +31,6 @@ class ConnectionSettings extends CarriersConnectionSettings
             $response = [
                 'error' => true,
                 'message' => 'ShipEngine API Key is required.',
-            ];
-        } elseif(isset($data['shipengine_carrier_id']) && empty($data['shipengine_carrier_id']) && isset($data['shipengine_api_key']) && empty($data['shipengine_api_key'])){
-            $response = [
-                'error' => false,
-                'message' => 'Test connection successful.',
             ];
         }
 
