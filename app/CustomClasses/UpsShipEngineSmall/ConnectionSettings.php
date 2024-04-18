@@ -27,16 +27,6 @@ class ConnectionSettings extends CarriersConnectionSettings
                 'error' => false,
                 'message' => 'Test connection successful.',
             ];
-        } elseif (!isset($data['shipengine_carrier_id']) || (isset($data['shipengine_carrier_id']) && empty($data['shipengine_carrier_id']) && isset($data['shipengine_api_key']) && !empty($data['shipengine_api_key']))){
-            $response = [
-                'error' => true,
-                'message' => 'ShipEngine Carrier ID is required.',
-            ];
-        } elseif((isset($data['shipengine_carrier_id']) && !empty($data['shipengine_carrier_id']) && isset($data['shipengine_api_key']) && empty($data['shipengine_api_key'])) || !isset($data['shipengine_api_key'])){
-            $response = [
-                'error' => true,
-                'message' => 'ShipEngine API Key is required.',
-            ];
         }
 
         if(isset($data['shipengine_carrier_id']) && !empty($data['shipengine_carrier_id']) && isset($data['shipengine_api_key']) && !empty($data['shipengine_api_key'])){
