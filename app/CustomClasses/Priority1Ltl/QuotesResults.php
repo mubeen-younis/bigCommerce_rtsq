@@ -30,7 +30,10 @@ class QuotesResults
                             $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $surcharge['amount'] ?? 0;
                         }
                         if(isset($surcharge['code']) && ($surcharge['code'] == 'NOTIFY' || $surcharge['code'] == 'APPT')){
-                            $shipments[$shipment]['q'][$key]['surcharges']['notifyBeforeDeliveryFee'] = $surcharge['amount'] ?? 0;
+                            $shipments[$shipment]['q'][$key]['surcharges']['notifyDeliveryFee'] = $surcharge['amount'] ?? 0;
+                        }
+                        if(isset($surcharge['code']) && ($surcharge['code'] == 'RESDEL') || ($surcharge['code'] == 'RES')){
+                            $shipments[$shipment]['q'][$key]['surcharges']['residentialFee'] = $surcharge['amount'] ?? 0;
                         }
                     }
                 }

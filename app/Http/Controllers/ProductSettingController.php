@@ -55,6 +55,7 @@ class ProductSettingController extends Controller
                 // Need to add this and comment below line if you want to execute without queue job or in dev server $this->importProductsJob($data);
                 ImportProductsFromBCStore::dispatch($data)->delay(Carbon::now()->addSeconds($delay++));
             }
+            Log::info('Syncing inprogress');
             ImportProductsFromBCStoreStatusUpdate::dispatch($insertedId, $request['email'])->delay(Carbon::now()->addSeconds(5));
         }
 

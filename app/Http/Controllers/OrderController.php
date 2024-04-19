@@ -164,11 +164,13 @@ class OrderController extends Controller
                     ->first())->toArray() ?? null;
             }
         }
+        Log::info('Order Data details from Database: ' . json_encode($data));
         return $data;
     }
 
     public function createOrderWidget($request, $order, $reportingFlag)
     {
+        Log::info('Order Data details from BC: ' . json_encode($order));
         $rateId = $order['rate_id'] ?? null;
         $cartId = $order['cart_id'] ?? null;
 
@@ -337,7 +339,7 @@ class OrderController extends Controller
                                 ++$count;
 
                             }
-                            $orderWidget[$zip]['sbs'][$key]['weight'] = optional($binPacked->bin_data)->totalBoxWeight ?? 0;
+                            isset($binPacked->bin_data->totalBoxWeight) ? $orderWidget[$zip]['sbs'][$key]['weight'] = optional($binPacked->bin_data)->totalBoxWeight : null;
                             unset($orderWidgetData);
                             if ($count) {
                                 $orderWidget[$zip]['sbs'][$key]['number_of_items'] = $count;

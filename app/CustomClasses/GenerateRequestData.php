@@ -91,9 +91,10 @@ class GenerateRequestData
         }
         /**
         *  Check: if RAD is not installed or inactive, then using keyword search to validate Po Box address
+        *  Also Check: if Address is standard then keyword search not applied.
         **/
         $this->destinationIsPOBox($destination);
-        if (Functions::isPOBoxAddress($rad_settings, $this->isPoBOX)) {
+        if (Functions::isPOBoxAddress($rad_settings, $this->isPoBOX) && !SmartyStreet::$isStandAddress) {
             return [];
         }
 
@@ -3070,12 +3071,12 @@ class GenerateRequestData
         $apiArray = [
             'accessLevel' => 'pro', // set accessLevel to be pro mentioned in Ticket#1846800919
             'APIKey' => isset($connSettings['creds']['ups_api_access_key']) ? $connSettings['creds']['ups_api_access_key'] : '',
-            'AccountNumber' => isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api' && isset($connSettings['creds']['new_api_account_number']) ? $connSettings['creds']['new_api_account_number'] : $connSettings['creds']['account_number'] ?? '',
+            'AccountNumber' => isset($connSettings['creds']['account_number']) ? $connSettings['creds']['account_number'] : '',
             'UserName' => isset($connSettings['creds']['username']) ? $connSettings['creds']['username'] : '',
             'Password' => isset($connSettings['creds']['password']) ? $connSettings['creds']['password'] : '',
             'clientId' => isset($connSettings['creds']['clientId']) ? $connSettings['creds']['clientId'] : '',
             'clientSecret' => isset($connSettings['creds']['clientSecret']) ? $connSettings['creds']['clientSecret'] : '',
-            'ApiVersion' => '2.0',
+            'requestForTForceQuotes' => '1',
             'paymentCode' => '10',
             'paymentDescription' => 'PREPAID',
             'paymentType' => $paymentType,
@@ -3107,14 +3108,13 @@ class GenerateRequestData
             unset(
                 $apiArray['accessLevel'],
                 $apiArray['APIKey'],
-                $apiArray['UserName'],
-                $apiArray['Password'],
+                $apiArray['AccountNumber'],
             );
         } else {
             unset(
                 $apiArray['clientId'],
                 $apiArray['clientSecret'],
-                $apiArray['ApiVersion'],
+                $apiArray['requestForTForceQuotes'],
             );
         }
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
