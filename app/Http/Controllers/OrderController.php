@@ -2,21 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use App\Constants\Constant;
 use App\CurlRequest;
-use App\CustomClasses\Functions;
-use App\CustomClasses\PalletPackaging;
-use App\Models\BoxSize;
-use App\Models\DBSC\DbscShippingProfile;
-use App\Models\Locations;
-use App\Models\Orders;
-use App\Models\RequestData;
-use App\Models\RequestTempData;
-use App\Models\ShippingGroup;
 use App\Models\Store;
-use Illuminate\Http\JsonResponse;
+use App\Models\Orders;
+use App\Models\BoxSize;
+use App\Models\Locations;
+use App\Constants\Constant;
+use App\Models\RequestData;
 use Illuminate\Http\Request;
+use App\Models\ShippingGroup;
+use App\Models\RequestTempData;
+use App\CustomClasses\Functions;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\CustomClasses\PalletPackaging;
+use App\Models\DBSC\DbscShippingProfile;
 
 class OrderController extends Controller
 {
@@ -136,9 +137,9 @@ class OrderController extends Controller
 
     public function getRequestDataFromDB($tableName, $request, $rateId, $cartId, $order)
     {
+
         $modelName = $tableName === 'RequestData' ? new RequestData() : new RequestTempData();
         $source = $order['order_source'] ?? "www";
-
         $data = optional($modelName::where('rate_id', $rateId)
             ->where('cart_id', $cartId)
             ->where('store_id', $request['store_id'])
@@ -150,7 +151,6 @@ class OrderController extends Controller
                 ->where('store_id', $request['store_id'])
                 ->first())->toArray() ?? null;
         }
-
         // Get data for draft order from DB
         if (blank($data) && $source === "manual") {
             $data = optional($modelName::where('rate_id', $rateId)
@@ -164,11 +164,13 @@ class OrderController extends Controller
                     ->first())->toArray() ?? null;
             }
         }
+        Log::info('Order Data details from Database: ' . json_encode($data));
         return $data;
     }
 
     public function createOrderWidget($request, $order, $reportingFlag)
     {
+        Log::info('Order Data details from BC: ' . json_encode($order));
         $rateId = $order['rate_id'] ?? null;
         $cartId = $order['cart_id'] ?? null;
 
@@ -209,7 +211,6 @@ class OrderController extends Controller
         $LimitedAccessDel = strpos($rateId, '+LAD') ? 'Y' : 'n';
         $isTruckLoad = strpos($rateId, '+TL') ? 'Y' : 'n';
         $isFreightTruckLoad = strpos($rateId, '+FLGTL') ? 'Y' : 'n';
-        $isOverrideRates = strpos($rateId, '+override') ? true : false;
         $isTwoManDel = strpos($rateId, Functions::$twoManDelAccess) ? 'Y' : 'n';
         $isAppointmentDel = strpos($rateId, Functions::$appointmentDelAccess) ? 'Y' : 'n';
         $rateId = strtolower($rateId);
@@ -218,7 +219,7 @@ class OrderController extends Controller
         $isLG = strpos($rateId, '+lg') != false;
         $isOwnArrangement = strpos($rateId, 'own_arrangement') === 0 || strpos($rateId, 'freernlltl') === 0 ? true : false;
         $isLtlRate = $isSmallLtlrate || (substr($rateId, 0, 9) != 'parcel_12') || (strpos($rateId, 'ltl') != false);
-        $carrierHasInsurance = $this->hasInsureCarrier($rateId) && !$isOverrideRates;
+        $carrierHasInsurance = $this->hasInsureCarrier($rateId);
         /*
         * Stored Response from WS */
         $lineItem = json_decode($data['lineitems'])->lineItemData;
@@ -305,6 +306,7 @@ class OrderController extends Controller
                                 $itemCount++;
                             }
                             $count = 0;
+                            $boxWeight = 0;
                             $orderWidgetData['type'] = $type;
                             $orderWidgetData['image_complete'] = $binPacked->image_complete;
                             $orderWidgetData['quantity'] = $quantity;
@@ -313,7 +315,6 @@ class OrderController extends Controller
                                 $orderWidgetData['d'] = '';
                                 $orderWidgetData['w'] = '';
                                 $orderWidgetData['h'] = '';
-                                $orderWidgetData['weight'] = $binPacked->bin_data->weight ?? '';
                             } else {
                                 $orderWidgetData['d'] = $binPacked->bin_data->d . ' x ';
                                 $orderWidgetData['w'] = $binPacked->bin_data->w . ' x ';
@@ -329,6 +330,7 @@ class OrderController extends Controller
                                 $orderWidgetData['items'][$count]['w'] = $item->w;
                                 $orderWidgetData['items'][$count]['h'] = $item->h;
                                 $orderWidgetData['items'][$count]['d'] = $item->d;
+                                $orderWidgetData['items'][$count]['wg'] = $item->wg;
 
                                 $orderWidgetData['items'][$count]['image_separated'] = $item->image_separated;
                                 $orderWidgetData['items'][$count]['image_sbs'] = $item->image_sbs;
@@ -337,6 +339,7 @@ class OrderController extends Controller
                                 ++$count;
 
                             }
+                            isset($binPacked->bin_data->totalBoxWeight) ? $orderWidget[$zip]['sbs'][$key]['weight'] = optional($binPacked->bin_data)->totalBoxWeight : null;
                             unset($orderWidgetData);
                             if ($count) {
                                 $orderWidget[$zip]['sbs'][$key]['number_of_items'] = $count;
@@ -379,15 +382,15 @@ class OrderController extends Controller
             if (blank($item)) {
                 continue;
             }
-            $isOriginMarkup = isset($origin->origin_markup) && !empty($origin->origin_markup) && !$isOverrideRates;
-            $isProductMarkup = isset($item->product_markup) && !empty($item->product_markup) && !$isOverrideRates;
+            $isOriginMarkup = isset($origin->origin_markup) && !empty($origin->origin_markup);
+            $isProductMarkup = isset($item->product_markup) && !empty($item->product_markup);
 
             $zip = $origin->locationId != '' ? $origin->locationId : $origin->senderZip;
             $city = $origin->senderCity ? $origin->senderCity . ',' : '';
             $state = $origin->senderState ?? '';
             $senderZip = $origin->senderZip ?? '';
             $origDetails = $this->getOriginForInsAndLocal($zip);
-            $nickname = $origDetails['nickname']; 
+            $nickname = isset($origDetails['nickname']) ? $origDetails['nickname'] : ''; 
             if (!$isMultiShipment && $isInspOrLocal) {
                 $origDetails = $this->getOriginForInsAndLocal($zip);
                 if (!blank($origDetails)) {
@@ -403,7 +406,7 @@ class OrderController extends Controller
                 $orderWidget[$zip]['address'] = $nickname . ' - ' . $city . ' ' . $state . ' ' . $senderZip;
             }
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
-            $sRate = $order['shipping_rate'];
+            $sRate = $order['shipping_rate'] ?? null;
 
             if ($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement) {
                 $enableFeaturesArray = Functions::getEnableFeaturesArr($isLG, $insideDelivery == 'Y', $notifyBeforeDelivery == 'Y', $LimitedAccessDel == 'Y');
@@ -446,10 +449,7 @@ class OrderController extends Controller
                         break;
                     }
                 }
-                $isOverrideRates = strpos($code, '+override') ? true : false;
-                $carrierHasInsurance = $code && !$isOverrideRates ? $this->hasInsureCarrier($code) : false;
-                $isOriginMarkup = isset($origin->origin_markup) && !empty($origin->origin_markup) && !$isOverrideRates;
-                $isProductMarkup = isset($item->product_markup) && !empty($item->product_markup) && !$isOverrideRates;
+                $carrierHasInsurance = $code ? $this->hasInsureCarrier($code) : false;
 
                 /*Added condition if in case of multi shipment
                 The rate of shipping group will be added to warehouse rate*/
@@ -460,9 +460,9 @@ class OrderController extends Controller
                 $isMulti = true;
             }
 
-            /** 
+            /**
              * Add Quote ID
-             * */ 
+             * */
             if (!$isSmallLtlrate && empty($multiShipmentresponse)){
                 $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($rateId, $responseFromWS, $zip);
             } elseif (!$isSmallLtlrate && $isMultiShipment) {
@@ -483,7 +483,7 @@ class OrderController extends Controller
                 $sName = $order['shipping_name'] ?? '';
                 $sName = explode('w/', $sName)[0] ?? '';
                 $sMethod = '';
-            }            
+            }
 
             $orderWidget[$zip]['shipping_method'] = $sName . $sMethod;
             $orderWidget[$zip]['shipping_rate'] = '$' . number_format((float)$sRate, 2,);
@@ -539,17 +539,17 @@ class OrderController extends Controller
                     }
                 }
 
-                if (isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y' && !$isOverrideRates) {
+                if (isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') {
                     array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
                     $addHazmat = true;
-                } else if ($addHazmat && !$isOverrideRates) {
+                } else if ($addHazmat) {
                     array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
                 }
             } else {
                 if ((isset($item->product_insurance_active) && $item->product_insurance_active == 1 && $carrierHasInsurance) || in_array('Insurance', $oldAccessorial)) {
                     array_push($orderWidget[$zip]['accessories'], 'Insurance');
                 }
-                if ((isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y' && !$isOverrideRates) || $addedHazmat) {
+                if ((isset($item->isHazmatLineItem) && $item->isHazmatLineItem == 'Y') || $addedHazmat) {
                     array_push($orderWidget[$zip]['accessories'], 'Hazardous Material');
                     $addHazmat = true;
                 }
@@ -630,7 +630,7 @@ class OrderController extends Controller
         $resp = [
             'widget' => $this->objectToArray($orderWidget),
             'sbs' => $sbs,
-            'fdoShipments' =>$fdoShipmenst, 
+            'fdoShipments' =>$fdoShipmenst,
         ];
         return $resp;
     }
@@ -673,7 +673,7 @@ class OrderController extends Controller
         $response['resi'] = strpos($rateId, '+r') ? 'Y' : 'n';
         $response['liftG'] = strpos($rateId, '+lg') ? 'Y' : 'n';
         $response['resiPickup'] = strpos($rateId, '+pu') ? 'Y' : 'n';
-        $response['lgPickup'] = strpos($rateId, '+lfgpu') ? 'Y' : 'n';
+        $response['lgPickup'] = strpos($rateId, '+lgpu') ? 'Y' : 'n';
         return $response;
     }
 
@@ -737,6 +737,33 @@ class OrderController extends Controller
             }
         }
         return $resp;
+    }
+
+    private function updateStaffNote($data,$toRequest)
+    {   
+        // Combine array elements into a single string with two line breaks between them
+        $staffNoteContent = implode("\n\n", $data);
+
+        // Create a JSON string for the staff_notes field
+        $staffNotesJson = json_encode(['staff_notes' => $staffNoteContent]);
+
+        // Set up headers for the request
+        $headers[] = 'X-Auth-Token: ' . $this->accessToken;
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+
+        // Set the endpoint for the BigCommerce API
+        $endPoint = 'https://api.bigcommerce.com/stores/' . $toRequest['store_hash'] . '/v2/orders/' . $toRequest['order_id'];
+
+
+        // Make the PUT request
+        $response = $this->curlRequest->enSingleCurlRequest($endPoint, $staffNotesJson, $headers, 'PUT', true);
+
+        // Check the response and handle it accordingly
+        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+            $responseData = json_decode($response['response'], true);
+            return $response['status'];
+        }
     }
 
     public function getBCOrders($request)
@@ -1030,7 +1057,7 @@ class OrderController extends Controller
         $toRequest['order_id'] = $orderId;
         $this->accessToken = $store->access_token;
         $this->storeHash = $storeHash;
-        $this->moveQuotesTempToReq($toRequest, $request);
+        $this->moveQuotesTempToReq($toRequest, $request,$scope);
         return response()->json(true, 200);
     }
 
@@ -1133,8 +1160,9 @@ class OrderController extends Controller
      * Move row from request_temp to request table after order placing
      * delete all rows from request_temp relevant to cart_id
      */
-    public function moveQuotesTempToReq($toRequest, $request)
+    public function moveQuotesTempToReq($toRequest, $request,$scope)
     {
+        $order=[];
         $headers[] = 'X-Auth-Token: ' . $this->accessToken;
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
@@ -1142,6 +1170,7 @@ class OrderController extends Controller
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
             $cartId = json_decode($response['response'])->cart_id;
+            $order= json_decode($response['response'],true);
             $endpoint = json_decode($response['response'])->shipping_addresses->url;
             $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
             if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
@@ -1149,6 +1178,10 @@ class OrderController extends Controller
                 $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
                 if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
                     $response = json_decode($response['response']);
+                    $order['rate_id'] = optional($response)->rate_id ?? null;
+                    $order['full_rate_id'] = optional($response)->shipping_provider_quote->rateId ?? '';
+                    $order['shipping_name'] = optional($response)->shipping_provider_quote->name ?? '';
+                    $order['shipping_rate'] = optional($response)->shipping_provider_quote->rate->value ?? '';
                     $rateId = optional($response)->rate_id ?? null;
                     /*
                      * Added this if in case of rate ID characters exceed 36
@@ -1158,30 +1191,105 @@ class OrderController extends Controller
                      * */
                     $fullRateId = optional($response)->shipping_provider_quote->rateId ?? null;
                     $reqData = optional(RequestTempData::where('rate_id', $rateId)->where('cart_id', $cartId)->first())->toArray();
-
                     if (blank($reqData)) {
                         $reqData = optional(RequestTempData::where('rate_id', $fullRateId)->where('cart_id', $cartId)->first())->toArray();
                     }
-
                     if (blank($reqData)) {
                         $reqData = optional(RequestTempData::where('rate_id', $fullRateId)->where('store_id', $toRequest['store_id'])->latest()->first())->toArray();
                     }
-                    Log::info('Order Data DB: ' . json_encode($reqData) . ' RateID: ' . $rateId . ' CartId: ' . $cartId);
+
                     if (!blank($reqData)) {
                         unset($reqData['id']);
+                        $orderId= $order['id'];
                         RequestData::insert($reqData);
+                        // Check: if order is newly created then update staff note
+                        if ($scope == 'store/order/created') {
+                            $orderCheck = RequestData::where('order_id', $orderId)->first();
+                            if (!$orderCheck) {
+                                $reportingFlag = "false";
+                                $orderWidget = $this->createOrderWidget($toRequest, $order, $reportingFlag);
+                                $formateStaffNote = $this->formatShipment($orderWidget);
+                                $isStatus = $this->updateStaffNote($formateStaffNote, $toRequest);
+                                if($isStatus){
+                                    RequestData::where('store_id', $toRequest['store_id'])
+                                    ->orWhere('cart_id', $cartId)
+                                    ->orWhere('rate_id', $rateId)
+                                    ->update([
+                                        'order_id' => $orderId
+                                    ]);
+                                }
+                            }
+                        }
                         // TODO :  Need to check why we are doing this
-//                        $request['store_name'] = $toRequest['store_name'];
-//                        $request['store_id'] = $toRequest['store_id'];
-//                        $request['store_hash'] = $toRequest['store_hash'];
-//                        $request['order_id'] = $toRequest['order_id'];
-//                        $this->getOrderWidget($request, true);
+                        //  $request['store_name'] = $toRequest['store_name'];
+                        //  $request['store_id'] = $toRequest['store_id'];
+                        //  $request['store_hash'] = $toRequest['store_hash'];
+                        //  $request['order_id'] = $toRequest['order_id'];
+                        //  $this->getOrderWidget($request, true);
                     }
                 }
             }
         }
     }
 
+    private function formatShipment($data)
+    {
+
+        if (isset($data['widget']) && is_array($data['widget']) && count($data['widget']) > 0) {
+            $formattedShipments = [];
+
+            foreach ($data['widget'] as $index => $shipmentData) {
+                // Extract relevant information
+                $locationType = isset($shipmentData['locationtype']) ? $shipmentData['locationtype'] : '';
+                $address = isset($shipmentData['address']) ? $shipmentData['address'] : '';
+                $items = isset($shipmentData['items']) ? implode(', ', $shipmentData['items']) : '';
+                $accessories = isset($shipmentData['accessories']) ? implode(' | ', $shipmentData['accessories']) : '';
+                $items = isset($shipmentData['items']) ? implode(' | ', $shipmentData['items']) : ''; 
+                $shippingRate = isset($shipmentData['shipping_rate']) ? $shipmentData['shipping_rate'] : '';
+                $quoteId = isset($shipmentData['quoteId']) ? $shipmentData['quoteId'] : '';
+                $expectedDelivery = isset($shipmentData['shipping_method']) && !empty($shipmentData['shipping_method'])
+                    ? $shipmentData['shipping_method']
+                    : '';
+
+                // Build the formatted string for each shipment
+                $formattedString = "Shipment " . ($index + 1) . " > Origin and Services > ";
+                $formattedString .= "$locationType : $address, $expectedDelivery : $shippingRate";
+                $formattedString .= !empty($accessories) ? ", Accessorials: $accessories" : '';
+                $formattedString .= !empty($quoteId) ? ", Quote Id: $quoteId" : '';
+                $formattedString .= !empty($items) ? ", Items: $items" : '';
+
+                // Add SBS details in the staff note
+                $sbs = isset($shipmentData['sbs']) ? $shipmentData['sbs'] : [];
+                if(!empty($sbs)){
+                    $boxes = array_filter($sbs, function($bin) {
+                        return $bin['type'] != 'item' && $bin['type'] != 'weight_based';
+                    }) ?? [];
+                    
+                    $totalBoxes = count($boxes) > 0 ? count($boxes) : 1;
+
+                    foreach($sbs as $key => $bin){
+                        if(isset($bin['type']) && $bin['type'] == 'item' && isset($bin['quantity']) && !empty($bin['quantity'])){
+                            $totalBoxes = $bin['quantity'];
+                            for ($i=1; $i <= $bin['quantity']; $i++) { 
+                                $weight = isset($bin['weight']) ? $bin['weight'] : 0;
+                                $sbsDetails = "Box $i of $totalBoxes : $weight lbs";
+                                $formattedString .= !empty($sbsDetails) ? ", $sbsDetails" : '';
+                            }
+                        } else {
+                            $count = $key + 1;
+                            $weight = isset($bin['weight']) ? $bin['weight'] : 0;
+                            $sbsDetails = "Box $count of $totalBoxes : $weight lbs";
+                            $formattedString .= !empty($sbsDetails) ? ", $sbsDetails" : '';
+                        }
+                    }
+                }
+                // Add the formatted string to the array
+                $formattedShipments[] = $formattedString;
+            } 
+
+            return $formattedShipments;
+        }
+    }
     private function isSmallQuote($quote)
     {
         $quote = explode('(', $quote)[0];

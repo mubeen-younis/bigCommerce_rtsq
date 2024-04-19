@@ -91,9 +91,10 @@ class GenerateRequestData
         }
         /**
         *  Check: if RAD is not installed or inactive, then using keyword search to validate Po Box address
+        *  Also Check: if Address is standard then keyword search not applied.
         **/
         $this->destinationIsPOBox($destination);
-        if (Functions::isPOBoxAddress($rad_settings, $this->isPoBOX)) {
+        if (Functions::isPOBoxAddress($rad_settings, $this->isPoBOX) && !SmartyStreet::$isStandAddress) {
             return [];
         }
 
@@ -486,13 +487,7 @@ class GenerateRequestData
     function rnlLtlEnitArr($connSettings, $destination, $enitOrigin, $lineItems)
     {
         $shipmentPrice = $this->calculatePrice($lineItems);
-        if (isset($connSettings['quote_settings']['free_shipping_on_orders']) && $connSettings['quote_settings']['free_shipping_on_orders'] < $shipmentPrice) {
-            return [
-                'freeShipment' => true
-            ];
-        }
-
-        return [
+        $requestArr = [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
@@ -502,6 +497,10 @@ class GenerateRequestData
             'api' => $this->getApiInfoArrRNLLtl($connSettings, $destination, $enitOrigin),
             'getDistance' => 0
         ];
+    
+        return array_merge($requestArr, [
+            'freeShipment' => isset($connSettings['quote_settings']['free_shipping_on_orders']) && $connSettings['quote_settings']['free_shipping_on_orders'] < $shipmentPrice
+        ]);
     }
 
     public function unishippersSmallEnitArr($connSettings, $destination)
@@ -1838,7 +1837,7 @@ class GenerateRequestData
         $apiArray = [
             'UserName' => $connSettings['creds']['username'] ?? '',
             'Password' => $connSettings['creds']['password'] ?? '',
-            'APIKey' => $connSettings['creds']['authentication_key'] ?? '',
+            'APIKey' => $connSettings['creds']['api_key'] ?? '',
             'thresholdWeightLimit' => $weightThreshold,
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
@@ -1851,7 +1850,7 @@ class GenerateRequestData
             'CODAmount' => '0',
             'collectOnDeliveryAmount' => '0',
             'DeclaredValue' => '0',
-
+            'ApiVersion' => '2.0',
             'holdAtTerminal' => $connSettings['quote_settings']['hold_at_terminal'] ?? 0,
             'palletCode' => $palletCode ?? '',
             'palletWeight' => $palletWeight ?? '',
@@ -3072,12 +3071,12 @@ class GenerateRequestData
         $apiArray = [
             'accessLevel' => 'pro', // set accessLevel to be pro mentioned in Ticket#1846800919
             'APIKey' => isset($connSettings['creds']['ups_api_access_key']) ? $connSettings['creds']['ups_api_access_key'] : '',
-            'AccountNumber' => isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api' && isset($connSettings['creds']['new_api_account_number']) ? $connSettings['creds']['new_api_account_number'] : $connSettings['creds']['account_number'] ?? '',
+            'AccountNumber' => isset($connSettings['creds']['account_number']) ? $connSettings['creds']['account_number'] : '',
             'UserName' => isset($connSettings['creds']['username']) ? $connSettings['creds']['username'] : '',
             'Password' => isset($connSettings['creds']['password']) ? $connSettings['creds']['password'] : '',
             'clientId' => isset($connSettings['creds']['clientId']) ? $connSettings['creds']['clientId'] : '',
             'clientSecret' => isset($connSettings['creds']['clientSecret']) ? $connSettings['creds']['clientSecret'] : '',
-            'ApiVersion' => '2.0',
+            'requestForTForceQuotes' => '1',
             'paymentCode' => '10',
             'paymentDescription' => 'PREPAID',
             'paymentType' => $paymentType,
@@ -3109,14 +3108,13 @@ class GenerateRequestData
             unset(
                 $apiArray['accessLevel'],
                 $apiArray['APIKey'],
-                $apiArray['UserName'],
-                $apiArray['Password'],
+                $apiArray['AccountNumber'],
             );
         } else {
             unset(
                 $apiArray['clientId'],
                 $apiArray['clientSecret'],
-                $apiArray['ApiVersion'],
+                $apiArray['requestForTForceQuotes'],
             );
         }
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
@@ -3325,6 +3323,9 @@ class GenerateRequestData
 
                         $newOrigins[$newkey] = $origins[$origin];
                         $newitemsArr[$newkey] = $this->updatCommdityDetails($itemsArr[$origin], $bin, $boxBins, $itemsArr);
+                        $boxWeight = $boxBins[$bin->bin_data->id]['box_weight'] ?? 0;
+                        $totalBoxWeight = $bin->bin_data->weight + $boxWeight ?? 0;
+                        $binResponse[$locationId]->bins_packed[$key]->bin_data->totalBoxWeight = $totalBoxWeight;
                     }
                 }
             } else {
