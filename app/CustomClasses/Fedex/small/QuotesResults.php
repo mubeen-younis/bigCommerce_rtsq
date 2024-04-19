@@ -8,6 +8,7 @@ use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
 use App\CustomClasses\Functions;
 use Illuminate\Support\Str;
+use App\Http\Controllers\ShippingRuleController;
 
 class QuotesResults
 {
@@ -137,8 +138,9 @@ class QuotesResults
     }
 
 
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $destination, $items, $storeId = '')
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $destination, $items, $storeId = '', $carrierName = '')
     {
+        $shippingRule = new ShippingRuleController();
         $this->allOrigins = $this->originIndexToShipment($allOrigins);
         $this->destination = $destination;
         $shipments = $this->formateQuoteBeforeCompile($shipments);
@@ -147,7 +149,7 @@ class QuotesResults
         $allConfigServices['services'] = $allConfigServices = [];
 
         $rad_settings = Functions::getRADsettings($storeId) ?? [];
-        $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
+        $isRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
 
         if (isset($this->quoteSettings['carrier_services'])) {
             foreach ($this->quoteSettings['carrier_services'] as $key => $serviceName) {
@@ -227,6 +229,7 @@ class QuotesResults
                     // Check if service type is checked to show
                     $serviceName = str_replace('_ONE_RATE', '', $data['serviceType']);
                     $serviceName = str_replace('_AIR_SERVICE', '', $serviceName);
+                    $serviceName = str_replace('FEDEX_', '', $serviceName);
                     // Added to check one rate service check
                     $tocheckServiceName = Str::contains($data['serviceType'], '_ONE_RATE') ? "ONE_RATE_" . $serviceName : $serviceName;
                     $checkService = $this->checkServiceIsEnabled($origin, $tocheckServiceName, $allConfigServices['services']);
@@ -234,7 +237,7 @@ class QuotesResults
                         continue;
                     }
                     //  CHeck FOr Ups ground transit days
-                    if ($serviceName == "FEDEX_GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "FEDEX_GROUND_HOME_DELIVERY" || $serviceName == "FEDEX_APPOINTMENT_HOME_DELIVERY" || $serviceName == "FEDEX_DATE_CERTAIN_HOME_DELIVERY" || $serviceName == "FEDEX_EVENING_HOME_DELIVERY") {
+                    if ($serviceName == "GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "APPOINTMENT_HOME_DELIVERY" || $serviceName == "DATE_CERTAIN_HOME_DELIVERY" || $serviceName == "EVENING_HOME_DELIVERY") {
                         if (isset($this->quoteSettings['number_of_transit_days']) && $this->quoteSettings['number_of_transit_days'] != null && isset($this->quoteSettings['ground_metric']) && $this->quoteSettings['ground_metric'] != null) {
                             $islimited = $this->checkGroundTransit($data, $this->quoteSettings);
                             if ($islimited) {
@@ -244,23 +247,29 @@ class QuotesResults
                     }
                     //  CHecks FOr Only quote ground service if hazardous
                     if ($isHazmat && isset($this->quoteSettings['ground_service_for_hazardous_material']) && $this->quoteSettings['ground_service_for_hazardous_material']) {
-                        if (!($serviceName == "FEDEX_GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "FEDEX_GROUND_HOME_DELIVERY" || $serviceName == "FEDEX_APPOINTMENT_HOME_DELIVERY" || $serviceName == "FEDEX_DATE_CERTAIN_HOME_DELIVERY" || $serviceName == "FEDEX_EVENING_HOME_DELIVERY")) {
+                        if (!($serviceName == "GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "APPOINTMENT_HOME_DELIVERY" || $serviceName == "DATE_CERTAIN_HOME_DELIVERY" || $serviceName == "EVENING_HOME_DELIVERY")) {
                             continue;
                         }
                     }
-
-                    //$access = $this->getAccessorialCodeSmall();
                     // Adding Markup in services if enabled
                     if (isset($this->quoteSettings['negotiated_rates']) && $this->quoteSettings['negotiated_rates'] == 1) {
                         $data['totalNetCharge']['Amount'] = $data['NegotiatedRates']['Amount'] ?? $data['totalNetCharge']['Amount'];
                     }
+                    // Apply override rates shipping rule
+                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
+                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
+
                     // Adding Product and Origin Markup in services if added
                     $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
-                    $price = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
-                    $price = $this->getServiceRate($price, $serviceName, $this->quoteSettings);
+                    $data['totalNetCharge']['Amount'] = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
+
                     $quoteSettings = $this->quoteSettings;
 
-                    $price = $this->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup'] ?? 0);
+                    $data['totalNetCharge']['Amount'] = $this->addHandlingMarkupOfHazmat($data['totalNetCharge']['Amount'], $quoteSettings['handling_fee_markup'] ?? 0);
+                    
+                    $price = $data['totalNetCharge']['Amount'];
+
+                    $access2 = $access;
                     // Checking hazmat and adding hazmat amounts in services
                     if ($isHazmat) {
                         if ($this->isMultiShipment) {
@@ -271,20 +280,24 @@ class QuotesResults
                             $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
                         }
                     }
+
+                    $price = $this->getServiceRate($price, $serviceName, $this->quoteSettings);
+
+                    
                     $data['serviceDesc'] = $this->checkAndAppendFedex($data['serviceDesc']);
-                    $title = $this->getServiceTitle($data['serviceDesc'], $data, $data['serviceType'], $this->quoteSettings, $residential, $showRadNotation);
+                    $title = $this->getServiceTitle($data['serviceDesc'], $data, $data['serviceType'], $this->quoteSettings, $residential, $isRadNotation);
                     $price = (float)str_replace(',', '', $price);
                     /*
                     * Generate random code to limit rate_id to 50 chars
                      */
-                    if ($serviceName == "FEDEX_GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "FEDEX_GROUND_HOME_DELIVERY") {
-                        $access2 = $access . '+gd';
+                    if ($serviceName == "GROUND" || $serviceName == "GROUND_HOME_DELIVERY") {
+                        $access2 = $access2 . '+gd';
                     } elseif (strpos($data['serviceType'], '_AIR_SERVICE')) {
-                        $access2 = $access . '+as';
+                        $access2 = $access2 . '+as';
                     } else if (strpos($data['serviceType'], '_ONE_RATE')) {
-                        $access2 = $access . '+or';
+                        $access2 = $access2 . '+or';
                     } else {
-                        $access2 = $access . '+gd';
+                        $access2 = $access2 . '+gd';
                     }
 
                     $data['serviceType'] = $this->generateRandomString(5);
@@ -316,7 +329,7 @@ class QuotesResults
                     $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
                     $originQuotesMulti[0]['code'] = 'Multifedexsmall' . $access2;
                     $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
-                    $originQuotesMulti[0]['title'] = $residential && $showRadNotation ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
+                    $originQuotesMulti[0]['title'] = $residential ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
                 }
             }
             $resp = [

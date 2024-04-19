@@ -229,10 +229,10 @@ class ConnectionController extends Controller
                 'dont_auth' => '1',
                 'carrierName' => 'rnl',
                 'serverName' => $storeName ?? '',
-    
+                'APIVersion' => '2.0',
                 'UserName' => $request['username'] ?? '',
                 'Password' => $request['password'] ?? '',
-                'APIKey' => $request['authentication_key'] ?? '',
+                'APIKey' => $request['api_key'] ?? '',
             ];
     
             $getPalletsQueryString = http_build_query($getPalletsParams);

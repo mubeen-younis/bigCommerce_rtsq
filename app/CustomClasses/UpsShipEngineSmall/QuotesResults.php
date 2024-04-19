@@ -8,6 +8,7 @@ use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
 use App\CustomClasses\Functions;
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\ShippingRuleController;
 
 class QuotesResults
 {
@@ -150,8 +151,9 @@ class QuotesResults
     /*
      * Returns compiled quotes of shipengine
      * */
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items, $storeId = '')
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items, $storeId = '', $carrierName = '')
     {
+        $shippingRule = new ShippingRuleController();
         $shipments = $this->formateQuoteBeforeCompile($shipments);
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
         $this->quoteSettings = $connectionSettings['ups-ship-engine']['quote_settings'] ?? '';
@@ -172,7 +174,7 @@ class QuotesResults
         $carrierCode = "shipEng";
 
         $rad_settings = Functions::getRADsettings($storeId) ?? [];
-        $showRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
+        $isRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
 
         foreach ($shipments as $origin => $quote) {
 
@@ -222,18 +224,20 @@ class QuotesResults
                             continue;
                         }
                     }
+                    // Apply override rates shipping rule
+                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
+                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
+
                     // Adding Product and Origin Markup in services if added
                     $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['shipping_amount']['amount'], $origin, $items, $allOrigins);
-                    $price = $data['shipping_amount']['amount'] + $productOriginMarkupFee;
+                    $data['shipping_amount']['amount'] = $data['shipping_amount']['amount'] + $productOriginMarkupFee;
 
-
-                    // Adding Markup in services if enabled
-                    $price = $this->getServiceRate($price, $serviceCode, $this->quoteSettings);
                     $quoteSettings = $this->quoteSettings;
                     $amount = $data['shipping_amount']['amount'];
 
-                    $price = $this->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup'] ?? 0);
-
+                    $data['shipping_amount']['amount'] = $this->addHandlingMarkupOfHazmat($data['shipping_amount']['amount'], $quoteSettings['handling_fee_markup'] ?? 0);
+                    $price = $data['shipping_amount']['amount'];
+                    
                     // Checking hazmat and adding hazmat amounts in services
                     if ($isHazmat) {
                         if ($isMultiShipment) {
@@ -245,8 +249,9 @@ class QuotesResults
                         }
                     }
 
+                    $price = $this->getServiceRate($price, $serviceCode, $this->quoteSettings);
 
-                    $title = $this->getServiceTitle($data['serviceDesc'], $data, $this->quoteSettings, $residential, $showRadNotation);
+                    $title = $this->getServiceTitle($data['serviceDesc'], $data, $this->quoteSettings, $residential, $isRadNotation);
                     $price = (float)str_replace(',', '', $price);
                     $shortServiceCode = $this->getShortCodesOfService($serviceCode);
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12' . $carrierCode . $shortServiceCode . $access2;
@@ -273,7 +278,7 @@ class QuotesResults
                 $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
                 $originQuotesMulti[0]['code'] = 'Multi' . $carrierCode . $access2;
                 $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
-                $originQuotesMulti[0]['title'] = $residential && $showRadNotation ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
+                $originQuotesMulti[0]['title'] = $residential ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
             }
 
 

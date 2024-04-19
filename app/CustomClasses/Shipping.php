@@ -184,7 +184,6 @@ class Shipping
         if (empty($requestArr)) {
             return [];
         }
-
         $SuppressParcelRates = isset($requestArr['SuppressParcelRates']) ? $requestArr['SuppressParcelRates'] : false;
         unset($requestArr['SuppressParcelRates']);
         $url = Constant::QUOTES_URL;
@@ -893,24 +892,10 @@ class Shipping
     public function freeShippingTitle($finalQuotes)
     {
         foreach ($finalQuotes as $key => $quote) {
-            if (isset($quote['code']) && ($quote['code'] == 'INSP' || $quote['code'] == 'LOCDEL')) {
-                continue;
-            }
-            if ((empty($quote['rate']) || $quote['rate'] == '0.00') && isset($quote['code']) && $quote['code'] !== 'own_arrangement') {
-                $title = '';
-
-                if (isset($quote['title']) && strpos($quote['title'], '(Delivery')){
-                    $estimate = explode('(Delivery', $quote['title'])[1] ?? '';
-                    $title = Functions::$freeShipping . ' (Delivery' . $estimate;
-                } elseif (isset($quote['title']) && strpos($quote['title'], '(Intransit')){
-                    $estimate = explode('(Intransit', $quote['title'])[1] ?? '';
-                    $title = Functions::$freeShipping . ' (Intransit' . $estimate;
-                }
-
-                $finalQuotes[$key]['title'] = empty($title) ? Functions::$freeShipping : $title;
+            if (isset($quote['rate']) && ($quote['rate'] <= 0 )){
+                $finalQuotes[$key]['rate'] = 0;
             }
         }
-
         return $finalQuotes;
     }
 
@@ -1050,7 +1035,7 @@ class Shipping
             $res = str_replace(Functions::$smallPrefix, '', $res);
         }
 
-        if (strlen($quote['title']) > 100) {
+        if (strlen($quote['title']) >= 100) {
             $res = explode("w/", $quote['title']);
             $string = str_replace('residential', 'resi', $res[1]);
             $res = Functions::$simpleLTLTitle . ' w/' . $string;

@@ -194,7 +194,7 @@ class LocationsController extends Controller
     public function saveLocationRequest($location, $request, $method, $callBy)
     {
         if (empty($request->nickname)) {
-            $nickname = $request->zip_code . '_' . $request->city . '_' . $request->state;
+            $nickname =  $request->city. ', ' . $request->state . ' ' . $request->zip_code;
         } else {
             $nickname = $request->nickname;
         }

@@ -19,6 +19,7 @@ class AdditionalCarrierTabSettingController extends Controller
     public function index(Request $request)
     {
         $installed_carrier = $request->installed_carrier_id;
+        $services = [];
 
         $carrier = DB::table('installed_carriers')
             ->select('slug')
@@ -34,7 +35,7 @@ class AdditionalCarrierTabSettingController extends Controller
             $carrierType = $request->carrier_type ?? 'gtz';
 
             if ($carrierType === 'CRS') {
-                $storeId = $request['store_id'] ?? null;
+                $storeId = $request['store_id'] ?? $request->store_id ?? null;
                 $services = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
                     ->where('installed_carriers.id', $installed_carrier)
                     ->where('shopify_freights.store_id', $storeId)

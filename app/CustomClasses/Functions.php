@@ -13,7 +13,8 @@ use App\CustomClasses\UpsShipEngineSmall\QuotesResults as upsShipEngineSmallQuot
 use App\Http\Controllers\OrderController;
 use App\Models\PackagingDetail;
 use App\Helpers\Helpers;
-
+use Illuminate\Support\Facades\DB;
+use App\Models\CarrierServices;
 use App\Constants\Constant;
 
 class Functions
@@ -35,7 +36,7 @@ class Functions
     public static $insideDelLiftGateResiLable = ' w/ residential, LG & inside delivery';
     public static $freeShipping = 'Free Shipping';
     public static $resiPickupTitle = '+pu';
-    public static $lgPickupTitle = '+lfgpu';
+    public static $lgPickupTitle = '+lgpu';
     public static $palletPkgUrl = 'https://us-east.api.3dbinpacking.com/packer/palletPack';
     public static $imageCompleteUrl = 'https://images.eniture.com/d549b90ece00d180c5b69a51b6354842/20221207/cd59328e85619fe6b0dc52aa4db034c7/1670418636-7316-1129122.png';
     public static $imageSeparatedUrl = 'https://us-east.api.3dbinpacking.com/images/70785010926d0cc360921e4541811a53/20181106/4c114cebfa2d61a0c8153b3170ab6663/1541503329-2391-8709331.png';
@@ -86,6 +87,41 @@ class Functions
         'ups_worldwide_express',
         'ups_worldwide_express_plus',
     ];
+
+    public static $rnlServices = [
+        'STD' => 'Standard Service',
+        'GSDS' => 'Guaranteed PM',
+        'GSAM' => 'Guaranteed AM',
+        'GSHW' => 'Guaranteed Hourly Window'
+    ];
+
+    public static $accessorialServices = [
+        'liftgate' => 'liftgateFee',
+        'notify' => 'notifyDeliveryFee',
+        'limitedAccess' => 'limitedAccessDeliveryFee',
+        'insideDelivery' => 'insideDeliveryFee',
+        'residential' => 'residentialFee',
+    ];
+
+    public static $dayRossServices = [
+        'AM' => 'AM Service',
+        'EG' => 'Ground Service',
+        'UP' => 'Urgent PAC',
+        'AD' => 'US Next PM',
+        'A2' => 'US 2nd Day',
+        'AG' => 'US Ground',
+        'H1' => 'Deliver to threshold',
+        'H2' => 'Deliver to room of choice',
+        'H3' => 'Deliver & packaging removal',
+        'H4' => 'Deliver to threshold - 2 man',
+        'H5' => 'Deliver to room of choice - 2 man',
+        'H6' => 'Deliver & packaging removal - 2 man',
+    ];
+
+    public static function is3plCarrier($carrier){
+        $carriersArray = ['ltl-quotes', 'freightquote-ltl', 'tql-ltl', 'echo-ltl', 'freightquote-chr-ltl', 'priority-one-ltl', 'gtz-ltl', 'gtz-new', 'cltl'];
+        return in_array($carrier, $carriersArray);
+    }
 
     public static function hasInsureCarrier($code)
     {
@@ -166,13 +202,26 @@ class Functions
         return $carrierCodesWithName[$carrSlug] ?? null;
     }
 
+    public static function getCarrIndexBySlug($carrSlug): ?string
+    {
+        $carrierIndexesArray = ['ltl-quotes' => 'wweLTL', 'ups-ltl' => 'upsLTL', 'rl-ltl' => 'rnl', 'xpo-ltl' => 'xpoLogistics',
+            'fedex-ltl' => 'fedexLTL', 'gtz-new' => 'wweLTLN', 'gtz-ltl' => 'globalTranz', 'cltl' => 'cerasis', 'ups-ship-engine' => 'shipEngine',
+            'small-package' => 'wweSmall', 'unishippers-small-new' => 'wweSmallN', 'ups-small' => 'upsSmall', 'fedex-small' => 'fedexSmall', 'unishippers-small' => 'unishippersSmall',
+            'freightquote-ltl' => 'freightQuote', 'freightquote-chr-ltl' => 'chr', 'purolator-small' => 'purolator', 'usps-small' => 'usps',
+            'tql-ltl' => 'tql', 'yrc-ltl' => 'yrc', 'odfl-ltl' => 'odfl4me', 'dayross-ltl' => 'dayross', 'priority-one-ltl' => 'priority1',
+            'estes-ltl' => 'estes', 'echo-ltl' => 'echoLogistics', 'saia-ltl' => 'saia', 'abf-ltl' => 'abf', 'daylight-ltl' => 'daylight',
+            'southeastern-ltl' => 'southeastern'];
+
+        return $carrierIndexesArray[$carrSlug] ?? null;
+    }
+
     public static function getLiftResidentialStatus($rateId)
     {
         $response = ['resi' => 'n', 'liftG' => 'n', 'resiPickup' => 'n'];
         $response['resi'] = strpos($rateId, '+r') ? 'Y' : 'n';
         $response['liftG'] = strpos($rateId, '+lg') ? 'Y' : 'n';
         $response['resiPickup'] = strpos($rateId, '+pu') ? 'Y' : 'n';
-        $response['lgPickup'] = strpos($rateId, '+lfgpu') ? 'Y' : 'n';
+        $response['lgPickup'] = strpos($rateId, '+lgpu') ? 'Y' : 'n';
         return $response;
     }
 
@@ -715,14 +764,12 @@ class Functions
         $serviceCode = $data['ratquoteNumber'] ?? $data['scac'] ?? $data['CarrierSCAC'] ?? $serviceCode;
 
         $isUpsLtl = false;
-        if ($carrName === 'upsltl') {
-            $isUpsLtl = true;
-        }
         $isQuickestSer = isset($quoteSettings['quickest_service']) && $quoteSettings['quickest_service'] && $carrName === 'gtzltl';
-        $quickLabelAs = isset($quoteSettings['quickest_service_label']) && !empty($quoteSettings['quickest_service_label']) ? $quoteSettings['quickest_service_label'] : self::$simpleLTLTitle;
+        $quickLabelAs = isset($quoteSettings['quickest_service_label']) && !empty($quoteSettings['quickest_service_label']) ? $quoteSettings['quickest_service_label'] : $serviceName;
+        $isResidential = ($isResi || $isAlwaysResi) ?? false; 
 
         $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, $insideDelivery, $resiPickup, $lgPickup, $laccess, false, false, $notifyDelivery, $isResi, $isAlwaysResi);
-        $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, $isUpsLtl, $insideDelivery, $laccess, false, false, $notifyDelivery, $originKey, $items, $allOrigins, $quoteSettings);
+        $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, $isUpsLtl, $insideDelivery, $laccess, false, false, $notifyDelivery, $originKey, $items, $allOrigins, $quoteSettings, $isResidential);
         $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, $insideDelivery, $laccess, false, false, false, false, $notifyDelivery, $isResi, $storeId);
 
         if ($isQuickestSer) {
@@ -1116,7 +1163,14 @@ class Functions
                     case 'freightQuote':
                         foreach ($quote as $zipCode => $q) {
                             if($zip == $zipCode){
-                                foreach ($q->q as $service) {
+                                if(isset($q->q)){
+                                    $quotes = $q->q ?? [];
+                                } elseif (isset($q->Truckload)){
+                                    $quotes = $q->Truckload ?? [];
+                                } else {
+                                    $quotes = [];
+                                }
+                                foreach ($quotes as $service) {
                                     $serviceCode = isset($service->serviceType) ? $service->serviceType : ' ';
                                     $length = strlen($serviceCode);
                                     $isTrue = str_contains(strtolower($rateId), strtolower($serviceCode));
@@ -1193,7 +1247,14 @@ class Functions
                     case 'chr':
                         foreach ($quote as $zipCode => $q) {
                             if($zip == $zipCode){
-                                foreach ($q->q as $service) {
+                                if(isset($q->q)){
+                                    $quotes = $q->q ?? [];
+                                } elseif (isset($q->Truckload)){
+                                    $quotes = $q->Truckload ?? [];
+                                } else {
+                                    $quotes = [];
+                                }
+                                foreach ($quotes as $service) {
                                     $serviceCode = isset($service->serviceType) ? $service->serviceType : ' ';
                                     $length = strlen($serviceCode);
                                     $isTrue = str_contains(strtolower($rateId), strtolower($serviceCode));
@@ -1379,5 +1440,42 @@ class Functions
             $resp[] = $widget;
         }
         return $resp;
+    }
+
+    public static function index($request)
+    {
+        $installed_carrier = $request->installed_carrier_id;
+        $services = [];
+
+        $carrier = DB::table('installed_carriers')
+            ->select('slug')
+            ->join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
+            ->where('installed_carriers.id', $installed_carrier)->first();
+
+        if ($carrier->slug == 'ltl-quotes' || $carrier->slug == 'freightquote-ltl' || $carrier->slug == 'tql-ltl' || $carrier->slug == "echo-ltl" || $carrier->slug == 'freightquote-chr-ltl' || $carrier->slug == 'priority-one-ltl') {
+            $services = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
+                ->where('installed_carriers.id', $installed_carrier)
+                ->orderBy('speed_freight_carrierName')->select('speed_freight_carrierName', 'speed_freight_carrierSCAC')->get();
+        } else if ($carrier->slug == 'gtz-ltl') {
+            $storeId = null;
+            $carrierType = $request->carrier_type ?? 'gtz';
+
+            if ($carrierType === 'CRS') {
+                $storeId = $request['store_id'] ?? $request->store_id ?? null;
+                $services = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
+                    ->where('installed_carriers.id', $installed_carrier)
+                    ->where('shopify_freights.store_id', $storeId)
+                    ->orderBy('speed_freight_carrierSCAC')->select('speed_freight_carrierName', 'speed_freight_carrierSCAC')->get();
+            } elseif ($carrierType === 'NEWAPI') {
+                $services = CarrierServices::where('app_id', '=', 1)->orderBy('speed_freight_carrierName')->select('speed_freight_carrierName', 'speed_freight_carrierSCAC')->get();
+            } else {
+                $services = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
+                    ->where('installed_carriers.id', $installed_carrier)
+                    ->whereNull('shopify_freights.store_id')
+                    ->orderBy('speed_freight_carrierName')->select('speed_freight_carrierName', 'speed_freight_carrierSCAC')->get();
+            }
+        }
+
+        return $services->toArray() ?? [];
     }
 }
