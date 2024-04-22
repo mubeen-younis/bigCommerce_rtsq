@@ -1,3 +1,31 @@
+= 2.1.25 2024-04-22 =
+
+* Update - Add Connection Settings In shipEngine (Ticket:2455207255) [#431] (https://bitbucket.org/eniture/big-commerce/pull-requests/431)
+
+= 2.1.24 2024-04-17 =
+
+* Update - Add Tforce New API in BC (Ticket:2537259103 and 2541618719) [#430] (https://bitbucket.org/eniture/big-commerce/pull-requests/430)
+
+= 2.1.23 2024-04-12 =
+
+* Fix - fixes issue on product settings save (Ticket:2593063812) [#426] (https://bitbucket.org/eniture/big-commerce/pull-requests/426)
+
+= 2.1.22 2024-04-08 =
+
+* Update - Update override rates feature (3rd chunk) (Ticket:2007189654) [#425] (https://bitbucket.org/eniture/big-commerce/pull-requests/425)
+
+= 2.1.21 2024-03-25 =
+
+* Update - R+L Carrier New API (Ticket:1870032478) [#423] (https://bitbucket.org/eniture/big-commerce/pull-requests/423)
+
+= 2.1.20 2024-03-21 =
+
+* Update - Update override rates feature (2nd chunk) (Ticket:2007189654) [#421] (https://bitbucket.org/eniture/big-commerce/pull-requests/421)
+
+= 2.1.19 2024-03-20 =
+
+* Update - Add SBS details in the staff note text  (Ticket:2329677373) [#420] (https://bitbucket.org/eniture/big-commerce/pull-requests/420)
+
 = 2.1.18 2024-03-12 =
 
 * Update - Add staff note and show box weight.  (Ticket:2329677373) [#418] (https://bitbucket.org/eniture/big-commerce/pull-requests/418)
@@ -12,7 +40,7 @@
 
 = 2.1.15 2024-03-11 =
 
-* Fix - Update override rates feature (1st chunk) (Ticket:2007189654) [#415] (https://bitbucket.org/eniture/big-commerce/pull-requests/415)
+* Update - Update override rates feature (1st chunk) (Ticket:2007189654) [#415] (https://bitbucket.org/eniture/big-commerce/pull-requests/415)
 
 = 2.1.14 2024-03-05 =
 

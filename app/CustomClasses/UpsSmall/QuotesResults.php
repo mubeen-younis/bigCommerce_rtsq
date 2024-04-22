@@ -24,7 +24,7 @@ class QuotesResults
 
 
         if (isset($quoteSettings['rate_source']) && $quoteSettings['rate_source'] === 1) {
-            $boxFee = $data['boxFees']['Amount'] ?? 0;
+            $boxFee = isset($data['boxFees']['Amount']) ? $data['boxFees']['Amount'] : 0 ?? 0;
             $amount = $data['NegotiatedRates']['Amount'] > 0 ? $data['NegotiatedRates']['Amount'] + $boxFee : $amount;
         }
 
@@ -119,6 +119,7 @@ class QuotesResults
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
         $this->quoteSettings = $connectionSettings['ups-small']['quote_settings'] ?? '';
         $numberOfShipments = 0;
+        $overrideRuleCount = 0;
         foreach ($shipments as $ship) {
             if(isset($ship['tnt']['faultstring'])){
                 continue;
@@ -204,7 +205,6 @@ class QuotesResults
 
                     // Apply override rates shipping rule
                     $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
-                    $isOverrideRate = isset($overrideRates['isOverrideRates']) && $overrideRates['isOverrideRates'];
                     $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;                    
                     // Apply Surcharge rates shipping rule
                     $surchargeRates = $shippingRule->surchargeRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
@@ -266,7 +266,14 @@ class QuotesResults
             foreach ($originQuotes as $shipmentKey => $shipment) {
                 $netChargeArray = array_column($shipment['shipment'], 'simple');
                 $minValueFromNetChargeArr = min(array_column($netChargeArray, 'rate'));
+                $rates = array_column($netChargeArray, 'rate');
+                $minRateIndex = array_search($minValueFromNetChargeArr, $rates);
+                $minRateArray = $netChargeArray[$minRateIndex];
 
+                if(isset($minRateArray['code']) && strpos($minRateArray['code'], '+override') !== false){
+                    $overrideRuleCount++;
+                }  
+                $access2  = $overrideRuleCount > 0 ? '+override' : $access2;
                 $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
                 $originQuotesMulti[0]['code'] = 'Multiups' . $access2;
                 $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);

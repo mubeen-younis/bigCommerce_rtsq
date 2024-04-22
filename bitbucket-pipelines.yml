@@ -8,7 +8,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    staff-note-2:
+    remove-upsltl-newapi:
       - step:
           caches:
             - composer
@@ -20,8 +20,7 @@ pipelines:
                 MODE: 'command'
                 COMMAND: '/home/apx-bc-01/html/bc/remote-script.sh'
 
-    update-override-rates-feature:
-    
+    feature/shipengine-conn-settings:
       - step:
           caches:
             - composer

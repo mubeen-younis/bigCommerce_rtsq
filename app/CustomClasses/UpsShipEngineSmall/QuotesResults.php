@@ -224,6 +224,10 @@ class QuotesResults
                             continue;
                         }
                     }
+                    // Apply override rates shipping rule
+                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
+                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
+
                     // Adding Product and Origin Markup in services if added
                     $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['shipping_amount']['amount'], $origin, $items, $allOrigins);
                     $data['shipping_amount']['amount'] = $data['shipping_amount']['amount'] + $productOriginMarkupFee;
@@ -232,33 +236,22 @@ class QuotesResults
                     $amount = $data['shipping_amount']['amount'];
 
                     $data['shipping_amount']['amount'] = $this->addHandlingMarkupOfHazmat($data['shipping_amount']['amount'], $quoteSettings['handling_fee_markup'] ?? 0);
-
-                    
-                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName);
-                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
                     $price = $data['shipping_amount']['amount'];
-                    // check: is override rule is applied, if yes then skip to add other features fee
-                    if(isset($overrideRates['isOverrideRates']) && $overrideRates['isOverrideRates']){
-                        $access2 = '';
-                        $showRadNotation = false;
-                    } else {
-                        $access2 = $access;
-                        $showRadNotation = $isRadNotation;
-                        // Checking hazmat and adding hazmat amounts in services
-                        if ($isHazmat) {
-                            if ($isMultiShipment) {
-                                if ($hazmatAllItems[$origin] == 'Y') {
-                                    $price = $this->addHazmatAmountsInServices($price, $serviceCode, $this->quoteSettings, $groundServiceCodes);
-                                }
-                            } else {
+                    
+                    // Checking hazmat and adding hazmat amounts in services
+                    if ($isHazmat) {
+                        if ($isMultiShipment) {
+                            if ($hazmatAllItems[$origin] == 'Y') {
                                 $price = $this->addHazmatAmountsInServices($price, $serviceCode, $this->quoteSettings, $groundServiceCodes);
                             }
+                        } else {
+                            $price = $this->addHazmatAmountsInServices($price, $serviceCode, $this->quoteSettings, $groundServiceCodes);
                         }
-
-                        $price = $this->getServiceRate($price, $serviceCode, $this->quoteSettings);
                     }
 
-                    $title = $this->getServiceTitle($data['serviceDesc'], $data, $this->quoteSettings, $residential, $showRadNotation);
+                    $price = $this->getServiceRate($price, $serviceCode, $this->quoteSettings);
+
+                    $title = $this->getServiceTitle($data['serviceDesc'], $data, $this->quoteSettings, $residential, $isRadNotation);
                     $price = (float)str_replace(',', '', $price);
                     $shortServiceCode = $this->getShortCodesOfService($serviceCode);
                     $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12' . $carrierCode . $shortServiceCode . $access2;
@@ -285,7 +278,7 @@ class QuotesResults
                 $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
                 $originQuotesMulti[0]['code'] = 'Multi' . $carrierCode . $access2;
                 $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
-                $originQuotesMulti[0]['title'] = $residential && $showRadNotation ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
+                $originQuotesMulti[0]['title'] = $residential ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
             }
 
 

@@ -164,11 +164,13 @@ class OrderController extends Controller
                     ->first())->toArray() ?? null;
             }
         }
+        Log::info('Order Data details from Database: ' . json_encode($data));
         return $data;
     }
 
     public function createOrderWidget($request, $order, $reportingFlag)
     {
+        Log::info('Order Data details from BC: ' . json_encode($order));
         $rateId = $order['rate_id'] ?? null;
         $cartId = $order['cart_id'] ?? null;
 
@@ -338,7 +340,7 @@ class OrderController extends Controller
                                 ++$count;
 
                             }
-                            $orderWidget[$zip]['sbs'][$key]['weight'] = optional($binPacked->bin_data)->totalBoxWeight ?? 0;
+                            isset($binPacked->bin_data->totalBoxWeight) ? $orderWidget[$zip]['sbs'][$key]['weight'] = optional($binPacked->bin_data)->totalBoxWeight : null;
                             unset($orderWidgetData);
                             if ($count) {
                                 $orderWidget[$zip]['sbs'][$key]['number_of_items'] = $count;
@@ -672,7 +674,7 @@ class OrderController extends Controller
         $response['resi'] = strpos($rateId, '+r') ? 'Y' : 'n';
         $response['liftG'] = strpos($rateId, '+lg') ? 'Y' : 'n';
         $response['resiPickup'] = strpos($rateId, '+pu') ? 'Y' : 'n';
-        $response['lgPickup'] = strpos($rateId, '+lfgpu') ? 'Y' : 'n';
+        $response['lgPickup'] = strpos($rateId, '+lgpu') ? 'Y' : 'n';
         return $response;
     }
 
@@ -1257,9 +1259,34 @@ class OrderController extends Controller
                 $formattedString .= !empty($quoteId) ? ", Quote Id: $quoteId" : '';
                 $formattedString .= !empty($items) ? ", Items: $items" : '';
 
+                // Add SBS details in the staff note
+                $sbs = isset($shipmentData['sbs']) ? $shipmentData['sbs'] : [];
+                if(!empty($sbs)){
+                    $boxes = array_filter($sbs, function($bin) {
+                        return $bin['type'] != 'item' && $bin['type'] != 'weight_based';
+                    }) ?? [];
+                    
+                    $totalBoxes = count($boxes) > 0 ? count($boxes) : 1;
+
+                    foreach($sbs as $key => $bin){
+                        if(isset($bin['type']) && $bin['type'] == 'item' && isset($bin['quantity']) && !empty($bin['quantity'])){
+                            $totalBoxes = $bin['quantity'];
+                            for ($i=1; $i <= $bin['quantity']; $i++) { 
+                                $weight = isset($bin['weight']) ? $bin['weight'] : 0;
+                                $sbsDetails = "Box $i of $totalBoxes : $weight lbs";
+                                $formattedString .= !empty($sbsDetails) ? ", $sbsDetails" : '';
+                            }
+                        } else {
+                            $count = $key + 1;
+                            $weight = isset($bin['weight']) ? $bin['weight'] : 0;
+                            $sbsDetails = "Box $count of $totalBoxes : $weight lbs";
+                            $formattedString .= !empty($sbsDetails) ? ", $sbsDetails" : '';
+                        }
+                    }
+                }
                 // Add the formatted string to the array
                 $formattedShipments[] = $formattedString;
-            }
+            } 
 
             return $formattedShipments;
         }
