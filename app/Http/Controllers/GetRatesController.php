@@ -416,7 +416,7 @@ class GetRatesController extends Controller
         if (!empty($productCategories) && !empty($productCategories->toArray())) {
             return $productCategories['categories_id'];
         }
-        return [];
+        return null;
     }
 
     private function getProductPrice($productId, $variantId, $storeId)
