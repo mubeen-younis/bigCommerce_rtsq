@@ -1233,7 +1233,7 @@ class OrderController extends Controller
                     if (blank($reqData)) {
                         $reqData = optional(RequestTempData::where('rate_id', $fullRateId)->where('store_id', $toRequest['store_id'])->latest()->first())->toArray();
                     }
-                    Log::info('log 1: ' . json_encode($reportData));
+                    Log::info('log 1: ' . json_encode($reqData));
                     if (!blank($reqData)) {
                         unset($reqData['id']);
                         $orderId= $order['id'];
