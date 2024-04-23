@@ -18,6 +18,7 @@ use App\Models\Subscription\Subscription;
 use App\Models\SubscriptionStripePayments;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -971,7 +972,7 @@ class SubscriptionController extends Controller
                 'updated_date' => $paymentDetail->data->object->webhooks_delivered_at,
                 'subscriptionId' => $paymentDetail->data->object->subscription
             );
-            $this->addOrUpdateSubscriptionPayment($subscriptionPlanObj,$paymentDetail);
+            SubscriptionStripePayments::addOrUpdateSubscriptionPayment($subscriptionPlanObj, $paymentDetail);
         } else {
             $params = array(
                 'subscriptionId' => $paymentDetail->data->object->items->data[0]->subscription
@@ -1120,8 +1121,6 @@ class SubscriptionController extends Controller
         } elseif ($eventType == 'invoice.payment_failed') {
             $msg = 'Subscription Failed';
             $this->invoicePaymentActionByWebHook($paymentDetail, 0);
-        } else {
-            //Do Nothing
         }
 
 
@@ -1177,62 +1176,18 @@ class SubscriptionController extends Controller
         ], 200);
     }
 
-    public function addOrUpdateSubscriptionPayment($stripeObjectData, $paymentData)
+
+    /**
+     * @return JsonResponse
+     */
+    public function getPayments(Request $request): JsonResponse
     {
-        //  dd($paymentData['data']['id']);
-        try{
-         $invoiceID = $paymentData->data->object->id ?? null;
-        $receiptNumber = $paymentData->id ?? null;
-        if (blank($invoiceID) || blank($receiptNumber)) {
-            return null;
-        }
+        $storeId = $request['store_id'] ?? null;
+        if (blank($storeId)) {
+            return Helpers::sendJsonResponse(true, "No store ID in request");
 
-        $subscriptionPayment = SubscriptionStripePayments::where('invoice_id',$invoiceID)->first();
-        
-        if (blank($subscriptionPayment)) {
-            $subscriptionPayment = new SubscriptionStripePayments();
         }
-            $invoiceUrl = $paymentData->data->object->invoice_pdf ?? "";
-            $search = ["https://pay.stripe.com/invoice", "/pdf?s=ap", "/pdf"];
-            $replace = ["https://invoicedata.stripe.com/invoice_receipt_file_url", "", ""];
-            $receiptUrl = str_replace($search, $replace, $invoiceUrl);
-            $subscrbedBy = Subscription::where('subscription_id',$stripeObjectData->id)->first();
-            $subscriptionPayment->invoice_id = $invoiceID;
-            $subscriptionPayment->receipt_number = $receiptNumber;
-            $subscriptionPayment->amount = ($stripeObjectData->amount) / 100;
-            $subscriptionPayment->is_addon = 0; 
-            $subscriptionPayment->product_id = $subscrbedBy->plan_id;
-            $subscriptionPayment->store_id = $subscrbedBy->store_id;
-            $subscriptionPayment->invoice_download_url = $paymentData->data->object->invoice_pdf   ?? "";
-            $subscriptionPayment->receipt_url = $receiptUrl;
-            $subscriptionPayment->save();
-        } catch (Exception $e){
-           return response()->json([
-           'error' => true,
-           'message' => $e->getMessage(),
-           ]);
-        }
-       
-        }
-
-    
-    public function getPayments(){
-        // $getPayments = DB::table('subscription_stripe_payments')->get()->toArray() ?? [];
-        $getPayments = DB::table('subscription_stripe_payments')
-        ->leftJoin('plans', function ($join) {
-            $join->on('subscription_stripe_payments.product_id', '=', 'plans.id')
-                ->where('subscription_stripe_payments.is_addon', '=', 0);
-        })
-        ->leftJoin('packages', function ($join) {
-            $join->on('subscription_stripe_payments.product_id', '=', 'packages.id')
-                ->where('subscription_stripe_payments.is_addon', '=', 1);
-        })
-        ->leftJoin('addons', function ($join) {
-            $join->on('packages.addon_type', '=', 'addons.short_code');
-        })
-        ->select('subscription_stripe_payments.*', 'plans.name as product_name', 'addons.name as addon_name')
-        ->get();
-        return Helpers::sendJsonResponse(false, "", $getPayments);
+        return Helpers::sendJsonResponse(false, "", SubscriptionStripePayments::getSubscriptionStripePayments($storeId));
     }
 
 }

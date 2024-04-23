@@ -226,19 +226,25 @@ class PackageSubscriptionController extends Controller
             // if No Current subscription exist and selected package is not a trial or disable
             $updateSubscription = self::$updateFullSubscription;
         }
+
+
         if (($data['package'] != self::$dynamicTrial && $data['package'] != self::$disableAddon) || $updateSubscription == self::$updateFullSubscription) {
             if ($updateSubscription != self::$updateFullSubscription) {
                 $chargeResponse = $this->createStripeChargeForPackage($package, $mainSubscription, $addonType);
             }
         }
+
+
         if (!empty($chargeResponse['error']) && $chargeResponse['error'] == true) {
             return $chargeResponse;
         } else {
             $chargeId = isset($chargeResponse['data']['chargeId']) ? $chargeResponse['data']['chargeId'] : null;
         }
+
         if ($chargeId == null && $data['package'] == self::$disableAddon) {
             $updateSubscription = self::$updateToBeChargeonly;
         }
+
         if (!is_null($currentPackageSub) && ($updateSubscription == self::$updateToBeChargeonly || $updateSubscription == self::$updateFullSubscription)) {
             //Updating the current package Subscription in database
             $this->updatePackageSubscriptionInDB($data, $package, $paymentMethod, $chargeId, $currentPackageSub, $updateSubscription);
@@ -246,10 +252,12 @@ class PackageSubscriptionController extends Controller
             //Saving a new trial or package Subscription in database
             $this->createPackageSubscriptionInDB($data, $package, $paymentMethod, $chargeId);
         }
+
         $currentPackageDetails = $this->getPkgDetails($addonType);
         if ($updateSubscription == self::$updateFullSubscription && !empty($mainSubscription->email)) {
             Mail::to($mainSubscription->email)->send(new AddonPackageUpdateMail($addonType, $currentPackageDetails['currentPackage']));
         }
+
         return [
             'error' => false,
             'data' => $currentPackageDetails,
@@ -343,7 +351,8 @@ class PackageSubscriptionController extends Controller
                 'source' => $mainSubscription->payment_method
             ];
             $charge = Charge::create($chargeData);
-            $this->addOrUpdatePackagesPayment($package,$charge,$stripeCustomerId);
+            //Saving charge details to display in payments tab
+            SubscriptionStripePayments::addOrUpdateAddonsPayment($package, $charge, $stripeCustomerId);
             $response = [
                 'chargeId' => $charge->id
             ];
@@ -633,33 +642,4 @@ class PackageSubscriptionController extends Controller
         return isset($getSBSAddonSettings->bins_pack_mode) ? $getSBSAddonSettings->bins_pack_mode : 0;
     }
 
-    public function addOrUpdatePackagesPayment($package,$stripeObjectData,$stripeCustomerId)
-    {
-        $invoiceID = $stripeObjectData->id ?? null;
-        $receiptNumber = $stripeObjectData->id ?? null;
-        if (blank($invoiceID) || blank($receiptNumber)) {
-            return null;
-        }
-
-        $subscriptionPayment = SubscriptionStripePayments::where('invoice_id',$invoiceID)->first();
-        
-        if (blank($subscriptionPayment)) {
-            $subscriptionPayment = new SubscriptionStripePayments();
-        }
-            $invoiceUrl = $stripeObjectData->receipt_url ?? "";
-            $search = ["https://pay.stripe.com/invoice", "/pdf?s=ap", "/pdf"];
-            $replace = ["https://invoicedata.stripe.com/invoice_receipt_file_url", "", ""];
-            $receiptUrl = str_replace($search, $replace, $invoiceUrl);
-            $subscrbedBy = Subscription::where('stripe_id', $stripeCustomerId)->first();
-            $subscriptionPayment->invoice_id = $invoiceID;
-            $subscriptionPayment->receipt_number = $receiptNumber;
-            $amount = $stripeObjectData->amount/100;
-            $subscriptionPayment->amount = $amount;
-            $subscriptionPayment->is_addon = 1; 
-            $subscriptionPayment->product_id = $package->id;
-            $subscriptionPayment->store_id = $subscrbedBy->store_id;
-            $subscriptionPayment->invoice_download_url = $invoiceUrl  ?? "";
-            $subscriptionPayment->receipt_url = $receiptUrl;
-            $subscriptionPayment->save();
-        }
 }
