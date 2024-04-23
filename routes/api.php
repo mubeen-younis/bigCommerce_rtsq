@@ -132,6 +132,9 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/saveResidentialSettings', [RADController::class, 'saveSettings']);
     Route::get('/getResidentialSettings', [RADController::class, 'getSettings']);
 
+    //Payments
+    Route::get('/get_payments',[SubscriptionController::class,'getPayments']);
+
     /* SBS routes */
     Route::get('/sbs/get_plans', [SBSController::class, 'getPlans']);
     Route::post('/sbsb/change_plan', [RADController::class, 'changePlan']);
@@ -151,7 +154,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/updateAvaiableStatus', [\App\Http\Controllers\ShippingRuleController::class, 'updateAvaiableStatus']);
     Route::post('/get_country_states', [\App\Http\Controllers\ShippingRuleController::class, 'getCountryStates']);
     Route::get('/get_shipping_rule_products', [App\Http\Controllers\ShippingRuleController::class, 'getshippingRuleProductsFromDb']);
-    
+
     Route::post('/get_store_categories', [\App\Http\Controllers\ShippingRuleController::class, 'getProductsCategories']);
     Route::post('/get_store_brands', [\App\Http\Controllers\ShippingRuleController::class, 'getProductsBrands']);
 
@@ -288,9 +291,6 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
 Route::post('/bc-subscription-update', [SubscriptionController::class, 'paymentByStripeWebHook']);
 // Route::post('/bc-payment-succeeded', [SubscriptionController::class, 'invoicePaymentSucceeded']);
 // Route::post('/update-subscription', [SubscriptionController::class, 'updateSubscriptionFromStripe']);
-
-//Payments 
-Route::get('/get_payments',[SubscriptionController::class,'getPayments']);
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);
 Route::get('/get_conn_settings', [ConnectionController::class, 'index']);
