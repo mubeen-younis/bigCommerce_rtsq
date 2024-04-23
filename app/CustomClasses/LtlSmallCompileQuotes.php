@@ -428,6 +428,41 @@ class LtlSmallCompileQuotes
                     } else {
                         $quotesCarrier['ltl']['SouthEastern']['simple'][] = $quote;
                     }
+                } else if (strpos($quote['code'], 'unl') !== false) {
+                    $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
+                    $quote['isResi'] = $residential['uniLtl'] == 'Y';
+                    $quote['isLG'] = isset($connectionSettings['unishipper-ltl']['quote_settings']['offerLiftGateDelivery']) && $connectionSettings['unishipper-ltl']['quote_settings']['offerLiftGateDelivery'];
+                    $quote['isNBD'] = isset($connectionSettings['unishipper-ltl']['quote_settings']['offer_notify_as_option']) && $connectionSettings['unishipper-ltl']['quote_settings']['offer_notify_as_option'];
+                    $quoteSettings = isset($connectionSettings['unishipper-ltl']['quote_settings']) ? $connectionSettings['unishipper-ltl']['quote_settings'] : [];
+                    $quote['isID'] = isset($connectionSettings['unishipper-ltl']['quote_settings']['offer_inside_delivery']) && $connectionSettings['unishipper-ltl']['quote_settings']['offer_inside_delivery'];
+                    $quote['isLAD'] = isset($connectionSettings['unishipper-ltl']['quote_settings']['offer_limited_access_delivery']) && $connectionSettings['unishipper-ltl']['quote_settings']['offer_limited_access_delivery'];
+                    
+                    if (strpos($quote['code'], '+LG+ID+NBD') !== false) {
+                        $quotesCarrier['ltl']['uniltl']['LGIDNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+ID+LAD') !== false) {
+                        $quotesCarrier['ltl']['uniltl']['LGIDLAD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+NBD') !== false) {
+                        $quotesCarrier['ltl']['uniltl']['LGNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+ID+NBD') !== false) {
+                        $quotesCarrier['ltl']['uniltl']['IDNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+LAD') !== false) {
+                        $quotesCarrier['ltl']['uniltl']['LGLAD'][] = $quote;
+                    } else if (strpos($quote['code'], '+ID+LAD') !== false) {
+                        $quotesCarrier['ltl']['uniltl']['IDLAD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+ID') !== false) {
+                        $quotesCarrier['ltl']['uniltl']['LGID'][] = $quote;
+                    } else if (strpos($quote['code'], '+NBD') !== false) {
+                        $quotesCarrier['ltl']['uniltl']['NBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG') !== false) {
+                        $quotesCarrier['ltl']['uniltl']['LG'][] = $quote;
+                    } else if (strpos($quote['code'], '+LAD') !== false) {
+                        $quotesCarrier['ltl']['uniltl']['LAD'][] = $quote;
+                    } else if (strpos($quote['code'], '+ID') !== false) {
+                        $quotesCarrier['ltl']['uniltl']['ID'][] = $quote;
+                    } else {
+                        $quotesCarrier['ltl']['uniltl']['simple'][] = $quote;
+                    }
+
                 }
                 else {
                     $alwaysResi = (isset($requestArr['carriers']['wweLTL']['api']['speed_freight_residential_delivery']) && $requestArr['carriers']['wweLTL']['api']['speed_freight_residential_delivery'] == 'Y');
