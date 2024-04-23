@@ -1233,7 +1233,7 @@ class OrderController extends Controller
                     if (blank($reqData)) {
                         $reqData = optional(RequestTempData::where('rate_id', $fullRateId)->where('store_id', $toRequest['store_id'])->latest()->first())->toArray();
                     }
-                    Log::info('log 1: ' . json_encode($reqData));
+
                     if (!blank($reqData)) {
                         unset($reqData['id']);
                         $orderId= $order['id'];
@@ -1242,9 +1242,10 @@ class OrderController extends Controller
                         // Check: if order is newly created then update staff note
                         $staffNoteSettings = optional(WeightThresholdSettings::where('store_id', $toRequest['store_id'])->first())->toArray() ?? [];
                         $isStaffNotesActive = isset($staffNoteSettings['is_staff_note_active']) && $staffNoteSettings['is_staff_note_active'] == 0 ? false : true;
-                        Log::info('log 2: ' . $isStaffNotesActive . json_encode($staffNoteSettings));
+                        Log::info('log 1: ' . $isStaffNotesActive . ' ' . $scope);
                         if ($isStaffNotesActive && $scope == 'store/order/created') {
                             $orderCheck = RequestData::where('order_id', $orderId)->first();
+                            Log::info('log 2: ' . json_encode($orderCheck));
                             if (!$orderCheck) {
                                 $reportingFlag = "false";
                                 $orderWidget = $this->createOrderWidget($toRequest, $order, $reportingFlag);
