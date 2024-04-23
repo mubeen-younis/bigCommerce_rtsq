@@ -1250,6 +1250,7 @@ class OrderController extends Controller
                                 $orderWidget = $this->createOrderWidget($toRequest, $order, $reportingFlag);
                                 $formateStaffNote = $this->formatShipment($orderWidget);
                                 $isStatus = $this->updateStaffNote($formateStaffNote, $toRequest);
+                                Log::info('log 3: ' . $isStatus . $formateStaffNote);
                                 if($isStatus){
                                     RequestData::where('store_id', $toRequest['store_id'])
                                     ->orWhere('cart_id', $cartId)
