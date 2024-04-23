@@ -218,6 +218,7 @@ class ConnectionController extends Controller
                     return response()->json($response);
                 case "unishipper-ltl":
                     $response = $this->UnishipperLtlTestCon->testLtlConnection($request, $storeName);
+                    return response()->json($response);
                 case "ups-ship-engine":
                     $response = $this->ShipEngineTestCon->testConnection($request, $storeName);
                     return response()->json($response);
