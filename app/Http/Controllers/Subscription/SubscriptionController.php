@@ -527,8 +527,8 @@ class SubscriptionController extends Controller
                 'data' => $subscriptionDetail,
                 'message' => 'The plan subscribed successfully.'
             ], 200);
-        } catch (\Exception $exception) {
-            Log::info('Exception on subscribing plan ' . json_encode($exception->getTraceAsString()));
+        } catch (\Exception|\Throwable $exception) {
+            Log::info('Exception on subscribing plan ' . json_encode(Functions::returnFormExceptionArray($exception)));
             return response()->json([
                 'error' => true,
                 'data' => [],
