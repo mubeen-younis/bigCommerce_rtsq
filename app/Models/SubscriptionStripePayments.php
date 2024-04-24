@@ -19,8 +19,9 @@ class SubscriptionStripePayments extends Model
         Log::info('Stripe Object Data' . json_encode($stripeObjectData) . ' Payment data ' . json_encode($paymentData));
         try {
             $invoiceID = $paymentData->data->object->id ?? null;
+            $subscriptionID = $paymentData->data->object->subscription ?? null;
             $receiptNumber = $paymentData->id ?? null;
-            if (blank($invoiceID) || blank($receiptNumber)) {
+            if (blank($invoiceID) || blank($subscriptionID)) {
                 return null;
             }
 
@@ -30,7 +31,7 @@ class SubscriptionStripePayments extends Model
 
             $receiptUrl = self::getReceiptUrl($invoiceUrl);
 
-            $subscribedBy = Subscription::where('subscription_id', $stripeObjectData->id)->first();
+            $subscribedBy = Subscription::where('subscription_id', $subscriptionID)->first();
 
             $subscriptionPayment->invoice_id = $invoiceID;
             $subscriptionPayment->receipt_number = $receiptNumber;
