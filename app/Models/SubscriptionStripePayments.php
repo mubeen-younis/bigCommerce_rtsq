@@ -14,7 +14,7 @@ class SubscriptionStripePayments extends Model
 
     protected $table = "subscription_stripe_payments";
 
-    public function addOrUpdateSubscriptionPayment($stripeObjectData, $paymentData)
+    public static function addOrUpdateSubscriptionPayment($stripeObjectData, $paymentData)
     {
         try {
             $invoiceID = $paymentData->data->object->id ?? null;
@@ -97,7 +97,7 @@ class SubscriptionStripePayments extends Model
             $subscriptionPayment = self::addOrUpdateRecord($invoiceID);
 
             $receiptUrl = $stripeChargeData->receipt_url ?? "";
-            
+
             $subscriptionPayment->invoice_id = $invoiceID;
             $subscriptionPayment->receipt_number = str_replace("ch_", "", $invoiceID);
             $subscriptionPayment->amount = self::getAmountInDols($stripeChargeData->amount);
