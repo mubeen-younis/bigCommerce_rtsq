@@ -31,6 +31,9 @@ class SubscriptionStripePayments extends Model
             $receiptUrl = self::getReceiptUrl($invoiceUrl);
 
             $subscribedBy = Subscription::where('subscription_id', $subscriptionID)->first();
+            if (blank($subscribedBy)) {
+                return null;
+            }
 
             $subscriptionPayment->invoice_id = $invoiceID;
             $subscriptionPayment->receipt_number = $receiptNumber;
@@ -103,7 +106,7 @@ class SubscriptionStripePayments extends Model
             $subscriptionPayment->receipt_number = str_replace("ch_", "", $invoiceID);
             $subscriptionPayment->amount = self::getAmountInDols($stripeChargeData->amount);
             $subscriptionPayment->is_addon = 1;
-            $subscriptionPayment->product_id = $package->id;
+            $subscriptionPayment->plan_id = $package->id;
             $subscriptionPayment->store_id = $subscribedBy->store_id;
             $subscriptionPayment->invoice_download_url = $receiptUrl;
             $subscriptionPayment->receipt_url = $receiptUrl;
