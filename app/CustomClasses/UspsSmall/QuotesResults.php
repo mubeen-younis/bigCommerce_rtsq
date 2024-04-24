@@ -62,6 +62,7 @@ class QuotesResults
                     if (!$this->isActiveService($srvcType)) {
                         continue;
                     }
+                  
                     // Adding Product and Origin Markup in services if added
                     $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
                     $data['totalNetCharge']['Amount'] = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
@@ -172,11 +173,10 @@ class QuotesResults
 
     private function getServiceIndexFromServiceType($srvcType)
     {
-        $indexesArr = ['First Class Mail' => 'usps_first_class_mail',
+        $indexesArr = [
             'Priority Mail' => 'usps_priority_mail',
             'Priority Mail Express' => 'usps_priority_mail_express',
             'Priority Mail Flat Rate' => 'usps_priority_mail_flat_rate',
-            'Retail Ground' => 'usps_retail_ground', //TODO:Need to remove
             'Ground Advantage' => 'usps_ground_advantage',
             'Priority Mail International' => 'usps_priority_mail_international',
             'Priority Mail International Express' => 'usps_priority_mail_international_express',
@@ -274,22 +274,9 @@ class QuotesResults
                 } else {
                     return $serviceType;
                 }
-            case 'First Class Mail':
-                if (isset($quote['carrier_services']['usps_first_class_mail_label']) && $quote['carrier_services']['usps_first_class_mail_label'] != '') {
-                    return $quote['carrier_services']['usps_first_class_mail_label'];
-                } else {
-                    return $serviceType;
-                }
             case 'Priority Mail Flat Rate':
                 if (isset($quote['carrier_services']['usps_priority_mail_flat_rate_label']) && $quote['carrier_services']['usps_priority_mail_flat_rate_label'] != '') {
                     return $quote['carrier_services']['usps_priority_mail_flat_rate_label'];
-                } else {
-                    return $serviceType;
-                }
-            //TODO:Need to remove
-            case 'Retail Ground':
-                if (isset($quote['carrier_services']['usps_retail_ground_label']) && $quote['carrier_services']['usps_retail_ground_label'] != '') {
-                    return $quote['carrier_services']['usps_retail_ground_label'];
                 } else {
                     return $serviceType;
                 }
@@ -366,11 +353,9 @@ class QuotesResults
     public function getUspsActiveServices($carrierServices): array
     {
         $domesticServices = [
-            'usps_first_class_mail' => 'First Class Mail',
             'usps_priority_mail_express' => 'Priority Mail Express',
             'usps_priority_mail' => 'Priority Mail',
             'usps_priority_mail_flat_rate' => 'Priority Mail Flat Rate',
-            'usps_retail_ground' => 'Retail Ground', //TODO:Need to remove
             'usps_ground_advantage' => 'Ground Advantage',
         ];
         $internationalServices = [

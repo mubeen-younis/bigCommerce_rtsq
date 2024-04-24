@@ -233,5 +233,35 @@ class QuoteSettingsController extends Controller
     }
 
 
+    /**
+     * @return void
+     */
+    public function scriptToUpdateUSPSService()
+    {
+        $getAllUSPSCarrierQuoteSetting = InstalledCarrier::getAllUSPSCarriersQuoteSetting();
+        foreach ($getAllUSPSCarrierQuoteSetting as $uspsSetting) {
+            $carrierServiceDetails = json_decode($uspsSetting['value'], true);
+
+            if (isset($carrierServiceDetails['carrier_services'])) {
+                $carrierServiceDetails['carrier_services']['usps_ground_advantage'] = $carrierServiceDetails['carrier_services']['usps_retail_ground'] ?? false;
+                $carrierServiceDetails['carrier_services']['usps_ground_advantage_markup'] = $carrierServiceDetails['carrier_services']['usps_retail_ground_markup'] ?? null;
+
+                if (!empty($carrierServiceDetails['carrier_services']['usps_retail_ground_label'])) {
+                    $carrierServiceDetails['carrier_services']['usps_ground_advantage_label'] = $carrierServiceDetails['carrier_services']['usps_retail_ground_label'];
+                }
+                //Removing First class mail service
+                unset($carrierServiceDetails['carrier_services']['usps_first_class_mail']);
+
+
+                $quoteSettings = QuoteSetting::where('id', $uspsSetting['id'])->first();
+                $quoteSettings->value = json_encode($carrierServiceDetails);
+                $quoteSettings->save();
+            }
+
+        }
+
+        return "Services moved successfully";
+    }
+
 
 }
