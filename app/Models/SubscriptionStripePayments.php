@@ -19,7 +19,7 @@ class SubscriptionStripePayments extends Model
         try {
             $invoiceID = $paymentData->data->object->id ?? null;
             $subscriptionID = $paymentData->data->object->subscription ?? null;
-            $receiptNumber = $paymentData->id ?? null;
+            $receiptNumber = $paymentData->data->object->number ?? null;
             if (blank($invoiceID) || blank($subscriptionID)) {
                 return null;
             }
