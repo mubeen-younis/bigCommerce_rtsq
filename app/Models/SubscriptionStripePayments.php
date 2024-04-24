@@ -16,7 +16,6 @@ class SubscriptionStripePayments extends Model
 
     public static function addOrUpdateSubscriptionPayment($stripeObjectData, $paymentData)
     {
-        Log::info('Stripe Object Data' . json_encode($stripeObjectData) . ' Payment data ' . json_encode($paymentData));
         try {
             $invoiceID = $paymentData->data->object->id ?? null;
             $subscriptionID = $paymentData->data->object->subscription ?? null;
@@ -149,6 +148,15 @@ class SubscriptionStripePayments extends Model
     public static function getAmountInDols($amount): float|int
     {
         return (float)$amount / 100;
+    }
+
+    /**
+     * @param $id
+     * @return array
+     */
+    public static function getInvoiceDetail($id)
+    {
+        return optional(self::where('id', $id)->first())->toArray() ?? [];
     }
 
 }

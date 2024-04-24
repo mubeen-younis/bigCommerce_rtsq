@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Subscription;
 
 
+use App\CustomClasses\CurlRequest;
 use App\CustomClasses\Functions;
 use App\Helpers\Helpers;
 use App\Http\Controllers\Controller;
@@ -15,6 +16,7 @@ use App\Models\Subscription\CarrierCount;
 use App\Models\Subscription\PaymentMethod;
 use App\Models\Subscription\Plan;
 use App\Models\Subscription\Subscription;
+use App\Models\SubscriptionPayments;
 use App\Models\SubscriptionStripePayments;
 use App\Models\User;
 use Carbon\Carbon;
@@ -1188,6 +1190,40 @@ class SubscriptionController extends Controller
 
         }
         return Helpers::sendJsonResponse(false, "", SubscriptionStripePayments::getSubscriptionStripePayments($storeId));
+    }
+
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getReceipt(Request $request)
+    {
+        $notFoundMessage = "The specified receipt cannot be found.";
+
+        $id = $request->id ?? "";
+        $invoiceDetail = SubscriptionStripePayments::getInvoiceDetail($id);
+        $receiptUrl = $invoiceDetail['receipt_url'] ?? "";
+
+        if (blank($receiptUrl)) {
+            return Helpers::sendJsonResponse(true, $notFoundMessage);
+        }
+
+        if ($invoiceDetail['is_addon']) {
+            $fileUrl = $receiptUrl;
+        } else {
+            $curlResponse = (new CurlRequest())->enSingleCurlRequest($receiptUrl, '', [], 'GET');
+            $curlResponse = json_decode($curlResponse['response'] ?? "", true);
+            $fileUrl = $curlResponse['file_url'] ?? "";
+        }
+
+        if (!blank($fileUrl)) {
+            return Helpers::sendJsonResponse(false, '', ['file_url' => $fileUrl]);
+
+        }
+
+        return Helpers::sendJsonResponse(true, $notFoundMessage);
+
+
     }
 
 }

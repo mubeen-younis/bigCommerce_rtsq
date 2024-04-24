@@ -133,7 +133,8 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::get('/getResidentialSettings', [RADController::class, 'getSettings']);
 
     //Payments
-    Route::get('/get_payments',[SubscriptionController::class,'getPayments']);
+    Route::get('/get_payments', [SubscriptionController::class, 'getPayments']);
+    Route::get('/get_receipt', [SubscriptionController::class, 'getReceipt']);
 
     /* SBS routes */
     Route::get('/sbs/get_plans', [SBSController::class, 'getPlans']);
