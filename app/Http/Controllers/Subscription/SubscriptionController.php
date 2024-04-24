@@ -164,7 +164,8 @@ class SubscriptionController extends Controller
             return $newSubscription->id;
         }
         Log::info('Old subscription ' . json_encode($oldSubscription));
-        $carrierCounts = CarrierCount::where('plan_id', $oldSubscription->plan_id)->where('subscription_id', $oldSubscription->id)->first();
+
+        $carrierCounts = CarrierCount::where('subscription_id', $oldSubscription->id)->first();
         Log::info('Carrier counts ' . json_encode($carrierCounts));
         $oldSubscription->plan_id = self::$plansData['plan_id'];
         $oldSubscription->status = 1; //Active Status
