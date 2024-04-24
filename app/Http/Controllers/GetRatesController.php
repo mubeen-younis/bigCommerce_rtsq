@@ -401,7 +401,7 @@ class GetRatesController extends Controller
             ->where(['source_product_id' => $productId, 'variant_id' => $variantId, 'store_id' => $storeId])
             ->first();
             
-        if (!empty($productBrand->toArray())) {
+        if (!empty($productBrand) && !empty($productBrand->toArray())) {
             return $productBrand['brand_id'];
         }
         return null;
@@ -413,10 +413,10 @@ class GetRatesController extends Controller
             ->where(['source_product_id' => $productId, 'variant_id' => $variantId, 'store_id' => $storeId])
             ->first();
 
-        if (!empty($productCategories->toArray())) {
+        if (!empty($productCategories) && !empty($productCategories->toArray())) {
             return $productCategories['categories_id'];
         }
-        return [];
+        return null;
     }
 
     private function getProductPrice($productId, $variantId, $storeId)

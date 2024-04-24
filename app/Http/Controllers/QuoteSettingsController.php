@@ -232,4 +232,21 @@ class QuoteSettingsController extends Controller
         return response()->json(['error' => false, 'data' => $WeightThresholdSettings, 'debug' => $request->all()], 200);
     }
 
+    public function saveStaffNoteSettings(Request $request)
+    {
+        $StaffNoteSettings = WeightThresholdSettings::firstOrNew(['store_id' => $request->store_id]);
+        $StaffNoteSettings->store_id = $request->store_id;
+        $StaffNoteSettings->is_staff_note_active = $request->is_staff_note_active ?? 1;
+        $StaffNoteSettings->save();
+        return response()->json(['error' => false, 'data' => $StaffNoteSettings]);
+    }
+
+    public function getStaffNoteSettings(Request $request)
+    {
+        $StaffNoteSettings = WeightThresholdSettings::where('store_id', $request->store_id)->first();
+        $parcel = ['is_staff_note_active' => 1];
+        $StaffNoteSettings = empty($StaffNoteSettings) ? $parcel : $StaffNoteSettings;
+        return response()->json(['error' => false, 'data' => $StaffNoteSettings, 'debug' => $request->all()], 200);
+    }
+
 }

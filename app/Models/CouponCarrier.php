@@ -38,6 +38,7 @@ class CouponCarrier extends Model
             'ltl-quotes' => 'WWE_LTL',
             'gtz-ltl' => 'GTZ',
             'unishippers-small' => 'UNI_PL',
+            'unishipper-ltl' => 'UNI_LTL'
         ];
 
         $code = $request['coupon_code'] ?? '';        
