@@ -259,9 +259,11 @@ class PackageSubscriptionController extends Controller
 
         $currentPackageDetails = $this->getPkgDetails($addonType);
 
-        if ($updateSubscription == self::$updateFullSubscription && !empty($mainSubscription->email)) {
-            //TODO:Need to uncomment
-            // Mail::to($mainSubscription->email)->send(new AddonPackageUpdateMail($addonType, $currentPackageDetails['currentPackage']));
+        if ($updateSubscription == self::$updateFullSubscription &&
+            !empty($mainSubscription->email) &&
+            (isset($data['package']) && $data['package'] != self::$dynamicTrial)
+        ) {
+            Mail::to($mainSubscription->email)->send(new AddonPackageUpdateMail($addonType, $currentPackageDetails['currentPackage']));
         }
 
         return [
