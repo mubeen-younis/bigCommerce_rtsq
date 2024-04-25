@@ -361,6 +361,12 @@ class ProductSettingController extends Controller
                     ->orderBy('name', $sortProd)
                     ->get();
             }
+            
+            if ($count->count()) {
+                $count = $count->whereNotNull('variant_id')->groupBy('variant_id')->count();
+            } else {
+                $count = 0;
+            }
 
             if ($search === null || $search == '') {
                 $products = ProductSetting::where('store_id', $request->store_id)->whereNotNull('variant_id')
