@@ -8,7 +8,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    update-products-setting-UI:
+    add-control-staff-notes:
       - step:
           caches:
             - composer
@@ -20,7 +20,7 @@ pipelines:
                 MODE: 'command'
                 COMMAND: '/home/apx-bc-01/html/bc/remote-script.sh'
 
-    add-control-staff-notes:
+    update-products-setting-UI:
       - step:
           caches:
             - composer
