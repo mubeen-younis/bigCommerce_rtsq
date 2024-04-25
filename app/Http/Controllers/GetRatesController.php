@@ -188,7 +188,7 @@ class GetRatesController extends Controller
                 'street_1' => $data['base_options']['destination']['street_1'] ?? null,
                 'street_2' => $data['base_options']['destination']['street_2'] ?? null,
                 'zip' => $data['base_options']['destination']['zip'] ?? null,
-                'city' => $data['base_options']['destination']['city'] ?? null,
+                'city' => str_replace("'", '', $data['base_options']['destination']['city']) ?? null,
                 'state' => $data['base_options']['destination']['state_iso2'] ?? null,
                 'country' => $data['base_options']['destination']['country_iso2'] ?? null,
                 'address_type' => $data['base_options']['destination']['address_type'] ?? null,
@@ -401,7 +401,7 @@ class GetRatesController extends Controller
             ->where(['source_product_id' => $productId, 'variant_id' => $variantId, 'store_id' => $storeId])
             ->first();
             
-        if (!empty($productBrand->toArray())) {
+        if (!empty($productBrand) && !empty($productBrand->toArray())) {
             return $productBrand['brand_id'];
         }
         return null;
@@ -413,10 +413,10 @@ class GetRatesController extends Controller
             ->where(['source_product_id' => $productId, 'variant_id' => $variantId, 'store_id' => $storeId])
             ->first();
 
-        if (!empty($productCategories->toArray())) {
+        if (!empty($productCategories) && !empty($productCategories->toArray())) {
             return $productCategories['categories_id'];
         }
-        return [];
+        return null;
     }
 
     private function getProductPrice($productId, $variantId, $storeId)
@@ -716,7 +716,7 @@ class GetRatesController extends Controller
             $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
             foreach($restrictedProducts as $rpKey => $productId){
 
-                $filterProducts = collect($cartItems)->where('product_id', $productId)->all() ?? [];
+                $filterProducts = collect($cartItems)->where('product_id', $productId['key'])->all() ?? [];
                 
                 if(!empty($filterProducts)){
                     $istrue = $istrue || $this->checkRuleRestriction($rule, $origins, $destination, $statesCode, $filterProducts);

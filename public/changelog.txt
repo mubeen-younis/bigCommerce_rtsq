@@ -1,3 +1,15 @@
+= 2.2.1 2024-04-24 =
+
+* Update - Add control staff notes functionality (Ticket:2555082021) [#435] (https://bitbucket.org/eniture/big-commerce/pull-requests/435)
+
+= 2.2.0 2024-04-23 =
+
+* Update - Add Unishippers Freight Carrier Integration (Ticket:2295363422) [#432] (https://bitbucket.org/eniture/big-commerce/pull-requests/432)
+
+= 2.1.25 2024-04-22 =
+
+* Update - Add Connection Settings In shipEngine (Ticket:2455207255) [#431] (https://bitbucket.org/eniture/big-commerce/pull-requests/431)
+
 = 2.1.24 2024-04-17 =
 
 * Update - Add Tforce New API in BC (Ticket:2537259103 and 2541618719) [#430] (https://bitbucket.org/eniture/big-commerce/pull-requests/430)

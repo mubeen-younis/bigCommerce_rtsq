@@ -175,7 +175,7 @@ class CarrierController extends Controller
 
             $install_carrier = InstalledCarrier::find($installCarrier->id);
 
-            if ($carrier->slug == "ltl-quotes" || $carrier->slug == "freightquote-ltl" || $carrier->slug == "tql-ltl" || $carrier->slug == "echo-ltl" || $carrier->slug == "freightquote-chr-ltl" || $carrier->slug == 'priority-one-ltl') {
+            if ($carrier->slug == "ltl-quotes" || $carrier->slug == 'unishipper-ltl' || $carrier->slug == "freightquote-ltl" || $carrier->slug == "tql-ltl" || $carrier->slug == "echo-ltl" || $carrier->slug == "freightquote-chr-ltl" || $carrier->slug == 'priority-one-ltl') {
 
                 $services = CarrierServices::where("app_id", $carrier->id)->pluck("speed_freight_carrierSCAC")->all();
                 $checked = $this->CheckedAllServices($installCarrier->id, $services, $request);

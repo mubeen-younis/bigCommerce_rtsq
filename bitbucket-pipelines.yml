@@ -20,7 +20,7 @@ pipelines:
                 MODE: 'command'
                 COMMAND: '/home/apx-bc-01/html/bc/remote-script.sh'
 
-    update-override-rates-feature:
+    add-control-staff-notes:
       - step:
           caches:
             - composer
