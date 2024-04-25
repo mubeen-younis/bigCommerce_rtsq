@@ -1,3 +1,7 @@
+= 2.2.2 2024-04-25 =
+
+* Fix - missing street 2 address line in smarty street api request (Ticket:2605709068) [#437] (https://bitbucket.org/eniture/big-commerce/pull-requests/437)
+
 = 2.2.1 2024-04-24 =
 
 * Update - Add control staff notes functionality (Ticket:2555082021) [#435] (https://bitbucket.org/eniture/big-commerce/pull-requests/435)
