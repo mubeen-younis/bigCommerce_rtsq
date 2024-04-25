@@ -217,7 +217,9 @@ class PackageSubscriptionController extends Controller
         // self::$updateFullSubscription means we will update both current package and  update the package_to_be_charge table as well
         //If current subscription is active and it is trial
         if (!is_null($currentPackageSub) && $currentPackageSub->status == 1 && $currentPackageSub->package_id == self::$dynamicTrial && Carbon::parse($currentPackageSub->expiry_time) > Carbon::now()) {
-            $updateSubscription = self::$updateFullSubscription;
+            //Earlier when it was trial and whenever customer selects the paid plan, it was updating that to the paid plan rather just updating the auto-renewal
+            //it was set to $updateSubscription = $updateFullSubscription;
+            $updateSubscription = self::$updateToBeChargeonly;
         } elseif (!is_null($currentPackageSub) && $currentPackageSub->status == 1 && Carbon::parse($currentPackageSub->expiry_time) > Carbon::now()) {
             //If current subscription is active
             $updateSubscription = self::$updateToBeChargeonly;
