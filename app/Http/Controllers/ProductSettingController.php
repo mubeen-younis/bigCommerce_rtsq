@@ -291,6 +291,7 @@ class ProductSettingController extends Controller
             ], 404);
         }
         $products = ProductSetting::where('source_product_id', $request->product_id)
+            ->whereNotNull('variant_id')
             ->where('store_id', $request->store_id)
             ->get();
         if ($products->isEmpty()) {
