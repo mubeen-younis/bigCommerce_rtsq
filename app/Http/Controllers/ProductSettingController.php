@@ -284,14 +284,13 @@ class ProductSettingController extends Controller
     {
         $this->deleteDuplicateProducts($request);
 
-        if (empty($request->product_id) && $request->variant_id) {
+        if (empty($request->product_id)) {
             return response()->json(['error' => true,
                 'data' => [],
                 'message' => 'No Product Id',
             ], 404);
         }
         $products = ProductSetting::where('source_product_id', $request->product_id)
-            ->where('variant_id', $request->variant_id)
             ->where('store_id', $request->store_id)
             ->get();
         if ($products->isEmpty()) {
@@ -363,22 +362,23 @@ class ProductSettingController extends Controller
             }
             
             if ($count->count()) {
-                $count = $count->whereNotNull('variant_id')->groupBy('variant_id')->count();
+                $count = $count->groupBy('source_product_id')->count();
             } else {
                 $count = 0;
             }
 
             if ($search === null || $search == '') {
-                $products = ProductSetting::where('store_id', $request->store_id)->whereNotNull('variant_id')
-                    ->orderBy('name', $sortProd)->skip(($page - 1) * $perPage)->take($perPage)->get();
+                $products = ProductSetting::where('store_id', $request->store_id)
+                    ->groupBy('source_product_id')->orderBy('name', $sortProd)->skip(($page - 1) * $perPage)->take($perPage)->get();
             } else {
                 $products = ProductSetting::where(function ($query) use ($search) {
                     $query->where('name', 'LIKE', '%' . $search . '%')
                         ->orWhere('sku', 'LIKE', '%' . $search . '%')
                         ->orWhere('variant_id', $search)
                         ->orWhere('source_product_id', $search);
-                })->where('store_id', $request->store_id)->whereNotNull('variant_id')
+                })->where('store_id', $request->store_id)
                     ->orderBy('name', $sortProd)
+                    ->groupBy('source_product_id')
                     ->skip(($page - 1) * $perPage)->take($perPage)->get();
             }
             if ($products->isEmpty()) {
