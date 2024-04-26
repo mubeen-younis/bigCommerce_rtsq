@@ -454,6 +454,7 @@ class OrderController extends Controller
                     }
                 }
                 $carrierHasInsurance = $code ? $this->hasInsureCarrier($code) : false;
+                $isSurcharge = strpos($code, '+SR' ) ? 'Y' : 'n';
 
                 /*Added condition if in case of multi shipment
                 The rate of shipping group will be added to warehouse rate*/
@@ -583,6 +584,7 @@ class OrderController extends Controller
 
             $isProductMarkup ? array_push($orderWidget[$zip]['accessories'], 'Product Markup') : '';
             $isOriginMarkup ? array_push($orderWidget[$zip]['accessories'], 'Origin Markup') : '';
+            $isSurcharge != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Surcharge Included') : '';
 
             if (!$isSmall) {
                 $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Pickup') : '';
