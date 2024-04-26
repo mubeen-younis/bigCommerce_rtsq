@@ -342,7 +342,7 @@ class ProductSettingController extends Controller
             $perPage = $request['perpage'] ?? 50;
             $search = $request['search'] ?? null;
             $sortProd = $request['sortProd'] == "true" ? 'DESC' : 'ASC';
-            $count = 0;
+
             /*$count = ProductSetting::where('store_id', $request->store_id)
                 ->where('name','LIKE','%'.$search.'%')->orderBy('name', $sortProd)->get()->groupBy('source_product_id')->count();*/
 
@@ -360,7 +360,7 @@ class ProductSettingController extends Controller
                     ->orderBy('name', $sortProd)
                     ->get();
             }
-            
+
             if ($count->count()) {
                 $count = $count->groupBy('source_product_id')->count();
             } else {
