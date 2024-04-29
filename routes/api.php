@@ -285,8 +285,13 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::get('/get_dbsc_other_settings', [OtherSettingsController::class, 'index']);
     Route::post('/save_dbsc_other_settings', [OtherSettingsController::class, 'store']);
 
+    // Threshold Settings Route
     Route::get('/get_threshold_settings', [QuoteSettingsController::class, 'getThresholdSettings']);
     Route::post('/submit_threshold_settings', [QuoteSettingsController::class, 'saveThresholdSettings']);
+
+    // Staff Note Settings Route
+    Route::get('/get_staffnote_settings', [QuoteSettingsController::class, 'getStaffNoteSettings']);
+    Route::post('/submit_staffnote_settings', [QuoteSettingsController::class, 'saveStaffNoteSettings']);
 
     Route::get('/get_carrs_conn_settings', [ConnectionController::class, 'getConnSettings']);
 });

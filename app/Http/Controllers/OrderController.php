@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\CustomClasses\PalletPackaging;
 use App\Models\DBSC\DbscShippingProfile;
+use App\Models\WeightThresholdSettings;
 
 class OrderController extends Controller
 {
@@ -1062,7 +1063,7 @@ class OrderController extends Controller
             $postData = json_decode($postData, true);
             return $this->orderWebhookProcess($request, $postData);
         } catch (\Exception $exception) {
-            Log::info('Exception On Moving Quotes ' . json_encode($exception->getTraceAsString()));
+            Log::info('Exception On Moving Quotes ' . json_encode([$exception->getMessage(), $exception->getFile(), $exception->getLine()]));
             return response()->json(true, 200);
         }
     }
@@ -1237,8 +1238,11 @@ class OrderController extends Controller
                         unset($reqData['id']);
                         $orderId= $order['id'];
                         RequestData::insert($reqData);
+
                         // Check: if order is newly created then update staff note
-                        if ($scope == 'store/order/created') {
+                        $staffNoteSettings = optional(WeightThresholdSettings::where('store_id', $toRequest['store_id'])->first())->toArray() ?? [];
+                        $isStaffNotesActive = isset($staffNoteSettings['is_staff_note_active']) && $staffNoteSettings['is_staff_note_active'] == 0 ? false : true;
+                        if ($isStaffNotesActive && $scope == 'store/order/created') {
                             $orderCheck = RequestData::where('order_id', $orderId)->first();
                             if (!$orderCheck) {
                                 $reportingFlag = "false";
