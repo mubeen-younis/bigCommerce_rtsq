@@ -181,9 +181,6 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/update_boxsize', 'App\Http\Controllers\BoxSizeController@update');
     Route::delete('boxsize/delete/{id}', 'App\Http\Controllers\BoxSizeController@destroy');
 
-    //Payments Tab changes
-    Route::get('/get_payments', [SubscriptionController::class, 'getPayments']);
-
 
     Route::post('/submit_connection_settings', [ConnectionController::class, 'store']);
 
@@ -297,9 +294,6 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
 });
 //Webhook
 Route::post('/bc-subscription-update', [SubscriptionController::class, 'paymentByStripeWebHook']);
-
-//Route::post('/bc-payment-succeeded', [SubscriptionController::class, 'invoicePaymentSucceeded']);
-//Route::post('/update-subscription', [SubscriptionController::class, 'updateSubscriptionFromStripe']);
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);
 Route::get('/get_conn_settings', [ConnectionController::class, 'index']);
