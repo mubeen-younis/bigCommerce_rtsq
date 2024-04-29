@@ -18,24 +18,24 @@ class InstalledCarrier extends Model
     public static function getinstalledProvidersSlug($storeId)
     {
         return optional(self::join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
-                ->select('slug')
-                ->where('installed_carriers.store_id', $storeId)
-                ->where('installed_carriers.is_enabled', 1)
-                ->get())->toArray() ?? [];
+            ->select('slug')
+            ->where('installed_carriers.store_id', $storeId)
+            ->where('installed_carriers.is_enabled', 1)
+            ->get())->toArray() ?? [];
     }
 
     public static function getinstalledProviderSlug($installedProvId)
     {
         return optional(self::join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
-                ->select('slug')
-                ->where('installed_carriers.id', $installedProvId)
-                ->first())->toArray() ?? [];
+            ->select('slug')
+            ->where('installed_carriers.id', $installedProvId)
+            ->first())->toArray() ?? [];
     }
 
     public static function getInstCarFromSlugANdStore($slug, $storeId, $promoCode = null)
     {
         $carrier = self::join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
-            ->select('slug', 'installed_carriers.id','installed_carriers.store_id', 'installed_carriers.is_enabled','carriers.slug')
+            ->select('slug', 'installed_carriers.id', 'installed_carriers.store_id', 'installed_carriers.is_enabled', 'carriers.slug')
             ->where('installed_carriers.store_id', $storeId)
             ->where('installed_carriers.is_enabled', 1)
             ->where('carriers.slug', $slug)
@@ -47,6 +47,15 @@ class InstalledCarrier extends Model
             Connection::addPromoCodeInConnectionSettings($carrier->id, $promoCode);
         }
         return true;
+    }
+
+    public static function getAllUSPSCarriersQuoteSetting()
+    {
+        return optional(self::join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
+            ->join('qoute_settings', 'qoute_settings.installed_carrier_id', 'installed_carriers.id')
+            ->select('qoute_settings.id', 'qoute_settings.value')
+            ->where('installed_carriers.carrier_id', 23)
+            ->get())->toArray() ?? [];
     }
 
 }

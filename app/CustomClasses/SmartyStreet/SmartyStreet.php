@@ -71,7 +71,7 @@ class SmartyStreet
 
     public function set_address($address)
     {
-        $street = $address['street_1'] ?? '';
+        $street = $address['street_1'] . ' ' . $address['street_2'] ?? '';
         $city = $address['city'] ?? '';
         $state = $address['state'] ?? '';
         $zip = $address['zip'] ?? '';

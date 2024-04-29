@@ -20,7 +20,7 @@ pipelines:
                 MODE: 'command'
                 COMMAND: '/home/apx-bc-01/html/bc/remote-script.sh'
 
-    feature/shipengine-conn-settings:
+    usps-ground-advantage:
       - step:
           caches:
             - composer
