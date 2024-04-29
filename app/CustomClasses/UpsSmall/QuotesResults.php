@@ -140,7 +140,6 @@ class QuotesResults
         $originQuotes = $multiShipmentQuotes = $multiShipmentQuote = [];
         $shipmentCount = 0;
         $count = 0;
-        $access2 = $access;
 
         $rad_settings = Functions::getRADsettings($storeId) ?? [];
         $isRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
@@ -173,6 +172,8 @@ class QuotesResults
                     if (isset($data['severity'])) {
                         continue;
                     }
+                    $access2 = $access;
+
                     if(isset($quote['ups_services'][$key])){
                         $serviceName = $quote['ups_services'][$key];
                         $service = str_replace(' ', '_', strtolower($serviceName));
@@ -239,7 +240,9 @@ class QuotesResults
                         $access2 = $access2 . '+gd'; 
                     } else if ((strpos($data['serviceType'], 'SR_') !== false) && strpos($access2, '+sr') === false) {
                         $access2 = $access2 . '+sr'; 
-                    } 
+                    }
+                    
+                    $access2 = $isSurchargeRates ? $access2 . '+SC' : $access2;
 
                     $title = $this->getServiceTitle($data['serviceDesc'], $data, $data['serviceType'], $this->quoteSettings, $residential, $isRadNotation);
                     $price = (float)str_replace(',', '', $price);

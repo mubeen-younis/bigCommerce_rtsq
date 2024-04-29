@@ -85,6 +85,8 @@ class QuotesResults
                         $price = $this->getServiceRate($price, $srvcType);
                     }
                     $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
+
+                    $access2 = $isSurchargeRates ? $access2 . '+SC' : $access2;
                     
                     // Get service title
                     $title = $this->getServiceTitle($data, $srvcType, $this->quoteSettings, $residential, $showRadNotation);
@@ -110,7 +112,7 @@ class QuotesResults
                 $minRateFromNetChargeArr = min(array_column($netChargeArr, 'rate'));
 
                 $multiShipmentPrice += str_replace(',', '', $minRateFromNetChargeArr);
-                $multishipmentCheckoutQuotes[0]['code'] = 'Multiusps' . $access;
+                $multishipmentCheckoutQuotes[0]['code'] = 'Multiusps' . $access2;
                 $multishipmentCheckoutQuotes[0]['rate'] = number_format($multiShipmentPrice, 2);
                 $multishipmentCheckoutQuotes[0]['title'] = $residential && $showRadNotation ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
             }

@@ -1623,7 +1623,7 @@ class CompileQuotes
                         $this->storeId,
                     );
 
-                    $arraySorting['notifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
+                    $arraySorting['notifydelivery'][$origin] = $compileNotifyDeliveryQuotes['ndPrice'];
                     $originQuotes = $compileNotifyDeliveryQuotes['originQuotes'];
                 }
                 if ($notifyDelivery && $lgQuotes) {
@@ -1644,7 +1644,7 @@ class CompileQuotes
                         $this->storeId,
                     );
 
-                    $arraySorting['lgnotifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
+                    $arraySorting['lgnotifydelivery'][$origin] = $compileNotifyDeliveryQuotes['ndPrice'];
                     $originQuotes = $compileNotifyDeliveryQuotes['originQuotes'];
                 }
 
@@ -6212,7 +6212,7 @@ class CompileQuotes
             $access .= '+NBD';
         }
         if($this->isSurchargeRates){
-            $access .= '+SR';
+            $access .= '+SC';
         }
         if ($twoManDel && $appDel) {
             $access .= Functions::$twoManAptDelAccess;
