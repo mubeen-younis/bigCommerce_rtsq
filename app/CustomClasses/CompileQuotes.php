@@ -2149,6 +2149,7 @@ class CompileQuotes
 
         foreach ($shipments as $origin => $quote) {
             $this->originKey = $origin;
+            $this->isSurchargeRates = false;
             $hatShipments[] = $estesLtl->HatQuoteCompile($quote, $this->quoteSettings);
 
             if (isset($quote['severity'])) {
@@ -2216,7 +2217,8 @@ class CompileQuotes
                         // Apply override rates shipping rule
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         // Apply Surcharge rates shipping rule
-                        //$data = $this->applySurchargeRatesRule($connectionSettings, $data);
+                        $data = $this->applySurchargeRatesRule($connectionSettings, $data);
+
                         $price = $this->calculatePrice($data);
                         $access = $this->getAccessorialCode() . $resiPickup;
 
@@ -3305,6 +3307,7 @@ class CompileQuotes
         $HAT = [];
         foreach ($shipments as $origin => $quote) {
             $this->originKey = $origin;
+            $this->isSurchargeRates = false;
             if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -3344,6 +3347,10 @@ class CompileQuotes
                     }
                     // Apply Override rates shipping rule
                     $data = $this->applyOverrideRatesRule($connectionSettings, $data);
+                    // Apply Surcharge rates shipping rule
+                    $data = $this->applySurchargeRatesRule($connectionSettings, $data);
+
+
                     $price = $this->calculatePrice($data);
                     $access = $this->getAccessorialCode();
 
@@ -4597,6 +4604,7 @@ class CompileQuotes
         /* Quotes compilation */
         foreach ($shipments as $origin => $quote) {
             $this->originKey = $origin;
+            $this->isSurchargeRates = false;
             $isError = isset($quote['severity']);
             if ($isError) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
@@ -4623,6 +4631,9 @@ class CompileQuotes
                     if (isset($srvcType)) {                   
                         // Apply override rates shipping rule
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data);
+                        // Apply Surcharge rates shipping rule
+                        $data = $this->applySurchargeRatesRule($connectionSettings, $data);
+
                         $price = $this->calculatePrice($data);
                         $access = $this->getAccessorialCode();
                         $this->quoteSettings['label_as'] = $labelAs;
@@ -4777,7 +4788,7 @@ class CompileQuotes
 
         foreach ($shipments as $origin => $quote) {
             $this->originKey = $origin;
-
+            $this->isSurchargeRates = false;
             if ((isset($quote['severity']) || !isset($quote['q']) || (isset($quote['q']) && empty($quote['q'])))) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -4825,7 +4836,8 @@ class CompileQuotes
                         // Apply override rates shipping rule
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         // Apply Surcharge rates shipping rule
-                        //$data = $this->applySurchargeRatesRule($connectionSettings, $data);
+                        $data = $this->applySurchargeRatesRule($connectionSettings, $data);
+
                         $price = $this->calculatePrice($data);
                         $access = $this->getAccessorialCode();
                         $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : 'Freight';
@@ -5001,6 +5013,7 @@ class CompileQuotes
         $labelAs = $this->quoteSettings['label_as'] ?? '';
         foreach ($shipments as $origin => $quote) {
             $this->originKey = $origin;
+            $this->isSurchargeRates = false;
             if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -5040,6 +5053,9 @@ class CompileQuotes
                     if (isset($srvcType)) {
                         // Apply Override rates shipping rule
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data);
+                        // Apply Surcharge rates shipping rule
+                        $data = $this->applySurchargeRatesRule($connectionSettings, $data);
+
                         $price = $this->calculatePrice($data);
                         $access = $this->getAccessorialCode();
                         $isNbdSurcharges = isset($data['surcharges']['notifyDeliveryFee']);
@@ -5387,6 +5403,7 @@ class CompileQuotes
         /* Quotes compilation */
         foreach ($shipments as $origin => $quote) {
             $this->originKey = $origin;
+            $this->isSurchargeRates = false;
             if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -5404,6 +5421,9 @@ class CompileQuotes
                 foreach ($quotesArr as $key => $data) {
                     // Apply Override rates shipping rule
                     $data = $this->applyOverrideRatesRule($connectionSettings, $data);
+                    // Apply Surcharge rates shipping rule
+                    $data = $this->applySurchargeRatesRule($connectionSettings, $data);
+
                     $price = $this->calculatePrice($data);
                     $access = $this->getAccessorialCode();
 
