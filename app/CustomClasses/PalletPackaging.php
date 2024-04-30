@@ -335,9 +335,9 @@ class PalletPackaging
         return [
             "w" => $pallet['width'],
             "d" => $pallet['length'],
-            "h" => $pallet['ext_height'],
+            "h" => ceil($pallet['height'] - $pallet['ext_height']),
             "id" => $pallet['id'],
-            "max_wg" => $pallet['max_weight'],
+            "max_wg" => ceil($pallet['max_weight'] - $pallet['box_weight']),
         ];
     }
 
@@ -439,6 +439,7 @@ class PalletPackaging
 
         if (isset($pallet->pallet_data->id) && isset($palletBins[$pallet->pallet_data->id])) {
             $palletWeight = $palletBins[$pallet->pallet_data->id]['box_weight'];
+            $palletHeight = $palletBins[$pallet->pallet_data->id]['ext_height'];
             $price = 0;
             if (isset($pallet->items)) {
                 foreach ($pallet->items as $itemData) {
@@ -452,7 +453,7 @@ class PalletPackaging
 
         $item['lineItemLength'] = $pallet->pallet_data->d ?? 0;
         $item['lineItemWidth'] = $pallet->pallet_data->w ?? 0;
-        $item['lineItemHeight'] = $pallet->pallet_data->h ?? 0;
+        $item['lineItemHeight'] = $pallet->pallet_data->h + $palletHeight?? 0;
         $item['lineItemPrice'] = $price;
         $item['lineItemWeight'] = $pallet->pallet_data->weight + $palletWeight;
         $item['isHazmatLineItem'] = $hazmat;
@@ -524,6 +525,7 @@ class PalletPackaging
                 'h' => $pallet['height'],
                 'd' => $pallet['length'],
                 'id' => $pallet['id'],
+                'ext_height' => $pallet['ext_height'],
                 'max_wg' => $pallet['max_weight'],
                 'box_weight' => $pallet['box_weight'],
             );
