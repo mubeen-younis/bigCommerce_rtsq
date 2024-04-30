@@ -27,10 +27,10 @@ pipelines:
           script:
             - pipe: atlassian/ssh-run:0.2.2
               variables:
-                SSH_USER: 'apx-bc-01'
+                SSH_USER: 'ec2-user'
                 SERVER: '52.87.17.243'
                 MODE: 'command'
-                COMMAND: '/home/apx-bc-01/html/bc/remote-script.sh'
+                COMMAND: '/var/www/html/bigcommerce/bc/remote-script.sh'
 
     master:
 
