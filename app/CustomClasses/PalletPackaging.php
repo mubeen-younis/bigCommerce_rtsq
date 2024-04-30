@@ -433,7 +433,7 @@ class PalletPackaging
      */
     public function updateCommdityDetails($item = [], $pallet, $palletBins = [], $itemsArr = [])
     {
-        $palletWeight = 0;
+        $palletWeight = $palletHeight = 0;
         $price = $item['lineItemPrice'] ?? 0;
         $hazmat = 'N';
 
@@ -453,7 +453,7 @@ class PalletPackaging
 
         $item['lineItemLength'] = $pallet->pallet_data->d ?? 0;
         $item['lineItemWidth'] = $pallet->pallet_data->w ?? 0;
-        $item['lineItemHeight'] = $pallet->pallet_data->h + $palletHeight?? 0;
+        $item['lineItemHeight'] = $pallet->pallet_data->h + $palletHeight ?? 0;
         $item['lineItemPrice'] = $price;
         $item['lineItemWeight'] = $pallet->pallet_data->weight + $palletWeight;
         $item['isHazmatLineItem'] = $hazmat;
