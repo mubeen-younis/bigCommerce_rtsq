@@ -140,7 +140,7 @@ class BoxSizeController extends Controller
 
         return response()->json([
             'error' => true,
-            'message' => 'Box could not be updated successfully.',
+            'message' => ($isPalletBox ? 'Pallet' : 'Box') . ' could not be updated successfully.',
         ]);
     }
 
@@ -153,10 +153,11 @@ class BoxSizeController extends Controller
     public function destroy($id)
     {
         $boxsize = BoxSize::find($id);
+        $isPalletBox = isset($boxsize->box_name) && $boxsize->box_name == 'Pallet Box' ? true : false;
         $boxsize->delete();
 
         return response()->json(['error' => false,
-            'message' => "Box deleted successfully",
+            'message' => ($isPalletBox ? 'Pallet' : 'Box') . " deleted successfully",
             'data' => $id]);
     }
 
