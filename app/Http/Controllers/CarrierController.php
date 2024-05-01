@@ -437,7 +437,7 @@ class CarrierController extends Controller
                 ->updateOrCreate(
                     ['store_id' => $store->id], 
                     ['carrier_id' => $carrier['id']],
-                    ['is_enabled' => $carrier['is_enabled']],
+                    ['is_enabled' => $installCarrier['is_enabled']],
                     ['installed_at' => now()],
                     ['plan_updated_at' => now()]
                 );
