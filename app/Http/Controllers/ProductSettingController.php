@@ -537,6 +537,7 @@ class ProductSettingController extends Controller
 
     public function updateProductDetail(Request $request)
     {
+        Log::info('requested product details ' . json_encode($request->products));
         $productCount = isset($request->products) ? count($request->products) : null;
         foreach ($request->products as $prd) {
             $product = ProductSetting::where('source_product_id', $prd['source_product_id'])
@@ -595,7 +596,7 @@ class ProductSettingController extends Controller
             $products = $this->isLtlParcelBothEnabled($request->products, $request);
             $product = $products[0] ?? [];
         }
-        
+        Log::info('Updated product details ' . json_encode($product));
         return response()->json(['error' => false,
             'data' => $product,
             'message' => 'Product Updated Successfully',
