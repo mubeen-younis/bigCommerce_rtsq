@@ -229,7 +229,7 @@ class AddonsController extends Controller
         foreach($addons as $addon){
             if (!empty($addon) && $addon['status'] === 1) {
 
-                $installAddon = InstalledAddon::where(['store_id' => $store->id, 'addon_id' => $addon['id']]);
+                $installAddon = InstalledAddon::where(['store_id' => $store->id, 'addon_id' => $addon['id']])->first();
 
                 if ($installAddon) {
                     $installAddon->update([
