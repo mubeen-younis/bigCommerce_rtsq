@@ -171,6 +171,7 @@ class Shipping
 
         // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo, $carriersErrorSettings);
+        
         // Added customization for eniture packaging disabled stores
 
         $requestArr = (new Customizations())->eniturePackagingCustomization($requestArr, $storeData['store']['hash']);
@@ -278,7 +279,7 @@ class Shipping
         } else {
             $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
             //TODO : Need to Add LTL Carriers Here as well
-            if (!$isShippingOrFreight && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist || $isEstesLtlCodeExist || $isDayRossLtlCodeExist || $isOdflLtlCodeExist || $isSaiaLtlCodeExist || $isAbfLtlCodeExist || $isSouthEasternLtlCodeExist || $isTqlLtlCodeExist || $isEchoLtlCodeExist || $isDayLightLtlCodeExist || $isFreightQuoteChrLtlCodeExist ||  $isFreightQuoteUnishipperLtlCodeExist)) {
+            if (!$isShippingOrFreight && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist || $isEstesLtlCodeExist || $isDayRossLtlCodeExist || $isOdflLtlCodeExist || $isSaiaLtlCodeExist || $isAbfLtlCodeExist || $isSouthEasternLtlCodeExist || $isTqlLtlCodeExist || $isEchoLtlCodeExist || $isDayLightLtlCodeExist || $isFreightQuoteChrLtlCodeExist || $isFreightQuoteUnishipperLtlCodeExist)) {
                 $isShippingOrFreight = false;
             }
 
@@ -893,7 +894,7 @@ class Shipping
     public function freeShippingTitle($finalQuotes)
     {
         foreach ($finalQuotes as $key => $quote) {
-            if (isset($quote['rate']) && ($quote['rate'] <= 0 )){
+            if (isset($quote['rate']) && ($quote['rate'] <= 0)) {
                 $finalQuotes[$key]['rate'] = 0;
             }
         }

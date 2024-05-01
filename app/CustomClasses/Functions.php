@@ -74,11 +74,11 @@ class Functions
     public static $notifyDelAccess = '+NBD';
     public static $WWE_SMALL_SERVICES = [
         'ups_ground',
-        'ups_3_day_select', 
-        'ups_2nd_day_air', 
-        'ups_2nd_day_air_am',  
-        'ups_next_day_air_saver', 
-        'ups_next_day_air', 
+        'ups_3_day_select',
+        'ups_2nd_day_air',
+        'ups_2nd_day_air_am',
+        'ups_next_day_air_saver',
+        'ups_next_day_air',
         'ups_next_day_air_early',
         // International services
         'ups_standard',
@@ -650,7 +650,7 @@ class Functions
             }
             $symbolicHandlingFee = '';
         }
-        
+
         return $totalFeeMarkup;
     }
 
@@ -766,7 +766,7 @@ class Functions
         $isUpsLtl = false;
         $isQuickestSer = isset($quoteSettings['quickest_service']) && $quoteSettings['quickest_service'] && $carrName === 'gtzltl';
         $quickLabelAs = isset($quoteSettings['quickest_service_label']) && !empty($quoteSettings['quickest_service_label']) ? $quoteSettings['quickest_service_label'] : $serviceName;
-        $isResidential = ($isResi || $isAlwaysResi) ?? false; 
+        $isResidential = ($isResi || $isAlwaysResi) ?? false;
 
         $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, $insideDelivery, $resiPickup, $lgPickup, $laccess, false, false, $notifyDelivery, $isResi, $isAlwaysResi);
         $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, $isUpsLtl, $insideDelivery, $laccess, false, false, $notifyDelivery, $originKey, $items, $allOrigins, $quoteSettings, $isResidential);
@@ -851,7 +851,7 @@ class Functions
 
         if ($isResi && !empty($accessLabel) && $showRadNotation) {
             $expolodAccess = explode('w/', $accessLabel);
-            $accessLabel = $isResi && $count <= 2 ? ' w/ residential &' . $expolodAccess[1] : ' w/ residential,' . $expolodAccess[1];            
+            $accessLabel = $isResi && $count <= 2 ? ' w/ residential &' . $expolodAccess[1] : ' w/ residential,' . $expolodAccess[1];
         }
 
         $accessLabel = $isResi && empty($accessLabel) && $showRadNotation ? Constant::RESI_LABEL : $accessLabel;
@@ -1038,10 +1038,10 @@ class Functions
 
     public static function getQuoteId($rateId, $quotes, $zip = null)
     {
-        
+
         $carrierCode = self::getCarrierNameOrCode($rateId, 1);
         $carrierQuoteIds = '';
-      
+
         foreach ($quotes as $carrrierName => $quote) {
             if($carrrierName === $carrierCode){
                 switch ($carrrierName) {
@@ -1284,7 +1284,7 @@ class Functions
         }
         return $carrierQuoteIds;
     }
-    
+
     public static function addPackagingId($requestArr, $lineItems, $storeId)
     {
         if (empty($requestArr)) {
@@ -1333,7 +1333,7 @@ class Functions
 
                     $totalBoxes = 1;
                     if (!empty($ws)) {
-                        
+
                             $sbsData = $ws->bins_packed ?? [];
 
                         /* Usps carrier packaging according to boxes types */
@@ -1369,7 +1369,7 @@ class Functions
                             $orderWidgetData['type'] = $type;
                             $orderWidgetData['image_complete'] = $binPacked->image_complete;
                             $orderWidgetData['quantity'] = $quantity;
-                           // $totalPackedItems += $quantity; 
+                           // $totalPackedItems += $quantity;
                             /*For Weight Based Products*/
                             if ($type == 'weight_based') {
                                 $orderWidgetData['d'] = '';
@@ -1425,7 +1425,7 @@ class Functions
                 }
             }
 
-            
+
 
         $resp = [
             'widget' => self::objectToArray($orderWidget),

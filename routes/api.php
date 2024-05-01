@@ -63,6 +63,9 @@ Route::middleware([\App\Http\Middleware\EnsureStoreisActive::class])->group(func
 Route::get('/add_to_test_stores', [MainController::class, 'addTestStore']);
 
 
+Route::get('/updateUSPSServices', [QuoteSettingsController::class, 'scriptToUpdateUSPSService']);
+
+
 // FDO ROUTES
 Route::middleware([\App\Http\Middleware\FDOValidity::class])->group(function () {
     Route::get('/order/{orderId}.json', [\App\Http\Controllers\FDOOrderController::class, 'getOrderDetails']);
@@ -151,7 +154,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/updateAvaiableStatus', [\App\Http\Controllers\ShippingRuleController::class, 'updateAvaiableStatus']);
     Route::post('/get_country_states', [\App\Http\Controllers\ShippingRuleController::class, 'getCountryStates']);
     Route::get('/get_shipping_rule_products', [App\Http\Controllers\ShippingRuleController::class, 'getshippingRuleProductsFromDb']);
-    
+
     Route::post('/get_store_categories', [\App\Http\Controllers\ShippingRuleController::class, 'getProductsCategories']);
     Route::post('/get_store_brands', [\App\Http\Controllers\ShippingRuleController::class, 'getProductsBrands']);
 
@@ -291,8 +294,6 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
 });
 //Webhook
 Route::post('/bc-subscription-update', [SubscriptionController::class, 'paymentByStripeWebHook']);
-//Route::post('/bc-payment-succeeded', [SubscriptionController::class, 'invoicePaymentSucceeded']);
-//Route::post('/update-subscription', [SubscriptionController::class, 'updateSubscriptionFromStripe']);
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);
 Route::get('/get_conn_settings', [ConnectionController::class, 'index']);
