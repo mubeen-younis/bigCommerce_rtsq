@@ -20,6 +20,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Bigcommerce\Api\Client as Bigcommerce;
 use Illuminate\Support\Facades\Redirect;
+use App\Models\Carrier;
+use App\Http\Controllers\CarrierController;
 
 
 class MainController extends BaseController
@@ -144,6 +146,10 @@ class MainController extends BaseController
                         'store_id' => $store->id,
                         'store_name' => $store->hash
                     ]);
+
+                    $carrierController = new CarrierController();
+                    $carriers = optional(Carrier::get())->toArray() ?? [];
+                    $carrierController->installCarriers($carriers, $store);
                 }
                 /*
                  * Update WS graph data
