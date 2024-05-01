@@ -149,7 +149,7 @@ class MainController extends BaseController
 
                     $carrierController = new CarrierController();
                     $carriers = optional(Carrier::get())->toArray() ?? [];
-                    //$carrierController->installCarriers($carriers, $store);
+                    $carrierController->installCarriers($carriers, $store);
                 }
                 /*
                  * Update WS graph data
