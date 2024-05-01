@@ -434,6 +434,7 @@ class CarrierController extends Controller
             if (!empty($carrier) && $carrier['status'] === 1) {
 
                 $installCarrier = InstalledCarrier::where(['store_id' => $store->id, 'carrier_id' => $carrier['id']])->first();
+                $time = now();
 
                 if ($installCarrier) {
                     $installCarrier->update([
@@ -441,6 +442,8 @@ class CarrierController extends Controller
                         'store_id' => $store->id,
                         'carrier_id' => $carrier['id'], 
                         'is_enabled' => isset($installCarrier->is_enabled) ? $installCarrier->is_enabled : false,
+                        'installed_at' => $time,
+                        'plan_updated_at' => $time, 
                     ]);
                 } else {
                     // If not found, create a new record
@@ -449,6 +452,8 @@ class CarrierController extends Controller
                         'store_id' => $store->id, 
                         'carrier_id' => $carrier['id'], 
                         'is_enabled' => false,
+                        'installed_at' => $time,
+                        'plan_updated_at' => $time,
                     ]);
                 }
                 
