@@ -459,7 +459,7 @@ class CarrierController extends Controller
         
                         $CRS = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
                             ->where('installed_carriers.id', $install_carrier->id)
-                            ->where('shopify_freights.store_id', $store_id)
+                            ->where('shopify_freights.store_id', $store->id)
                             ->orderBy('speed_freight_carrierSCAC')->pluck("speed_freight_carrierName")->all();
         
                         $NEWAPI = CarrierServices::where('app_id', 1)->orderBy('speed_freight_carrierName')->pluck("speed_freight_carrierSCAC")->all();
