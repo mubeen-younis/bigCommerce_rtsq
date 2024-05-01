@@ -234,7 +234,7 @@ class AddonsController extends Controller
                 $installAddon->updateOrCreate(
                     ['store_id' => $store->id], 
                     ['addon_id' => $addon['id']],
-                    ['is_enabled' => $installAddon->is_enabled]
+                    ['is_enabled' => $installAddon->is_enabled ?? false]
                 );
             }
         }
