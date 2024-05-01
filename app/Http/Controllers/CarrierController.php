@@ -15,7 +15,6 @@ use App\Http\Controllers\Subscription\SubscriptionController;
 use App\Models\DBSC\DbscOtherSettings;
 use App\Models\DBSC\DbscShippingProfile;
 use App\Helpers\Helpers;
-use Illuminate\Support\Facades\Log;
 
 class CarrierController extends Controller
 {
@@ -434,7 +433,6 @@ class CarrierController extends Controller
             if (!empty($carrier) && $carrier['status'] === 1) {
                 
                 $installCarrier = InstalledCarrier::firstOrNew(['store_id' => $store->id, 'carrier_id' => $carrier['id']]);
-                Log::info('$installCarrier log ' . json_encode($installCarrier));
                 if(!empty($installCarrier->store_id) && !empty($installCarrier->carrier_id)){
                     continue;
                 }
