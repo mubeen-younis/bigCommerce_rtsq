@@ -419,7 +419,7 @@ class CarrierController extends Controller
                 break;
         }
     }
-
+    // install all carriers on app installation
     public function carriersOnAppInstallation($carriers, $store)
     {
         if (empty($carriers)) {

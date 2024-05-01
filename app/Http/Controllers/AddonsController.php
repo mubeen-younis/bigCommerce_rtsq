@@ -216,7 +216,7 @@ class AddonsController extends Controller
             ], 404);
         }
     }
-
+    // install all add-ons on app installation
     public function addonsOnAppInstallation($addons, $store)
     {
         if (empty($addons)) {
