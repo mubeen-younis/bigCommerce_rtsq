@@ -547,6 +547,7 @@ class ProductSettingController extends Controller
             $product->length = $prd['length'];
             $product->width = $prd['width'];
             $product->height = $prd['height'];
+            $product->name = $prd['name'];
             $product->ship_multiple_package = isset($prd['ship_multiple_package']) && $prd['ship_multiple_package'] ? 1 : 0;
             $product->pallet_vertical_rotation = isset($prd['pallet_vertical_rotation']) && $prd['pallet_vertical_rotation'] ? 1 : 0;
             $product->own_pallet = isset($prd['own_pallet']) && $prd['own_pallet'] ? 1 : 0;
