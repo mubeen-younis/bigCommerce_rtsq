@@ -231,11 +231,22 @@ class AddonsController extends Controller
 
                 $installAddon = InstalledAddon::where(['store_id' => $store->id, 'addon_id' => $addon['id']]);
 
-                $installAddon->updateOrCreate(
-                    ['store_id' => $store->id], 
-                    ['addon_id' => $addon['id']],
-                    ['is_enabled' => $installAddon->is_enabled ?? false]
-                );
+                if ($installAddon) {
+                    $installAddon->update([
+                        // Update attributes
+                        'store_id' => $store->id,
+                        'addon_id' => $addon['id'], 
+                        'is_enabled' => isset($installAddon->is_enabled) ? $installAddon->is_enabled : false, 
+                    ]);
+                } else {
+                    // If not found, create a new record
+                    $installAddon = InstalledAddon::create([
+                        // Set attributes for the new record
+                        'store_id' => $store->id, 
+                        'addon_id' => $addon['id'], 
+                        'is_enabled' => false,
+                    ]);
+                }
             }
         }
 
