@@ -433,8 +433,9 @@ class CarrierController extends Controller
         foreach($carriers as $carrier){
             if (!empty($carrier) && $carrier['status'] === 1) {
 
-                $installCarrier = InstalledCarrier::where(['store_id' => $store->id, 'carrier_id' => $carrier['id']])
-                ->updateOrCreate(
+                $installCarrier = InstalledCarrier::where(['store_id' => $store->id, 'carrier_id' => $carrier['id']]);
+
+                $installCarrier->updateOrCreate(
                     ['store_id' => $store->id], 
                     ['carrier_id' => $carrier['id']],
                     ['is_enabled' => $installCarrier['is_enabled']],
