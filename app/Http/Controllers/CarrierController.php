@@ -424,16 +424,16 @@ class CarrierController extends Controller
     {
         if(!empty($carriers)){
             foreach($carriers as $carrier){
-                if (!empty($carrier) && $carrier->status === 1) {
-                    $installCarrier = InstalledCarrier::firstOrNew(['store_id' => $store->id, 'carrier_id' => $carrier->id]);
+                if (!empty($carrier) && $carrier['status'] === 1) {
+                    $installCarrier = InstalledCarrier::firstOrNew(['store_id' => $store->id, 'carrier_id' => $carrier['id']]);
                     $installCarrier->store_id = $store->id;
-                    $installCarrier->carrier_id = $carrier->id;
+                    $installCarrier->carrier_id = $carrier['id'];
                     $installCarrier->is_enabled = false;
                     $installCarrier->installed_at = now();
                     $installCarrier->plan_updated_at = now();
                     $installCarrier->save();
         
-                    if ($carrier->slug == 'dbsc') {
+                    if ($carrier['slug'] == 'dbsc') {
         
                         $otherSettings = DbscOtherSettings::create();
                         $generalProfile = DbscShippingProfile::create(['p_nickname' => "General Profile",
@@ -445,12 +445,12 @@ class CarrierController extends Controller
         
                     $install_carrier = InstalledCarrier::find($installCarrier->id);
         
-                    if ($carrier->slug == "ltl-quotes" || $carrier->slug == 'unishipper-ltl' || $carrier->slug == "freightquote-ltl" || $carrier->slug == "tql-ltl" || $carrier->slug == "echo-ltl" || $carrier->slug == "freightquote-chr-ltl" || $carrier->slug == 'priority-one-ltl') {
+                    if ($carrier['slug'] == "ltl-quotes" || $carrier['slug'] == 'unishipper-ltl' || $carrier['slug'] == "freightquote-ltl" || $carrier['slug'] == "tql-ltl" || $carrier['slug'] == "echo-ltl" || $carrier['slug'] == "freightquote-chr-ltl" || $carrier['slug'] == 'priority-one-ltl') {
         
-                        $services = CarrierServices::where("app_id", $carrier->id)->pluck("speed_freight_carrierSCAC")->all();
+                        $services = CarrierServices::where("app_id", $carrier['id'])->pluck("speed_freight_carrierSCAC")->all();
                         $checked = $this->CheckedAllServices($installCarrier->id, $services, $store->id);
         
-                    } else if ($carrier->slug == "gtz-ltl") {
+                    } else if ($carrier['slug'] == "gtz-ltl") {
         
                         $GTZ = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
                             ->where('installed_carriers.id', $install_carrier->id)
@@ -476,7 +476,7 @@ class CarrierController extends Controller
                     $uspsSmall = 'usps-small';
                     $shipEngineSlug = 'ups-ship-engine';
                     $settings = [];
-                    if ($carrier->slug === $uspsSmall || $carrier->slug === $shipEngineSlug) {
+                    if ($carrier['slug'] === $uspsSmall || $carrier['slug'] === $shipEngineSlug) {
                         $con = Connection::firstOrNew(['installed_carrier_id' => $installCarrier->id]);
         
                         $settings['carrier_id'] = $installCarrier->id;
