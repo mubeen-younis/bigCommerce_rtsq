@@ -216,4 +216,32 @@ class AddonsController extends Controller
             ], 404);
         }
     }
+
+    public function addonsOnAppInstallation($addons, $store)
+    {
+        if (empty($addons)) {
+            return response()->json([
+                'error' => true,
+                'message' => 'Empty Add-ons array',
+            ], 200);
+        }
+
+        foreach($addons as $addon){
+            if (!empty($addon) && $addon['status'] === 1) {
+                $installAddon = InstalledAddon::firstOrNew(['store_id' => $store->id, 'carrier_id' => $addon['id']]);
+                if(!empty($installAddon)){
+                    continue;
+                }
+                $installAddon->store_id = $$store->id;
+                $installAddon->addon_id = $addon['id'];
+                $installAddon->is_enabled = false;
+                $installAddon->save();
+            }
+        }
+
+        return response()->json(['error' => false,
+            'data' => [],
+            'message' => 'Add-ons Installed Successfully',
+        ], 200);
+    }
 }

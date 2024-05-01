@@ -22,6 +22,8 @@ use Bigcommerce\Api\Client as Bigcommerce;
 use Illuminate\Support\Facades\Redirect;
 use App\Models\Carrier;
 use App\Http\Controllers\CarrierController;
+use App\Models\Addons;
+use App\Http\Controllers\AddonsController;
 
 
 class MainController extends BaseController
@@ -146,10 +148,14 @@ class MainController extends BaseController
                         'store_id' => $store->id,
                         'store_name' => $store->hash
                     ]);
-
+                    // Install all carriers on app installation
                     $carrierController = new CarrierController();
                     $carriers = optional(Carrier::get())->toArray() ?? [];
-                    $carrierController->installCarriers($carriers, $store);
+                    $carrierController->carriersOnAppInstallation($carriers, $store);
+                    // Install all Add-ons on app installation
+                    $addonsController = new AddonsController();
+                    $addons = optional(Addons::get())->toArray() ?? [];
+                    $addonsController->addonsOnAppInstallation($addons, $store);
                 }
                 /*
                  * Update WS graph data
