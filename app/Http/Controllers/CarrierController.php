@@ -432,6 +432,7 @@ class CarrierController extends Controller
         foreach($carriers as $carrier){
             if (!empty($carrier) && $carrier['status'] === 1) {
                 $installCarrier = InstalledCarrier::firstOrNew(['store_id' => $store->id, 'carrier_id' => $carrier['id']]);
+                Log::info('$installCarrier log ' . json_encode($installCarrier));
                 if(!empty($installCarrier)){
                     continue;
                 }
