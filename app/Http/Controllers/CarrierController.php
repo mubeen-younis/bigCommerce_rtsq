@@ -439,8 +439,6 @@ class CarrierController extends Controller
                 if ($installCarrier) {
                     $installCarrier->update([
                         // Update attributes
-                        'store_id' => $store->id,
-                        'carrier_id' => $carrier['id'], 
                         'is_enabled' => isset($installCarrier->is_enabled) ? $installCarrier->is_enabled : false,
                         'installed_at' => $time,
                         'plan_updated_at' => $time, 
