@@ -540,6 +540,7 @@ class ProductSettingController extends Controller
         Log::info('requested product details ' . json_encode($request->products));
         $productCount = isset($request->products) ? count($request->products) : null;
         foreach ($request->products as $prd) {
+            $result = $this->updateSingleProductFromApi($prd);
             $product = ProductSetting::where('source_product_id', $prd['source_product_id'])
                 ->where('variant_id', $prd['variant_id'])
                 ->where('store_id', $request->store_id)->first();
@@ -583,7 +584,6 @@ class ProductSettingController extends Controller
             $product->update();
             $prd['store_id'] = $request['store_id'];
             $prd['store_hash'] = $request['store_hash'];
-            $this->updateSingleProductFromApi($prd);
         }
 
         if($productCount > 1){
