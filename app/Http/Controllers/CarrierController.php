@@ -432,18 +432,16 @@ class CarrierController extends Controller
 
         foreach($carriers as $carrier){
             if (!empty($carrier) && $carrier['status'] === 1) {
-                $installCarrier = InstalledCarrier::firstOrNew(['store_id' => $store->id, 'carrier_id' => $carrier['id']]);
-                Log::info('$installCarrier log ' . json_encode($installCarrier));
-                if(!empty($installCarrier)){
-                    continue;
-                }
-                $installCarrier->store_id = $store->id;
-                $installCarrier->carrier_id = $carrier['id'];
-                $installCarrier->is_enabled = false;
-                $installCarrier->installed_at = now();
-                $installCarrier->plan_updated_at = now();
-                $installCarrier->save();
-    
+
+                $installCarrier = InstalledCarrier::where(['store_id' => $store->id, 'carrier_id' => $carrier['id']])
+                ->updateOrCreate(
+                    ['store_id' => $store->id], 
+                    ['carrier_id' => $carrier['id']],
+                    ['is_enabled' => $carrier['is_enabled']],
+                    ['installed_at' => now()],
+                    ['plan_updated_at' => now()]
+                );
+                
                 if ($carrier['slug'] == 'dbsc') {
     
                     $otherSettings = DbscOtherSettings::create();
