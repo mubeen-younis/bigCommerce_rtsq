@@ -20,7 +20,7 @@ pipelines:
                 MODE: 'command'
                 COMMAND: '/home/apx-bc-01/html/bc/remote-script.sh'
 
-    update-products-setting-UI:
+    install-all-carriers:
       - step:
           caches:
             - composer
