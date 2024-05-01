@@ -8,7 +8,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    remove-upsltl-newapi:
+    add-control-staff-notes:
       - step:
           caches:
             - composer
@@ -20,7 +20,7 @@ pipelines:
                 MODE: 'command'
                 COMMAND: '/home/apx-bc-01/html/bc/remote-script.sh'
 
-    usps-ground-advantage:
+    update-products-setting-UI:
       - step:
           caches:
             - composer
@@ -30,7 +30,7 @@ pipelines:
                 SSH_USER: 'apx-bc-01'
                 SERVER: '52.87.17.243'
                 MODE: 'command'
-                COMMAND: '/home/apx-bc-01/html/bc/remote-script.sh'
+                COMMAND: '/var/www/html/bigcommerce/bc/remote-script.sh'
 
     master:
 

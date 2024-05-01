@@ -63,6 +63,7 @@ class BoxSizeController extends Controller
         }
 
         $data = $request->except(['store_name', 'store_hash','is_test_store']);
+        $isPalletBox = isset($request->box_name) && $request->box_name == 'Pallet Box' ? true : false;
 
         $boxsize = BoxSize::create($data);
         $boxsize->save();
@@ -71,7 +72,7 @@ class BoxSizeController extends Controller
         return response()->json(
             [
                 'error' => false,
-                'message' => "Box added successfully.",
+                'message' => ($isPalletBox ? 'Pallet' : 'Box') . " added successfully.",
                 'data' => $boxsize,
             ], 200);
     }
@@ -115,6 +116,7 @@ class BoxSizeController extends Controller
         }
 
         $box_size = BoxSize::find($request->id);
+        $isPalletBox = isset($request->box_name) && $request->box_name == 'Pallet Box' ? true : false;
 
         if ($box_size) {
             if(BoxSize::where('nickname', $request->nickname)->where('store_id', $request->store_id)->where('id','!=',$request->id)->exists()){
@@ -131,14 +133,14 @@ class BoxSizeController extends Controller
             return response()->json(
                 [
                     'error' => false,
-                    'message' => "Box updated successfully.",
+                    'message' => ($isPalletBox ? 'Pallet' : 'Box') . " updated successfully.",
                     'data' => $box,//BoxSize::find($request->id),
                 ], 200);
         }
 
         return response()->json([
             'error' => true,
-            'message' => 'Box could not be updated successfully.',
+            'message' => ($isPalletBox ? 'Pallet' : 'Box') . ' could not be updated successfully.',
         ]);
     }
 
@@ -151,10 +153,11 @@ class BoxSizeController extends Controller
     public function destroy($id)
     {
         $boxsize = BoxSize::find($id);
+        $isPalletBox = isset($boxsize->box_name) && $boxsize->box_name == 'Pallet Box' ? true : false;
         $boxsize->delete();
 
         return response()->json(['error' => false,
-            'message' => "Box deleted successfully",
+            'message' => ($isPalletBox ? 'Pallet' : 'Box') . " deleted successfully",
             'data' => $id]);
     }
 
