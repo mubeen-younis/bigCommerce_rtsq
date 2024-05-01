@@ -432,29 +432,19 @@ class CarrierController extends Controller
 
         foreach($carriers as $carrier){
             if (!empty($carrier) && $carrier['status'] === 1) {
-
-                $installCarrier = InstalledCarrier::where(['store_id' => $store->id, 'carrier_id' => $carrier['id']])->first();
-                $time = now();
-
-                if ($installCarrier) {
-                    $installCarrier->update([
-                        // Update attributes
-                        'is_enabled' => isset($installCarrier->is_enabled) ? $installCarrier->is_enabled : false,
-                        'installed_at' => $time,
-                        'plan_updated_at' => $time, 
-                    ]);
-                } else {
-                    // If not found, create a new record
-                    $installCarrier = InstalledCarrier::create([
-                        // Set attributes for the new record
-                        'store_id' => $store->id, 
-                        'carrier_id' => $carrier['id'], 
-                        'is_enabled' => false,
-                        'installed_at' => $time,
-                        'plan_updated_at' => $time,
-                    ]);
-                }
                 
+                $installCarrier = InstalledCarrier::firstOrNew(['store_id' => $store->id, 'carrier_id' => $carrier['id']]);
+                Log::info('$installCarrier log ' . json_encode($installCarrier));
+                if(!empty($installCarrier->store_id) && !empty($installCarrier->carrier_id)){
+                    continue;
+                }
+                $installCarrier->store_id = $store->id;
+                $installCarrier->carrier_id = $carrier['id'];
+                $installCarrier->is_enabled = false;
+                $installCarrier->installed_at = now();
+                $installCarrier->plan_updated_at = now();
+                $installCarrier->save();
+    
                 if ($carrier['slug'] == 'dbsc') {
     
                     $otherSettings = DbscOtherSettings::create();
