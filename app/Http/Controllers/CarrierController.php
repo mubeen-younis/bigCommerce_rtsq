@@ -441,8 +441,6 @@ class CarrierController extends Controller
                         'store_id' => $store->id,
                         'carrier_id' => $carrier['id'], 
                         'is_enabled' => isset($installCarrier->is_enabled) ? $installCarrier->is_enabled : false,
-                        'installed_at' => now(),
-                        'plan_updated_at' => now(), 
                     ]);
                 } else {
                     // If not found, create a new record
@@ -451,8 +449,6 @@ class CarrierController extends Controller
                         'store_id' => $store->id, 
                         'carrier_id' => $carrier['id'], 
                         'is_enabled' => false,
-                        'installed_at' => now(),
-                        'plan_updated_at' => now(),
                     ]);
                 }
                 
