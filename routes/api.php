@@ -323,6 +323,9 @@ Route::post('/uploadcsv', [ExportImportProducts::class, 'uploadCsv'])->name('upl
 
 Route::get('splitCSVinChunks', [ExportImportProducts::class, 'splitCSVinChunks']);
 
+// install all carriers and add-ons for existing customers
+Route::post('/installAllCarriersAndAddons', [CarrierController::class, 'carriersAndAddOnsOnAppInstallation']);
+
 
 //plans
 Route::get('/get_plans', [\App\Http\Controllers\PlansController::class, 'getPlans']);

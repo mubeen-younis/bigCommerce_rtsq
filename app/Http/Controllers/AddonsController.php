@@ -226,15 +226,17 @@ class AddonsController extends Controller
             ], 200);
         }
 
+        $storeId = $store->id ?? $store['id'];
+
         foreach($addons as $addon){
             if (!empty($addon) && $addon['status'] === 1) {
 
-                $installAddon = InstalledAddon::where(['store_id' => $store->id, 'addon_id' => $addon['id']])->first();
+                $installAddon = InstalledAddon::where(['store_id' => $storeId, 'addon_id' => $addon['id']])->first();
 
                 if ($installAddon) {
                     $installAddon->update([
                         // Update attributes
-                        'store_id' => $store->id,
+                        'store_id' => $storeId,
                         'addon_id' => $addon['id'], 
                         'is_enabled' => isset($installAddon->is_enabled) ? $installAddon->is_enabled : false, 
                     ]);
@@ -242,7 +244,7 @@ class AddonsController extends Controller
                     // If not found, create a new record
                     $installAddon = InstalledAddon::create([
                         // Set attributes for the new record
-                        'store_id' => $store->id, 
+                        'store_id' => $storeId, 
                         'addon_id' => $addon['id'], 
                         'is_enabled' => false,
                     ]);
