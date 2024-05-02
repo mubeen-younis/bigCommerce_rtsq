@@ -501,7 +501,7 @@ class CarrierController extends Controller
                     $settings['store_id'] = $storeId;
                     $settings['store_name'] = $storeName;
                     $settings['store_hash'] = $storeHash;
-                    $isTestStore = Helpers::checkIsTestStore($store->hash);
+                    $isTestStore = Helpers::checkIsTestStore($storeHash);
                     $settings['is_test_store'] = $isTestStore;
                     $con->value = json_encode($settings);
                     $con->installed_carrier_id = $installCarrier->id;
