@@ -1,3 +1,7 @@
+= 2.2.3 2024-05-02 =
+
+* Update - add functionality to install all carriers on app installation (Ticket:2295363422) [#440] (https://bitbucket.org/eniture/big-commerce/pull-requests/440)
+
 = 2.2.3 2024-05-01 =
 
 * Fix - update product settings functionality (Ticket:2257786184) [#439] (https://bitbucket.org/eniture/big-commerce/pull-requests/439)
