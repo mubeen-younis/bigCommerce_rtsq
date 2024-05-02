@@ -16,6 +16,7 @@ use App\Models\DBSC\DbscOtherSettings;
 use App\Models\DBSC\DbscShippingProfile;
 use App\Helpers\Helpers;
 use App\Http\Controllers\AddonsController;
+use App\Models\Addons;
 
 class CarrierController extends Controller
 {
