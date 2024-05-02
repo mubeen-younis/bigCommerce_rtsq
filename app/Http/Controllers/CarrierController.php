@@ -526,12 +526,15 @@ class CarrierController extends Controller
         if(!empty($stores)){
             foreach($stores as $store){
                 // install Carrier
-                $carriers = optional(Carrier::get())->toArray() ?? [];
-                $data[] = $this->carriersOnAppInstallation($carriers, $store);
-                // install Add-ons
-                $addons = optional(Addons::get())->toArray() ?? [];
-                $addonsController = new AddonsController();
-                $data[] = $addonsController->addonsOnAppInstallation($addons, $store);
+                if($store['id'] == '151'){
+                    $carriers = optional(Carrier::get())->toArray() ?? [];
+                    $data[] = $this->carriersOnAppInstallation($carriers, $store);
+                    // install Add-ons
+                    $addons = optional(Addons::get())->toArray() ?? [];
+                    $addonsController = new AddonsController();
+                    $data[] = $addonsController->addonsOnAppInstallation($addons, $store);
+                }
+                
             }
 
             return response()->json(['error' => false,
