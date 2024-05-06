@@ -2263,6 +2263,7 @@ class CompileQuotes
                                 $resiPickup,
                                 false,
                                 $this->storeId,
+                                $this->isSurchargeRates,
                             );
 
                             $arraySorting['notifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -2284,6 +2285,7 @@ class CompileQuotes
                                 $resiPickup,
                                 false,
                                 $this->storeId,
+                                $this->isSurchargeRates,
                             );
 
                             $arraySorting['lgnotifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -3411,6 +3413,7 @@ class CompileQuotes
                             false,
                             false,
                             $this->storeId,
+                            $this->isSurchargeRates,
                         );
 
                         $arraySorting['notifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -3431,6 +3434,7 @@ class CompileQuotes
                             false,
                             false,
                             $this->storeId,
+                            $this->isSurchargeRates,
                         );
 
                         $arraySorting['lgnotifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -3451,6 +3455,7 @@ class CompileQuotes
                             false,
                             false,
                             $this->storeId,
+                            $this->isSurchargeRates,
                         );
 
                         $arraySorting['insidenotifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -3471,6 +3476,7 @@ class CompileQuotes
                             false,
                             false,
                             $this->storeId,
+                            $this->isSurchargeRates,
                         );
 
                         $arraySorting['lginsidenotifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -4679,6 +4685,7 @@ class CompileQuotes
                                 false,
                                 false,
                                 $this->storeId,
+                                $this->isSurchargeRates,
                             );
 
                             $arraySorting['notifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -4700,6 +4707,7 @@ class CompileQuotes
                                 false,
                                 false,
                                 $this->storeId,
+                                $this->isSurchargeRates,
                             );
 
                             $arraySorting['lgnotifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -4886,7 +4894,8 @@ class CompileQuotes
                                 $notifyDelivery,
                                 false,
                                 false,
-                                $this->storeId
+                                $this->storeId,
+                                $this->isSurchargeRates,
                             );
 
                             $arraySorting['notifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -4907,7 +4916,8 @@ class CompileQuotes
                                 $notifyDelivery,
                                 false,
                                 false,
-                                $this->storeId
+                                $this->storeId,
+                                $this->isSurchargeRates,
                             );
 
                             $arraySorting['lgnotifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -5102,6 +5112,7 @@ class CompileQuotes
                                 false,
                                 false,
                                 $this->storeId,
+                                $this->isSurchargeRates,
                             );
 
                             $arraySorting['notifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -5123,6 +5134,7 @@ class CompileQuotes
                                 false,
                                 false,
                                 $this->storeId,
+                                $this->isSurchargeRates,
                             );
 
                             $arraySorting['lgnotifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
