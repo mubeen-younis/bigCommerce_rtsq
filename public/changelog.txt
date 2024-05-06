@@ -1,3 +1,11 @@
+= 2.2.3 2024-05-02 =
+
+* Update - add functionality to install all carriers on app installation (Ticket:2295363422) [#440] (https://bitbucket.org/eniture/big-commerce/pull-requests/440)
+
+= 2.2.3 2024-05-01 =
+
+* Fix - update product settings functionality (Ticket:2257786184) [#439] (https://bitbucket.org/eniture/big-commerce/pull-requests/439)
+
 = 2.2.2 2024-04-25 =
 
 * Fix - missing street 2 address line in smarty street api request (Ticket:2605709068) [#437] (https://bitbucket.org/eniture/big-commerce/pull-requests/437)
