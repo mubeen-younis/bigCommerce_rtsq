@@ -624,6 +624,8 @@ class GenerateRequestData
 
     public function abfLtlEnitArr($connSettings, $destination)
     {
+        $liftGateDelivery = (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery']) ? 1 : 0;
+        $notifyBeforeDelivery = (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']) ? 1 : 0;
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -631,6 +633,8 @@ class GenerateRequestData
             'quotestType' => 'ltl',
             'version' => '1.0',
             'returnQuotesOnExceedWeight' => 1,
+            'liftGateAsAnOption' => $liftGateDelivery,
+            'notifyAsAnOption' => $notifyBeforeDelivery,
             'api' => $this->getApiInfoArrAbfLtl($connSettings, $destination),
         ];
     }

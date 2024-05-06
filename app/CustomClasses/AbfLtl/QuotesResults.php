@@ -61,6 +61,11 @@ class QuotesResults
             if (!isset($quotes['q']) || isset($quotes['q']['NUMERRORS'] ) && $quotes['q']['NUMERRORS'] == 1) {
                 continue;
             }
+            // Check: if API not return liftgate rates then get normal rates from quotesWithoutLiftgate index
+            if(isset($quotes['quotesWithoutLiftgate']) && !empty($quotes['quotesWithoutLiftgate'])){
+                $quotesWithoutLiftgate = $quotes['quotesWithoutLiftgate']['CHARGE'] ?? 0;
+            }
+            
             $quotesArr = $quotes['q'];
             $lgStatus = $quotes['liftGateStatus'] ?? '';
             $radStatus = $quotes['residentialStatus'] ?? '';
@@ -82,8 +87,11 @@ class QuotesResults
                 'Standard', $srvcDesc, $lineItems, $lgStatus, $radStatus, $quotesArr['CHARGE']);
 
                 if (isset($lgStatus) && $lgStatus != 'n') {
-
-                    $formattedShipments[$shipment]['q']['surcharges']['liftgateFee'] = $quotes['q']['INCLUDEDCHARGES']['LIFTGATEGROUNDDELIVERY'] ?? 0;        
+                    if(is_numeric($quotes['q']['INCLUDEDCHARGES']['LIFTGATEGROUNDDELIVERY'])){
+                        $formattedShipments[$shipment]['q']['surcharges']['liftgateFee'] = $quotes['q']['INCLUDEDCHARGES']['LIFTGATEGROUNDDELIVERY'] ?? 0;
+                    } else { // Check: if API not return liftgate rates then subtract API liftgate response and normal response
+                        $formattedShipments[$shipment]['q']['surcharges']['liftgateFee'] = $quotes['q']['CHARGE'] - $quotesWithoutLiftgate ?? 0;
+                    }    
                 }  
 
                 if(isset($quotes['q']['INCLUDEDCHARGES']['ARRIVALNOTIFICATION']) && !empty($quotes['q']['INCLUDEDCHARGES']['ARRIVALNOTIFICATION'])){
