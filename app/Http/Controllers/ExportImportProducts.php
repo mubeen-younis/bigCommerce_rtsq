@@ -100,6 +100,10 @@ class ExportImportProducts extends Controller
                     fputs($fp, $line);
                 }
                 foreach ($products as $key => $product) {
+                    // Check: if product variant id is null then product will not add in CSV file.
+                    if(!isset($product->variant_id) && $product->variant_id == null){
+                        continue;
+                    }
                     $productLine = [];
                     $productLine[] = 'P' . $product->source_product_id;
                     $productLine[] = 'V' . $product->variant_id;
