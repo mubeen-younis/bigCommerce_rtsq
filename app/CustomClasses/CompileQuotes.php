@@ -1621,6 +1621,7 @@ class CompileQuotes
                         false,
                         false,
                         $this->storeId,
+                        $this->isSurchargeRates,
                     );
 
                     $arraySorting['notifydelivery'][$origin] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -1642,6 +1643,7 @@ class CompileQuotes
                         false,
                         false,
                         $this->storeId,
+                        $this->isSurchargeRates,
                     );
 
                     $arraySorting['lgnotifydelivery'][$origin] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -3170,6 +3172,7 @@ class CompileQuotes
                             false,
                             false,
                             $this->storeId,
+                            $this->isSurchargeRates,
                         );
 
                         $arraySorting['notifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -3190,6 +3193,7 @@ class CompileQuotes
                             false,
                             false,
                             $this->storeId,
+                            $this->isSurchargeRates,
                         );
 
                         $arraySorting['lgnotifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -3830,6 +3834,7 @@ class CompileQuotes
                         false,
                         false,
                         $this->storeId,
+                        $this->isSurchargeRates,
                     );
 
                     $arraySorting['notifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -3851,6 +3856,7 @@ class CompileQuotes
                         false,
                         false,
                         $this->storeId,
+                        $this->isSurchargeRates,
                     );
 
                     $arraySorting['lgnotifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -6192,7 +6198,7 @@ class CompileQuotes
      *
      * @info: This will return specific code according to the accessorials for appending with the service code.
      */
-    public function getAccessorialCode($lgOption = false, $insideDel = false, $resiPickup = '', $lgPickup = '', $laccess = false, $twoManDel = false, $appDel = false, $notifyDelivery = false, $isResi = false, $isAlwaysResidential = false)
+    public function getAccessorialCode($lgOption = false, $insideDel = false, $resiPickup = '', $lgPickup = '', $laccess = false, $twoManDel = false, $appDel = false, $notifyDelivery = false, $isResi = false, $isAlwaysResidential = false, $isSurchargeRates = false)
     {
         $access = '';
         $isAlwaysResi = isset($this->isSameDayApi) && $this->isSameDayApi && $lgOption ? false : $this->alwaysResi;
@@ -6211,7 +6217,7 @@ class CompileQuotes
         if ($notifyDelivery) {
             $access .= '+NBD';
         }
-        if($this->isSurchargeRates){
+        if($this->isSurchargeRates || $isSurchargeRates){
             $access .= '+SC';
         }
         if ($twoManDel && $appDel) {
