@@ -539,6 +539,8 @@ class ProductSettingController extends Controller
     {
         $productCount = isset($request->products) ? count($request->products) : null;
         foreach ($request->products as $prd) {
+            $prd['store_id'] = $request->store_id;
+            $prd['store_hash'] = $request->store_hash;
             $result = $this->updateSingleProductFromApi($prd);
             $product = ProductSetting::where('source_product_id', $prd['source_product_id'])
                 ->where('variant_id', $prd['variant_id'])
