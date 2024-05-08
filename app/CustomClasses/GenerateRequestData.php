@@ -624,8 +624,7 @@ class GenerateRequestData
 
     public function abfLtlEnitArr($connSettings, $destination)
     {
-        $liftGateDelivery = (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery']) ? 1 : 0;
-        $notifyBeforeDelivery = (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']) ? 1 : 0;
+        $api = $this->getApiInfoArrAbfLtl($connSettings, $destination);
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -633,9 +632,10 @@ class GenerateRequestData
             'quotestType' => 'ltl',
             'version' => '1.0',
             'returnQuotesOnExceedWeight' => 1,
-            'liftGateAsAnOption' => $liftGateDelivery,
-            'notifyAsAnOption' => $notifyBeforeDelivery,
-            'api' => $this->getApiInfoArrAbfLtl($connSettings, $destination),
+            'liftGateAsAnOption' => isset($api['accessorial']['Acc_GRD_DEL']) && $api['accessorial']['Acc_GRD_DEL'] == 'Y' ? true : false,
+            'notifyAsAnOption' => isset($api['accessorial']['Acc_ARR']) && $api['accessorial']['Acc_ARR'] == 'Y' ? true : false,
+            'residentialAsAnOption' => isset($api['accessorial']['Acc_RDEL']) && $api['accessorial']['Acc_RDEL'] == 'Y' ? true : false,
+            'api' => $api,
         ];
     }
 
