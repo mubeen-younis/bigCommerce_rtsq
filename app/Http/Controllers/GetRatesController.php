@@ -733,7 +733,7 @@ class GetRatesController extends Controller
         $postalCodes = isset($rule['filter_postal_code']) ? $rule['filter_postal_code'] : '';
         $warehouses = isset($rule['warehouses']) ? $rule['warehouses'] : [];
         $isSameOrigin = false;
-        if($rule['rule_type'] == 7){
+        if($rule['rule_type'] == '7'){
             $this->applyHideDeliveryEstimatesRule($rule);
             return false;
         }
