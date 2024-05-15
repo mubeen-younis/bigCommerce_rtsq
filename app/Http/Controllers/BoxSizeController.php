@@ -27,7 +27,7 @@ class BoxSizeController extends Controller
         }
         return response()->json(['error' => false, 'data' => $boxes]);
     }
-
+    
     /**
      * Show the form for creating a new resource.
      *
