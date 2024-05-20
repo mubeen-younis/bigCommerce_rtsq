@@ -799,11 +799,12 @@ class GenerateRequestData
             $isLargeCartShippingRule = $shippingRule->checkLargeCartRuleApply($itemsArr, $this->storeData['store']->id) ?? [];
             // Check: Large Cart Settings Shipping Rule is apply
             if(!empty($isLargeCartShippingRule)){
-                $q = $shipmentWeight = $shipmentPrice = $total_weight = 0;
+
                 if (!empty($this->origins)) {
                     // get total shipments based on cart items
                     $totalShipments = collect($this->origins)->pluck('locationId')->unique()->toArray() ?? [];
                     foreach($totalShipments as $shipment){   
+                        $q = $shipmentWeight = $shipmentPrice = $total_weight = 0;
                         // get total products in a shipment                 
                         $variantKeys = collect($this->origins)->filter(function ($orig) use ($shipment) {
                             return $orig['locationId'] == $shipment;
