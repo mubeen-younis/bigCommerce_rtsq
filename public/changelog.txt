@@ -1,3 +1,7 @@
+= 2.2.4 2024-05-13 =
+
+* Fix - Update abf compilation quotes (Ticket:2677122393) [#442] (https://bitbucket.org/eniture/big-commerce/pull-requests/442)
+
 = 2.2.3 2024-05-02 =
 
 * Update - add functionality to install all carriers on app installation (Ticket:2295363422) [#440] (https://bitbucket.org/eniture/big-commerce/pull-requests/440)

@@ -624,6 +624,7 @@ class GenerateRequestData
 
     public function abfLtlEnitArr($connSettings, $destination)
     {
+        $api = $this->getApiInfoArrAbfLtl($connSettings, $destination);
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -631,7 +632,10 @@ class GenerateRequestData
             'quotestType' => 'ltl',
             'version' => '1.0',
             'returnQuotesOnExceedWeight' => 1,
-            'api' => $this->getApiInfoArrAbfLtl($connSettings, $destination),
+            'liftGateAsAnOption' => isset($api['accessorial']['Acc_GRD_DEL']) && $api['accessorial']['Acc_GRD_DEL'] == 'Y' ? true : false,
+            'notifyAsAnOption' => isset($api['accessorial']['Acc_ARR']) && $api['accessorial']['Acc_ARR'] == 'Y' ? true : false,
+            'residentialAsAnOption' => isset($api['accessorial']['Acc_RDEL']) && $api['accessorial']['Acc_RDEL'] == 'Y' ? true : false,
+            'api' => $api,
         ];
     }
 
