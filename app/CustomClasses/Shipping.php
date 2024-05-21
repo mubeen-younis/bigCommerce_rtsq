@@ -880,7 +880,7 @@ class Shipping
                     'rate_id' => $quote['rate_id'],
                     'display_name' => $this->limitTitle($quote),
                     'cost' => ['currency' => 'USD', 'amount' => str_replace(',', '', $quote['rate'])],
-                    'dispatch_date' => "$current",
+                    'dispatch_date' => $current,
                 ];
             }
         } else {
