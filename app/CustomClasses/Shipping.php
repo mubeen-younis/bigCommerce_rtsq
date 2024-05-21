@@ -872,7 +872,7 @@ class Shipping
                 $quotes = $this->addDbscRates($quotes);
             }
 
-            //$resp['carrier_quotes'][0] = [];//['carrier_info' => ['code' => 'eniture_quotes', 'display_name' => $this->limitTitle($quotes[0])]];
+            $resp['carrier_quotes'][0] = ['carrier_info' => ['code' => 'eniture_quotes', 'display_name' => $this->limitTitle($quotes[0])]];
 
             foreach ($quotes as $key => $quote) {
                 $resp['carrier_quotes'][0]['quotes'][$key] = [
