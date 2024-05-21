@@ -270,7 +270,7 @@ class ShippingRuleController extends Controller
                                 if(isset($quote['serviceDesc'])){
                                     if ($serviceDesc == $quote['serviceDesc']){
                                         $quote['totalNetCharge']['Amount'] += (float) $rule['service_rates'] ?? 0;
-                                        $quote['NegotiatedRates']['Amount'] += (float) $rule['service_rates'] ?? 0;
+                                        $quote['NegotiatedRates']['Amount'] = $quote['NegotiatedRates']['Amount'] > 0 ? (float) $quote['NegotiatedRates']['Amount'] + (float) $rule['service_rates'] : 0;
                                         $isSurchargeRates = true;
                                     } 
                                 } else if ($providerSlug == 'usps-small') { 
@@ -307,7 +307,10 @@ class ShippingRuleController extends Controller
                             }
                         }  
                     }
-                    $surchargeServiceRate = $isSurchargeRates? $rule['service_rates'] : 0;
+                    $surchargeServiceRate = $isSurchargeRates ? $rule['service_rates'] : 0;
+                    if($isSurchargeRates){
+                        return ['data' => $quote, 'isSurchargeRates' => $isSurchargeRates, 'surchargeServiceRate' => $surchargeServiceRate ];                
+                    }
                 }
             }
         }  
