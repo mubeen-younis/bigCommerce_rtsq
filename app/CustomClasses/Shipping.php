@@ -862,7 +862,7 @@ class Shipping
         }
 
         $quotes = array_values($quotes);
-        $current = str_replace(' ', 'T', Carbon::now()) . "-00:00";
+        $current = Carbon::now()->format('Y-m-d') ; //str_replace(' ', 'T', Carbon::now()) . "-00:00";
         if (!empty(array_filter($quotes))) {
             $resp['quote_id'] = (string)rand(1, 9); // need to change
             $resp['messages'] = []; // need to change
@@ -881,7 +881,7 @@ class Shipping
                     'rate_id' => $quote['rate_id'],
                     'display_name' => $this->limitTitle($quote),
                     'cost' => ['currency' => 'USD', 'amount' => str_replace(',', '', $quote['rate'])],
-                    //'dispatch_date' => "$current",
+                    'dispatch_date' => $current,
                 ];
             }
         } else {
