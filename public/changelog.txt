@@ -1,3 +1,11 @@
+= 2.2.6 2024-05-22 =
+
+* Update - create api get box sizes and get origin address for fdo (Ticket:No) [#444] (https://bitbucket.org/eniture/big-commerce/pull-requests/444)
+
+= 2.2.5 2024-05-21 =
+
+* Fix - update dispatch date format according to BC new update (Ticket:2746175568) [#443] (https://bitbucket.org/eniture/big-commerce/pull-requests/443)
+
 = 2.2.4 2024-05-13 =
 
 * Fix - Update abf compilation quotes (Ticket:2677122393) [#442] (https://bitbucket.org/eniture/big-commerce/pull-requests/442)
