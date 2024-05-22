@@ -216,4 +216,45 @@ class AddonsController extends Controller
             ], 404);
         }
     }
+    // install all add-ons on app installation
+    public function addonsOnAppInstallation($addons, $store)
+    {
+        if (empty($addons)) {
+            return response()->json([
+                'error' => true,
+                'message' => 'Empty Add-ons array',
+            ], 200);
+        }
+
+        $storeId = $store->id ?? $store['id'];
+
+        foreach($addons as $addon){
+            if (!empty($addon) && $addon['status'] === 1) {
+
+                $installAddon = InstalledAddon::where(['store_id' => $storeId, 'addon_id' => $addon['id']])->first();
+
+                if ($installAddon) {
+                    $installAddon->update([
+                        // Update attributes
+                        'store_id' => $storeId,
+                        'addon_id' => $addon['id'], 
+                        'is_enabled' => isset($installAddon->is_enabled) ? $installAddon->is_enabled : false, 
+                    ]);
+                } else {
+                    // If not found, create a new record
+                    $installAddon = InstalledAddon::create([
+                        // Set attributes for the new record
+                        'store_id' => $storeId, 
+                        'addon_id' => $addon['id'], 
+                        'is_enabled' => false,
+                    ]);
+                }
+            }
+        }
+
+        return response()->json(['error' => false,
+            'data' => [],
+            'message' => 'Add-ons Installed Successfully',
+        ], 200);
+    }
 }
