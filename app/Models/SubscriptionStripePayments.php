@@ -35,6 +35,8 @@ class SubscriptionStripePayments extends Model
      */
     public static function addOrUpdateSubscriptionPayment($stripeObjectData, $paymentData)
     {
+        Log::info('Subscription plan object $stripeObjectData' . json_encode($stripeObjectData));
+
         try {
             $invoiceID = $paymentData->data->object->id ?? null;
             $subscriptionID = $paymentData->data->object->subscription ?? null;
