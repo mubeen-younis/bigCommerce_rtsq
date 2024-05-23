@@ -84,24 +84,21 @@ class QuotesResults
                 'Standard', $srvcDesc, $lineItems, $lgStatus, $radStatus, $quotesArr['CHARGE']);
                 // Check: if API not return liftgate rates then get normal rates from quotesWithoutLiftgate index
                 if (isset($lgStatus) && $lgStatus != 'n') {
-                    if(isset($quotes['q']['INCLUDEDCHARGES']['LIFTGATEGROUNDDELIVERY']) && is_numeric($quotes['q']['INCLUDEDCHARGES']['LIFTGATEGROUNDDELIVERY'])){
-                        $formattedShipments[$shipment]['q']['surcharges']['liftgateFee'] = $quotes['q']['INCLUDEDCHARGES']['LIFTGATEGROUNDDELIVERY'] ?? 0;
-                    } elseif(isset($quotes['quotesWithoutLiftgate']) && !empty($quotes['quotesWithoutLiftgate'])) { // Check: if API not return liftgate rates then subtract API liftgate response and normal response
+                   if(isset($quotes['quotesWithoutLiftgate']) && !empty($quotes['quotesWithoutLiftgate'])) { 
+                    // Check: if API not return liftgate rates then subtract API liftgate response and normal response
                         $liftgateCharges = $quotes['q']['CHARGE'] - $quotes['quotesWithoutLiftgate']['CHARGE'] ?? 0;
                         $formattedShipments[$shipment]['q']['surcharges']['liftgateFee'] = $liftgateCharges;
                     }    
                 }  
                 // Check: if API not return notify rates then get normal rates from quotesWithoutNofity index
-                if(isset($quotes['q']['INCLUDEDCHARGES']['ARRIVALNOTIFICATION']) && !empty($quotes['q']['INCLUDEDCHARGES']['ARRIVALNOTIFICATION']) && is_numeric($quotes['q']['INCLUDEDCHARGES']['ARRIVALNOTIFICATION'])){
-                    $formattedShipments[$shipment]['q']['surcharges']['notifyDeliveryFee'] = $quotes['q']['INCLUDEDCHARGES']['ARRIVALNOTIFICATION'] ?? 0;
-                } elseif(isset($quotes['quotesWithoutNofity']) && !empty($quotes['quotesWithoutNofity'])) { // Check: if API not return notify rates then subtract API notify response and normal response
+                if(isset($quotes['quotesWithoutNofity']) && !empty($quotes['quotesWithoutNofity'])) { 
+                    // Check: if API not return notify rates then subtract API notify response and normal response
                     $notifyCharges = $quotes['q']['CHARGE'] - $quotes['quotesWithoutNofity']['CHARGE'] ?? 0;
                     $formattedShipments[$shipment]['q']['surcharges']['notifyDeliveryFee'] = $notifyCharges;
                 }
                 // Check: if API not return residential rates then get normal rates from quotesWithoutResidential index
-                if(isset($quotes['q']['INCLUDEDCHARGES']['RESIDENTIALDELIVERY']) && !empty($quotes['q']['INCLUDEDCHARGES']['RESIDENTIALDELIVERY']) && is_numeric($quotes['q']['INCLUDEDCHARGES']['RESIDENTIALDELIVERY'])){
-                    $formattedShipments[$shipment]['q']['surcharges']['residentialFee'] = $quotes['q']['INCLUDEDCHARGES']['RESIDENTIALDELIVERY'] ?? 0;
-                } elseif(isset($quotes['quotesWithoutResidential']) && !empty($quotes['quotesWithoutResidential'])){ // Check: if API not return residential rates then subtract API residential response and normal response
+                if(isset($quotes['quotesWithoutResidential']) && !empty($quotes['quotesWithoutResidential'])){ 
+                    // Check: if API not return residential rates then subtract API residential response and normal response
                     $formattedShipments[$shipment]['q']['surcharges']['residentialFee'] = $quotes['q']['CHARGE'] - $quotes['quotesWithoutResidential']['CHARGE'] - $liftgateCharges - $notifyCharges ?? 0;
                 }
 
