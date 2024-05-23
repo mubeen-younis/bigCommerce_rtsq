@@ -63,6 +63,9 @@ Route::middleware([\App\Http\Middleware\EnsureStoreisActive::class])->group(func
 Route::get('/add_to_test_stores', [MainController::class, 'addTestStore']);
 
 
+Route::get('/updateUSPSServices', [QuoteSettingsController::class, 'scriptToUpdateUSPSService']);
+
+
 // FDO ROUTES
 Route::middleware([\App\Http\Middleware\FDOValidity::class])->group(function () {
     Route::get('/order/{orderId}.json', [\App\Http\Controllers\FDOOrderController::class, 'getOrderDetails']);
@@ -71,6 +74,8 @@ Route::middleware([\App\Http\Middleware\FDOValidity::class])->group(function () 
     Route::get('/locations.json', [\App\Http\Controllers\FDOLocationsController::class, 'getLocations']);
     Route::get('/get_boxes', 'App\Http\Controllers\BoxSizeController@index');
     Route::post('/save_fdo_shipments', [\App\Http\Controllers\FDOOrderController::class, 'saveFdoShipments']);
+    Route::get('/get_parcel_box_sizes', [BoxSizeController::class, 'getParcelBoxSizes']);
+    Route::get('/get_address_book', [\App\Http\Controllers\FDOLocationsController::class, 'getLocations']);
 
 });
 Route::post('update_coupon_details_fdo_av', [FDOController::class, 'updateCouponDetailsFromFDOAV']);
@@ -283,15 +288,18 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::get('/get_dbsc_other_settings', [OtherSettingsController::class, 'index']);
     Route::post('/save_dbsc_other_settings', [OtherSettingsController::class, 'store']);
 
+    // Threshold Settings Route
     Route::get('/get_threshold_settings', [QuoteSettingsController::class, 'getThresholdSettings']);
     Route::post('/submit_threshold_settings', [QuoteSettingsController::class, 'saveThresholdSettings']);
+
+    // Staff Note Settings Route
+    Route::get('/get_staffnote_settings', [QuoteSettingsController::class, 'getStaffNoteSettings']);
+    Route::post('/submit_staffnote_settings', [QuoteSettingsController::class, 'saveStaffNoteSettings']);
 
     Route::get('/get_carrs_conn_settings', [ConnectionController::class, 'getConnSettings']);
 });
 //Webhook
 Route::post('/bc-subscription-update', [SubscriptionController::class, 'paymentByStripeWebHook']);
-// Route::post('/bc-payment-succeeded', [SubscriptionController::class, 'invoicePaymentSucceeded']);
-// Route::post('/update-subscription', [SubscriptionController::class, 'updateSubscriptionFromStripe']);
 
 Route::get('/get_carriers', [CarrierController::class, 'index']);
 Route::get('/get_conn_settings', [ConnectionController::class, 'index']);
@@ -320,6 +328,9 @@ Route::get('downloadcsv/{hash}', [ExportImportProducts::class, 'downloadCsv'])->
 Route::post('/uploadcsv', [ExportImportProducts::class, 'uploadCsv'])->name('uploadcsv');
 
 Route::get('splitCSVinChunks', [ExportImportProducts::class, 'splitCSVinChunks']);
+
+// install all carriers and add-ons for existing customers
+Route::post('/installAllCarriersAndAddons', [CarrierController::class, 'carriersAndAddOnsOnAppInstallation']);
 
 
 //plans

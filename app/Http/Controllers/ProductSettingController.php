@@ -114,12 +114,12 @@ class ProductSettingController extends Controller
             $response = json_decode($response['response'], true);
             if (isset($response['data']) && count($response['data'])) {
                 foreach ($response['data'] as $variant) {
-                    $product['price'] = $variant['price'];
-                    $product['weight'] = $variant['weight'];
-                    $product['depth'] = $variant['depth'];
-                    $product['width'] = $variant['width'];
-                    $product['height'] = $variant['height'];
-                    $product['sku'] = $variant['sku'];
+                    $product['price'] = $variant['price'] ?? $product['price'];
+                    $product['weight'] = $variant['weight'] ?? $product['weight'];
+                    $product['depth'] = $variant['depth'] ?? $product['depth'];
+                    $product['width'] = $variant['width'] ?? $product['width'];
+                    $product['height'] = $variant['height'] ?? $product['height'];
+                    $product['sku'] = $variant['sku'] ?? $product['sku'];
                     $product['base_variant_id'] = $variant['id'];
 
                     !$useTransaction ? $this->saveProducts->saveProductFromSync($product, $data['store_id']) :
@@ -291,6 +291,7 @@ class ProductSettingController extends Controller
             ], 404);
         }
         $products = ProductSetting::where('source_product_id', $request->product_id)
+            ->whereNotNull('variant_id')
             ->where('store_id', $request->store_id)
             ->get();
         if ($products->isEmpty()) {
@@ -342,6 +343,7 @@ class ProductSettingController extends Controller
             $perPage = $request['perpage'] ?? 50;
             $search = $request['search'] ?? null;
             $sortProd = $request['sortProd'] == "true" ? 'DESC' : 'ASC';
+
             /*$count = ProductSetting::where('store_id', $request->store_id)
                 ->where('name','LIKE','%'.$search.'%')->orderBy('name', $sortProd)->get()->groupBy('source_product_id')->count();*/
 
@@ -365,6 +367,7 @@ class ProductSettingController extends Controller
             } else {
                 $count = 0;
             }
+
             if ($search === null || $search == '') {
                 $products = ProductSetting::where('store_id', $request->store_id)
                     ->groupBy('source_product_id')->orderBy('name', $sortProd)->skip(($page - 1) * $perPage)->take($perPage)->get();
@@ -536,6 +539,9 @@ class ProductSettingController extends Controller
     {
         $productCount = isset($request->products) ? count($request->products) : null;
         foreach ($request->products as $prd) {
+            $prd['store_id'] = $request->store_id;
+            $prd['store_hash'] = $request->store_hash;
+            $result = $this->updateSingleProductFromApi($prd);
             $product = ProductSetting::where('source_product_id', $prd['source_product_id'])
                 ->where('variant_id', $prd['variant_id'])
                 ->where('store_id', $request->store_id)->first();
@@ -543,6 +549,7 @@ class ProductSettingController extends Controller
             $product->length = $prd['length'];
             $product->width = $prd['width'];
             $product->height = $prd['height'];
+            $product->name = $prd['name'];
             $product->ship_multiple_package = isset($prd['ship_multiple_package']) && $prd['ship_multiple_package'] ? 1 : 0;
             $product->pallet_vertical_rotation = isset($prd['pallet_vertical_rotation']) && $prd['pallet_vertical_rotation'] ? 1 : 0;
             $product->own_pallet = isset($prd['own_pallet']) && $prd['own_pallet'] ? 1 : 0;
@@ -578,7 +585,6 @@ class ProductSettingController extends Controller
             $product->update();
             $prd['store_id'] = $request['store_id'];
             $prd['store_hash'] = $request['store_hash'];
-            $this->updateSingleProductFromApi($prd);
         }
 
         if($productCount > 1){
@@ -592,7 +598,7 @@ class ProductSettingController extends Controller
             $products = $this->isLtlParcelBothEnabled($request->products, $request);
             $product = $products[0] ?? [];
         }
-        
+
         return response()->json(['error' => false,
             'data' => $product,
             'message' => 'Product Updated Successfully',
@@ -762,12 +768,12 @@ class ProductSettingController extends Controller
 
             if (isset($response['data'])) {
                 $variant = $response['data'];
-                $product['price'] = $variant['price'];
-                $product['weight'] = $variant['weight'];
-                $product['depth'] = $variant['depth'];
-                $product['width'] = $variant['width'];
-                $product['height'] = $variant['height'];
-                $product['sku'] = $variant['sku'];
+                $product['price'] = $variant['price'] ?? $product['price'];
+                $product['weight'] = $variant['weight'] ?? $product['weight'];
+                $product['depth'] = $variant['depth'] ?? $product['depth'];
+                $product['width'] = $variant['width'] ?? $product['width'];
+                $product['height'] = $variant['height'] ?? $product['height'];
+                $product['sku'] = $variant['sku'] ?? $product['sku'];
                 $product['base_variant_id'] = $variant['id'];
                 $product['id'] = $variant['product_id'];
                 $this->saveProducts->setVariantNullProduct($product, $store->id);

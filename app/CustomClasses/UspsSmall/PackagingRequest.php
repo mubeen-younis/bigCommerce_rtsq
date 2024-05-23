@@ -161,8 +161,8 @@ class PackagingRequest
 
     private function setUspsServiceBoxType($type)
     {
-        //TODO:Need to remove usp_first_class_mail and usps_retail_ground
-        if ($type == 'usp_first_class_mail' || $type == 'usps_retail_ground' || $type == 'usps_ground_advantage' || $type == 'usps_first_class_package_international_service') {
+
+        if ($type == 'usps_ground_advantage' || $type == 'usps_first_class_package_international_service') {
             $this->uspsActiveServices[] = 'customBoxes';
         }
 
