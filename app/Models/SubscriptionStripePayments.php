@@ -41,6 +41,8 @@ class SubscriptionStripePayments extends Model
             $invoiceID = $paymentData->data->object->id ?? null;
             $subscriptionID = $paymentData->data->object->subscription ?? null;
             $receiptNumber = $paymentData->data->object->number ?? null;
+            $amountPaid = $paymentData->data->object->total ?? null;
+            Log::info('Amount paid ' . json_encode($amountPaid));
             if (blank($invoiceID) || blank($subscriptionID)) {
                 return null;
             }
@@ -59,7 +61,7 @@ class SubscriptionStripePayments extends Model
             $subscriptionPayment->invoice_id = $invoiceID;
             $subscriptionPayment->receipt_number = $receiptNumber;
 
-            $subscriptionPayment->amount = self::getAmountInDols($stripeObjectData->amount);
+            $subscriptionPayment->amount = self::getAmountInDols($amountPaid);
 
             $subscriptionPayment->is_addon = 0;
             $subscriptionPayment->plan_id = $subscribedBy->plan_id;
