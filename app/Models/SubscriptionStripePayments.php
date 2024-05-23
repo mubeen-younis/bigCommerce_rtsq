@@ -25,7 +25,13 @@ class SubscriptionStripePayments extends Model
      */
     public function getAmountAttribute($value)
     {
-        return number_format($value, 2, '.', '');
+        if ($value < 0) {
+            $value = "($" . number_format(abs($value), 2, '.', '') . ")";
+        } else {
+            $value = "$" . number_format($value, 2, '.', '');
+        }
+        return $value;
+
     }
 
     /**
