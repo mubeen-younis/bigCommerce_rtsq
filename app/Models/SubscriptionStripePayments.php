@@ -14,6 +14,25 @@ class SubscriptionStripePayments extends Model
 
     protected $table = "subscription_stripe_payments";
 
+    protected $casts = [
+        'amount' => 'float',
+    ];
+
+    /**
+     * It is formatting the amount column to return float number e.g 15 => 15.00
+     * @param $value
+     * @return string
+     */
+    public function getAmountAttribute($value)
+    {
+        return number_format($value, 2, '.', '');
+    }
+
+    /**
+     * @param $stripeObjectData
+     * @param $paymentData
+     * @return void|null
+     */
     public static function addOrUpdateSubscriptionPayment($stripeObjectData, $paymentData)
     {
         try {
