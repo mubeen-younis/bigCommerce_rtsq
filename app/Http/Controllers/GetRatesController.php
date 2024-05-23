@@ -734,7 +734,8 @@ class GetRatesController extends Controller
         $postalCodes = isset($rule['filter_postal_code']) ? $rule['filter_postal_code'] : '';
         $warehouses = isset($rule['warehouses']) ? $rule['warehouses'] : [];
         $isSameOrigin = false;
-        if($rule['rule_type'] == '7' || $rule['rule_type'] == 7){
+        $ruleType = !empty($rule['rule_type']) ? (int)$rule['rule_type'] : null;
+        if($ruleType == 7){
             $this->applyHideDeliveryEstimatesRule($rule);
             return false;
         }
@@ -749,11 +750,11 @@ class GetRatesController extends Controller
 
         Log::info('Shipping rule applied: ' . json_encode($rule));
 
-        if ($isSameCountry && $isSameState && $isSamePostalCode && isset($rule['rule_type']) && $rule['rule_type'] == 4) {
+        if ($isSameCountry && $isSameState && $isSamePostalCode && $ruleType == 4) {
             return false;
-        } elseif ($isSameCountry && $isSameState && isset($rule['rule_type']) && $rule['rule_type'] == 3) {
+        } elseif ($isSameCountry && $isSameState && $ruleType == 3) {
             return false;
-        } elseif ($isSameCountry && isset($rule['rule_type']) && $rule['rule_type'] == 1) {
+        } elseif ($isSameCountry && $ruleType == 1) {
             return false;
         } else {
             return true;
