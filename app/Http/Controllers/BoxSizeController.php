@@ -7,6 +7,7 @@ use App\Models\MultiplePackagingBoxes;
 use App\Models\ProductSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use App\Helpers\Helpers;
 
 class BoxSizeController extends Controller
 {
@@ -27,7 +28,16 @@ class BoxSizeController extends Controller
         }
         return response()->json(['error' => false, 'data' => $boxes]);
     }
-
+    // get boxes for fdo
+    public function getParcelBoxSizes(Request $request)
+    {
+        $boxes = optional(BoxSize::where('store_id', $request['store_id'])->where('box_type', '!=', 4)->get())->toArray() ?? [];
+        if(!empty($boxes)){
+            return Helpers::sendJsonResponseFdo(false, '', $boxes);
+        }
+        return Helpers::sendJsonResponseFdo(true, 'Box Sizes not found', []);
+    }
+    
     /**
      * Show the form for creating a new resource.
      *

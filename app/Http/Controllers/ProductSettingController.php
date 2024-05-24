@@ -768,12 +768,12 @@ class ProductSettingController extends Controller
 
             if (isset($response['data'])) {
                 $variant = $response['data'];
-                $product['price'] = $variant['price'] ?? $product['price'];
-                $product['weight'] = $variant['weight'] ?? $product['weight'];
-                $product['depth'] = $variant['depth'] ?? $product['depth'];
-                $product['width'] = $variant['width'] ?? $product['width'];
-                $product['height'] = $variant['height'] ?? $product['height'];
-                $product['sku'] = $variant['sku'] ?? $product['sku'];
+                $product['price'] = $variant['price'];
+                $product['weight'] = $variant['weight'];
+                $product['depth'] = $variant['depth'];
+                $product['width'] = $variant['width'];
+                $product['height'] = $variant['height'];
+                $product['sku'] = $variant['sku'];
                 $product['base_variant_id'] = $variant['id'];
                 $product['id'] = $variant['product_id'];
                 $this->saveProducts->setVariantNullProduct($product, $store->id);
