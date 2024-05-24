@@ -859,6 +859,7 @@ class GenerateRequestData
                     foreach(Functions::$smallCarriersArray as $carrierName){
                         if(isset($carriers[$carrierName])){
                             $carriers[$carrierName]['originAddress'] = $origins ?? [];
+                            Log::info('Large Cart Settings Shipping Rule Applied');
                         }
                     }
                 }
