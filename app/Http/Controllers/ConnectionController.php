@@ -33,7 +33,6 @@ use App\CustomClasses\FreightQuote\ChrLtl\ConnectionSettings as FreightQuoteChrC
 use App\CustomClasses\Priority1Ltl\ConnectionSettings as Priority1LtlConnectionSettings;
 use App\CustomClasses\UnishipperLtl\UnishipperLtlConnectionSettings;
 use App\CustomClasses\UpsShipEngineSmall\ConnectionSettings as ShipEngineSmallConnectionSettings;
-use App\CustomClasses\UpsLandCostApi\ConnectionSettings as UpsLandCostApiConnectionSettings;
 use App\Endpoints\Endpoints;
 
 use App\Models\Connection;
@@ -88,7 +87,6 @@ class ConnectionController extends Controller
         $this->Priority1LtlTestCon = new Priority1LtlConnectionSettings();
         $this->UnishipperLtlTestCon = new UnishipperLtlConnectionSettings(); 
         $this->ShipEngineTestCon = new ShipEngineSmallConnectionSettings();
-        $this->UpsLandedCostTestCon = new UpsLandCostApiConnectionSettings();
         $this->curlRequest = new connCurlRequest();
     }
 
@@ -223,9 +221,6 @@ class ConnectionController extends Controller
                     return response()->json($response);
                 case "ups-ship-engine":
                     $response = $this->ShipEngineTestCon->testConnection($request, $storeName);
-                    return response()->json($response);
-                case "ups-land-cost-small":
-                    $response = $this->UpsLandedCostTestCon->testConnection($request, $storeName);
                     return response()->json($response);
                 default:
                     return response()->json([
