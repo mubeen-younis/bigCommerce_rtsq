@@ -30,7 +30,7 @@ pipelines:
                 SSH_USER: 'apx-bc-01'
                 SERVER: '52.87.17.243'
                 MODE: 'command'
-                COMMAND: 'cd /var/www/html/bigcommerce/bc-fe/ && \ git fetch | git checkout feature/large-cart-settings && \ php artisan route:clear && \ php artisan optimize && \ php artisan config:clear'
+                COMMAND: 'cd /var/www/html/bigcommerce/bc/ && \ git fetch | git checkout feature/large-cart-settings && \ php artisan route:clear && \ php artisan optimize && \ php artisan config:clear'
 
     master:
 
