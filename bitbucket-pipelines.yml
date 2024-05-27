@@ -20,7 +20,7 @@ pipelines:
                 MODE: 'command'
                 COMMAND: '/home/apx-bc-01/html/bc/remote-script.sh'
 
-    update-abf-compilation:
+    payments-tab:
       - step:
           caches:
             - composer
@@ -34,13 +34,13 @@ pipelines:
 
     master:
 
-    - step:
-        caches:
-          - composer
-        script:
-          - pipe: atlassian/ssh-run:0.2.2
-            variables:
-              SSH_USER: 'ec2-user'
-              SERVER: '34.197.112.152'
-              MODE: 'command'
-              COMMAND: '/var/www/html/bigcommerce/bc/remote-script.sh'
+      - step:
+          caches:
+            - composer
+          script:
+            - pipe: atlassian/ssh-run:0.2.2
+              variables:
+                SSH_USER: 'ec2-user'
+                SERVER: '34.197.112.152'
+                MODE: 'command'
+                COMMAND: '/var/www/html/bigcommerce/bc/remote-script.sh'
