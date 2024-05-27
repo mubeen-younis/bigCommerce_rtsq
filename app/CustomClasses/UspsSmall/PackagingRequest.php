@@ -161,6 +161,7 @@ class PackagingRequest
 
     private function setUspsServiceBoxType($type)
     {
+
         if ($type == 'usps_ground_advantage' || $type == 'usps_first_class_package_international_service') {
             $this->uspsActiveServices[] = 'customBoxes';
         }

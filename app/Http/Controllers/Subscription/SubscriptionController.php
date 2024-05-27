@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Subscription;
 
 
+use App\CustomClasses\CurlRequest;
 use App\CustomClasses\Functions;
 use App\Helpers\Helpers;
 use App\Http\Controllers\Controller;
@@ -15,7 +16,11 @@ use App\Models\Subscription\CarrierCount;
 use App\Models\Subscription\PaymentMethod;
 use App\Models\Subscription\Plan;
 use App\Models\Subscription\Subscription;
+use App\Models\SubscriptionPayments;
+use App\Models\SubscriptionStripePayments;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -158,7 +163,10 @@ class SubscriptionController extends Controller
             $this->updateCarrierCountsinDB($newSubscription->id, $oldSubscription->store_id);
             return $newSubscription->id;
         }
-        $carrierCounts = CarrierCount::where('plan_id', $oldSubscription->plan_id)->where('subscription_id', $oldSubscription->id)->first();
+        Log::info('Old subscription ' . json_encode($oldSubscription));
+
+        $carrierCounts = CarrierCount::where('subscription_id', $oldSubscription->id)->first();
+        Log::info('Carrier counts ' . json_encode($carrierCounts));
         $oldSubscription->plan_id = self::$plansData['plan_id'];
         $oldSubscription->status = 1; //Active Status
         $oldSubscription->ends_at = gmdate("Y-m-d\TH:i:s\Z", $subscriptionReponse->current_period_end);
@@ -370,7 +378,12 @@ class SubscriptionController extends Controller
             //Start: Upgrade or DownGrade Plans
             if (!is_null($paymentMethod) && !is_null($oldSubscription) && $stripePlanId != null && $oldSubscription->subscription_id != null) {
                 $oldPaymentMethod = PaymentMethod::where('store_id', $data['store_id'])->first();
-                $last4 = decrypt($oldPaymentMethod->last4);
+                try {
+                    $last4 = decrypt($oldPaymentMethod->last4);
+                } catch (\Exception $exception) {
+                    $last4 = '****';
+                    Log::info('Card Decrypt Exception' . $exception->getMessage());
+                }
                 //Update: the customer card if the defaultpayment is false OR the last4 digits of the current card does not match with the new given card
                 if ((isset($data['defaultpayment']) && $data['defaultpayment'] == false) && substr($data['cNumber'], -4) != $last4) {
                     $customerId = $oldSubscription->stripe_id;
@@ -388,14 +401,15 @@ class SubscriptionController extends Controller
 
                 } else { //If the previous subscription is active
                     $updateSubResponse = $this->updateSubscriptionPlan($oldSubscription->subscription_id, $stripePlanId);
+
                 }
 
                 if ($updateSubResponse['error'] == true) {
                     return response()->json($updateSubResponse);
                 }
 
-
                 $this->updateSubscriptionInDB($updateSubResponse['data'], $oldSubscription, $isTestStore);
+
                 //Getting Current Plan Detail
                 $updateSubResponse['data'] = $this->subscriptionDetailFromDB($data['store_id']);
 
@@ -516,8 +530,8 @@ class SubscriptionController extends Controller
                 'data' => $subscriptionDetail,
                 'message' => 'The plan subscribed successfully.'
             ], 200);
-        } catch (\Exception $exception) {
-            Log::info('Exception on subscribing plan ' . json_encode($exception->getTraceAsString()));
+        } catch (\Exception|\Throwable $exception) {
+            Log::info('Exception on subscribing plan ' . json_encode(Functions::returnFormExceptionArray($exception)));
             return response()->json([
                 'error' => true,
                 'data' => [],
@@ -963,7 +977,7 @@ class SubscriptionController extends Controller
                 'updated_date' => $paymentDetail->data->object->webhooks_delivered_at,
                 'subscriptionId' => $paymentDetail->data->object->subscription
             );
-
+            SubscriptionStripePayments::addOrUpdateSubscriptionPayment($subscriptionPlanObj, $paymentDetail);
         } else {
             $params = array(
                 'subscriptionId' => $paymentDetail->data->object->items->data[0]->subscription
@@ -1112,8 +1126,6 @@ class SubscriptionController extends Controller
         } elseif ($eventType == 'invoice.payment_failed') {
             $msg = 'Subscription Failed';
             $this->invoicePaymentActionByWebHook($paymentDetail, 0);
-        } else {
-            //Do Nothing
         }
 
 
@@ -1169,5 +1181,52 @@ class SubscriptionController extends Controller
         ], 200);
     }
 
+
+    /**
+     * @return JsonResponse
+     */
+    public function getPayments(Request $request): JsonResponse
+    {
+        $storeId = $request['store_id'] ?? null;
+        if (blank($storeId)) {
+            return Helpers::sendJsonResponse(true, "No store ID in request");
+
+        }
+        return Helpers::sendJsonResponse(false, "", SubscriptionStripePayments::getSubscriptionStripePayments($storeId));
+    }
+
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getReceipt(Request $request)
+    {
+        $notFoundMessage = "The specified receipt cannot be found.";
+
+        $id = $request->id ?? "";
+        $invoiceDetail = SubscriptionStripePayments::getInvoiceDetail($id);
+        $receiptUrl = $invoiceDetail['receipt_url'] ?? "";
+
+        if (blank($receiptUrl)) {
+            return Helpers::sendJsonResponse(true, $notFoundMessage);
+        }
+
+        if ($invoiceDetail['is_addon']) {
+            $fileUrl = $receiptUrl;
+        } else {
+            $curlResponse = (new CurlRequest())->enSingleCurlRequest($receiptUrl, '', [], 'GET');
+            $curlResponse = json_decode($curlResponse['response'] ?? "", true);
+            $fileUrl = $curlResponse['file_url'] ?? "";
+        }
+
+        if (!blank($fileUrl)) {
+            return Helpers::sendJsonResponse(false, '', ['file_url' => $fileUrl]);
+
+        }
+
+        return Helpers::sendJsonResponse(true, $notFoundMessage);
+
+
+    }
 
 }
