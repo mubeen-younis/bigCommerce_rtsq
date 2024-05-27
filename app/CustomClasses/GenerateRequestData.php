@@ -840,12 +840,12 @@ class GenerateRequestData
                                 $lineItemWeight = $maxWeightPackage;
                             }
                             $item['piecesOfLineItem'] = 1;
-                            $item['lineItemName'] = 'custom-package-'.($i+1);
                             $item['lineItemWeight'] = $lineItemWeight ?? 0;
                             $item['lineItemWidth'] = '';
                             $item['lineItemHeight'] = '';
                             $item['lineItemLength'] = '';
                             $item['shipBinAlone'] = 1;
+                            $item['shipItemAlone'] = 1;
                             $item['lineItemPrice'] = $pricePerPackage > 0 ? $pricePerPackage / 100 : 0;
                             $total_weight += $maxWeightPackage;
                             $index = $variantKeys[0] . $i;
