@@ -1,3 +1,7 @@
+= 2.2.7 2024-05-27 =
+
+* Update - Add Feature/hide delivery estimates (Ticket:2227216656) [#448] (https://bitbucket.org/eniture/big-commerce/pull-requests/448)
+
 = 2.2.6 2024-05-22 =
 
 * Update - create api get box sizes and get origin address for fdo (Ticket:No) [#444] (https://bitbucket.org/eniture/big-commerce/pull-requests/444)
