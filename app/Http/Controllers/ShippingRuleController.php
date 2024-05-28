@@ -373,6 +373,7 @@ class ShippingRuleController extends Controller
     public function hideMethods($shippingRule, $items)
     {
         $isFilterWeight = $isFilterPrice = $isFilterQuantity = false;
+        $isFilterWeightCheck = $isFilterPriceCheck = $isFilterQuantityCheck = false;
         if(isset($shippingRule['isFilterWeight']) && $shippingRule['isFilterWeight']){
             $weight = collect($items)->map(function ($item) {
                 return $item['lineItemWeight'] * $item['piecesOfLineItem'] ?? 0;
@@ -381,6 +382,8 @@ class ShippingRuleController extends Controller
             if(isset($shippingRule['weight_from']) && $totalWeight >= $shippingRule['weight_from'] && isset($shippingRule['weight_to']) && ($totalWeight < $shippingRule['weight_to'] || $shippingRule['weight_to'] === '')){
                 $isFilterWeight = true;
             }
+        }else {
+            $isFilterWeightCheck = true;
         }
         if(isset($shippingRule['isFilterPrice']) && $shippingRule['isFilterPrice']){
             $price = collect($items)->map(function ($item) {
@@ -390,15 +393,19 @@ class ShippingRuleController extends Controller
             if(isset($shippingRule['price_from']) && $totalPrice >= $shippingRule['price_from'] && isset($shippingRule['price_to']) && ($totalPrice < $shippingRule['price_to'] || $shippingRule['price_to'] === '')){
                 $isFilterPrice = true;
             }
+        }else {
+            $isFilterPriceCheck = true;
         }
         if(isset($shippingRule['isFilterQuantity']) && $shippingRule['isFilterQuantity']){
             $totalQuantity = collect($items)->sum('piecesOfLineItem') ?? 0;
             if(isset($shippingRule['quantity_from']) && $totalQuantity >= $shippingRule['quantity_from'] && isset($shippingRule['quantity_to']) && ($totalQuantity < $shippingRule['quantity_to'] || $shippingRule['quantity_to'] === '')){
                 $isFilterQuantity = true;
             }
+        }else{
+            $isFilterQuantityCheck = true;
         }
 
-        if($isFilterWeight || $isFilterPrice || $isFilterQuantity){
+        if(($isFilterWeight || $isFilterPrice || $isFilterQuantity) || ($isFilterWeightCheck && $isFilterPriceCheck && $isFilterQuantityCheck)){
             return false;
         }
 
@@ -412,6 +419,7 @@ class ShippingRuleController extends Controller
         $totalQuantity = 0;
         $totalPrice = 0;
         $isFilterWeight = $isFilterPrice = $isFilterQuantity = false;
+        $isFilterWeightCheck = $isFilterPriceCheck = $isFilterQuantityCheck = false;
 
         if (!empty($allOrigins)) {
             $variants = collect($allOrigins)->filter(function ($origin) use ($shipmentKey) {
@@ -436,19 +444,25 @@ class ShippingRuleController extends Controller
             if(isset($shippingRule['weight_from']) && $totalWeight >= $shippingRule['weight_from'] && isset($shippingRule['weight_to']) && ($totalWeight < $shippingRule['weight_to'] || $shippingRule['weight_to'] === '')){
                 $isFilterWeight = true;
             }
+        }else {
+            $isFilterWeightCheck = true;
         }
         if(isset($shippingRule['isFilterPrice']) && $shippingRule['isFilterPrice']){
             if(isset($shippingRule['price_from']) && $totalPrice >= $shippingRule['price_from'] && isset($shippingRule['price_to']) && ($totalPrice < $shippingRule['price_to'] || $shippingRule['price_to'] === '')){
                 $isFilterPrice = true;
             }
+        }else {
+            $isFilterPriceCheck = true;
         }
         if(isset($shippingRule['isFilterQuantity']) && $shippingRule['isFilterQuantity']){
             if(isset($shippingRule['quantity_from']) && $totalQuantity >= $shippingRule['quantity_from'] && isset($shippingRule['quantity_to']) && ($totalQuantity < $shippingRule['quantity_to'] || $shippingRule['quantity_to'] === '')){
                 $isFilterQuantity = true;
             }
+        }else {
+            $isFilterWeightCheck = true;
         }
 
-        if($isFilterWeight || $isFilterPrice || $isFilterQuantity){
+        if(($isFilterWeight || $isFilterPrice || $isFilterQuantity) || ($isFilterWeightCheck && $isFilterPriceCheck && $isFilterQuantityCheck)){
             return false;
         }
 
@@ -462,6 +476,7 @@ class ShippingRuleController extends Controller
         $totalQuantity = 0;
         $totalPrice = 0;
         $isFilterWeight = $isFilterPrice = $isFilterQuantity = false;
+        $isFilterWeightCheck = $isFilterPriceCheck = $isFilterQuantityCheck = false;
         
         if (!empty($allOrigins)) {
             $variants = collect($allOrigins)->filter(function ($origin) use ($shipmentKey) {
@@ -484,19 +499,25 @@ class ShippingRuleController extends Controller
             if(isset($shippingRule['weight_from']) && $totalWeight >= $shippingRule['weight_from'] && isset($shippingRule['weight_to']) && ($totalWeight < $shippingRule['weight_to'] || $shippingRule['weight_to'] === '')){
                 $isFilterWeight = true;
             }
+        }else {
+            $isFilterWeightCheck = true;
         }
         if(isset($shippingRule['isFilterPrice']) && $shippingRule['isFilterPrice']){
             if(isset($shippingRule['price_from']) && $totalPrice >= $shippingRule['price_from'] && isset($shippingRule['price_to']) && ($totalPrice < $shippingRule['price_to'] || $shippingRule['price_to'] === '')){
                 $isFilterPrice = true;
             }
+        }else {
+            $isFilterPriceCheck = true;
         }
         if(isset($shippingRule['isFilterQuantity']) && $shippingRule['isFilterQuantity']){
             if(isset($shippingRule['quantity_from']) && $totalQuantity >= $shippingRule['quantity_from'] && isset($shippingRule['quantity_to']) && ($totalQuantity < $shippingRule['quantity_to'] || $shippingRule['quantity_to'] === '')){
                 $isFilterQuantity = true;
             }
+        }else {
+            $isFilterQuantityCheck = true;
         }
 
-        if($isFilterWeight || $isFilterPrice || $isFilterQuantity){
+        if(($isFilterWeight || $isFilterPrice || $isFilterQuantity) || ($isFilterWeightCheck && $isFilterPriceCheck && $isFilterQuantityCheck)){
             return false;
         }
 
