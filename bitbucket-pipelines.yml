@@ -8,7 +8,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    add-control-staff-notes:
+    feature/shipping-rule-surcharge:
       - step:
           caches:
             - composer
@@ -20,7 +20,7 @@ pipelines:
                 MODE: 'command'
                 COMMAND: '/home/apx-bc-01/html/bc/remote-script.sh'
 
-    feature/shipping-rule-surcharge:
+    add-control-staff-notes:
       - step:
           caches:
             - composer
