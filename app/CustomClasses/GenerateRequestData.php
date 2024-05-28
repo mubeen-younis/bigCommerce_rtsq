@@ -1482,6 +1482,8 @@ class GenerateRequestData
             'senderZip' => $connSettings['creds']['billing_postal_Code'],
             'thresholdWeightLimit' => $weightThreshold,
             'accessorial' => $accessorial,
+            'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
+            'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
 
         ];
 
