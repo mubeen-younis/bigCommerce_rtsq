@@ -824,10 +824,19 @@ class GenerateRequestData
                         $pricePerPackage = round($shipmentPrice/$totalNoOfPackages, 2) ?? 0;
                         $maxWeightPackage = $isLargeCartShippingRule['max_package_weight'] ?? 0;
 
-                        $item = $itemsArr[$variantKeys[0]] ?? [];
-                        $origin = $this->origins[$variantKeys[0]] ?? [];
+                        
                         // creating custom packages
                         for($i=0; $i<$totalNoOfPackages; $i++){
+
+                            if(isset($variantKeys[$i])){
+                                $index =  $variantKeys[$i];
+                                $item = $itemsArr[$variantKeys[$i]] ?? [];
+                                $origin = $this->origins[$variantKeys[$i]] ?? [];    
+                            }else {
+                                $index =  $variantKeys[0] . $i;
+                                $item = $itemsArr[$variantKeys[0]] ?? [];
+                                $origin = $this->origins[$variantKeys[0]] ?? [];    
+                            }
                             
                             $shipmentWeight = $shipmentWeight - $maxWeightPackage ?? 0;
                             /** 
@@ -848,7 +857,6 @@ class GenerateRequestData
                             $item['shipItemAlone'] = 1;
                             $item['lineItemPrice'] = $pricePerPackage > 0 ? $pricePerPackage / 100 : 0;
                             $total_weight += $maxWeightPackage;
-                            $index = $variantKeys[0] . $i;
                             $lineItems[$index] = $item ?? [];
                             $origins[$index] = $origin;
                         }
