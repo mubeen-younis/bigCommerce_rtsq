@@ -452,6 +452,8 @@ class ShippingRule extends Model
             $shippingRule['service_rates'] = $settings['service_rates'];
         }
         if($isSurchargeRates){
+            $shippingRule['filter_provider'] = '';
+            $shippingRule['filter_name'] = '';
             $shippingRule['products'] = $settings['filter_products'] ?? [];
             $shippingRule['categories'] = $settings['filter_categories'] ?? [];
             $shippingRule['brands'] = $settings['filter_brands'] ?? []; 
