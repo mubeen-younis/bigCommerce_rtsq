@@ -215,7 +215,7 @@ class ShippingRuleController extends Controller
         if(!empty($shippingRules)){
             $cartItems = !empty($lineItemData) ? $lineItemData : [];
             foreach($shippingRules as $key => $rule){
-                if(isset($rule['available']) && $rule['available']){
+                if(isset($rule['available']) && $rule['available'] && $rule['rule_type'] == 8){
                     $providers = array_keys($connectionSettings);
                     foreach($providers as  $index){
                         $providerSlug = isset($index) ? $index: " ";
