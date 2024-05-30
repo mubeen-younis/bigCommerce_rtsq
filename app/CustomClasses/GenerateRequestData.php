@@ -2617,7 +2617,8 @@ class GenerateRequestData
         $apiArray = [
 
             'id' => $connSettings['creds']['business_id'],
-            'senderConsignee' => $connSettings['creds']['request_freight_quotes'] ?? 'ShipAff',
+            'senderConsignee' => !empty($connSettings['creds']['request_freight_quotes']) ? $connSettings['creds']['request_freight_quotes'] : 'ShipAff',
+            'dimWeightBaseAccount' => !empty($connSettings['creds']['weight_base_account']) ? $connSettings['creds']['weight_base_account'] : '0',
             'thresholdWeightLimit' => $weightThreshold,
             'accessorial' => $accessorial,
             'holdAtTerminal' => isset($connSettings['quote_settings']['hold_at_terminal']) && $connSettings['quote_settings']['hold_at_terminal'] ? '1' : '0',
