@@ -459,7 +459,7 @@ class ShippingRuleController extends Controller
                 $isFilterQuantity = true;
             }
         }else {
-            $isFilterWeightCheck = true;
+            $isFilterQuantityCheck = true;
         }
 
         if(($isFilterWeight || $isFilterPrice || $isFilterQuantity) || ($isFilterWeightCheck && $isFilterPriceCheck && $isFilterQuantityCheck)){
