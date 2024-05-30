@@ -569,13 +569,17 @@ class GenerateRequestData
 
     public function tqlLtlEnitArr($connSettings, $destination)
     {
+        $liftGate = (!empty($connSettings['quote_settings']['offerLiftGateDelivery']) || !empty($connSettings['quote_settings']['alwaysLiftGateDelivery'])) ? true : false ?? false;
+        $notify = (!empty($connSettings['quote_settings']['offer_notify_as_option']) || !empty($connSettings['quote_settings']['always_quote_notify'])) ? true : false ?? false;
+
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl',
             'version' => '1.0.0',
-            'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
+            'liftGateAsAnOption' => $liftGate,
+            'notifyAsAnOption' => $notify,
             'returnQuotesOnExceedWeight' => '1',
             'api' => $this->getApiInfoArrTqlLtl($connSettings, $destination),
         ];

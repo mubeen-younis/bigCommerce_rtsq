@@ -17,6 +17,7 @@ use App\CustomClasses\YrcLTL\QuotesResults as yrcLtlQuotesResults;
 use App\CustomClasses\DayRossLTL\QuotesResults as dayRossLtlQuotesResults;
 use App\CustomClasses\SaiaLTL\QuotesResults as saiaLtlQuotesResults;
 use App\CustomClasses\AbfLtl\QuotesResults as abfLtlQuotesResults;
+use App\CustomClasses\tqlLtl\QuotesResults as tqlLtlQuotesResults;
 use App\CustomClasses\SouthEasternLtl\QuotesResults as SouthEasternQuotesResults;
 use App\CustomClasses\Priority1Ltl\QuotesResults as Priority1QuotesResults;
 use App\CustomClasses\UspsSmall\QuotesResults as uspsSmallQuotesResults;
@@ -1677,6 +1678,7 @@ class CompileQuotes
 
     public function compileTqlLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
+        $tqlLtl = new tqlLtlQuotesResults();
         $this->isOverrideRates = false;
         $this->TQL = true;
         if ($this->residential['tqlLtl'] == 'Y') {
@@ -1687,6 +1689,7 @@ class CompileQuotes
             $this->residentialDlvry = 0;
         }
         $this->alwaysResi = $this->residential['alwaysResi']['tqlLtl'] ?? false;
+        $shipments = $tqlLtl->formateQuoteBeforeCompile($shipments, $connectionSettings['tql-ltl']);
         $this->quoteSettings = $connectionSettings['tql-ltl']['quote_settings'] ?? [];
         $this->allConfigServices = $connectionSettings['tql-ltl']['carrier_services'] ?? [];
         $ratingMethod = $this->quoteSettings['method'] ?? 1;
@@ -1751,7 +1754,7 @@ class CompileQuotes
                     if ($this->lgQuotes || $this->notifyDelivery) {
                         foreach ($q['priceCharges'] as $charge) {
                             if (isset($charge['description']) && $charge['description'] === 'Lift Gate' || isset($charge['description']) && $charge['description'] === 'Delivery Call Ahead') {
-                                isset($q["serviceLevel"]) && ($q["serviceLevel"] == 'Guaranteed 5 PM' || $q["serviceLevel"] == 'Guaranteed 12 PM');
+                                return isset($q["serviceLevel"]) && ($q["serviceLevel"] == 'Guaranteed 5 PM' || $q["serviceLevel"] == 'Guaranteed 12 PM');
                             }
                         }
                     } else {
@@ -1820,7 +1823,7 @@ class CompileQuotes
                         //$data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         $access = $data['scac'] . $this->getAccessorialCode() . $resiPickup;
                         $isLgSurcharges = isset($data['surcharges']['liftgateFee']) && $data['surcharges']['liftgateFee'];
-                        $isNbdSurcharges = isset($data['surcharges']['notifyDeliveryFee']) && $data['surcharges']['notifyDeliveryFee'];
+                        $isNbdSurcharges = isset($data['surcharges']['notifyDeliveryFee']);
                         $price = $this->calculatePrice($data);
 
                         $serviceType = $ratingMethod === 5 ? ' ' . $data['serviceLevel'] : '';
@@ -1836,7 +1839,7 @@ class CompileQuotes
                         $originQuotes[$key]['simple']['title'] = $title;
 
                         //if(!$this->isOverrideRates){
-                        if ($this->lgQuotes) {
+                        if ($this->lgQuotes && $isLgSurcharges) {
                             $lgAccess = $data['scac'] . 'tqlltl' . $this->getAccessorialCode(true) . $resiPickup;
                             $lgPrice = $this->calculatePrice($data, true);
                             $lgTitle = $this->getTitle($data['carrier'] . $serviceType, true, false, $data['totalCalenderDaysInTransit'], [], $dateAndDays);
@@ -1872,7 +1875,7 @@ class CompileQuotes
                                 $data,
                                 $key, $data['totalCalenderDaysInTransit'],
                                 $dateAndDays,
-                                true,
+                                $this->lgQuotes,
                                 'tqlltl', $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi,
                                 false,
                                 false, $this->notifyDelivery,
@@ -1890,7 +1893,7 @@ class CompileQuotes
                 }
             }
             if ($ratingMethod == 1 || $ratingMethod == 2 || $ratingMethod == 3) {
-                $compiledQuotes = $this->getCompiledQuotesTQL($originQuotes, $arraySorting, $lgQuotes, $this->notifyDelivery);
+                $compiledQuotes = $this->getCompiledQuotesTQL($originQuotes, $arraySorting, $this->lgQuotes, $this->notifyDelivery);
             } else {
                 $compiledQuotes = $originQuotes;
             }
@@ -6899,9 +6902,8 @@ class CompileQuotes
         }
 
         foreach ($arraySorting as $key => $value) {
-            $sliced = $sliced + array_slice($arraySorting[$key], 0, $options, true);
-        }
-
+            $sliced =  array_slice($arraySorting[$key], 0, $options, true);
+        }  
 
         if ($this->quoteSettings['method'] == 3) {
             return $this->averageRattingMethod($arraySorting, $options, $lgQuotes, '', '', false, $notifyDelivery);
