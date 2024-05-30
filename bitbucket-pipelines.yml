@@ -8,7 +8,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    feature/hide-delivery-estimates:
+    feature/shipping-rule-surcharge:
       - step:
           caches:
             - composer

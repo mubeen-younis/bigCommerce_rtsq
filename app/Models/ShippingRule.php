@@ -256,6 +256,7 @@ class ShippingRule extends Model
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
+                    
             }
 
             $shippingRule->rule_name = $shippingRuleData['rule_name'] ?? '';
@@ -388,7 +389,7 @@ class ShippingRule extends Model
                 break;
             case 8:
                 $shippingRule = self::updateSurchargeRatesParams($shippingRule);
-                break;     
+                break;
             default:
                 break;
             
