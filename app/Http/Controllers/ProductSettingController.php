@@ -539,6 +539,8 @@ class ProductSettingController extends Controller
     {
         $productCount = isset($request->products) ? count($request->products) : null;
         foreach ($request->products as $prd) {
+            $prd['store_id'] = $request->store_id;
+            $prd['store_hash'] = $request->store_hash;
             $result = $this->updateSingleProductFromApi($prd);
             $product = ProductSetting::where('source_product_id', $prd['source_product_id'])
                 ->where('variant_id', $prd['variant_id'])
@@ -766,12 +768,12 @@ class ProductSettingController extends Controller
 
             if (isset($response['data'])) {
                 $variant = $response['data'];
-                $product['price'] = $variant['price'] ?? $product['price'];
-                $product['weight'] = $variant['weight'] ?? $product['weight'];
-                $product['depth'] = $variant['depth'] ?? $product['depth'];
-                $product['width'] = $variant['width'] ?? $product['width'];
-                $product['height'] = $variant['height'] ?? $product['height'];
-                $product['sku'] = $variant['sku'] ?? $product['sku'];
+                $product['price'] = $variant['price'];
+                $product['weight'] = $variant['weight'];
+                $product['depth'] = $variant['depth'];
+                $product['width'] = $variant['width'];
+                $product['height'] = $variant['height'];
+                $product['sku'] = $variant['sku'];
                 $product['base_variant_id'] = $variant['id'];
                 $product['id'] = $variant['product_id'];
                 $this->saveProducts->setVariantNullProduct($product, $store->id);

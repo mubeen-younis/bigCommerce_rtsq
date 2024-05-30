@@ -226,6 +226,16 @@ class ShippingRule extends Model
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
+                case 7:
+                    $shippingRule->filter_name = $shippingRuleData['filter_provider'] ?? '';
+                    $settings = [
+                       "filter_categories" => $shippingRuleData['filter_categories'] ?? '',
+                       "filter_products" => $shippingRuleData['filter_products'] ?? '', 
+                       "filter_brands" => $shippingRuleData['filter_brands'] ?? '',
+                       "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
+                    ];
+                    $shippingRule->filter_settings = json_encode($settings) ?? '';
+                    break;
                 case 8:
                     $shippingRule->filter_name = $shippingRuleData['filter_provider'] ?? '';
                     $settings = [
@@ -373,16 +383,30 @@ class ShippingRule extends Model
             case 6:
                 $shippingRule = self::updateOverrideRatesParams($shippingRule);
                 break;
+            case 7:
+                $shippingRule = self::updateHideEstimateDeliveryParams($shippingRule);
+                break;
             case 8:
                 $shippingRule = self::updateSurchargeRatesParams($shippingRule);
-                break;
-
+                break;     
             default:
                 break;
             
         } 
         
         return $shippingRule ?? [];
+    }
+
+    public static function updateHideEstimateDeliveryParams($shippingRule)
+    {
+        $shippingRule['filter_provider'] = $shippingRule['filter_name'];
+        $settings = json_decode($shippingRule['filter_settings'], true);
+        $shippingRule['products'] = $settings['filter_products'] ?? [];
+        $shippingRule['categories'] = $settings['filter_categories'] ?? [];
+        $shippingRule['brands'] = $settings['filter_brands'] ?? [];
+        $shippingRule['apply_rule_to'] = $settings['apply_rule_to'] ?? 1;
+
+        return $shippingRule;
     }
 
     public static function updateOverrideRatesParams($shippingRule)

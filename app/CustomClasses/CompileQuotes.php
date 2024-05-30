@@ -6309,19 +6309,19 @@ class CompileQuotes
                 (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery'] == '1' && !(isset($this->quoteSettings['insideDelivery']) && $this->quoteSettings['insideDelivery']))) || $getCost
         ) {
             if (isset($quotes['surcharges']) && isset($quotes['surcharges']['liftgateFee'])) {
-                $lgCost = $quotes['surcharges']['liftgateFee'];
+                $lgCost = (float) $quotes['surcharges']['liftgateFee'];
             }
             if ($isUpsLtl) {
 
                 $surcharges = $quotes['surcharges'] ?? [];
                 foreach ($surcharges as $surcharge) {
                     if (isset($surcharge['Type']['Code']) && $surcharge['Type']['Code'] === 'LIFTGATE') {
-                        $lgCost = $surcharge['Factor']['Value'] ?? 0;
+                        $lgCost = (float) $surcharge['Factor']['Value'] ?? 0;
                         break;
                     }
                     //check : Tforce new api
                     if (isset($surcharge['code']) && $surcharge['code'] === 'LIFD') {
-                        $lgCost = $surcharge['value'] ?? 0;
+                        $lgCost = (float) $surcharge['value'] ?? 0;
                         break;
                     }
                 }

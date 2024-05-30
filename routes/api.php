@@ -74,6 +74,8 @@ Route::middleware([\App\Http\Middleware\FDOValidity::class])->group(function () 
     Route::get('/locations.json', [\App\Http\Controllers\FDOLocationsController::class, 'getLocations']);
     Route::get('/get_boxes', 'App\Http\Controllers\BoxSizeController@index');
     Route::post('/save_fdo_shipments', [\App\Http\Controllers\FDOOrderController::class, 'saveFdoShipments']);
+    Route::get('/get_parcel_box_sizes', [BoxSizeController::class, 'getParcelBoxSizes']);
+    Route::get('/get_address_book', [\App\Http\Controllers\FDOLocationsController::class, 'getLocations']);
 
 });
 Route::post('update_coupon_details_fdo_av', [FDOController::class, 'updateCouponDetailsFromFDOAV']);
@@ -134,6 +136,10 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::get('/rad/getAddonAdressSettings', [RADController::class, 'getDefaultAddress']);
     Route::post('/saveResidentialSettings', [RADController::class, 'saveSettings']);
     Route::get('/getResidentialSettings', [RADController::class, 'getSettings']);
+
+    //Payments
+    Route::get('/get_payments', [SubscriptionController::class, 'getPayments']);
+    Route::get('/get_receipt', [SubscriptionController::class, 'getReceipt']);
 
     /* SBS routes */
     Route::get('/sbs/get_plans', [SBSController::class, 'getPlans']);
