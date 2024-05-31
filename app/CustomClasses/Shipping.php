@@ -228,7 +228,6 @@ class Shipping
             unset($requestArr['requestArr']['carriers']['rnl']['freeShipment']);
             $freeRNL = true;
         }
-        Log::info('$quotes4 ');
         $quotesFromWs = $quotes ?? [];
         try {
             $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $package['items'], $SuppressParcelRates, $store_id);    //code...
@@ -238,8 +237,6 @@ class Shipping
                 'message' => $exception->getMessage()
             ]));
         }
-        
-        Log::info('$quotes5 ');
         Log::info('$finalQuotes ' . json_encode($finalQuotes));
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
