@@ -1689,16 +1689,7 @@ class CompileQuotes
             $this->residentialDlvry = 0;
         }
         $this->alwaysResi = $this->residential['alwaysResi']['tqlLtl'] ?? false;
-        Log::info('$shipments1 ' . json_encode($shipments));
-        try {
-            $shipments = $tqlLtl->formateQuoteBeforeCompile($shipments, $connectionSettings['tql-ltl']);
-        } catch (\Exception $exception){
-            Log::info('finalQuotes ' . json_encode([
-                'line' => $exception->getLine(),
-                'message' => $exception->getMessage()
-            ]));
-        }
-        Log::info('$shipments2 ' . json_encode($shipments));
+        $shipments = $tqlLtl->formateQuoteBeforeCompile($shipments, $connectionSettings['tql-ltl']);
         $this->quoteSettings = $connectionSettings['tql-ltl']['quote_settings'] ?? [];
         $this->allConfigServices = $connectionSettings['tql-ltl']['carrier_services'] ?? [];
         $ratingMethod = $this->quoteSettings['method'] ?? 1;
