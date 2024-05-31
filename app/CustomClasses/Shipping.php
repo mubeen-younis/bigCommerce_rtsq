@@ -230,7 +230,15 @@ class Shipping
         }
         Log::info('$quotes4 ');
         $quotesFromWs = $quotes ?? [];
-        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $package['items'], $SuppressParcelRates, $store_id);
+        try {
+            $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $package['items'], $SuppressParcelRates, $store_id);    //code...
+        } catch (\Exception $exception){
+            Log::info('finalQuotes ' . json_encode([
+                'line' => $exception->getLine(),
+                'message' => $exception->getMessage()
+            ]));
+        }
+        
         Log::info('$quotes5 ');
         Log::info('$finalQuotes ' . json_encode($finalQuotes));
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
