@@ -41,10 +41,9 @@ class QuotesResults
             return $shipments;
         }
 
-        $isLG = $isNotify = false;
-
         $srvcDesc = $connSettings['quote_settings']['label_as'] ?? Functions::$simpleLTLTitle;
         foreach ($shipments as $shipment => $quotes) {
+            $isLG = $isNotify = false;
             if (!isset($quotes['q']) || (isset($quotes['severity']) && $quotes['severity'] == 'ERROR')) {
                 continue;
             }
@@ -96,9 +95,9 @@ class QuotesResults
                     }
                 }
             }
+            unset($shipments[$shipment]['quotesWithLiftGate'], $shipments[$shipment]['quotesWithNotify']);
         }
 
-        unset($shipments[$shipment]['quotesWithLiftGate'], $shipments[$shipment]['quotesWithNotify']);
         return $shipments;
     }
 }
