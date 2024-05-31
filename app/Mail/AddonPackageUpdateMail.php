@@ -19,7 +19,8 @@ class AddonPackageUpdateMail extends Mailable
      */
     private $addonType;
     private $subscriptionDetail;
-    public function __construct($addonType,$subscriptionDetail)
+
+    public function __construct($addonType, $subscriptionDetail)
     {
         $this->addonType = $addonType;
         $this->subscriptionDetail = $subscriptionDetail;
@@ -32,9 +33,9 @@ class AddonPackageUpdateMail extends Mailable
      */
     public function build()
     {
-        $addonName = ($this->addonType == 'SBS') ? 'Standard Box Sizes' : 'Residential Address Detection';
-        return $this->subject($addonName.' Addon Subscription')
+        $addonName = ($this->addonType == 'SBS') ? 'Standard Box Sizes' : ($this->addonType == 'PLT' ? 'Pallet Packaging' : 'Residential Address Detection');
+        return $this->subject($addonName . ' Addon Subscription')
             ->replyTo([Constant::ENITURE_SUPPORT_EMAIL])
-            ->view('emails.addonpackage',['addon' => $addonName, 'subscriptionDetail'=>$this->subscriptionDetail]);
+            ->view('emails.addonpackage', ['addon' => $addonName, 'subscriptionDetail' => $this->subscriptionDetail]);
     }
 }

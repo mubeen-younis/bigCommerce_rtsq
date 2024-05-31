@@ -19,6 +19,7 @@ use function GuzzleHttp\Promise\all;
 use App\Models\InstalledAddon;
 use App\Models\AddonSettings;
 use App\CustomClasses\Functions;
+use App\Models\SubscriptionStripePayments;
 
 class PackageSubscriptionController extends Controller
 {
@@ -181,12 +182,14 @@ class PackageSubscriptionController extends Controller
         $chargeResponse = [];
         $chargeId = null;
 
+
         $updateSubscription = 0;
         $package = Package::find($data['package']);
         $mainSubscription = DB::table('subscriptions as s')
             ->leftJoin('payment_methods as p', 'p.store_id', '=', 's.store_id')
             ->select('s.stripe_id as stripe_customer_id', 's.payment_method', 's.plan_id', 's.email', 's.created_at', 'p.id as payment_method_id')
             ->where('s.store_id', self::$storeId)->latest()->first();
+
 
         if (is_null($mainSubscription)) {
             return [
@@ -209,9 +212,14 @@ class PackageSubscriptionController extends Controller
             ->select('package_subscriptions.id', 'package_subscriptions.created_at', 'package_subscriptions.package_id', 'package_subscriptions.payment_method_id', 'package_subscriptions.status', 'package_subscriptions.subscription_time', 'package_subscriptions.update_time', 'package_subscriptions.expiry_time', 'package_subscriptions.total_count', 'package_subscriptions.stripe_charge_id', 'package_subscriptions.charge_cost')
             ->latest()->first();
 
+        //Setting either to update subscription,create charge and create subscription
+        // self::$updateToBeChargeonly means we only need t update the package_to_be_charge table
+        // self::$updateFullSubscription means we will update both current package and  update the package_to_be_charge table as well
         //If current subscription is active and it is trial
         if (!is_null($currentPackageSub) && $currentPackageSub->status == 1 && $currentPackageSub->package_id == self::$dynamicTrial && Carbon::parse($currentPackageSub->expiry_time) > Carbon::now()) {
-            $updateSubscription = self::$updateFullSubscription;
+            //Earlier when it was trial and whenever customer selects the paid plan, it was updating that to the paid plan rather just updating the auto-renewal
+            //it was set to $updateSubscription = $updateFullSubscription;
+            $updateSubscription = self::$updateToBeChargeonly;
         } elseif (!is_null($currentPackageSub) && $currentPackageSub->status == 1 && Carbon::parse($currentPackageSub->expiry_time) > Carbon::now()) {
             //If current subscription is active
             $updateSubscription = self::$updateToBeChargeonly;
@@ -225,19 +233,24 @@ class PackageSubscriptionController extends Controller
             // if No Current subscription exist and selected package is not a trial or disable
             $updateSubscription = self::$updateFullSubscription;
         }
-        if (($data['package'] != self::$dynamicTrial && $data['package'] != self::$disableAddon) || $updateSubscription == self::$updateFullSubscription) {
-            if ($updateSubscription == self::$updateFullSubscription) {
-                $chargeResponse = $this->createStripeChargeForPackage($package, $mainSubscription, $addonType);
-            }
+
+
+        if (($data['package'] != self::$dynamicTrial && $data['package'] != self::$disableAddon) && $updateSubscription == self::$updateFullSubscription) {
+            $chargeResponse = $this->createStripeChargeForPackage($package, $mainSubscription, $addonType);
         }
-        if (!empty($chargeResponse['error']) && $chargeResponse['error'] == true) {
+
+        if (!empty($chargeResponse['error']) && $chargeResponse['error']) {
             return $chargeResponse;
         } else {
             $chargeId = isset($chargeResponse['data']['chargeId']) ? $chargeResponse['data']['chargeId'] : null;
         }
+
+        //Means customer want to disable the auto-renewal
         if ($chargeId == null && $data['package'] == self::$disableAddon) {
             $updateSubscription = self::$updateToBeChargeonly;
         }
+
+
         if (!is_null($currentPackageSub) && ($updateSubscription == self::$updateToBeChargeonly || $updateSubscription == self::$updateFullSubscription)) {
             //Updating the current package Subscription in database
             $this->updatePackageSubscriptionInDB($data, $package, $paymentMethod, $chargeId, $currentPackageSub, $updateSubscription);
@@ -245,10 +258,16 @@ class PackageSubscriptionController extends Controller
             //Saving a new trial or package Subscription in database
             $this->createPackageSubscriptionInDB($data, $package, $paymentMethod, $chargeId);
         }
+
         $currentPackageDetails = $this->getPkgDetails($addonType);
-        if ($updateSubscription == self::$updateFullSubscription && !empty($mainSubscription->email)) {
+
+        if ($updateSubscription == self::$updateFullSubscription &&
+            !empty($mainSubscription->email) &&
+            (isset($data['package']) && $data['package'] != self::$dynamicTrial)
+        ) {
             Mail::to($mainSubscription->email)->send(new AddonPackageUpdateMail($addonType, $currentPackageDetails['currentPackage']));
         }
+
         return [
             'error' => false,
             'data' => $currentPackageDetails,
@@ -260,15 +279,15 @@ class PackageSubscriptionController extends Controller
     //***********************************
     public function updatePackageSubscriptionInDB($data, $package, $paymentMethod, $chargeId, $currentPackageSub, $updateSubscription)
     {
-        //  $package_id = isset($data['package']) ? $data['package'] : $currentPackageSub->package_id;
-        $package_id = isset($data['package']) ? $data['package'] : $package->id;
+        $packageID = $data['package'] ?? $package->id;
         $addDays = (isset($data['package']) && $data['package'] == self::$dynamicTrial) ? 15 : 30;
         $currentPackageSub = PackageSubscription::find($currentPackageSub->id);
+
         if ($updateSubscription == self::$updateFullSubscription) {
             $currentPackageSub->update([
                 'store_id' => $data['store_id'],
-                'package_id' => $package_id,
-                'payment_method_id' => ($package_id != self::$dynamicTrial) ? $paymentMethod : null,
+                'package_id' => $packageID,
+                'payment_method_id' => ($packageID != self::$dynamicTrial) ? $paymentMethod : null,
                 'status' => 1,
                 'subscription_time' => now(),
                 'update_time' => now(),
@@ -279,21 +298,24 @@ class PackageSubscriptionController extends Controller
             ]);
         }
 
-        if ((!isset($data['package']) || (!isset($data['package']) && $data['package'] != self::$disableAddon)) && ($updateSubscription == self::$updateToBeChargeonly || $updateSubscription == self::$updateFullSubscription)) {
-
+        if ((!isset($data['package'])) &&
+            ($updateSubscription == self::$updateToBeChargeonly || $updateSubscription == self::$updateFullSubscription)) {
             PackageToBeCharge::where('subscription_id', $currentPackageSub->id)->update([
-                'package_id' => $package_id,
-                'status' => ($package_id != self::$dynamicTrial && $package_id != self::$disableAddon) ? 1 : 0,
+                'package_id' => $packageID,
+                'status' => ($packageID != self::$dynamicTrial && $packageID != self::$disableAddon) ? 1 : 0,
                 'requested_date' => now(),
             ]);
         }
+        //Customer wants to disable auto-renewal
         if (isset($data['package']) && $data['package'] == self::$disableAddon && $updateSubscription == self::$updateToBeChargeonly) {
             PackageToBeCharge::where('subscription_id', $currentPackageSub->id)->update([
                 'status' => ($data['package'] != self::$dynamicTrial && $data['package'] != self::$disableAddon) ? 1 : 0,
                 'requested_date' => now(),
             ]);
         }
-        if (isset($data['package']) && $data['package'] != self::$disableAddon && ($updateSubscription == self::$updateToBeChargeonly || $updateSubscription == self::$updateFullSubscription)) {
+
+        if (isset($data['package']) && $data['package'] != self::$disableAddon &&
+            ($updateSubscription == self::$updateToBeChargeonly || $updateSubscription == self::$updateFullSubscription)) {
 
             PackageToBeCharge::where('subscription_id', $currentPackageSub->id)->update([
                 'package_id' => $data['package'],
@@ -334,15 +356,25 @@ class PackageSubscriptionController extends Controller
     {
         $stripeCustomerId = $mainSubscription->stripe_customer_id;
         try {
+            $packageCost = bcmul($package->cost, 100);
+        } catch (\Exception|\Throwable $exception) {
+            $packageCost = $package->cost * 100;
+
+        }
+        try {
             $chargeData = [
-                'amount' => bcmul($package->cost, 100),
+                'amount' => $packageCost,
                 'currency' => 'usd',
                 'customer' => $stripeCustomerId,
                 "description" => 'Real-time Shipping Quotes (BigCommerce ' . $addonType . ') Charge',
                 'source' => $mainSubscription->payment_method
             ];
             $charge = Charge::create($chargeData);
-
+            if (isset($charge['error']) && $charge['error']) {
+                return $charge;
+            }
+            //Saving charge details to display in payments tab
+            SubscriptionStripePayments::addOrUpdateAddonsPayment($package, $charge, $stripeCustomerId);
             $response = [
                 'chargeId' => $charge->id
             ];
@@ -631,4 +663,5 @@ class PackageSubscriptionController extends Controller
 
         return isset($getSBSAddonSettings->bins_pack_mode) ? $getSBSAddonSettings->bins_pack_mode : 0;
     }
+
 }
