@@ -191,7 +191,7 @@ class Shipping
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         //Sending request to WS to get Quotes
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
-
+        Log::info('$quotes ' . json_encode($quotes));
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
         /*
          * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
