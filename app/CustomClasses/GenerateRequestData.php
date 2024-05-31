@@ -802,6 +802,82 @@ class GenerateRequestData
             $this->itemsArr = $itemsArr;
             $this->carriers = $carriers;
 
+            // Apply Large Cart Settings Shipping Rule
+            $shippingRule = new ShippingRuleController();
+            $isLargeCartShippingRule = $shippingRule->checkLargeCartRuleApply($itemsArr, $this->storeData['store']->id) ?? [];
+            // Check: Large Cart Settings Shipping Rule is apply
+            if(!empty($isLargeCartShippingRule)){
+
+                if (!empty($this->origins)) {
+                    // get total shipments based on cart items
+                    $totalShipments = collect($this->origins)->pluck('locationId')->unique()->toArray() ?? [];
+                    foreach($totalShipments as $shipment){   
+                        $q = $shipmentWeight = $shipmentPrice = $total_weight = 0;
+                        // get total products in a shipment                 
+                        $variantKeys = collect($this->origins)->filter(function ($orig) use ($shipment) {
+                            return $orig['locationId'] == $shipment;
+                        })->keys()->all() ?? [];
+
+                        foreach($variantKeys as $variant_id){
+                            // get total shipment weight and price
+                            $shipmentWeight += $itemsArr[$variant_id]['lineItemWeight'] * $itemsArr[$variant_id]['piecesOfLineItem'] ?? 0;
+                            $shipmentPrice += $itemsArr[$variant_id]['lineItemPrice'] * $itemsArr[$variant_id]['piecesOfLineItem'] ?? 0;
+                        }
+                        // calcluate total no of packages of the shipment weight
+                        $totalNoOfPackages = ceil($shipmentWeight/$isLargeCartShippingRule['max_package_weight']) ?? 0;
+                        $pricePerPackage = round($shipmentPrice/$totalNoOfPackages, 2) ?? 0;
+                        $maxWeightPackage = $isLargeCartShippingRule['max_package_weight'] ?? 0;
+
+                        
+                        // creating custom packages
+                        for($i=0; $i<$totalNoOfPackages; $i++){
+
+                            if(isset($variantKeys[$i])){
+                                $index =  $variantKeys[$i];
+                                $item = $itemsArr[$variantKeys[$i]] ?? [];
+                                $origin = $this->origins[$variantKeys[$i]] ?? [];    
+                            }else {
+                                $index =  $variantKeys[0] . $i;
+                                $item = $itemsArr[$variantKeys[0]] ?? [];
+                                $origin = $this->origins[$variantKeys[0]] ?? [];    
+                            }
+                            
+                            $shipmentWeight = $shipmentWeight - $maxWeightPackage ?? 0;
+                            /** 
+                            * Check: if last package weight is less than the max per package weight 
+                            * then assign only minimum weight not max per package weight
+                            **/
+                            if($shipmentWeight < 0){
+                                $lineItemWeight = $shipmentWeight + $maxWeightPackage;
+                            } else {
+                                $lineItemWeight = $maxWeightPackage;
+                            }
+                            $item['piecesOfLineItem'] = 1;
+                            $item['lineItemWeight'] = $lineItemWeight ?? 0;
+                            $item['lineItemWidth'] = '';
+                            $item['lineItemHeight'] = '';
+                            $item['lineItemLength'] = '';
+                            $item['shipBinAlone'] = 1;
+                            $item['shipItemAlone'] = 1;
+                            $item['lineItemPrice'] = $pricePerPackage > 0 ? $pricePerPackage / 100 : 0;
+                            $total_weight += $maxWeightPackage;
+                            $lineItems[$index] = $item ?? [];
+                            $origins[$index] = $origin;
+                        }
+                    }
+                    unset($itemsArr);
+                    // update lineitems with custom packages and origins with package id
+                    $itemsArr = $lineItems ?? [];
+                    foreach(Functions::$smallCarriersArray as $carrierName){
+                        if(isset($carriers[$carrierName])){
+                            $carriers[$carrierName]['originAddress'] = $origins ?? [];
+                            Log::info('Large Cart Settings Shipping Rule Applied');
+                        }
+                    }
+                }
+            }
+            // End Apply Large Cart Settings Shipping Rule
+
             $hasSmall = isset($carriers['wweSmall'])
                 || isset($carriers['upsSmall'])
                 || isset($carriers['fedexSmall'])
@@ -811,7 +887,7 @@ class GenerateRequestData
                 || isset($carriers['shipEngine'])
                 || isset($carriers['wweSmallN']);
 
-            if ($hasSmall) {
+            if ($hasSmall && empty($isLargeCartShippingRule)) {
                 $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
                 if (empty($multiplePackaging)) {
                     return null;

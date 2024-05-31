@@ -87,6 +87,17 @@ class Functions
         'ups_worldwide_express',
         'ups_worldwide_express_plus',
     ];
+    // small carriers indexes
+    public static $smallCarriersArray = [
+        'wweSmall',
+        'upsSmall',
+        'fedexSmall',
+        'unishippersSmall',
+        'purolator',
+        'usps',
+        'shipEngine',
+        'wweSmallN',
+    ];
 
     public static $rnlServices = [
         'STD' => 'Standard Service',
