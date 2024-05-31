@@ -608,7 +608,7 @@ class ProductSettingController extends Controller
     public function getSetting($product)
     {
         $getOnly = ['freight_class', 'freightParcelEnabled',
-            'hazardous_enabled', 'freight_enabled', 'parcel_enabled', 'quote_as_instore', 'quote_as_local', 'insurance', 'allow_vertical', 'ship_own_package', 'nmfc'];
+            'hazardous_enabled', 'freight_enabled', 'parcel_enabled', 'quote_as_instore', 'quote_as_local', 'insurance', 'allow_vertical', 'ship_own_package', 'nmfc', 'hs_code'];
         $settings = new \stdClass();
         foreach ($product as $key => $prd) {
             if (in_array($key, $getOnly)) {

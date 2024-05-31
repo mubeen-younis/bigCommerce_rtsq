@@ -284,6 +284,12 @@ class GenerateRequestData
                     $carriersArr['carriers']['priority1'] = $p1LtlArr;
                     $errorManagment['priority1'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
+                case 'ups-land-cost-small':
+                    $p1LtlArr = $this->upsLandedCostApiEnitArr($con1, $destination);
+                    $p1LtlArr['originAddress'] = $enitOrigin;
+                    $carriersArr['carriers']['UPSLandedCost'] = $p1LtlArr;
+                    $errorManagment['UPSLandedCost'] = $con1['quote_settings']['error_managment'] ?? 1;
+                    break;
             }
         }
         return ['carriersArr' => $carriersArr, 'residential' => $this->resiCarrier, 'errorManagment' => $errorManagment];
@@ -718,6 +724,19 @@ class GenerateRequestData
             'version' => '1.0.0',
             'returnQuotesOnExceedWeight' => 1,
             'api' => $this->getApiInfoArrPriority1Ltl($connSettings, $destination),
+        ];
+    }
+
+    public function upsLandedCostApiEnitArr($connSettings, $destination)
+    {
+        return [
+            'licenseKey' => '',
+            'serverName' => Functions::getServerName($this->storeData),
+            'carrierMode' => 'pro',
+            'quotestType' => '',
+            'version' => '1.0.0',
+            'returnQuotesOnExceedWeight' => 1,
+            'api' => $this->getApiInfoArrUpsLandedCost($connSettings, $destination),
         ];
     }
 
@@ -3131,6 +3150,23 @@ class GenerateRequestData
         ];
 
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
+    }
+
+    function getApiInfoArrUpsLandedCost($connSettings, $destination)
+    {
+        $apiArray = [
+            'clientId' => isset($connSettings['creds']['clientId']) ? $connSettings['creds']['clientId'] : '',
+            'clientSecret' => isset($connSettings['creds']['clientSecret']) ? $connSettings['creds']['clientSecret'] : '',
+            'upsAccountNumber' => isset($connSettings['creds']['account_number']) ? $connSettings['creds']['account_number'] : '', // optional
+
+            'currencyCode' => isset($connSettings['quote_settings']['currencyCode']) ? $connSettings['quote_settings']['currencyCode'] : '', // Specifies the currency of transaction.
+            'commoditiesCurrencyCode' => isset($connSettings['quote_settings']['currencyCode']) ? $connSettings['quote_settings']['currencyCode'] : '', // Specifies the Currency Code used for commodity price
+
+            'transModes' => isset($connSettings['quote_settings']['TransportationModes']) ? $connSettings['quote_settings']['TransportationModes'] : '', // optional
+            'shipmentType' => isset($connSettings['quote_settings']['ShipmentType']) ? $connSettings['quote_settings']['ShipmentType'] : 'SALE', // optional
+        ];
+
+        return $apiArray;
     }
 
     private function verifyRADStatus($connSettings, $destination): array
