@@ -5787,7 +5787,7 @@ class CompileQuotes
                         $title = $this->getTitle($data['serviceDesc']);
 
                         $arraySorting['simple'][$origin] = $price;
-                        $originQuotes[$origin]['simple']['code'] = 'UpsLandCostApi' . $access;
+                        $originQuotes[$origin]['simple']['code'] = 'upslandcostapi' . $access;
                         $originQuotes[$origin]['simple']['rate'] = $price;
                         $originQuotes[$origin]['simple']['title'] = $title;
                     }
