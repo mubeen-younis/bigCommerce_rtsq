@@ -1,6 +1,6 @@
 <?php
 
-namespace App\CustomClasses\tqlLtl;
+namespace App\CustomClasses\TQLLtl;
 
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;

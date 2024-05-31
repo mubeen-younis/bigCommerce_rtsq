@@ -17,7 +17,7 @@ use App\CustomClasses\YrcLTL\QuotesResults as yrcLtlQuotesResults;
 use App\CustomClasses\DayRossLTL\QuotesResults as dayRossLtlQuotesResults;
 use App\CustomClasses\SaiaLTL\QuotesResults as saiaLtlQuotesResults;
 use App\CustomClasses\AbfLtl\QuotesResults as abfLtlQuotesResults;
-use App\CustomClasses\tqlLtl\QuotesResults as tqlLtlQuotesResults;
+use App\CustomClasses\TQLLtl\QuotesResults as tqlLtlQuotesResults;
 use App\CustomClasses\SouthEasternLtl\QuotesResults as SouthEasternQuotesResults;
 use App\CustomClasses\Priority1Ltl\QuotesResults as Priority1QuotesResults;
 use App\CustomClasses\UspsSmall\QuotesResults as uspsSmallQuotesResults;
