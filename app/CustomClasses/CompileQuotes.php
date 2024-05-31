@@ -17,6 +17,7 @@ use App\CustomClasses\YrcLTL\QuotesResults as yrcLtlQuotesResults;
 use App\CustomClasses\DayRossLTL\QuotesResults as dayRossLtlQuotesResults;
 use App\CustomClasses\SaiaLTL\QuotesResults as saiaLtlQuotesResults;
 use App\CustomClasses\AbfLtl\QuotesResults as abfLtlQuotesResults;
+use App\CustomClasses\UpsLandCostApi\QuotesResults as UPSLandedCostResults;
 use App\CustomClasses\SouthEasternLtl\QuotesResults as SouthEasternQuotesResults;
 use App\CustomClasses\Priority1Ltl\QuotesResults as Priority1QuotesResults;
 use App\CustomClasses\UspsSmall\QuotesResults as uspsSmallQuotesResults;
@@ -903,6 +904,13 @@ class CompileQuotes
                 case 'priority1':
                     $resp = $this->compilePriority1LtlQuotes($shipment, $connectionSettings, $allOrigins);
                     $quotesTemp['priority1'] = $resp;
+                    if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
+                        $quotesRes = array_merge($quotesRes, $resp);
+                    }
+                    break;
+                case 'UPSLandedCost':
+                    $resp = $this->compileUPSLandedCostQuotes($shipment, $connectionSettings, $allOrigins);
+                    $quotesTemp['UPSLandedCost'] = $resp;
                     if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
                         $quotesRes = array_merge($quotesRes, $resp);
                     }
@@ -5718,6 +5726,109 @@ class CompileQuotes
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
         if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1)) {
+            $allQuotes = $this->forceChangeTitle($allQuotes);
+            $resp = [
+                'checkoutQuotes' => $allQuotes,
+                'multiShipmentQuotes' => $multiShipmentQuotes,
+            ];
+            return $resp;
+        }
+        return $allQuotes;
+    }
+
+    private function compileUPSLandedCostQuotes($shipments, $connectionSettings, $allOrigins)
+    {
+        $UPSLandedCostApi = new UPSLandedCostResults();
+        $shipments = $UPSLandedCostApi->formateQuoteBeforeCompile($shipments, $connectionSettings['ups-land-cost-small']);
+
+        $this->quoteSettings = $connectionSettings['ups-land-cost-small']['quote_settings'] ?? [];
+
+        $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
+        $count = 0;
+
+        $numberOfShipments = 0;
+        foreach ($shipments as $ship) {
+            if (!isset($ship['severity'])) {
+                $numberOfShipments++;
+            }
+        }
+
+        if (!$this->isMultiShipment) {
+            $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
+        }
+
+        foreach ($shipments as $origin => $quote) {
+            $this->originKey = $origin;
+
+            if ((isset($quote['severity']) || !isset($quote['q']) || (isset($quote['q']) && empty($quote['q'])))) {
+                return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
+            }
+
+            if ($count == 0) {
+                $inStoreLdData = $UPSLandedCostApi->isSuppressedRatesShipment($shipments) ? $quote['InstorPickupLocalDelivery'] : $quote['q']['InstorPickupLocalDelivery'] ?? false;
+                unset($quote['InstorPickupLocalDelivery']);
+                unset($quote['q']['InstorPickupLocalDelivery']);
+            }
+
+            $originQuotes = [];
+            $arraySorting = [];
+
+            if (isset($quote['q']) && !$UPSLandedCostApi->isSuppressedRatesShipment($shipments)) {
+
+                foreach ($quote as $key => $data) {
+
+                    $srvcType = $data['serviceType'] ?? '';
+                    if (!empty($srvcType)) {
+                        // Apply override rates shipping rule
+                        //$data = $this->applyOverrideRatesRule($connectionSettings, $data);
+
+                        $price = $this->calculatePrice($data);
+                        $access = $this->getAccessorialCode();
+                        $title = $this->getTitle($data['serviceDesc']);
+
+                        $arraySorting['simple'][$origin] = $price;
+                        $originQuotes[$origin]['simple']['code'] = 'UpsLandCostApi' . $access;
+                        $originQuotes[$origin]['simple']['rate'] = $price;
+                        $originQuotes[$origin]['simple']['title'] = $title;
+                    }
+                }
+            }
+
+            $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $this->isMultiShipment);
+
+            if ($compiledQuotes !== null && !empty($compiledQuotes)) {
+                // Get Quotes Array
+                if (count($compiledQuotes) > 1) {
+                    foreach ($compiledQuotes as $k => $service) {
+                        foreach ($service as $serKey => $ser) {
+                            $quotes = Functions::getQuotesArray($service, $allQuotes, $multiShipmentQuotes, $origin, $serKey);
+                            $allQuotes = $quotes['allQuotes'];
+                            $multiShipmentQuotes = $quotes['multiShipmentQuotes'];
+                        }
+                    }
+                } else {
+                    $service = reset($compiledQuotes);
+                    foreach ($service as $serKey => $ser) {
+                        $quotes = Functions::getQuotesArray($service, $allQuotes, $multiShipmentQuotes, $origin, $serKey);
+                        $allQuotes = $quotes['allQuotes'];
+                        $multiShipmentQuotes = $quotes['multiShipmentQuotes'];
+                    }
+                }
+            }
+
+            if ($this->isMultiShipment) {
+                $odwArr[$origin]['quotes'] = $compiledQuotes;
+            }
+
+            $count++;
+        }
+
+        $allQuotes = $this->getFinalQuotesArray($allQuotes);
+
+        if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
+            $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
+        }
+        if ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1)) {
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $allQuotes,
