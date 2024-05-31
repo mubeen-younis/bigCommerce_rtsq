@@ -191,7 +191,7 @@ class Shipping
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         //Sending request to WS to get Quotes
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
-        Log::info('$quotes ' . json_encode($quotes));
+        Log::info('$quotes1 ');
         $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
         /*
          * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
@@ -207,7 +207,7 @@ class Shipping
                 $quotes = $this->addBinResponseToQuotes($apiArray['binResponseArr'], $quotes, true);
             }
         }
-
+        Log::info('$quotes2 ');
         $boxbins = $requestArr['boxBins'] ?? [];
         if (isset($uspsBoxBins) && !empty($uspsBoxBins)) {
             $boxbins = array_merge($boxbins, $uspsBoxBins);
@@ -217,7 +217,7 @@ class Shipping
         if (isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])) {
             $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes, false);
         }
-
+        Log::info('$quotes3 ');
         $palletBins = $requestArr['palletBins'] ?? [];
         if (isset($requestArr['palletResponse']) && !empty($requestArr['palletResponse'])) {
             $quotes = (new PalletPackaging())->addPalletResponseToQuotes($requestArr['palletResponse'], $quotes);
@@ -228,7 +228,7 @@ class Shipping
             unset($requestArr['requestArr']['carriers']['rnl']['freeShipment']);
             $freeRNL = true;
         }
-
+        Log::info('$quotes4 ');
         $quotesFromWs = $quotes ?? [];
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $package['items'], $SuppressParcelRates, $store_id);
         Log::info('$finalQuotes ' . json_encode($finalQuotes));
