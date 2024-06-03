@@ -1,6 +1,10 @@
-= 2.2.9 2024-05-29 =
+= 2.2.10 2024-06-03 =
 
 * Update - Introduce "Surcharge" shipping rule in BC (Ticket:2451812923) [#450] (https://bitbucket.org/eniture/big-commerce/pull-requests/450)
+
+= 2.2.9 2024-05-30 =
+
+* Update - Introduce "Large Cart Settings" shipping rule in BC (Ticket:2386490400) [#451] (https://bitbucket.org/eniture/big-commerce/pull-requests/451)
 
 = 2.2.8 2024-05-28 =
 

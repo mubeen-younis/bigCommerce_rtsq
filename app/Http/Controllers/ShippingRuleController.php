@@ -677,4 +677,21 @@ class ShippingRuleController extends Controller
             }
         }
     }
+    
+    public function checkLargeCartRuleApply($shippingItems, $storeId)
+    {
+        $shipmentQuantity = 0;
+        $LCSShippingRuleType = '9';
+        $shipmentQuantity = collect($shippingItems)->sum('piecesOfLineItem') ?? 0;
+        // Get Large Cart Settings Shipping Rule
+        $LCSShippingRules = ShippingRule::getStoreShippingRules($storeId, $LCSShippingRuleType);
+
+        foreach($LCSShippingRules as $rule){
+            // Check: rule is available and meet the condition
+            if(isset($rule['max_items']) && $shipmentQuantity > (int) $rule['max_items'] && isset($rule['available']) && $rule['available']){
+                return $rule;
+            }
+        }
+        return [];
+    }
 }
