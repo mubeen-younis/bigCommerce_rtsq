@@ -254,6 +254,12 @@ class ShippingRule extends Model
                         "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
                         "service_rates" => $shippingRuleData['service_rates'] ?? '',
                     ];
+                    break;
+                case 9:
+                    $settings = [
+                        "max_items" => $shippingRuleData['max_items'] ?? null, 
+			            "max_package_weight" => $shippingRuleData['max_package_weight'] ?? null,
+                    ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
                     
@@ -390,10 +396,11 @@ class ShippingRule extends Model
             case 8:
                 $shippingRule = self::updateSurchargeRatesParams($shippingRule);
                 break;
-                     
+            case 9:
+                $shippingRule = self::updateLargeCartSettingsParams($shippingRule);
+                break;
             default:
                 break;
-            
         } 
         
         return $shippingRule ?? [];
@@ -499,6 +506,15 @@ class ShippingRule extends Model
         $shippingRule['brands'] = $settings['filter_brands'] ?? [];
         $shippingRule['apply_rule_to'] = $settings['apply_rule_to'] ?? 1;
         $shippingRule['warehouses'] = $settings['warehouses'] ?? [];
+
+        return $shippingRule;
+    }
+
+    public static function updateLargeCartSettingsParams($shippingRule)
+    {
+        $settings = json_decode($shippingRule['filter_settings'], true);
+        $shippingRule['max_items'] = $settings['max_items'] ?? [];
+        $shippingRule['max_package_weight'] = $settings['max_package_weight'] ?? [];
 
         return $shippingRule;
     }
