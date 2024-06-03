@@ -168,13 +168,11 @@ class OrderController extends Controller
                     ->first())->toArray() ?? null;
             }
         }
-        Log::info('Order Data details from Database: ' . json_encode($data));
         return $data;
     }
 
     public function createOrderWidget($request, $order, $reportingFlag)
     {
-        Log::info('Order Data details from BC: ' . json_encode($order));
         $rateId = $order['rate_id'] ?? null;
         $cartId = $order['cart_id'] ?? null;
 
@@ -215,6 +213,7 @@ class OrderController extends Controller
         $LimitedAccessDel = strpos($rateId, '+LAD') ? 'Y' : 'n';
         $isTruckLoad = strpos($rateId, '+TL') ? 'Y' : 'n';
         $isFreightTruckLoad = strpos($rateId, '+FLGTL') ? 'Y' : 'n';
+        $isSurcharge = strpos($rateId, '+SC' ) ? 'Y' : 'n';
         $isTwoManDel = strpos($rateId, Functions::$twoManDelAccess) ? 'Y' : 'n';
         $isAppointmentDel = strpos($rateId, Functions::$appointmentDelAccess) ? 'Y' : 'n';
         $rateId = strtolower($rateId);
@@ -454,6 +453,7 @@ class OrderController extends Controller
                     }
                 }
                 $carrierHasInsurance = $code ? $this->hasInsureCarrier($code) : false;
+                $isSurcharge = strpos($code, '+SC' ) ? 'Y' : 'n';
 
                 /*Added condition if in case of multi shipment
                 The rate of shipping group will be added to warehouse rate*/
@@ -583,6 +583,7 @@ class OrderController extends Controller
 
             $isProductMarkup ? array_push($orderWidget[$zip]['accessories'], 'Product Markup') : '';
             $isOriginMarkup ? array_push($orderWidget[$zip]['accessories'], 'Origin Markup') : '';
+            $isSurcharge != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Surcharge Included') : '';
 
             if (!$isSmall) {
                 $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Pickup') : '';

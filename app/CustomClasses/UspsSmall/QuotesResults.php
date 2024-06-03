@@ -63,6 +63,11 @@ class QuotesResults
                         continue;
                     }
 
+                    // Apply Surcharge rates shipping rule
+                    $surchargeRates = $shippingRule->surchargeRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
+                    $isSurchargeRates = isset($surchargeRates['isSurchargeRates']) && $surchargeRates['isSurchargeRates'];
+                    $data = isset($surchargeRates['data']) ? $surchargeRates['data'] : $data;    
+                     
                     // Adding Product and Origin Markup in services if added
                     $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
                     $data['totalNetCharge']['Amount'] = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
@@ -81,6 +86,8 @@ class QuotesResults
                     }
                     $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
 
+                    $access2 = $isSurchargeRates ? $access2 . '+SC' : $access2;
+                    
                     // Get service title
                     $title = $this->getServiceTitle($data, $srvcType, $this->quoteSettings, $residential, $showRadNotation);
                     $price = (float)str_replace(',', '', $price);
@@ -105,7 +112,7 @@ class QuotesResults
                 $minRateFromNetChargeArr = min(array_column($netChargeArr, 'rate'));
 
                 $multiShipmentPrice += str_replace(',', '', $minRateFromNetChargeArr);
-                $multishipmentCheckoutQuotes[0]['code'] = 'Multiusps' . $access;
+                $multishipmentCheckoutQuotes[0]['code'] = 'Multiusps' . $access2;
                 $multishipmentCheckoutQuotes[0]['rate'] = number_format($multiShipmentPrice, 2);
                 $multishipmentCheckoutQuotes[0]['title'] = $residential && $showRadNotation ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
             }

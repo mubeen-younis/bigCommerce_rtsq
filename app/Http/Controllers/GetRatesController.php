@@ -634,7 +634,7 @@ class GetRatesController extends Controller
 
             foreach ($shippingRules as $key => $rule) {
 
-                if (isset($rule['rule_type']) && $rule['rule_type'] == 5) {
+                if(isset($rule['rule_type']) && $rule['rule_type'] == 5 || $rule['rule_type'] == 8){
                     continue;
                 }
 
