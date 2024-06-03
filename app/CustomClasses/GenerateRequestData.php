@@ -64,8 +64,7 @@ class GenerateRequestData
         $quoteSettings,
         $connectionSettings,
         $storeData
-    )
-    {
+    ) {
         $this->storeData = $storeData;
         $this->quoteSettings = $quoteSettings;
         $this->connectionSettings = $connectionSettings;
@@ -80,9 +79,9 @@ class GenerateRequestData
     {
         $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
         /**
-        *  Check: if RAD is installed and active, destination address is US 
-        *  then using Smarty Api to validate Po Box address
-        **/ 
+         *  Check: if RAD is installed and active, destination address is US 
+         *  then using Smarty Api to validate Po Box address
+         **/
         if ($this->checkIsPoBoxAndRADInstalled($rad_settings) && $destination['country'] == 'US') {
             $this->checkRadStatus($this->storeData['store']['id'], $destination);
             if (Functions::isPOBoxAddress($rad_settings, SmartyStreet::$isPoBOX)) {
@@ -91,9 +90,10 @@ class GenerateRequestData
         }
         /**
         *  Check: if RAD is not installed or inactive, then using keyword search to validate Po Box address
+        *  Also Check: if Address is standard then keyword search not applied.
         **/
         $this->destinationIsPOBox($destination);
-        if (Functions::isPOBoxAddress($rad_settings, $this->isPoBOX)) {
+        if (Functions::isPOBoxAddress($rad_settings, $this->isPoBOX) && !SmartyStreet::$isStandAddress) {
             return [];
         }
 
@@ -153,12 +153,18 @@ class GenerateRequestData
                     $errorManagment['fedexSmall'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case "gtz-ltl":
-                    $carName = isset($con1['creds']['api_type']) && $con1['creds']['api_type'] === 'CRS' ? 'cerasis' : 
-                    (isset($con1['creds']['api_type']) && $con1['creds']['api_type'] === 'NEWAPI' ? 'wweLTLN' : 'globalTranz');
+                    $carName = isset($con1['creds']['api_type']) && $con1['creds']['api_type'] === 'CRS' ? 'cerasis' : (isset($con1['creds']['api_type']) && $con1['creds']['api_type'] === 'NEWAPI' ? 'wweLTLN' : 'globalTranz');
                     $wweLtlArr = $this->gtzLtlEnitArr($con1, $destination, $enitOrigin, $carName);
 
                     $wweLtlArr['originAddress'] = $enitOrigin;
 
+                    $carriersArr['carriers'][$carName] = $wweLtlArr;
+                    $errorManagment[$carName] = $con1['quote_settings']['error_managment'] ?? 1;
+                    break;
+                case "unishipper-ltl":
+                    $carName = 'wweLTLN';
+                    $wweLtlArr = $this->uniLtlEnitArr($con1, $destination, $enitOrigin, $carName);
+                    $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers'][$carName] = $wweLtlArr;
                     $errorManagment[$carName] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
@@ -368,6 +374,24 @@ class GenerateRequestData
         ];
     }
 
+    function uniLtlEnitArr($connSettings, $destination, $enitOrigin, $carName)
+    {
+        $api = $this->getApiInfoArrUNILtl($connSettings, $destination, $carName);
+        $notify = (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']) ? 1 : 0;
+        return [
+            'licenseKey' => $connSettings['creds']['license_key'] ?? '',
+            'serverName' => Functions::getServerName($this->storeData),
+            'carrierMode' => 'pro',
+            'quotestType' => 'ltl', // ltl / small
+            'version' => '1.0.0',
+            'returnQuotesOnExceedWeight' => 1,
+            'liftGateAsAnOption' => isset($api['accessorial']['LFTGATDEST']) ? 1 : 0,
+            'notifyAsAnOption' => $notify,
+            'api' => $api,
+            'getDistance' => 0,
+        ];
+    }
+
     // WWE SMALL QUOTE SETTINGS AND CREDENTIALS
 
     public function wweSmallEnitArr($connSettings, $destination)
@@ -527,8 +551,6 @@ class GenerateRequestData
             'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
             'api' => $this->getApiInfoEsterLtl($connSettings, $destination),
         ];
-
-
     }
 
     public function yrcLtlEnitArr($connSettings, $destination)
@@ -602,6 +624,7 @@ class GenerateRequestData
 
     public function abfLtlEnitArr($connSettings, $destination)
     {
+        $api = $this->getApiInfoArrAbfLtl($connSettings, $destination);
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -609,7 +632,10 @@ class GenerateRequestData
             'quotestType' => 'ltl',
             'version' => '1.0',
             'returnQuotesOnExceedWeight' => 1,
-            'api' => $this->getApiInfoArrAbfLtl($connSettings, $destination),
+            'liftGateAsAnOption' => isset($api['accessorial']['Acc_GRD_DEL']) && $api['accessorial']['Acc_GRD_DEL'] == 'Y' ? true : false,
+            'notifyAsAnOption' => isset($api['accessorial']['Acc_ARR']) && $api['accessorial']['Acc_ARR'] == 'Y' ? true : false,
+            'residentialAsAnOption' => isset($api['accessorial']['Acc_RDEL']) && $api['accessorial']['Acc_RDEL'] == 'Y' ? true : false,
+            'api' => $api,
         ];
     }
 
@@ -772,6 +798,82 @@ class GenerateRequestData
             $this->itemsArr = $itemsArr;
             $this->carriers = $carriers;
 
+            // Apply Large Cart Settings Shipping Rule
+            $shippingRule = new ShippingRuleController();
+            $isLargeCartShippingRule = $shippingRule->checkLargeCartRuleApply($itemsArr, $this->storeData['store']->id) ?? [];
+            // Check: Large Cart Settings Shipping Rule is apply
+            if(!empty($isLargeCartShippingRule)){
+
+                if (!empty($this->origins)) {
+                    // get total shipments based on cart items
+                    $totalShipments = collect($this->origins)->pluck('locationId')->unique()->toArray() ?? [];
+                    foreach($totalShipments as $shipment){   
+                        $q = $shipmentWeight = $shipmentPrice = $total_weight = 0;
+                        // get total products in a shipment                 
+                        $variantKeys = collect($this->origins)->filter(function ($orig) use ($shipment) {
+                            return $orig['locationId'] == $shipment;
+                        })->keys()->all() ?? [];
+
+                        foreach($variantKeys as $variant_id){
+                            // get total shipment weight and price
+                            $shipmentWeight += $itemsArr[$variant_id]['lineItemWeight'] * $itemsArr[$variant_id]['piecesOfLineItem'] ?? 0;
+                            $shipmentPrice += $itemsArr[$variant_id]['lineItemPrice'] * $itemsArr[$variant_id]['piecesOfLineItem'] ?? 0;
+                        }
+                        // calcluate total no of packages of the shipment weight
+                        $totalNoOfPackages = ceil($shipmentWeight/$isLargeCartShippingRule['max_package_weight']) ?? 0;
+                        $pricePerPackage = round($shipmentPrice/$totalNoOfPackages, 2) ?? 0;
+                        $maxWeightPackage = $isLargeCartShippingRule['max_package_weight'] ?? 0;
+
+                        
+                        // creating custom packages
+                        for($i=0; $i<$totalNoOfPackages; $i++){
+
+                            if(isset($variantKeys[$i])){
+                                $index =  $variantKeys[$i];
+                                $item = $itemsArr[$variantKeys[$i]] ?? [];
+                                $origin = $this->origins[$variantKeys[$i]] ?? [];    
+                            }else {
+                                $index =  $variantKeys[0] . $i;
+                                $item = $itemsArr[$variantKeys[0]] ?? [];
+                                $origin = $this->origins[$variantKeys[0]] ?? [];    
+                            }
+                            
+                            $shipmentWeight = $shipmentWeight - $maxWeightPackage ?? 0;
+                            /** 
+                            * Check: if last package weight is less than the max per package weight 
+                            * then assign only minimum weight not max per package weight
+                            **/
+                            if($shipmentWeight < 0){
+                                $lineItemWeight = $shipmentWeight + $maxWeightPackage;
+                            } else {
+                                $lineItemWeight = $maxWeightPackage;
+                            }
+                            $item['piecesOfLineItem'] = 1;
+                            $item['lineItemWeight'] = $lineItemWeight ?? 0;
+                            $item['lineItemWidth'] = '';
+                            $item['lineItemHeight'] = '';
+                            $item['lineItemLength'] = '';
+                            $item['shipBinAlone'] = 1;
+                            $item['shipItemAlone'] = 1;
+                            $item['lineItemPrice'] = $pricePerPackage > 0 ? $pricePerPackage / 100 : 0;
+                            $total_weight += $maxWeightPackage;
+                            $lineItems[$index] = $item ?? [];
+                            $origins[$index] = $origin;
+                        }
+                    }
+                    unset($itemsArr);
+                    // update lineitems with custom packages and origins with package id
+                    $itemsArr = $lineItems ?? [];
+                    foreach(Functions::$smallCarriersArray as $carrierName){
+                        if(isset($carriers[$carrierName])){
+                            $carriers[$carrierName]['originAddress'] = $origins ?? [];
+                            Log::info('Large Cart Settings Shipping Rule Applied');
+                        }
+                    }
+                }
+            }
+            // End Apply Large Cart Settings Shipping Rule
+
             $hasSmall = isset($carriers['wweSmall'])
                 || isset($carriers['upsSmall'])
                 || isset($carriers['fedexSmall'])
@@ -781,7 +883,7 @@ class GenerateRequestData
                 || isset($carriers['shipEngine'])
                 || isset($carriers['wweSmallN']);
 
-            if ($hasSmall) {
+            if ($hasSmall && empty($isLargeCartShippingRule)) {
                 $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
                 if (empty($multiplePackaging)) {
                     return null;
@@ -792,8 +894,8 @@ class GenerateRequestData
 
                 $olditemsArr = $itemsArr;
                 $carriersoriginAddress = $carriers['wweSmall']['originAddress'] ?? $carriers['upsSmall']['originAddress'] ??
-                 $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? $carriers['usps']['originAddress'] ??
-                  $carriers['purolator']['originAddress'] ?? $carriers['shipEngine']['originAddress'] ?? $carriers['wweSmallN']['originAddress'] ?? "";
+                    $carriers['fedexSmall']['originAddress'] ?? $carriers['unishippersSmall']['originAddress'] ?? $carriers['usps']['originAddress'] ??
+                    $carriers['purolator']['originAddress'] ?? $carriers['shipEngine']['originAddress'] ?? $carriers['wweSmallN']['originAddress'] ?? "";
 
                 if (isset($carriers['fedexSmall'])) {
                     $this->checkServiceEnabled();
@@ -1023,7 +1125,7 @@ class GenerateRequestData
                 }
 
                 $binReponse = $sbsResponse['binResponse'] ?? [];
-                $boxBins = $sbsResponse['boxBins'] ?? [];                
+                $boxBins = $sbsResponse['boxBins'] ?? [];
                 $isLtl = isset($carriers['wweLTL'])
                     || isset($carriers['wweLTLN'])
                     || isset($carriers['upsLTL'])
@@ -1304,7 +1406,7 @@ class GenerateRequestData
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? '',
         ];
 
-        if (isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api'){
+        if (isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api') {
             unset(
                 $apiArray['speed_freight_authentication_key'],
                 $apiArray['speed_freight_account_number'],
@@ -1312,7 +1414,7 @@ class GenerateRequestData
 
             $apiArray['speed_freight_username'] = isset($connSettings['creds']['new_api_username']) ? $connSettings['creds']['new_api_username'] : '';
             $apiArray['speed_freight_password'] = isset($connSettings['creds']['new_api_password']) ? $connSettings['creds']['new_api_password'] : '';
-        }else {
+        } else {
             unset(
                 $apiArray['clientId'],
                 $apiArray['clientSecret'],
@@ -1456,11 +1558,12 @@ class GenerateRequestData
             'senderZip' => $connSettings['creds']['billing_postal_Code'],
             'thresholdWeightLimit' => $weightThreshold,
             'accessorial' => $accessorial,
+            'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
+            'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
 
         ];
 
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
-
     }
 
 
@@ -1607,8 +1710,82 @@ class GenerateRequestData
                 'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? '',
                 'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? '',
             ];
-            
         }
+        return array_merge($apiArray, $this->getCutOffDetails($connSettings));
+    }
+
+    public function getApiInfoArrUNILtl($connSettings, $destination, $carName)
+    {
+        $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
+            (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+
+        $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
+
+        /*
+         * Check if rad hit not consumed and residential is enables
+         * **/
+        $residential = 'N';
+        $alwaysResi = false;
+        $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
+
+        if ($this->checkIsAutoDetectedResDel($rad_settings)) {
+
+            if ($this->radHitConsumed == 0) {
+                $this->radHitConsumed = 1;
+                $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
+                $this->residential = $residential;
+            } else {
+                $residential = $this->residential;
+            }
+            if ($liftGate != 'Y') {
+                $liftGate = ($residential == 'Y' && isset($connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) && $connSettings['quote_settings']['autoDetectedResidentialAddressesLfg']) ? 'Y' : 'N';
+            }
+        } else {
+            $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
+        }
+
+        $this->resiCarrier['uniLtl'] = $residential;
+        $this->resiCarrier['alwaysResi']['uniLtl'] = $alwaysResi;
+
+        $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
+
+        $insurance = [
+            'code' => '',
+            'value' => ''
+        ];
+        if (isset($connSettings['quote_settings']['insurance_category'])) {
+            $insuranceCategory = explode('-', $connSettings['quote_settings']['insurance_category']);
+            $insurance = [
+                'code' => $insuranceCategory[0] ?? '',
+                'value' => $insuranceCategory[1] ?? ''
+            ];
+        }
+        $accessorial = [];
+        $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
+
+        $liftGatePickup = (isset($connSettings['quote_settings']['liftGatePickup']) && $connSettings['quote_settings']['liftGatePickup'] && $connSettings['quote_settings']['liftGatePickup'] == true) ? 'Y' : 'N';
+        $insideDelivery = (isset($connSettings['quote_settings']['always_inside_delivery']) && $connSettings['quote_settings']['always_inside_delivery'] == true) || (isset($connSettings['quote_settings']['offer_inside_delivery']) && $connSettings['quote_settings']['offer_inside_delivery'] == true) ? 'Y' : 'N';
+        $notifyDelivery = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']) ? 'Y' : 'N';
+        $apiArray = [
+            'speed_freight_username' => isset($connSettings['creds']['username']) ? $connSettings['creds']['username'] : '',
+            'speed_freight_password' => isset($connSettings['creds']['password']) ? $connSettings['creds']['password'] : '',
+            'clientId' => isset($connSettings['creds']['clientId']) ? $connSettings['creds']['clientId'] : '',
+            'clientSecret' => isset($connSettings['creds']['clientSecret']) ? $connSettings['creds']['clientSecret'] : '',
+            'ApiVersion' => '2.0',
+            'speed_freight_residential_delivery' => $alwaysResi ? 'Y' : $residential,
+            'speed_freight_lift_gate_delivery' => $liftGate,
+            'speed_freight_residential_pickup' => $residentialPickup,
+            'speed_freight_lift_gate_pickup' => $liftGatePickup,
+            'speed_freight_lift_inside_delivery' => $insideDelivery,
+            'speed_freight_notify_before_delivery' => $notifyDelivery,
+            'insureShipment' => 0,
+            'requestFromUnishippersLTL' => 1,
+            'insuranceCategory' => $insurance,
+            'thresholdWeightLimit' => $weightThreshold,
+            'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? '',
+            'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? '',
+        ];
+
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
 
@@ -1824,11 +2001,12 @@ class GenerateRequestData
         $this->resiCarrier['rnlLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['rnlLtl'] = $alwaysResi;
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
-        
-        if (isset($connSettings['quote_settings']['pallet_code']) && !empty($connSettings['quote_settings']['pallet_code']) && 
-            is_numeric($connSettings['quote_settings']['pallet_code']) && isset($connSettings['quote_settings']['pallet_weight']) && 
-            !empty($connSettings['quote_settings']['pallet_weight']))
-        {
+
+        if (
+            isset($connSettings['quote_settings']['pallet_code']) && !empty($connSettings['quote_settings']['pallet_code']) &&
+            is_numeric($connSettings['quote_settings']['pallet_code']) && isset($connSettings['quote_settings']['pallet_weight']) &&
+            !empty($connSettings['quote_settings']['pallet_weight'])
+        ) {
             $palletWeight = $connSettings['quote_settings']['pallet_weight'];
             $palletCode = $connSettings['quote_settings']['pallet_code'];
         }
@@ -1881,7 +2059,6 @@ class GenerateRequestData
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
                 $this->residential = $residential;
-
             } else {
                 $residential = $this->residential;
             }
@@ -1982,14 +2159,14 @@ class GenerateRequestData
             'packagesType' => !$sbsEnabled ? $ratingMethod : '',
         ];
 
-        if (isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api'){
+        if (isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api') {
             $apiArray['speed_ship_username'] = isset($connSettings['creds']['new_api_username']) ? $connSettings['creds']['new_api_username'] : '';
             $apiArray['speed_ship_password'] = isset($connSettings['creds']['new_api_password']) ? $connSettings['creds']['new_api_password'] : '';
             unset(
                 $apiArray['authentication_key'],
                 $apiArray['world_wide_express_account_number'],
             );
-        }else {
+        } else {
             unset(
                 $apiArray['clientId'],
                 $apiArray['clientSecret'],
@@ -2149,7 +2326,6 @@ class GenerateRequestData
             } else {
                 $residential = $this->residential;
             }
-
         } else {
             $alwaysResi = $this->checkIsALwaysQuoteResDel($radSettings);
         }
@@ -2173,7 +2349,12 @@ class GenerateRequestData
             'packagesType' => !$sbsEnabled ? $ratingMethod : '',
 
         ];
-
+        // Check: if shipEngine connection setting set then use the connection setting creds in the quotes api request
+        if(isset($connSettings['creds']['shipengine_carrier_id']) && !empty($connSettings['creds']['shipengine_carrier_id']) &&isset($connSettings['creds']['shipengine_api_key']) && !empty($connSettings['creds']['shipengine_api_key'])){
+            $apiArray['shipEngineCarrierIds'] = [$connSettings['creds']['shipengine_carrier_id']];
+            $apiArray['apiKey'] = $connSettings['creds']['shipengine_api_key'];
+            $apiArray['myCarriersInShipengine'] = 1;
+        }
 
         return $apiArray;
     }
@@ -2270,7 +2451,7 @@ class GenerateRequestData
         $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
         $ratingMethod = $this->getPackagingRatingMethod($connSettings);
 
-        if (isset($connSettings['creds']['api_type']) &&  $connSettings['creds']['api_type'] === 'new_api'){
+        if (isset($connSettings['creds']['api_type']) &&  $connSettings['creds']['api_type'] === 'new_api') {
             $this->resiCarrier['isUnishipperNewApi'] = true;
             $this->resiCarrier['unishippersSmallNewApi'] = $residential;
             $this->resiCarrier['alwaysResi']['unishippersSmallNewApi'] = $alwaysResi;
@@ -2291,7 +2472,6 @@ class GenerateRequestData
                 'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
                 'packagesType' => !$sbsEnabled ? $ratingMethod : '',
             ];
-
         } else {
             $this->resiCarrier['unishippersSmall'] = $residential;
             $this->resiCarrier['alwaysResi']['unishippersSmall'] = $alwaysResi;
@@ -2304,13 +2484,13 @@ class GenerateRequestData
                 'unishipperscustomernumber' => $connSettings['creds']['unishippers_customer_number'],
                 'packagetype' => 'P',
                 'doNesting' => '0',
-    
+
                 'modifyShipmentDateTime' => isset($connSettings['quote_settings']['delivery_estimate_options']) && $connSettings['quote_settings']['delivery_estimate_options'] > 1 ? '1' : '0',
                 'OrderCutoffTime' => $connSettings['quote_settings']['order_cut_off_time'] ?? '',
                 'shipmentOffsetDays' => $connSettings['quote_settings']['fulfillment_offset_days'] ?? '',
                 'storeDateTime' => $this->storeDateTime,
                 'shipmentWeekDays' => isset($connSettings['quote_settings']['week_days']) ? $this->getDays($connSettings['quote_settings']['week_days']) : '', //array('1','2','3','4','5'),
-    
+
                 'prefferedCurrency' => 'USD',
                 'service' => 'ALL',
                 'accessorial' => $accessorial,
@@ -2348,7 +2528,6 @@ class GenerateRequestData
             }
         } else {
             $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
-
         }
 
         $limitedAccess = (isset($connSettings['quote_settings']['always_limited_access_delivery']) && $connSettings['quote_settings']['always_limited_access_delivery']) || (isset($connSettings['quote_settings']['offer_limited_access_delivery']) && $connSettings['quote_settings']['offer_limited_access_delivery']) ?? false;
@@ -2440,7 +2619,8 @@ class GenerateRequestData
         $apiArray = [
 
             'id' => $connSettings['creds']['business_id'],
-            'senderConsignee' => $connSettings['creds']['request_freight_quotes'] ?? 'ShipAff',
+            'senderConsignee' => !empty($connSettings['creds']['request_freight_quotes']) ? $connSettings['creds']['request_freight_quotes'] : 'ShipAff',
+            'dimWeightBaseAccount' => !empty($connSettings['creds']['weight_base_account']) ? $connSettings['creds']['weight_base_account'] : '0',
             'thresholdWeightLimit' => $weightThreshold,
             'accessorial' => $accessorial,
             'holdAtTerminal' => isset($connSettings['quote_settings']['hold_at_terminal']) && $connSettings['quote_settings']['hold_at_terminal'] ? '1' : '0',
@@ -2526,7 +2706,6 @@ class GenerateRequestData
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
                 $this->residential = $residential;
-
             } else {
                 $residential = $this->residential;
             }
@@ -2724,7 +2903,7 @@ class GenerateRequestData
         $uspsSmallPkgReq = new UspsSmallPackagingRequest();
 
         $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
-        
+
         $storeId = $this->storeData['store']['id'] ?? null;
         $radResp = $this->verifyRADStatus($connSettings, $destination);
         $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
@@ -2782,7 +2961,6 @@ class GenerateRequestData
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
                 $this->residential = $residential;
-
             } else {
                 $residential = $this->residential;
             }
@@ -2854,7 +3032,6 @@ class GenerateRequestData
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
                 $this->residential = $residential;
-
             } else {
                 $residential = $this->residential;
             }
@@ -2919,7 +3096,6 @@ class GenerateRequestData
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($this->storeData['store']['id'], $destination);
                 $this->residential = $residential;
-
             } else {
                 $residential = $this->residential;
             }
@@ -2976,7 +3152,6 @@ class GenerateRequestData
                 $this->radHitConsumed = 1;
                 $residential = $this->checkRadStatus($storeId, $destination);
                 $this->residential = $residential;
-
             } else {
                 $residential = $this->residential;
             }
@@ -3070,12 +3245,12 @@ class GenerateRequestData
         $apiArray = [
             'accessLevel' => 'pro', // set accessLevel to be pro mentioned in Ticket#1846800919
             'APIKey' => isset($connSettings['creds']['ups_api_access_key']) ? $connSettings['creds']['ups_api_access_key'] : '',
-            'AccountNumber' => isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api' && isset($connSettings['creds']['new_api_account_number']) ? $connSettings['creds']['new_api_account_number'] : $connSettings['creds']['account_number'] ?? '',
+            'AccountNumber' => isset($connSettings['creds']['account_number']) ? $connSettings['creds']['account_number'] : '',
             'UserName' => isset($connSettings['creds']['username']) ? $connSettings['creds']['username'] : '',
             'Password' => isset($connSettings['creds']['password']) ? $connSettings['creds']['password'] : '',
             'clientId' => isset($connSettings['creds']['clientId']) ? $connSettings['creds']['clientId'] : '',
             'clientSecret' => isset($connSettings['creds']['clientSecret']) ? $connSettings['creds']['clientSecret'] : '',
-            'ApiVersion' => '2.0',
+            'requestForTForceQuotes' => '1',
             'paymentCode' => '10',
             'paymentDescription' => 'PREPAID',
             'paymentType' => $paymentType,
@@ -3107,14 +3282,13 @@ class GenerateRequestData
             unset(
                 $apiArray['accessLevel'],
                 $apiArray['APIKey'],
-                $apiArray['UserName'],
-                $apiArray['Password'],
+                $apiArray['AccountNumber'],
             );
         } else {
             unset(
                 $apiArray['clientId'],
                 $apiArray['clientSecret'],
-                $apiArray['ApiVersion'],
+                $apiArray['requestForTForceQuotes'],
             );
         }
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
@@ -3142,8 +3316,8 @@ class GenerateRequestData
         if (!$isMultishipment) {
             $resp = [];
             $orgLocIds = array_column($origins, 'locationId') ?? [];
-            $ltlItems = array_filter($itemsArr, fn($item) => $item['freightClass'] === 'ltl') ?? [];
-            $smallItems = array_filter($itemsArr, fn($item) => $item['freightClass'] === '') ?? [];
+            $ltlItems = array_filter($itemsArr, fn ($item) => $item['freightClass'] === 'ltl') ?? [];
+            $smallItems = array_filter($itemsArr, fn ($item) => $item['freightClass'] === '') ?? [];
 
             if (count($itemsArr) > 1 && count(array_unique($orgLocIds)) == 1 && !empty($ltlItems) && !empty($smallItems)) {
                 $resp['items'] = $itemsArr;
@@ -3248,7 +3422,6 @@ class GenerateRequestData
                 if (($itemMinVolume > $boxVolume) || ($itemMinWeight > $boxWeight)) {
                     continue;
                 }
-
             }
 
             $boxBins[$box->id] = array(
@@ -3588,15 +3761,14 @@ class GenerateRequestData
 
             return null;
         }
-
     }
 
     public function getPackagingRatingMethod($connSettings)
     {
         $packagingRatingMethod = isset($connSettings['quote_settings']['packageRatingMethod']) ? $connSettings['quote_settings']['packageRatingMethod'] : null;
-        if ($packagingRatingMethod == 2){
+        if ($packagingRatingMethod == 2) {
             $ratingMethod = 'ship_combine_and_alone';
-        } elseif($packagingRatingMethod == 3){
+        } elseif ($packagingRatingMethod == 3) {
             $ratingMethod = 'eniture_packaging';
         } else {
             $ratingMethod = 'ship_alone';

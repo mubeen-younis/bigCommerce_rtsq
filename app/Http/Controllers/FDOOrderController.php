@@ -224,7 +224,7 @@ class FDOOrderController extends Controller
             $sRate = $order['shipping_rate'];
             //print_r($multiShipmentresponse); exit;
             if ($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement) {
-                $enableFeaturesArray = Functions::getEnableFeaturesArr($isLG, $insideDelivery == 'Y', $notifyBeforeDelivery == 'Y', $LimitedAccessDel == 'Y');
+                $enableFeaturesArray = Functions::getEnableFeaturesArr($isLG, $insideDelivery == 'Y', $notifyBeforeDel == 'Y', $LimitedAccessDel == 'Y');
                 $enableFeaturesArray = array_reverse($enableFeaturesArray);
                 foreach($enableFeaturesArray as $key => $feature){
                     if ($isHAT) {

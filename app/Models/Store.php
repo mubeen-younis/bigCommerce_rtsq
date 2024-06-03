@@ -39,6 +39,11 @@ class Store extends Model
         return optional(self::where('id', $storeId)->first())->toArray() ?? [];
     }
 
+    public static function getAllStoreDetails(): array
+    {
+        return optional(self::get())->toArray() ?? [];
+    }
+
     public static function getAccessToken($storeHash)
     {
         return optional(self::where('hash', $storeHash)->first())->access_token ?? null;

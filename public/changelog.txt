@@ -1,10 +1,74 @@
+= 2.2.10 2024-06-03 =
+
+* Update - Introduce "Surcharge" shipping rule in BC (Ticket:2451812923) [#450] (https://bitbucket.org/eniture/big-commerce/pull-requests/450)
+
+= 2.2.9 2024-05-30 =
+
+* Update - Introduce "Large Cart Settings" shipping rule in BC (Ticket:2386490400) [#451] (https://bitbucket.org/eniture/big-commerce/pull-requests/451)
+
+= 2.2.8 2024-05-28 =
+
+* Update - Add new settings in the ABF connection settings page (Ticket:2677122393) [#449] (https://bitbucket.org/eniture/big-commerce/pull-requests/449)
+
+= 2.2.7 2024-05-27 =
+
+* Update - Add Feature/hide delivery estimates (Ticket:2227216656) [#448] (https://bitbucket.org/eniture/big-commerce/pull-requests/448)
+
+= 2.2.6 2024-05-22 =
+
+* Update - create api get box sizes and get origin address for fdo (Ticket:No) [#444] (https://bitbucket.org/eniture/big-commerce/pull-requests/444)
+
+= 2.2.5 2024-05-21 =
+
+* Fix - update dispatch date format according to BC new update (Ticket:2746175568) [#443] (https://bitbucket.org/eniture/big-commerce/pull-requests/443)
+
+= 2.2.4 2024-05-13 =
+
+* Fix - Update abf compilation quotes (Ticket:2677122393) [#442] (https://bitbucket.org/eniture/big-commerce/pull-requests/442)
+
+= 2.2.3 2024-05-02 =
+
+* Update - add functionality to install all carriers on app installation (Ticket:2295363422) [#440] (https://bitbucket.org/eniture/big-commerce/pull-requests/440)
+
+= 2.2.3 2024-05-01 =
+
+* Fix - update product settings functionality (Ticket:2257786184) [#439] (https://bitbucket.org/eniture/big-commerce/pull-requests/439)
+
+= 2.2.2 2024-04-25 =
+
+* Fix - missing street 2 address line in smarty street api request (Ticket:2605709068) [#437] (https://bitbucket.org/eniture/big-commerce/pull-requests/437)
+
+= 2.2.1 2024-04-24 =
+
+* Update - Add control staff notes functionality (Ticket:2555082021) [#435] (https://bitbucket.org/eniture/big-commerce/pull-requests/435)
+
+= 2.2.0 2024-04-23 =
+
+* Update - Add Unishippers Freight Carrier Integration (Ticket:2295363422) [#432] (https://bitbucket.org/eniture/big-commerce/pull-requests/432)
+
+= 2.1.25 2024-04-22 =
+
+* Update - Add Connection Settings In shipEngine (Ticket:2455207255) [#431] (https://bitbucket.org/eniture/big-commerce/pull-requests/431)
+
+= 2.1.24 2024-04-17 =
+
+* Update - Add Tforce New API in BC (Ticket:2537259103 and 2541618719) [#430] (https://bitbucket.org/eniture/big-commerce/pull-requests/430)
+
+= 2.1.23 2024-04-12 =
+
+* Fix - fixes issue on product settings save (Ticket:2593063812) [#426] (https://bitbucket.org/eniture/big-commerce/pull-requests/426)
+
+= 2.1.22 2024-04-08 =
+
+* Update - Update override rates feature (3rd chunk) (Ticket:2007189654) [#425] (https://bitbucket.org/eniture/big-commerce/pull-requests/425)
+
 = 2.1.21 2024-03-25 =
 
 * Update - R+L Carrier New API (Ticket:1870032478) [#423] (https://bitbucket.org/eniture/big-commerce/pull-requests/423)
 
 = 2.1.20 2024-03-21 =
 
-* Fix - Update override rates feature (2nd chunk) (Ticket:2007189654) [#421] (https://bitbucket.org/eniture/big-commerce/pull-requests/421)
+* Update - Update override rates feature (2nd chunk) (Ticket:2007189654) [#421] (https://bitbucket.org/eniture/big-commerce/pull-requests/421)
 
 = 2.1.19 2024-03-20 =
 
@@ -24,7 +88,7 @@
 
 = 2.1.15 2024-03-11 =
 
-* Fix - Update override rates feature (1st chunk) (Ticket:2007189654) [#415] (https://bitbucket.org/eniture/big-commerce/pull-requests/415)
+* Update - Update override rates feature (1st chunk) (Ticket:2007189654) [#415] (https://bitbucket.org/eniture/big-commerce/pull-requests/415)
 
 = 2.1.14 2024-03-05 =
 

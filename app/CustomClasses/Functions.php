@@ -36,7 +36,7 @@ class Functions
     public static $insideDelLiftGateResiLable = ' w/ residential, LG & inside delivery';
     public static $freeShipping = 'Free Shipping';
     public static $resiPickupTitle = '+pu';
-    public static $lgPickupTitle = '+lgpu';
+    public static $lgPickupTitle = '+lfgp';
     public static $palletPkgUrl = 'https://us-east.api.3dbinpacking.com/packer/palletPack';
     public static $imageCompleteUrl = 'https://images.eniture.com/d549b90ece00d180c5b69a51b6354842/20221207/cd59328e85619fe6b0dc52aa4db034c7/1670418636-7316-1129122.png';
     public static $imageSeparatedUrl = 'https://us-east.api.3dbinpacking.com/images/70785010926d0cc360921e4541811a53/20181106/4c114cebfa2d61a0c8153b3170ab6663/1541503329-2391-8709331.png';
@@ -74,11 +74,11 @@ class Functions
     public static $notifyDelAccess = '+NBD';
     public static $WWE_SMALL_SERVICES = [
         'ups_ground',
-        'ups_3_day_select', 
-        'ups_2nd_day_air', 
-        'ups_2nd_day_air_am',  
-        'ups_next_day_air_saver', 
-        'ups_next_day_air', 
+        'ups_3_day_select',
+        'ups_2nd_day_air',
+        'ups_2nd_day_air_am',
+        'ups_next_day_air_saver',
+        'ups_next_day_air',
         'ups_next_day_air_early',
         // International services
         'ups_standard',
@@ -86,6 +86,17 @@ class Functions
         'ups_worldwide_saver',
         'ups_worldwide_express',
         'ups_worldwide_express_plus',
+    ];
+    // small carriers indexes
+    public static $smallCarriersArray = [
+        'wweSmall',
+        'upsSmall',
+        'fedexSmall',
+        'unishippersSmall',
+        'purolator',
+        'usps',
+        'shipEngine',
+        'wweSmallN',
     ];
 
     public static $rnlServices = [
@@ -154,7 +165,7 @@ class Functions
 
     public static function getCarrierNameOrCode($code, $getWsCode = 0): ?string
     {
-        $carrierCodes = ['wweltl', 'rnlltl', 'xpoltl', 'fedexltl', 'gtzltl_new', 'gtzltl', 'yrcltl', 'cltl', 'upsltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship_new', 'parcel_12uniship', 'parcel_12shipEng',
+        $carrierCodes = ['wweltl', 'rnlltl', 'xpoltl', 'fedexltl', 'gtzltl_new', 'gtzltl','unl', 'yrcltl', 'cltl', 'upsltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship_new', 'parcel_12uniship', 'parcel_12shipEng',
             'fqltl', 'estesltl', 'dayrossltl', 'odflltl', 'saialtl', 'parcel_12Purolator', 'abfltl', 'SouthEastern', 'southeastern', 'parcel_12usps', 'tqlltl', 'echoltl', 'daylightltl', 'fqchrltl', 'shipeng', 'priority1'];
         foreach ($carrierCodes as $carrierCode) {
             if (strpos($code, $carrierCode) !== false) {
@@ -170,7 +181,7 @@ class Functions
 
     public static function getCarrierCodeWs($carrierCode): ?string
     {
-        $carrierCodesWithName = ['wweltl' => 'wweLTL', 'gtzltl_new' => 'wweLTLN', 'rnlltl' => 'rnl', 'xpoltl' => 'xpoLogistics', 'upsltl' => 'upsLTL',
+        $carrierCodesWithName = ['wweltl' => 'wweLTL', 'gtzltl_new' => 'wweLTLN','unl' => 'wweLTLN','rnlltl' => 'rnl', 'xpoltl' => 'xpoLogistics', 'upsltl' => 'upsLTL',
             'fedexltl' => 'fedexLTL', 'yrcltl' => 'yrc', 'gtzltl' => 'globalTranz', 'cltl' => 'cerasis',
             'parcel_12wwe' => 'wweSmall', 'parcel_12uniship_new' => 'wweSmallN', 'parcel_12ups' => 'upsSmall', 'parcel_12fd' => 'fedexSmall', 'parcel_12uniship' => 'unishippersSmall',
             'parcel_12shipEng' => 'shipEngine', 'shipeng' => 'shipEngine', 'priority1' => 'priority1',
@@ -215,7 +226,7 @@ class Functions
             'freightquote-ltl' => 'b2b', 'freightquote-chr-ltl' => 'b2b', 'purolator-small' => 'purolator', 'usps-small' => 'usps',
             'tql-ltl' => 'tql', 'yrc-ltl' => 'yrc', 'odfl-ltl' => 'odfl4me', 'dayross-ltl' => 'dayross', 'priority-one-ltl' => 'priority1',
             'estes-ltl' => 'estes', 'echo-ltl' => 'echoLogistics', 'saia-ltl' => 'saia', 'abf-ltl' => 'abf', 'daylight-ltl' => 'daylight',
-            'southeastern-ltl' => 'southeastern'];
+            'southeastern-ltl' => 'southeastern', 'unishipper-ltl' => 'Unishippers LTL New API'];
 
         return $carrierCodesWithName[$carrSlug] ?? null;
     }
@@ -239,7 +250,7 @@ class Functions
         $response['resi'] = strpos($rateId, '+r') ? 'Y' : 'n';
         $response['liftG'] = strpos($rateId, '+lg') ? 'Y' : 'n';
         $response['resiPickup'] = strpos($rateId, '+pu') ? 'Y' : 'n';
-        $response['lgPickup'] = strpos($rateId, '+lgpu') ? 'Y' : 'n';
+        $response['lgPickup'] = strpos($rateId, '+lfgp') ? 'Y' : 'n';
         return $response;
     }
 
@@ -668,7 +679,7 @@ class Functions
             }
             $symbolicHandlingFee = '';
         }
-        
+
         return $totalFeeMarkup;
     }
 
@@ -775,7 +786,7 @@ class Functions
     }
 
     // Create Origin Quotes Array in case of notify before delivery enable
-    public static function getOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi, $insideDelivery = false, $laccess = false, $notifyDelivery = false, $resiPickup = false, $lgPickup = false, $storeId = null)
+    public static function getOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi, $insideDelivery = false, $laccess = false, $notifyDelivery = false, $resiPickup = false, $lgPickup = false, $storeId = null, $isSurchargeRates = false)
     {
         $CompileQuotes = new CompileQuotes();
         $serviceCode = !($carrName == 'SouthEastern' || $carrName == 'yrcltl' || $carrName == 'upsltl' || $carrName == 'saialtl' || $carrName == 'fedexltl' || $carrName == 'tqlltl' || $carrName == 'abfltl' || $carrName == 'daylightltl' || $carrName == 'dayrossltl') && isset($data['serviceType']) ? $data['serviceType'] : '';
@@ -784,9 +795,9 @@ class Functions
         $isUpsLtl = false;
         $isQuickestSer = isset($quoteSettings['quickest_service']) && $quoteSettings['quickest_service'] && $carrName === 'gtzltl';
         $quickLabelAs = isset($quoteSettings['quickest_service_label']) && !empty($quoteSettings['quickest_service_label']) ? $quoteSettings['quickest_service_label'] : $serviceName;
-        $isResidential = ($isResi || $isAlwaysResi) ?? false; 
+        $isResidential = ($isResi || $isAlwaysResi) ?? false;
 
-        $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, $insideDelivery, $resiPickup, $lgPickup, $laccess, false, false, $notifyDelivery, $isResi, $isAlwaysResi);
+        $ndAccess = $CompileQuotes->getAccessorialCode($lgQuotes, $insideDelivery, $resiPickup, $lgPickup, $laccess, false, false, $notifyDelivery, $isResi, $isAlwaysResi, $isSurchargeRates);
         $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, $isUpsLtl, $insideDelivery, $laccess, false, false, $notifyDelivery, $originKey, $items, $allOrigins, $quoteSettings, $isResidential);
         $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, $insideDelivery, $laccess, false, false, false, false, $notifyDelivery, $isResi, $storeId);
 
@@ -869,7 +880,7 @@ class Functions
 
         if ($isResi && !empty($accessLabel) && $showRadNotation) {
             $expolodAccess = explode('w/', $accessLabel);
-            $accessLabel = $isResi && $count <= 2 ? ' w/ residential &' . $expolodAccess[1] : ' w/ residential,' . $expolodAccess[1];            
+            $accessLabel = $isResi && $count <= 2 ? ' w/ residential &' . $expolodAccess[1] : ' w/ residential,' . $expolodAccess[1];
         }
 
         $accessLabel = $isResi && empty($accessLabel) && $showRadNotation ? Constant::RESI_LABEL : $accessLabel;
@@ -1056,10 +1067,10 @@ class Functions
 
     public static function getQuoteId($rateId, $quotes, $zip = null)
     {
-        
+
         $carrierCode = self::getCarrierNameOrCode($rateId, 1);
         $carrierQuoteIds = '';
-      
+
         foreach ($quotes as $carrrierName => $quote) {
             if($carrrierName === $carrierCode){
                 switch ($carrrierName) {
@@ -1181,7 +1192,14 @@ class Functions
                     case 'freightQuote':
                         foreach ($quote as $zipCode => $q) {
                             if($zip == $zipCode){
-                                foreach ($q->q as $service) {
+                                if(isset($q->q)){
+                                    $quotes = $q->q ?? [];
+                                } elseif (isset($q->Truckload)){
+                                    $quotes = $q->Truckload ?? [];
+                                } else {
+                                    $quotes = [];
+                                }
+                                foreach ($quotes as $service) {
                                     $serviceCode = isset($service->serviceType) ? $service->serviceType : ' ';
                                     $length = strlen($serviceCode);
                                     $isTrue = str_contains(strtolower($rateId), strtolower($serviceCode));
@@ -1258,7 +1276,14 @@ class Functions
                     case 'chr':
                         foreach ($quote as $zipCode => $q) {
                             if($zip == $zipCode){
-                                foreach ($q->q as $service) {
+                                if(isset($q->q)){
+                                    $quotes = $q->q ?? [];
+                                } elseif (isset($q->Truckload)){
+                                    $quotes = $q->Truckload ?? [];
+                                } else {
+                                    $quotes = [];
+                                }
+                                foreach ($quotes as $service) {
                                     $serviceCode = isset($service->serviceType) ? $service->serviceType : ' ';
                                     $length = strlen($serviceCode);
                                     $isTrue = str_contains(strtolower($rateId), strtolower($serviceCode));
@@ -1288,7 +1313,7 @@ class Functions
         }
         return $carrierQuoteIds;
     }
-    
+
     public static function addPackagingId($requestArr, $lineItems, $storeId)
     {
         if (empty($requestArr)) {
@@ -1337,7 +1362,7 @@ class Functions
 
                     $totalBoxes = 1;
                     if (!empty($ws)) {
-                        
+
                             $sbsData = $ws->bins_packed ?? [];
 
                         /* Usps carrier packaging according to boxes types */
@@ -1373,7 +1398,7 @@ class Functions
                             $orderWidgetData['type'] = $type;
                             $orderWidgetData['image_complete'] = $binPacked->image_complete;
                             $orderWidgetData['quantity'] = $quantity;
-                           // $totalPackedItems += $quantity; 
+                           // $totalPackedItems += $quantity;
                             /*For Weight Based Products*/
                             if ($type == 'weight_based') {
                                 $orderWidgetData['d'] = '';
@@ -1429,7 +1454,7 @@ class Functions
                 }
             }
 
-            
+
 
         $resp = [
             'widget' => self::objectToArray($orderWidget),
