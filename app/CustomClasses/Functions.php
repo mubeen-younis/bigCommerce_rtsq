@@ -208,7 +208,7 @@ class Functions
             'freightquote-ltl' => 'b2b', 'freightquote-chr-ltl' => 'b2b', 'purolator-small' => 'purolator', 'usps-small' => 'usps',
             'tql-ltl' => 'tql', 'yrc-ltl' => 'yrc', 'odfl-ltl' => 'odfl4me', 'dayross-ltl' => 'dayross', 'priority-one-ltl' => 'priority1',
             'estes-ltl' => 'estes', 'echo-ltl' => 'echoLogistics', 'saia-ltl' => 'saia', 'abf-ltl' => 'abf', 'daylight-ltl' => 'daylight',
-            'southeastern-ltl' => 'southeastern', 'unishipper-ltl' => 'Unishippers LTL New API'];
+            'southeastern-ltl' => 'southeastern', 'unishipper-ltl' => 'Unishippers LTL New API', 'ups-land-cost-small' => 'UPSLandedCost'];
 
         return $carrierCodesWithName[$carrSlug] ?? null;
     }
@@ -1292,7 +1292,6 @@ class Functions
                     break;
                     case 'UPSLandedCost':
                         foreach ($quote as $zipCode => $q) {
-                            dd($q);
                             if($zip == $zipCode) {
                                 $carrierQuoteIds = $q->q->id ?? '';
                             }
