@@ -254,6 +254,7 @@ class ShippingRule extends Model
                         "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
                         "service_rates" => $shippingRuleData['service_rates'] ?? '',
                     ];
+                    $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
                 case 9:
                     $settings = [
