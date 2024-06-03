@@ -395,6 +395,7 @@ class ShippingRule extends Model
                 break;
             case 8:
                 $shippingRule = self::updateSurchargeRatesParams($shippingRule);
+                break;
             case 9:
                 $shippingRule = self::updateLargeCartSettingsParams($shippingRule);
                 break;
@@ -458,6 +459,8 @@ class ShippingRule extends Model
             $shippingRule['service_rates'] = $settings['service_rates'];
         }
         if($isSurchargeRates){
+            $shippingRule['filter_provider'] = '';
+            $shippingRule['filter_name'] = '';
             $shippingRule['products'] = $settings['filter_products'] ?? [];
             $shippingRule['categories'] = $settings['filter_categories'] ?? [];
             $shippingRule['brands'] = $settings['filter_brands'] ?? []; 
