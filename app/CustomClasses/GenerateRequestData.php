@@ -2140,7 +2140,7 @@ class GenerateRequestData
             $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
-        $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
+        $sbsEnabled = $this->checkIsSBSActive($this->storeData['store']['id']);
         $ratingMethod = $this->getPackagingRatingMethod($connSettings);
 
         $this->resiCarrier['wweSmall'] = $residential;
@@ -2195,7 +2195,7 @@ class GenerateRequestData
             $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
-        $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
+        $sbsEnabled = $this->checkIsSBSActive($this->storeData['store']['id']);
         $ratingMethod = $this->getPackagingRatingMethod($connSettings);
 
         $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
@@ -2237,7 +2237,7 @@ class GenerateRequestData
         $this->resiCarrier['upsSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['upsSmall'] = $alwaysResi;
 
-        $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
+        $sbsEnabled = $this->checkIsSBSActive($this->storeData['store']['id']);
         $ratingMethod = $this->getPackagingRatingMethod($connSettings);
 
         $upsSmall = new UpsSmallQuotesResults();
@@ -2330,7 +2330,7 @@ class GenerateRequestData
             $alwaysResi = $this->checkIsALwaysQuoteResDel($radSettings);
         }
 
-        $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
+        $sbsEnabled = $this->checkIsSBSActive($this->storeData['store']['id']);
         $ratingMethod = $this->getPackagingRatingMethod($connSettings);
 
         $this->resiCarrier['shipEngine'] = $residential;
@@ -2381,7 +2381,7 @@ class GenerateRequestData
         $this->resiCarrier['fedexSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['fedexSmall'] = $alwaysResi;
 
-        $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
+        $sbsEnabled = $this->checkIsSBSActive($this->storeData['store']['id']);
         $ratingMethod = $this->getPackagingRatingMethod($connSettings);
 
         $hubIdindicia = isset($connSettings['creds']['hub_id']) ? explode('(', $connSettings['creds']['hub_id']) : '';
@@ -2448,7 +2448,7 @@ class GenerateRequestData
 
         $accessorial = ($alwaysResi ? 'Y' : $residential == 'Y') ? ['REP'] : [];
 
-        $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
+        $sbsEnabled = $this->checkIsSBSActive($this->storeData['store']['id']);
         $ratingMethod = $this->getPackagingRatingMethod($connSettings);
 
         if (isset($connSettings['creds']['api_type']) &&  $connSettings['creds']['api_type'] === 'new_api') {
@@ -3775,5 +3775,21 @@ class GenerateRequestData
         }
 
         return $ratingMethod;
+    }
+
+    private function checkIsSBSActive($storeId)
+    {
+        $currentPackageSub = DB::table('package_subscriptions as ps')
+            ->leftjoin('package_sub_to_be_charge as pstbc', 'pstbc.subscription_id', '=', 'ps.id')
+            ->leftjoin('packages as p', 'ps.package_id', '=', 'p.id')
+            ->select('ps.id', 'ps.package_id as package_id', 'ps.expiry_time', 'ps.status', 'ps.created_at', 'ps.total_count as consumed_hits', 'p.htis as total_hits', 'pstbc.status as package_to_to_charge_status', 'pstbc.package_id as to_be_charge_package_id')
+            ->where('store_id', $storeId)->where('p.addon_type', 'SBS')->latest()->first();
+        if (isset($currentPackageSub->status) && $currentPackageSub->status == 1) {
+            return true;
+        } else if (isset($currentPackageSub->status) && $currentPackageSub->status == 3) {
+            return false;
+        } else {
+            return false;
+        }
     }
 }
