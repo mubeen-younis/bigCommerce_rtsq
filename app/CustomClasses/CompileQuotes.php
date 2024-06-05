@@ -1732,7 +1732,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['always_quote_notify']) && $this->quoteSettings['always_quote_notify']) ||
                     (isset($this->quoteSettings['offer_notify_as_option']) && $this->quoteSettings['offer_notify_as_option']);
             }
-            $originQuotes = [];
+            $originQuotes = $standard = $guaranteed = [];
             $arraySorting = [];
 
             $standardQuotes = collect($quote['q'])->filter(function ($q) {
@@ -1773,8 +1773,12 @@ class CompileQuotes
                 } elseif ($ratingMethod == 4) {
                     $quotes['q'] = $standardQuotes;
                     $standard[] = $this->getCheapestQuotesArr($quotes);
-                    $quotes['q'] = $guaranteedQuotes;
-                    $guaranteed[] = $this->getCheapestQuotesArr($quotes);
+                    if (!$this->isMultiShipment){
+                        $quotes['q'] = $guaranteedQuotes;
+                        $guaranteed[] = $this->getCheapestQuotesArr($quotes);
+                    } else {
+                        $guaranteed = [];
+                    }
                     $bothService = array_merge($standard, $guaranteed);
                     $quote['q'] = $bothService;
 
@@ -1792,8 +1796,12 @@ class CompileQuotes
                     $options = (int) $this->quoteSettings['number_of_options'];
                     $standardSort = collect($standardQuotes)->sortBy('customerRate')->toArray();
                     $standardPrice = $this->averageOfEachService($standardSort, $options, $this->allConfigServices, $this->lgQuotes, $this->notifyDelivery, false, $standardLabel);
-                    $guaranteedSort = collect($guaranteedQuotes)->sortBy('customerRate')->toArray();
-                    $guaranteedPrice = $this->averageOfEachService($guaranteedSort, $options, $this->allConfigServices, $this->lgQuotes, $this->notifyDelivery, false, $guaranteedLabel);
+                    if (!$this->isMultiShipment){
+                        $guaranteedSort = collect($guaranteedQuotes)->sortBy('customerRate')->toArray();
+                        $guaranteedPrice = $this->averageOfEachService($guaranteedSort, $options, $this->allConfigServices, $this->lgQuotes, $this->notifyDelivery, false, $guaranteedLabel);
+                    } else {
+                        $guaranteedPrice = [];
+                    }
                     $quote['q'] = $originQuotes = array_merge($standardPrice, $guaranteedPrice);
                 }
             }
@@ -1893,6 +1901,8 @@ class CompileQuotes
                 }
             }
             if ($ratingMethod == 1 || $ratingMethod == 2 || $ratingMethod == 3) {
+                $compiledQuotes = $this->getCompiledQuotesTQL($originQuotes, $arraySorting, $this->lgQuotes, $this->notifyDelivery);
+            } elseif($this->isMultiShipment && $ratingMethod == 5) {
                 $compiledQuotes = $this->getCompiledQuotesTQL($originQuotes, $arraySorting, $this->lgQuotes, $this->notifyDelivery);
             } else {
                 $compiledQuotes = $originQuotes;
@@ -6891,7 +6901,6 @@ class CompileQuotes
             return [];
         }
         $sliced = [];
-        asort($arraySorting['simple']);
         $this->quoteSettings['method'] = $this->quoteSettings['method'] ?? 1;
         if ($this->quoteSettings['method'] == 2 && $this->isMultiShipment == false) { //Cheapest method
             $options = (int) $this->quoteSettings['number_of_options'] ?? 1;
@@ -6902,6 +6911,7 @@ class CompileQuotes
         }
 
         foreach ($arraySorting as $key => $value) {
+            asort($arraySorting[$key]);
             $sliced =  array_slice($arraySorting[$key], 0, $options, true);
         }  
 
