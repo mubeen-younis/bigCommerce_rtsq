@@ -1562,6 +1562,8 @@ class GenerateRequestData
             'senderZip' => $connSettings['creds']['billing_postal_Code'],
             'thresholdWeightLimit' => $weightThreshold,
             'accessorial' => $accessorial,
+            'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
+            'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
 
         ];
 
@@ -3788,7 +3790,7 @@ class GenerateRequestData
             ->where('store_id', $storeId)->where('p.addon_type', 'SBS')->latest()->first();
         if (isset($currentPackageSub->status) && $currentPackageSub->status == 1) {
             return true;
-        } else if ($currentPackageSub->status == 3) {
+        } else if (isset($currentPackageSub->status) && $currentPackageSub->status == 3) {
             return false;
         } else {
             return false;
