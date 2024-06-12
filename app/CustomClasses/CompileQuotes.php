@@ -18,6 +18,7 @@ use App\CustomClasses\DayRossLTL\QuotesResults as dayRossLtlQuotesResults;
 use App\CustomClasses\SaiaLTL\QuotesResults as saiaLtlQuotesResults;
 use App\CustomClasses\AbfLtl\QuotesResults as abfLtlQuotesResults;
 use App\CustomClasses\UpsLandCostApi\QuotesResults as UPSLandedCostResults;
+use App\CustomClasses\TQLLtl\QuotesResults as tqlLtlQuotesResults;
 use App\CustomClasses\SouthEasternLtl\QuotesResults as SouthEasternQuotesResults;
 use App\CustomClasses\Priority1Ltl\QuotesResults as Priority1QuotesResults;
 use App\CustomClasses\UspsSmall\QuotesResults as uspsSmallQuotesResults;
@@ -1710,6 +1711,7 @@ class CompileQuotes
 
     public function compileTqlLtlQuotes($shipments, $connectionSettings, $allOrigins)
     {
+        $tqlLtl = new tqlLtlQuotesResults();
         $this->isOverrideRates = false;
         $this->TQL = true;
         if ($this->residential['tqlLtl'] == 'Y') {
@@ -1720,6 +1722,7 @@ class CompileQuotes
             $this->residentialDlvry = 0;
         }
         $this->alwaysResi = $this->residential['alwaysResi']['tqlLtl'] ?? false;
+        $shipments = $tqlLtl->formateQuoteBeforeCompile($shipments, $connectionSettings['tql-ltl']);
         $this->quoteSettings = $connectionSettings['tql-ltl']['quote_settings'] ?? [];
         $this->allConfigServices = $connectionSettings['tql-ltl']['carrier_services'] ?? [];
         $ratingMethod = $this->quoteSettings['method'] ?? 1;
@@ -1762,7 +1765,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['always_quote_notify']) && $this->quoteSettings['always_quote_notify']) ||
                     (isset($this->quoteSettings['offer_notify_as_option']) && $this->quoteSettings['offer_notify_as_option']);
             }
-            $originQuotes = [];
+            $originQuotes = $standard = $guaranteed = [];
             $arraySorting = [];
 
             $standardQuotes = collect($quote['q'])->filter(function ($q) {
@@ -1784,7 +1787,7 @@ class CompileQuotes
                     if ($this->lgQuotes || $this->notifyDelivery) {
                         foreach ($q['priceCharges'] as $charge) {
                             if (isset($charge['description']) && $charge['description'] === 'Lift Gate' || isset($charge['description']) && $charge['description'] === 'Delivery Call Ahead') {
-                                isset($q["serviceLevel"]) && ($q["serviceLevel"] == 'Guaranteed 5 PM' || $q["serviceLevel"] == 'Guaranteed 12 PM');
+                                return isset($q["serviceLevel"]) && ($q["serviceLevel"] == 'Guaranteed 5 PM' || $q["serviceLevel"] == 'Guaranteed 12 PM');
                             }
                         }
                     } else {
@@ -1803,8 +1806,12 @@ class CompileQuotes
                 } elseif ($ratingMethod == 4) {
                     $quotes['q'] = $standardQuotes;
                     $standard[] = $this->getCheapestQuotesArr($quotes);
-                    $quotes['q'] = $guaranteedQuotes;
-                    $guaranteed[] = $this->getCheapestQuotesArr($quotes);
+                    if (!$this->isMultiShipment){
+                        $quotes['q'] = $guaranteedQuotes;
+                        $guaranteed[] = $this->getCheapestQuotesArr($quotes);
+                    } else {
+                        $guaranteed = [];
+                    }
                     $bothService = array_merge($standard, $guaranteed);
                     $quote['q'] = $bothService;
 
@@ -1822,8 +1829,12 @@ class CompileQuotes
                     $options = (int) $this->quoteSettings['number_of_options'];
                     $standardSort = collect($standardQuotes)->sortBy('customerRate')->toArray();
                     $standardPrice = $this->averageOfEachService($standardSort, $options, $this->allConfigServices, $this->lgQuotes, $this->notifyDelivery, false, $standardLabel);
-                    $guaranteedSort = collect($guaranteedQuotes)->sortBy('customerRate')->toArray();
-                    $guaranteedPrice = $this->averageOfEachService($guaranteedSort, $options, $this->allConfigServices, $this->lgQuotes, $this->notifyDelivery, false, $guaranteedLabel);
+                    if (!$this->isMultiShipment){
+                        $guaranteedSort = collect($guaranteedQuotes)->sortBy('customerRate')->toArray();
+                        $guaranteedPrice = $this->averageOfEachService($guaranteedSort, $options, $this->allConfigServices, $this->lgQuotes, $this->notifyDelivery, false, $guaranteedLabel);
+                    } else {
+                        $guaranteedPrice = [];
+                    }
                     $quote['q'] = $originQuotes = array_merge($standardPrice, $guaranteedPrice);
                 }
             }
@@ -1853,7 +1864,7 @@ class CompileQuotes
                         //$data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         $access = $data['scac'] . $this->getAccessorialCode() . $resiPickup;
                         $isLgSurcharges = isset($data['surcharges']['liftgateFee']) && $data['surcharges']['liftgateFee'];
-                        $isNbdSurcharges = isset($data['surcharges']['notifyDeliveryFee']) && $data['surcharges']['notifyDeliveryFee'];
+                        $isNbdSurcharges = isset($data['surcharges']['notifyDeliveryFee']);
                         $price = $this->calculatePrice($data);
 
                         $serviceType = $ratingMethod === 5 ? ' ' . $data['serviceLevel'] : '';
@@ -1869,7 +1880,7 @@ class CompileQuotes
                         $originQuotes[$key]['simple']['title'] = $title;
 
                         //if(!$this->isOverrideRates){
-                        if ($this->lgQuotes) {
+                        if ($this->lgQuotes && $isLgSurcharges) {
                             $lgAccess = $data['scac'] . 'tqlltl' . $this->getAccessorialCode(true) . $resiPickup;
                             $lgPrice = $this->calculatePrice($data, true);
                             $lgTitle = $this->getTitle($data['carrier'] . $serviceType, true, false, $data['totalCalenderDaysInTransit'], [], $dateAndDays);
@@ -1905,7 +1916,7 @@ class CompileQuotes
                                 $data,
                                 $key, $data['totalCalenderDaysInTransit'],
                                 $dateAndDays,
-                                true,
+                                $this->lgQuotes,
                                 'tqlltl', $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi,
                                 false,
                                 false, $this->notifyDelivery,
@@ -1923,7 +1934,9 @@ class CompileQuotes
                 }
             }
             if ($ratingMethod == 1 || $ratingMethod == 2 || $ratingMethod == 3) {
-                $compiledQuotes = $this->getCompiledQuotesTQL($originQuotes, $arraySorting, $lgQuotes, $this->notifyDelivery);
+                $compiledQuotes = $this->getCompiledQuotesTQL($originQuotes, $arraySorting, $this->lgQuotes, $this->notifyDelivery);
+            } elseif($this->isMultiShipment && $ratingMethod == 5) {
+                $compiledQuotes = $this->getCompiledQuotesTQL($originQuotes, $arraySorting, $this->lgQuotes, $this->notifyDelivery);
             } else {
                 $compiledQuotes = $originQuotes;
             }
@@ -7046,7 +7059,6 @@ class CompileQuotes
             return [];
         }
         $sliced = [];
-        asort($arraySorting['simple']);
         $this->quoteSettings['method'] = $this->quoteSettings['method'] ?? 1;
         if ($this->quoteSettings['method'] == 2 && $this->isMultiShipment == false) { //Cheapest method
             $options = (int) $this->quoteSettings['number_of_options'] ?? 1;
@@ -7057,9 +7069,9 @@ class CompileQuotes
         }
 
         foreach ($arraySorting as $key => $value) {
-            $sliced = $sliced + array_slice($arraySorting[$key], 0, $options, true);
-        }
-
+            asort($arraySorting[$key]);
+            $sliced =  array_slice($arraySorting[$key], 0, $options, true);
+        }  
 
         if ($this->quoteSettings['method'] == 3) {
             return $this->averageRattingMethod($arraySorting, $options, $lgQuotes, '', '', false, $notifyDelivery);
