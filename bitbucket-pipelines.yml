@@ -20,7 +20,7 @@ pipelines:
                 MODE: 'command'
                 COMMAND: '/home/apx-bc-01/html/bc/remote-script.sh'
 
-    feature/large-cart-settings:
+    feature/ups-landed-cost-api:
       - step:
           caches:
             - composer
