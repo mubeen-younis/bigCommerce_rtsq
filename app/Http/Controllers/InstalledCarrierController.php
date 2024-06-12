@@ -189,7 +189,7 @@ class InstalledCarrierController extends Controller
             return response()->json(['error' => true,
                 'data' => [],
                 'message' => $exception->getMessage(),
-            ], 500);
+            ], 200);
         }
     }      
 }
