@@ -228,9 +228,9 @@ class Shipping
             unset($requestArr['requestArr']['carriers']['rnl']['freeShipment']);
             $freeRNL = true;
         }
-
         $quotesFromWs = $quotes ?? [];
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $package['items'], $SuppressParcelRates, $store_id);
+
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];
@@ -861,7 +861,7 @@ class Shipping
         }
 
         $quotes = array_values($quotes);
-        $current = str_replace(' ', 'T', Carbon::now()) . "-00:00";
+        $current = str_replace(' ', 'T', Carbon::now()) . "-0000";
         if (!empty(array_filter($quotes))) {
             $resp['quote_id'] = (string)rand(1, 9); // need to change
             $resp['messages'] = []; // need to change

@@ -267,6 +267,7 @@ class GetRatesController extends Controller
                     'pallet_vertical_rotation' => isset($product_settings['pallet_vertical_rotation']) && $product_settings['pallet_vertical_rotation'] ? '1' : '0',
                     'own_pallet' => isset($product_settings['own_pallet']) && $product_settings['own_pallet'] ? '1' : '0',
                     'product_markup' => isset($product_settings['product_markup']) && !empty($product_settings['product_markup']) ? $product_settings['product_markup'] : '',
+                    'lineItemHSCode' => isset($product_settings['hs_code']) && !empty($product_settings['hs_code']) ? $product_settings['hs_code'] : '',
                     'lineItemNMFC' => isset($product_settings['nmfc']) && !empty($product_settings['nmfc']) ? $product_settings['nmfc'] : '',
                 ];
 
@@ -734,7 +735,11 @@ class GetRatesController extends Controller
         $postalCodes = isset($rule['filter_postal_code']) ? $rule['filter_postal_code'] : '';
         $warehouses = isset($rule['warehouses']) ? $rule['warehouses'] : [];
         $isSameOrigin = false;
-
+        $ruleType = !empty($rule['rule_type']) ? (int)$rule['rule_type'] : null;
+        if($ruleType == 7){
+            $this->applyHideDeliveryEstimatesRule($rule);
+            return false;
+        }
         $isSameCountry = $destination['country'] == $filterCountry ?? false;
         $isSameState = in_array($destination['state'], $statesCode) ?? false;
         $isSamePostalCode = CountryState::isSamePostalCode($destination['zip'], $postalCodes) ?? false;
@@ -746,19 +751,28 @@ class GetRatesController extends Controller
 
         Log::info('Shipping rule applied: ' . json_encode($rule));
 
-        if ($isSameCountry && $isSameState && $isSamePostalCode && isset($rule['rule_type']) && $rule['rule_type'] == 4) {
+        if ($isSameCountry && $isSameState && $isSamePostalCode && $ruleType == 4) {
             return false;
-        } elseif ($isSameCountry && $isSameState && isset($rule['rule_type']) && $rule['rule_type'] == 3) {
+        } elseif ($isSameCountry && $isSameState && $ruleType == 3) {
             return false;
-        } elseif ($isSameCountry && isset($rule['rule_type']) && $rule['rule_type'] == 1) {
+        } elseif ($isSameCountry && $ruleType == 1) {
             return false;
         } else {
             return true;
         }
     }
 
-    public function applyRestrictOriginLocationsRule($storeId, $formatReq)
-    {
+    public function applyHideDeliveryEstimatesRule($rule){
+       
+        if(isset($rule['filter_provider']) && $rule['filter_provider'] != null && isset($this->connectionSettings[$rule['filter_provider']]['quote_settings'])){
+            $quoteSettings = $this->connectionSettings[$rule['filter_provider']]['quote_settings'];
+            $quoteSettings['delivery_estimate_options'] = 1;
+            $this->connectionSettings[$rule['filter_provider']]['quote_settings'] = $quoteSettings; 
+        }
+
+    }
+
+    public function applyRestrictOriginLocationsRule($storeId, $formatReq){
         $shippingRules = ShippingRule::getStoreShippingRules($storeId, 5);
         $cartItems = isset($formatReq['lineItemData']['items']) ? $formatReq['lineItemData']['items'] : [];
         $destination = isset($formatReq['lineItemData']['destination']) ? $formatReq['lineItemData']['destination'] : [];
