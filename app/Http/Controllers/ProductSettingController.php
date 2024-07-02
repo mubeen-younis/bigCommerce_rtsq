@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Jobs\ProductWebhookImport;
+use App\Models\NestingItemsDetail;
 
 
 class ProductSettingController extends Controller
@@ -294,6 +295,18 @@ class ProductSettingController extends Controller
             ->whereNotNull('variant_id')
             ->where('store_id', $request->store_id)
             ->get();
+
+        if(!empty($products)){
+            foreach($products as $key => $product){
+                $nestingItemsDetails = optional(NestingItemsDetail::where('product_settings_id', $product['id'])->first())->toArray() ?? [];
+                $products[$key]->dimension_type = $nestingItemsDetails['dimension_type'] ?? 0;
+                $products[$key]->nesting_percentage = $nestingItemsDetails['nesting_percentage'] ?? 0;
+                $products[$key]->stacked_type = $nestingItemsDetails['stacked_type'] ?? 0;
+                $products[$key]->max_nested_items = $nestingItemsDetails['max_nested_items'] ?? 0;
+                $products[$key]->is_nesting_enabled = $nestingItemsDetails['is_nesting_enabled'] ?? 0;
+            }
+        }
+        
         if ($products->isEmpty()) {
             return response()->json(['error' => true,
                 'data' => [],
@@ -580,9 +593,16 @@ class ProductSettingController extends Controller
             }
 
             $product->settings = json_encode($this->getSetting($prd));
-            /*json_encode($prd->only(['dropship_enabled', 'dropship_location', 'freight_class',
-                'hazardous_enabled', 'freight_enabled', 'parcel_enabled', 'insurance']));*/
-            $product->update();
+            // updating Nesting Items details
+            $nestingItemsDetails = $this->updateNestingItemsDetail($prd);
+            if(!empty($nestingItemsDetails)){
+                $product->nested_diamensions = $prd['nested_diamensions'] ?? 0;
+                $product->nesting_percentage = $prd['nesting_percentage'] ?? 0;
+                $product->stacking_property = $prd['stacking_property'] ?? 0;
+                $product->max_nested_items = $prd['max_nested_items'] ?? 0;
+                $product->is_nesting_enabled = $prd['is_nesting_enabled'] ?? 0;
+            }
+
             $prd['store_id'] = $request['store_id'];
             $prd['store_hash'] = $request['store_hash'];
         }
@@ -603,6 +623,20 @@ class ProductSettingController extends Controller
             'data' => $product,
             'message' => 'Product Updated Successfully',
         ], 200);
+    }
+
+    public function updateNestingItemsDetail($prd)
+    {
+        $nestingItemsDetails = NestingItemsDetail::firstOrNew(['product_settings_id' => $prd['id']]);
+
+        $nestingItemsDetails->dimension_type = $prd['dimension_type'] ?? 0;
+        $nestingItemsDetails->nesting_percentage = $prd['nesting_percentage'] ?? 0;
+        $nestingItemsDetails->stacked_type = $prd['stacked_type'] ?? 0;
+        $nestingItemsDetails->max_nested_items = $prd['max_nested_items'] ?? 0;
+        $nestingItemsDetails->is_nesting_enabled = $prd['is_nesting_enabled'] ? 1 : 0;
+        $nestingItemsDetails->save();
+        
+        return $prd;
     }
 
     public function getSetting($product)
