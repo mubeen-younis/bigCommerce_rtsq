@@ -360,6 +360,9 @@ class QuotesResults
             }
             foreach ($quotes['q'] as $key => $quote) {
                 if (!isset($quote['severity']) && isset($servicesDesc[$key])) {
+                    // Adding landed cost api charges
+                    $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = $quote['totalNetCharge']['Amount'] + $quote['landCostQuoteAPICharges'];
+                    $shipments[$shipment]['q'][$key]['NegotiatedRates']['Amount'] = $quote['NegotiatedRates']['Amount'] + $quote['landCostQuoteAPICharges'];
 
                     if (!in_array($quote['totalNetCharge']['Amount'], $temp)) {
                         $temp[] = $quote['totalNetCharge']['Amount'] ?? 0;
