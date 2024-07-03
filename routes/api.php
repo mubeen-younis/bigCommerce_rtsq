@@ -347,4 +347,6 @@ Route::get('/get_customers_list', [BigCommerceListingController::class, 'listCus
 Route::get('/edit_subscription', [BigCommerceListingController::class, 'editBigCommerceSubscription']);
 Route::post('/update_subscription', [BigCommerceListingController::class, 'updateBCSubscription']);
 Route::post('/cancel_subscription', [BigCommerceListingController::class, 'cancelBCSubscription']);
+// install new carrier on all existing customer stores
+Route::post('/install_carrier', [InstalledCarrierController::class, 'installCarrierAllStores']);
 
