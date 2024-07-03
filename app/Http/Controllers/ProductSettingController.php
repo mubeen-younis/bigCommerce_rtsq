@@ -593,8 +593,9 @@ class ProductSettingController extends Controller
             }
 
             $product->settings = json_encode($this->getSetting($prd));
+            $product->update();
             // updating Nesting Items details
-            $nestingItemsDetails = $this->updateNestingItemsDetail($prd);
+            $nestingItemsDetails = $this->updateNestingItemsDetail($prd, $request['store_id']);
             if(!empty($nestingItemsDetails)){
                 $product->nested_diamensions = $prd['nested_diamensions'] ?? 0;
                 $product->nesting_percentage = $prd['nesting_percentage'] ?? 0;
@@ -625,18 +626,17 @@ class ProductSettingController extends Controller
         ], 200);
     }
 
-    public function updateNestingItemsDetail($prd)
+    public function updateNestingItemsDetail($product, $storeId)
     {
-        $nestingItemsDetails = NestingItemsDetail::firstOrNew(['product_settings_id' => $prd['id']]);
-
-        $nestingItemsDetails->dimension_type = $prd['dimension_type'] ?? 0;
-        $nestingItemsDetails->nesting_percentage = $prd['nesting_percentage'] ?? 0;
-        $nestingItemsDetails->stacked_type = $prd['stacked_type'] ?? 0;
-        $nestingItemsDetails->max_nested_items = $prd['max_nested_items'] ?? 0;
-        $nestingItemsDetails->is_nesting_enabled = $prd['is_nesting_enabled'] ? 1 : 0;
+        $nestingItemsDetails = NestingItemsDetail::firstOrNew(['product_settings_id' => $product['id'], 'store_id' => $storeId]);
+        $nestingItemsDetails->dimension_type = $product['dimension_type'] ?? 0;
+        $nestingItemsDetails->nesting_percentage = $product['nesting_percentage'] ?? 0;
+        $nestingItemsDetails->stacked_type = $product['stacked_type'] ?? 0;
+        $nestingItemsDetails->max_nested_items = $product['max_nested_items'] ?? 0;
+        $nestingItemsDetails->is_nesting_enabled = $product['is_nesting_enabled'] ? 1 : 0;
         $nestingItemsDetails->save();
         
-        return $prd;
+        return $product;
     }
 
     public function getSetting($product)

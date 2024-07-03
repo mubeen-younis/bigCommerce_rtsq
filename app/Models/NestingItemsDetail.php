@@ -13,6 +13,7 @@ class NestingItemsDetail extends Model
     protected $table = 'nesting_items_details';
     protected $fillable = [
         'product_settings_id',
+        'store_id',
     ];
 
 }
