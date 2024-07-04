@@ -205,11 +205,11 @@ class InstalledCarrierController extends Controller
             if(!empty($stores)){
                 foreach($stores as $store){
                     // Get Carrier
-                    $carrier = optional(Carrier::where('slug', $request->carrier_slug)->first())->toArray() ?? [];
+                    $carrier = optional(Carrier::where('slug', $request->carrier_slug)->first()) ?? [];
 
                     if (!empty($carrier)) {
                         // Get installed carrier details
-                        $installCarrier = InstalledCarrier::where(['store_id' => $store['id'], 'carrier_id' => $carrier['id']])->first();
+                        $installCarrier = InstalledCarrier::where(['store_id' => $store['id'], 'carrier_id' => $carrier->id])->first();
                         if(empty($installCarrier->store_id) && empty($installCarrier->carrier_id)){
                             continue;
                         }
@@ -226,6 +226,9 @@ class InstalledCarrierController extends Controller
                         }
                         // remove carrier from DB installed carrier list
                         $installCarrier->delete();
+                        $carrier->update([
+                            'status' => 0,
+                        ]);
                     }
                 }
 
