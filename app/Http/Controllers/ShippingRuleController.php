@@ -254,6 +254,7 @@ class ShippingRuleController extends Controller
                                     break;
                                 case 1:
                                     $isRuletrue = $this->hideMethods($rule, $cartItems);
+                                    Log::info('257 isRuletrue: ' . ($isRuletrue));
                                     break;
                                 case 2:
                                     $isRuletrue = $this->checkProdExistInShipment($rule, $cartItems, $originKey, $allOrigins);
@@ -271,10 +272,13 @@ class ShippingRuleController extends Controller
                                 $serviceDesc = isset($quote['serviceDesc']) && !is_array($quote['serviceDesc']) ? str_replace('®', '' , $quote['serviceDesc']) : $serviceDesc;
                                 $serviceDesc = str_replace(' Saturday', '' , $serviceDesc) ?? $serviceDesc;
                                 if(isset($quote['serviceDesc'])){
+                                    Log::info('275 serviceDesc: ' . ($serviceDesc));
                                     if ($serviceDesc == $quote['serviceDesc']){
+                                        Log::info('277 serviceDesc: ' . json_encode($quote));
                                         $quote['totalNetCharge']['Amount'] += (float) $rule['service_rates'] ?? 0;
                                         $quote['NegotiatedRates']['Amount'] = $quote['NegotiatedRates']['Amount'] > 0 ? (float) $quote['NegotiatedRates']['Amount'] + (float) $rule['service_rates'] : 0;
                                         $isSurchargeRates = true;
+                                        Log::info('281 serviceDesc: ' . json_encode($quote));
                                     } 
                                 } else if ($providerSlug == 'usps-small') { 
                                     $quote['totalNetCharge']['Amount'] += (float) $rule['service_rates'] ?? 0;
@@ -310,6 +314,7 @@ class ShippingRuleController extends Controller
                             }
                         }  
                     }
+                    Log::info('313 quote with surcharge rule : ' . json_encode($quote));
                     $surchargeServiceRate = $isSurchargeRates ? $rule['service_rates'] : 0;
                     if($isSurchargeRates){
                         return ['data' => $quote, 'isSurchargeRates' => $isSurchargeRates, 'surchargeServiceRate' => $surchargeServiceRate ];                
