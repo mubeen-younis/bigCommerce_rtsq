@@ -215,8 +215,6 @@ class ShippingRuleController extends Controller
         if(!empty($shippingRules)){
             $cartItems = !empty($lineItemData) ? $lineItemData : [];
             foreach($shippingRules as $key => $rule){
-                Log::info('1 Rule: ' . json_encode($rule));
-                Log::info('Quote rates : ' . json_encode($quote));
                 if(isset($rule['available']) && $rule['available'] && $rule['rule_type'] == 8){
                     $providers = array_keys($connectionSettings);
                     foreach($providers as  $index){
@@ -254,12 +252,10 @@ class ShippingRuleController extends Controller
                                     break;
                                 case 1:
                                     $isRuletrue = $this->hideMethods($rule, $cartItems);
-                                    Log::info('257 isRuletrue: ' . ($isRuletrue));
                                     break;
                                 case 2:
                                     $isRuletrue = $this->checkProdExistInShipment($rule, $cartItems, $originKey, $allOrigins);
-                                    Log::info('4 isRuletrue: ' . ($isRuletrue));
-                                    if (!$isRuletrue && $carrierType == 1) {Log::info('apply to 4');
+                                    if (!$isRuletrue && $carrierType == 1) {
                                         $quote = $this->surchargeRatesAccessorialsfee($quote, $rule);
                                         $isSurchargeRates = true;
                                     }
@@ -272,13 +268,10 @@ class ShippingRuleController extends Controller
                                 $serviceDesc = isset($quote['serviceDesc']) && !is_array($quote['serviceDesc']) ? str_replace('®', '' , $quote['serviceDesc']) : $serviceDesc;
                                 $serviceDesc = str_replace(' Saturday', '' , $serviceDesc) ?? $serviceDesc;
                                 if(isset($quote['serviceDesc'])){
-                                    Log::info('275 serviceDesc: ' . ($serviceDesc));
                                     if ($serviceDesc == $quote['serviceDesc']){
-                                        Log::info('277 serviceDesc: ' . json_encode($quote));
                                         $quote['totalNetCharge']['Amount'] += (float) $rule['service_rates'] ?? 0;
                                         $quote['NegotiatedRates']['Amount'] = $quote['NegotiatedRates']['Amount'] > 0 ? (float) $quote['NegotiatedRates']['Amount'] + (float) $rule['service_rates'] : 0;
                                         $isSurchargeRates = true;
-                                        Log::info('281 serviceDesc: ' . json_encode($quote));
                                     } 
                                 } else if ($providerSlug == 'usps-small') { 
                                     $quote['totalNetCharge']['Amount'] += (float) $rule['service_rates'] ?? 0;
@@ -290,21 +283,21 @@ class ShippingRuleController extends Controller
                             switch ($rule['apply_to']) {
                                 case 0:
                                     $isRuletrue = $this->checkIsSurchargeRuleApply($rule, $cartItems, $originKey, $allOrigins);
-                                    if (!$isRuletrue && $carrierType == 1) {Log::info('apply to 1');
+                                    if (!$isRuletrue && $carrierType == 1) {
                                         $quote = $this->surchargeRatesAccessorialsfee($quote, $rule);
                                         $isSurchargeRates = true;
                                     }
                                     break;
                                 case 1:
                                     $isRuletrue = $this->hideMethods($rule, $cartItems);
-                                    if (!$isRuletrue && $carrierType == 1) {Log::info('apply to 2');
+                                    if (!$isRuletrue && $carrierType == 1) {
                                         $quote = $this->surchargeRatesAccessorialsfee($quote, $rule);
                                         $isSurchargeRates = true;
                                     }
                                     break;
                                 case 2:
                                     $isRuletrue = $this->checkProdExistInShipment($rule, $cartItems, $originKey, $allOrigins);
-                                    if (!$isRuletrue && $carrierType == 1) {Log::info('apply to 3');
+                                    if (!$isRuletrue && $carrierType == 1) {
                                         $quote = $this->surchargeRatesAccessorialsfee($quote, $rule);
                                         $isSurchargeRates = true;
                                     }
@@ -313,8 +306,9 @@ class ShippingRuleController extends Controller
                                     break;
                             }
                         }  
+                        break;
                     }
-                    Log::info('313 quote with surcharge rule : ' . json_encode($quote));
+
                     $surchargeServiceRate = $isSurchargeRates ? $rule['service_rates'] : 0;
                     if($isSurchargeRates){
                         return ['data' => $quote, 'isSurchargeRates' => $isSurchargeRates, 'surchargeServiceRate' => $surchargeServiceRate ];                
@@ -353,7 +347,7 @@ class ShippingRuleController extends Controller
     }
 
     public function surchargeRatesAccessorialsfee($quote, $rule)
-    {   Log::info('5 surchargeRatesAccessorialsfee: ');
+    {
         if (isset($rule['service_rates']) && $rule['service_rates'] >= 0){
             $quote['totalNetCharge']['Amount'] += (float) $rule['service_rates'] ?? 0;
         }
@@ -490,7 +484,6 @@ class ShippingRuleController extends Controller
             $variants = collect($allOrigins)->filter(function ($origin) use ($shipmentKey) {
             return $origin['locationId'] == $shipmentKey;})->keys()->all() ?? [];
         }
-        Log::info('2 Variants: ' . json_encode($variants));
         
         if (!empty($variants)) {
             foreach($variants as $variantId){
@@ -504,7 +497,6 @@ class ShippingRuleController extends Controller
             }
         }
 
-        Log::info('3 totalprice : ' . $totalPrice);
 
         if(isset($shippingRule['isFilterWeight']) && $shippingRule['isFilterWeight']){
             if(isset($shippingRule['weight_from']) && $totalWeight >= $shippingRule['weight_from'] && isset($shippingRule['weight_to']) && ($totalWeight < $shippingRule['weight_to'] || $shippingRule['weight_to'] === '')){
