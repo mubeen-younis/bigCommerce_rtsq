@@ -361,8 +361,9 @@ class QuotesResults
             foreach ($quotes['q'] as $key => $quote) {
                 if (!isset($quote['severity']) && isset($servicesDesc[$key])) {
                     // Adding landed cost api charges
-                    $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = $quote['totalNetCharge']['Amount'] + $quote['landCostQuoteAPICharges'];
-                    $shipments[$shipment]['q'][$key]['NegotiatedRates']['Amount'] = $quote['NegotiatedRates']['Amount'] > 0 ? (float) $quote['NegotiatedRates']['Amount'] + (float) $quote['landCostQuoteAPICharges'] : $quote['totalNetCharge']['Amount'];
+                    $landedQuotes = !empty($quote['landCostQuoteAPICharges']) ? $quote['landCostQuoteAPICharges'] : 0;
+                    $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = $quote['totalNetCharge']['Amount'] + $landedQuotes;
+                    $shipments[$shipment]['q'][$key]['NegotiatedRates']['Amount'] = $quote['NegotiatedRates']['Amount'] > 0 ? (float) $quote['NegotiatedRates']['Amount'] + (float) $landedQuotes : $quote['totalNetCharge']['Amount'];
 
                     if (!in_array($quote['totalNetCharge']['Amount'], $temp)) {
                         $temp[] = $quote['totalNetCharge']['Amount'] ?? 0;
