@@ -2286,12 +2286,6 @@ class GenerateRequestData
 
             'ups_small_pkg_resid_delivery' => ($alwaysResi ? 'Y' : $residential == 'Y') ? 'yes' : 'no',
             'prefferedCurrency' => 'USD',
-            'taxAPIFlag' => $isUpsLandedCost,
-            'taxAPIParam' => [
-                'currencyCode' => 'USD', // default will be USD
-                'transModes' => '', // optional
-                'shipmentType' => 'SALE', // optional - default SALE
-            ],
             'services' => [
                 'ups_small_pkg_Ground' => $this->issetIndex($carrierServices, 'ups_ground', 'simple_rate_ups_ground'),
                 'ups_small_pkg_3_Day_Select' => $this->issetIndex($carrierServices, 'ups_3_day_select', 'simple_rate_ups_3_day_select'),
@@ -2324,6 +2318,13 @@ class GenerateRequestData
                 $apiArray['ups_small_pkg_password'],
                 $apiArray['ups_small_pkg_authentication_key'],
             );
+
+            $apiArray['taxAPIFlag'] = $isUpsLandedCost;
+            $apiArray['taxAPIParam'] = [
+                'currencyCode' => 'USD', // default will be USD
+                'transModes' => '', // optional
+                'shipmentType' => 'SALE', // optional - default SALE
+            ];
         } else {
             unset(
                 $apiArray['clientId'],
