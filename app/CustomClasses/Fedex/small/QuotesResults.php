@@ -82,6 +82,8 @@ class QuotesResults
             $title = "Fedex SmartPost";
         }
 
+        $title = $this->getServiceLabel($title, $data['serviceType'], $quoteSettings);
+
         if ($isResi && $showRadNotation) {
             $title = $title . Constant::RESI_LABEL;
         }
@@ -91,6 +93,15 @@ class QuotesResults
             $title = $title . ' (Delivery by ' . date('m-d-Y', strtotime($data['deliveryTimestamp'])) . ')';
         }
         return $title;
+    }
+
+    public function getServiceLabel($title, $serviceType, $quoteSettings)
+    {
+        $serviceType = $this->international && $title == 'Fedex Ground'? 'international_ground' : $serviceType;
+        $stringTrim = str_replace('_', ' ', $serviceType);
+        $serviceType = !$this->international && strpos($stringTrim, 'FEDEX ') === false ? 'FEDEX_' . $serviceType: $serviceType;
+        $serviceIndex =  strtolower($serviceType) . '_label';
+        return !empty($quoteSettings['carrier_services'][$serviceIndex]) ? $quoteSettings['carrier_services'][$serviceIndex] : $title;
     }
 
     public function checkGroundTransit($quote, $quoteSettings)
