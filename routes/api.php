@@ -349,4 +349,5 @@ Route::post('/update_subscription', [BigCommerceListingController::class, 'updat
 Route::post('/cancel_subscription', [BigCommerceListingController::class, 'cancelBCSubscription']);
 // install new carrier on all existing customer stores
 Route::post('/install_carrier', [InstalledCarrierController::class, 'installCarrierAllStores']);
+Route::post('/uninstall_carrier', [InstalledCarrierController::class, 'unInstallCarrierAllStores']);
 
