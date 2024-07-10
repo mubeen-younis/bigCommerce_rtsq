@@ -103,6 +103,8 @@ class QuotesResults
      */
     public function getServiceTitle($title, $data, $quoteSettings, $isResi = false, $showRadNotation = false)
     {
+        $title = $this->getServiceLabel($title, $data['service_code'], $quoteSettings);
+
         if ($isResi && $showRadNotation) {
             $title = $title . Constant::RESI_LABEL;
         }
@@ -124,6 +126,12 @@ class QuotesResults
             return $title;
         }
 
+    }
+
+    public function getServiceLabel($title, $serviceType, $quoteSettings)
+    {
+        $labelIndex =  strtolower($serviceType) . '_label';
+        return !empty($quoteSettings['carrier_services'][$labelIndex]) ? $quoteSettings['carrier_services'][$labelIndex] : $title;
     }
 
     /**
