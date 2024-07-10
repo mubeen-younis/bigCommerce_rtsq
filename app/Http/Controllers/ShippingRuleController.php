@@ -269,7 +269,7 @@ class ShippingRuleController extends Controller
                                     break;
                             }
                             if(!$isRuletrue){
-                                Log::info('2 quote ' . ($quote));
+                                Log::info('2 quote ' . json_encode($quote));
                                 $serviceDesc = isset($quote['timeInTransit']['serviceDescription']) ? $quote['timeInTransit']['serviceDescription'] : '';
                                 $serviceDesc = isset($quote['serviceDesc']) && !is_array($quote['serviceDesc']) ? str_replace('®', '' , $quote['serviceDesc']) : $serviceDesc;
                                 $serviceDesc = str_replace(' Saturday', '' , $serviceDesc) ?? $serviceDesc;
