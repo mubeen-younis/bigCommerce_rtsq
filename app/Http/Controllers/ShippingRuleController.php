@@ -215,10 +215,7 @@ class ShippingRuleController extends Controller
         if(!empty($shippingRules)){
             $cartItems = !empty($lineItemData) ? $lineItemData : [];
             foreach($shippingRules as $key => $rule){
-                Log::info('1 Rule ' . json_encode($rule));
-                Log::info('2 cartItems ' . json_encode($cartItems));
                 if(isset($rule['available']) && $rule['available'] && $rule['rule_type'] == 8){
-                    Log::info('221 if rule active ');
                     $providers = array_keys($connectionSettings);
                     foreach($providers as  $index){
                         $providerSlug = isset($index) ? $index: " ";
@@ -247,20 +244,16 @@ class ShippingRuleController extends Controller
                                 $providerSlug = 'cltl';
                             }
                         }
-                        Log::info('250 carrierType ' . $carrierType);
-                        if($carrierType == 2){
+                        if($carrierType == 2 && $carrierId !== null && $carrierName == $carrIndexName){
                             switch ($rule['apply_to']) {
                                 case 0:
                                     $isRuletrue = $this->checkIsSurchargeRuleApply($rule, $cartItems, $originKey, $allOrigins);
-                                    Log::info('0 isRuletrue ' . ($isRuletrue));
                                     break;
                                 case 1:
                                     $isRuletrue = $this->hideMethods($rule, $cartItems);
-                                    Log::info('1 isRuletrue ' . ($isRuletrue));
                                     break;
                                 case 2:
                                     $isRuletrue = $this->checkProdExistInShipment($rule, $cartItems, $originKey, $allOrigins);
-                                    Log::info('2 isRuletrue ' . ($isRuletrue));
                                     if (!$isRuletrue && $carrierType == 1) {
                                         $quote = $this->surchargeRatesAccessorialsfee($quote, $rule);
                                         $isSurchargeRates = true;
@@ -270,7 +263,6 @@ class ShippingRuleController extends Controller
                                     break;
                             }
                             if(!$isRuletrue){
-                                Log::info('2 quote ' . json_encode($quote));
                                 $serviceDesc = isset($quote['timeInTransit']['serviceDescription']) ? $quote['timeInTransit']['serviceDescription'] : '';
                                 $serviceDesc = isset($quote['serviceDesc']) && !is_array($quote['serviceDesc']) ? str_replace('®', '' , $quote['serviceDesc']) : $serviceDesc;
                                 $serviceDesc = str_replace(' Saturday', '' , $serviceDesc) ?? $serviceDesc;
@@ -287,7 +279,6 @@ class ShippingRuleController extends Controller
                             }
                         }
                         if ($rule['rule_type'] == 8 && $carrierId !== null && $carrierName == $carrIndexName) {
-                            Log::info('LTL loop');
                             switch ($rule['apply_to']) {
                                 case 0:
                                     $isRuletrue = $this->checkIsSurchargeRuleApply($rule, $cartItems, $originKey, $allOrigins);
@@ -313,16 +304,13 @@ class ShippingRuleController extends Controller
                                 default:
                                     break;
                             }
-                        }  
-                        break;
+                        }
                     }
-                    Log::info('319 return back ');
                     $surchargeServiceRate = $isSurchargeRates ? $rule['service_rates'] : 0;
                     if($isSurchargeRates){
                         return ['data' => $quote, 'isSurchargeRates' => $isSurchargeRates, 'surchargeServiceRate' => $surchargeServiceRate ];                
                     }
                 }
-                Log::info('325 return back ');
             }
         }  
         return ['data' => $quote, 'isSurchargeRates' => $isSurchargeRates, 'surchargeServiceRate' => $surchargeServiceRate ];
