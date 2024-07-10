@@ -100,8 +100,8 @@ class QuotesResults
         $serviceType = $this->international && $title == 'Fedex Ground'? 'international_ground' : $serviceType;
         $stringTrim = str_replace('_', ' ', $serviceType);
         $serviceType = !$this->international && strpos($stringTrim, 'FEDEX ') === false ? 'FEDEX_' . $serviceType: $serviceType;
-        $serviceIndex =  strtolower($serviceType) . '_label';
-        return !empty($quoteSettings['carrier_services'][$serviceIndex]) ? $quoteSettings['carrier_services'][$serviceIndex] : $title;
+        $labelIndex =  strtolower($serviceType) . '_label';
+        return !empty($quoteSettings['carrier_services'][$labelIndex]) ? $quoteSettings['carrier_services'][$labelIndex] : $title;
     }
 
     public function checkGroundTransit($quote, $quoteSettings)
