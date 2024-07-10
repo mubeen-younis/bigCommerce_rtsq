@@ -218,6 +218,7 @@ class ShippingRuleController extends Controller
                 Log::info('1 Rule ' . json_encode($rule));
                 Log::info('2 cartItems ' . json_encode($cartItems));
                 if(isset($rule['available']) && $rule['available'] && $rule['rule_type'] == 8){
+                    Log::info('221 if rule active ');
                     $providers = array_keys($connectionSettings);
                     foreach($providers as  $index){
                         $providerSlug = isset($index) ? $index: " ";
@@ -246,7 +247,7 @@ class ShippingRuleController extends Controller
                                 $providerSlug = 'cltl';
                             }
                         }
-                        
+                        Log::info('250 carrierType ' . $carrierType);
                         if($carrierType == 2){
                             switch ($rule['apply_to']) {
                                 case 0:
@@ -315,12 +316,13 @@ class ShippingRuleController extends Controller
                         }  
                         break;
                     }
-
+                    Log::info('319 return back ');
                     $surchargeServiceRate = $isSurchargeRates ? $rule['service_rates'] : 0;
                     if($isSurchargeRates){
                         return ['data' => $quote, 'isSurchargeRates' => $isSurchargeRates, 'surchargeServiceRate' => $surchargeServiceRate ];                
                     }
                 }
+                Log::info('325 return back ');
             }
         }  
         return ['data' => $quote, 'isSurchargeRates' => $isSurchargeRates, 'surchargeServiceRate' => $surchargeServiceRate ];
