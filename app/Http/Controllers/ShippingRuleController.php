@@ -306,7 +306,9 @@ class ShippingRuleController extends Controller
                                     break;
                             }
                         }  
+                        break;
                     }
+
                     $surchargeServiceRate = $isSurchargeRates ? $rule['service_rates'] : 0;
                     if($isSurchargeRates){
                         return ['data' => $quote, 'isSurchargeRates' => $isSurchargeRates, 'surchargeServiceRate' => $surchargeServiceRate ];                
@@ -494,6 +496,7 @@ class ShippingRuleController extends Controller
                 
             }
         }
+
 
         if(isset($shippingRule['isFilterWeight']) && $shippingRule['isFilterWeight']){
             if(isset($shippingRule['weight_from']) && $totalWeight >= $shippingRule['weight_from'] && isset($shippingRule['weight_to']) && ($totalWeight < $shippingRule['weight_to'] || $shippingRule['weight_to'] === '')){
