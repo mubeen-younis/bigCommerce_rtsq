@@ -517,8 +517,8 @@ class QuotesResults
             'SC' => 'UPS 2nd Day Air', 
             'SC25' => 'UPS 2nd Day Air A.M.', 
             'SC3' => 'UPS 3 Day Select', 
-            'SG' => 'UPS Ground', 'SGR' => 
-            'UPS Ground (Residential Delivery)', 
+            'SG' => 'UPS Ground', 
+            'SGR' => 'UPS Ground (Residential Delivery)', 
             'SND' => 'Saturday - UPS Next Day Air', 
             'SND5' => 'Saturday - UPS Next Day Air Early A.M.', 
             'SSC' => 'Saturday - UPS 2nd Day Air', 
@@ -592,6 +592,8 @@ class QuotesResults
     {
         $title = $this->getServiceTitleFromServiceType($serviceCode);
 
+        $title = $this->getServiceLabel($title, $data['serviceType'], $quoteSettings);
+
         if ($isResi && $showRadNotation) {
             $title = $title . Constant::RESI_LABEL;
         }
@@ -603,6 +605,18 @@ class QuotesResults
         }
 
         return $title;
+    }
+
+    public function getServiceLabel($title, $serviceType, $quoteSettings)
+    {
+        $title = str_replace(' ', '_', $title);
+        $title = str_replace('.', '', $title);
+        $title = str_replace('(', '', $title);
+        $title = strpos($title, 'Saturday') ? $title . ' Saturday' : $title;
+        $title = str_replace('Saturday - ', '', $title);
+        $title = strpos($title, 'Standard') ? 'UPS Standard': $title;
+        $labelIndex =  strtolower($title) . '_label';
+        return !empty($quoteSettings['carrier_services'][$labelIndex]) ? $quoteSettings['carrier_services'][$labelIndex] : str_replace('_', ' ', $title);
     }
 
     public function calenderDays($fDesc, $tnts)
