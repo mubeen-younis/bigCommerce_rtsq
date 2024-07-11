@@ -116,7 +116,7 @@ class GetRatesController extends Controller
             // Get nesting items details from DB
             $nestingItemsDetails = optional(NestingItemsDetail::where(['product_settings_id' => $product['id'], 'store_id' => $storeId])->first())->toArray() ?? [];
             // Check: Nested percentage should be greater then 0
-            if(!empty($nestingItemsDetails) && $nestingItemsDetails['is_nesting_enabled'] && $nestingItemsDetails['nesting_percentage'] > 0){
+            if(!empty($nestingItemsDetails) && $nestingItemsDetails['is_nesting_enabled'] && !empty($nestingItemsDetails['max_nested_items'])){
 
                 $params = [
                     'totalItems' => $product['piecesOfLineItem'] ?? 0,

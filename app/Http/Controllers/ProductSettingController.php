@@ -300,9 +300,9 @@ class ProductSettingController extends Controller
             foreach($products as $key => $product){
                 $nestingItemsDetails = optional(NestingItemsDetail::where('product_settings_id', $product['id'])->first())->toArray() ?? [];
                 $products[$key]->dimension_type = $nestingItemsDetails['dimension_type'] ?? 0;
-                $products[$key]->nesting_percentage = $nestingItemsDetails['nesting_percentage'] ?? 0;
+                $products[$key]->nesting_percentage = $nestingItemsDetails['nesting_percentage'] ?? null;
                 $products[$key]->stacked_type = $nestingItemsDetails['stacked_type'] ?? 0;
-                $products[$key]->max_nested_items = $nestingItemsDetails['max_nested_items'] ?? 0;
+                $products[$key]->max_nested_items = $nestingItemsDetails['max_nested_items'] ?? null;
                 $products[$key]->is_nesting_enabled = $nestingItemsDetails['is_nesting_enabled'] ?? 0;
             }
         }
@@ -598,9 +598,9 @@ class ProductSettingController extends Controller
             $nestingItemsDetails = $this->updateNestingItemsDetail($prd, $request['store_id']);
             if(!empty($nestingItemsDetails)){
                 $product->nested_diamensions = $prd['nested_diamensions'] ?? 0;
-                $product->nesting_percentage = $prd['nesting_percentage'] ?? 0;
+                $product->nesting_percentage = $prd['nesting_percentage'] ?? null;
                 $product->stacking_property = $prd['stacking_property'] ?? 0;
-                $product->max_nested_items = $prd['max_nested_items'] ?? 0;
+                $product->max_nested_items = $prd['max_nested_items'] ?? null;
                 $product->is_nesting_enabled = $prd['is_nesting_enabled'] ?? 0;
             }
 
@@ -630,9 +630,9 @@ class ProductSettingController extends Controller
     {
         $nestingItemsDetails = NestingItemsDetail::firstOrNew(['product_settings_id' => $product['id'], 'store_id' => $storeId]);
         $nestingItemsDetails->dimension_type = $product['dimension_type'] ?? 0;
-        $nestingItemsDetails->nesting_percentage = $product['nesting_percentage'] ?? 0;
+        $nestingItemsDetails->nesting_percentage = $product['nesting_percentage'] ?? null;
         $nestingItemsDetails->stacked_type = $product['stacked_type'] ?? 0;
-        $nestingItemsDetails->max_nested_items = $product['max_nested_items'] ?? 0;
+        $nestingItemsDetails->max_nested_items = $product['max_nested_items'] ?? null;
         $nestingItemsDetails->is_nesting_enabled = $product['is_nesting_enabled'] ? 1 : 0;
         $nestingItemsDetails->save();
         
