@@ -2266,6 +2266,8 @@ class GenerateRequestData
         $upsSmall = new UpsSmallQuotesResults();
         $saturdayDelivery = $upsSmall->isSaturdayDeliveryEnabled($connSettings) ? '1' : '0';
 
+        $isUpsLandedCost = !empty($connSettings['quote_settings']['isUpsLandedCost']) ? 1 : 0;
+
         $apiArray = [
             'ups_small_pkg_username' => isset($connSettings['creds']['username']) ? $connSettings['creds']['username'] : '',
             'ups_small_pkg_password' => isset($connSettings['creds']['password']) ? $connSettings['creds']['password'] : '',
@@ -2316,6 +2318,13 @@ class GenerateRequestData
                 $apiArray['ups_small_pkg_password'],
                 $apiArray['ups_small_pkg_authentication_key'],
             );
+
+            $apiArray['taxAPIFlag'] = $isUpsLandedCost;
+            $apiArray['taxAPIParam'] = [
+                'currencyCode' => 'USD', // default will be USD
+                'transModes' => '', // optional
+                'shipmentType' => 'SALE', // optional - default SALE
+            ];
         } else {
             unset(
                 $apiArray['clientId'],

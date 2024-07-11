@@ -6,6 +6,8 @@ use App\Models\Carrier;
 use App\Models\InstalledCarrier;
 use Illuminate\Http\Request;
 use App\Models\Store;
+use App\Models\Connection;
+use App\Models\QuoteSetting;
 
 class InstalledCarrierController extends Controller
 {
@@ -192,4 +194,55 @@ class InstalledCarrierController extends Controller
             ], 200);
         }
     }      
+
+    // unInstall carrier on all existing stores
+    public function unInstallCarrierAllStores(Request $request)
+    {
+        try {
+            $stores = Store::getAllStoreDetails();
+            $data = [];
+
+            if(!empty($stores)){
+                foreach($stores as $store){
+                    // Get Carrier
+                    $carrier = optional(Carrier::where('slug', $request->carrier_slug)->first()) ?? [];
+
+                    if (!empty($carrier)) {
+                        // Get installed carrier details
+                        $installCarrier = InstalledCarrier::where(['store_id' => $store['id'], 'carrier_id' => $carrier->id])->first();
+                        if(empty($installCarrier->store_id) && empty($installCarrier->carrier_id)){
+                            continue;
+                        }
+
+                        $connectionSettings = Connection::where('installed_carrier_id', $installCarrier->id)->first();
+                        $quoteSettings = QuoteSetting::where('installed_carrier_id', $installCarrier->id)->first();
+                        // remove connection settings from DB
+                        if(!empty($connectionSettings)){
+                            $connectionSettings->delete();
+                        }
+                        // remove quote settings from DB
+                        if(!empty($quoteSettings)){
+                            $quoteSettings->delete();
+                        }
+                        // remove carrier from DB installed carrier list
+                        $installCarrier->delete();
+                        $carrier->update([
+                            'status' => 0,
+                        ]);
+                    }
+                }
+
+                return response()->json(['error' => false,
+                    'data' => $data,
+                    'error' => false,
+                    'message' => 'Carrier UnInstalled Successfully',
+                ], 200);
+            }
+        } catch (\Exception $exception) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => $exception->getMessage(),
+            ], 200);
+        }
+    }  
 }
