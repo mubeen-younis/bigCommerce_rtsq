@@ -609,12 +609,15 @@ class QuotesResults
 
     public function getServiceLabel($title, $serviceType, $quoteSettings)
     {
+        $title = strpos($title, 'UPS') === false ? 'UPS ' . $title : $title;
+        $title = strpos($title, 'Standard') === 0 ? 'UPS Standard': $title;
         $title = str_replace(' ', '_', $title);
         $title = str_replace('.', '', $title);
         $title = str_replace('(', '', $title);
-        $title = strpos($title, 'Saturday') ? $title . ' Saturday' : $title;
+        $title = str_replace(')', '', $title);
+        $title = str_replace('_Canada', '', $title);
+        $title = strpos($title, 'Saturday') === 0 ? $title . ' Saturday' : $title;
         $title = str_replace('Saturday - ', '', $title);
-        $title = strpos($title, 'Standard') ? 'UPS Standard': $title;
         $labelIndex =  strtolower($title) . '_label';
         return !empty($quoteSettings['carrier_services'][$labelIndex]) ? $quoteSettings['carrier_services'][$labelIndex] : str_replace('_', ' ', $title);
     }
