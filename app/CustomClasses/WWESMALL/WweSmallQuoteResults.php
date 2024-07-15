@@ -95,6 +95,8 @@ class WweSmallQuoteResults
 
     public function getServiceTitle($title, $dateAndDays, $serviceCode, $quoteSettings, $isResi = false, $showRadNotation = false)
     {
+        $title = $this->getServiceLabel($title, $serviceCode, $quoteSettings);
+
         if ($isResi && $showRadNotation) {
             $title = $title . Constant::RESI_LABEL;
         }
@@ -106,6 +108,13 @@ class WweSmallQuoteResults
             $title = !blank($date) ? $title . " (Delivery by " . date('m-d-Y', strtotime($date)) . ")" : $title;
         }
         return $title;
+    }
+
+    public function getServiceLabel($title, $serviceType, $quoteSettings)
+    {
+        $title = str_replace(' ', '_', $title);
+        $labelIndex =  strtolower($title) . '_label';
+        return !empty($quoteSettings['carrier_services'][$labelIndex]) ? $quoteSettings['carrier_services'][$labelIndex] : str_replace('_', ' ', $title);
     }
 
     public function serviceCodeOfWweSmallService($service)
