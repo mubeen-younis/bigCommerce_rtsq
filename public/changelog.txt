@@ -1,3 +1,11 @@
+= 2.2.15 2024-07-16 =
+
+* Update - introduce "Nesting Products" Fetaure in BC (Ticket:2504095504) [#464] (https://bitbucket.org/eniture/big-commerce/pull-requests/464)
+
+= 2.2.14 2024-07-16 =
+
+* Update - rename parcel shipment services feature (chunk-1) (Ticket:2801730131) [#463] (https://bitbucket.org/eniture/big-commerce/pull-requests/463)
+
 = 2.2.13 2024-07-10 =
 
 * Update - Landed Cost Quote API for international shipping with Updated functionality (Ticket:2720770325) [#459] (https://bitbucket.org/eniture/big-commerce/pull-requests/459)
