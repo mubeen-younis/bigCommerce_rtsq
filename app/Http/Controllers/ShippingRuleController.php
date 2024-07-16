@@ -244,8 +244,7 @@ class ShippingRuleController extends Controller
                                 $providerSlug = 'cltl';
                             }
                         }
-                        
-                        if($carrierType == 2){
+                        if($carrierType == 2 && $carrierId !== null && $carrierName == $carrIndexName){
                             switch ($rule['apply_to']) {
                                 case 0:
                                     $isRuletrue = $this->checkIsSurchargeRuleApply($rule, $cartItems, $originKey, $allOrigins);
@@ -305,7 +304,7 @@ class ShippingRuleController extends Controller
                                 default:
                                     break;
                             }
-                        }  
+                        }
                     }
                     $surchargeServiceRate = $isSurchargeRates ? $rule['service_rates'] : 0;
                     if($isSurchargeRates){
@@ -494,6 +493,7 @@ class ShippingRuleController extends Controller
                 
             }
         }
+
 
         if(isset($shippingRule['isFilterWeight']) && $shippingRule['isFilterWeight']){
             if(isset($shippingRule['weight_from']) && $totalWeight >= $shippingRule['weight_from'] && isset($shippingRule['weight_to']) && ($totalWeight < $shippingRule['weight_to'] || $shippingRule['weight_to'] === '')){

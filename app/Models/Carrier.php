@@ -6,9 +6,5 @@ use Illuminate\Database\Eloquent\Model;
 
 class Carrier extends Model
 {
-
-  // public function qoutes()
-  //   {
-  //   	return $this->hasMany(Qoutes::class);
-  //   }
+  protected $fillable = ['status'];
 }
