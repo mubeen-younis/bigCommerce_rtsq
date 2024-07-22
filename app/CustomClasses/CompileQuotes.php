@@ -679,13 +679,15 @@ class CompileQuotes
         $destination,
         $items,
         $SuppressParcelRates,
-        $store_id
+        $store_id,
+        $totalHazmatBoxes,
     ) {
         $this->residential = $residential;
         $this->items = $items;
         $this->allOrigins = $allOrigins;
         $this->SuppressParcelRates = $SuppressParcelRates;
         $this->storeId = $store_id;
+        $this->totalHazmatBoxes = $totalHazmatBoxes;
         if ($quotes == null) {
             return [];
         }
@@ -2036,9 +2038,9 @@ class CompileQuotes
             $this->residentialDlvry = 0;
         }
         $this->alwaysResi = $this->residential['alwaysResi']['upsSmall'] ?? false;
-        $access = $this->getAccessorialCodeSmall();
+        $isSbsEnable = isset($residential['isSbsEnable']) ? $residential['isSbsEnable'] : false;
 
-        $res = $this->upsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName);
+        $res = $this->upsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $isSbsEnable, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = $res['isMultiShipment'] ?? false;
         }
@@ -2061,9 +2063,9 @@ class CompileQuotes
             $this->residentialDlvry = 0;
         }
         $this->alwaysResi = $this->residential['alwaysResi']['unishippersSmallNewApi'] ?? false;
-        $access = $this->getAccessorialCodeSmall();
+        $isSbsEnable = isset($residential['isSbsEnable']) ? $residential['isSbsEnable'] : false;
 
-        $res = $this->unishippersSmallQuotesResults->compileQuotesNewApi($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName);
+        $res = $this->unishippersSmallQuotesResults->compileQuotesNewApi($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $isSbsEnable, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = $res['isMultiShipment'] ?? false;
         }
@@ -2097,10 +2099,10 @@ class CompileQuotes
             $this->residentialDlvry = 0;
         }
         $this->alwaysResi = $this->residential['alwaysResi']['shipEngine'] ?? false;
-        $access = $this->getAccessorialCodeSmall();
+        $isSbsEnable = isset($residential['isSbsEnable']) ? $residential['isSbsEnable'] : false;
 
         try {
-            $res = $quoteResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName);
+            $res = $quoteResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $isSbsEnable, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
         } catch (\Exception $exception) {
             Log::info('Exception on shipengine results ' . json_encode([
                 'line' => $exception->getLine(),
@@ -2131,9 +2133,8 @@ class CompileQuotes
             $this->residentialDlvry = 0;
         }
         $this->alwaysResi = $this->residential['alwaysResi']['purolatorSmall'] ?? false;
-        $access = $this->getAccessorialCodeSmall();
-
-        $res = $this->purolatorSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName);
+        $isSbsEnable = isset($residential['isSbsEnable']) ? $residential['isSbsEnable'] : false;
+        $res = $this->purolatorSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $isSbsEnable, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = isset($res['isMultiShipment']) ? $res['isMultiShipment'] : [];
         }
@@ -2390,8 +2391,8 @@ class CompileQuotes
             $this->residentialDlvry = 0;
         }
         $this->alwaysResi = $this->residential['alwaysResi']['fedexSmall'] ?? false;
-        $access = $this->getAccessorialCodeSmall();
-        $res = $this->fedexSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $destination, $this->items, $this->storeId, $this->carrierName);
+        $isSbsEnable = isset($residential['isSbsEnable']) ? $residential['isSbsEnable'] : false;
+        $res = $this->fedexSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $isSbsEnable, $this->isMultiShipment, $destination, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = $res['isMultiShipment'] ?? false;
         }
@@ -3575,6 +3576,7 @@ class CompileQuotes
             $this->residentialDlvry = 0;
         }
         $this->alwaysResi = $this->residential['alwaysResi']['wweSmall'] ?? false;
+        $isSbsEnable = isset($this->residential['isSbsEnable']) ? $this->residential['isSbsEnable'] : false;
         $this->quoteSettings = [];
         //$isHazmat = $isHazmat == "Y" ? true : false;
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
@@ -3655,12 +3657,13 @@ class CompileQuotes
                     $price = $data['totalNetCharge']['Amount'];
                     // Checking hazmat and adding hazmat amounts in services
                     if ($isHazmat) {
+                        $hazmatBoxes = $this->totalHazmatBoxes['totalHazmatBoxes'][$origin];
                         if ($this->isMultiShipment) {
                             if ($hazmatAllItems[$origin] == 'Y') {
-                                $price = $this->wweSmallQuoteRes->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
+                                $price = $this->wweSmallQuoteRes->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings, $isSbsEnable, $this->items, $hazmatBoxes);
                             }
                         } else {
-                            $price = $this->wweSmallQuoteRes->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
+                            $price = $this->wweSmallQuoteRes->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings, $isSbsEnable, $this->items, $hazmatBoxes);
                         }
                     }
 
@@ -3944,8 +3947,8 @@ class CompileQuotes
             $this->residentialDlvry = 0;
         }
         $this->alwaysResi = $this->residential['alwaysResi']['unishippersSmall'] ?? false;
-        $access = $this->getAccessorialCodeSmall();
-        $res = $this->unishippersSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName);
+        $isSbsEnable = isset($residential['isSbsEnable']) ? $residential['isSbsEnable'] : false;
+        $res = $this->unishippersSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $isSbsEnable, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
 
         if (!$this->isMultiShipment) {
             $this->isMultiShipment = $res['isMultiShipment'] ?? false;

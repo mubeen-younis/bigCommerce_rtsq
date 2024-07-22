@@ -1496,4 +1496,61 @@ class Functions
 
         return $services->toArray() ?? [];
     }
+
+    public static function getHazmatItemBoxes($isSbsEnable, $quoteSettings, $items, $hazmatBoxes)
+    {
+        $totalHazmatBoxes = 1;
+        $totalWeight = 0;
+        if(!$isSbsEnable){
+            $packageType = $quoteSettings['packageRatingMethod'] ?? 1;
+            if($packageType === 1){
+                $itemsQuantity = collect($items)->sum('piecesOfLineItem') ?? 0;
+                $totalHazmatBoxes = $itemsQuantity;
+                
+            } else if($packageType === 2){
+                $itemWithOutDim = collect($items)->map(function ($item) {
+                    if(empty((int) $item['lineItemLength']) && empty((int) $item['lineItemWidth']) && empty((int) $item['lineItemHeight'])){
+                        return $item['lineItemWeight'] * $item['piecesOfLineItem'] ?? 0;
+                    }
+                }) ?? 0;
+                $totalItemWeightWithOutDim = collect($itemWithOutDim)->sum();
+                $totalBoxesWithOutDim = (int) ceil($totalItemWeightWithOutDim/150);
+
+                $itemWithDim = collect($items)->map(function ($item) {
+                    if(!empty((int) $item['lineItemLength']) && !empty((int) $item['lineItemWidth']) && !empty((int) $item['lineItemHeight'])){
+                        return $item['piecesOfLineItem'] ?? 0;
+                    }
+                }) ?? 0;
+                $totalItemsWithDim = collect($itemWithDim)->sum();
+
+                $totalHazmatBoxes = $totalBoxesWithOutDim + $totalItemsWithDim;
+                
+            } else if($packageType === 3){
+                $weight = collect($items)->map(function ($item) {
+                    return $item['lineItemWeight'] * $item['piecesOfLineItem'] ?? 0;
+                }) ?? 0;
+                $totalWeight = collect($weight)->sum();
+                $totalHazmatBoxes = (int) ceil($totalWeight/150);
+            }
+        } else {
+            $totalHazmatBoxes = $hazmatBoxes;
+        }
+
+        return $totalHazmatBoxes;
+    }
+
+    public static function verifyAndCountHazmatBox($binPacked, $itemsArr)
+    {
+        foreach ($binPacked->items as $item) {
+            if(isset($itemsArr[$item->id]['isHazmatLineItem']) && $itemsArr[$item->id]['isHazmatLineItem'] == 'Y'){
+                if(isset($binPacked->bin_data->type) && $binPacked->bin_data->type == 'item'){
+                    return $binPacked->bin_data->quantity;
+                } else {
+                    return 1;
+                }   
+            }
+        }
+
+        return 0;
+    }
 }

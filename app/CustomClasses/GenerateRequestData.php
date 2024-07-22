@@ -53,6 +53,7 @@ class GenerateRequestData
     public $simpleRate = false;
     public $homeDeliveryServices = false;
     public $storeDateTime;
+    public $Boxes = [];
 
     /**
      * constructor of class that accepts request object
@@ -1196,6 +1197,7 @@ class GenerateRequestData
             'carriers' => $carriers,
             'receiverAddress' => $receiverAddress,
             'commdityDetails' => $itemsArr,
+            'hazmatBoxes' => $this->Boxes,
         ];
 
         if (isset($carriers['fedexSmall'])) {
@@ -2168,6 +2170,7 @@ class GenerateRequestData
 
         $this->resiCarrier['wweSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['wweSmall'] = $alwaysResi;
+        $this->resiCarrier['isSbsEnable'] = $sbsEnabled && $this->storeData['enabled_addon_sbs'];
 
         $apiArray = [
             'speed_ship_username' => isset($connSettings['creds']['username']) ? $connSettings['creds']['username'] : '',
@@ -2224,6 +2227,7 @@ class GenerateRequestData
         $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
         $this->resiCarrier['purolatorSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['purolatorSmall'] = $alwaysResi;
+        $this->resiCarrier['isSbsEnable'] = $sbsEnabled && $this->storeData['enabled_addon_sbs'];
 
         $apiArray = [
             'productionKey' => $connSettings['creds']['productionKey'],
@@ -2245,6 +2249,7 @@ class GenerateRequestData
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
+        $sbsEnabled = $this->checkIsSBSActive($this->storeData['store']['id']);
         if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
@@ -2259,8 +2264,8 @@ class GenerateRequestData
         $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
         $this->resiCarrier['upsSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['upsSmall'] = $alwaysResi;
+        $this->resiCarrier['isSbsEnable'] = $sbsEnabled && $this->storeData['enabled_addon_sbs'];
 
-        $sbsEnabled = $this->checkIsSBSActive($this->storeData['store']['id']);
         $ratingMethod = $this->getPackagingRatingMethod($connSettings);
 
         $upsSmall = new UpsSmallQuotesResults();
@@ -2367,6 +2372,7 @@ class GenerateRequestData
 
         $this->resiCarrier['shipEngine'] = $residential;
         $this->resiCarrier['alwaysResi']['shipEngine'] = $alwaysResi;
+        $this->resiCarrier['isSbsEnable'] = $sbsEnabled && $this->storeData['enabled_addon_sbs'];
 
 
         $apiArray = [
@@ -2398,6 +2404,7 @@ class GenerateRequestData
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
+        $sbsEnabled = $this->checkIsSBSActive($this->storeData['store']['id']);
         if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
@@ -2412,8 +2419,8 @@ class GenerateRequestData
         $this->setIsSmartPost($connSettings);
         $this->resiCarrier['fedexSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['fedexSmall'] = $alwaysResi;
+        $this->resiCarrier['isSbsEnable'] = $sbsEnabled && $this->storeData['enabled_addon_sbs'];
 
-        $sbsEnabled = $this->checkIsSBSActive($this->storeData['store']['id']);
         $ratingMethod = $this->getPackagingRatingMethod($connSettings);
 
         $hubIdindicia = isset($connSettings['creds']['hub_id']) ? explode('(', $connSettings['creds']['hub_id']) : '';
@@ -2482,6 +2489,7 @@ class GenerateRequestData
 
         $sbsEnabled = $this->checkIsSBSActive($this->storeData['store']['id']);
         $ratingMethod = $this->getPackagingRatingMethod($connSettings);
+        $this->resiCarrier['isSbsEnable'] = $sbsEnabled && $this->storeData['enabled_addon_sbs'];
 
         if (isset($connSettings['creds']['api_type']) &&  $connSettings['creds']['api_type'] === 'new_api') {
             $this->resiCarrier['isUnishipperNewApi'] = true;
@@ -3522,6 +3530,8 @@ class GenerateRequestData
                 $binResponse = $this->addPackagingID($binResponse, $boxBins);
                 $counting = 0;
                 $counting = 0;
+                $totalHazmatBoxes = 0;
+                $this->Boxes = [];
 
                 foreach ($binResponse as $locationId => $bins) {
                     foreach ($bins->bins_packed as $key => $binPacked) {
@@ -3532,6 +3542,8 @@ class GenerateRequestData
                                 $item->image_separated = Functions::replace3DBinUrl($item->image_separated);
                                 $item->image_sbs = Functions::replace3DBinUrl($item->image_sbs);
                             }
+                            // Check which box has hazmat material and get count how much hazmat boxes
+                            $totalHazmatBoxes += Functions::verifyAndCountHazmatBox($binPacked, $itemsArr);
                         }
 
                         $bin = $binPacked;
@@ -3549,6 +3561,7 @@ class GenerateRequestData
                         $totalBoxWeight = $bin->bin_data->weight + $boxWeight ?? 0;
                         $binResponse[$locationId]->bins_packed[$key]->bin_data->totalBoxWeight = $totalBoxWeight;
                     }
+                    $this->Boxes['totalHazmatBoxes'][$locationId] = $totalHazmatBoxes ?? 0;
                 }
             } else {
                 $newOrigins = $this->origins;

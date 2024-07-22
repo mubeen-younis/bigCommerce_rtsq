@@ -171,7 +171,8 @@ class Shipping
 
         // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo, $carriersErrorSettings);
-        
+        $totalHazmatBoxes = isset($requestArr['requestArr']['hazmatBoxes']) ? $requestArr['requestArr']['hazmatBoxes'] : [];
+        unset($requestArr['requestArr']['hazmatBoxes']);
         // Added customization for eniture packaging disabled stores
 
         $requestArr = (new Customizations())->eniturePackagingCustomization($requestArr, $storeData['store']['hash']);
@@ -229,7 +230,7 @@ class Shipping
             $freeRNL = true;
         }
         $quotesFromWs = $quotes ?? [];
-        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $package['items'], $SuppressParcelRates, $store_id);
+        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $package['items'], $SuppressParcelRates, $store_id, $totalHazmatBoxes);
 
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];

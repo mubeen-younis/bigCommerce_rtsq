@@ -44,17 +44,18 @@ class QuotesResults
 
     }
 
-    public function addHazmatAmountsInServices($amount, $serviceCode, $quoteSettings)
+    public function addHazmatAmountsInServices($amount, $serviceCode, $quoteSettings, $hazmatBoxes = 1)
     {
+        $totalHazmatBoxes = Functions::getHazmatItemBoxes($this->isSbsEnable, $quoteSettings, $this->items, $hazmatBoxes);
         // Adding hazmat fee to Ground Service
         if ($serviceCode == "03" || $serviceCode = 'SR_03' || $serviceCode == "03S" || $serviceCode == 'SR_03S') {
             if (isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
-                $amount = $amount + $quoteSettings['ground_hazardous_material_fee'];
+                $amount = $amount + $quoteSettings['ground_hazardous_material_fee'] * $totalHazmatBoxes;
             }
             // Adding hazmat fee to Air Services
         } else {
             if (isset($quoteSettings['air_hazardous_material_fee']) && is_numeric($quoteSettings['air_hazardous_material_fee']) && !empty($quoteSettings['air_hazardous_material_fee'])) {
-                $amount = $amount + $quoteSettings['air_hazardous_material_fee'];
+                $amount = $amount + $quoteSettings['air_hazardous_material_fee'] * $totalHazmatBoxes;
             }
         }
         // $amount = $this->addHandlingMarkupOfHazmat($amount, $quoteSettings['handling_fee_markup']);
@@ -121,13 +122,17 @@ class QuotesResults
     }
 
 
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items, $storeId = '', $carrierName = '')
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $isSbsEnable, $isMultiShipment, $items, $storeId = '', $carrierName = '', $totalHazmatBoxes)
     {
         $shippingRule = new ShippingRuleController();
         $shipments = $this->formateQuoteBeforeCompile($shipments);
         $this->quoteSettings = [];
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
         $this->quoteSettings = $connectionSettings['ups-small']['quote_settings'] ?? '';
+        $this->isSbsEnable = $isSbsEnable;
+        $this->items = $items;
+        $access = $this->CompileQuotes->getAccessorialCodeSmall();
+
         $numberOfShipments = 0;
         $overrideRuleCount = 0;
         foreach ($shipments as $ship) {
@@ -237,12 +242,13 @@ class QuotesResults
                     $price = $this->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup'] ?? 0);
                     // Checking hazmat and adding hazmat amounts in services
                     if ($isHazmat) {
+                        $hazmatBoxes = $totalHazmatBoxes['totalHazmatBoxes'][$origin];
                         if ($isMultiShipment) {
                             if ($hazmatAllItems[$origin] == 'Y') {
-                                $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
+                                $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings, $hazmatBoxes);
                             }
                         } else {
-                            $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
+                            $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings, $hazmatBoxes);
                         }
                     }
 
