@@ -3657,7 +3657,7 @@ class CompileQuotes
                     $price = $data['totalNetCharge']['Amount'];
                     // Checking hazmat and adding hazmat amounts in services
                     if ($isHazmat) {
-                        $hazmatBoxes = $this->totalHazmatBoxes['totalHazmatBoxes'][$origin];
+                        $hazmatBoxes = isset($this->totalHazmatBoxes['totalHazmatBoxes'][$origin]) ? $this->totalHazmatBoxes['totalHazmatBoxes'][$origin] : 1;
                         if ($this->isMultiShipment) {
                             if ($hazmatAllItems[$origin] == 'Y') {
                                 $price = $this->wweSmallQuoteRes->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings, $isSbsEnable, $this->items, $hazmatBoxes);
