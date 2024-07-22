@@ -3530,10 +3530,9 @@ class GenerateRequestData
                 $binResponse = $this->addPackagingID($binResponse, $boxBins);
                 $counting = 0;
                 $counting = 0;
-                $totalHazmatBoxes = 0;
                 $this->Boxes = [];
-
                 foreach ($binResponse as $locationId => $bins) {
+                    $totalHazmatBoxes = 0;
                     foreach ($bins->bins_packed as $key => $binPacked) {
                         $binPacked->image_complete = Functions::replace3DBinUrl($binPacked->image_complete);
 
@@ -3600,7 +3599,7 @@ class GenerateRequestData
             if (isset($bin->items)) {
                 foreach ($bin->items as $itemData) {
                     if ($hazmat == 'N') {
-                        $hazmat = $itemsArr[$itemData->id]['isHazmatLineItem'];
+                        $item['isHazmatLineItem'] = $itemsArr[$itemData->id]['isHazmatLineItem'];
                     }
                     $price += $itemsArr[$itemData->id]['lineItemPrice'] ?? 0;
                 }
@@ -3611,7 +3610,7 @@ class GenerateRequestData
         $item['lineItemHeight'] = $bin->bin_data->h ?? 0;
         $item['lineItemPrice'] = $price; //$item['lineItemPrice']*$quantityPacked;
         $item['lineItemWeight'] = $bin->bin_data->weight + $boxWeight;
-        $item['isHazmatLineItem'] = $hazmat;
+        //$item['isHazmatLineItem'] = $hazmat;
 
         //$item['piecesOfLineItem'] = 1 ?? 0;
         $item['shipItemAlone'] = 1;
