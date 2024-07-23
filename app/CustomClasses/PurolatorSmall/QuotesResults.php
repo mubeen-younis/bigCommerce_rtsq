@@ -105,6 +105,8 @@ class QuotesResults
 
             if($serviceType == $title && $service == $checked){
                 $labelIndex =  strtolower($service) . '_label';
+                $labelIndex =str_replace('am','AM',$labelIndex);
+                $labelIndex =str_replace('_AM_','_am_',$labelIndex);
                 return !empty($quoteSettings['carrier_services'][$labelIndex]) ? $quoteSettings['carrier_services'][$labelIndex] : $title;
             }
         }
