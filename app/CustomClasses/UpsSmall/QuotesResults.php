@@ -82,6 +82,8 @@ class QuotesResults
 
     public function getServiceTitle($title, $data, $serviceCode, $quoteSettings, $isResi = false, $showRadNotation = false)
     {
+        $title = $this->getServiceLabel($title, $data['serviceType'], $quoteSettings);
+
         if ($isResi && $showRadNotation) {
             $title = $title . Constant::RESI_LABEL;
         }
@@ -91,6 +93,14 @@ class QuotesResults
             $title = $title . ' (Delivery by ' . date('m-d-Y', strtotime($data['deliveryTimestamp'])) . ')';
         }
         return $title;
+    }
+
+    public function getServiceLabel($title, $serviceType, $quoteSettings)
+    {
+        $title = str_replace(' ', '_', $title);
+        $title = str_replace('.', '', $title);
+        $labelIndex =  strtolower($title) . '_label';
+        return !empty($quoteSettings['carrier_services'][$labelIndex]) ? $quoteSettings['carrier_services'][$labelIndex] : str_replace('_', ' ', $title);
     }
 
     public function checkGroundTransit($quote, $quoteSettings)

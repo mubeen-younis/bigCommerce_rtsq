@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Log;
 use App\CustomClasses\CompareRates;
 use App\Constants\Constant;
 use App\Models\ShippingRule;
+use App\Models\NestingItemsDetail;
 
 class GetRatesController extends Controller
 {
@@ -98,12 +99,102 @@ class GetRatesController extends Controller
         if ($this->isShippingRule($storeData, $this->formatReq)) {
             return [];
         }
+        // Apply Nesting items functionality
+        if(!empty($this->formatReq['lineItemData']['items'])){
+            $this->itemsTobeNested($this->formatReq['lineItemData']['items'], $cartInfo['store_id']);
+        }
 
         $quotes = $this->shipping->collectRates($this->formatReq, $storeData, $this->connectionSettings, $cartInfo, $this->isDbscInstalled);
 
         return $quotes;
 
 
+    }
+
+    public function itemsTobeNested($products, $storeId){
+        foreach($products as $variantId => $product){
+            // Get nesting items details from DB
+            $nestingItemsDetails = optional(NestingItemsDetail::where(['product_settings_id' => $product['id'], 'store_id' => $storeId])->first())->toArray() ?? [];
+            // Check: Nested percentage should be greater then 0
+            if(!empty($nestingItemsDetails) && $nestingItemsDetails['is_nesting_enabled'] && !empty($nestingItemsDetails['max_nested_items'])){
+
+                $params = [
+                    'totalItems' => $product['piecesOfLineItem'] ?? 0,
+                    'length' => $product['lineItemLength'] ?? 0,
+                    'width' => $product['lineItemWidth'] ?? 0,
+                    'height' => $product['lineItemHeight'] ?? 0,
+                    'weight' => $product['lineItemWeight'] ?? 0,
+                    'maxNestingItems' => $nestingItemsDetails['max_nested_items'] ?? 0,
+                    'nestingDimType' => $nestingItemsDetails['dimension_type'] ?? 0,
+                    'nestingPercentage' => $nestingItemsDetails['nesting_percentage'] ?? 0,
+                    'nestingStackType' => $nestingItemsDetails['stacked_type'] ?? 0,
+                ];
+                // Check: cart items greater then maximum nested items
+                if($params['totalItems'] > $params['maxNestingItems']){
+
+                    $totalStacks = $count = (int) ceil($params['totalItems']/$params['maxNestingItems']);
+                    // Check: stack type is even or maximized (0 = evenly type and 1 = maximized type)
+                    if($params['nestingStackType'] == 1){
+
+                        $stackItems = $params['maxNestingItems'];
+                        $products = $this->calcNestingDimensions($products, $product, $params, $count, $stackItems, $variantId);
+
+                    } else{
+
+                        $stackItems = (int) ceil($params['totalItems']/$totalStacks);
+                        $products = $this->calcNestingDimensions($products, $product, $params, $count, $stackItems, $variantId);
+
+                    }
+                } else {
+
+                    $product = $this->selectDimType($params, $product, $params['totalItems']);
+
+                    $product['lineItemWeight'] = $params['weight'] * $params['totalItems'];
+                    $product['piecesOfLineItem'] = 1;
+                    $products[$variantId] = $product;
+                }
+            }
+
+        }
+        $this->formatReq['lineItemData']['items'] = $products;
+    }
+
+    public function calcNestingDimensions($products, $product, $params, $count, $items, $variantId){
+        
+        while($count > 0){
+            // select diamension type and calculate diamension based on diamension type
+            $product = $this->selectDimType($params, $product, $items);
+
+            $product['lineItemWeight'] = $params['weight'] * $items;
+            $product['piecesOfLineItem'] = 1;
+            $params['totalItems'] = $params['totalItems'] - $items;
+            $key = $variantId . $count;
+            $products[$key] = $product;
+            // update formate request
+            $this->formatReq['lineItemData']['origin'][$key] = $this->formatReq['lineItemData']['origin'][$variantId];
+
+            $count--;
+
+            if($count == 1){
+                $items = $params['totalItems'];
+            }
+        }
+        unset($products[$variantId], $this->formatReq['lineItemData']['origin'][$variantId]);
+
+        return $products;
+    }
+
+    public function selectDimType($params, $product, $items){
+        // calculation of diamension based on diamension type
+        if($params['nestingDimType'] == 0){
+            $product['lineItemLength'] = $params['length'] + (($items - 1) * $params['length'] * (1 - ($params['nestingPercentage']/100)));
+        } elseif($params['nestingDimType'] == 1){
+            $product['lineItemWidth'] = $params['width'] + (($items - 1) * $params['width'] * (1 - ($params['nestingPercentage']/100)));
+        } elseif($params['nestingDimType'] == 2){
+            $product['lineItemHeight'] = $params['height'] + (($items - 1) * $params['height'] * (1 - ($params['nestingPercentage']/100)));
+        }
+
+        return $product;
     }
 
     public function getCompareRates(Request $request)
