@@ -8,7 +8,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    surcharge-rates-chunk-1:
+    feature/ups-landed-cost-api:
       - step:
           caches:
             - composer
@@ -20,7 +20,7 @@ pipelines:
                 MODE: 'command'
                 COMMAND: '/home/apx-bc-01/html/bc/remote-script.sh'
 
-    feature/ups-landed-cost-api:
+    surcharge-rates-chunk-1:
       - step:
           caches:
             - composer
