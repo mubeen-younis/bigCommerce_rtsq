@@ -217,6 +217,9 @@ class LocationsController extends Controller
 
             $additionals = [
                 'instore_pickup' => $request->enable_instore ?? '',
+                'enable_instore_distance' => $request->enable_instore_distance ?? false,
+                'enable_instore_address' => $request->enable_instore_address ?? false,
+                'enable_instore_phone' => $request->enable_instore_phone ?? false,
                 'local_delivery' => $request->enable_ld ?? '',
                 'ld_enable_supress' => $request->ld_enable_supress ?? '',
                 'instore_pickup_data' => [
