@@ -2443,6 +2443,12 @@ class GenerateRequestData
             'password' => $connSettings['creds']['password'],
             'key' => $connSettings['creds']['api_access_key'],
             'AccountNumber' => $connSettings['creds']['account_number'],
+            // New Api Test Connection Params
+            'clientId' => $connSettings['creds']['clientId'],
+            'clientSecret' => $connSettings['creds']['clientSecret'],
+            'accountNumber' => $connSettings['creds']['new_api_account_number'],
+            'requestForNewAPI' => '1',
+
             'prefferedCurrency' => 'USD',
             'pkgType' => '00',
             'saturdayDelivery' => 'on',
@@ -2450,6 +2456,23 @@ class GenerateRequestData
             'homeDeliveryPremiumType' => $premiumType,
             'packagesType' => !$sbsEnabled ? $ratingMethod : '',
         ];
+
+        if (isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api') {
+            unset(
+                $apiArray['MeterNumber'],
+                $apiArray['password'],
+                $apiArray['AccountNumber'],
+                $apiArray['key'],
+            );
+        } else {
+            unset(
+                $apiArray['clientId'],
+                $apiArray['clientSecret'],
+                $apiArray['accountNumber'],
+                $apiArray['requestForNewAPI'],
+            );
+        }
+
         if ($this->smartPost) {
             $apiArray['smartPostData'] = [
                 'hubId' => $hubId,
