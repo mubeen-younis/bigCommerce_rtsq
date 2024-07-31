@@ -31,7 +31,21 @@ class ConnectionSettings extends CarriersConnectionSettings
             'licence_key' =>  '',
             'platform' => 'bigcommerce',
             'server_name' => $storeName, // $_SERVER['SERVER_NAME'];
+            // New Api Test Connection Params
+            'clientId' => $data->clientId,
+            'clientSecret' => $data->clientSecret,
+            'accountNumber' => $data->new_api_account_number,
+            'requestForNewAPI' => '1', 
         );
+
+        if (isset($data->api_type) && $data->api_type === 'new_api'){
+            unset($params['fedex_user_id'], $params['fedex_password'], $params['fedex_meter_number'], $params['fedex_account_number']);
+
+        } else {
+            unset($params['clientId'], $params['clientSecret'], $params['requestForNewAPI'], $params['accountNumber']);
+
+        }
+
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
         if (isset($output['status']) && $output['status'] == false) {
@@ -41,7 +55,7 @@ class ConnectionSettings extends CarriersConnectionSettings
             ];
         }
         $output = json_decode($output['response'], true);
-        if (isset($output['error']) && isset($output['Message'])) {
+        if (isset($output['error']) && isset($output['Message']) || (isset($output['severity']) && isset($output['severity']) == 'ERROR')) {
             $response = [
                 'error' => true,
                 'message' => $output['Message'],
