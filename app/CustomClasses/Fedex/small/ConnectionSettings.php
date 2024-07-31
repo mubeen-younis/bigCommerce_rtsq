@@ -35,7 +35,7 @@ class ConnectionSettings extends CarriersConnectionSettings
             'clientId' => $data->clientId,
             'clientSecret' => $data->clientSecret,
             'accountNumber' => $data->new_api_account_number,
-            'requestForNewAPI' => '1', 
+            'requestForNewAPI' => '1',
         );
 
         if (isset($data->api_type) && $data->api_type === 'new_api'){
@@ -55,12 +55,12 @@ class ConnectionSettings extends CarriersConnectionSettings
             ];
         }
         $output = json_decode($output['response'], true);
-        if (isset($output['error']) && isset($output['Message']) || (isset($output['severity']) && isset($output['severity']) == 'ERROR')) {
+        if ((isset($output['error']) && isset($output['Message'])) || (isset($output['severity']) && $output['severity'] == 'ERROR')) {
             $response = [
                 'error' => true,
                 'message' => $output['Message'],
             ];
-        } elseif (isset($output['success'])) {
+        } elseif (isset($output['success']) || (isset($output['severity']) && $output['severity'] == 'SUCCESS')) {
             $response = [
                 'error' => false,
                 'message' => 'Test connection successful.',
