@@ -212,7 +212,7 @@ class LogToDbController extends Controller
     public static function getDateTime($time, $response)
     {
         $datetime = new \DateTime($time);
-        $storeTimezone = isset($response['timezone']['name']) ? $response['timezone']['name'] : ''; 
+        $storeTimezone = isset($response['timezone']['name']) ? $response['timezone']['name'] : 'UTC'; 
         $storeTime = new \DateTimeZone($storeTimezone);
         $datetime->setTimezone($storeTime);
         $formattedTime = $datetime->format('m/d/Y H:i:s');
