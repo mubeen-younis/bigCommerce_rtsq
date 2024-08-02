@@ -92,7 +92,7 @@ class LogToDbController extends Controller
             $logsData = [];
             $url = Constant::LOGS_URL;
             $logsResp = $this->sendCurlRequest($url, $postData);  
-
+            Log::info('1 $logsResp: ' . json_encode($logsResp));
             $storeDetails = BigCommerceFunctions::getStoreSettings($storeHash);
             $storeDetails = (new CurlRequest())->enSingleCurlRequest($storeDetails['endpoint'], $storeDetails['request'], $storeDetails['headers'], $storeDetails['method'], false);
             $response = json_decode($storeDetails['response'], true);
@@ -113,7 +113,7 @@ class LogToDbController extends Controller
                         $respdata = optional(PackagingDetail::select('is_packaging', 'lineitems')->where('packaging_uuid', $packageId)
                         ->where('store_id', $request['store_id'])
                         ->first())->toArray() ?? [];
-
+                        Log::info('2 $respdata: ' . json_encode($respdata));
                         if(isset($requestData['carrier_mode']) && $requestData['carrier_mode'] === 'pro' && empty($respdata)){
                             continue;
                         }
