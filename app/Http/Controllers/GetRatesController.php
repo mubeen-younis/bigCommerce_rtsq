@@ -324,6 +324,9 @@ class GetRatesController extends Controller
                     $wareHouseShipmentExist = true;
                 }
 
+                $product['name'] = str_replace('"', '', $product['name']);
+                $product['name'] = str_replace("'", '', $product['name']);
+
                 $details['origin'][$key] = $originAddress;
                 $details['items'][$key] = [
                     'id' => $product_settings['id'] ?? '',
