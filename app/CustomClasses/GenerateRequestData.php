@@ -1870,10 +1870,15 @@ class GenerateRequestData
         }
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $apiArray = [
-            'AccountNumber' => $connSettings['creds']['account_number'] ?? '',
-            'MeterNumber' => $connSettings['creds']['meter_number'] ?? '',
-            'password' => $connSettings['creds']['password'] ?? '',
-            'key' => $connSettings['creds']['api_access_key'] ?? '',
+            'AccountNumber' => isset($connSettings['creds']['account_number']) ? $connSettings['creds']['account_number'] : '',
+            'MeterNumber' => isset($connSettings['creds']['meter_number']) ? $connSettings['creds']['meter_number'] : '',
+            'password' => isset($connSettings['creds']['password']) ? $connSettings['creds']['password'] : '',
+            'key' => isset($connSettings['creds']['api_access_key']) ? $connSettings['creds']['api_access_key'] : '',
+            // New Api Test Connection Params
+            'clientId' => isset($connSettings['creds']['clientId']) ? $connSettings['creds']['clientId'] : '',
+            'clientSecret' => isset($connSettings['creds']['clientSecret']) ? $connSettings['creds']['clientSecret'] : '',
+            'requestForNewAPI' => '1',
+            // ---------------- //
             'shippingChargesAccount' => $connSettings['creds']['shipping_account_number'] ?? '',
             'billingLineAddress' => $connSettings['creds']['billing_address'] ?? '',
             'billingCountry' => $connSettings['creds']['billing_country'] ?? '',
@@ -1915,6 +1920,15 @@ class GenerateRequestData
             'accessorial' => $accessorial,
             /*array('DANGEROUS_GOODS', 'LIFTGATE_DELIVERY'),*/
         ];
+
+        if (isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api') {
+            unset($apiArray['AccountNumber'], $apiArray['MeterNumber'], $apiArray['password'], $apiArray['key']);
+
+        } else {
+            unset($apiArray['clientId'], $apiArray['clientSecret'], $apiArray['requestForNewAPI']);
+
+        }
+
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
 
