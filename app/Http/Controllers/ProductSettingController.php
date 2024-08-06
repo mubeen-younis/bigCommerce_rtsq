@@ -208,6 +208,7 @@ class ProductSettingController extends Controller
             'height' => $request['height'] ?? '',
             'depth' => $request['length'] ?? '',
         ];
+        Log::info('catch: ' . json_encode($data));
         $this->curlRequest->enSingleCurlRequest($storeUrl, json_encode($data), $headers, 'PUT', true);
     }
 
