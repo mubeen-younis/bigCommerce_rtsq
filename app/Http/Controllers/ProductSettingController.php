@@ -203,10 +203,10 @@ class ProductSettingController extends Controller
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
         $data = [
-            'weight' => $request['weight'] ?? '',
-            'width' => $request['width'] ?? '',
-            'height' => $request['height'] ?? '',
-            'depth' => $request['length'] ?? '',
+            'weight' => $request['weight'] ?? null,
+            'width' => $request['width'] ?? null,
+            'height' => $request['height'] ?? null,
+            'depth' => $request['length'] ?? null,
         ];
         Log::info('catch: ' . json_encode($data));
         $this->curlRequest->enSingleCurlRequest($storeUrl, json_encode($data), $headers, 'PUT', true);
