@@ -78,6 +78,8 @@ class QuotesResults
 
     public function getServiceTitle($title, $data, $serviceCode, $quoteSettings, $isResi = false, $showRadNotation = false)
     {
+        $title = $this->getServiceLabel($title, $serviceCode, $quoteSettings);
+
         if ($isResi && $showRadNotation) {
             $title = $title . Constant::RESI_LABEL;
         }
@@ -85,6 +87,29 @@ class QuotesResults
             $title = $title . ' (Intransit days: ' . $data['totalTransitTimeInDays'] . ')';
         } else if (isset($data['deliveryTimestamp']) && $data['deliveryTimestamp'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3) {
             $title = $title . ' (Delivery by ' . date('m-d-Y', strtotime($data['deliveryTimestamp'])) . ')';
+        }
+        return $title;
+    }
+
+    public function getServiceLabel($title, $serviceType, $quoteSettings)
+    {
+        $services = $quoteSettings['carrier_services'] ?? [];
+        foreach($services as $service => $checked){
+            $serviceLetter =str_replace('_',' ',$service);
+            $serviceLetter =str_replace('us','U.S.',$serviceLetter);
+            $capitalServiceLetter = ucwords($serviceLetter);
+            $serviceType =str_replace('  ',':',$capitalServiceLetter);
+            $serviceType =str_replace(' ','',$serviceType);
+            $serviceType =str_replace('1030','10:30',$serviceType);
+            $serviceType =str_replace('am','AM',$serviceType);
+            $serviceType =str_replace('Am','AM',$serviceType);
+
+            if($serviceType == $title && $service == $checked){
+                $labelIndex =  strtolower($service) . '_label';
+                $labelIndex =str_replace('am','AM',$labelIndex);
+                $labelIndex =str_replace('_AM_','_am_',$labelIndex);
+                return !empty($quoteSettings['carrier_services'][$labelIndex]) ? $quoteSettings['carrier_services'][$labelIndex] : $title;
+            }
         }
         return $title;
     }
@@ -304,11 +329,16 @@ class QuotesResults
                 foreach ($quote['q'] as $key => $value) {
                     foreach($carrier_services as $service => $checked){
                         $serviceLetter =str_replace('_',' ',$service);
+                        $serviceLetter =str_replace('us','U.S.',$serviceLetter);
                         $capitalServiceLetter = ucwords($serviceLetter);
                         $serviceType =str_replace('  ',':',$capitalServiceLetter);
                         $serviceType =str_replace(' ','',$serviceType);
+                        $serviceType =str_replace('1030','10:30',$serviceType);
+                        $serviceType =str_replace('am','AM',$serviceType);
+                        $serviceType =str_replace('Am','AM',$serviceType);
                         if($serviceType == $value['serviceType'] && $service == $checked){
                             $checkedshipment[$shipkey]['q'][] = $value;
+                            break;
                         }
                     }
                 }

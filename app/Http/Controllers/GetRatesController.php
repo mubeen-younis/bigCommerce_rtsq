@@ -279,7 +279,8 @@ class GetRatesController extends Controller
                 'street_1' => $data['base_options']['destination']['street_1'] ?? null,
                 'street_2' => $data['base_options']['destination']['street_2'] ?? null,
                 'zip' => $data['base_options']['destination']['zip'] ?? null,
-                'city' => str_replace("'", '', $data['base_options']['destination']['city']) ?? null,
+                // regex use for remove special character from city name
+                'city' => preg_replace('/[^a-zA-Z0-9\s-]/', '', $data['base_options']['destination']['city']),
                 'state' => $data['base_options']['destination']['state_iso2'] ?? null,
                 'country' => $data['base_options']['destination']['country_iso2'] ?? null,
                 'address_type' => $data['base_options']['destination']['address_type'] ?? null,
@@ -322,6 +323,8 @@ class GetRatesController extends Controller
                     $originAddress = 'warehouse';
                     $wareHouseShipmentExist = true;
                 }
+
+                $product['name'] = str_replace('"', '', $product['name']);
 
                 $details['origin'][$key] = $originAddress;
                 $details['items'][$key] = [

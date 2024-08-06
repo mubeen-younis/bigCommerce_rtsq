@@ -1,3 +1,7 @@
+= 2.2.16 2024-07-25 =
+
+* Update - rename parcel shipment services feature (chunk-2) (Ticket:2801730131) [#465] (https://bitbucket.org/eniture/big-commerce/pull-requests/465)
+
 = 2.2.15 2024-07-16 =
 
 * Update - introduce "Nesting Products" Fetaure in BC (Ticket:2504095504) [#464] (https://bitbucket.org/eniture/big-commerce/pull-requests/464)
