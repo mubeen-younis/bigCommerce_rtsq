@@ -3599,7 +3599,7 @@ class GenerateRequestData
             if (isset($bin->items)) {
                 foreach ($bin->items as $itemData) {
                     if ($hazmat == 'N') {
-                        $item['isHazmatLineItem'] = $itemsArr[$itemData->id]['isHazmatLineItem'];
+                        $item['isHazmatLineItem'] = $hazmat = $itemsArr[$itemData->id]['isHazmatLineItem'];
                     }
                     $price += $itemsArr[$itemData->id]['lineItemPrice'] ?? 0;
                 }
