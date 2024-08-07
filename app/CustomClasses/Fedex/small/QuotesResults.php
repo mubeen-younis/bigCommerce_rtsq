@@ -20,7 +20,7 @@ class QuotesResults
 
     public function getServiceRate($data, $serviceDesc, $quoteSettings)
     {
-        $amount = $data;
+        $amount = str_replace(',', '', $data);
         if (isset($quoteSettings['rate_source']) && $quoteSettings['rate_source'] === 1) {
             $boxFee = $data['boxFees']['Amount'] ?? 0;
             $amount = $data['NegotiatedRates']['Amount'] > 0 ? $data['NegotiatedRates']['Amount'] + $boxFee : $amount;
@@ -241,6 +241,15 @@ class QuotesResults
             $lowestAmount = 0;
             if (isset($quote['q'])) {
                 foreach ($quote['q'] as $key => $data) {
+
+                    if(Str::contains($data['serviceType'], '_ONE_RATE')){
+                        $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]['fedex']) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin]['fedex'] : 1;
+                    } elseif(Str::contains($data['serviceType'], '_AIR_SERVICE')){
+                        $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]['both']) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin]['both'] : 1;
+                    } else{
+                        $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]['normal']) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin]['normal'] : 1;
+                    }
+
                     // Check if service type is checked to show
                     $serviceName = str_replace('_ONE_RATE', '', $data['serviceType']);
                     $serviceName = str_replace('_AIR_SERVICE', '', $serviceName);
@@ -252,7 +261,7 @@ class QuotesResults
                         continue;
                     }
                     //  CHeck FOr Ups ground transit days
-                    if ($serviceName == "GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "APPOINTMENT_HOME_DELIVERY" || $serviceName == "DATE_CERTAIN_HOME_DELIVERY" || $serviceName == "EVENING_HOME_DELIVERY") {
+                    if ($serviceName == "GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "APPOINTMENT_HOME_DELIVERY" || $serviceName == "DATE_CERTAIN_HOME_DELIVERY" || $serviceName == "EVENING_HOME_DELIVERY") {
                         if (isset($this->quoteSettings['number_of_transit_days']) && $this->quoteSettings['number_of_transit_days'] != null && isset($this->quoteSettings['ground_metric']) && $this->quoteSettings['ground_metric'] != null) {
                             $islimited = $this->checkGroundTransit($data, $this->quoteSettings);
                             if ($islimited) {
@@ -262,7 +271,7 @@ class QuotesResults
                     }
                     //  CHecks FOr Only quote ground service if hazardous
                     if ($isHazmat && isset($this->quoteSettings['ground_service_for_hazardous_material']) && $this->quoteSettings['ground_service_for_hazardous_material']) {
-                        if (!($serviceName == "GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "APPOINTMENT_HOME_DELIVERY" || $serviceName == "DATE_CERTAIN_HOME_DELIVERY" || $serviceName == "EVENING_HOME_DELIVERY")) {
+                        if (!($serviceName == "GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "APPOINTMENT_HOME_DELIVERY" || $serviceName == "DATE_CERTAIN_HOME_DELIVERY" || $serviceName == "EVENING_HOME_DELIVERY")) {
                             continue;
                         }
                     }
@@ -287,7 +296,6 @@ class QuotesResults
                     $access2 = $access;
                     // Checking hazmat and adding hazmat amounts in services
                     if ($isHazmat) {
-                        $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin] : 1;
                         if ($this->isMultiShipment) {
                             if ($hazmatAllItems[$origin] == 'Y') {
                                 $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings, $hazmatBoxes);

@@ -7,6 +7,7 @@ namespace App\CustomClasses\UpsSmall;
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
 use App\CustomClasses\Functions;
+use Illuminate\Support\Str;
 use App\Http\Controllers\ShippingRuleController;
 
 class QuotesResults
@@ -48,7 +49,7 @@ class QuotesResults
     {
         $totalHazmatBoxes = Functions::getHazmatItemBoxes($this->isSbsEnable, $quoteSettings, $this->items, $hazmatBoxes);
         // Adding hazmat fee to Ground Service
-        if ($serviceCode == "03" || $serviceCode == 'SR_03' || $serviceCode == "03S" || $serviceCode == 'SR_03S') {
+        if ($serviceCode == "03" || $serviceCode == 'SR_03' || $serviceCode == "03S" || $serviceCode == 'SR_03S' || $serviceCode == "SR_12S" || $serviceCode == "12S" || $serviceCode == "11" || $serviceCode == "12" || $serviceCode == "GFP") {
             if (isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
                 $amount = $amount + $quoteSettings['ground_hazardous_material_fee'] * $totalHazmatBoxes;
             }
@@ -198,8 +199,15 @@ class QuotesResults
                             continue;
                         }
                     }
+
+                    if(Str::contains($key, 'SR_')){
+                        $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]['simple-rate']) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin]['simple-rate'] : 1;
+                    } else{
+                        $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]['normal']) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin]['normal'] : 1;
+                    }
+
                     //  CHeck FOr Ups ground transit days
-                    if ($data['serviceType'] == "03" || $data['serviceType'] == "SR_03" || $data['serviceType'] == "03S" || $data['serviceType'] == "SR_03S") {
+                    if ($data['serviceType'] == "03" || $data['serviceType'] == "SR_03" || $data['serviceType'] == "03S" || $data['serviceType'] == "SR_03S" || $data['serviceType'] == "SR_12S" || $data['serviceType'] == "12S" || $data['serviceType'] == "11" || $data['serviceType'] == "12" || $data['serviceType'] == "GFP") {
                         if (isset($this->quoteSettings['number_of_transit_days']) && $this->quoteSettings['number_of_transit_days'] != null && isset($this->quoteSettings['ground_metric']) && $this->quoteSettings['ground_metric'] != null) {
                             $islimited = $this->checkGroundTransit($data, $this->quoteSettings);
                             if ($islimited) {
@@ -209,7 +217,7 @@ class QuotesResults
                     }
                     //  CHecks FOr Only quote ground service if hazardous
                     if ($isHazmat && isset($this->quoteSettings['ground_service_for_hazardous_material']) && $this->quoteSettings['ground_service_for_hazardous_material']) {
-                        if ($data['serviceType'] != "03" && $data['serviceType'] != "SR_03" && $data['serviceType'] != "03S" && $data['serviceType'] != "SR_03S") {
+                        if ($data['serviceType'] != "03" && $data['serviceType'] != "SR_03" && $data['serviceType'] != "03S" && $data['serviceType'] != "SR_03S" && $data['serviceType'] != "SR_12S" && $data['serviceType'] != "12S" && $data['serviceType'] != "11" && $data['serviceType'] != "12" && $data['serviceType'] != "GFP") {
                             continue;
                         }
                     }
@@ -242,7 +250,6 @@ class QuotesResults
                     $price = $this->addHandlingMarkupOfHazmat($price, $quoteSettings['handling_fee_markup'] ?? 0);
                     // Checking hazmat and adding hazmat amounts in services
                     if ($isHazmat) {
-                        $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin] : 1;
                         if ($isMultiShipment) {
                             if ($hazmatAllItems[$origin] == 'Y') {
                                 $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings, $hazmatBoxes);

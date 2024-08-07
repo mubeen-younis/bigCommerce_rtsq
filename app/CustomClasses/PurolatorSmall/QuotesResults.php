@@ -7,6 +7,7 @@ namespace App\CustomClasses\PurolatorSmall;
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
 use App\CustomClasses\Functions;
+use Illuminate\Support\Str;
 use App\Http\Controllers\ShippingRuleController;
 
 class QuotesResults
@@ -42,7 +43,7 @@ class QuotesResults
         // Adding hazmat fee to Ground Service
         $serviceDesc = preg_replace("([A-Z])", " $0", $serviceCode);
         $trim = ltrim($serviceDesc);
-        if (strpos($trim, 'Ground') !== false) {
+        if (strpos($trim, 'Ground') !== false || Str::contains($trim, 'Ground')) {
             if (isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
                 $amount = $amount + $quoteSettings['ground_hazardous_material_fee'] * $totalHazmatBoxes;
             }
@@ -219,7 +220,7 @@ class QuotesResults
                         $showRadNotation = $isRadNotation;
                         // Checking hazmat and adding hazmat amounts in services
                         if ($isHazmat) {
-                            $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin] : 1;
+                            $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin]['normal'] : 1;
                             if ($isMultiShipment) {
                                 if ($hazmatAllItems[$origin] == 'Y') {
                                     $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings, $hazmatBoxes);
@@ -303,7 +304,7 @@ class QuotesResults
 
     private function onylQuoteGroundServices($isHazmat, $srvcType)
     {
-        $grdServicesArr = ['PurolatorGround9AM', 'PurolatorGround10:30AM', 'PurolatorGround'];
+        $grdServicesArr = ['PurolatorGround9AM', 'PurolatorGround10:30AM', 'PurolatorGround', 'PurolatorGroundU.S.'];
         $grdSrvcForHazMat = $this->quoteSettings['ground_service_for_hazardous_material'] ?? false;
 
         if ($isHazmat && isset($grdSrvcForHazMat) && $grdSrvcForHazMat) {

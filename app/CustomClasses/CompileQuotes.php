@@ -3625,7 +3625,7 @@ class CompileQuotes
                         continue;
                     }
                     //  CHeck FOr Ups ground transit days
-                    if ($data['serviceType'] == "GND") {
+                    if ($data['serviceType'] == "GND" || $data['serviceType'] == "3DS" || $data['serviceType'] == "03") {
                         // TODO: ALso We have to check plan here
                         if (isset($this->quoteSettings['number_of_transit_days']) && $this->quoteSettings['number_of_transit_days'] != null && isset($this->quoteSettings['ground_metric']) && $this->quoteSettings['ground_metric'] != null) {
                             $islimited = $this->wweSmallQuoteRes->checkGroundTransit($data, $this->quoteSettings);
@@ -3636,7 +3636,7 @@ class CompileQuotes
                     }
                     //  CHecks FOr Only quote ground service if hazardous
                     if ($isHazmat && isset($this->quoteSettings['ground_service_for_hazardous_material']) && $this->quoteSettings['ground_service_for_hazardous_material']) {
-                        if ($data['serviceType'] != "GND") {
+                        if ($data['serviceType'] != "GND" || $data['serviceType'] != "3DS" || $data['serviceType'] != "03") {
                             continue;
                         }
                     }
@@ -3657,7 +3657,7 @@ class CompileQuotes
                     $price = $data['totalNetCharge']['Amount'];
                     // Checking hazmat and adding hazmat amounts in services
                     if ($isHazmat) {
-                        $hazmatBoxes = isset($this->totalHazmatBoxes['totalHazmatBoxes'][$origin]) ? $this->totalHazmatBoxes['totalHazmatBoxes'][$origin] : 1;
+                        $hazmatBoxes = isset($this->totalHazmatBoxes['totalHazmatBoxes'][$origin]) ? $this->totalHazmatBoxes['totalHazmatBoxes'][$origin]['normal'] : 1;
                         if ($this->isMultiShipment) {
                             if ($hazmatAllItems[$origin] == 'Y') {
                                 $price = $this->wweSmallQuoteRes->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings, $isSbsEnable, $this->items, $hazmatBoxes);

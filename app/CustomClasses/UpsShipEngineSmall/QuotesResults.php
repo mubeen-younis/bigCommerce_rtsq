@@ -182,7 +182,7 @@ class QuotesResults
         $shipmentCount = 0;
         $count = 0;
         $access2 = $access;
-        $groundServiceCodes = ["ups_ground"];
+        $groundServiceCodes = ["ups_ground", "ups_3_day_select", "ups_standard", "ups_standard_international"];
         $carrierCode = "shipEng";
 
         $rad_settings = Functions::getRADsettings($storeId) ?? [];
@@ -252,7 +252,7 @@ class QuotesResults
                     
                     // Checking hazmat and adding hazmat amounts in services
                     if ($isHazmat) {
-                        $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin] : 1;
+                        $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin]['normal'] : 1;
                         if ($isMultiShipment) {
                             if ($hazmatAllItems[$origin] == 'Y') {
                                 $price = $this->addHazmatAmountsInServices($price, $serviceCode, $this->quoteSettings, $groundServiceCodes, $hazmatBoxes);

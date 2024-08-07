@@ -59,7 +59,7 @@ class WweSmallQuoteResults
     {
         $totalHazmatBoxes = Functions::getHazmatItemBoxes($isSbsEnable, $quoteSettings, $items, $hazmatBoxes);
         // Adding hazmat fee to Ground Service
-        if ($serviceCode == "GND") {
+        if ($serviceCode == "GND" || $serviceCode == "3DS" || $serviceCode == "03") {
             if (isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
                 $amount = $amount + $quoteSettings['ground_hazardous_material_fee'] * $totalHazmatBoxes;
             }

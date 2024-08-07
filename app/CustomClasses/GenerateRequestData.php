@@ -3530,7 +3530,6 @@ class GenerateRequestData
                 $binResponse = $this->addPackagingID($binResponse, $boxBins);
                 $counting = 0;
                 $counting = 0;
-                $this->Boxes = [];
                 foreach ($binResponse as $locationId => $bins) {
                     $totalHazmatBoxes = 0;
                     foreach ($bins->bins_packed as $key => $binPacked) {
@@ -3560,7 +3559,7 @@ class GenerateRequestData
                         $totalBoxWeight = $bin->bin_data->weight + $boxWeight ?? 0;
                         $binResponse[$locationId]->bins_packed[$key]->bin_data->totalBoxWeight = $totalBoxWeight;
                     }
-                    $this->Boxes['totalHazmatBoxes'][$locationId] = $totalHazmatBoxes ?? 0;
+                    $this->Boxes['totalHazmatBoxes'][$locationId][$this->fedexType] = $totalHazmatBoxes ?? 0;
                 }
             } else {
                 $newOrigins = $this->origins;

@@ -97,7 +97,7 @@ class QuotesResults
                         $showRadNotation = $isRadNotation;
                         // Checking hazmat and adding hazmat amounts in services
                         if ($isHazmat) {
-                            $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin] : 1;
+                            $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin]['normal'] : 1;
                             if ($isMultiShipment) {
                                 if ($hazmatAllItems[$origin] == 'Y') {
                                     $price = $this->addHazmatAmountsInServices($price, $srvcType, $hazmatBoxes);
@@ -259,7 +259,7 @@ class QuotesResults
                         $showRadNotation = $isRadNotation;
                         // Checking hazmat and adding hazmat amounts in services
                         if ($isHazmat) {
-                            $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin] : 1;
+                            $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin]['normal'] : 1;
                             if ($isMultiShipment) {
                                 if ($hazmatAllItems[$origin] == 'Y') {
                                     $price = $this->addHazmatAmountsInServices($price, $srvcType, $hazmatBoxes);
@@ -425,7 +425,7 @@ class QuotesResults
     {
         $islimited = false;
 
-        if ($srvcType == "SG" || $srvcType == "SGR" || $srvcType == "GND") {
+        if ($srvcType == "SG" || $srvcType == "SGR" || $srvcType == "GND" || $srvcType == "03" || $srvcType == "3DS" || $srvcType == "SC3" || $srvcType == "ZZ11") {
             if (isset($this->quoteSettings['number_of_transit_days']) && $this->quoteSettings['number_of_transit_days'] != null && isset($this->quoteSettings['ground_metric']) && $this->quoteSettings['ground_metric'] != null) {
                 // Check limited to carrier transit days
                 if ($this->quoteSettings['ground_metric'] == 1) {
@@ -464,7 +464,7 @@ class QuotesResults
 
     private function onylQuoteGroundServices($isHazmat, $srvcType)
     {
-        $grdServicesArr = ['SG', 'SGR', 'GND'];
+        $grdServicesArr = ['SG', 'SGR', 'GND', '03', '3DS', 'SC3', 'ZZ11'];
         $grdSrvcForHazMat = $this->quoteSettings['ground_service_for_hazardous_material'] ?? false;
 
         if ($isHazmat && isset($grdSrvcForHazMat) && $grdSrvcForHazMat) {
@@ -559,7 +559,7 @@ class QuotesResults
         $quoteSettings = $this->quoteSettings;
         $totalHazmatBoxes = Functions::getHazmatItemBoxes($this->isSbsEnable, $quoteSettings, $this->items, $hazmatBoxes);
         // Adding hazmat fee to Ground Service
-        if ($serviceCode == "SG" || $serviceCode == "SGR" || $serviceCode == "GND") {
+        if ($serviceCode == "SG" || $serviceCode == "SGR" || $serviceCode == "GND" || $serviceCode == "03" || $serviceCode == "3DS" || $serviceCode == "SC3" || $serviceCode == "ZZ11") {
             $grdHazMatFee = $quoteSettings['ground_hazardous_material_fee'] * $totalHazmatBoxes ?? null;
             if (isset($grdHazMatFee) && is_numeric($grdHazMatFee) && !empty($grdHazMatFee)) {
                 $amount = $amount + $grdHazMatFee;

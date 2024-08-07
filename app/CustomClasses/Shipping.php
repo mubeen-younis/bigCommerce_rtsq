@@ -536,7 +536,7 @@ class Shipping
 
     private function addBoxFeeToQuotes($quotes, $boxFee, $fedexBoxesFee = [])
     {
-        $parcelCarName = ['wweSmall', 'upsSmall', 'fedexSmall', 'unishippersSmall', 'usps'];
+        $parcelCarName = ['wweSmall', 'upsSmall', 'fedexSmall', 'unishippersSmall', 'usps', 'shipEngine', 'wweSmallN', 'purolator'];
         if (isset($quotes) && !empty($quotes)) {
             foreach ($quotes as $carName => $quot) {
                 if (in_array($carName, $parcelCarName)) {
@@ -636,6 +636,16 @@ class Shipping
                                 if (isset($qs['totalNetCharge']['Amount'])) {
                                     if (isset($boxFee[$locId])) {
                                         $quotes[$carName][$locId]['q'][$key]['totalNetCharge']['Amount'] = $qs['totalNetCharge']['Amount'] + $boxFee[$locId];
+                                        $quotes[$carName][$locId]['q'][$key]['boxFees']['Amount'] = $boxFee[$locId];
+                                    }
+                                } elseif (isset($qs['totalOfferPrice']['value'])) {
+                                    if (isset($boxFee[$locId])) {
+                                        $quotes[$carName][$locId]['q'][$key]['totalOfferPrice']['value'] = $qs['totalOfferPrice']['value'] + $boxFee[$locId];
+                                        $quotes[$carName][$locId]['q'][$key]['boxFees']['Amount'] = $boxFee[$locId];
+                                    }
+                                } elseif (isset($qs['shipping_amount']['amount'])) {
+                                    if (isset($boxFee[$locId])) {
+                                        $quotes[$carName][$locId]['q'][$key]['shipping_amount']['amount'] = $qs['shipping_amount']['amount'] + $boxFee[$locId];
                                         $quotes[$carName][$locId]['q'][$key]['boxFees']['Amount'] = $boxFee[$locId];
                                     }
                                 }
