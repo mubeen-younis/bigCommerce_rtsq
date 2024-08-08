@@ -1039,6 +1039,9 @@ class Shipping
 
         if (strlen($quote['title']) >= 100) {
             $res = explode("w/", $quote['title']);
+            if($quote['code'] === 'INSP'){
+                return $res[0];
+            }
             $string = str_replace('residential', 'resi', $res[1]);
             $res = Functions::$simpleLTLTitle . ' w/' . $string;
         } else if ($quote['title'] == "") {
