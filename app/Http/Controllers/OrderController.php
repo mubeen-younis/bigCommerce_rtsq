@@ -489,6 +489,7 @@ class OrderController extends Controller
                 $sMethod = '';
             }
 
+            $sName = str_replace('mi away', 'Mi Away', $sName);
             $orderWidget[$zip]['shipping_method'] = $sName . $sMethod;
             $orderWidget[$zip]['shipping_rate'] = '$' . number_format((float)$sRate, 2,);
             // TODO : Need to change originalPiecesOfLineItem -> itemQuantity
