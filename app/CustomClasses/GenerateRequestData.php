@@ -3418,9 +3418,9 @@ class GenerateRequestData
                         "variant_id" => $key,
                         "id" => $key,
                         "wg" => $itemsArr[$key]['lineItemWeight'] ?? 0,
-                        "h" => Helpers::floatValue($itemsArr[$key]['lineItemHeight'] ?? 0),
-                        "d" => Helpers::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
-                        "w" => Helpers::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
+                        "h" => Functions::floatValue($itemsArr[$key]['lineItemHeight'] ?? 0),
+                        "d" => Functions::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
+                        "w" => Functions::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
                         "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
                         "vr" => 0, //vertical 0 or 1
                         "boxFee" => 0,
@@ -3431,9 +3431,9 @@ class GenerateRequestData
                         "variant_id" => $key,
                         "id" => $key,
                         "wg" => $itemsArr[$key]['lineItemWeight'] ?? 0,
-                        "h" => Helpers::floatValue($itemsArr[$key]['lineItemHeight'] ?? 0),
-                        "d" => Helpers::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
-                        "w" => Helpers::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
+                        "h" => Functions::floatValue($itemsArr[$key]['lineItemHeight'] ?? 0),
+                        "d" => Functions::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
+                        "w" => Functions::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
                         "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
                         "vr" => $itemsArr[$key]['vertical_rotation'] ?? 0, //vertical 0 or 1
                         "boxFee" => $itemsArr[$key]['boxFee'] ?? 0

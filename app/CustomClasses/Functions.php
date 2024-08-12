@@ -1496,4 +1496,19 @@ class Functions
 
         return $services->toArray() ?? [];
     }
+
+    public static function floatValue($number = 0)
+    {   
+        $number = (float) $number;
+        $number = number_format($number, 1, '.', '');
+        if ($number == 0) {
+            return $number;
+        }
+        $number = rtrim($number, '0'); // 50,00 --> 50 or // 50.00 --> 50.
+        $number = rtrim($number, ','); // 50,   --> 50
+        $number = rtrim($number, '.'); // 50.   --> 50
+
+        return $number;
+
+    }
 }
