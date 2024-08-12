@@ -22,6 +22,7 @@ use App\Http\Controllers\StoreController;
 use App\Http\Controllers\Subscription\SubscriptionController;
 use App\Http\Controllers\Subscription\PackageSubscriptionController;
 use App\Http\Middleware\EnsureTokenIsValid;
+use App\Http\Middleware\EnsureProductApiTokenIsValid;
 use App\Models\CarrierServices;
 use App\Models\Locations;
 use Illuminate\Http\Request;
@@ -85,7 +86,9 @@ Route::post('connection_update_from_fdo', [\App\Http\Controllers\FDOController::
 
 
 /////
-
+Route::middleware([EnsureProductApiTokenIsValid::class])->group(function () {
+    Route::post('/products', [ApiAccessTokenController::class, 'updateProduct']);
+});
 
 // Ws Route For Adding Plan
 Route::post('/save_plan_detail', [CarrierPlanController::class, 'addPlanFromWs']);

@@ -4,6 +4,7 @@ namespace App\Http;
 
 use App\Http\Middleware\EnsureStoreisActive;
 use App\Http\Middleware\EnsureTokenIsValid;
+use App\Http\Middleware\EnsureProductApiTokenIsValid;
 use App\Http\Middleware\EnsureWebhookIsValid;
 use App\Http\Middleware\FDOValidity;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
@@ -67,6 +68,7 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'isvalidtoken' => EnsureTokenIsValid::class,
+        'isvalidproductapitoken' => EnsureProductApiTokenIsValid::class,
         'isvalidfdo' => FDOValidity::class,
         'iswebhookvalid'=>EnsureStoreisActive::class,
     ];
