@@ -36,6 +36,7 @@ use App\Http\Controllers\DBSC\ShippingZoneController;
 use App\Http\Controllers\DBSC\ShippingRatesController;
 use App\Http\Controllers\DBSC\OtherSettingsController;
 use App\Http\Controllers\BigCommerceListingController;
+use App\Http\Controllers\ApiAccessTokenController;
 
 /*
 |--------------------------------------------------------------------------
@@ -297,6 +298,9 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/submit_staffnote_settings', [QuoteSettingsController::class, 'saveStaffNoteSettings']);
 
     Route::get('/get_carrs_conn_settings', [ConnectionController::class, 'getConnSettings']);
+    // Update Product API Route
+    Route::post('/generateApiToken', [ApiAccessTokenController::class, 'create']);
+    Route::post('/getApiAccessToken', [ApiAccessTokenController::class, 'show']);
 });
 //Webhook
 Route::post('/bc-subscription-update', [SubscriptionController::class, 'paymentByStripeWebHook']);
