@@ -208,7 +208,7 @@ class Functions
             'freightquote-ltl' => 'b2b', 'freightquote-chr-ltl' => 'b2b', 'purolator-small' => 'purolator', 'usps-small' => 'usps',
             'tql-ltl' => 'tql', 'yrc-ltl' => 'yrc', 'odfl-ltl' => 'odfl4me', 'dayross-ltl' => 'dayross', 'priority-one-ltl' => 'priority1',
             'estes-ltl' => 'estes', 'echo-ltl' => 'echoLogistics', 'saia-ltl' => 'saia', 'abf-ltl' => 'abf', 'daylight-ltl' => 'daylight',
-            'southeastern-ltl' => 'southeastern', 'unishipper-ltl' => 'Unishippers LTL New API', 'ups-land-cost-small' => 'UPSLandedCost'];
+            'southeastern-ltl' => 'southeastern', 'unishipper-ltl' => 'Unishippers LTL New API', 'ups-land-cost-small' => 'UPSLandedCost', 'fedex-small-new' => 'FedEx Small New API'];
 
         return $carrierCodesWithName[$carrSlug] ?? null;
     }

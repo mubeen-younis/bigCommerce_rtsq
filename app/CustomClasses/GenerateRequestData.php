@@ -2439,14 +2439,14 @@ class GenerateRequestData
 
             'residentialDelivery' => ($alwaysResi ? 'Y' : $residential == 'Y') ? 'on' : 'off',
 
-            'MeterNumber' => $connSettings['creds']['meter_number'],
-            'password' => $connSettings['creds']['password'],
-            'key' => $connSettings['creds']['api_access_key'],
-            'AccountNumber' => $connSettings['creds']['account_number'],
+            'MeterNumber' => $connSettings['creds']['meter_number'] ?? '',
+            'password' => $connSettings['creds']['password'] ?? '',
+            'key' => $connSettings['creds']['api_access_key'] ?? '',
+            'AccountNumber' => $connSettings['creds']['account_number'] ?? '',
             // New Api Test Connection Params
-            'clientId' => $connSettings['creds']['clientId'],
-            'clientSecret' => $connSettings['creds']['clientSecret'],
-            'accountNumber' => $connSettings['creds']['new_api_account_number'],
+            'clientId' => $connSettings['creds']['clientId'] ?? '',
+            'clientSecret' => $connSettings['creds']['clientSecret'] ?? '',
+            'accountNumber' => $connSettings['creds']['new_api_account_number'] ?? '',
             'requestForNewAPI' => '1',
 
             'prefferedCurrency' => 'USD',
