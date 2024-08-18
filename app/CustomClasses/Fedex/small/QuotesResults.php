@@ -44,7 +44,7 @@ class QuotesResults
     {
         $totalHazmatBoxes = Functions::getHazmatItemBoxes($this->isSbsEnable, $quoteSettings, $this->items, $hazmatBoxes);
         // Adding hazmat fee to Ground Service
-        if ($serviceCode == "FEDEX_GROUND" || $serviceCode == "GROUND_HOME_DELIVERY" || $serviceCode == "FEDEX_GROUND_HOME_DELIVERY" || $serviceCode == "GROUND_HOME_DELIVERY_AIR_SERVICE" || $serviceCode == "FEDEX_APPOINTMENT_HOME_DELIVERY" || $serviceCode == "FEDEX_DATE_CERTAIN_HOME_DELIVERY" || $serviceCode == "FEDEX_EVENING_HOME_DELIVERY") {
+        if ($serviceCode == "FEDEX_GROUND" || $serviceCode == "GROUND_HOME_DELIVERY" || $serviceCode == "FEDEX_GROUND_HOME_DELIVERY" || $serviceCode == "GROUND_HOME_DELIVERY_AIR_SERVICE") {
             if (isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
                 $amount = $amount + $quoteSettings['ground_hazardous_material_fee'] * $totalHazmatBoxes;
             }
@@ -261,7 +261,7 @@ class QuotesResults
                         continue;
                     }
                     //  CHeck FOr Ups ground transit days
-                    if ($serviceName == "GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "APPOINTMENT_HOME_DELIVERY" || $serviceName == "DATE_CERTAIN_HOME_DELIVERY" || $serviceName == "EVENING_HOME_DELIVERY") {
+                    if ($serviceName == "GROUND" || $serviceName == "GROUND_HOME_DELIVERY") {
                         if (isset($this->quoteSettings['number_of_transit_days']) && $this->quoteSettings['number_of_transit_days'] != null && isset($this->quoteSettings['ground_metric']) && $this->quoteSettings['ground_metric'] != null) {
                             $islimited = $this->checkGroundTransit($data, $this->quoteSettings);
                             if ($islimited) {
@@ -271,7 +271,7 @@ class QuotesResults
                     }
                     //  CHecks FOr Only quote ground service if hazardous
                     if ($isHazmat && isset($this->quoteSettings['ground_service_for_hazardous_material']) && $this->quoteSettings['ground_service_for_hazardous_material']) {
-                        if (!($serviceName == "GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "APPOINTMENT_HOME_DELIVERY" || $serviceName == "DATE_CERTAIN_HOME_DELIVERY" || $serviceName == "EVENING_HOME_DELIVERY")) {
+                        if (!($serviceName == "GROUND" || $serviceName == "GROUND_HOME_DELIVERY")) {
                             continue;
                         }
                     }
@@ -570,7 +570,7 @@ class QuotesResults
 
     function isGroundService($service)
     {
-        $groundServices = ['FEDEX_GROUND', 'HOME_DELIVERY', 'DATE_CERTAIN_HOME_DELIVERY', 'EVENING_HOME_DELIVERY', 'APPOINTMENT_HOME_DELIVERY', 'SMART_POST'];
+        $groundServices = ['FEDEX_GROUND', 'HOME_DELIVERY', 'SMART_POST'];
         return in_array($service, $groundServices);
     }
 
