@@ -2453,10 +2453,16 @@ class GenerateRequestData
 
             'residentialDelivery' => ($alwaysResi ? 'Y' : $residential == 'Y') ? 'on' : 'off',
 
-            'MeterNumber' => $connSettings['creds']['meter_number'],
-            'password' => $connSettings['creds']['password'],
-            'key' => $connSettings['creds']['api_access_key'],
-            'AccountNumber' => $connSettings['creds']['account_number'],
+            'MeterNumber' => $connSettings['creds']['meter_number'] ?? '',
+            'password' => $connSettings['creds']['password'] ?? '',
+            'key' => $connSettings['creds']['api_access_key'] ?? '',
+            'AccountNumber' => $connSettings['creds']['account_number'] ?? '',
+            // New Api Test Connection Params
+            'clientId' => $connSettings['creds']['clientId'] ?? '',
+            'clientSecret' => $connSettings['creds']['clientSecret'] ?? '',
+            'accountNumber' => $connSettings['creds']['new_api_account_number'] ?? '',
+            'requestForNewAPI' => '1',
+
             'prefferedCurrency' => 'USD',
             'pkgType' => '00',
             'saturdayDelivery' => 'on',
@@ -2464,6 +2470,23 @@ class GenerateRequestData
             'homeDeliveryPremiumType' => $premiumType,
             'packagesType' => !$sbsEnabled ? $ratingMethod : '',
         ];
+
+        if (isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api') {
+            unset(
+                $apiArray['MeterNumber'],
+                $apiArray['password'],
+                $apiArray['AccountNumber'],
+                $apiArray['key'],
+            );
+        } else {
+            unset(
+                $apiArray['clientId'],
+                $apiArray['clientSecret'],
+                $apiArray['accountNumber'],
+                $apiArray['requestForNewAPI'],
+            );
+        }
+
         if ($this->smartPost) {
             $apiArray['smartPostData'] = [
                 'hubId' => $hubId,
@@ -3409,9 +3432,9 @@ class GenerateRequestData
                         "variant_id" => $key,
                         "id" => $key,
                         "wg" => $itemsArr[$key]['lineItemWeight'] ?? 0,
-                        "h" => Helpers::floatValue($itemsArr[$key]['lineItemHeight'] ?? 0),
-                        "d" => Helpers::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
-                        "w" => Helpers::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
+                        "h" => Functions::floatValue($itemsArr[$key]['lineItemHeight'] ?? 0),
+                        "d" => Functions::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
+                        "w" => Functions::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
                         "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
                         "vr" => 0, //vertical 0 or 1
                         "boxFee" => 0,
@@ -3422,9 +3445,9 @@ class GenerateRequestData
                         "variant_id" => $key,
                         "id" => $key,
                         "wg" => $itemsArr[$key]['lineItemWeight'] ?? 0,
-                        "h" => Helpers::floatValue($itemsArr[$key]['lineItemHeight'] ?? 0),
-                        "d" => Helpers::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
-                        "w" => Helpers::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
+                        "h" => Functions::floatValue($itemsArr[$key]['lineItemHeight'] ?? 0),
+                        "d" => Functions::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
+                        "w" => Functions::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
                         "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
                         "vr" => $itemsArr[$key]['vertical_rotation'] ?? 0, //vertical 0 or 1
                         "boxFee" => $itemsArr[$key]['boxFee'] ?? 0
