@@ -1234,7 +1234,7 @@ class OrderController extends Controller
                     if (blank($reqData)) {
                         $reqData = optional(RequestTempData::where('rate_id', $fullRateId)->where('store_id', $toRequest['store_id'])->latest()->first())->toArray();
                     }
-                    Log::info('reqData ' . json_encode($reqData));
+
                     if (!blank($reqData)) {
                         unset($reqData['id']);
                         $orderId= $order['id'];
@@ -1243,26 +1243,21 @@ class OrderController extends Controller
                         // Check: if order is newly created then update staff note
                         $staffNoteSettings = optional(WeightThresholdSettings::where('store_id', $toRequest['store_id'])->first())->toArray() ?? [];
                         $isStaffNotesActive = isset($staffNoteSettings['is_staff_note_active']) && $staffNoteSettings['is_staff_note_active'] == 0 ? false : true;
-                        Log::info('isStaffNotesActive ' . $isStaffNotesActive . ' scope : ' . $scope);
+
                         if ($isStaffNotesActive && $scope == 'store/order/created') {
                             $orderCheck = RequestData::where('order_id', $orderId)->first();
-                            Log::info('orderCheck ' . json_encode($orderCheck));
-                            // if (!$orderCheck) {
-                                $reportingFlag = "false";
-                                $orderWidget = $this->createOrderWidget($toRequest, $order, $reportingFlag);
-                                Log::info('orderWidget ' . json_encode($orderWidget));
-                                $formateStaffNote = $this->formatShipment($orderWidget);
-                                $isStatus = $this->updateStaffNote($formateStaffNote, $toRequest);
-                                Log::info('isStatus ' . $isStatus);
-                                if($isStatus){
-                                    RequestData::where('store_id', $toRequest['store_id'])
-                                    ->orWhere('cart_id', $cartId)
-                                    ->orWhere('rate_id', $rateId)
-                                    ->update([
-                                        'order_id' => $orderId
-                                    ]);
-                                }
-                            // }
+                            $reportingFlag = "false";
+                            $orderWidget = $this->createOrderWidget($toRequest, $order, $reportingFlag);
+                            $formateStaffNote = $this->formatShipment($orderWidget);
+                            $isStatus = $this->updateStaffNote($formateStaffNote, $toRequest);
+                            if($isStatus){
+                                RequestData::where('store_id', $toRequest['store_id'])
+                                ->orWhere('cart_id', $cartId)
+                                ->orWhere('rate_id', $rateId)
+                                ->update([
+                                    'order_id' => $orderId
+                                ]);
+                            }
                         }
                         // TODO :  Need to check why we are doing this
                         //  $request['store_name'] = $toRequest['store_name'];
