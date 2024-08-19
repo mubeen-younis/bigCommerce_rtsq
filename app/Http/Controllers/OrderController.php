@@ -1247,7 +1247,7 @@ class OrderController extends Controller
                         if ($isStaffNotesActive && $scope == 'store/order/created') {
                             $orderCheck = RequestData::where('order_id', $orderId)->first();
                             Log::info('orderCheck ' . json_encode($orderCheck));
-                            if (!$orderCheck) {
+                            // if (!$orderCheck) {
                                 $reportingFlag = "false";
                                 $orderWidget = $this->createOrderWidget($toRequest, $order, $reportingFlag);
                                 Log::info('orderWidget ' . json_encode($orderWidget));
@@ -1262,7 +1262,7 @@ class OrderController extends Controller
                                         'order_id' => $orderId
                                     ]);
                                 }
-                            }
+                            // }
                         }
                         // TODO :  Need to check why we are doing this
                         //  $request['store_name'] = $toRequest['store_name'];
