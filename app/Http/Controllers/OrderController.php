@@ -1246,7 +1246,7 @@ class OrderController extends Controller
                         Log::info('isStaffNotesActive ' . $isStaffNotesActive . ' scope ' . $scope);
                         if ($isStaffNotesActive && $scope == 'store/order/created') {
                             // $orderCheck = RequestData::where('order_id', $orderId)->first();
-                            $orderCheck = RequestData::where('order_id', $orderId)->where('rate_id', $rateId)->where('cart_id', $cartId)->where('store_id', $storeId)->exists();
+                            $orderCheck = RequestData::where('order_id', $orderId)->where('rate_id', $rateId)->where('cart_id', $cartId)->where('store_id', $toRequest['store_id'])->exists();
                             Log::info('orderCheck ' . $orderCheck);
                             if(!$orderCheck){
                                 $reportingFlag = "false";
