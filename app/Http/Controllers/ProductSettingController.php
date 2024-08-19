@@ -174,7 +174,6 @@ class ProductSettingController extends Controller
                 $this->saveProducts->saveProduct($product, $storeId, $scope);
                 $this->getVariants($product, $data, $scope);
             } else {
-                Log::info('Check Product Scope ' . $scope);
                 $this->saveProducts->saveProduct($product, $storeId, $scope);
                 $this->saveProducts->deleteNullVariantProduct($product, $storeId);
             }
