@@ -8,7 +8,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    feature/fedex-new-api:
+    feature/fedex-ltl-new-api:
       - step:
           caches:
             - composer
