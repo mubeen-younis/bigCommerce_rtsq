@@ -355,7 +355,7 @@ class ExportImportProducts extends Controller
         ini_set('memory_limit', '-1');
         try {
             $delay = 2;
-            $data['filename'] = $request['file'];
+            $data['filename'] = $request['filename'];
             $data['firstHeader'] = $request['firstHeader'];
             $data['importEmailAddress'] = $request['importEmailAddress'];
             $data['indexes'] = $request['indexes'];
