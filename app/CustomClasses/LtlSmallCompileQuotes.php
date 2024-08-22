@@ -45,6 +45,10 @@ class LtlSmallCompileQuotes
                         $alwaysResi = (isset($requestArr['carriers']['uspsSmall']['api']['residentials_delivery']) && $requestArr['carriers']['uspsSmall']['api']['residential_delivery'] == 'yes');
                         $quote['alwaysResi'] = $alwaysResi;
                         $quote['isResi'] = $residential['uspsSmall'] == 'Y';
+                    } else if (strpos($quote['code'], 'parcel_12shipEng') !== false) {
+                        $alwaysResi = (isset($requestArr['carriers']['shipEngine']['api']['residentials_delivery']) && $requestArr['carriers']['shipEngine']['api']['residential_delivery'] == 'yes');
+                        $quote['alwaysResi'] = $alwaysResi;
+                        $quote['isResi'] = $residential['shipEngine'] == 'Y';
                     } else {
                         $alwaysResi = (isset($requestArr['carriers']['wweSmall']['api']['residentials_delivery']) && $requestArr['carriers']['wweSmall']['api']['residentials_delivery'] == 'yes');
                         $quote['alwaysResi'] = $alwaysResi;
@@ -237,13 +241,22 @@ class LtlSmallCompileQuotes
                     $quote['isResi'] = $residential['odflLtl'] == 'Y';
                     $quote['isLG'] = isset($connectionSettings['odfl-ltl']['quote_settings']['offerLiftGateDelivery']) && $connectionSettings['odfl-ltl']['quote_settings']['offerLiftGateDelivery'];
                     $quote['isNBD'] = isset($connectionSettings['odfl-ltl']['quote_settings']['offer_notify_as_option']) && $connectionSettings['odfl-ltl']['quote_settings']['offer_notify_as_option'];
+                    $quote['isLAD'] = isset($connectionSettings['odfl-ltl']['quote_settings']['offer_limited_access_delivery']) && $connectionSettings['odfl-ltl']['quote_settings']['offer_limited_access_delivery'];
                     $quoteSettings = isset($connectionSettings['odfl-ltl']['quote_settings']) ? $connectionSettings['odfl-ltl']['quote_settings'] : [];
-                    if (strpos($quote['code'], '+LG+NBD') !== false) {
+                    if (strpos($quote['code'], '+LG+LAD+NBD') !== false) {
+                        $quotesCarrier['ltl']['odfl']['LGLADNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+NBD') !== false) {
                         $quotesCarrier['ltl']['odfl']['LGNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LAD+NBD') !== false) {
+                        $quotesCarrier['ltl']['odfl']['LADNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+LAD') !== false) {
+                        $quotesCarrier['ltl']['odfl']['LGLAD'][] = $quote;
                     } else if (strpos($quote['code'], '+NBD') !== false) {
                         $quotesCarrier['ltl']['odfl']['NBD'][] = $quote;
                     } else if (strpos($quote['code'], '+LG') !== false) {
                         $quotesCarrier['ltl']['odfl']['LG'][] = $quote;
+                    } else if (strpos($quote['code'], '+LAD') !== false) {
+                        $quotesCarrier['ltl']['odfl']['LAD'][] = $quote;
                     } else {
                         $quotesCarrier['ltl']['odfl']['simple'][] = $quote;
                     }
@@ -297,9 +310,14 @@ class LtlSmallCompileQuotes
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
                     $quote['isResi'] = isset($residential['freightQuoteLtl']) && $residential['freightQuoteLtl'] == 'Y';
                     $quote['isLG'] = isset($connectionSettings['freightquote-ltl']['quote_settings']['offerLiftGateDelivery']) && $connectionSettings['freightquote-ltl']['quote_settings']['offerLiftGateDelivery'];
+                    $quote['isLAD'] = isset($connectionSettings['freightquote-ltl']['quote_settings']['offer_limited_access_delivery']) && $connectionSettings['freightquote-ltl']['quote_settings']['offer_limited_access_delivery'];
                     $quoteSettings = isset($connectionSettings['freightquote-ltl']['quote_settings']) ? $connectionSettings['freightquote-ltl']['quote_settings'] : [];
-                    if (strpos($quote['code'], '+LG') !== false) {
+                    if (strpos($quote['code'], '+LG+LAD') !== false) {
+                        $quotesCarrier['ltl']['fq']['LGLAD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG') !== false) {
                         $quotesCarrier['ltl']['fq']['LG'][] = $quote;
+                    } else if (strpos($quote['code'], '+LAD') !== false) {
+                        $quotesCarrier['ltl']['fq']['LAD'][] = $quote;
                     } else if (strpos($quote['code'], '+HAT') !== false) {
                         $quotesCarrier['ltl']['fq']['HAT'][] = $quote;
                     } else if (strpos($quote['code'], '+TL') !== false) {
@@ -311,11 +329,16 @@ class LtlSmallCompileQuotes
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
                     $quote['isResi'] = isset($residential['freightQuoteChrLtl']) && $residential['freightQuoteChrLtl'] == 'Y';
                     $quote['isLG'] = isset($connectionSettings['freightquote-chr-ltl']['quote_settings']['offerLiftGateDelivery']) && $connectionSettings['freightquote-chr-ltl']['quote_settings']['offerLiftGateDelivery'];
+                    $quote['isLAD'] = isset($connectionSettings['freightquote-chr-ltl']['quote_settings']['offer_limited_access_delivery']) && $connectionSettings['freightquote-chr-ltl']['quote_settings']['offer_limited_access_delivery'];
                     $quoteSettings = isset($connectionSettings['freightquote-chr-ltl']['quote_settings']) ? $connectionSettings['freightquote-chr-ltl']['quote_settings'] : [];
-                    if (strpos($quote['code'], '+LG') !== false) {
+                    if (strpos($quote['code'], '+LG+LAD') !== false) {
+                        $quotesCarrier['ltl']['fqchr']['LGLAD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG') !== false) {
                         $quotesCarrier['ltl']['fqchr']['LG'][] = $quote;
-                    } else if (strpos($quote['code'], '+HAT') !== false) {
+                    } else if(strpos($quote['code'], '+HAT') !== false){
                         $quotesCarrier['ltl']['fqchr']['HAT'][] = $quote;
+                    } else if (strpos($quote['code'], '+LAD') !== false) {
+                        $quotesCarrier['ltl']['fqchr']['LAD'][] = $quote;
                     } else if (strpos($quote['code'], '+TL') !== false) {
                         $quotesCarrier['ltl']['fqchr']['TL'][] = $quote;
                     } else {
@@ -380,14 +403,23 @@ class LtlSmallCompileQuotes
                     $quote['isResi'] = isset($residential['abfLtl']) && $residential['abfLtl'] == 'Y';
                     $quote['isLG'] = isset($connectionSettings['abf-ltl']['quote_settings']['offerLiftGateDelivery']) && $connectionSettings['abf-ltl']['quote_settings']['offerLiftGateDelivery'];
                     $quote['isNBD'] = isset($connectionSettings['abf-ltl']['quote_settings']['offer_notify_as_option']) && $connectionSettings['abf-ltl']['quote_settings']['offer_notify_as_option'];
+                    $quote['isLAD'] = isset($connectionSettings['abf-ltl']['quote_settings']['offer_limited_access_delivery']) && $connectionSettings['abf-ltl']['quote_settings']['offer_limited_access_delivery'];
                     $quoteSettings = isset($connectionSettings['abf-ltl']['quote_settings']) ? $connectionSettings['abf-ltl']['quote_settings'] : [];
 
-                    if (strpos($quote['code'], '+LG+NBD') !== false) {
+                    if (strpos($quote['code'], '+LG+LAD+NBD') !== false) {
+                        $quotesCarrier['ltl']['abf']['LGLADNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+NBD') !== false) {
                         $quotesCarrier['ltl']['abf']['LGNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LAD+NBD') !== false) {
+                        $quotesCarrier['ltl']['abf']['LADNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+LAD') !== false) {
+                        $quotesCarrier['ltl']['abf']['LGLAD'][] = $quote;
                     } else if (strpos($quote['code'], '+NBD') !== false) {
                         $quotesCarrier['ltl']['abf']['NBD'][] = $quote;
                     } else if (strpos($quote['code'], '+LG') !== false) {
                         $quotesCarrier['ltl']['abf']['LG'][] = $quote;
+                    } else if (strpos($quote['code'], '+LAD') !== false) {
+                        $quotesCarrier['ltl']['abf']['LAD'][] = $quote;
                     } else if (strpos($quote['code'], '+HAT') !== false) {
                         $quotesCarrier['ltl']['abf']['HAT'][] = $quote;
                     } else {
@@ -600,6 +632,42 @@ class LtlSmallCompileQuotes
                         'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
                         'title' => 'Freight' . $rtitle
                     ];
+                } else if ($simpleLg === 'IDLADNBD') {
+
+                    // Create Multi Quotes Array of inside, Limited Access and noftify before Delivery, When Small and Ltl Products
+
+                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, false, $ltlQuot['isID'], $ltlQuot['isNBD'], $ltlQuot['isLAD']);
+
+                    
+
+                    $newQuotes[] = [
+
+                        'code' => 'multi' . $rCode . 'ID+LAD+NBD',
+
+                        'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
+
+                        'title' => 'Freight' . $rtitle
+
+                    ];
+
+                } else if ($simpleLg === 'LGIDLADNBD') {
+
+                    // Create Multi Quotes Array of liftgate, inside, Limited Access and notify before Delivery, When Small and Ltl Products
+
+                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, $ltlQuot['isLG'], $ltlQuot['isID'], $ltlQuot['isNBD'], $ltlQuot['isLAD']);
+
+                    
+
+                    $newQuotes[] = [
+
+                        'code' => 'multi' . $rCode . '+LG+ID+LAD+NBD',
+
+                        'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
+
+                        'title' => 'Freight' . $rtitle
+
+                    ];
+
                 } else if ($simpleLg === 'TL') {
 
                     $newQuotes[] = [
@@ -809,7 +877,7 @@ class LtlSmallCompileQuotes
             $ltl[] = $key;
         }
 
-        $smallQuotes = $quotes['wweSmall'] ?? $quotes['wweSmallN'] ?? $quotes['upsSmall'] ?? $quotes['fedexSmall'] ?? $quotes['unishippersSmall'] ?? $quotes['usps'] ?? $quotes['purolator'] ?? [];
+        $smallQuotes = $quotes['wweSmall'] ?? $quotes['wweSmallN'] ?? $quotes['upsSmall'] ?? $quotes['fedexSmall'] ?? $quotes['unishippersSmall'] ?? $quotes['usps'] ?? $quotes['purolator'] ?? $quotes['shipEngine'] ?? [];
         foreach ($smallQuotes as $key => $quote) {
             $small[] = $key;
         }
