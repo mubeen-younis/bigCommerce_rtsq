@@ -20,7 +20,7 @@ class QuotesResults
 
     public function getServiceRate($data, $serviceDesc, $quoteSettings)
     {
-        $amount = str_replace(',', '', $data);
+        $amount = (float)str_replace(',', '', $data);
         if (isset($quoteSettings['rate_source']) && $quoteSettings['rate_source'] === 1) {
             $boxFee = $data['boxFees']['Amount'] ?? 0;
             $amount = $data['NegotiatedRates']['Amount'] > 0 ? $data['NegotiatedRates']['Amount'] + $boxFee : $amount;
@@ -83,6 +83,10 @@ class QuotesResults
             $title = "Fedex SmartPost";
         }
 
+        if ($this->international && $title == "Fedex Ground") {
+            $title = "Fedex International Ground";
+        }
+
         $title = $this->getServiceLabel($title, $data['serviceType'], $quoteSettings);
 
         if ($isResi && $showRadNotation) {
@@ -98,7 +102,7 @@ class QuotesResults
 
     public function getServiceLabel($title, $serviceType, $quoteSettings)
     {
-        $serviceType = $this->international && $title == 'Fedex Ground'? 'international_ground' : $serviceType;
+        $serviceType = $this->international && $title == 'Fedex International Ground' ? 'international_ground' : $serviceType;
         $stringTrim = str_replace('_', ' ', $serviceType);
         $serviceType = !$this->international && strpos($stringTrim, 'FEDEX ') === false ? 'FEDEX_' . $serviceType: $serviceType;
         $labelIndex =  strtolower($serviceType) . '_label';

@@ -1,3 +1,11 @@
+= 2.2.18 2024-08-20 =
+
+* Fix - fixes staff note update functionality issue (Ticket:3056110929) [#471] (https://bitbucket.org/eniture/big-commerce/pull-requests/471)
+
+= 2.2.17 2024-08-19 =
+
+* Update - Add FedEx Parcel New API in BC (Ticket:2294982745) [#470] (https://bitbucket.org/eniture/big-commerce/pull-requests/470)
+
 = 2.2.16 2024-07-25 =
 
 * Update - rename parcel shipment services feature (chunk-2) (Ticket:2801730131) [#465] (https://bitbucket.org/eniture/big-commerce/pull-requests/465)

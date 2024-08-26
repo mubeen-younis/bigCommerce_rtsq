@@ -208,7 +208,7 @@ class Functions
             'freightquote-ltl' => 'b2b', 'freightquote-chr-ltl' => 'b2b', 'purolator-small' => 'purolator', 'usps-small' => 'usps',
             'tql-ltl' => 'tql', 'yrc-ltl' => 'yrc', 'odfl-ltl' => 'odfl4me', 'dayross-ltl' => 'dayross', 'priority-one-ltl' => 'priority1',
             'estes-ltl' => 'estes', 'echo-ltl' => 'echoLogistics', 'saia-ltl' => 'saia', 'abf-ltl' => 'abf', 'daylight-ltl' => 'daylight',
-            'southeastern-ltl' => 'southeastern', 'unishipper-ltl' => 'Unishippers LTL New API', 'ups-land-cost-small' => 'UPSLandedCost'];
+            'southeastern-ltl' => 'southeastern', 'unishipper-ltl' => 'Unishippers LTL New API', 'ups-land-cost-small' => 'UPSLandedCost', 'fedex-small-new' => 'FedEx Small New API'];
 
         return $carrierCodesWithName[$carrSlug] ?? null;
     }
@@ -1552,5 +1552,20 @@ class Functions
         }
 
         return 0;
+    }
+    
+    public static function floatValue($number = 0)
+    {   
+        $number = (float) $number;
+        $number = number_format($number, 1, '.', '');
+        if ($number == 0) {
+            return $number;
+        }
+        $number = rtrim($number, '0'); // 50,00 --> 50 or // 50.00 --> 50.
+        $number = rtrim($number, ','); // 50,   --> 50
+        $number = rtrim($number, '.'); // 50.   --> 50
+
+        return $number;
+
     }
 }

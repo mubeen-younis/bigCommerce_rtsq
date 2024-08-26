@@ -354,8 +354,9 @@ class ExportImportProducts extends Controller
     {
         ini_set('memory_limit', '-1');
         try {
+            Log::info('started import products process');
             $delay = 2;
-            $data['filename'] = $request['file'];
+            $data['filename'] = $request['filename'];
             $data['firstHeader'] = $request['firstHeader'];
             $data['importEmailAddress'] = $request['importEmailAddress'];
             $data['indexes'] = $request['indexes'];
@@ -366,6 +367,8 @@ class ExportImportProducts extends Controller
 
             ImportProductsJob::dispatch($data)->delay(Carbon::now()->addSeconds($delay));
             unset($data['path']);
+
+            Log::info('ended import products process');
 
             return response()->json([
                 'error' => false,
