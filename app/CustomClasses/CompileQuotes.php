@@ -3636,7 +3636,7 @@ class CompileQuotes
                     }
                     //  CHecks FOr Only quote ground service if hazardous
                     if ($isHazmat && isset($this->quoteSettings['ground_service_for_hazardous_material']) && $this->quoteSettings['ground_service_for_hazardous_material']) {
-                        if ($data['serviceType'] != "GND" || $data['serviceType'] != "3DS" || $data['serviceType'] != "03") {
+                        if ($data['serviceType'] != "GND" && $data['serviceType'] != "3DS" && $data['serviceType'] != "03") {
                             continue;
                         }
                     }

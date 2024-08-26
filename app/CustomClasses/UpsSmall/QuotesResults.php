@@ -26,7 +26,7 @@ class QuotesResults
 
         if (isset($quoteSettings['rate_source']) && $quoteSettings['rate_source'] === 1) {
             $boxFee = isset($data['boxFees']['Amount']) ? $data['boxFees']['Amount'] : 0 ?? 0;
-            $amount = $data['NegotiatedRates']['Amount'] > 0 ? $data['NegotiatedRates']['Amount'] + $boxFee : $amount;
+            $amount = $data['NegotiatedRates']['Amount'] > 0 ? $data['NegotiatedRates']['Amount'] : $amount;
         }
 
         $markupIndex = strtolower(str_replace(' ', '_', $serviceDesc) . '_markup');
