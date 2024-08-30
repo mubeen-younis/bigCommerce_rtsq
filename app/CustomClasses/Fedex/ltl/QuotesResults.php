@@ -349,15 +349,16 @@ class QuotesResults
         foreach ($hatQuotes as $quote) {
             $compiledQuotes['serviceType'] = 'fedexltl+HAT+' . $postFix;
             $title = $srvcTitle ?? $quote['Title'] ?? '';
-            $address['city'] = $quote['address']['City'] ?? '';
-            $address['state'] = $quote['address']['StateOrProvinceCode'] ?? '';
-            $address['zipCode'] = $quote['address']['PostalCode'] ?? '';
-            $distance = $quote['distance']['Value'] . strtolower($quote['distance']['Units']) ?? '0 mi';
-            $phoneNumber = $quote['custServicePhoneNbr']['PhoneNumber'] ?? '';
+            $address['city'] = $quote['address']['City'] ?? $quote['address']['city'] ?? '';
+            $address['state'] = $quote['address']['StateOrProvinceCode'] ?? $quote['address']['stateOrProvinceCode'] ?? '';
+            $address['zipCode'] = $quote['address']['PostalCode'] ?? $quote['address']['postalCode'] ?? '';
+            $value = $quote['distance']['Value'] ?? $quote['distance']['value'] ?? '';
+            $distance = $value . strtolower($quote['distance']['Units'] ?? $quote['distance']['units']) ?? '0 mi';
+            $phoneNumber = $quote['custServicePhoneNbr']['PhoneNumber'] ?? $quote['custServicePhoneNbr']['phoneNumber'] ?? '';
 
             $compiledQuotes['serviceDesc'] = Functions::getHATTitle($title, $address, $distance, $phoneNumber);
             $compiledQuotes['totalNetCharge']['Amount'] = Functions::getHATPrice($quote['totalNetCharge'], $quoteSettings['hold_at_terminal_price'] ?? 0);
-            $compiledQuotes['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
+            $compiledQuotes['deliveryTimestamp'] = $quote['deliveryDate'] ?? $quote['deliveryTimestamp'] ?? '';
             $compiledQuotes['totalTransitTimeInDays'] = $quote['totalTransitTimeInDays'] ?? '';
             $compiledQuotes['transitTime'] = $quote['transitTime'] ?? '';
             isset($quote['surcharges']) && !empty($quote['surcharges']) ? $compiledQuotes['surcharges'] = $quote['surcharges'] ?? 0 : null;

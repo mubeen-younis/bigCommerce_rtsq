@@ -243,6 +243,7 @@ class OrderController extends Controller
         $autoResidentialsStatus = 'n';
         $residentialsPickup = 'n';
         $liftGateStatus = 'n';
+        $liftGatePickup = 'n';
         $binPackagingData = '';
         $orderWidget = [];
         $isOneRate = strpos($rateId, '+or');
