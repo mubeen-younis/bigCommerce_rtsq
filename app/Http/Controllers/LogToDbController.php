@@ -51,6 +51,22 @@ class LogToDbController extends Controller
 
     }
 
+    public function enableLogs(Request $request)
+    {
+        if(isset($request->store_hash)){
+            $store = Store::where("hash", $request->store_hash)->update([
+                'enable_app_logs' => $request->enable_app_logs ?? 0
+            ]);
+
+            if($store){
+                return $request->enable_app_logs == 1 ? 'Store logs enabled.' :  'Store logs disabled.';
+            }
+        }
+
+        return 'Something went wrong.';
+
+    }
+
     public function sendCurlRequest($url, $postData)
     {
         $fieldString = http_build_query($postData);
