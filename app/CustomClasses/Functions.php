@@ -16,6 +16,7 @@ use App\Helpers\Helpers;
 use Illuminate\Support\Facades\DB;
 use App\Models\CarrierServices;
 use App\Constants\Constant;
+use App\Models\Store;
 
 class Functions
 {
@@ -1567,5 +1568,9 @@ class Functions
 
         return $number;
 
+    }
+
+    public static function isEnabledLogs($storeHash){
+        return Store::where('hash', $storeHash)->where('enable_app_logs', 1)->exists() ?? 0;
     }
 }
