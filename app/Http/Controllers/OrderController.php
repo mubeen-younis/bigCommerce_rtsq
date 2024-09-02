@@ -1247,15 +1247,15 @@ class OrderController extends Controller
 
                         if ($isStaffNotesActive && $scope == 'store/order/created') {
                             $orderCheck = RequestData::where('order_id', $orderId)->where('rate_id', $rateId)->where('cart_id', $cartId)->where('store_id', $toRequest['store_id'])->exists();
-                            if(!$orderCheck){
+                            if (!$orderCheck) {
                                 $reportingFlag = "false";
                                 $orderWidget = $this->createOrderWidget($toRequest, $order, $reportingFlag);
                                 $formateStaffNote = $this->formatShipment($orderWidget);
                                 $isStatus = $this->updateStaffNote($formateStaffNote, $toRequest);
                                 if($isStatus){
                                     RequestData::where('store_id', $toRequest['store_id'])
-                                    ->where('cart_id', $cartId)
-                                    ->where('rate_id', $rateId)
+                                    ->Where('cart_id', $cartId)
+                                    ->Where('rate_id', $rateId)
                                     ->update([
                                         'order_id' => $orderId
                                     ]);
