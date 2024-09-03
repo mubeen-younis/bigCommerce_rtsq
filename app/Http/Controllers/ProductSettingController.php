@@ -58,6 +58,9 @@ class ProductSettingController extends Controller
                 ImportProductsFromBCStore::dispatch($data)->delay(Carbon::now()->addSeconds($delay++));
             }
             Log::info('Syncing inprogress');
+            if(Functions::isEnabledLogs($data['store_hash'])){
+                Log::info('Syncing inprogress');
+            }
             ImportProductsFromBCStoreStatusUpdate::dispatch($insertedId, $request['email'])->delay(Carbon::now()->addSeconds(5));
         }
 
