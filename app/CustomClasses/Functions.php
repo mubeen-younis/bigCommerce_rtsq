@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\CarrierServices;
 use App\Constants\Constant;
 use App\Models\Store;
+use App\Models\EnableLog;
 
 class Functions
 {
@@ -1570,7 +1571,8 @@ class Functions
 
     }
 
-    public static function isEnabledLogs($storeHash){
-        return Store::where('hash', $storeHash)->where('enable_app_logs', 1)->exists() ?? 0;
+    public static function isEnabledLogs($storeHash = '', $storeId = ''){
+        $store = Store::where('id', $storeId)->orwhere('hash', $storeHash)->select('id')->first() ?? [];
+        return EnableLog::where('store_id', $store->id)->where('log_status', 1)->exists() ?? 0;
     }
 }
