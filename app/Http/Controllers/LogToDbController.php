@@ -13,6 +13,7 @@ use App\Models\PackagingDetail;
 use App\CustomClasses\BigCommerceFunctions;
 use App\CurlRequest;
 use Carbon\Carbon;
+use App\Models\EnableLog;
 class LogToDbController extends Controller
 {
     /**
@@ -53,18 +54,7 @@ class LogToDbController extends Controller
 
     public function enableLogs(Request $request)
     {
-        if(isset($request->store_hash)){
-            $store = Store::where("hash", $request->store_hash)->update([
-                'enable_app_logs' => $request->enable_app_logs ?? 0
-            ]);
-
-            if($store){
-                return $request->enable_app_logs == 1 ? 'Store logs enabled.' :  'Store logs disabled.';
-            }
-        }
-
-        return 'Something went wrong.';
-
+        return EnableLog::enableAppLogs($request);
     }
 
     public function sendCurlRequest($url, $postData)
