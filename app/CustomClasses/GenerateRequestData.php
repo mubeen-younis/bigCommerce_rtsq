@@ -3865,7 +3865,7 @@ class GenerateRequestData
         if ($packagingRatingMethod == 2) {
             $ratingMethod = 'ship_combine_and_alone';
         } elseif ($packagingRatingMethod == 3) {
-            $ratingMethod = 'eniture_packaging';
+            $ratingMethod = 'ship_as_one';
         } else {
             $ratingMethod = 'ship_alone';
         }
