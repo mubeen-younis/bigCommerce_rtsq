@@ -23,6 +23,7 @@ use ZipArchive;
 use Illuminate\Filesystem\Filesystem;
 use App\CurlRequest;
 use Carbon\Carbon;
+use App\CustomClasses\Functions;
 
 class ExportImportProducts extends Controller
 {
@@ -426,10 +427,18 @@ class ExportImportProducts extends Controller
 
                 } catch (\Exception $exception) {
                     $exceptionProducts[] = [
-                        'productId' => $product['Product Id'],
-                        'varientId' => $product['Variant Id'],
-                        'productName' => $product['Product Name'],
+                        'productId' => $product['Product Id'] ?? '',
+                        'varientId' => $product['Variant Id'] ?? '',
                     ];
+
+                    if(Functions::isEnabledLogs($request['store_hash'])){
+                        Log::info('CSV Products Exception Array: ' . json_encode($exceptionProducts));
+                        Log::info(json_encode([
+                            'line' => $exception->getLine(),
+                            'message' => $exception->getMessage(),
+                            'file' => $exception->getFile(),
+                        ]));
+                    }
                 }
             }
         }
