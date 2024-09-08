@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Models\ProductSetting;
 use App\Models\Store;
 use App\Models\Locations;
+use App\Models\ShippingGroup;
 use App\Http\Controllers\ExportImportProducts;
 use Illuminate\Support\Facades\Log;
 use App\Models\NestingItemsDetail;
@@ -51,61 +52,461 @@ class ApiAccessTokenController extends Controller
         try {
             $this->storeId = isset($request->store_id) ? $request->store_id : '';
             $isSetProduct = !empty($request->data) && !empty($request->data->attributes) ? true : false;
-            $product = !empty($request->data) ? $request->data : [];
-            if (!empty($product)){
+            $product['data'] = !empty($request->data) ? $request->data : [];
+            if (!empty($product['data'])){
 
                 $rules = [
-                    'productId' => 'required|numeric|regex:/^\d+$/',
-                    'variantId' => 'required|numeric|regex:/^\d+$/',
-                    'attributes.sku' => 'nullable|string',
-                    'attributes.name' => 'nullable|string',
-                    'attributes.weight' => 'nullable|numeric',
-                    'attributes.length' => 'nullable|numeric',
-                    'attributes.width' => 'nullable|numeric',
-                    'attributes.height' => 'nullable|numeric',
-                    'attributes.nmfc' => 'nullable|regex:/^\d+(\-\d+)*$/',
-                    'attributes.HSCode' => [
+                    'data.productId' => 'required|numeric',
+                    'data.variantId' => 'required|numeric',
+                    'data.attributes.sku' => 'nullable|string',
+                    'data.attributes.name' => 'nullable|string',
+                    'data.attributes.weight' => [
                         'nullable',
+                        'numeric',
                         function ($attribute, $value, $fail) {
-                            if (!is_numeric($value) && !is_string($value)) {
-                                $fail($attribute.' must be a string or numeric.');
+                            $errors = [];
+                            if (strlen($value) > 10) {
+                                $errors[] = 'The value is invalid. The value can be max 10 characters long.';
+                            } 
+                            if ($value < 0.01) {
+                                $errors[] = 'The ' . $attribute . ' must be greater than 0.';
                             }
-                        },
-                    ],
-                    'attributes.productMarkup' => [
-                        'nullable',
-                        function ($attribute, $value, $fail) {
-                            if (!is_numeric($value) && !preg_match('/^\d+(\.\d+)?%?$/', $value)) {
-                                $fail($attribute.' must be a number or a percentage.');
-                            }
-                        },
-                    ],
-                    'attributes.quoteMethod' => 'nullable|string',
-                    'attributes.freightClass' => [
-                        'nullable',
-                        function ($attribute, $value, $fail) {
-                            if (!is_numeric($value) && !is_string($value)) {
-                                $fail($attribute.' must be a string or numeric.');
-                            }
-                        },
-                    ],
-                    'attributes.hazardousEnabled' => 'required|boolean',
-                    'attributes.insuranceEnabled' => 'required|boolean',
-                    'attributes.boxingProperties' => 'nullable|integer',
-                    'attributes.palletProperties' => 'nullable|integer',
-                
-                    'attributes.dropship.enabled' => 'nullable|integer',
-                    'attributes.dropship.nickname' => 'nullable|string',
-                    'attributes.dropship.zipcode' => 'nullable|string',
-                    'attributes.dropship.city' => 'nullable|string',
-                    'attributes.dropship.state' => 'nullable|string',
-                    'attributes.dropship.country' => 'nullable|string',
 
-                    'attributes.nesting.enabled' => 'nullable|integer',
-                    'attributes.nesting.dimensionType' => 'nullable|string',
-                    'attributes.nesting.percentage' => 'nullable|numeric',
-                    'attributes.nesting.maximumNestedItems' => 'nullable|numeric',
-                    'attributes.nesting.stackingProperty' => 'nullable|string',
+                            if(!empty($errors)){
+                                $fail($errors);
+                            } 
+                        },
+                    ],
+                    'data.attributes.length' => [
+                        'nullable',
+                        'numeric',
+                        function ($attribute, $value, $fail) {
+                            $errors = [];
+                            if (strlen($value) > 10) {
+                                $errors[] = 'The value is invalid. The value can be max 10 characters long.';
+                            } 
+                            if ($value < 0.01) {
+                                $errors[] = 'The ' . $attribute . ' must be greater than 0.';
+                            }
+
+                            if(!empty($errors)){
+                                $fail($errors);
+                            } 
+                        },
+                    ],
+                    'data.attributes.width' => [
+                        'nullable',
+                        'numeric',
+                        function ($attribute, $value, $fail) {
+                            $errors = [];
+                            if (strlen($value) > 10) {
+                                $errors[] = 'The value is invalid. The value can be max 10 characters long.';
+                            } 
+                            if ($value < 0.01) {
+                                $errors[] = 'The ' . $attribute . ' must be greater than 0.';
+                            }
+
+                            if(!empty($errors)){
+                                $fail($errors);
+                            } 
+                        },
+                    ],
+                    'data.attributes.height' => [
+                        'nullable',
+                        'numeric',
+                        function ($attribute, $value, $fail) {
+                            $errors = [];
+                            if (strlen($value) > 10) {
+                                $errors[] = 'The value is invalid. The value can be max 10 characters long.';
+                            } 
+                            if ($value < 0.01) {
+                                $errors[] = 'The ' . $attribute . ' must be greater than 0.';
+                            }
+
+                            if(!empty($errors)){
+                                $fail($errors);
+                            } 
+                        },
+                    ],
+                    'data.attributes.nmfc' => [
+                        'nullable',
+                        function ($attribute, $value, $fail) {
+                            $errors = [];
+                            if (strlen($value) > 10) {
+                                $errors[] = 'The ' . $attribute . ' must not be greater than 10 characters.';
+                            } 
+                            if (!preg_match('/^[0-9\-]+$/', $value)) {
+                                $errors[] = 'The format is invalid. The value should contain numbers or hyphen(-) example: -123456-23';
+                            }
+
+                            if(!empty($errors)){
+                                $fail($errors);
+                            } 
+                        },
+                    ],
+                    'data.attributes.HSCode' => [
+                        'nullable',
+                        function ($attribute, $value, $fail) {
+                            $errors = [];
+                            if (strlen($value) > 20) {
+                                $errors[] = 'The value is invalid. The value can be max 20 characters long.';
+                            }
+                            if (!preg_match('/^[0-9\.]+$/', $value)) {
+                                $errors[] = 'The format is invalid. The value should contain numbers or dot(.) example: 1234.56.2312';
+                            }
+
+                            if(!empty($errors)){
+                                $fail($errors);
+                            } 
+                        },
+                    ],
+                    'data.attributes.productMarkup' => [
+                        'nullable',
+                        function ($attribute, $value, $fail) {
+                            $errors = [];
+                            if (strlen($value) > 7) {
+                                $errors[] = 'The ' . $attribute . ' must not be greater than 7 characters.';
+                            } 
+                            if (!preg_match('/^-?\d+(\.\d{1,2})?%?$/', $value)) {
+                                $errors[] = 'The format is invalid. The value should contain numbers or percentage(%) example: Currency 1.00 or percentage 5%';
+                            }
+
+                            if(!empty($errors)){
+                                $fail($errors);
+                            }
+                        },
+                    ],
+                    'data.attributes.quoteMethod' => [
+                        'nullable',
+                        function ($attribute, $value, $fail) {
+                            // Define the valid values
+                            $validValues = ['S', 'L', 'PD'];
+                            // Check if the value is not in the valid values array
+                            if (!in_array($value, $validValues, true)) {
+                                $fail("The value is invalid. The value can only be 'S', 'L', 'PD'");
+                            }
+                        },
+                    ],
+                    'data.attributes.freightClass' => [
+                        'nullable',
+                        function ($attribute, $value, $fail) {
+                            // Define the valid values
+                            $validValues = [50, 55, 60, 65, 70, 77.5, 85, 92.5, 100, 110, 125, 150, 175, 200, 250, 300, 400, 500, 'DensityBased'];
+                            // Check if the value is not in the valid values array
+                            if (!in_array($value, $validValues, true)) {
+                                $fail("The value is invalid. The value can only be 50, 55, 60, 65, 70, 77.5, 85, 92.5, 100, 110, 125, 150, 175, 200, 250, 300, 400, 500, 'DensityBased'");
+                            }
+                        },
+                    ],
+                    'data.attributes.hazardousEnabled' => 'required|boolean',
+                    'data.attributes.insuranceEnabled' => 'required|boolean',
+                    'data.attributes.boxingProperties' => [
+                        'nullable',
+                        'integer',
+                        'numeric',
+                        function ($attribute, $value, $fail) {
+                            // Define the valid values
+                            $validValues = [1, 2, 3];
+                            // Check if the value is not in the valid values array
+                            if (!in_array($value, $validValues, true)) {
+                                $fail("The value is invalid. The value can only be 1, 2 or 3");
+                            }
+                        },
+                    ],
+                    'data.attributes.palletProperties' => [
+                        'nullable',
+                        'integer',
+                        'numeric',
+                        function ($attribute, $value, $fail) {
+                            // Define the valid values
+                            $validValues = [1, 2];
+                            // Check if the value is not in the valid values array
+                            if (!in_array($value, $validValues, true)) {
+                                $fail("The value is invalid. The value can only be 1 or 2");
+                            }
+                        },
+                    ],
+                
+                    'data.attributes.dropship.enabled' => [
+                        'nullable',
+                        function ($attribute, $value, $fail) {
+                            if (!in_array($value, [0, 1, '0', '1'], true)) {
+                                $fail("The value is invalid. The value can only be 0 or 1");
+                            }
+                        }
+                    ],
+                    'data.attributes.dropship.nickname' => [
+                        function ($attribute, $value, $fail) {
+                            if (request('data.attributes.dropship.enabled') == 1 && $value !== null) {
+                                $errors = [];
+
+                                if (!is_string($value)) {
+                                    $errors[] = "The " . $attribute . ' must be a string.';
+                                }
+                                if (strlen($value) > 20) {
+                                    $errors[] = 'The ' . $attribute . ' must not be greater than 20 characters.';
+                                }
+                            } elseif (request('data.attributes.dropship.enabled') == 1 && empty($value)) {
+                                $errors[] = 'The ' . $attribute . ' is required when data.attributes.dropship.enabled is 1.';
+                            }
+
+                            if(!empty($errors)){
+                                $fail($errors);
+                            }
+                        }
+                    ],
+                    'data.attributes.dropship.zipcode' => [
+                        function ($attribute, $value, $fail) {
+                            if (request('data.attributes.dropship.enabled') == 1 && $value !== null) {
+                                $errors = [];
+                                if (request('data.attributes.dropship.country') == 'US') {
+                                    if (strlen($value) > 5) {
+                                        $errors[] = 'The ' . $attribute . ' must not be greater than 5 characters for US country example: US => 10003.';
+                                    } 
+                                } elseif (request('data.attributes.dropship.country') == 'CA') {
+                                    if (strlen($value) > 6) {
+                                        $errors[] = 'The ' . $attribute . ' must not be greater than 6 characters for CA country example: CA => H2V1H9.';
+                                    } 
+                                }
+                            } elseif (request('data.attributes.dropship.enabled') == 1 && empty($value)) {
+                                $errors[] = 'The ' . $attribute . ' is required when data.attributes.dropship.enabled is 1.';
+                            }
+
+                            if(!empty($errors)){
+                                $fail($errors);
+                            }
+                        }
+                    ],
+                    'data.attributes.dropship.city' => [
+                        function ($attribute, $value, $fail) {
+                            if (request('data.attributes.dropship.enabled') == 1 && $value !== null) {
+                                $errors = [];
+
+                                if (!is_string($value)) {
+                                    $errors[] = "The " . $attribute . ' must be a string.';
+                                }
+                                if (strlen($value) > 20) {
+                                    $errors[] = 'The ' . $attribute . ' must not be greater than 20 characters.';
+                                } 
+                            } elseif (request('data.attributes.dropship.enabled') == 1 && empty($value)) {
+                                $errors[] = 'The ' . $attribute . ' is required when data.attributes.dropship.enabled is 1.';
+                            }
+
+                            if(!empty($errors)){
+                                $fail($errors);
+                            }
+                        }
+                    ],
+                    'data.attributes.dropship.state' => [
+                        function ($attribute, $value, $fail) {
+                            if (request('data.attributes.dropship.enabled') == 1 && $value !== null) {
+                                $errors = [];
+
+                                if (!is_string($value)) {
+                                    $errors[] = "The " . $attribute . ' must be a string.';
+                                }
+                                if (strlen($value) > 2) {
+                                    $errors[] = 'The ' . $attribute . ' must not be greater than 2 characters example: New York => NY, California => CA';
+                                } 
+                                
+                            } elseif (request('data.attributes.dropship.enabled') == 1 && empty($value)) {
+                                $errors[] = 'The ' . $attribute . ' is required when data.attributes.dropship.enabled is 1.';
+                            }
+
+                            if(!empty($errors)){
+                                $fail($errors);
+                            }
+                        }
+                    ],
+                    'data.attributes.dropship.country' => [
+                        function ($attribute, $value, $fail) {
+                            if (request('data.attributes.dropship.enabled') == 1 && $value !== null) {
+                                $errors = [];
+
+                                if (!is_string($value)) {
+                                    $errors[] = "The " . $attribute . ' must be a string.';
+                                }
+                                if (!in_array($value, ['US', 'CA'], true)) {
+                                    $errors[] = "The value is invalid. The value can only be US, CA.";
+                                } 
+                            } elseif (request('data.attributes.dropship.enabled') == 1 && empty($value)) {
+                                $errors[] = 'The ' . $attribute . ' is required when data.attributes.dropship.enabled is 1.';
+                            }
+
+                            if(!empty($errors)){
+                                $fail($errors);
+                            }
+                        }
+                    ],
+
+                    'data.attributes.shippingGroup.enabled' => [
+                        'nullable',
+                        function ($attribute, $value, $fail) {
+                            if (request('data.attributes.dropship.enabled') == 1 && !in_array($value, [0,'0'], true)) {
+                                $fail('The shipping group is not enable. To enable please disable data.attributes.dropship.enabled.');
+                            } elseif (!in_array($value, [0, 1, '0', '1'], true)) {
+                                $fail("The value is invalid. The value can only be 0 or 1");
+                            }
+                        }
+                    ],
+                    'data.attributes.shippingGroup.nickname' => [
+                        function ($attribute, $value, $fail) {
+                            if (request('data.attributes.shippingGroup.enabled') == 1 && $value !== null) {
+                                $errors = [];
+
+                                if (!is_string($value)) {
+                                    $errors[] = "The " . $attribute . ' must be a string.';
+                                }
+                                if (strlen($value) > 20) {
+                                    $errors[] = 'The ' . $attribute . ' must not be greater than 20 characters.';
+                                }
+                            } elseif (request('data.attributes.shippingGroup.enabled') == 1 && empty($value)) {
+                                $errors[] = 'The ' . $attribute . ' is required when data.attributes.shippingGroup.enabled is 1.';
+                            }
+
+                            if(!empty($errors)){
+                                $fail($errors);
+                            }
+                        }
+                    ],
+                    'data.attributes.shippingGroup.labelAs' => [
+                        function ($attribute, $value, $fail) {
+                            if (request('data.attributes.shippingGroup.enabled') == 1 && $value !== null) {
+                                $errors = [];
+
+                                if (!is_string($value)) {
+                                    $errors[] = "The " . $attribute . ' must be a string.';
+                                }
+                                if (strlen($value) > 20) {
+                                    $errors[] = 'The ' . $attribute . ' must not be greater than 20 characters.';
+                                }
+                            } elseif (request('data.attributes.shippingGroup.enabled') == 1 && empty($value)) {
+                                $errors[] = 'The ' . $attribute . ' is required when data.attributes.shippingGroup.enabled is 1.';
+                            }
+
+                            if(!empty($errors)){
+                                $fail($errors);
+                            }
+                        }
+                    ],
+                    'data.attributes.shippingGroup.rate' => [
+                        function ($attribute, $value, $fail) {
+                            if (request('data.attributes.shippingGroup.enabled') == 1 && $value !== null) {
+                                $errors = [];
+
+                                if (!is_numeric($value) || intval($value) != $value) {
+                                    $errors[] = "The " . $attribute . ' must be an integer.';
+                                }
+                                if ($value < 0.01) {
+                                    $errors[] = 'The ' . $attribute . ' must be greater than 0.';
+                                }
+                            } elseif (request('data.attributes.shippingGroup.enabled') == 1 && empty($value)) {
+                                $errors[] = 'The ' . $attribute . ' is required when data.attributes.shippingGroup.enabled is 1.';
+                            }
+
+                            if(!empty($errors)){
+                                $fail($errors);
+                            }
+                        }
+                    ],
+                    'data.attributes.shippingGroup.rateXquantity' => [
+                        function ($attribute, $value, $fail) {
+                            if (!in_array($value, [0, 1, '0', '1'], true)) {
+                                $fail("The value is invalid. The value can only be 0 or 1");
+                            }
+                        }
+                    ],
+                    'data.attributes.nesting.enabled' => [
+                        'nullable',
+                        function ($attribute, $value, $fail) {
+                            if (!in_array($value, [0, 1, '0', '1'], true)) {
+                                $fail("The value is invalid. The value can only be 0 or 1");
+                            }
+                        }
+                    ],
+                    'data.attributes.nesting.dimensionType' => [
+                        function ($attribute, $value, $fail) {
+                            if (request('data.attributes.nesting.enabled') == 1 && $value !== null) {
+                                $errors = [];
+
+                                if (!in_array($value, ['length', 'width', 'height'], true)) {
+                                    $errors[] = "The value is invalid. The value can only be length, width, height.";
+                                }
+
+                                
+                            } elseif (request('data.attributes.nesting.enabled') == 1 && empty($value)) {
+                                $errors[] = 'The ' . $attribute . ' is required when data.attributes.nesting.enabled is 1.';
+                            }
+
+                            if(!empty($errors)){
+                                $fail($errors);
+                            }
+                        }
+                    ],
+                    'data.attributes.nesting.percentage' => [
+                        function ($attribute, $value, $fail) {
+                            if (request('data.attributes.nesting.enabled') == 1 && $value !== null) {
+                                $errors = [];
+
+                                if (!is_numeric($value) || intval($value) != $value) {
+                                    $errors[] = "The " . $attribute . ' must be an integer.';
+                                }
+                                if ($value > 100) {
+                                    $errors[] = 'The ' . $attribute . ' must not be greater than 100.';
+                                }
+                                if ($value < 0) {
+                                    $errors[] = 'The ' . $attribute . ' must be at least 0.';
+                                }
+                            } elseif (request('data.attributes.nesting.enabled') == 1 && empty($value)) {
+                                $errors[] = 'The ' . $attribute . ' is required when data.attributes.nesting.enabled is 1.';
+                            }
+
+                            if(!empty($errors)){
+                                $fail($errors);
+                            }
+                            
+                        }
+                    ],
+                    'data.attributes.nesting.maximumNestedItems' => [
+                        function ($attribute, $value, $fail) {
+                            if (request('data.attributes.nesting.enabled') == 1 && $value !== null) {
+                                $errors = [];
+
+                                if (!is_numeric($value) || intval($value) != $value) {
+                                    $errors[] = "The " . $attribute . ' must be an integer.';
+                                }
+                                if ($value > 10000) {
+                                    $errors[] = 'The ' . $attribute . ' must not be greater than 10000.';
+                                }
+                                if ($value < 0.01) {
+                                    $errors[] = 'The ' . $attribute . ' must be greater than 0.';
+                                }
+                            } elseif (request('data.attributes.nesting.enabled') == 1 && empty($value)) {
+                                $errors[] = 'The ' . $attribute . ' is required when data.attributes.nesting.enabled is 1.';
+                            }
+
+                            if(!empty($errors)){
+                                $fail($errors);
+                            }
+                        }
+                    ],
+                    'data.attributes.nesting.stackingProperty' => [
+                        function ($attribute, $value, $fail) {
+                            if (request('data.attributes.nesting.enabled') == 1 && $value !== null) {
+                                $errors = [];
+
+                                if (!in_array($value, ['evenly', 'maximized'], true)) {
+                                    $errors[] = "The value is invalid. The value can only be evenly or maximized.";
+                                }
+                            } elseif (request('data.attributes.nesting.enabled') == 1 && empty($value)) {
+                                $errors[] = 'The ' . $attribute . ' is required when data.attributes.nesting.enabled is 1.';
+                            }
+
+                            if(!empty($errors)){
+                                $fail($errors);
+                            }
+                        }
+                    ],
 
                 ];
                 
@@ -127,7 +528,7 @@ class ApiAccessTokenController extends Controller
                     
                     return response()->json($formattedErrors, 422);
                 } else {
-
+                    $product = $product['data'];
                     if ($product['variantId'] == null && ProductSetting::where('source_product_id', $product['productId'])->where('store_id', $this->storeId)->exists()) 
                     {
                         $variants = ProductSetting::where('source_product_id', $product['productId'])->where('store_id', $this->storeId)->get()->toArray();
@@ -151,21 +552,36 @@ class ApiAccessTokenController extends Controller
 
                 if (!empty($updateddata)){
                     Log::info('Product not found errors: ' . json_encode($updateddata));
-                    return Helpers::toSendJsonResponse(true, 'The resource was not found.', $updateddata, 404);
+                    $error['errors'] = ['message' => 'Product Error / Not Found'];
+                    return response()->json($error, 404);
                 } else {
-                    return Helpers::toSendJsonResponse(true, 'Successfully updated product batch.', $product);
+                    return self::toSendJsonResponse(200, 'Product Data updated successfully', [], 200);
                 }
 
             } elseif (!$isSetProduct){
-                return Helpers::toSendJsonResponse(true, 'Invalid request format.', [], 403);
+                return self::toSendJsonResponse(400, 'Invalid request format.', [], 400);
             } else {
-                return Helpers::toSendJsonResponse(true, 'The resource was not found.', [], 404);
-
+                $error['errors'] = ['message' => 'Product Error / Not Found'];
+                return response()->json($error, 404);
             }
 
         } catch (\Exception $exception) {
             Log::info('Exception on update product using API: ' . json_encode([$exception->getMessage(), $exception->getLine()]));
+            return ['message' => $exception->getMessage(), 'line' => $exception->getLine()];
         }
+    }
+
+    public static function toSendJsonResponse($status, $message, $data = [], $code = 200)
+    {
+        $response = [
+            'message' => $message,
+            'status' => $status,
+        ];
+        if (!blank($data)) {
+            $response['data'] = $data;
+        }
+        return response()->json($response
+            , $code);
     }
 
     public function updateData($product)
@@ -208,7 +624,7 @@ class ApiAccessTokenController extends Controller
         if(isset($prodAttributes['height']) && $prodAttributes['height']){
             $update['height'] = $prodAttributes['height'];
         }
-
+                     
         if(isset($prodAttributes['nmfc']) && $prodAttributes['nmfc']){
             $update['nmfc'] = $prodAttributes['nmfc'];
         }
@@ -237,12 +653,35 @@ class ApiAccessTokenController extends Controller
         && isset($dropshipLocation['country']) && $dropshipLocation['country'])
         {
             $dropShipId = $this->updateDropShip($dropshipLocation);
-            if ($dropShipId != false) {
+            if ($dropShipId != false && $dropshipLocation['enabled']) {
                 $update['dropship_enabled'] = $dropshipLocation['enabled'] ?? true;
                 $update['dropship_location'] = $dropShipId;
+                $update['shipping_group_enabled'] = false;
+                $update['shipping_group'] = null;
             } else {
                 $update['dropship_enabled'] = false;
                 $update['dropship_location'] = null;
+            }
+        }
+        // END //
+
+        /*Start -  For Shipping Group CHange*/
+        $shippingGroup = isset($prodAttributes['shippingGroup']) ? $prodAttributes['shippingGroup'] : [];
+
+        if (isset($shippingGroup['nickname']) && $shippingGroup['nickname']
+        && isset($shippingGroup['labelAs']) && $shippingGroup['labelAs']
+        && isset($shippingGroup['rate']) && $shippingGroup['rate']
+        && isset($shippingGroup['rateXquantity']) && $shippingGroup['rateXquantity'])
+        {
+            $shippingGroupId = $this->updateShippingGroup($shippingGroup);
+            if ($shippingGroupId != false && $shippingGroup['enabled']) {
+                $update['shipping_group_enabled'] = $shippingGroup['enabled'] ?? true;
+                $update['shipping_group'] = $shippingGroupId;
+                $update['dropship_enabled'] = false;
+                $update['dropship_location'] = null;
+            } else {
+                $update['shipping_group_enabled'] = false;
+                $update['shipping_group'] = null;
             }
         }
         // END //
@@ -359,6 +798,66 @@ class ApiAccessTokenController extends Controller
             }
         }
         return $dropShipId;
+    }
+
+    public function updateShippingGroup($productShippingGroup)
+    {
+        $shippingGroupId = false;
+        $isShippingGroup = isset($productShippingGroup['nickname']) && $productShippingGroup['nickname']
+            && isset($productShippingGroup['labelAs']) && $productShippingGroup['labelAs']
+            && isset($productShippingGroup['rate']) && $productShippingGroup['rate']
+            && isset($productShippingGroup['rateXquantity']) && $productShippingGroup['rateXquantity'];
+        if ($isShippingGroup) {
+            $shippingGroup = true;
+            if (array_key_exists('labelAs', $productShippingGroup)) {
+                $labelAs = $productShippingGroup['labelAs'];
+            } else {
+                $shippingGroup = false;
+            }
+            if (array_key_exists('rate', $productShippingGroup)) {
+                $rate = $productShippingGroup['rate'];
+            } else {
+                $shippingGroup = false;
+            }
+            if (array_key_exists('rateXquantity', $productShippingGroup)) {
+                $rateXquantity = $productShippingGroup['rateXquantity'];
+            } else {
+                $shippingGroup = false;
+            }
+            
+            if (array_key_exists('nickname', $productShippingGroup)) {
+                $nickname = $productShippingGroup['nickname'];
+            } else {
+                $shippingGroup = false;
+            }
+            if (!($nickname && $rateXquantity && $rate && $labelAs)) {
+                $shippingGroup = false;
+            }
+
+            if ($shippingGroup) {
+                $shippingGroupDetails = ShippingGroup::where('checkout_description', $labelAs)
+                    ->where('rate', $rate)
+                    ->where('rate_x_quantity', $rateXquantity)
+                    ->where('nickname', $nickname)
+                    ->where('store_id', $this->storeId)
+                    ->get()->toArray();
+                if (!empty($shippingGroupDetails)) {
+                    $shippingGroupId = $shippingGroupDetails[0]['id'] ?? false;
+                } else {
+                    // shipping group insert
+                    $shippingGroupDetails = new ShippingGroup();
+                    $shippingGroupDetails->nickname = $nickname;
+                    $shippingGroupDetails->store_id = $this->storeId;
+                    $shippingGroupDetails->rate_x_quantity = $rateXquantity;
+                    $shippingGroupDetails->checkout_description = $labelAs;
+                    $shippingGroupDetails->rate = $rate;
+                    
+                    $shippingGroupDetails->save();
+                    $shippingGroupId = $shippingGroupDetails->id;
+                }
+            }
+        }
+        return $shippingGroupId;
     }
 
     public function getSettings($oldSettings, $product, $store_id)

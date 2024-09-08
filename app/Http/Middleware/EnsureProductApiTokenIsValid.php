@@ -26,7 +26,7 @@ class EnsureProductApiTokenIsValid
                 $token = explode(' ', $request->header('authorization'));
 
                 if (empty($token[1])) {
-                    return Helpers::toSendJsonResponse(true, 'Missing Token Value', [], 401);
+                    return Helpers::toSendJsonResponse(true, 'Unauthenticated.', [], 401);
                 }
 
                 $ApiTokenDetails = ApiAccessTokens::whereAccessToken($token[1])->first();
@@ -44,11 +44,11 @@ class EnsureProductApiTokenIsValid
                     }
                     return Helpers::toSendJsonResponse(true, 'No Store Found.', [], 404);
                 }
-                return Helpers::toSendJsonResponse(true, 'Token Mismatch', ['token' => $token[1], 'ApiTokenDetails' => $ApiTokenDetails], 401);
+                return Helpers::toSendJsonResponse(true, 'Unauthenticated.', ['token' => $token[1], 'ApiTokenDetails' => $ApiTokenDetails], 401);
             }
             return Helpers::toSendJsonResponse(true, 'Token Not Found', [], 404);
         } 
-        return Helpers::toSendJsonResponse(true, 'Please make sure X-BigCommerce-Url is in header', [], 401);
+        return Helpers::toSendJsonResponse(true, 'Please make sure X-BigCommerce-Url is in header', [], 404);
 
     }
 }
