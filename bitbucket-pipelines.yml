@@ -20,7 +20,7 @@ pipelines:
                 MODE: 'command'
                 COMMAND: '/var/www/html/bigcommerce/bc/remote-script.sh'
 
-    feature/add-hazmat-per-box:
+    feature/update-product-api:
       - step:
           caches:
             - composer
