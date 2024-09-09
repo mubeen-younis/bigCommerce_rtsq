@@ -148,7 +148,19 @@ class ShippingRuleController extends Controller
                     $request->installed_carrier_id = $carrierId;
                     $request->store_id = $storeId;
                     if($rule['rule_type'] == 6 && $carrierId != null && $carrierName == $carrIndexName){
-                        $isRuletrue = $this->checkIsOverrideRuleApply($rule, $cartItems, $originKey, $allOrigins);
+                        switch ($rule['apply_to']) {
+                            case 0:
+                                $isRuletrue = $this->checkIsOverrideRuleApply($rule, $cartItems, $originKey, $allOrigins);
+                                break;
+                            case 1:
+                                $isRuletrue = $this->checkIsOverrideRuleApply($rule, $cartItems, $originKey, $allOrigins);
+                                break;
+                            case 2:
+                                $isRuletrue = $this->checkProdExistInShipment($rule, $cartItems, $originKey, $allOrigins);
+                                break;
+                            default:
+                                break;
+                        }
                         if(!$isRuletrue){
                             if($carrierType == 2) {
                                 // Update Parcel carriers WS rate with override rate shipping rule
