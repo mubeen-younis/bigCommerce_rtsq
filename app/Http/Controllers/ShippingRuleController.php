@@ -149,13 +149,13 @@ class ShippingRuleController extends Controller
                     $request->store_id = $storeId;
                     if($rule['rule_type'] == 6 && $carrierId != null && $carrierName == $carrIndexName){
                         switch ($rule['apply_to']) {
-                            case 0:
+                            case 0: //Apply Shipments level
                                 $isRuletrue = $this->checkIsOverrideRuleApply($rule, $cartItems, $originKey, $allOrigins);
                                 break;
-                            case 1:
+                            case 1: //Apply Cart level
                                 $isRuletrue = $this->checkIsOverrideRuleApply($rule, $cartItems, $originKey, $allOrigins);
                                 break;
-                            case 2:
+                            case 2: //Apply Products level
                                 $isRuletrue = $this->checkProdExistInShipment($rule, $cartItems, $originKey, $allOrigins);
                                 break;
                             default:
