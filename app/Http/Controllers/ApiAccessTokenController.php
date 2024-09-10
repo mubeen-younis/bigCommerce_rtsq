@@ -58,7 +58,7 @@ class ApiAccessTokenController extends Controller
                 $rules = [
                     'data.productId' => 'required|numeric',
                     'data.variantId' => 'required|numeric',
-                    'data.attributes.sku' => 'nullable|string',
+                    'data.attributes.sku' => 'nullable',
                     'data.attributes.name' => 'nullable|string',
                     'data.attributes.weight' => [
                         'nullable',
@@ -135,8 +135,8 @@ class ApiAccessTokenController extends Controller
                             if (strlen($value) > 10) {
                                 $errors[] = 'The ' . $attribute . ' must not be greater than 10 characters.';
                             } 
-                            if (!preg_match('/^[0-9\-]+$/', $value)) {
-                                $errors[] = 'The format is invalid. The value should contain numbers or hyphen(-) example: -123456-23';
+                            if (!preg_match('/^\d+(-\d+)$/', $value) && !empty($value)) {
+                                $errors[] = 'The format is invalid. The value should contain numbers or hyphen(-) example:- 123456-23 or 123-123';
                             }
 
                             if(!empty($errors)){
@@ -190,26 +190,44 @@ class ApiAccessTokenController extends Controller
                     'data.attributes.freightClass' => [
                         'nullable',
                         function ($attribute, $value, $fail) {
-                            // Define the valid values
-                            $validValues = [50, 55, 60, 65, 70, 77.5, 85, 92.5, 100, 110, 125, 150, 175, 200, 250, 300, 400, 500, 'DensityBased'];
                             // Check if the value is not in the valid values array
-                            if (!in_array($value, $validValues, true)) {
+                            if (!$this->isFreightClass($value)) {
                                 $fail("The value is invalid. The value can only be 50, 55, 60, 65, 70, 77.5, 85, 92.5, 100, 110, 125, 150, 175, 200, 250, 300, 400, 500, 'DensityBased'");
                             }
                         },
                     ],
-                    'data.attributes.hazardousEnabled' => 'required|boolean',
-                    'data.attributes.insuranceEnabled' => 'required|boolean',
+                    'data.attributes.hazardousEnabled' => [
+                        'nullable',
+                        function ($attribute, $value, $fail) {
+                            // Define the valid values
+                            $validValues = [true, false];
+                            // Check if the value is not in the valid values array
+                            if (!in_array($value, $validValues, true)) {
+                                $fail("The value is invalid. The value can only be true or false.");
+                            }
+                        },
+                    ],
+                    'data.attributes.insuranceEnabled' => [
+                        'nullable',
+                        function ($attribute, $value, $fail) {
+                            // Define the valid values
+                            $validValues = [true, false];
+                            // Check if the value is not in the valid values array
+                            if (!in_array($value, $validValues, true)) {
+                                $fail("The value is invalid. The value can only be true or false.");
+                            }
+                        },
+                    ],
                     'data.attributes.boxingProperties' => [
                         'nullable',
                         'integer',
                         'numeric',
                         function ($attribute, $value, $fail) {
                             // Define the valid values
-                            $validValues = [1, 2, 3];
+                            $validValues = ["0", "1", "2", "3"];
                             // Check if the value is not in the valid values array
-                            if (!in_array($value, $validValues, true)) {
-                                $fail("The value is invalid. The value can only be 1, 2 or 3");
+                            if (!in_array($value, $validValues)) {
+                                $fail("The value is invalid. The value can only be 0, 1, 2 or 3");
                             }
                         },
                     ],
@@ -219,10 +237,10 @@ class ApiAccessTokenController extends Controller
                         'numeric',
                         function ($attribute, $value, $fail) {
                             // Define the valid values
-                            $validValues = [1, 2];
+                            $validValues = ["0", "1", "2"];
                             // Check if the value is not in the valid values array
-                            if (!in_array($value, $validValues, true)) {
-                                $fail("The value is invalid. The value can only be 1 or 2");
+                            if (!in_array($value, $validValues)) {
+                                $fail("The value is invalid. The value can only be 0, 1 or 2");
                             }
                         },
                     ],
@@ -264,8 +282,8 @@ class ApiAccessTokenController extends Controller
                                         $errors[] = 'The ' . $attribute . ' must not be greater than 5 characters for US country example: US => 10003.';
                                     } 
                                 } elseif (request('data.attributes.dropship.country') == 'CA') {
-                                    if (strlen($value) > 6) {
-                                        $errors[] = 'The ' . $attribute . ' must not be greater than 6 characters for CA country example: CA => H2V1H9.';
+                                    if (strlen($value) > 7) {
+                                        $errors[] = 'The ' . $attribute . ' must not be greater than 7 characters for CA country example: CA => H2V1H9 or H2V 1H9.';
                                     } 
                                 }
                             } elseif (request('data.attributes.dropship.enabled') == 1 && empty($value)) {
@@ -605,31 +623,43 @@ class ApiAccessTokenController extends Controller
         $shipMultiPackage = isset($settings->ship_multi_package) ? $settings->ship_multi_package : null;
         $update['settings'] = json_encode($settings);
 
-        if(isset($prodAttributes['sku']) && $prodAttributes['sku']){
+        if(isset($prodAttributes['sku'])){
             $update['sku'] = $prodAttributes['sku'];
+        }else {
+            $update['sku'] = '';
         }
 
-        if(isset($prodAttributes['weight']) && $prodAttributes['weight']){
+        if(isset($prodAttributes['weight'])){
             $update['weight'] = $prodAttributes['weight'];
+        } else {
+            $update['weight'] = '';
         }
 
-        if(isset($prodAttributes['length']) && $prodAttributes['length']){
+        if(isset($prodAttributes['length'])){
             $update['length'] = $prodAttributes['length'];
+        } else {
+            $update['length'] = '';
         }
 
-        if(isset($prodAttributes['width']) && $prodAttributes['width']){
+        if(isset($prodAttributes['width'])){
             $update['width'] = $prodAttributes['width'];
+        } else {
+            $update['width'] = '';
         }
 
-        if(isset($prodAttributes['height']) && $prodAttributes['height']){
+        if(isset($prodAttributes['height'])){
             $update['height'] = $prodAttributes['height'];
+        } else {
+            $update['height'] = '';
         }
                      
-        if(isset($prodAttributes['nmfc']) && $prodAttributes['nmfc']){
+        if(isset($prodAttributes['nmfc'])){
             $update['nmfc'] = $prodAttributes['nmfc'];
+        } else {
+            $update['nmfc'] = '';
         }
 
-        if(isset($prodAttributes['productMarkup']) && $prodAttributes['productMarkup']){
+        if(isset($prodAttributes['productMarkup'])){
             $update['product_markup'] = $prodAttributes['productMarkup'];
         } else {
             $update['product_markup'] = '';
@@ -864,7 +894,7 @@ class ApiAccessTokenController extends Controller
     {
         $settings = isset($oldSettings[0]) && $oldSettings[0] ? json_decode($oldSettings[0]) : new \stdClass();
 
-        if (isset($product['quoteMethod']) && $product['quoteMethod']) {
+        if (isset($product['quoteMethod'])) {
             $quoteMethod = strtolower($product["quoteMethod"]);
             // Added instore and local delivery quoting method here as well Instore-local
             if ($quoteMethod === 's') {
@@ -880,16 +910,22 @@ class ApiAccessTokenController extends Controller
                 $settings->freight_enabled = false;
                 $settings->quote_as_local = true;
             }
+        } else {
+            $settings->parcel_enabled = false;
+            $settings->freight_enabled = false;
+            $settings->quote_as_local = false;
         }
         
-        if (isset($product['freightClass']) && $product['freightClass']) {
+        if (isset($product['freightClass'])) {
             $freightClass = (string)$product["freightClass"];
 
             if ($freightClass == '' || $this->isFreightClass($freightClass)) {
                 $settings->freight_class = (string)$product["freightClass"];
             }
+        } else{
+            $settings->freight_class = '';
         }
-        
+
         if (isset($product['boxingProperties'])) {
             $boxingProperty = strtolower($product["boxingProperties"]);
 
@@ -911,15 +947,19 @@ class ApiAccessTokenController extends Controller
                 $settings->allow_vertical = null;
                 $settings->ship_multi_package = null;
             }
+        } else {
+            $settings->ship_own_package = null;
+            $settings->allow_vertical = null;
+            $settings->ship_multi_package = null;
         }
 
-        if (isset($product['nmfc']) && $product['nmfc']) {
+        if (isset($product['nmfc'])) {
             $settings->nmfc = (string)$product["nmfc"];
         } else{
             $settings->nmfc = '';
         }
 
-        if (isset($product['HSCode']) && $product['HSCode']) {
+        if (isset($product['HSCode'])) {
             $settings->hs_code = $product["HSCode"];
         } else {
             $settings->hs_code = '';
@@ -939,13 +979,20 @@ class ApiAccessTokenController extends Controller
                 $settings->own_pallet = null;
                 $settings->pallet_vertical_rotation = null;
             }
+        } else {
+            $settings->own_pallet = null;
+            $settings->pallet_vertical_rotation = null;
         }
 
         if (isset($product['insuranceEnabled'])) {
             $settings->insurance = ($product["insuranceEnabled"] == 1) ? true : false;
+        } else{
+            $settings->insurance = false;
         }
         if (isset($product['hazardousEnabled'])) {
             $settings->hazardous_enabled = ($product["hazardousEnabled"] == 1) ? true : false;
+        } else{
+            $settings->hazardous_enabled = false;
         }
 
         return $settings;
@@ -953,7 +1000,7 @@ class ApiAccessTokenController extends Controller
 
     function isFreightClass($freigtClass)
     {
-        $allFreightClass = ['50', '55', '60', '65', '70', '77.5', '85', '92.5', '100', '125', '150', '175', '200', '250', '300', '400', '500', 'DensityBased'];
+        $allFreightClass = ['50', '55', '60', '65', '70', '77.5', '85', '92.5', '100', '110', '125', '150', '175', '200', '250', '300', '400', '500', 'DensityBased'];
         return in_array($freigtClass, $allFreightClass);
     }
 

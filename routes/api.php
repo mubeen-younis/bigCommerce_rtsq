@@ -86,7 +86,7 @@ Route::post('connection_update_from_fdo', [\App\Http\Controllers\FDOController::
 
 
 // Update Product API Route
-Route::middleware(['customThrottle:2,1', EnsureProductApiTokenIsValid::class])->group(function () {
+Route::middleware(['customThrottle:60,1', EnsureProductApiTokenIsValid::class])->group(function () {
     Route::post('/products', [ApiAccessTokenController::class, 'updateProduct']);
 });
 

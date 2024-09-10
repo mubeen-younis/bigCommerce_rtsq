@@ -15,20 +15,37 @@ class CustomThrottle
         $this->limiter = $limiter;
     }
 
-    public function handle($request, Closure $next, $limit = 60, $minutes = 1, $guard = null)
+    public function handle($request, Closure $next, $limit = 60, $minutes = 1)
     {
         $key = $this->resolveRequestSignature($request);
+        $maxAttempts = $limit;
+        $decayMinutes = $minutes;
 
-        if ($this->limiter->tooManyAttempts($key, $limit)) {
+        // Check if the user has exceeded the max attempts
+        if ($this->limiter->tooManyAttempts($key, $maxAttempts)) {
+            $retryAfter = $this->limiter->availableIn($key);
+
             return response()->json([
                 'message' => 'You have exceeded the number of requests allowed. Please try again later.',
                 'status' => '429'
-            ], 429);
+            ], 429)
+            ->header('Retry-After', $retryAfter)
+            ->header('X-RateLimit-Limit', $maxAttempts)
+            ->header('X-RateLimit-Remaining', 0);
         }
 
-        $this->limiter->hit($key, $minutes * 60);
+        // Increment the hit count for the current key
+        $this->limiter->hit($key, $decayMinutes * 60);
 
-        return $next($request);
+        // Get the remaining attempts
+        $remainingAttempts = $this->limiter->retriesLeft($key, $maxAttempts);
+
+        // Proceed with the request and add rate limit headers to the response
+        $response = $next($request);
+
+        return $response
+            ->header('X-RateLimit-Limit', $maxAttempts)
+            ->header('X-RateLimit-Remaining', $remainingAttempts);
     }
 
     protected function resolveRequestSignature($request)
