@@ -243,6 +243,7 @@ class OrderController extends Controller
         $autoResidentialsStatus = 'n';
         $residentialsPickup = 'n';
         $liftGateStatus = 'n';
+        $liftGatePickup = 'n';
         $binPackagingData = '';
         $orderWidget = [];
         $isOneRate = strpos($rateId, '+or');
@@ -1244,8 +1245,9 @@ class OrderController extends Controller
                         // Check: if order is newly created then update staff note
                         $staffNoteSettings = optional(WeightThresholdSettings::where('store_id', $toRequest['store_id'])->first())->toArray() ?? [];
                         $isStaffNotesActive = isset($staffNoteSettings['is_staff_note_active']) && $staffNoteSettings['is_staff_note_active'] == 0 ? false : true;
+
                         if ($isStaffNotesActive && $scope == 'store/order/created') {
-                            $orderCheck = RequestData::where('order_id', $orderId)->first();
+                            $orderCheck = RequestData::where('order_id', $orderId)->where('rate_id', $rateId)->where('cart_id', $cartId)->where('store_id', $toRequest['store_id'])->exists();
                             if (!$orderCheck) {
                                 $reportingFlag = "false";
                                 $orderWidget = $this->createOrderWidget($toRequest, $order, $reportingFlag);
@@ -1253,8 +1255,8 @@ class OrderController extends Controller
                                 $isStatus = $this->updateStaffNote($formateStaffNote, $toRequest);
                                 if($isStatus){
                                     RequestData::where('store_id', $toRequest['store_id'])
-                                    ->orWhere('cart_id', $cartId)
-                                    ->orWhere('rate_id', $rateId)
+                                    ->Where('cart_id', $cartId)
+                                    ->Where('rate_id', $rateId)
                                     ->update([
                                         'order_id' => $orderId
                                     ]);
