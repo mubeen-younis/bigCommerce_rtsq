@@ -412,8 +412,8 @@ class ApiAccessTokenController extends Controller
                             if (request('data.attributes.shippingGroup.enabled') == 1 && $value !== null) {
                                 $errors = [];
 
-                                if (!is_numeric($value) || intval($value) != $value) {
-                                    $errors[] = "The " . $attribute . ' must be an integer.';
+                                if (!is_numeric($value)) {
+                                    $errors[] = "The " . $attribute . ' must be an number.';
                                 }
                                 if ($value < 0.01) {
                                     $errors[] = 'The ' . $attribute . ' must be greater than 0.';
@@ -541,7 +541,7 @@ class ApiAccessTokenController extends Controller
                     ];
                    // Format all errors with their corresponding field names
                     foreach ($errors->messages() as $field => $messageArray) {
-                        $formattedErrors['errors']['data.' . $field] = $messageArray;
+                        $formattedErrors['errors'][$field] = $messageArray;
                     }
                     
                     return response()->json($formattedErrors, 422);
@@ -700,8 +700,7 @@ class ApiAccessTokenController extends Controller
 
         if (isset($shippingGroup['nickname']) && $shippingGroup['nickname']
         && isset($shippingGroup['labelAs']) && $shippingGroup['labelAs']
-        && isset($shippingGroup['rate']) && $shippingGroup['rate']
-        && isset($shippingGroup['rateXquantity']) && $shippingGroup['rateXquantity'])
+        && isset($shippingGroup['rate']) && $shippingGroup['rate'])
         {
             $shippingGroupId = $this->updateShippingGroup($shippingGroup);
             if ($shippingGroupId != false && $shippingGroup['enabled']) {
@@ -835,8 +834,7 @@ class ApiAccessTokenController extends Controller
         $shippingGroupId = false;
         $isShippingGroup = isset($productShippingGroup['nickname']) && $productShippingGroup['nickname']
             && isset($productShippingGroup['labelAs']) && $productShippingGroup['labelAs']
-            && isset($productShippingGroup['rate']) && $productShippingGroup['rate']
-            && isset($productShippingGroup['rateXquantity']) && $productShippingGroup['rateXquantity'];
+            && isset($productShippingGroup['rate']) && $productShippingGroup['rate'];
         if ($isShippingGroup) {
             $shippingGroup = true;
             if (array_key_exists('labelAs', $productShippingGroup)) {
@@ -860,7 +858,7 @@ class ApiAccessTokenController extends Controller
             } else {
                 $shippingGroup = false;
             }
-            if (!($nickname && $rateXquantity && $rate && $labelAs)) {
+            if (!($nickname && $rate && $labelAs)) {
                 $shippingGroup = false;
             }
 
@@ -878,9 +876,10 @@ class ApiAccessTokenController extends Controller
                     $shippingGroupDetails = new ShippingGroup();
                     $shippingGroupDetails->nickname = $nickname;
                     $shippingGroupDetails->store_id = $this->storeId;
-                    $shippingGroupDetails->rate_x_quantity = $rateXquantity;
+                    $shippingGroupDetails->rate_x_quantity = $rateXquantity ?? 0;
                     $shippingGroupDetails->checkout_description = $labelAs;
                     $shippingGroupDetails->rate = $rate;
+                    $shippingGroupDetails->uuid = Helpers::getUuid();
                     
                     $shippingGroupDetails->save();
                     $shippingGroupId = $shippingGroupDetails->id;
