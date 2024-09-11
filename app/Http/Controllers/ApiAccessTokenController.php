@@ -135,7 +135,7 @@ class ApiAccessTokenController extends Controller
                             if (strlen($value) > 10) {
                                 $errors[] = 'The ' . $attribute . ' must not be greater than 10 characters.';
                             } 
-                            if (!preg_match('/^\d+(-\d+)$/', $value) && !empty($value)) {
+                            if (!preg_match('/^\d+(-\d+)?$/', $value) && !empty($value)) {
                                 $errors[] = 'The format is invalid. The value should contain numbers or hyphen(-) example:- 123456-23 or 123-123';
                             }
 
