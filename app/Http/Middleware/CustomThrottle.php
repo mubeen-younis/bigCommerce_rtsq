@@ -43,9 +43,9 @@ class CustomThrottle
         // Proceed with the request and add rate limit headers to the response
         $response = $next($request);
 
-        return $response
-            ->header('X-RateLimit-Limit', $maxAttempts)
-            ->header('X-RateLimit-Remaining', $remainingAttempts);
+        return response()->json($response)
+        ->header('X-RateLimit-Limit', $maxAttempts)
+        ->header('X-RateLimit-Remaining', $remainingAttempts);
     }
 
     protected function resolveRequestSignature($request)
