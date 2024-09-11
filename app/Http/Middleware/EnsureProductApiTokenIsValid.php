@@ -48,7 +48,7 @@ class EnsureProductApiTokenIsValid
             }
             return Helpers::toSendJsonResponse(404, 'Token Not Found', [], 404);
         } 
-        return Helpers::toSendJsonResponse(404, 'Please make sure X-BigCommerce-Url is in header', [], 404);
+        return response()->json(['status' => 404,'message' => 'Please make sure X-BigCommerce-Url is in header'], 404);
 
     }
 }
