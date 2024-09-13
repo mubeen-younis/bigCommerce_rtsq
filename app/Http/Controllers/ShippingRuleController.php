@@ -171,8 +171,8 @@ class ShippingRuleController extends Controller
                                 $serviceDesc = str_replace('®', '' , $serviceDesc) ?? $serviceDesc;
                                 $serviceDesc = str_replace(' Saturday', '' , $serviceDesc) ?? $serviceDesc;
                                 $serviceDesc = str_replace('Fedex ', '' , $serviceDesc);
+                                $serviceDesc = isset($quote['isInternationQuote']) && $quote['isInternationQuote'] ? str_replace('Ground', 'International Ground' , $serviceDesc) : $serviceDesc;
                                 $serviceDesc = str_replace('2 Day Am', '2 Day AM' , $serviceDesc);
-                                $rule['filter_services'] = str_replace('International Ground', 'Ground' , $rule['filter_services']) ?? $rule['filter_services'];
                                 
                                 if ($serviceDesc == $rule['filter_services']){
                                     $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
