@@ -482,7 +482,7 @@ class OrderController extends Controller
                 $sName = explode('|', $order['shipping_name']) ?? '';
                 $filteredArray = preg_grep('/\.\.\.,/', $sName);
                 foreach ($filteredArray as $index => $value) {
-                    $sName[$index] = ' ' . $origDetails['address'] . ' ' ?? '';
+                    $sName[$index] = ' ' . $origDetails['address'] . ', ' . $origDetails['city'] . ', ' . $origDetails['state'] . ' ' . $origDetails['zip_code'] . ' ' ?? '';
                 }   
                 $order['shipping_name'] = implode('|', $sName) ?? '';
             }
