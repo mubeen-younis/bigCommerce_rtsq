@@ -218,6 +218,7 @@ class OrderController extends Controller
         $isAppointmentDel = strpos($rateId, Functions::$appointmentDelAccess) ? 'Y' : 'n';
         $rateId = strtolower($rateId);
         $isInspOrLocal = substr($rateId, 0, 4) == 'insp' || substr($rateId, 0, 6) == 'locdel';
+        $isInstore = substr($rateId, 0, 4) == 'insp';
         $isSmallrate = substr($rateId, 0, 9) == 'parcel_12' || substr($rateId, 0, 5) == 'multi' ? true : false;
         $isLG = strpos($rateId, '+lg') != false;
         $isOwnArrangement = strpos($rateId, 'own_arrangement') === 0 || strpos($rateId, 'freernlltl') === 0 ? true : false;
@@ -472,6 +473,18 @@ class OrderController extends Controller
                 $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($rateId, $responseFromWS, $zip);
             } elseif (!$isSmallLtlrate && $isMultiShipment) {
                 $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($code, $responseFromWS, $zip);
+            }
+
+            /**
+             * To show full instore-pick shipping name
+             * */
+            if($isInstore) {
+                $sName = explode('|', $order['shipping_name']) ?? '';
+                $filteredArray = preg_grep('/\.\.\.,/', $sName);
+                foreach ($filteredArray as $index => $value) {
+                    $sName[$index] = ' ' . $origDetails['address'] . ' ' ?? '';
+                }   
+                $order['shipping_name'] = implode('|', $sName) ?? '';
             }
 
             if (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Delivery')){

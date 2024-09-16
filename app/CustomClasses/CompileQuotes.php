@@ -391,7 +391,7 @@ class CompileQuotes
         if ($inStore) {
             $inStoreTitle = $inStore['checkout_description'];
             if (empty($inStoreTitle)) {
-                $inStoreTitle = "In-store pick up";
+                $inStoreTitle = "Instore Pick Up";
             }
             $return['inStoreTitle'] = $inStoreTitle;
             $return['suppress_other'] = isset($whCollection['ld_enable_supress']) && $whCollection['ld_enable_supress'] == true ? true : false;
