@@ -429,8 +429,10 @@ class ApiAccessTokenController extends Controller
                     ],
                     'data.attributes.shippingGroup.rateXquantity' => [
                         function ($attribute, $value, $fail) {
-                            if (!in_array($value, [0, 1, '0', '1'], true)) {
-                                $fail("The value is invalid. The value can only be 0 or 1");
+                            if (request('data.attributes.shippingGroup.enabled') == 1 && $value !== null) {
+                                if (!in_array($value, [0, 1, '0', '1'], true)) {
+                                    $fail("The value is invalid. The value can only be 0 or 1");
+                                }
                             }
                         }
                     ],
