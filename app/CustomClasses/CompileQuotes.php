@@ -327,14 +327,14 @@ class CompileQuotes
             if (isset($inStoreLd['inStorePickup']['status']) && $inStoreLd['inStorePickup']['status'] == 1) {
                 $title = $warehouseData['inStoreTitle'] ?? '';
 
-                if (isset($inStoreLd['totalDistance']) && $inStoreLd['totalDistance'] > 0 && $warehouseData['enable_instore_distance']) {
+                if (isset($inStoreLd['totalDistance']) && $inStoreLd['totalDistance'] > 0 && isset($warehouseData['enable_instore_distance']) && $warehouseData['enable_instore_distance']) {
                     $title .= " | " . $inStoreLd['totalDistance'] . " away";
                 }
                 if(isset($warehouseData['enable_instore_address']) && $warehouseData['enable_instore_address']){
                     $title .= " | " . $this->getShortStreetAddress($warehouseData['address']) . " " . $warehouseData['senderCity'] . ", " . $warehouseData['senderState'] . ", " . $warehouseData['senderZip'];
                 }
 
-                if (isset($array['phone']) && $array['phone'] && $warehouseData['enable_instore_phone']) {
+                if (isset($array['phone']) && $array['phone'] && isset($warehouseData['enable_instore_phone']) && $warehouseData['enable_instore_phone']) {
                     $title .= " | " . $array['phone'];
                 }
                 $quotesArray[] = [
