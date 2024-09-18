@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Jobs\ProductWebhookImport;
 use App\Models\NestingItemsDetail;
+use App\CustomClasses\Functions;
 
 
 class ProductSettingController extends Controller
@@ -57,6 +58,7 @@ class ProductSettingController extends Controller
                 ImportProductsFromBCStore::dispatch($data)->delay(Carbon::now()->addSeconds($delay++));
             }
             Log::info('Syncing inprogress');
+            
             ImportProductsFromBCStoreStatusUpdate::dispatch($insertedId, $request['email'])->delay(Carbon::now()->addSeconds(5));
         }
 
@@ -77,6 +79,11 @@ class ProductSettingController extends Controller
             ]);
         }
         $response = json_decode($response['response'], true);
+
+        if(Functions::isEnabledLogs($data['store_hash'])){
+            Log::info('Get products from BC using sync process' . json_encode($response));
+        }
+
         if (isset($response['data']) && count($response['data'])) {
             foreach ($response['data'] as $product) {
 
@@ -113,6 +120,11 @@ class ProductSettingController extends Controller
             $variantEndPoint = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products/' . $product['id'] . '/variants?limit=250&page=' . $count;
             $response = $this->curlRequest->enSingleCurlRequest($variantEndPoint, [], $headers, 'GET', true);
             $response = json_decode($response['response'], true);
+            
+            if(Functions::isEnabledLogs($data['store_hash'])){
+                Log::info('Get veriants from BC using sync process' . json_encode($response));
+            }
+
             if (isset($response['data']) && count($response['data'])) {
                 foreach ($response['data'] as $variant) {
                     $product['price'] = $variant['price'] ?? $product['price'];
@@ -174,7 +186,6 @@ class ProductSettingController extends Controller
                 $this->saveProducts->saveProduct($product, $storeId, $scope);
                 $this->getVariants($product, $data, $scope);
             } else {
-                Log::info('Check Product Scope ' . $scope);
                 $this->saveProducts->saveProduct($product, $storeId, $scope);
                 $this->saveProducts->deleteNullVariantProduct($product, $storeId);
             }

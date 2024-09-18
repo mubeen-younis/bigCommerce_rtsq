@@ -16,6 +16,8 @@ use App\Helpers\Helpers;
 use Illuminate\Support\Facades\DB;
 use App\Models\CarrierServices;
 use App\Constants\Constant;
+use App\Models\Store;
+use App\Models\EnableLog;
 
 class Functions
 {
@@ -207,7 +209,7 @@ class Functions
             'small-package' => 'WWE SmPkg', 'small-package-new' => 'WWE Small New API', 'unishippers-small-new' => 'Unishippers Small New API', 'ups-small' => 'UPS Small', 'fedex-small' => 'FedEx Small', 'unishippers-small' => 'unisheppers',
             'freightquote-ltl' => 'b2b', 'freightquote-chr-ltl' => 'b2b', 'purolator-small' => 'purolator', 'usps-small' => 'usps',
             'tql-ltl' => 'tql', 'yrc-ltl' => 'yrc', 'odfl-ltl' => 'odfl4me', 'dayross-ltl' => 'dayross', 'priority-one-ltl' => 'priority1',
-            'estes-ltl' => 'estes', 'echo-ltl' => 'echoLogistics', 'saia-ltl' => 'saia', 'abf-ltl' => 'abf', 'daylight-ltl' => 'daylight',
+            'estes-ltl' => 'estes', 'echo-ltl' => 'echoLogistics', 'saia-ltl' => 'saia', 'abf-ltl' => 'abf', 'daylight-ltl' => 'daylight', 'fedex-ltl-new' => 'FedEx LTL New API',
             'southeastern-ltl' => 'southeastern', 'unishipper-ltl' => 'Unishippers LTL New API', 'ups-land-cost-small' => 'UPSLandedCost', 'fedex-small-new' => 'FedEx Small New API'];
 
         return $carrierCodesWithName[$carrSlug] ?? null;
@@ -1567,5 +1569,10 @@ class Functions
 
         return $number;
 
+    }
+
+    public static function isEnabledLogs($storeHash = '', $storeId = ''){
+        $store = Store::where('id', $storeId)->orwhere('hash', $storeHash)->select('id')->first() ?? [];
+        return EnableLog::where('store_id', $store->id)->where('log_status', 1)->exists() ?? 0;
     }
 }

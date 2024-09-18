@@ -256,26 +256,39 @@ class QuotesResults
             foreach ($quotes['q'] as $key => $quote) {
                 if (isset($quote['serviceType'])) {
                     $shipments[$shipment]['q'][$key]['serviceDesc'] = $quote['serviceType'] === 'FEDEX_FREIGHT_PRIORITY' ? 'Freight Priority' : 'Freight Economy';
-                    if (isset($quote['surcharges'])) {
-                        $surcharges = $quote['surcharges'];
-                        unset($shipments[$shipment]['q'][$key]['surcharges']);
+                    if (isset($quote['surcharges']) || isset($quote['Surcharges'])) {
+                        $surcharges = $quote['surcharges'] ?? $quote['Surcharges'] ?? [];
+                        unset($shipments[$shipment]['q'][$key]['surcharges'], $shipments[$shipment]['q'][$key]['surcharges']);
                         foreach ($surcharges as $surcharge) {
                             if (isset($surcharge['SurchargeType']) && $surcharge['SurchargeType'] === 'LIFTGATE_DELIVERY') {
                                 $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $surcharge['Amount']['Amount'] ?? 0;
+                            } elseif (isset($surcharge['type']) && $surcharge['type'] === 'LIFTGATE_DELIVERY') {
+                                $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $surcharge['amount'] ?? 0;
                             }
+
                             if (isset($surcharge['SurchargeType']) && $surcharge['SurchargeType'] === 'RESIDENTIAL_DELIVERY') {
                                 $shipments[$shipment]['q'][$key]['surcharges']['residentialFee'] = $surcharge['Amount']['Amount'] ?? 0;
+                            } elseif (isset($surcharge['type']) && $surcharge['type'] === 'RESIDENTIAL_DELIVERY') {
+                                $shipments[$shipment]['q'][$key]['surcharges']['residentialFee'] = $surcharge['amount'] ?? 0;
                             }
+
                             if (isset($surcharge['SurchargeType']) && $surcharge['SurchargeType'] === 'DANGEROUS_GOODS') {
                                 $shipments[$shipment]['q'][$key]['surcharges']['hazardousMaterialsFee'] = $surcharge['Amount']['Amount'] ?? 0;
+                            } elseif (isset($surcharge['type']) && $surcharge['type'] === 'DANGEROUS_GOODS') {
+                                $shipments[$shipment]['q'][$key]['surcharges']['hazardousMaterialsFee'] = $surcharge['amount'] ?? 0;
                             }
+
                             if (isset($surcharge['SurchargeType']) && $surcharge['SurchargeType'] === 'APPOINTMENT_DELIVERY') {
                                 $shipments[$shipment]['q'][$key]['surcharges']['notifyDeliveryFee'] = $surcharge['Amount']['Amount'] ?? 0;
                                 if (isset($quote['holdAtTerminalResponse']) && !empty($quote['holdAtTerminalResponse'])) {
                                     $quote['holdAtTerminalResponse']['surcharges']['notifyDeliveryFee'] = $surcharge['Amount']['Amount'] ?? 0;
                                 }
+                            } elseif (isset($surcharge['type']) && $surcharge['type'] === 'APPOINTMENT_DELIVERY') {
+                                $shipments[$shipment]['q'][$key]['surcharges']['notifyDeliveryFee'] = $surcharge['amount'] ?? 0;
+                                if (isset($quote['holdAtTerminalResponse']) && !empty($quote['holdAtTerminalResponse'])) {
+                                    $quote['holdAtTerminalResponse']['surcharges']['notifyDeliveryFee'] = $surcharge['amount'] ?? 0;
+                                }
                             }
-
                         }
 
                     }
@@ -336,15 +349,16 @@ class QuotesResults
         foreach ($hatQuotes as $quote) {
             $compiledQuotes['serviceType'] = 'fedexltl+HAT+' . $postFix;
             $title = $srvcTitle ?? $quote['Title'] ?? '';
-            $address['city'] = $quote['address']['City'] ?? '';
-            $address['state'] = $quote['address']['StateOrProvinceCode'] ?? '';
-            $address['zipCode'] = $quote['address']['PostalCode'] ?? '';
-            $distance = $quote['distance']['Value'] . strtolower($quote['distance']['Units']) ?? '0 mi';
-            $phoneNumber = $quote['custServicePhoneNbr']['PhoneNumber'] ?? '';
+            $address['city'] = $quote['address']['City'] ?? $quote['address']['city'] ?? '';
+            $address['state'] = $quote['address']['StateOrProvinceCode'] ?? $quote['address']['stateOrProvinceCode'] ?? '';
+            $address['zipCode'] = $quote['address']['PostalCode'] ?? $quote['address']['postalCode'] ?? '';
+            $value = $quote['distance']['Value'] ?? $quote['distance']['value'] ?? '';
+            $distance = $value . strtolower($quote['distance']['Units'] ?? $quote['distance']['units']) ?? '0 mi';
+            $phoneNumber = $quote['custServicePhoneNbr']['PhoneNumber'] ?? $quote['custServicePhoneNbr']['phoneNumber'] ?? '';
 
             $compiledQuotes['serviceDesc'] = Functions::getHATTitle($title, $address, $distance, $phoneNumber);
             $compiledQuotes['totalNetCharge']['Amount'] = Functions::getHATPrice($quote['totalNetCharge'], $quoteSettings['hold_at_terminal_price'] ?? 0);
-            $compiledQuotes['deliveryTimestamp'] = $quote['deliveryDate'] ?? '';
+            $compiledQuotes['deliveryTimestamp'] = $quote['deliveryDate'] ?? $quote['deliveryTimestamp'] ?? '';
             $compiledQuotes['totalTransitTimeInDays'] = $quote['totalTransitTimeInDays'] ?? '';
             $compiledQuotes['transitTime'] = $quote['transitTime'] ?? '';
             isset($quote['surcharges']) && !empty($quote['surcharges']) ? $compiledQuotes['surcharges'] = $quote['surcharges'] ?? 0 : null;

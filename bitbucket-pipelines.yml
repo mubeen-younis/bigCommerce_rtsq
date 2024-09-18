@@ -8,7 +8,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    feature/add-label-fields-chunk-2:
+    feature/fedex-ltl-new-api:
       - step:
           caches:
             - composer

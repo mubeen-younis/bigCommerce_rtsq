@@ -23,6 +23,7 @@ use ZipArchive;
 use Illuminate\Filesystem\Filesystem;
 use App\CurlRequest;
 use Carbon\Carbon;
+use App\CustomClasses\Functions;
 
 class ExportImportProducts extends Controller
 {
@@ -391,50 +392,73 @@ class ExportImportProducts extends Controller
 
     public function importProductCsvJob($request)
     {
-        $indexes = $request['indexes'];
-        $store_id = $request['store_id'];
-        $store = Store::where('id', $store_id)->first();
-        $emailNotify = $request['importEmailAddress'] ?? '';
-        $path = $request['path'];
-        $exceptionProducts = [];
-
-        if (!file_exists($path)) {
-            return false;
-        }
-
-        // Converting Csv TO String
-        $csvArray = array_map('str_getcsv', file($path));
-        if (count($csvArray) < 1) {
-            return false;
-        }
-
-        $headerRow = array_slice(range('A', 'Z'), 0, count($csvArray[0]));
-        if ($request['firstHeader'] == "true") {
-            $headerRow = $csvArray[0];
-             unset($csvArray[0]);
-        }
-        array_walk($csvArray, function (&$a) use ($csvArray, $headerRow) {
-            $a = array_combine(array_map('trim', $headerRow), array_map('trim', $a));
-        });
-
-        $csvChunks = array_chunk($csvArray, $this->csvChunksLength);
-
-        foreach ($csvChunks as $chunkKey => $csv) {
-            foreach ($csv as $key => $product) {
-                try {
-                    $this->getUpdateData($product, $indexes, $store_id, $store->access_token, $request['store_hash']);
-
-                } catch (\Exception $exception) {
-                    $exceptionProducts[] = [
-                        'productId' => $product['Product Id'],
-                        'varientId' => $product['Variant Id'],
-                        'productName' => $product['Product Name'],
-                    ];
+        try {
+            if(Functions::isEnabledLogs($request['store_hash'])){
+                Log::info('CSV Import Products Job Start: ' . json_encode($request));
+            }
+            $indexes = $request['indexes'];
+            $store_id = $request['store_id'];
+            $store = Store::where('id', $store_id)->first();
+            $emailNotify = $request['importEmailAddress'] ?? '';
+            $path = $request['path'];
+            $exceptionProducts = [];
+    
+            if (!file_exists($path)) {
+                return false;
+            }
+    
+            // Converting Csv TO String
+            $csvArray = array_map('str_getcsv', file($path));
+            if (count($csvArray) < 1) {
+                return false;
+            }
+    
+            $headerRow = array_slice(range('A', 'Z'), 0, count($csvArray[0]));
+            if ($request['firstHeader'] == "true") {
+                $headerRow = $csvArray[0];
+                 unset($csvArray[0]);
+            }
+            array_walk($csvArray, function (&$a) use ($csvArray, $headerRow) {
+                $a = array_combine(array_map('trim', $headerRow), array_map('trim', $a));
+            });
+    
+            $csvChunks = array_chunk($csvArray, $this->csvChunksLength);
+    
+            foreach ($csvChunks as $chunkKey => $csv) {
+                foreach ($csv as $key => $product) {
+                    try {
+                        $this->getUpdateData($product, $indexes, $store_id, $store->access_token, $request['store_hash']);
+    
+                    } catch (\Exception $exception) {
+                        $exceptionProducts[] = [
+                            'productId' => $product['Product Id'] ?? '',
+                            'varientId' => $product['Variant Id'] ?? '',
+                        ];
+    
+                        if(Functions::isEnabledLogs($request['store_hash'])){
+                            Log::info('CSV Products Exception Array: ' . json_encode($exceptionProducts));
+                            Log::info(json_encode([
+                                'line' => $exception->getLine(),
+                                'message' => $exception->getMessage(),
+                                'file' => $exception->getFile(),
+                            ]));
+                        }
+                    }
                 }
             }
+    
+            $this->ImportNotifyEmail($emailNotify);
+            if(Functions::isEnabledLogs($request['store_hash'])){
+                Log::info('CSV Import Poducts Email Send.');
+            }
+        } catch (\Exception $exception) {
+            Log::info(json_encode([
+                'line' => $exception->getLine(),
+                'message' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+            ]));
         }
-
-        $this->ImportNotifyEmail($emailNotify);
+        
     }
 
     function getUpdateData($product, $indexes, $store_id, $access_token, $hash)
@@ -553,6 +577,10 @@ class ExportImportProducts extends Controller
             }
         }
         // END //
+
+        if(Functions::isEnabledLogs('', $store_id)){
+            Log::info('CSV Import products Data: ' . $variant_id . " " . json_encode($update));
+        }
 
         if (!empty($update)) {
             if ($variant_id) {
@@ -744,6 +772,10 @@ class ExportImportProducts extends Controller
                     $location->additionals = json_encode($additionals);
                     $location->save();
                     $dropShipId = $location->id;
+                }
+
+                if(Functions::isEnabledLogs("", $store_id)){
+                    Log::info('Import Products Dropship: ' . $dropShipId  . " " . json_encode($location));
                 }
             }
         }
