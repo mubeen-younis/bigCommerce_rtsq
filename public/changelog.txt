@@ -1,3 +1,7 @@
+= 2.2.22 2024-09-18 =
+
+* Update - Update Product API in BC (Ticket:2202219416) [#483] (https://bitbucket.org/eniture/big-commerce/pull-requests/483)
+
 = 2.2.21 2024-09-18 =
 
 * Update - Update instore label fields (Ticket:2721818958) [#482] (https://bitbucket.org/eniture/big-commerce/pull-requests/482)
