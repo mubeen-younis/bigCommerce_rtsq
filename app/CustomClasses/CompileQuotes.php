@@ -327,12 +327,14 @@ class CompileQuotes
             if (isset($inStoreLd['inStorePickup']['status']) && $inStoreLd['inStorePickup']['status'] == 1) {
                 $title = $warehouseData['inStoreTitle'] ?? '';
 
-                if (isset($inStoreLd['totalDistance']) && $inStoreLd['totalDistance'] > 0) {
-                    $title .= " | " . $inStoreLd['totalDistance'] . " away ";
+                if (isset($inStoreLd['totalDistance']) && $inStoreLd['totalDistance'] > 0 && isset($warehouseData['enable_instore_distance']) && $warehouseData['enable_instore_distance']) {
+                    $title .= " | " . $inStoreLd['totalDistance'] . " away";
                 }
-                $title .= " | " . $this->getShortStreetAddress($warehouseData['address']) . " " . $warehouseData['senderCity'] . ", " . $warehouseData['senderState'] . ", " . $warehouseData['senderZip'];
+                if(isset($warehouseData['enable_instore_address']) && $warehouseData['enable_instore_address']){
+                    $title .= " | " . $this->getShortStreetAddress($warehouseData['address']) . " " . $warehouseData['senderCity'] . ", " . $warehouseData['senderState'] . ", " . $warehouseData['senderZip'];
+                }
 
-                if (isset($array['phone']) && $array['phone']) {
+                if (isset($array['phone']) && $array['phone'] && isset($warehouseData['enable_instore_phone']) && $warehouseData['enable_instore_phone']) {
                     $title .= " | " . $array['phone'];
                 }
                 $quotesArray[] = [
@@ -389,10 +391,13 @@ class CompileQuotes
         if ($inStore) {
             $inStoreTitle = $inStore['checkout_description'];
             if (empty($inStoreTitle)) {
-                $inStoreTitle = "In-store pick up";
+                $inStoreTitle = "Instore Pick Up";
             }
             $return['inStoreTitle'] = $inStoreTitle;
             $return['suppress_other'] = isset($whCollection['ld_enable_supress']) && $whCollection['ld_enable_supress'] == true ? true : false;
+            $return['enable_instore_distance'] = isset($whCollection['enable_instore_distance']) && $whCollection['enable_instore_distance'] == true ? true : false;
+            $return['enable_instore_address'] = isset($whCollection['enable_instore_address']) && $whCollection['enable_instore_address'] == true ? true : false;
+            $return['enable_instore_phone'] = isset($whCollection['enable_instore_phone']) && $whCollection['enable_instore_phone'] == true ? true : false;
         }
         if ($locDel) {
             $locDelTitle = $locDel['checkout_description'];

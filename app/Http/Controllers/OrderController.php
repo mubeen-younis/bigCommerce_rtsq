@@ -218,6 +218,7 @@ class OrderController extends Controller
         $isAppointmentDel = strpos($rateId, Functions::$appointmentDelAccess) ? 'Y' : 'n';
         $rateId = strtolower($rateId);
         $isInspOrLocal = substr($rateId, 0, 4) == 'insp' || substr($rateId, 0, 6) == 'locdel';
+        $isInstore = substr($rateId, 0, 4) == 'insp';
         $isSmallrate = substr($rateId, 0, 9) == 'parcel_12' || substr($rateId, 0, 5) == 'multi' ? true : false;
         $isLG = strpos($rateId, '+lg') != false;
         $isOwnArrangement = strpos($rateId, 'own_arrangement') === 0 || strpos($rateId, 'freernlltl') === 0 ? true : false;
@@ -474,6 +475,18 @@ class OrderController extends Controller
                 $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($code, $responseFromWS, $zip);
             }
 
+            /**
+             * To show full instore-pick shipping name
+             * */
+            if($isInstore) {
+                $sName = explode('|', $order['shipping_name']) ?? '';
+                $filteredArray = preg_grep('/\.\.\.,/', $sName);
+                foreach ($filteredArray as $index => $value) {
+                    $sName[$index] = ' ' . $origDetails['address'] . ', ' . $origDetails['city'] . ', ' . $origDetails['state'] . ' ' . $origDetails['zip_code'] . ' ' ?? '';
+                }   
+                $order['shipping_name'] = implode('|', $sName) ?? '';
+            }
+
             if (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Delivery')){
                 $sName = explode('(Delivery', $order['shipping_name'])[0] ?? '';
                 $sName = explode('w/', $sName)[0] ?? '';
@@ -490,6 +503,7 @@ class OrderController extends Controller
                 $sMethod = '';
             }
 
+            $sName = str_replace('mi away', 'Mi Away', $sName);
             $orderWidget[$zip]['shipping_method'] = $sName . $sMethod;
             $orderWidget[$zip]['shipping_rate'] = '$' . number_format((float)$sRate, 2,);
             // TODO : Need to change originalPiecesOfLineItem -> itemQuantity
