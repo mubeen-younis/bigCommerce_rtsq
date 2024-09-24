@@ -20,7 +20,7 @@ pipelines:
                 MODE: 'command'
                 COMMAND: '/var/www/html/bigcommerce/bc/remote-script.sh'
 
-    feature/update-product-api:
+    update-pallet-packaging-api:
       - step:
           caches:
             - composer
