@@ -289,6 +289,10 @@ class Bin3D
             }
         }
 
+        if(Functions::isEnabledLogs('', $storeId)){
+            Log::info('3DbinRequest Data ' . json_encode($binRequest));
+        }
+
         $binRequestLog = new BinRequestLog();
         $binRequestLog->store_id = $storeId;
         $binRequestLog->cart_id = $cartInfo['cartId'];
@@ -351,6 +355,9 @@ class Bin3D
         $binRequestLog->not_updated_api_response = json_encode($responses);
         $binRequestLog->response_time = now();
         $binRequestLog->save();
+        if(Functions::isEnabledLogs('', $storeId)){
+            Log::info('3DbinResponse Data ' . json_encode($extBoxDimOfPackBoxes));
+        }
         return $extBoxDimOfPackBoxes;
     }
 
