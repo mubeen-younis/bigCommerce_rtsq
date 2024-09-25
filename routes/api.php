@@ -22,6 +22,7 @@ use App\Http\Controllers\StoreController;
 use App\Http\Controllers\Subscription\SubscriptionController;
 use App\Http\Controllers\Subscription\PackageSubscriptionController;
 use App\Http\Middleware\EnsureTokenIsValid;
+use App\Http\Middleware\EnsureProductApiTokenIsValid;
 use App\Models\CarrierServices;
 use App\Models\Locations;
 use Illuminate\Http\Request;
@@ -36,6 +37,7 @@ use App\Http\Controllers\DBSC\ShippingZoneController;
 use App\Http\Controllers\DBSC\ShippingRatesController;
 use App\Http\Controllers\DBSC\OtherSettingsController;
 use App\Http\Controllers\BigCommerceListingController;
+use App\Http\Controllers\ApiAccessTokenController;
 
 /*
 |--------------------------------------------------------------------------
@@ -83,8 +85,10 @@ Route::post('connection_update_from_va', [\App\Http\Controllers\AddressValidatio
 Route::post('connection_update_from_fdo', [\App\Http\Controllers\FDOController::class, 'connectionUpdateFromFdo']);
 
 
-/////
-
+// Update Product API Route
+Route::middleware(['customThrottle:60,1', EnsureProductApiTokenIsValid::class])->group(function () {
+    Route::post('/products', [ApiAccessTokenController::class, 'updateProduct']);
+});
 
 // Ws Route For Adding Plan
 Route::post('/save_plan_detail', [CarrierPlanController::class, 'addPlanFromWs']);
@@ -297,6 +301,9 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/submit_staffnote_settings', [QuoteSettingsController::class, 'saveStaffNoteSettings']);
 
     Route::get('/get_carrs_conn_settings', [ConnectionController::class, 'getConnSettings']);
+    // Update Product API Route
+    Route::post('/generateApiToken', [ApiAccessTokenController::class, 'create']);
+    Route::post('/getApiAccessToken', [ApiAccessTokenController::class, 'show']);
 });
 //Webhook
 Route::post('/bc-subscription-update', [SubscriptionController::class, 'paymentByStripeWebHook']);
@@ -341,10 +348,14 @@ Route::get('/test_bin', [App\CustomClasses\Bin3D\Bin3D::class, 'getBinResponse']
 // app logs
 Route::get('/api_logs', [App\Http\Controllers\LogToDbController::class, 'index']);
 Route::get('/truncate_logs', [App\Http\Controllers\LogToDbController::class, 'truncateLogs']);
+Route::post('/enable_logs', [App\Http\Controllers\LogToDbController::class, 'enableLogs']);
 
 // Eniture licenses routes
 Route::get('/get_customers_list', [BigCommerceListingController::class, 'listCustomers']);
 Route::get('/edit_subscription', [BigCommerceListingController::class, 'editBigCommerceSubscription']);
 Route::post('/update_subscription', [BigCommerceListingController::class, 'updateBCSubscription']);
 Route::post('/cancel_subscription', [BigCommerceListingController::class, 'cancelBCSubscription']);
+// install new carrier on all existing customer stores
+Route::post('/install_carrier', [InstalledCarrierController::class, 'installCarrierAllStores']);
+Route::post('/uninstall_carrier', [InstalledCarrierController::class, 'unInstallCarrierAllStores']);
 

@@ -7,6 +7,7 @@ namespace App\CustomClasses\PurolatorSmall;
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
 use App\CustomClasses\Functions;
+use Illuminate\Support\Str;
 use App\Http\Controllers\ShippingRuleController;
 
 class QuotesResults
@@ -36,19 +37,20 @@ class QuotesResults
 
     }
 
-    public function addHazmatAmountsInServices($amount, $serviceCode, $quoteSettings)
+    public function addHazmatAmountsInServices($amount, $serviceCode, $quoteSettings, $hazmatBoxes = 1)
     {
+        $totalHazmatBoxes = Functions::getHazmatItemBoxes($this->isSbsEnable, $quoteSettings, $this->items, $hazmatBoxes);
         // Adding hazmat fee to Ground Service
         $serviceDesc = preg_replace("([A-Z])", " $0", $serviceCode);
         $trim = ltrim($serviceDesc);
-        if (strpos($trim, 'Ground') !== false) {
+        if (strpos($trim, 'Ground') !== false || Str::contains($trim, 'Ground')) {
             if (isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
-                $amount = $amount + $quoteSettings['ground_hazardous_material_fee'];
+                $amount = $amount + $quoteSettings['ground_hazardous_material_fee'] * $totalHazmatBoxes;
             }
             // Adding hazmat fee to Air Services
         } else {
             if (isset($quoteSettings['air_hazardous_material_fee']) && is_numeric($quoteSettings['air_hazardous_material_fee']) && !empty($quoteSettings['air_hazardous_material_fee'])) {
-                $amount = $amount + $quoteSettings['air_hazardous_material_fee'];
+                $amount = $amount + $quoteSettings['air_hazardous_material_fee'] * $totalHazmatBoxes;
             }
         }
         $amount = $this->addHandlingMarkupOfHazmat($amount, $quoteSettings['handling_fee_markup']);
@@ -77,6 +79,8 @@ class QuotesResults
 
     public function getServiceTitle($title, $data, $serviceCode, $quoteSettings, $isResi = false, $showRadNotation = false)
     {
+        $title = $this->getServiceLabel($title, $serviceCode, $quoteSettings);
+
         if ($isResi && $showRadNotation) {
             $title = $title . Constant::RESI_LABEL;
         }
@@ -84,6 +88,29 @@ class QuotesResults
             $title = $title . ' (Intransit days: ' . $data['totalTransitTimeInDays'] . ')';
         } else if (isset($data['deliveryTimestamp']) && $data['deliveryTimestamp'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3) {
             $title = $title . ' (Delivery by ' . date('m-d-Y', strtotime($data['deliveryTimestamp'])) . ')';
+        }
+        return $title;
+    }
+
+    public function getServiceLabel($title, $serviceType, $quoteSettings)
+    {
+        $services = $quoteSettings['carrier_services'] ?? [];
+        foreach($services as $service => $checked){
+            $serviceLetter =str_replace('_',' ',$service);
+            $serviceLetter =str_replace('us','U.S.',$serviceLetter);
+            $capitalServiceLetter = ucwords($serviceLetter);
+            $serviceType =str_replace('  ',':',$capitalServiceLetter);
+            $serviceType =str_replace(' ','',$serviceType);
+            $serviceType =str_replace('1030','10:30',$serviceType);
+            $serviceType =str_replace('am','AM',$serviceType);
+            $serviceType =str_replace('Am','AM',$serviceType);
+
+            if($serviceType == $title && $service == $checked){
+                $labelIndex =  strtolower($service) . '_label';
+                $labelIndex =str_replace('am','AM',$labelIndex);
+                $labelIndex =str_replace('_AM_','_am_',$labelIndex);
+                return !empty($quoteSettings['carrier_services'][$labelIndex]) ? $quoteSettings['carrier_services'][$labelIndex] : $title;
+            }
         }
         return $title;
     }
@@ -106,13 +133,16 @@ class QuotesResults
     }
 
 
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items, $storeId = '', $carrierName = '')
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $isSbsEnable, $isMultiShipment, $items, $storeId = '', $carrierName = '', $totalHazmatBoxes)
     {
         $shippingRule = new ShippingRuleController();
         $shipments = $this->formateQuoteBeforeCompile($shipments,$connectionSettings);
         $this->quoteSettings = [];
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
         $this->quoteSettings = $connectionSettings['purolator-small']['quote_settings'] ?? '';
+        $this->isSbsEnable = $isSbsEnable;
+        $this->items = $items;
+        $access = $this->CompileQuotes->getAccessorialCodeSmall();
 
         $numberOfShipments = 0;
         foreach ($shipments as $ship) {
@@ -190,12 +220,13 @@ class QuotesResults
                         $showRadNotation = $isRadNotation;
                         // Checking hazmat and adding hazmat amounts in services
                         if ($isHazmat) {
+                            $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin]['normal'] : 1;
                             if ($isMultiShipment) {
                                 if ($hazmatAllItems[$origin] == 'Y') {
-                                    $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
+                                    $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings, $hazmatBoxes);
                                 }
                             } else {
-                                $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
+                                $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings, $hazmatBoxes);
                             }
                         }
 
@@ -273,7 +304,7 @@ class QuotesResults
 
     private function onylQuoteGroundServices($isHazmat, $srvcType)
     {
-        $grdServicesArr = ['PurolatorGround9AM', 'PurolatorGround10:30AM', 'PurolatorGround'];
+        $grdServicesArr = ['PurolatorGround9AM', 'PurolatorGround10:30AM', 'PurolatorGround', 'PurolatorGroundU.S.'];
         $grdSrvcForHazMat = $this->quoteSettings['ground_service_for_hazardous_material'] ?? false;
 
         if ($isHazmat && isset($grdSrvcForHazMat) && $grdSrvcForHazMat) {
@@ -299,11 +330,16 @@ class QuotesResults
                 foreach ($quote['q'] as $key => $value) {
                     foreach($carrier_services as $service => $checked){
                         $serviceLetter =str_replace('_',' ',$service);
+                        $serviceLetter =str_replace('us','U.S.',$serviceLetter);
                         $capitalServiceLetter = ucwords($serviceLetter);
                         $serviceType =str_replace('  ',':',$capitalServiceLetter);
                         $serviceType =str_replace(' ','',$serviceType);
+                        $serviceType =str_replace('1030','10:30',$serviceType);
+                        $serviceType =str_replace('am','AM',$serviceType);
+                        $serviceType =str_replace('Am','AM',$serviceType);
                         if($serviceType == $value['serviceType'] && $service == $checked){
                             $checkedshipment[$shipkey]['q'][] = $value;
+                            break;
                         }
                     }
                 }

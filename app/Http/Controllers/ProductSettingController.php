@@ -14,6 +14,8 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Jobs\ProductWebhookImport;
+use App\Models\NestingItemsDetail;
+use App\CustomClasses\Functions;
 
 
 class ProductSettingController extends Controller
@@ -56,6 +58,7 @@ class ProductSettingController extends Controller
                 ImportProductsFromBCStore::dispatch($data)->delay(Carbon::now()->addSeconds($delay++));
             }
             Log::info('Syncing inprogress');
+            
             ImportProductsFromBCStoreStatusUpdate::dispatch($insertedId, $request['email'])->delay(Carbon::now()->addSeconds(5));
         }
 
@@ -76,6 +79,11 @@ class ProductSettingController extends Controller
             ]);
         }
         $response = json_decode($response['response'], true);
+
+        if(Functions::isEnabledLogs($data['store_hash'])){
+            Log::info('Get products from BC using sync process' . json_encode($response));
+        }
+
         if (isset($response['data']) && count($response['data'])) {
             foreach ($response['data'] as $product) {
 
@@ -112,6 +120,11 @@ class ProductSettingController extends Controller
             $variantEndPoint = 'https://api.bigcommerce.com/stores/' . $data['store_hash'] . '/v3/catalog/products/' . $product['id'] . '/variants?limit=250&page=' . $count;
             $response = $this->curlRequest->enSingleCurlRequest($variantEndPoint, [], $headers, 'GET', true);
             $response = json_decode($response['response'], true);
+            
+            if(Functions::isEnabledLogs($data['store_hash'])){
+                Log::info('Get veriants from BC using sync process' . json_encode($response));
+            }
+
             if (isset($response['data']) && count($response['data'])) {
                 foreach ($response['data'] as $variant) {
                     $product['price'] = $variant['price'] ?? $product['price'];
@@ -173,7 +186,6 @@ class ProductSettingController extends Controller
                 $this->saveProducts->saveProduct($product, $storeId, $scope);
                 $this->getVariants($product, $data, $scope);
             } else {
-                Log::info('Check Product Scope ' . $scope);
                 $this->saveProducts->saveProduct($product, $storeId, $scope);
                 $this->saveProducts->deleteNullVariantProduct($product, $storeId);
             }
@@ -202,11 +214,12 @@ class ProductSettingController extends Controller
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
         $data = [
-            'weight' => $request['weight'] ?? '',
-            'width' => $request['width'] ?? '',
-            'height' => $request['height'] ?? '',
-            'depth' => $request['length'] ?? '',
+            'weight' => $request['weight'] ?? 0,
+            'width' => $request['width'] ?? 0,
+            'height' => $request['height'] ?? 0,
+            'depth' => $request['length'] ?? 0,
         ];
+
         $this->curlRequest->enSingleCurlRequest($storeUrl, json_encode($data), $headers, 'PUT', true);
     }
 
@@ -294,6 +307,18 @@ class ProductSettingController extends Controller
             ->whereNotNull('variant_id')
             ->where('store_id', $request->store_id)
             ->get();
+
+        if(!empty($products)){
+            foreach($products as $key => $product){
+                $nestingItemsDetails = optional(NestingItemsDetail::where('product_settings_id', $product['id'])->first())->toArray() ?? [];
+                $products[$key]->dimension_type = $nestingItemsDetails['dimension_type'] ?? 0;
+                $products[$key]->nesting_percentage = $nestingItemsDetails['nesting_percentage'] ?? null;
+                $products[$key]->stacked_type = $nestingItemsDetails['stacked_type'] ?? 0;
+                $products[$key]->max_nested_items = $nestingItemsDetails['max_nested_items'] ?? null;
+                $products[$key]->is_nesting_enabled = $nestingItemsDetails['is_nesting_enabled'] ?? 0;
+            }
+        }
+        
         if ($products->isEmpty()) {
             return response()->json(['error' => true,
                 'data' => [],
@@ -580,9 +605,17 @@ class ProductSettingController extends Controller
             }
 
             $product->settings = json_encode($this->getSetting($prd));
-            /*json_encode($prd->only(['dropship_enabled', 'dropship_location', 'freight_class',
-                'hazardous_enabled', 'freight_enabled', 'parcel_enabled', 'insurance']));*/
             $product->update();
+            // updating Nesting Items details
+            $nestingItemsDetails = $this->updateNestingItemsDetail($prd, $request['store_id']);
+            if(!empty($nestingItemsDetails)){
+                $product->nested_diamensions = $prd['nested_diamensions'] ?? 0;
+                $product->nesting_percentage = $prd['nesting_percentage'] ?? null;
+                $product->stacking_property = $prd['stacking_property'] ?? 0;
+                $product->max_nested_items = $prd['max_nested_items'] ?? null;
+                $product->is_nesting_enabled = $prd['is_nesting_enabled'] ?? 0;
+            }
+
             $prd['store_id'] = $request['store_id'];
             $prd['store_hash'] = $request['store_hash'];
         }
@@ -605,10 +638,23 @@ class ProductSettingController extends Controller
         ], 200);
     }
 
+    public function updateNestingItemsDetail($product, $storeId)
+    {
+        $nestingItemsDetails = NestingItemsDetail::firstOrNew(['product_settings_id' => $product['id'], 'store_id' => $storeId]);
+        $nestingItemsDetails->dimension_type = $product['dimension_type'] ?? 0;
+        $nestingItemsDetails->nesting_percentage = $product['nesting_percentage'] ?? null;
+        $nestingItemsDetails->stacked_type = $product['stacked_type'] ?? 0;
+        $nestingItemsDetails->max_nested_items = $product['max_nested_items'] ?? null;
+        $nestingItemsDetails->is_nesting_enabled = $product['is_nesting_enabled'] ? 1 : 0;
+        $nestingItemsDetails->save();
+        
+        return $product;
+    }
+
     public function getSetting($product)
     {
         $getOnly = ['freight_class', 'freightParcelEnabled',
-            'hazardous_enabled', 'freight_enabled', 'parcel_enabled', 'quote_as_instore', 'quote_as_local', 'insurance', 'allow_vertical', 'ship_own_package', 'nmfc'];
+            'hazardous_enabled', 'freight_enabled', 'parcel_enabled', 'quote_as_instore', 'quote_as_local', 'insurance', 'allow_vertical', 'ship_own_package', 'nmfc', 'hs_code'];
         $settings = new \stdClass();
         foreach ($product as $key => $prd) {
             if (in_array($key, $getOnly)) {

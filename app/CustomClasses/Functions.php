@@ -16,6 +16,8 @@ use App\Helpers\Helpers;
 use Illuminate\Support\Facades\DB;
 use App\Models\CarrierServices;
 use App\Constants\Constant;
+use App\Models\Store;
+use App\Models\EnableLog;
 
 class Functions
 {
@@ -166,7 +168,7 @@ class Functions
     public static function getCarrierNameOrCode($code, $getWsCode = 0): ?string
     {
         $carrierCodes = ['wweltl', 'rnlltl', 'xpoltl', 'fedexltl', 'gtzltl_new', 'gtzltl','unl', 'yrcltl', 'cltl', 'upsltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship_new', 'parcel_12uniship', 'parcel_12shipEng',
-            'fqltl', 'estesltl', 'dayrossltl', 'odflltl', 'saialtl', 'parcel_12Purolator', 'abfltl', 'SouthEastern', 'southeastern', 'parcel_12usps', 'tqlltl', 'echoltl', 'daylightltl', 'fqchrltl', 'shipeng', 'priority1'];
+            'fqltl', 'estesltl', 'dayrossltl', 'odflltl', 'saialtl', 'parcel_12Purolator', 'abfltl', 'SouthEastern', 'southeastern', 'parcel_12usps', 'tqlltl', 'echoltl', 'daylightltl', 'fqchrltl', 'shipeng', 'priority1', 'upslandcostapi'];
         foreach ($carrierCodes as $carrierCode) {
             if (strpos($code, $carrierCode) !== false) {
                 if ($getWsCode == 0) {
@@ -186,7 +188,7 @@ class Functions
             'parcel_12wwe' => 'wweSmall', 'parcel_12uniship_new' => 'wweSmallN', 'parcel_12ups' => 'upsSmall', 'parcel_12fd' => 'fedexSmall', 'parcel_12uniship' => 'unishippersSmall',
             'parcel_12shipEng' => 'shipEngine', 'shipeng' => 'shipEngine', 'priority1' => 'priority1',
             'fqltl' => 'freightQuote', 'estesltl' => 'estesLtl', 'dayrossltl' => 'dayross', 'odflltl' => 'OdflLTL', 'saialtl' => 'saia', 'parcel_12Purolator' => 'purolator', 'abfltl' => 'abf',
-            'SouthEastern' => 'southeastern', 'southeastern' => 'southeastern', 'parcel_12usps' => 'usps', 'tqlltl' => 'tql', 'echoltl' => 'echoLogistics', 'daylightltl' => 'daylight', 'chr' => 'chr', 'fqchrltl' => 'chr'];
+            'SouthEastern' => 'southeastern', 'southeastern' => 'southeastern', 'parcel_12usps' => 'usps', 'tqlltl' => 'tql', 'echoltl' => 'echoLogistics', 'daylightltl' => 'daylight', 'chr' => 'chr', 'fqchrltl' => 'chr', 'upslandcostapi' => 'UPSLandedCost'];
         return $carrierCodesWithName[$carrierCode] ?? null;
     }
 
@@ -225,8 +227,8 @@ class Functions
             'small-package' => 'WWE SmPkg', 'small-package-new' => 'WWE Small New API', 'unishippers-small-new' => 'Unishippers Small New API', 'ups-small' => 'UPS Small', 'fedex-small' => 'FedEx Small', 'unishippers-small' => 'unisheppers',
             'freightquote-ltl' => 'b2b', 'freightquote-chr-ltl' => 'b2b', 'purolator-small' => 'purolator', 'usps-small' => 'usps',
             'tql-ltl' => 'tql', 'yrc-ltl' => 'yrc', 'odfl-ltl' => 'odfl4me', 'dayross-ltl' => 'dayross', 'priority-one-ltl' => 'priority1',
-            'estes-ltl' => 'estes', 'echo-ltl' => 'echoLogistics', 'saia-ltl' => 'saia', 'abf-ltl' => 'abf', 'daylight-ltl' => 'daylight',
-            'southeastern-ltl' => 'southeastern', 'unishipper-ltl' => 'Unishippers LTL New API'];
+            'estes-ltl' => 'estes', 'echo-ltl' => 'echoLogistics', 'saia-ltl' => 'saia', 'abf-ltl' => 'abf', 'daylight-ltl' => 'daylight', 'fedex-ltl-new' => 'FedEx LTL New API',
+            'southeastern-ltl' => 'southeastern', 'unishipper-ltl' => 'Unishippers LTL New API', 'ups-land-cost-small' => 'UPSLandedCost', 'fedex-small-new' => 'FedEx Small New API'];
 
         return $carrierCodesWithName[$carrSlug] ?? null;
     }
@@ -1308,6 +1310,13 @@ class Functions
                             }
                         }
                     break;
+                    case 'UPSLandedCost':
+                        foreach ($quote as $zipCode => $q) {
+                            if($zip == $zipCode) {
+                                $carrierQuoteIds = $q->q->id ?? '';
+                            }
+                        }
+                    break;
                 }
             }
         }
@@ -1695,5 +1704,83 @@ class Functions
 
 
         return ['simple' => $cheapestQuotes, 'checkoutQuote' => $checkoutQuote];
+    }
+
+    public static function getHazmatItemBoxes($isSbsEnable, $quoteSettings, $items, $hazmatBoxes)
+    {
+        $totalHazmatBoxes = 1;
+        $totalWeight = 0;
+        if(!$isSbsEnable){
+            $packageType = $quoteSettings['packageRatingMethod'] ?? 1;
+            if($packageType === 1){
+                $itemsQuantity = collect($items)->sum('piecesOfLineItem') ?? 0;
+                $totalHazmatBoxes = $itemsQuantity;
+                
+            } else if($packageType === 2){
+                $itemWithOutDim = collect($items)->map(function ($item) {
+                    if(empty((int) $item['lineItemLength']) && empty((int) $item['lineItemWidth']) && empty((int) $item['lineItemHeight'])){
+                        return $item['lineItemWeight'] * $item['piecesOfLineItem'] ?? 0;
+                    }
+                }) ?? 0;
+                $totalItemWeightWithOutDim = collect($itemWithOutDim)->sum();
+                $totalBoxesWithOutDim = (int) ceil($totalItemWeightWithOutDim/150);
+
+                $itemWithDim = collect($items)->map(function ($item) {
+                    if(!empty((int) $item['lineItemLength']) && !empty((int) $item['lineItemWidth']) && !empty((int) $item['lineItemHeight'])){
+                        return $item['piecesOfLineItem'] ?? 0;
+                    }
+                }) ?? 0;
+                $totalItemsWithDim = collect($itemWithDim)->sum();
+
+                $totalHazmatBoxes = $totalBoxesWithOutDim + $totalItemsWithDim;
+                
+            } else if($packageType === 3){
+                $weight = collect($items)->map(function ($item) {
+                    return $item['lineItemWeight'] * $item['piecesOfLineItem'] ?? 0;
+                }) ?? 0;
+                $totalWeight = collect($weight)->sum();
+                $totalHazmatBoxes = (int) ceil($totalWeight/150);
+            }
+        } else {
+            $totalHazmatBoxes = $hazmatBoxes;
+        }
+
+        return $totalHazmatBoxes;
+    }
+
+    public static function verifyAndCountHazmatBox($binPacked, $itemsArr)
+    {
+        foreach ($binPacked->items as $item) {
+            if(isset($itemsArr[$item->id]['isHazmatLineItem']) && $itemsArr[$item->id]['isHazmatLineItem'] == 'Y'){
+                if(isset($binPacked->bin_data->type) && $binPacked->bin_data->type == 'item'){
+                    return $binPacked->bin_data->quantity;
+                } else {
+                    return 1;
+                }   
+            }
+        }
+
+        return 0;
+    }
+    
+    public static function floatValue($number = 0)
+    {   
+        $number = (float) $number;
+        $number = number_format($number, 1, '.', '');
+        if ($number == 0) {
+            return $number;
+        }
+        $number = rtrim($number, '0'); // 50,00 --> 50 or // 50.00 --> 50.
+        $number = rtrim($number, ','); // 50,   --> 50
+        $number = rtrim($number, '.'); // 50.   --> 50
+
+        return $number;
+
+    }
+
+    public static function isEnabledLogs($storeHash = '', $storeId = '')
+    {
+        $store = Store::where('id', $storeId)->orwhere('hash', $storeHash)->select('id')->first() ?? [];
+        return EnableLog::where('store_id', $store->id)->where('log_status', 1)->exists() ?? 0;
     }
 }

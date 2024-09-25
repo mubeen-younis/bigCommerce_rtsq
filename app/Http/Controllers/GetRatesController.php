@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Log;
 use App\CustomClasses\CompareRates;
 use App\Constants\Constant;
 use App\Models\ShippingRule;
+use App\Models\NestingItemsDetail;
 
 class GetRatesController extends Controller
 {
@@ -98,12 +99,102 @@ class GetRatesController extends Controller
         if ($this->isShippingRule($storeData, $this->formatReq)) {
             return [];
         }
+        // Apply Nesting items functionality
+        if(!empty($this->formatReq['lineItemData']['items'])){
+            $this->itemsTobeNested($this->formatReq['lineItemData']['items'], $cartInfo['store_id']);
+        }
 
         $quotes = $this->shipping->collectRates($this->formatReq, $storeData, $this->connectionSettings, $cartInfo, $this->isDbscInstalled);
 
         return $quotes;
 
 
+    }
+
+    public function itemsTobeNested($products, $storeId){
+        foreach($products as $variantId => $product){
+            // Get nesting items details from DB
+            $nestingItemsDetails = optional(NestingItemsDetail::where(['product_settings_id' => $product['id'], 'store_id' => $storeId])->first())->toArray() ?? [];
+            // Check: Nested percentage should be greater then 0
+            if(!empty($nestingItemsDetails) && $nestingItemsDetails['is_nesting_enabled'] && !empty($nestingItemsDetails['max_nested_items'])){
+
+                $params = [
+                    'totalItems' => $product['piecesOfLineItem'] ?? 0,
+                    'length' => $product['lineItemLength'] ?? 0,
+                    'width' => $product['lineItemWidth'] ?? 0,
+                    'height' => $product['lineItemHeight'] ?? 0,
+                    'weight' => $product['lineItemWeight'] ?? 0,
+                    'maxNestingItems' => $nestingItemsDetails['max_nested_items'] ?? 0,
+                    'nestingDimType' => $nestingItemsDetails['dimension_type'] ?? 0,
+                    'nestingPercentage' => $nestingItemsDetails['nesting_percentage'] ?? 0,
+                    'nestingStackType' => $nestingItemsDetails['stacked_type'] ?? 0,
+                ];
+                // Check: cart items greater then maximum nested items
+                if($params['totalItems'] > $params['maxNestingItems']){
+
+                    $totalStacks = $count = (int) ceil($params['totalItems']/$params['maxNestingItems']);
+                    // Check: stack type is even or maximized (0 = evenly type and 1 = maximized type)
+                    if($params['nestingStackType'] == 1){
+
+                        $stackItems = $params['maxNestingItems'];
+                        $products = $this->calcNestingDimensions($products, $product, $params, $count, $stackItems, $variantId);
+
+                    } else{
+
+                        $stackItems = (int) ceil($params['totalItems']/$totalStacks);
+                        $products = $this->calcNestingDimensions($products, $product, $params, $count, $stackItems, $variantId);
+
+                    }
+                } else {
+
+                    $product = $this->selectDimType($params, $product, $params['totalItems']);
+
+                    $product['lineItemWeight'] = $params['weight'] * $params['totalItems'];
+                    $product['piecesOfLineItem'] = 1;
+                    $products[$variantId] = $product;
+                }
+            }
+
+        }
+        $this->formatReq['lineItemData']['items'] = $products;
+    }
+
+    public function calcNestingDimensions($products, $product, $params, $count, $items, $variantId){
+        
+        while($count > 0){
+            // select diamension type and calculate diamension based on diamension type
+            $product = $this->selectDimType($params, $product, $items);
+
+            $product['lineItemWeight'] = $params['weight'] * $items;
+            $product['piecesOfLineItem'] = 1;
+            $params['totalItems'] = $params['totalItems'] - $items;
+            $key = $variantId . $count;
+            $products[$key] = $product;
+            // update formate request
+            $this->formatReq['lineItemData']['origin'][$key] = $this->formatReq['lineItemData']['origin'][$variantId];
+
+            $count--;
+
+            if($count == 1){
+                $items = $params['totalItems'];
+            }
+        }
+        unset($products[$variantId], $this->formatReq['lineItemData']['origin'][$variantId]);
+
+        return $products;
+    }
+
+    public function selectDimType($params, $product, $items){
+        // calculation of diamension based on diamension type
+        if($params['nestingDimType'] == 0){
+            $product['lineItemLength'] = $params['length'] + (($items - 1) * $params['length'] * (1 - ($params['nestingPercentage']/100)));
+        } elseif($params['nestingDimType'] == 1){
+            $product['lineItemWidth'] = $params['width'] + (($items - 1) * $params['width'] * (1 - ($params['nestingPercentage']/100)));
+        } elseif($params['nestingDimType'] == 2){
+            $product['lineItemHeight'] = $params['height'] + (($items - 1) * $params['height'] * (1 - ($params['nestingPercentage']/100)));
+        }
+
+        return $product;
     }
 
     public function getCompareRates(Request $request)
@@ -188,7 +279,8 @@ class GetRatesController extends Controller
                 'street_1' => $data['base_options']['destination']['street_1'] ?? null,
                 'street_2' => $data['base_options']['destination']['street_2'] ?? null,
                 'zip' => $data['base_options']['destination']['zip'] ?? null,
-                'city' => str_replace("'", '', $data['base_options']['destination']['city']) ?? null,
+                // regex use for remove special character from city name
+                'city' => preg_replace('/[^a-zA-Z0-9\s-]/', '', $data['base_options']['destination']['city']),
                 'state' => $data['base_options']['destination']['state_iso2'] ?? null,
                 'country' => $data['base_options']['destination']['country_iso2'] ?? null,
                 'address_type' => $data['base_options']['destination']['address_type'] ?? null,
@@ -232,6 +324,8 @@ class GetRatesController extends Controller
                     $wareHouseShipmentExist = true;
                 }
 
+                $product['name'] = str_replace('"', '', $product['name']);
+
                 $details['origin'][$key] = $originAddress;
                 $details['items'][$key] = [
                     'id' => $product_settings['id'] ?? '',
@@ -267,6 +361,7 @@ class GetRatesController extends Controller
                     'pallet_vertical_rotation' => isset($product_settings['pallet_vertical_rotation']) && $product_settings['pallet_vertical_rotation'] ? '1' : '0',
                     'own_pallet' => isset($product_settings['own_pallet']) && $product_settings['own_pallet'] ? '1' : '0',
                     'product_markup' => isset($product_settings['product_markup']) && !empty($product_settings['product_markup']) ? $product_settings['product_markup'] : '',
+                    'lineItemHSCode' => isset($product_settings['hs_code']) && !empty($product_settings['hs_code']) ? $product_settings['hs_code'] : '',
                     'lineItemNMFC' => isset($product_settings['nmfc']) && !empty($product_settings['nmfc']) ? $product_settings['nmfc'] : '',
                 ];
 
@@ -633,7 +728,7 @@ class GetRatesController extends Controller
 
             foreach ($shippingRules as $key => $rule) {
 
-                if(isset($rule['rule_type']) && $rule['rule_type'] == 5 || $rule['rule_type'] == 8){
+                if(isset($rule['rule_type']) && ($rule['rule_type'] == 5 || $rule['rule_type'] == 8 || $rule['rule_type'] == 6)){
                     continue;
                 }
 
