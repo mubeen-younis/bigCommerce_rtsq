@@ -3632,6 +3632,7 @@ class GenerateRequestData
         $hazmat = 'N';
         if (isset($bin->bin_data->id) && isset($boxBins[$bin->bin_data->id])) {
             $boxWeight = $boxBins[$bin->bin_data->id]['box_weight'];
+            $boxHeight = $boxBins[$bin->bin_data->id]['box_height'];
             $price = 0;
             if (isset($bin->items)) {
                 foreach ($bin->items as $itemData) {
@@ -3644,8 +3645,6 @@ class GenerateRequestData
         }
 
         if($palletPkgReq && !isset($bin->bin_data->type)){
-            $boxHeight = ceil($boxBins[$bin->bin_data->id]['ext_height'] - $boxBins[$bin->bin_data->id]['box_height']);
-            $boxWeight = ceil($boxBins[$bin->bin_data->id]['box_weight'] - $boxBins[$bin->bin_data->id]['max_wg']);
             $palletHeight = $bin->bin_data->stack_height + $boxHeight ?? 0;
         }
 

@@ -300,17 +300,12 @@ class PalletPackaging
                 'nickname' => $pallet['nickname'],
                 'name' => $pallet['box_name'],
                 'w' => $pallet['width'],
-                'h' => $pallet['ext_height'],
+                'h' => $pallet['height'],
                 'd' => $pallet['length'],
                 'id' => $pallet['id'],
-                'max_wg' => $pallet['box_weight'],
-                'box_weight' => $pallet['max_weight'],
+                'max_wg' => $pallet['max_weight'],
+                'box_weight' => $pallet['box_weight'],
                 'box_height' => $pallet['ext_height'],
-                /*Start- Added in case of Customer removes external dimesnions and bin request log issue
-                NO use of it in3dbin Request
-                Just adding in array For Request Hash*/
-                'ext_height' => $pallet['height'] ?? 0
-                /*END*/
             );
         }
 
