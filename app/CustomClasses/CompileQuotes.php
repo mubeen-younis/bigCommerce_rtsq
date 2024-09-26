@@ -117,6 +117,7 @@ class CompileQuotes
      * @var configSettings
      * */
     public $configSettings;
+    public $returnSingleShip = false;
 
     private $carrierServices = [];
     private $alwaysResi = false;
@@ -130,6 +131,7 @@ class CompileQuotes
     public function __construct()
     {
         $this->wweSmallQuoteRes = new WweSmallQuoteResults();
+        $this->returnSingleShip = false;
         // $this->upsSmallQuotesResults = new upsSmallQuotesResults();
     }
 
@@ -999,7 +1001,7 @@ class CompileQuotes
             foreach ($quotes as $car => $quote) {
                 unset($quote['checkoutQuotes']);
                 foreach ($quote as $key => $quot) {
-                    if($this ->returnSingleShip && $key == 'multiShipmentQuotes'){
+                    if($this->returnSingleShip && $key == 'multiShipmentQuotes'){
                         $outputArray = [];
                         foreach ($quot as $key => $value) {
                             // Get the first element from the nested array
