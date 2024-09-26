@@ -1517,7 +1517,8 @@ class Functions
         return $services->toArray() ?? [];
     }
 
-    public static function addUpCheapestQuotes($quotes){
+    public static function addUpCheapestQuotes($quotes)
+    {
         $multiShipmentQuotes = $quotes['multiShipmentQuotes'] ?? [];
         $checkoutQuotes = $quotes['checkoutQuotes'] ?? [];
         $finalCHeapestQuotes = [];
@@ -1526,9 +1527,8 @@ class Functions
         if(count($multiShipmentQuotes) >= 2 && count($checkoutQuotes) >= 2){
             foreach ($multiShipmentQuotes as $shipment) {
                 $simpleQuotes[] = isset($shipment['simple']) ? $shipment['simple'] : [];
-                //$accessorialServices = isset($shipment) ? $shipment : [];
             }
-            //dd($simpleQuotes);
+
             // Extract unique indexes
             $indexes = [];
             foreach ($simpleQuotes as $item) {
@@ -1537,7 +1537,7 @@ class Functions
                 }
             }
             $shipments = array_keys($indexes);
-            //dd($shipments, $simpleQuotes);
+        
             foreach($shipments as $shipNumber){
                 $data[$shipNumber] = array_map(function ($item) use ($shipNumber) {
                     return isset($item[$shipNumber]) ? $item[$shipNumber] : [];
@@ -1545,107 +1545,16 @@ class Functions
             }
             
             foreach ($data as $index => $items) {
-                $data[$index] = array_values(array_filter($items));
+                $data[$index] = array_values(array_filter(array_unique($items, SORT_REGULAR)));
             }
             
             $finalCHeapestQuotes = self::findCheapestQuotes($data, $quotes);
-            //dd($finalCHeapestQuotes);
             $simpleCheckoutQuotes = $finalCHeapestQuotes['checkoutQuote'] ?? [];
             $newQuotes['checkoutQuotes'][] = $simpleCheckoutQuotes;
             unset($finalCHeapestQuotes['checkoutQuote']);
             $newQuotes['multiShipmentQuotes'][] = $finalCHeapestQuotes;
-            $isLtlSmallShipments = self::checkIsLtlSmall($finalCHeapestQuotes);
 
-            $newArray = [];
-            $count = 0;
-            if($isLtlSmallShipments){
-                $p = array_filter($finalCHeapestQuotes['simple'], function($item) {
-                    //dd($item);
-                    return substr($item['code'], 0, 9) == 'parcel_12';
-                });
-                //dd($p);
-                foreach($finalCHeapestQuotes['simple'] as $origin => $quote){
-                    $isLtlRate = isset($quote['code']) ? (strpos($quote['code'], 'ltl') != false) : false;
-                    $newArray[] = $quote;
-                    if($isLtlRate){
-                        foreach(self::$accessorialsIndexes as $index){
-                            $data1[$index][$origin] = array_map(function ($item) use ($origin, $index) {
-                                return isset($item[$index]) ? $item[$index][$origin] : [];
-                            }, $multiShipmentQuotes);
-                            // Filter out empty arrays and extract rates
-                            $filteredRates = array_filter($data1[$index][141], function($item) {
-                                return is_array($item) && !empty($item);
-                            });
-    
-                            // Initialize an associative array to store unique rates
-                            $uniqueRates = [];
-    
-                            // Iterate through the filtered rates and store unique rates
-                            foreach ($filteredRates as $rateData) {
-                                $rate = $rateData['rate'];
-                                if (!isset($uniqueRates[$rate])) {
-                                    $uniqueRates[$rate] = $rateData;
-                                }
-                            }
-                            // Get the minimum rate value
-                            //dd($uniqueRates);
-                            if(empty($uniqueRates)){
-                                continue;
-                            }
-                            $minRate = min(array_keys($uniqueRates));
-                            $minRateArray = $uniqueRates[$minRate];
-    
-                            $q = array_values(array_filter($checkoutQuotes, function($item) use ($minRateArray) {
-                                return $minRateArray['code'] == $item['code'];
-                            }));
-                            //dd($minRateArray, $checkoutQuotes, $q);
-                            //$minRateArray['title'] = 
-                            $accessCode = explode('+', $minRateArray['code']);
-                            unset($accessCode[0]);
-                            $accessCode = implode('+', $accessCode);
-    
-                            $ltlQuotes[$index][$origin] = $minRateArray ?? [];
-                            $totalRate = array_reduce([$ltlQuotes[$index], $p], function ($carry, $item) {
-                                return $carry + array_sum(array_column($item, 'rate'));
-                            }, 0);
-                            //dd($ltlQuotes[$index], $p, $totalRate);
-                            $checkoutQuote['code'] = 'Multi+' . $accessCode ?? '';
-                            $checkoutQuote['rate'] = $totalRate ?? 0;
-                            $checkoutQuote['title'] = $q[0]['title'] ?? '';
-                            $ltlQuotes[$index] = $ltlQuotes[$index] + $p;
-                            //$finalCHeapestQuotes['checkoutQuote'][] = $checkoutQuote ?? [];
-                            $newQuotes['checkoutQuotes'][] = $checkoutQuote;
-                            unset($quotes['multiShipmentQuotes']);
-                            //dd($finalCHeapestQuotes);
-                            $newQuotes['multiShipmentQuotes'][] = $ltlQuotes;
-    
-                            unset($finalCHeapestQuotes['totalRates'], $ltlQuotes);
-                            //dump(1, $newQuotes, $ltlQuotes, $finalCHeapestQuotes);
-                            // foreach ($multiShipmentQuotes as $shipment) {
-                            //     $code = isset($shipment['liftgate'][$origin]['code']) ? $shipment['liftgate'][$origin]['code'] : '';
-                            //     $newArray[] = isset($shipment['liftgate']) && substr($code, 0, 6) == $quote['code'] ? $shipment['liftgate'][$origin] : [];
-                            // }
-                        }
-                        
-                    } 
-                    $count++;
-                }
-                // $quotes['checkoutQuotes'] = $finalCHeapestQuotes['checkoutQuote'] ?? [];
-                // unset($finalCHeapestQuotes['checkoutQuote'], $quotes['multiShipmentQuotes']);
-                // $quotes['multiShipmentQuotes'][] = array_merge($finalCHeapestQuotes, $ltlQuotes);
-                //dd(array_merge($finalCHeapestQuotes, $ltlQuotes), $quotes, $finalCHeapestQuotes);
-                //dd($newQuotes);
-                return $newQuotes;
-            }
-            $totalRates = $finalCHeapestQuotes['totalRates'] ?? 0;
-            $checkoutQuote = array_values(collect($quotes['checkoutQuotes'])->filter(function ($quote) {
-                return strpos($quote['code'], 'Multi') === 0;
-            })->toArray() ?? []);
-            unset($quotes['multiShipmentQuotes'], $finalCHeapestQuotes['totalRates'], $quotes['checkoutQuotes']);
-            $checkoutQuote[0]['rate'] = $totalRates;
-            $quotes['multiShipmentQuotes'][0] = $finalCHeapestQuotes;
-            $quotes['checkoutQuotes'] = $checkoutQuote ?? [];
-
+            return $newQuotes;
         }
 
         return $quotes;
@@ -1654,12 +1563,11 @@ class Functions
     public static function checkIsLtlSmall($quotes)
     {
         $isSmallRate = $isLtlRate = false;
-        foreach($quotes['simple'] as $origin => $quote){
+        foreach($quotes as $origin => $quote){
             $isSmallRate = isset($quote['code']) ? ($isSmallRate || substr($quote['code'], 0, 9) == 'parcel_12') : false;
             $isLtlRate = isset($quote['code']) ? ($isLtlRate || strpos($quote['code'], 'ltl') != false) : false;
         }
-
-        return ($isLtlRate && $isSmallRate);
+        return ['isLtl' => $isLtlRate && !$isSmallRate, 'IsLtlSmall' => $isLtlRate && $isSmallRate];
     }
 
     public static function getAccessCode($code)
@@ -1673,18 +1581,20 @@ class Functions
         return $accessCode;
     }
 
-    public static function findCheapestQuotes($data, $quotes){
-        $data[141][0]['rate'] = 10;
+    public static function findCheapestQuotes($data, $quotes)
+    {
         // Calculate min rate for each index
         $minRates = $cheapestQuotes = [];
         $totalRates = 0;
-        
+        $code = '';
+
         foreach ($data as $index => $items) {
             $minRate = null;
             foreach ($items as $item) {
                 if ($minRate === null || $item['rate'] < $minRate) {
                     $minRate = $item['rate'];
                     $cheapestQuotes[$index] = $item;
+                    $code = $item['code'] ?? 'Multi';
                 }
             }
             $minRates[$index] = $minRate;
@@ -1693,14 +1603,11 @@ class Functions
         foreach($minRates as $rate){
             $totalRates += $rate ?? 0;
         }
-        //dd($quotes);
+        $checkShipType = self::checkIsLtlSmall($cheapestQuotes);
 
-        // $checkoutQuote = array_values(collect($quotes['checkoutQuotes'])->filter(function ($quote) {
-        //     return strpos($quote['code'], 'Multi') === 0;
-        // })->toArray() ?? []);
-        $checkoutQuote['code'] = "Multi";
+        $checkoutQuote['code'] = $checkShipType['IsLtlSmall'] ? "Multi" : $code;
         $checkoutQuote['rate'] = $totalRates;
-        $checkoutQuote['title'] = Functions::$smallMultiTitle;
+        $checkoutQuote['title'] = $checkShipType['isLtl'] || $checkShipType['IsLtlSmall'] ? Functions::$ltlMultiTitle : Functions::$smallMultiTitle;
 
 
         return ['simple' => $cheapestQuotes, 'checkoutQuote' => $checkoutQuote];
