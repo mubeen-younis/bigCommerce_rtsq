@@ -998,11 +998,11 @@ class CompileQuotes
                 return [];
             }
         } else {
+            $outputArray = [];
             foreach ($quotes as $car => $quote) {
                 unset($quote['checkoutQuotes']);
                 foreach ($quote as $key => $quot) {
                     if($this->returnSingleShip && $key == 'multiShipmentQuotes'){
-                        $outputArray = [];
                         foreach ($quot as $key => $value) {
                             // Get the first element from the nested array
                             $outputArray[$key] = reset($value);
