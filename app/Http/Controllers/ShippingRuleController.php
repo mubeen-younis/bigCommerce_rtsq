@@ -148,7 +148,19 @@ class ShippingRuleController extends Controller
                     $request->installed_carrier_id = $carrierId;
                     $request->store_id = $storeId;
                     if($rule['rule_type'] == 6 && $carrierId != null && $carrierName == $carrIndexName){
-                        $isRuletrue = $this->checkIsOverrideRuleApply($rule, $cartItems, $originKey, $allOrigins);
+                        switch ($rule['apply_to']) {
+                            case 0: //Apply Shipments level
+                                $isRuletrue = $this->checkIsOverrideRuleApply($rule, $cartItems, $originKey, $allOrigins);
+                                break;
+                            case 1: //Apply Cart level
+                                $isRuletrue = $this->checkIsOverrideRuleApply($rule, $cartItems, $originKey, $allOrigins);
+                                break;
+                            case 2: //Apply Products level
+                                $isRuletrue = $this->checkProdExistInShipment($rule, $cartItems, $originKey, $allOrigins);
+                                break;
+                            default:
+                                break;
+                        }
                         if(!$isRuletrue){
                             if($carrierType == 2) {
                                 // Update Parcel carriers WS rate with override rate shipping rule
@@ -159,8 +171,8 @@ class ShippingRuleController extends Controller
                                 $serviceDesc = str_replace('®', '' , $serviceDesc) ?? $serviceDesc;
                                 $serviceDesc = str_replace(' Saturday', '' , $serviceDesc) ?? $serviceDesc;
                                 $serviceDesc = str_replace('Fedex ', '' , $serviceDesc);
+                                $serviceDesc = isset($quote['isInternationQuote']) && $quote['isInternationQuote'] ? str_replace('Ground', 'International Ground' , $serviceDesc) : $serviceDesc;
                                 $serviceDesc = str_replace('2 Day Am', '2 Day AM' , $serviceDesc);
-                                $rule['filter_services'] = str_replace('International Ground', 'Ground' , $rule['filter_services']) ?? $rule['filter_services'];
                                 
                                 if ($serviceDesc == $rule['filter_services']){
                                     $quote['totalNetCharge']['Amount'] = $rule['service_rates'];

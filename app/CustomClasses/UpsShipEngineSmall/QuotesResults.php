@@ -131,6 +131,7 @@ class QuotesResults
 
     public function getServiceLabel($title, $serviceType, $quoteSettings)
     {
+        $title = $serviceType == 'ups_standard_international' ? 'UPS Standard International®' : $title;
         $labelIndex =  strtolower($serviceType) . '_label';
         return !empty($quoteSettings['carrier_services'][$labelIndex]) ? $quoteSettings['carrier_services'][$labelIndex] : $title;
     }

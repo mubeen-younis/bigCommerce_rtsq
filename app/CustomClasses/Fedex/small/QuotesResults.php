@@ -445,11 +445,21 @@ class QuotesResults
         return $serviceName;
     }
 
+    public function toCheckInternationalQuote($quotes){
+        if(isset($quotes['q'])){
+            foreach($quotes['q'] as $quote){
+                if (str_contains($quote['serviceType'], 'INTERNATIONAL')) {
+                    $this->internationalQuotes = true;
+                }
+            }
+        }
+    }
+
 
     public
     function formateQuoteBeforeCompile($shipments)
     {
-        
+        $this->internationalQuotes = false;
         foreach ($shipments as $shipment => $serviceTypes) {
 
             $ship = $this->formateQuoteHomeDelivery($serviceTypes);
@@ -471,6 +481,7 @@ class QuotesResults
                 if ($serviceName == 'fedexAirServices') {
                     $isAir = true;
                 }
+                $this->toCheckInternationalQuote($quotes);
                 if (isset($quotes['q']) && !empty($quotes['q'])) {
                     foreach ($quotes['q'] as $key => $quote) {
                         if (isset($quote['serviceType'])) {
@@ -487,6 +498,7 @@ class QuotesResults
                                 $quote['serviceType'] = $quote['serviceType'] . $append;
                                 $shipments[$shipment]['q'][$key] = $quote;
                                 $shipments[$shipment]['q'][$key]['serviceDesc'] = ucwords(strtolower(str_replace('_', ' ', $quote['serviceType'])));
+                                $shipments[$shipment]['q'][$key]['isInternationQuote'] = $this->internationalQuotes ?? false;
                             }
                             if (!empty($inStoreLocal)) {
                                 $shipments[$shipment]['InstorPickupLocalDelivery'] = $inStoreLocal;
