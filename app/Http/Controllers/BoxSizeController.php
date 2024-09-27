@@ -74,7 +74,7 @@ class BoxSizeController extends Controller
             return response()->json(['error' => true, 'message' => $validator->errors()], 200);
         }
 
-        $data = $request->except(['store_name', 'store_hash','is_test_store']);
+        $data = $request->except(['store_name', 'store_hash','is_test_store', 'heightWithPallet', 'weightWithPallet']);
         $isPalletBox = isset($request->box_name) && $request->box_name == 'Pallet Box' ? true : false;
 
         $boxsize = BoxSize::create($data);
@@ -137,7 +137,7 @@ class BoxSizeController extends Controller
                         'message' => "The nickname has already been taken."
                     ]);
             }
-            $data = $request->except(['store_name', 'store_hash','is_test_store']);
+            $data = $request->except(['store_name', 'store_hash','is_test_store', 'heightWithPallet', 'weightWithPallet']);
 
             $boxsize = BoxSize::where('id', $request->id)->update($data);
             $box = BoxSize::find($request->id);
