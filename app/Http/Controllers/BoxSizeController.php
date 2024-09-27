@@ -81,6 +81,8 @@ class BoxSizeController extends Controller
         $boxsize->save();
         $boxsize->is_available = $boxsize->is_available === true ? 1:0;
         $boxsize->availability = $boxsize->is_available ===1 ? 'Yes' : 'No';
+        $boxsize->heightWithPallet = $request->height + $request->ext_height;
+        $boxsize->weightWithPallet = $request->max_weight + $request->box_weight;
         return response()->json(
             [
                 'error' => false,
@@ -142,6 +144,8 @@ class BoxSizeController extends Controller
             $boxsize = BoxSize::where('id', $request->id)->update($data);
             $box = BoxSize::find($request->id);
             $box['availability'] = $box['is_available']? 'Yes':'No';
+            $box->heightWithPallet = $request->height + $request->ext_height;
+            $box->weightWithPallet = $request->max_weight + $request->box_weight;
             return response()->json(
                 [
                     'error' => false,
