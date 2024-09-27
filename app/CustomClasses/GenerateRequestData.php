@@ -3527,6 +3527,7 @@ class GenerateRequestData
                 'id' => $box->id,
                 'max_wg' => $box->max_weight,
                 'box_weight' => $box->box_weight,
+                'box_height' => $box->height,
                 /*Start- Added in case of Customer removes external dimesnions and bin request log issue
                 NO use of it in3dbin Request
                 Just adding in array For Request Hash*/
@@ -3624,13 +3625,14 @@ class GenerateRequestData
         return $number;
     }
 
-    public function updatCommdityDetails($item, $bin, $boxBins, $itemsArr)
+    public function updatCommdityDetails($item, $bin, $boxBins, $itemsArr, $palletPkgReq = false)
     {
-        $boxWeight = 0;
+        $boxWeight = $boxHeight = 0;
         $price = $item['lineItemPrice'] ?? 0;
         $hazmat = 'N';
         if (isset($bin->bin_data->id) && isset($boxBins[$bin->bin_data->id])) {
             $boxWeight = $boxBins[$bin->bin_data->id]['box_weight'];
+            $boxHeight = $boxBins[$bin->bin_data->id]['box_height'];
             $price = 0;
             if (isset($bin->items)) {
                 foreach ($bin->items as $itemData) {
@@ -3641,9 +3643,14 @@ class GenerateRequestData
                 }
             }
         }
+
+        if($palletPkgReq && !isset($bin->bin_data->type)){
+            $palletHeight = $bin->bin_data->stack_height + $boxHeight ?? 0;
+        }
+
         $item['lineItemLength'] = $bin->bin_data->d ?? 0;
         $item['lineItemWidth'] = $bin->bin_data->w ?? 0;
-        $item['lineItemHeight'] = $bin->bin_data->h ?? 0;
+        $item['lineItemHeight'] = $palletPkgReq && !isset($bin->bin_data->type) ? $palletHeight : $bin->bin_data->h ?? 0;
         $item['lineItemPrice'] = $price; //$item['lineItemPrice']*$quantityPacked;
         $item['lineItemWeight'] = $bin->bin_data->weight + $boxWeight;
 

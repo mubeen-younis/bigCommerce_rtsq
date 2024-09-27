@@ -24,6 +24,8 @@ class BoxSizeController extends Controller
 
             $boxes[$key] = $box;
             $boxes[$key]['availability'] = $box['is_available'] ? 'Yes' : 'No';
+            $boxes[$key]['heightWithPallet'] = $box['height'] + $box['ext_height'];
+            $boxes[$key]['weightWithPallet'] = $box['max_weight'] + $box['box_weight'];
 
         }
         return response()->json(['error' => false, 'data' => $boxes]);
