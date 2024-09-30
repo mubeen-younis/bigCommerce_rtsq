@@ -555,12 +555,12 @@ class PalletPackaging
     private function getCumulativePalletFee($pallets): float
     {
         $palletFee = 0;
-        if (!empty($pallets->pallets_packed)) {
-            foreach ($pallets->pallets_packed as $pack) {
-                if (isset($pack->pallet_data->type) && $pack->pallet_data->type === 'item') {
-                    $palletFee += $pack->pallet_data->boxFee ?? 0;
+        if (!empty($pallets->bins_packed)) {
+            foreach ($pallets->bins_packed as $pack) {
+                if (isset($pack->bin_data->type) && $pack->bin_data->type === 'item') {
+                    $palletFee += $pack->bin_data->boxFee ?? 0;
                 } else {
-                    $palletFee += optional($pack)->pallet_data->boxfee ?? 0;
+                    $palletFee += optional($pack)->bin_data->boxfee ?? 0;
                 }
             }
         }
@@ -644,6 +644,8 @@ class PalletPackaging
             } elseif ($carName == 'abf') {
                 if (!$this->isAbfError($q)) {
                     $quotesWithFee[$carName][$locId]['q']['CHARGE'] = $q['q']['CHARGE'] + $palletFee[$locId];
+                    isset($q['quotesWithoutLiftgate']) ? $quotesWithFee[$carName][$locId]['quotesWithoutLiftgate']['CHARGE'] = $q['quotesWithoutLiftgate']['CHARGE'] + $palletFee[$locId] : '';
+                    isset($q['quotesWithoutNofity']) ? $quotesWithFee[$carName][$locId]['quotesWithoutNofity']['CHARGE'] = $q['quotesWithoutNofity']['CHARGE'] + $palletFee[$locId] : '';
                 }
             } elseif ($carName == 'xpoLogistics') {
                 if (isset($q['q']['serviceType']) && isset($q['q']['totalNetCharge'])) {
