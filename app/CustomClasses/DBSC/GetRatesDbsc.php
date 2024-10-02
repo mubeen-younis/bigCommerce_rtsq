@@ -50,6 +50,7 @@ class GetRatesDbsc
     public function getDbscRates($request, $storeData)
     {
         $this->storeId = $storeData['store']['id'] ?? [];
+        $this->storeData = $storeData['store']->toArray() ?? [];
         $this->destination = $request['lineItemData']['destination'] ?? [];
         $this->items = $request['lineItemData']['items'] ?? [];
         if (blank($this->storeId) || blank($this->destination) || blank($this->items)) {
@@ -561,7 +562,7 @@ class GetRatesDbsc
      */
     public function findDistance($distanceMethod, $origin): array|string|bool
     {
-        return (new GetDistance())->findDistance($distanceMethod, $origin, $this->destination, $this->storeId);
+        return (new GetDistance())->findDistance($distanceMethod, $origin, $this->destination, $this->storeId, $this->storeData);
     }
 
     /**

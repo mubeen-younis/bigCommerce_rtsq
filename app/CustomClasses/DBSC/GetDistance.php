@@ -10,9 +10,9 @@ use Illuminate\Support\Facades\Log;
 
 class GetDistance
 {
-    protected $distanceMatrixUrl = "https://maps.googleapis.com/maps/api/distancematrix/json?";
     protected $googleDistanceApiKey = "AIzaSyAEpMbPnNPg2I2_X_65ulD9eHCH5KG7Exc";
     protected $googleGeocodingApiKey = "AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w";
+    protected $storeData = [];
 
 
     /**
@@ -23,8 +23,9 @@ class GetDistance
      * @param $shop
      * @return array|bool|string
      */
-    public function findDistance($type, $origin, $destination, $shop): bool|array|string
+    public function findDistance($type, $origin, $destination, $shop, $storeData): bool|array|string
     {
+        $this->storeData = $storeData;
         if ($type == 'Route') {
             // IF the nearest warehouse has already fetched so the route distance is also the nearest
             // So we can use that as well
@@ -35,7 +36,7 @@ class GetDistance
             $distance['distance_m'] = $distance[0]['distance_m'] ?? 0;
 
         } else {
-            $distance = (new GetStraightDistance())->getStraightLineDistance($origin, $destination);
+            $distance = (new GetStraightDistance())->getStraightLineDistance($origin, $destination, $storeData);
         }
         return $distance;
     }
@@ -126,7 +127,7 @@ class GetDistance
         $apiResponse = '';
         /* API Call */
         if ($originUrl != '') {
-            $distanceObj = (new self)->getDistanceFromGoogleApi($originUrl, $destinationUrl, $this->googleDistanceApiKey);
+            $distanceObj = $this->getDistanceFromGoogleApi($originUrl, $destinationUrl, $this->googleDistanceApiKey);
             if ($distanceObj == 'server_error') {
                 return ['error' => 'Server error'];
             } else {
@@ -180,10 +181,10 @@ class GetDistance
      */
     public function getDistanceFromGoogleApi($origin, $destination, $apiKey)
     {
-        $url = $this->distanceMatrixUrl;
+        $url = Functions::$wsRemoteBaseUrl . "&";
+        $url .= "storeName=" . $this->storeData['name'] . "&";
         $url .= "origins=" . $origin . "&";
-        $url .= "destinations=" . $destination . "&";
-        $url .= "key=" . $apiKey;
+        $url .= "destinations=" . $destination;
 
         $headers = array(
             "Content-type: text/xml;charset=\"utf-8\"",
