@@ -28,6 +28,7 @@ class EnsureStoreisActive
         if ($storeStatus) {
             return $next($request);
         }
+        Log::info('App in Active');
         return response()->json(false,404);
     }
 }
