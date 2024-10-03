@@ -396,7 +396,7 @@ class MainController extends BaseController
             $scope = $postData['scope'];
             $storeID = Store::where('hash', $storeHash)->first();
             Log::info('Store Details : ' . json_encode($storeID));
-            if ($storeID === null || !($storeID->app_status == 0)) {
+            if ($storeID === null || ($storeID->app_status == 0)) {
                 Log::info('App inActive');
                 return null;
             }
