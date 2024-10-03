@@ -395,7 +395,7 @@ class MainController extends BaseController
             // Update,delete,create from  webhook
             $scope = $postData['scope'];
             $storeID = Store::where('hash', $storeHash)->first();
-            if ($storeID === null || !($storeID-app_status)) {
+            if ($storeID === null || !($storeID->app_status)) {
                 Log::info('App inActive');
                 return null;
             }
