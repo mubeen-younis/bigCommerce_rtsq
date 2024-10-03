@@ -398,7 +398,6 @@ class MainController extends BaseController
             if ($storeID === null || ($storeID->app_status == 0)) {
                 return null;
             }
-            Log::info('App Active');
             $toRequest['store_id'] = $storeID->id;
             $toRequest['store_name'] = $storeHash;
             $toRequest['product_id'] = $productId;
