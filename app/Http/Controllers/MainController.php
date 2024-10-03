@@ -198,7 +198,6 @@ class MainController extends BaseController
 
                 //Store::where('hash', $storeHash)->update(['app_status', 0]);
                 $store = Store::where('hash', $storeHash)->first();
-                Log::info('Store Details : ' . json_encode($store));
                 $store->app_status = 0;
                 $store->save();
                 $store = Store::where('hash', $storeHash)->first()->toArray();
