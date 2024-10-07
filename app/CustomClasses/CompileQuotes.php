@@ -4070,7 +4070,7 @@ class CompileQuotes
 
                         if ($this->isSameDayApi) {
                             $this->quoteSettings['label_as'] = '';
-                            if (isset($data['serviceType']) && ($data['ServiceLevelCode'] == "H1" || $data['ServiceLevelCode'] == "H2")) {
+                            if (isset($data['ServiceLevelCode']) && ($data['ServiceLevelCode'] == "H1" || $data['ServiceLevelCode'] == "H2")) {
                                 $access = $this->getAccessorialCode();
                             } else {
                                 $access = '';
