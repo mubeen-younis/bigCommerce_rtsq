@@ -65,7 +65,6 @@ class QuotesResults
                 } else {
                     $serviceDescription = 'Day & Ross';
                     $charges = $this->formatCharges($value['q']['TotalCharges'] ?? 0);
-                    $charges = $value['q']['TotalCharges'];
 
                     if ($this->isLGQuotes($quoteSettings) && isset($value['q']['liftgateSurcharge'])) {
                         $formattedShipments[$key]['q']['surcharges']['liftgateFee'] = $value['q']['liftgateSurcharge'];
