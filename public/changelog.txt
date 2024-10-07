@@ -1,3 +1,7 @@
+= 2.2.24 2024-09-30 =
+
+* Update - Update pallet packaging api (Ticket:2657775383) [#485] (https://bitbucket.org/eniture/big-commerce/pull-requests/485)
+
 = 2.2.23 2024-09-23 =
 
 * Update - Update override rates rule functionality in BC (Ticket:2970084986) [#484] (https://bitbucket.org/eniture/big-commerce/pull-requests/484)
