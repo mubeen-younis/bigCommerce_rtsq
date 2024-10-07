@@ -448,8 +448,8 @@ class QuotesResults
 
     public function toCheckInternationalQuote($quotes){
         if(isset($quotes['q'])){
+            Log::info('$quote '.json_encode($quotes));
             foreach($quotes['q'] as $quote){
-                Log::info('$quote '.json_encode($quote));
                 if (isset($quote['serviceType']) && str_contains($quote['serviceType'], 'INTERNATIONAL')) {
                     $this->internationalQuotes = true;
                 }
