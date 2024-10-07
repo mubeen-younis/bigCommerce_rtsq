@@ -461,7 +461,6 @@ class QuotesResults
     public
     function formateQuoteBeforeCompile($shipments)
     {
-        Log::info('$$shipments '.json_encode($shipments));
         $this->internationalQuotes = false;
         foreach ($shipments as $shipment => $serviceTypes) {
 
