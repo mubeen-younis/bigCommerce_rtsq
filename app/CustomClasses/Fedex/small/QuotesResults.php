@@ -9,6 +9,7 @@ use App\CustomClasses\CompileQuotes;
 use App\CustomClasses\Functions;
 use Illuminate\Support\Str;
 use App\Http\Controllers\ShippingRuleController;
+use Illuminate\Support\Facades\Log;
 
 class QuotesResults
 {
@@ -448,6 +449,7 @@ class QuotesResults
     public function toCheckInternationalQuote($quotes){
         if(isset($quotes['q'])){
             foreach($quotes['q'] as $quote){
+                Log::info('$quote '.json_encode($quote));
                 if (isset($quote['serviceType']) && str_contains($quote['serviceType'], 'INTERNATIONAL')) {
                     $this->internationalQuotes = true;
                 }
