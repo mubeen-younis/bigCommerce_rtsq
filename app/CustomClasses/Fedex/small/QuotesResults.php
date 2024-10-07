@@ -448,7 +448,7 @@ class QuotesResults
     public function toCheckInternationalQuote($quotes){
         if(isset($quotes['q'])){
             foreach($quotes['q'] as $quote){
-                if (str_contains($quote['serviceType'], 'INTERNATIONAL')) {
+                if (isset($quote['serviceType']) && str_contains($quote['serviceType'], 'INTERNATIONAL')) {
                     $this->internationalQuotes = true;
                 }
             }
