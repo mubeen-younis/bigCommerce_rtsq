@@ -5,6 +5,7 @@ namespace App\CustomClasses\DayRossLTL;
 use App\CustomClasses\CompileQuotes;
 use App\CustomClasses\Functions;
 use App\Models\TerminalLocation;
+use Illuminate\Support\Facades\Log;
 
 class QuotesResults
 {
@@ -26,7 +27,9 @@ class QuotesResults
             $charges = 0;
 
             if (isset($formattedShipments[$key]['q']) && !$isError) {
+                Log::info('formattedShipments: ' . json_encode($value));
                 if (isset($value['q']['ServiceLevelCode']) && $value['q']['ServiceLevelCode'] == 'GL' && isset($value['q']['ShipmentCharges'])) {
+                    Log::info('1');
                     $serviceDescription = $value['q']['Description'];
                     $charges = $this->formatCharges($value['q']['TotalAmount']);
                     $charges = $value['q']['TotalAmount'];
@@ -48,6 +51,7 @@ class QuotesResults
 
                     unset($formattedShipments[$key]['q']['ShipmentCharges']);
                 } elseif (isset($value['q']['Division']) && $value['q']['Division'] == 'Sameday') {
+                    Log::info('2');
                     $serviceDescription = $value['q']['Description'] ?? '';
                     $resp = $this->compileSameDayApiQuotes($quoteSettings, $value);
 
@@ -63,6 +67,7 @@ class QuotesResults
 
                     unset($formattedShipments[$key]['q']['ShipmentCharges']);
                 } else {
+                    Log::info('3');
                     $serviceDescription = 'Day & Ross';
                     $charges = $this->formatCharges($value['q']['TotalCharges'] ?? 0);
 
