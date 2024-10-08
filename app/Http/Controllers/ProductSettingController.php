@@ -702,6 +702,7 @@ class ProductSettingController extends Controller
     
     public function deleteDuplicateVariants(Request $request)
     {
+        Log::info('Delete duplicates variants from DB request');
         if(!(isset($request->store_id) && isset($request->deleteit) && $request->deleteit == 'true')){
             return response()->json(['error' => false,
                 'data' => [],
@@ -757,7 +758,7 @@ class ProductSettingController extends Controller
                 }
                         
             }
-
+        Log::info('Delete duplicates variants from DB Completed');
         return response()->json(['error' => false,
             'data' => [],
             'message' => 'Duplicated Variants deleted Successfully.',
