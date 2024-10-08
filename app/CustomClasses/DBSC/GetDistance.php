@@ -12,7 +12,6 @@ class GetDistance
 {
     protected $googleDistanceApiKey = "AIzaSyAEpMbPnNPg2I2_X_65ulD9eHCH5KG7Exc";
     protected $googleGeocodingApiKey = "AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w";
-    protected $storeData = [];
 
 
     /**
@@ -25,14 +24,13 @@ class GetDistance
      */
     public function findDistance($type, $origin, $destination, $shop, $storeData): bool|array|string
     {
-        $this->storeData = $storeData;
         if ($type == 'Route') {
             // IF the nearest warehouse has already fetched so the route distance is also the nearest
             // So we can use that as well
             if (isset($origin['distance_m']) && !blank($origin['distance_m'])) {
                 return $origin;
             }
-            $distance = $this->findRouteDistances($origin, $destination);
+            $distance = $this->findRouteDistances($origin, $destination, $storeData);
             $distance['distance_m'] = $distance[0]['distance_m'] ?? 0;
 
         } else {
@@ -47,12 +45,12 @@ class GetDistance
      * @param $destination
      * @return mixed
      */
-    public function getNearest($origins, $destination): mixed
+    public function getNearest($origins, $destination, $storeData): mixed
     {
         if (count($origins) <= 1) {
             return $origins;
         }
-        $nearest = $this->findRouteDistances($origins, $destination);
+        $nearest = $this->findRouteDistances($origins, $destination, $storeData);
         if (isset($nearest['error'])) {
             return [];
         }
@@ -74,10 +72,11 @@ class GetDistance
      *
      * @return array|bool|false|string
      */
-    public function findRouteDistances($origins, $destination): array|bool|string
+    public function findRouteDistances($origins, $destination, $storeData): array|bool|string
     {
         // Contain the origins string as a url which will be passed to Google API to find the distance.
         $originUrl = '';
+        $this->storeData = $storeData;
 
         // Combinations against we will get the distance from the API.
         $enabledCombinations = [];
@@ -119,7 +118,7 @@ class GetDistance
             // i.e. 'Chicago+IL+60701+US|Chicago+IL+60701+US|' to 'Chicago+IL+60701+US|Chicago+IL+60701+US'
             if ($originUrl != '') {
                 // remove '|' form right of the string
-                $originUrl = rtrim($originUrl, '|');
+                $originUrl = rtrim($originUrl, urlencode('|'));
             }
 
         }
