@@ -92,6 +92,8 @@ Route::middleware(['customThrottle:60,1', EnsureProductApiTokenIsValid::class])-
 
 // Ws Route For Adding Plan
 Route::post('/save_plan_detail', [CarrierPlanController::class, 'addPlanFromWs']);
+//========Delete duplicate variants
+Route::post('/delete_duplicate_variants', [ProductSettingController::class, 'deleteDuplicateVariants']);
 Route::middleware([EnsureTokenIsValid::class])->group(function () {
     //======Webhook Manually
     Route::get('/reg_webhooks_man', [\App\Http\Controllers\WebHooksController::class, 'registerStoreWebhooksManually']);
@@ -102,8 +104,6 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::get('/get_product', [ProductSettingController::class, 'getSingleProductDetail']);
     Route::get('/edit_product', [ProductSettingController::class, 'editProduct']);
     Route::post('/update_product', [ProductSettingController::class, 'updateProductDetail']);
-    //========Delete duplicate variants
-    Route::post('/delete_duplicate_variants', [ProductSettingController::class, 'deleteDuplicateVariants']);
 
     //=======Logs Routes
     Route::get('/get_logs', [App\Http\Controllers\LogToDbController::class, 'getStoreLogs']);
