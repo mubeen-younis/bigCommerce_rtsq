@@ -714,7 +714,7 @@ class ProductSettingController extends Controller
         }
 
 
-        $limit = 10;
+        $limit = 5;
         $hasMoreDuplicates = true;
         do {
 
