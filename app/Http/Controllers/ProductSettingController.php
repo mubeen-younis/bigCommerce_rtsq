@@ -702,68 +702,78 @@ class ProductSettingController extends Controller
     
     public function deleteDuplicateVariants(Request $request)
     {
+        ini_set('memory_limit', '-1');
+        ini_set('max_execution_time', '0');
         Log::info('Delete duplicates variants from DB request');
         if(!(isset($request->store_id) && isset($request->deleteit) && $request->deleteit == 'true')){
             return response()->json(['error' => false,
                 'data' => [],
                 'message' => 'Request not acceptable.',
-            ], 200);    
+            ], 200);
         }
 
-        $duplicateVar = ProductSetting::select('variant_id', 'source_product_id', DB::raw('COUNT(*) as count'))
-            ->where('store_id', $request->store_id)
-            ->whereNotNull('variant_id')
-            ->groupBy('variant_id', 'store_id')
-            ->having('count', '>', 1)
-            ->get();
 
-            if(!count($duplicateVar)){
-                $message = 'No Duplicated Variants Found.';
-                return response()->json(['error' => false,
-                    'data' => [],
-                    'message' => $message,
-                ], 200);    
+        $limit = 10;
+        $hasMoreDuplicates = true;
+        do {
+
+            $duplicateVar = ProductSetting::select('variant_id', 'source_product_id', DB::raw('COUNT(*) as count'))
+                ->where('store_id', $request->store_id)
+                ->whereNotNull('variant_id')
+                ->groupBy('variant_id', 'store_id')
+                ->having('count', '>', 1)
+                ->limit($limit)
+                ->get();
+
+            if($duplicateVar->isEmpty()){
+                $hasMoreDuplicates=false;
+               
+            }else{
+                foreach ($duplicateVar as $duplicate) {
+                    $count = $duplicate->count ?? 0;
+
+                    while($count > 1){
+                        $products = ProductSetting::where(['store_id' => $request->store_id, 'variant_id' => $duplicate->variant_id])
+                        ->first()
+                        ->delete();
+                        $count--;
+                    }
+
+                    // $store = Store::getStoreDetailsFromStoreId($request->store_id);
+                    // $storeUrl = 'https://api.bigcommerce.com/stores/' . $store['hash'] . '/v3/catalog/products/' . $duplicate->source_product_id . '/variants/' . $duplicate->variant_id;
+                    // $storeToken = $this->mainController->getCustAccessTok($store['id']);
+                    // $headers[] = 'X-Auth-Token: ' . $storeToken;
+                    // $headers[] = 'Content-Type: application/json';
+                    // $headers[] = 'Accept: application/json';
+
+                    // $response  = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
+
+                    // if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+                    //     $bcProduct = json_decode($response['response'], true)['data'];
+
+                    //     $product = ProductSetting::where(['store_id' => $store['id'], 'source_product_id' => $duplicate->source_product_id, 'variant_id' => $duplicate->variant_id])
+                    //     ->update([
+                    //         // Update attributes
+                    //         'weight' => $bcProduct['weight'] ?? 0,
+                    //         'length' => $bcProduct['depth'] ?? 0, 
+                    //         'width' => $bcProduct['width'] ?? 0,
+                    //         'height' => $bcProduct['height'] ?? 0,
+                    //     ]);
+                    // }
+
+                }
             }
 
-            foreach ($duplicateVar as $duplicate) {
-                $count = $duplicate->count ?? 0;
 
-                while($count > 1){
-                    ProductSetting::where(['store_id' => $request->store_id, 'variant_id' => $duplicate->variant_id])
-                    ->first()
-                    ->delete();
-                    $count--;
-                }
 
-                $store = Store::getStoreDetailsFromStoreId($request->store_id);
-                $storeUrl = 'https://api.bigcommerce.com/stores/' . $store['hash'] . '/v3/catalog/products/' . $duplicate->source_product_id . '/variants/' . $duplicate->variant_id;
-                $storeToken = $this->mainController->getCustAccessTok($store['id']);
-                $headers[] = 'X-Auth-Token: ' . $storeToken;
-                $headers[] = 'Content-Type: application/json';
-                $headers[] = 'Accept: application/json';
-                
-                $response  = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
-                
-                if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
-                    $bcProduct = json_decode($response['response'], true)['data'];
+        } while($hasMoreDuplicates);
 
-                    $product = ProductSetting::where(['store_id' => $store['id'], 'source_product_id' => $duplicate->source_product_id, 'variant_id' => $duplicate->variant_id])
-                    ->update([
-                        // Update attributes
-                        'weight' => $bcProduct['weight'] ?? 0,
-                        'length' => $bcProduct['depth'] ?? 0, 
-                        'width' => $bcProduct['width'] ?? 0,
-                        'height' => $bcProduct['height'] ?? 0,
-                    ]);
-                }
-                        
-            }
+
         Log::info('Delete duplicates variants from DB Completed');
         return response()->json(['error' => false,
             'data' => [],
             'message' => 'Duplicated Variants deleted Successfully.',
         ], 200);
-
     }
 
     public function deleteNullVariants(Request $request)
@@ -809,7 +819,7 @@ class ProductSettingController extends Controller
         ], 200);
 
     }
-    
+
     public function getProductImageByID($id, $request, $token)
     {
         $imageEndPoint = 'https://api.bigcommerce.com/stores/' . $request['store_hash'] . '/v3/catalog/products/' . $id . '/images';
