@@ -704,6 +704,7 @@ class ProductSettingController extends Controller
     {
         ini_set('memory_limit', '-1');
         ini_set('max_execution_time', '0');
+        set_time_limit(0);
         Log::info('Delete duplicates variants from DB request');
         if(!(isset($request->store_id) && isset($request->deleteit) && $request->deleteit == 'true')){
             return response()->json(['error' => false,
@@ -733,9 +734,11 @@ class ProductSettingController extends Controller
                     $count = $duplicate->count ?? 0;
 
                     while($count > 1){
-                        $products = ProductSetting::where(['store_id' => $request->store_id, 'variant_id' => $duplicate->variant_id])
-                        ->first()
-                        ->delete();
+                        $product = ProductSetting::where(['store_id' => $request->store_id, 'variant_id' => $duplicate->variant_id])
+                        ->first();
+                        if($product != null){
+                            $product->delete();
+                        }
                         $count--;
                     }
 
