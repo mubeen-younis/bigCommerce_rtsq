@@ -766,6 +766,50 @@ class ProductSettingController extends Controller
 
     }
 
+    public function deleteNullVariants(Request $request)
+    {
+        Log::info('Delete Null variants from DB request');
+        if(!(isset($request->store_id) && isset($request->deleteit) && $request->deleteit == 'true')){
+            return response()->json(['error' => false,
+                'data' => [],
+                'message' => 'Request not acceptable.',
+            ], 200);    
+        }
+
+        $nullVariants = ProductSetting::select('variant_id', 'source_product_id', DB::raw('COUNT(*) as count'))
+            ->where('store_id', $request->store_id)
+            ->whereNull('variant_id')
+            ->groupBy('source_product_id', 'store_id')
+            ->having('count', '>', 1)
+            ->get();
+
+            if(!count($nullVariants)){
+                $message = 'No Null Variants Found.';
+                return response()->json(['error' => false,
+                    'data' => [],
+                    'message' => $message,
+                ], 200);    
+            }
+
+            foreach ($nullVariants as $duplicate) {
+                $count = $duplicate->count ?? 0;
+
+                while($count > 1){
+                    $result = ProductSetting::where(['store_id' => $request->store_id, 'source_product_id' => $duplicate->source_product_id])
+                    ->whereNull('variant_id')
+                    ->first()
+                    ->delete();
+                    $count--;
+                }       
+            }
+        Log::info('Delete Null variants from DB Completed');
+        return response()->json(['error' => false,
+            'data' => [],
+            'message' => 'Null Variants deleted Successfully.',
+        ], 200);
+
+    }
+
     public function getProductImageByID($id, $request, $token)
     {
         $imageEndPoint = 'https://api.bigcommerce.com/stores/' . $request['store_hash'] . '/v3/catalog/products/' . $id . '/images';
