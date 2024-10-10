@@ -63,6 +63,12 @@ class ExportImportProducts extends Controller
 
     public function createExportData($request)
     {
+        // return back due to store plan expired
+        $GetRatesController = new GetRatesController();
+        if (!$GetRatesController->storePlanStatus($request['store_id'])) {
+            return response()->json(true, 200);
+        }
+        
         $locations = Locations::where('store_id', $request['store_id'])->where('type', 2)->get()->toArray();
         $storeHash = $request['store_hash'] ?? null;
         $weightDimensionUnits = $this->getweightDimensionUnits($storeHash);
