@@ -1,3 +1,7 @@
+= 2.2.25 2024-10-10 =
+
+* Update - update google api url with ws remote url, add google lookup data cache functionality (Shafique sir + Paul Instructions) [#491] (https://bitbucket.org/eniture/big-commerce/pull-requests/491)
+
 = 2.2.24 2024-09-30 =
 
 * Update - Update pallet packaging api (Ticket:2657775383) [#485] (https://bitbucket.org/eniture/big-commerce/pull-requests/485)
