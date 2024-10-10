@@ -74,7 +74,7 @@ class Functions
     public static $lglaccesseNotifyDelAccess = '+LG+LAD+NBD';
     public static $lginsideNotifyDelAccess = '+LG+ID+NBD';
     public static $notifyDelAccess = '+NBD';
-    public static $wsRemoteBaseUrl = 'https://wsgcp.eniture-qa.com/addon/get_gcp_response.php?license=82be22a4-ff18-11eb-9179-c8ff28c8b722&platform=bigcommerce';
+    public static $wsRemoteBaseUrl = 'https://wsgcp.eniture.com/addon/get_gcp_response.php?license=82be22a4-ff18-11eb-9179-c8ff28c8b722&platform=bigcommerce';
     public static $WWE_SMALL_SERVICES = [
         'ups_ground',
         'ups_3_day_select',
