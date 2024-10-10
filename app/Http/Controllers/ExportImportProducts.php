@@ -24,6 +24,7 @@ use Illuminate\Filesystem\Filesystem;
 use App\CurlRequest;
 use Carbon\Carbon;
 use App\CustomClasses\Functions;
+use App\Http\Controllers\GetRatesController;
 
 class ExportImportProducts extends Controller
 {
@@ -356,6 +357,13 @@ class ExportImportProducts extends Controller
         ini_set('memory_limit', '-1');
         try {
             Log::info('started import products process');
+
+            // return back due to store plan expired
+            $GetRatesController = new GetRatesController();
+            if (!$GetRatesController->storePlanStatus($request['store_id'])) {
+                return response()->json(true, 200);
+            }
+
             $delay = 2;
             $data['filename'] = $request['filename'];
             $data['firstHeader'] = $request['firstHeader'];
