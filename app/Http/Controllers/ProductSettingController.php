@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Log;
 use App\Jobs\ProductWebhookImport;
 use App\Models\NestingItemsDetail;
 use App\CustomClasses\Functions;
-
+use App\Http\Controllers\GetRatesController;
 
 class ProductSettingController extends Controller
 {
@@ -874,12 +874,19 @@ class ProductSettingController extends Controller
             //allow only create/update orders actions
             if ($scope == "store/sku/deleted") {
                 ProductSetting::where('source_product_id', $productId)->where('variant_id', $variant_id)->where('store_id', $store->id)->delete();
-                return response()->json(true);
+                return response()->json(true, 200);
             }
             $onlyScopes = ['store/sku/created', 'store/sku/updated'];
             if (empty($store) || !in_array($scope, $onlyScopes)) {
-                return response()->json(true);
+                return response()->json(true, 200);
             }
+
+            // webhook call return back due to store plan expired
+            $GetRatesController = new GetRatesController();
+            if (!$GetRatesController->storePlanStatus($store->id)) {
+                return response()->json(true, 200);
+            }
+
             /*
              * get variant details from bigcommerce
              * update details and save product into db
@@ -906,10 +913,10 @@ class ProductSettingController extends Controller
                 $this->saveProducts->setVariantNullProduct($product, $store->id);
                 $this->saveProducts->saveProduct($product, $store->id);
             }
-
+            return response()->json(true, 200);
         } catch (\Exception $exception) {
             Log::info('Sku Webhook Exception ' . json_encode([$exception->getMessage(), $exception->getLine()]));
-
+            return response()->json(true, 200);
         }
 
     }

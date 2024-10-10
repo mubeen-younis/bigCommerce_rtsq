@@ -24,6 +24,7 @@ use App\Models\Carrier;
 use App\Http\Controllers\CarrierController;
 use App\Models\Addons;
 use App\Http\Controllers\AddonsController;
+use App\Http\Controllers\GetRatesController;
 
 
 class MainController extends BaseController
@@ -395,21 +396,28 @@ class MainController extends BaseController
             $scope = $postData['scope'];
             $storeID = Store::where('hash', $storeHash)->first();
             if ($storeID === null || ($storeID->app_status == 0)) {
-                return null;
+                return response()->json(true, 200);
             }
+            // webhook call return back due to store plan expired
+            $GetRatesController = new GetRatesController();
+            if (!$GetRatesController->storePlanStatus($storeID->id)) {
+                return response()->json(true, 200);
+            }
+
             $toRequest['store_id'] = $storeID->id;
             $toRequest['store_name'] = $storeHash;
             $toRequest['product_id'] = $productId;
             // If product is deleted through webhook
             if ($scope == "store/product/deleted") {
                 ProductSetting::where('source_product_id', $productId)->where('store_id', $storeID->id)->delete();
-                return true;
+                return response()->json(true, 200);
             }
             $prodSetCon = new ProductSettingController();
             $prodSetCon->getSingleProductFromApi($toRequest, $scope);
             return response()->json(true, 200);
         } catch (\Exception $exception) {
             Log::info('Products data Exception ' . $exception->getMessage());
+            return response()->json(true, 200);
         }
 
     }
