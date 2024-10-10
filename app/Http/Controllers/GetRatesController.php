@@ -255,15 +255,21 @@ class GetRatesController extends Controller
     {
         $subsciption = Subscription::where('store_id', $store_id)->latest()->first();
         if (empty($subsciption) || $subsciption->status === 3) { // not plan or expired plan
-            Log::info('Expired Subscription ' . json_encode($subsciption));
+            if(Functions::isEnabledLogs('', $store_id)){
+                Log::info('Expired Subscription ' . json_encode($subsciption));
+            }
             return false;
         }
         if ($subsciption->status === 2 && Functions::isExpiredSubscription($subsciption->ends_at)) { // not plan or expired plan
-            Log::info('Expired Subscription with status 2' . json_encode($subsciption));
+            if(Functions::isEnabledLogs('', $store_id)){
+                Log::info('Expired Subscription with status 2' . json_encode($subsciption));
+            }
             return false;
         }
         if (Functions::isExpiredSubscription($subsciption->ends_at)) { // Expiry date is less then current date
-            Log::info('Expired Subscription due to expiry date' . json_encode($subsciption));
+            if(Functions::isEnabledLogs('', $store_id)){
+                Log::info('Expired Subscription due to expiry date' . json_encode($subsciption));
+            }
             return false;
         }
         return true;
