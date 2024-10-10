@@ -10,10 +10,6 @@ use Illuminate\Support\Facades\Log;
 
 class GetDistance
 {
-    protected $googleDistanceApiKey = "AIzaSyAEpMbPnNPg2I2_X_65ulD9eHCH5KG7Exc";
-    protected $googleGeocodingApiKey = "AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w";
-
-
     /**
      * Gets Distance for Profile Rate
      * @param $type
@@ -126,7 +122,7 @@ class GetDistance
         $apiResponse = '';
         /* API Call */
         if ($originUrl != '') {
-            $distanceObj = $this->getDistanceFromGoogleApi($originUrl, $destinationUrl, $this->googleDistanceApiKey);
+            $distanceObj = $this->getDistanceFromGoogleApi($originUrl, $destinationUrl);
             if ($distanceObj == 'server_error') {
                 return ['error' => 'Server error'];
             } else {
@@ -178,9 +174,9 @@ class GetDistance
      * @param $apiKey
      * @return bool|string
      */
-    public function getDistanceFromGoogleApi($origin, $destination, $apiKey)
+    public function getDistanceFromGoogleApi($origin, $destination)
     {
-        $url = Functions::$wsRemoteBaseUrl . "&";
+        $url = Constant::wsRemoteBaseUrl . "&";
         $url .= "storeName=" . $this->storeData['name'] . "&";
         $url .= "origins=" . $origin . "&";
         $url .= "destinations=" . $destination;

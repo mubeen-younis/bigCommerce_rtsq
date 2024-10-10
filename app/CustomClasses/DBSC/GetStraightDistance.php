@@ -6,11 +6,11 @@ use App\Models\DBSC\DistanceLookup;
 use App\Models\DBSC\AddressLookup;
 use Illuminate\Support\Facades\Log;
 use App\CustomClasses\Functions;
+use App\Constants\Constant;
 
 class GetStraightDistance extends GetDistance
 {
     protected $storeData = [];
-    protected $googleGeocodingApiKey = "AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w";
 
     public function getStraightLineDistance($origin, $destination, $storeData)
     {
@@ -157,7 +157,7 @@ class GetStraightDistance extends GetDistance
             // i.e. 'Chicago+IL+60701+US|Chicago+IL+60701+US|' to 'Chicago+IL+60701+US|Chicago+IL+60701+US'
             $geoCodeUrl = rtrim($geoCodeUrl, '|');
             $addressCount = count($enabledCombinations);
-            $geocodeObj = $this->getGeoCodeDataApi($geoCodeUrl, $this->googleGeocodingApiKey, $addressCount);
+            $geocodeObj = $this->getGeoCodeDataApi($geoCodeUrl, $addressCount);
             
             if ($geocodeObj != 'server_error') {
                 $apiResponse = json_decode($geocodeObj);
@@ -207,9 +207,9 @@ class GetStraightDistance extends GetDistance
         return $geoCode;
     }
 
-    public function getGeoCodeDataApi($origin, $apiKey, $addressCount)
+    public function getGeoCodeDataApi($origin, $addressCount)
     {
-        $url = Functions::$wsRemoteBaseUrl . "&";
+        $url = Constant::wsRemoteBaseUrl . "&";
         $url .= "storeName=" . $this->storeData['name'] . "&";
         $url .= "address=" . $origin;
 
@@ -253,7 +253,7 @@ class GetStraightDistance extends GetDistance
                 // send request to google api again
                 $geoCodeUrl = urlencode("{$combination['city']}  {$combination['state']} {$combination['zip']}  ");
 
-                $geocode_obj = $this->getGeoCodeDataApi($geoCodeUrl, $this->googleGeocodingApiKey, 1);
+                $geocode_obj = $this->getGeoCodeDataApi($geoCodeUrl, 1);
 
                 $secondApiResponse = '';
                 if ($geocode_obj != 'server_error') {

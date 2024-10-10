@@ -11,6 +11,7 @@ use App\Models\LocAssociatedAccountNo;
 use App\Models\ShippingRule;
 use App\CustomClasses\Functions;
 use App\Models\CacheAddressLookup;
+use App\Constants\Constant;
 
 class LocationsController extends Controller
 {
@@ -376,7 +377,7 @@ class LocationsController extends Controller
         // To check is address already exist in the database then no api call
         $addressLookupData = CacheAddressLookup::getAddressLookupDatabase($zipCode);
         if(empty($addressLookupData)){
-            $url = Functions::$wsRemoteBaseUrl . "&";
+            $url = Constant::wsRemoteBaseUrl . "&";
             $url .= "storeName=" . $request['store_name'] . "&";
             $url .= "address=" . urlencode($zipCode);
             $zipcodeDetail = $this->curlRequest->enSingleCurlRequest($url, [], [], 'GET', false);
