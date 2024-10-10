@@ -394,7 +394,7 @@ class MainController extends BaseController
             // Update,delete,create from  webhook
             $scope = $postData['scope'];
             $storeID = Store::where('hash', $storeHash)->first();
-            if ($storeID === null) {
+            if ($storeID === null || ($storeID->app_status == 0)) {
                 return null;
             }
             $toRequest['store_id'] = $storeID->id;

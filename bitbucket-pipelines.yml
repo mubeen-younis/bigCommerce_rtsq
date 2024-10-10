@@ -8,7 +8,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    update-override-rates-rule:
+    update-webhook-fucntionality:
       - step:
           caches:
             - composer
