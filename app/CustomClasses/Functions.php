@@ -18,6 +18,7 @@ use App\Models\CarrierServices;
 use App\Constants\Constant;
 use App\Models\Store;
 use App\Models\EnableLog;
+use Illuminate\Support\Arr;
 
 class Functions
 {
@@ -723,38 +724,33 @@ class Functions
     {
         try {
             $proKeyW = $proKeyD = [];
-            $warehouseWeight = $dropshipWeight = 0;
+            $warehouseWeight = $dropshipWeight = [];
             if (!empty($carriers)) {
                 foreach ($carriers as $key => $carrier) {
                     $carrierWeightThreshold = isset($carrier['api']['thresholdWeightLimit']) ? $carrier['api']['thresholdWeightLimit'] : null;
                     if ($carrierWeightThreshold === null) {
                         continue;
                     }
-                    foreach ($carrier['originAddress'] as $ori => $origin) {
+                    foreach ($carrier['originAddress'] as $key => $origin) {
                         if (isset($origin['location']) && $origin['location'] === 'warehouse') {
-                            if (!in_array($ori, $proKeyW)) {
-                                $proKeyW[] = $ori;
+                            if (!in_array($key, $proKeyW)) {
+                                $proKeyW[$origin['locationId']][] = $key;
                             }
                         } elseif (isset($origin['location']) && $origin['location'] === 'dropship') {
-                            if (!in_array($ori, $proKeyD)) {
-                                $proKeyD[] = $ori;
+                            if (!in_array($key, $proKeyD)) {
+                                $proKeyD[$origin['locationId']][] = $key;
                             }
                         }
                     }
                     if (!empty($proKeyW)) {
-                        $warehouseWeight = self::calculatItemseWeight($items, $proKeyW);
+                        $warehouseWeight = self::calculatItemseWeight($items, $proKeyW, $carrierWeightThreshold, $storeId);
 
                     }
                     if (!empty($proKeyD)) {
-                        $dropshipWeight = self::calculatItemseWeight($items, $proKeyD);
+                        $dropshipWeight = self::calculatItemseWeight($items, $proKeyD, $carrierWeightThreshold, $storeId);
                     }
 
-                    if ($warehouseWeight > $carrierWeightThreshold || $dropshipWeight > $carrierWeightThreshold) {
-                        $ThresholdSettings = optional(WeightThresholdSettings::where('store_id', $storeId)->first())->toArray() ?? [];
-                        if (isset($ThresholdSettings['parcel_rates']) && $ThresholdSettings['parcel_rates'] == 2) {
-                            return true;
-                        }
-                    }
+                    return array_merge($warehouseWeight, $dropshipWeight);
                 }
             }
             return false;
@@ -764,21 +760,31 @@ class Functions
         }
     }
 
-    public static function calculatItemseWeight($items, $proKeys)
+    public static function calculatItemseWeight($items, $proKeys, $carrierWeightThreshold, $storeId)
     {
         $totalWeight = 0;
+        $shipKeysWithThreshold = [];
         if (!empty($items) && !empty($proKeys)) {
             foreach ($proKeys as $key => $proKey) {
-                foreach ($items as $item) {
-                    if ($item['variant_id'] == $proKey) {
+                $totalWeight = 0;
+                foreach($proKey as $variantId){
+                    $item = Arr::get($items, $variantId);
+                    if ($item['variant_id'] == $variantId) {
                         $weight = isset($item['lineItemWeight']) ? $item['lineItemWeight'] : 0;
                         $quantity = isset($item['piecesOfLineItem']) ? $item['piecesOfLineItem'] : 0;
                         $totalWeight += $weight * $quantity;
                     }
                 }
+
+                if ($totalWeight > $carrierWeightThreshold) {
+                    $ThresholdSettings = optional(WeightThresholdSettings::where('store_id', $storeId)->first())->toArray() ?? [];
+                    if (isset($ThresholdSettings['parcel_rates']) && $ThresholdSettings['parcel_rates'] == 2) {
+                        $shipKeysWithThreshold[] = $key;
+                    }
+                }
             }
         }
-        return $totalWeight;
+        return $shipKeysWithThreshold;
 
     }
 

@@ -45,6 +45,10 @@ class LtlSmallCompileQuotes
                         $alwaysResi = (isset($requestArr['carriers']['uspsSmall']['api']['residentials_delivery']) && $requestArr['carriers']['uspsSmall']['api']['residential_delivery'] == 'yes');
                         $quote['alwaysResi'] = $alwaysResi;
                         $quote['isResi'] = $residential['uspsSmall'] == 'Y';
+                    } else if (strpos($quote['code'], 'parcel_12shipEng') !== false) {
+                        $alwaysResi = (isset($requestArr['carriers']['shipEngine']['api']['residentials_delivery']) && $requestArr['carriers']['shipEngine']['api']['residential_delivery'] == 'yes');
+                        $quote['alwaysResi'] = $alwaysResi;
+                        $quote['isResi'] = $residential['shipEngine'] == 'Y';
                     } else {
                         $alwaysResi = (isset($requestArr['carriers']['wweSmall']['api']['residentials_delivery']) && $requestArr['carriers']['wweSmall']['api']['residentials_delivery'] == 'yes');
                         $quote['alwaysResi'] = $alwaysResi;
@@ -809,7 +813,7 @@ class LtlSmallCompileQuotes
             $ltl[] = $key;
         }
 
-        $smallQuotes = $quotes['wweSmall'] ?? $quotes['wweSmallN'] ?? $quotes['upsSmall'] ?? $quotes['fedexSmall'] ?? $quotes['unishippersSmall'] ?? $quotes['usps'] ?? $quotes['purolator'] ?? [];
+        $smallQuotes = $quotes['wweSmall'] ?? $quotes['wweSmallN'] ?? $quotes['upsSmall'] ?? $quotes['fedexSmall'] ?? $quotes['unishippersSmall'] ?? $quotes['usps'] ?? $quotes['purolator'] ?? $quotes['shipEngine'] ?? [];
         foreach ($smallQuotes as $key => $quote) {
             $small[] = $key;
         }

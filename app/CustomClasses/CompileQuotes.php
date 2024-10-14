@@ -977,6 +977,9 @@ class CompileQuotes
         if ($this->isMultiShipment) {
             $newQuotes['checkoutQuotes'] = $newQuotes['multiShipmentQuotes'] = [];
             foreach ($quotes as $car => $quote) {
+                if(count($quote['multiShipmentQuotes']['simple']) < 2){
+                    break;
+                }
                 if (isset($quote['checkoutQuotes'])) {
                     foreach ($quote['checkoutQuotes'] as $key => $quot) {
 
@@ -2058,10 +2061,7 @@ class CompileQuotes
 
     public function compileUpsSmallQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
-        if ($this->SuppressParcelRates) {
-            return [];
-        }
-        $this->upsSmallQuotesResults = new upsSmallQuotesResults();
+        $this->upsSmallQuotesResults = new upsSmallQuotesResults($this->SuppressParcelRates);
         if ($residential['upsSmall'] == 'Y') {
             $this->isResi = true;
             $this->residentialDlvry = 1;
@@ -2082,10 +2082,7 @@ class CompileQuotes
 
     public function compileUnishipSmallNewApiQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
-        if ($this->SuppressParcelRates) {
-            return [];
-        }
-        $this->unishippersSmallQuotesResults = new unishippersSmallQuotesResults();
+        $this->unishippersSmallQuotesResults = new unishippersSmallQuotesResults($this->SuppressParcelRates);
         
         if ($residential['unishippersSmallNewApi'] == 'Y') {
             $this->isResi = true;
@@ -2117,12 +2114,7 @@ class CompileQuotes
      */
     public function compileUpsShipEngineQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
-        if ($this->SuppressParcelRates) {
-            return [];
-        }
-
-
-        $quoteResults = new upsShipEngineSmallQuotesResults();
+        $quoteResults = new upsShipEngineSmallQuotesResults($this->SuppressParcelRates);
         if ($residential['shipEngine'] == 'Y') {
             $this->isResi = true;
             $this->residentialDlvry = 1;
@@ -2153,10 +2145,7 @@ class CompileQuotes
 
     public function compilePurolatorSmallQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
-        if ($this->SuppressParcelRates) {
-            return [];
-        }
-        $this->purolatorSmallQuotesResults = new purolatorSmallQuotesResults();
+        $this->purolatorSmallQuotesResults = new purolatorSmallQuotesResults($this->SuppressParcelRates);
         if ($residential['purolatorSmall'] == 'Y') {
             $this->isResi = true;
             $this->residentialDlvry = 1;
@@ -2411,10 +2400,7 @@ class CompileQuotes
 
     public function compileFedexSmallQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $destination)
     {
-        if ($this->SuppressParcelRates) {
-            return [];
-        }
-        $this->fedexSmallQuotesResults = new fedexSmallQuotesResults();
+        $this->fedexSmallQuotesResults = new fedexSmallQuotesResults($this->SuppressParcelRates);
         if ($residential['fedexSmall'] == 'Y') {
             $this->isResi = true;
             $this->residentialDlvry = 1;
@@ -3599,10 +3585,6 @@ class CompileQuotes
 
     public function compileWweSmallQuotes($shipments, $connectionSettings, $allOrigins, $isHazmat, $smalLtlHazmat, $hazmatAllItems)
     {
-        if ($this->SuppressParcelRates) {
-            return [];
-        }
-
         if ($this->residential['wweSmall'] == 'Y') {
             $this->isResi = true;
             $this->residentialDlvry = 1;
@@ -3644,6 +3626,11 @@ class CompileQuotes
         $count = 0;
         foreach ($shipments as $origin => $quote) {
             $this->originKey = $origin;
+
+            if(in_array($origin, $this->SuppressParcelRates)){
+                continue;
+            }
+            
             if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -3970,10 +3957,7 @@ class CompileQuotes
 
     private function compileUnishippersSmallQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
-        if ($this->SuppressParcelRates) {
-            return [];
-        }
-        $this->unishippersSmallQuotesResults = new unishippersSmallQuotesResults();
+        $this->unishippersSmallQuotesResults = new unishippersSmallQuotesResults($this->SuppressParcelRates);
         if ($residential['unishippersSmall'] == 'Y') {
             $this->isResi = true;
             $this->residentialDlvry = 1;
@@ -5226,10 +5210,7 @@ class CompileQuotes
 
     private function compileUspsSmallQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
-        if ($this->SuppressParcelRates) {
-            return [];
-        }
-        $uspsSmallQuotesResults = new uspsSmallQuotesResults();
+        $uspsSmallQuotesResults = new uspsSmallQuotesResults($this->SuppressParcelRates);
         $this->isResi = false;
         $this->residentialDlvry = 0;
         $this->alwaysResi = false;
