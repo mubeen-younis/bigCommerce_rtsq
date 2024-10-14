@@ -20,7 +20,7 @@ pipelines:
                 MODE: 'command'
                 COMMAND: '/var/www/html/bigcommerce/bc/remote-script.sh'
 
-    update-pallet-packaging-api:
+    feature/google-lookup-cache:
       - step:
           caches:
             - composer

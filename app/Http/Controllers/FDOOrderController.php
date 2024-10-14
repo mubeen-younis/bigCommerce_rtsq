@@ -282,6 +282,15 @@ class FDOOrderController extends Controller
                 $handlingUnitDetails = optional($responseFromWS)->$wsCarrierCode->$zip->DEBUG ?? [];
             }
 
+            /**
+             * Add Quote ID
+             * */
+            if (!$isSmallLtlrate && empty($multiShipmentresponse)){
+                $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($rateId, $responseFromWS, $zip);
+            } elseif (!$isSmallLtlrate && $isMultiShipment) {
+                $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($code, $responseFromWS, $zip);
+            }
+
             if (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Delivery')){
                 $sName = explode('(Delivery', $order['shipping_name'])[0] ?? '';
                 $sName = explode('w/', $sName)[0] ?? '';
