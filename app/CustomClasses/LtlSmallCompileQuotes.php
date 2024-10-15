@@ -9,6 +9,11 @@ use Illuminate\Support\Facades\Log;
 
 class LtlSmallCompileQuotes
 {
+    public function __construct($suppressParcelRates = [])
+    {
+        $this->SuppressParcelRates = $suppressParcelRates;
+    }
+
     public function compileQuotes($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr, $storeId)
     {
         $quoteSettings = $connectionSettings['ltl-quotes']['quote_settings'] ?? [];
@@ -815,6 +820,9 @@ class LtlSmallCompileQuotes
 
         $smallQuotes = $quotes['wweSmall'] ?? $quotes['wweSmallN'] ?? $quotes['upsSmall'] ?? $quotes['fedexSmall'] ?? $quotes['unishippersSmall'] ?? $quotes['usps'] ?? $quotes['purolator'] ?? $quotes['shipEngine'] ?? [];
         foreach ($smallQuotes as $key => $quote) {
+            if(in_array($key, $this->SuppressParcelRates)){
+                continue;
+            }
             $small[] = $key;
         }
         $indexes['small'] = $small;

@@ -944,7 +944,7 @@ class CompileQuotes
         $quotesRes = array_map("unserialize", array_unique(array_map("serialize", $quotesRes)));
 
         if (isset($quotesRes['multiShipmentQuotes']) && !empty($quotesRes['multiShipmentQuotes']) && isset($quotesRes['checkoutQuotes']) && !empty($quotesRes['checkoutQuotes'])) {
-            $quotesRes = Functions::addUpCheapestQuotes($quotesRes);
+            $quotesRes = Functions::addUpCheapestQuotes($quotesRes, $this->storeId);
         }
 
         return $quotesRes;
@@ -977,9 +977,6 @@ class CompileQuotes
         if ($this->isMultiShipment) {
             $newQuotes['checkoutQuotes'] = $newQuotes['multiShipmentQuotes'] = [];
             foreach ($quotes as $car => $quote) {
-                if(count($quote['multiShipmentQuotes']['simple']) < 2){
-                    break;
-                }
                 if (isset($quote['checkoutQuotes'])) {
                     foreach ($quote['checkoutQuotes'] as $key => $quot) {
 

@@ -1523,14 +1523,45 @@ class Functions
         return $services->toArray() ?? [];
     }
 
-    public static function addUpCheapestQuotes($quotes)
+    public static function addUpCheapestQuotes($quotes, $storeId)
     {
         $multiShipmentQuotes = $quotes['multiShipmentQuotes'] ?? [];
         $checkoutQuotes = $quotes['checkoutQuotes'] ?? [];
         $finalCHeapestQuotes = [];
         $accessorialServices = [];
-        
+
         if(count($multiShipmentQuotes) >= 2 && count($checkoutQuotes) >= 2){
+            
+            $isParcel = $isLTL = false;
+            foreach ($multiShipmentQuotes as $index => $shipment) {
+                if(empty($shipment)){
+                    unset($quotes['multiShipmentQuotes'][$index]);
+                }
+                foreach(self::getEnableFeaturesArr() as $key => $value){
+                    if(!isset($shipment[$key])){
+                        continue;
+                    }
+                    foreach($shipment[$key] as $locId => $ship){
+                        if(isset($ship['code']) && substr($ship['code'], 0, 9) == 'parcel_12'){
+                            $isParcel = true;
+                        } elseif(isset($ship['code']) && (strpos($ship['code'], 'ltl') != false)){
+                            $isLTL = true;
+                        }
+                        $shipmentQuotes[] = $ship;
+
+                    }
+                }
+            }
+
+            $ThresholdSettings = optional(WeightThresholdSettings::where('store_id', $storeId)->first())->toArray() ?? [];
+            if (isset($ThresholdSettings['parcel_rates']) && $ThresholdSettings['parcel_rates'] == 2) {
+                if($isParcel && $isLTL){
+                    return $shipmentQuotes;
+                } else {
+                    return $quotes;
+                } 
+            }
+
             foreach ($multiShipmentQuotes as $shipment) {
                 $simpleQuotes[] = isset($shipment['simple']) ? $shipment['simple'] : [];
             }
