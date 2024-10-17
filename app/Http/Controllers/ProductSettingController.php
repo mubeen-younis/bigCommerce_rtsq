@@ -40,7 +40,10 @@ class ProductSettingController extends Controller
         // return back due to store plan expired
         $GetRatesController = new GetRatesController();
         if (!$GetRatesController->storePlanStatus($request['store_id'])) {
-            return response()->json(true, 200);
+            return response()->json(['error' => true,
+                    'data' => [],
+                    'message' => 'Your current plan has expired. Please renew your plan.',
+                ], 200);
         }
         $isSyncinProgress = ImportProductsModel::where('store_id', $request['store_id'])->where('status', '=', 1)->where('created_at', '>', Carbon::now()->subDay()->toDateTimeString())->exists();
         if (!$isSyncinProgress) {

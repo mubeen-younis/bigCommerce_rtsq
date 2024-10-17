@@ -42,7 +42,10 @@ class ExportImportProducts extends Controller
         // return back due to store plan expired
         $GetRatesController = new GetRatesController();
         if (!$GetRatesController->storePlanStatus($request['store_id'])) {
-            return response()->json(true, 200);
+            return response()->json(['error' => true,
+                    'data' => [],
+                    'message' => 'Your current plan has expired. Please renew your plan.',
+                ], 200);
         }
 
         if (isset($request['onlyResponse']) && $request['onlyResponse'] === true) {
@@ -367,7 +370,10 @@ class ExportImportProducts extends Controller
             // return back due to store plan expired
             $GetRatesController = new GetRatesController();
             if (!$GetRatesController->storePlanStatus($request['store_id'])) {
-                return response()->json(true, 200);
+                return response()->json(['error' => true,
+                    'data' => [],
+                    'message' => 'Your current plan has expired. Please renew your plan.',
+                ], 200);
             }
 
             $delay = 2;
