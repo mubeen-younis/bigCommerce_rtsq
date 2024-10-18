@@ -753,7 +753,7 @@ class Functions
                     return array_merge($warehouseWeight, $dropshipWeight);
                 }
             }
-            return false;
+            return [];
         } catch (\Exception $exception) {
             Log::info('Exception on suppress rates ' . json_encode($exception));
             return false;
