@@ -78,7 +78,7 @@ class LtlSmallCompileQuotes
                     } else {
                         $quotesCarrier['ltl']['ups']['simple'][] = $quote;
                     }
-                } else if (strpos($quote['code'], 'priority1') !== false) {
+                } else if (strpos($quote['code'], 'priority1ltl') !== false) {
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
                     $quote['isResi'] = $residential['priority1Ltl'] == 'Y';
                     $quote['isLG'] = isset($connectionSettings['priority-one-ltl']['quote_settings']['offerLiftGateDelivery']) && $connectionSettings['priority-one-ltl']['quote_settings']['offerLiftGateDelivery'];
@@ -432,7 +432,7 @@ class LtlSmallCompileQuotes
                     } else {
                         $quotesCarrier['ltl']['SouthEastern']['simple'][] = $quote;
                     }
-                } else if (strpos($quote['code'], 'unl') !== false) {
+                } else if (strpos($quote['code'], 'unlltl') !== false) {
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
                     $quote['isResi'] = $residential['uniLtl'] == 'Y';
                     $quote['isLG'] = isset($connectionSettings['unishipper-ltl']['quote_settings']['offerLiftGateDelivery']) && $connectionSettings['unishipper-ltl']['quote_settings']['offerLiftGateDelivery'];
