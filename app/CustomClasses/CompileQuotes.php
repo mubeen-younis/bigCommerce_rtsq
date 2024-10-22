@@ -5753,7 +5753,7 @@ class CompileQuotes
                                     $data,
                                     $key, $data['totalTransitTimeInDays'],
                                     $dateAndDays, $feature['index']['isLG'] ?? false,
-                                    "priority1", $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings,
+                                    "priority1ltl", $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings,
                                     $this->isResi, $this->alwaysResi, $feature['index']['isID'] ?? false, $feature['index']['isLAD'] ?? false, $feature['index']['isNBD'] ?? false,
                                     $resiPickup,
                                     $lgPickup,
