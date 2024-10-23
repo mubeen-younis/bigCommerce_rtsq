@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Log;
 use App\Jobs\ProductWebhookImport;
 use App\Models\NestingItemsDetail;
 use App\CustomClasses\Functions;
+use stdClass;
+use App\CustomClasses\BigCommerceFunctions;
 
 
 class ProductSettingController extends Controller
@@ -31,6 +33,7 @@ class ProductSettingController extends Controller
         $this->mainController = new MainController();
         $this->saveProducts = new ProductSetting();
         $this->categoryArray = [];
+        $this->productSettings = new ProductSetting();
     }
 
     public function importProducts(Request $request)
@@ -179,7 +182,7 @@ class ProductSettingController extends Controller
         $headers[] = 'Accept: application/json';
         $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
         $response = json_decode($response['response'], true);
-        
+
         if (isset($response['data']) && count($response['data'])) {
             $product = $response['data'];
             if ($product['base_variant_id'] == null) {
@@ -292,7 +295,6 @@ class ProductSettingController extends Controller
         return $settings;
     }
 
-
     public function getSingleProductDetail(Request $request)
     {
         $this->deleteDuplicateProducts($request);
@@ -301,25 +303,89 @@ class ProductSettingController extends Controller
             return response()->json(['error' => true,
                 'data' => [],
                 'message' => 'No Product Id',
-            ], 404);
+            ], 200);
         }
-        $products = ProductSetting::where('source_product_id', $request->product_id)
+        $DBproducts = ProductSetting::where('source_product_id', $request->product_id)
             ->whereNotNull('variant_id')
             ->where('store_id', $request->store_id)
             ->get();
 
+        $headers = BigCommerceFunctions::getHeaders($request['store_hash']);
+        $storeUrl = BigCommerceFunctions::$initalUrl . $request['store_hash'] . '/v3/catalog/products/' . $request['product_id'];
+        $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
+
+        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+            $response = json_decode($response['response'], true);
+            $product = $response['data'] ?? [];
+            $products = [];
+
+            if($product['base_variant_id'] == null){
+                $variantEndPoint = BigCommerceFunctions::$initalUrl . $request['store_hash'] . '/v3/catalog/products/' . $request['product_id'] . '/variants?limit=250' ;
+                $response = $this->curlRequest->enSingleCurlRequest($variantEndPoint, [], $headers, 'GET', true);
+                if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+                    $response = json_decode($response['response'], true);
+                    $variants = $response['data'] ?? [];
+                    if($DBproducts->count()){
+
+                        if (count($DBproducts)) {
+                            foreach ($DBproducts as $key => $DBvariant) {
+
+                                $variant = collect($variants)->firstWhere('id', $DBvariant->variant_id);
+                                $products = $this->getProductIndex($variant, $DBproducts, $key);
+                                $products[$key]['name'] = isset($product['name']) ? $product['name'] : '' ?? '';
+                            }
+                        }
+
+                    } else {
+                        if (count($variants)) {
+                            foreach ($variants as $key => $variant) {
+                                
+                                $products = $this->getProductIndex($variant, $products, $key);
+                                $products[$key]['name'] = isset($product['name']) ? $product['name'] : '' ?? '';
+                                $products[$key]['source_product_id'] = isset($variant['product_id']) ? $variant['product_id'] : '' ?? '';
+                                $products[$key]['variant_id'] = isset($variant['id']) ? $variant['id'] : null ?? null;
+                                // $products[$key]['id'] = isset($variant['id']) ? $variant['id'] : null ?? null;
+                                $products[$key]['settings'] = $this->setShippingMethod($variant, $request['store_id']);
+                            }   
+                        }
+                    }
+                }                    
+            } else {
+
+                if($DBproducts->count()){
+                    
+                    $products = $this->getProductIndex($product, $DBproducts);
+
+                } else {
+
+                    $products = $this->getProductIndex($product, $products);
+                    // $products[0]['id'] = isset($product['id']) ? $product['id'] : null ?? null;
+                    $products[0]['source_product_id'] = isset($product['id']) ? $product['id'] : null ?? null;
+                    $products[0]['variant_id'] = isset($product['base_variant_id']) ? $product['base_variant_id'] : null ?? null;
+                    $products[0]['settings'] = $this->setShippingMethod($product, $request['store_id']);
+                }
+            }
+        } else {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'No Products Available',
+            ], 200);
+        }
+
         if(!empty($products)){
             foreach($products as $key => $product){
-                $nestingItemsDetails = optional(NestingItemsDetail::where('product_settings_id', $product['id'])->first())->toArray() ?? [];
-                $products[$key]->dimension_type = $nestingItemsDetails['dimension_type'] ?? 0;
-                $products[$key]->nesting_percentage = $nestingItemsDetails['nesting_percentage'] ?? null;
-                $products[$key]->stacked_type = $nestingItemsDetails['stacked_type'] ?? 0;
-                $products[$key]->max_nested_items = $nestingItemsDetails['max_nested_items'] ?? null;
-                $products[$key]->is_nesting_enabled = $nestingItemsDetails['is_nesting_enabled'] ?? 0;
+                if(!empty($product['id'])){
+                    $nestingItemsDetails = optional(NestingItemsDetail::where('product_settings_id', $product['id'])->first())->toArray() ?? [];
+                    $products[$key]['dimension_type'] = !empty($nestingItemsDetails['dimension_type']) ? $nestingItemsDetails['dimension_type'] : 0;
+                    $products[$key]['nesting_percentage'] = !empty($nestingItemsDetails['nesting_percentage']) ? $nestingItemsDetails['nesting_percentage'] : null;
+                    $products[$key]['stacked_type'] = !empty($nestingItemsDetails['stacked_type']) ? $nestingItemsDetails['stacked_type'] : 0;
+                    $products[$key]['max_nested_items'] = !empty($nestingItemsDetails['max_nested_items']) ? $nestingItemsDetails['max_nested_items'] : null;
+                    $products[$key]['is_nesting_enabled'] = !empty($nestingItemsDetails['is_nesting_enabled']) ? $nestingItemsDetails['is_nesting_enabled'] : 0;
+                }
             }
         }
         
-        if ($products->isEmpty()) {
+        if (empty($products)) {
             return response()->json(['error' => true,
                 'data' => [],
                 'message' => 'No Products Available',
@@ -329,6 +395,44 @@ class ProductSettingController extends Controller
             'data' => $products,
             'message' => '',
         ], 200);
+    }
+
+    public function setShippingMethod($product, $storeId)
+    {
+        $parcelEnabled = $freightEnabled = false;
+        if(!empty($product['weight'])) {
+            $storeSettings = $this->productSettings->getStoreSettings($storeId);
+            $varWeight = $this->productSettings->convertWeight(isset($product['weight']) ? $product['weight'] : '', isset($storeSettings['weight_units']) ? strtolower($storeSettings['weight_units']) : 'lbs') ?? 0;
+            if (!empty($product['weight']) && $varWeight > 150) {
+                $freightEnabled = true;
+            } else {
+                $parcelEnabled = true;
+            }                        
+        }
+
+        /*Start - Added FOr Default Quoting Method*/
+        $settings = new stdClass();
+        if ($parcelEnabled){
+            $settings->parcel_enabled = true;
+            $settings->freight_enabled = false;
+        } elseif ($freightEnabled){
+            $settings->freight_enabled = true;
+            $settings->parcel_enabled = false;
+        }
+
+        return json_encode($settings);
+    }
+
+    public function getProductIndex($product, $products = [], $key = 0)
+    {
+        $products[$key]['name'] = isset($product['name']) ? $product['name'] : null ?? null;
+        $products[$key]['sku'] = isset($product['sku']) ? $product['sku'] : null ?? null;
+        $products[$key]['weight'] = isset($product['weight']) ? $product['weight'] : null ?? null;
+        $products[$key]['length'] = isset($product['depth']) ? $product['depth'] : null ?? null;
+        $products[$key]['width'] = isset($product['width']) ? $product['width'] : null ?? null;
+        $products[$key]['height'] = isset($product['height']) ? $product['height'] : null ?? null;
+
+        return $products;
     }
 
     public function deleteDuplicateProducts($request)
@@ -361,76 +465,75 @@ class ProductSettingController extends Controller
         return true;
     }
 
-    public function getStoreProductsFromDb(Request $request)
+    public function getStoreProductsFromAPI(Request $request)
     {
-        try {
-            $page = $request['page'] ?? 1;
-            $perPage = $request['perpage'] ?? 50;
-            $search = $request['search'] ?? null;
-            $sortProd = $request['sortProd'] == "true" ? 'DESC' : 'ASC';
-
-            /*$count = ProductSetting::where('store_id', $request->store_id)
-                ->where('name','LIKE','%'.$search.'%')->orderBy('name', $sortProd)->get()->groupBy('source_product_id')->count();*/
-
-            if ($search === null || $search == '') {
-                $count = ProductSetting::where('store_id', $request->store_id)
-                    ->orderBy('name', $sortProd)->get();
-            } else {
-                $count = ProductSetting::where('store_id', $request->store_id)
-                    ->where(function ($query) use ($search) {
-                        $query->where('name', 'LIKE', '%' . $search . '%')
-                            ->orWhere('sku', 'LIKE', '%' . $search . '%')
-                            ->orWhere('variant_id', $search)
-                            ->orWhere('source_product_id', $search);
-                    })
-                    ->orderBy('name', $sortProd)
-                    ->get();
-            }
-
-            if ($count->count()) {
-                $count = $count->groupBy('source_product_id')->count();
-            } else {
-                $count = 0;
-            }
-
-            if ($search === null || $search == '') {
-                $products = ProductSetting::where('store_id', $request->store_id)
-                    ->groupBy('source_product_id')->orderBy('name', $sortProd)->skip(($page - 1) * $perPage)->take($perPage)->get();
-            } else {
-                $products = ProductSetting::where(function ($query) use ($search) {
-                    $query->where('name', 'LIKE', '%' . $search . '%')
-                        ->orWhere('sku', 'LIKE', '%' . $search . '%')
-                        ->orWhere('variant_id', $search)
-                        ->orWhere('source_product_id', $search);
-                })->where('store_id', $request->store_id)
-                    ->orderBy('name', $sortProd)
-                    ->groupBy('source_product_id')
-                    ->skip(($page - 1) * $perPage)->take($perPage)->get();
-            }
-            if ($products->isEmpty()) {
-                return response()->json(['error' => true,
-                    'data' => [],
-                    'message' => 'No Products Available',
-                ], 200);
-            }
-
-            $products = $this->isLtlParcelBothEnabled($products, $request);
-
-            $resp = response()->json(['error' => false,
-                'data' => $products,
-                'meta' => ['total' => $count, 'current' => $page, 'perpage' => $perPage],
-                'message' => '',
-            ], 200);
-            return $resp;
-        } catch (\Exception $exception) {
-            Log::info('catch: ' . json_encode($exception->getMessage()));
+        $store = Store::where('hash', $request['store_hash'])->first();
+        if (empty($store)) {
+            return null;
+        }
+        $page = $request['page'] ?? 1;
+        $perPage = $request['perpage'] ?? 10;
+        $sortProd = (isset($request['sortProd']) && $request['sortProd'] === "true") ? 'desc' : 'asc';
+        $search = $request['search'] ?? null;
+        $headers = BigCommerceFunctions::getHeaders($request['store_hash']);
+        $total = 1;
+        if ($search) {
+            $endpoint = BigCommerceFunctions::$initalUrl . $request['store_hash'] . "/v3/catalog/products?keyword=" . urlencode($search) . "&direction=" . $sortProd . "&sort=name";
+        } else {
+            $endpoint = BigCommerceFunctions::$initalUrl . $request['store_hash'] . "/v3/catalog/products?direction=" . $sortProd . "&sort=name" . "&limit=" . $perPage . "&page=" . $page;
         }
 
+        $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
+
+        $resp = $products = [];
+
+        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+            $response = json_decode($response['response'], true);
+
+            if (!empty($response['data']) && !empty($response['meta']['pagination'])) {
+                $total = $response['meta']['pagination']['total'] ?? 1;
+                $products =  $response['data'] ?? [];
+
+                if (empty($products)) {
+                    return response()->json(['error' => true,
+                        'data' => [],
+                        'message' => 'No Products Available',
+                    ], 200);
+                }
+
+                if (count($products)) {
+                    foreach ($products as $key => $product) {
+                        $resp[$key]['name'] = isset($product['name']) ? $product['name'] : '' ?? '';
+                        $resp[$key]['source_product_id'] = isset($product['id']) ? $product['id'] : '' ?? '';
+                        $resp[$key]['variant_id'] = isset($product['base_variant_id']) ? $product['base_variant_id'] : null ?? null;
+                        $resp[$key]['sku'] = isset($product['sku']) ? $product['sku'] : null ?? null;
+                        $resp[$key]['weight'] = isset($product['weight']) ? $product['weight'] : null ?? null;
+                        $resp[$key]['length'] = isset($product['depth']) ? $product['depth'] : null ?? null;
+                        $resp[$key]['width'] = isset($product['width']) ? $product['width'] : null ?? null;
+                        $resp[$key]['height'] = isset($product['height']) ? $product['height'] : null ?? null;
+                        $resp[$key]['price'] = isset($product['price']) ? $product['price'] : null ?? null;
+                        $resp[$key]['brand_id'] = isset($product['brand_id']) && !empty($product['brand_id']) ? $product['brand_id'] : null ?? null;
+                        $resp[$key]['categories_id'] =  isset($product['categories']) && !empty($product['categories']) ? json_encode($product['categories']) : '' ?? '';
+                    }
+                }
+                $products = $this->isLtlParcelBothEnabled($resp, $request);
+            }
+        }
+        
+        $resp = response()->json([
+            'error' => false,
+            'data' => $products,
+            'meta' => ['total' => $total, 'current' => $page, 'perpage' => $perPage],
+            'message' => '',
+        ], 200);
+
+        return $resp;
     }
 
     public function isLtlParcelBothEnabled($products, $request)
     {
         $brandArray = [];
+        $storeSettings = $this->productSettings->getStoreSettings($request['store_id']);
         
         $uniqueBrandIds = collect($products)->unique('brand_id')->values()->all();
             
@@ -438,43 +541,83 @@ class ProductSettingController extends Controller
                 
                 $brandName = $this->productBrand($request, $product) ?? '';
                 $brandArray['brand_' . $product['brand_id']] = $brandName;
-                
+
             }
 
         foreach($products as $key => $product){
             $freightEnabled = $parcelEnabled = false;
             if($product['variant_id'] == null){
-                $variants = ProductSetting::where('source_product_id', $product['source_product_id'])
-                ->where('store_id', $request->store_id)->get();
+
+                $settings = new stdClass();
+                $DBproducts = ProductSetting::where('source_product_id', $product['source_product_id'])
+                    ->whereNotNull('variant_id')
+                    ->where('store_id', $request['store_id'])
+                    ->get()->toArray();
+
+                if(!empty($DBproducts)){
+                    $variants = $DBproducts;
+                } else {
+                    $headers = BigCommerceFunctions::getHeaders($request['store_hash']);
+                    $variantEndPoint = BigCommerceFunctions::$initalUrl . $request['store_hash'] . '/v3/catalog/products/' . $product['source_product_id'] . '/variants?limit=250' ;
+                    $response = $this->curlRequest->enSingleCurlRequest($variantEndPoint, [], $headers, 'GET', true);
+    
+                    $response = json_decode($response['response'], true);
+                    $variants = isset($response['data']) ? $response['data'] : [];
+                }
+
                 foreach($variants as $variant){
-                    if($variant->variant_id != null){
-                        if(json_decode($variant['settings'])->freight_enabled){
-                            $freightEnabled = json_decode($variant['settings'])->freight_enabled;
-                        } elseif (json_decode($variant['settings'])->parcel_enabled){
-                            $parcelEnabled = json_decode($variant['settings'])->parcel_enabled;
-                        }
+                    if($variant['id'] != null){
+
+                        if(!empty($DBproducts) &&  isset($variant['settings'])){
+                            $settings = json_decode($variant['settings']);
+                        } else {
+                            $varWeight = $this->productSettings->convertWeight(isset($variant['weight']) ? $variant['weight'] : '', isset($storeSettings['weight_units']) ? strtolower($storeSettings['weight_units']) : 'lbs') ?? 0;
+                            if (!empty($variant['weight']) && $varWeight > 150) {
+                                $freightEnabled = true;
+                            } else {
+                                $parcelEnabled = true;
+                            }
+                        }                        
                     }
                 }
 
+                /*Start - Added FOr Default Quoting Method*/
                 if ($freightEnabled && $parcelEnabled){
-                    $settings = json_decode($product['settings']);
                     $settings->freightParcelEnabled = true;
-                    $product['settings'] = json_encode($settings);
-                    $products[$key] = $product;
                 } elseif ($parcelEnabled){
-                    $settings = json_decode($product['settings']);
                     $settings->parcel_enabled = true;
                     $settings->freight_enabled = false;
-                    $product['settings'] = json_encode($settings);
-                    $products[$key] = $product;
                 } elseif ($freightEnabled){
-                    $settings = json_decode($product['settings']);
                     $settings->freight_enabled = true;
                     $settings->parcel_enabled = false;
-                    $product['settings'] = json_encode($settings);
-                    $products[$key] = $product;
+                }
+            
+            } else {
+                if (!empty($product)) {
+                    $settings = new stdClass();
+                    $DBproducts = ProductSetting::where('source_product_id', $product['source_product_id'])
+                    ->where('variant_id', $product['variant_id'])
+                    ->where('store_id', $request['store_id'])
+                    ->first();
+
+                    
+                    if(isset($DBproducts->settings)){
+                        $settings = json_decode($DBproducts->settings);
+                    } else {
+                        $prodWeight = $this->productSettings->convertWeight(isset($product['weight']) ? $product['weight'] : '', isset($storeSettings['weight_units']) ? strtolower($storeSettings['weight_units']) : 'lbs') ?? 0;
+                        /*Start - Added FOr Default Quoting Method*/
+                        if (!empty($product['weight']) && $prodWeight > 150) {
+                            $settings->freight_enabled = true;
+                            $settings->parcel_enabled = false;
+                        } else {
+                            $settings->freight_enabled = false;
+                            $settings->parcel_enabled = true;
+                        }
+                    }
                 }
             }
+            $product['settings'] = json_encode($settings) ?? '';
+            $products[$key] = $product;
 
             $products[$key]['brand_name'] = $brandArray['brand_' . $product['brand_id']] ?? '';
             $products[$key]['category_name'] = $this->productCategory($request, $product) ?? '';
@@ -563,13 +706,42 @@ class ProductSettingController extends Controller
     public function updateProductDetail(Request $request)
     {
         $productCount = isset($request->products) ? count($request->products) : null;
+        $count = 1; $apiProduct = $products = [];
         foreach ($request->products as $prd) {
             $prd['store_id'] = $request->store_id;
             $prd['store_hash'] = $request->store_hash;
             $result = $this->updateSingleProductFromApi($prd);
             $product = ProductSetting::where('source_product_id', $prd['source_product_id'])
                 ->where('variant_id', $prd['variant_id'])
-                ->where('store_id', $request->store_id)->first();
+                ->where('store_id', $request->store_id)->firstOrNew();
+
+            if(empty($product->toArray())){
+                if($count){
+                    $count = 0;
+                    $headers = BigCommerceFunctions::getHeaders($request['store_hash']);
+                    $endpoint = "https://api.bigcommerce.com/stores/" . $request['store_hash'] . "/v3/catalog/products/" . $prd['source_product_id'];
+                    $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
+                    if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+                        $response = json_decode($response['response'], true);
+                        $apiProduct = $response['data'];
+                    } else {
+                        return response()->json(['error' => true,
+                            'data' => [],
+                            'message' => 'Something went wrong! Please try again.',
+                        ], 200);
+                    }
+                }
+
+                $product->store_id = $prd['store_id'];
+                $product->source_product_id = $prd['source_product_id'];
+                $product->variant_id = $prd['variant_id'];
+                $product->sku = $prd['sku'];
+                $product->brand_id = isset($apiProduct['brand_id']) && !empty($apiProduct['brand_id']) ? $apiProduct['brand_id'] : null ?? null;
+                $product->categories_id = isset($apiProduct['categories']) && !empty($apiProduct['categories']) ? json_encode($apiProduct['categories']) : null ?? null;
+                $product->price = isset($apiProduct['price']) && !empty($apiProduct['price']) ? json_encode($apiProduct['price']) : null ?? null;
+                $product->product_type = isset($apiProduct['type']) ? $apiProduct['type'] : '' ?? '';
+            }
+
             $product->weight = $prd['weight'];
             $product->length = $prd['length'];
             $product->width = $prd['width'];
@@ -605,30 +777,34 @@ class ProductSettingController extends Controller
             }
 
             $product->settings = json_encode($this->getSetting($prd));
-            $product->update();
+            $product->save();
+            $prd['id'] = $product->id;
             // updating Nesting Items details
-            $nestingItemsDetails = $this->updateNestingItemsDetail($prd, $request['store_id']);
-            if(!empty($nestingItemsDetails)){
-                $product->nested_diamensions = $prd['nested_diamensions'] ?? 0;
-                $product->nesting_percentage = $prd['nesting_percentage'] ?? null;
-                $product->stacking_property = $prd['stacking_property'] ?? 0;
-                $product->max_nested_items = $prd['max_nested_items'] ?? null;
-                $product->is_nesting_enabled = $prd['is_nesting_enabled'] ?? 0;
+            if(isset($prd['is_nesting_enabled']) && $prd['is_nesting_enabled']){
+                $nestingItemsDetails = $this->updateNestingItemsDetail($prd, $request['store_id']);
+                if(!empty($nestingItemsDetails)){
+                    $product->nested_diamensions = $prd['nested_diamensions'] ?? 0;
+                    $product->nesting_percentage = $prd['nesting_percentage'] ?? null;
+                    $product->stacking_property = $prd['stacking_property'] ?? 0;
+                    $product->max_nested_items = $prd['max_nested_items'] ?? null;
+                    $product->is_nesting_enabled = $prd['is_nesting_enabled'] ?? 0;
+                }
             }
 
             $prd['store_id'] = $request['store_id'];
             $prd['store_hash'] = $request['store_hash'];
+            $products[] = $product->toArray();
         }
 
         if($productCount > 1){
-            $products = $this->isLtlParcelBothEnabled($request->products, $request);
+            $products = $this->isLtlParcelBothEnabled($products, $request);
             foreach($products as $prod){
                 if($prod['variant_id'] == null){
                     $product = $prod;
                 }
             }
         } else { 
-            $products = $this->isLtlParcelBothEnabled($request->products, $request);
+            $products = $this->isLtlParcelBothEnabled($products, $request);
             $product = $products[0] ?? [];
         }
 
