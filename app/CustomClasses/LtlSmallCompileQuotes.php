@@ -414,7 +414,7 @@ class LtlSmallCompileQuotes
                     } else {
                         $quotesCarrier['ltl']['daylight']['simple'][] = $quote;
                     }
-                } else if (strpos($quote['code'], 'SouthEastern') !== false) {
+                } else if (strpos($quote['code'], 'seflltl') !== false) {
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
                     $quote['isResi'] = isset($residential['SouthEastern']) && $residential['SouthEastern'] == 'Y';
                     $quote['isLG'] = isset($connectionSettings['southeastern-ltl']['quote_settings']['offerLiftGateDelivery']) && $connectionSettings['southeastern-ltl']['quote_settings']['offerLiftGateDelivery'];

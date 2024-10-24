@@ -169,7 +169,7 @@ class Functions
     public static function getCarrierNameOrCode($code, $getWsCode = 0): ?string
     {
         $carrierCodes = ['wweltl', 'rnlltl', 'xpoltl', 'fedexltl', 'gtzltl_new', 'gtzltl','unlltl', 'yrcltl', 'cltl', 'upsltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship_new', 'parcel_12uniship', 'parcel_12shipEng',
-            'fqltl', 'estesltl', 'dayrossltl', 'odflltl', 'saialtl', 'parcel_12Purolator', 'abfltl', 'SouthEastern', 'southeastern', 'parcel_12usps', 'tqlltl', 'echoltl', 'daylightltl', 'fqchrltl', 'shipeng', 'priority1ltl', 'upslandcostapi'];
+            'fqltl', 'estesltl', 'dayrossltl', 'odflltl', 'saialtl', 'parcel_12Purolator', 'abfltl', 'seflltl', 'southeastern', 'parcel_12usps', 'tqlltl', 'echoltl', 'daylightltl', 'fqchrltl', 'shipeng', 'priority1ltl', 'upslandcostapi'];
         foreach ($carrierCodes as $carrierCode) {
             if (strpos($code, $carrierCode) !== false) {
                 if ($getWsCode == 0) {
@@ -189,7 +189,7 @@ class Functions
             'parcel_12wwe' => 'wweSmall', 'parcel_12uniship_new' => 'wweSmallN', 'parcel_12ups' => 'upsSmall', 'parcel_12fd' => 'fedexSmall', 'parcel_12uniship' => 'unishippersSmall',
             'parcel_12shipEng' => 'shipEngine', 'shipeng' => 'shipEngine', 'priority1ltl' => 'priority1',
             'fqltl' => 'freightQuote', 'estesltl' => 'estesLtl', 'dayrossltl' => 'dayross', 'odflltl' => 'OdflLTL', 'saialtl' => 'saia', 'parcel_12Purolator' => 'purolator', 'abfltl' => 'abf',
-            'SouthEastern' => 'southeastern', 'southeastern' => 'southeastern', 'parcel_12usps' => 'usps', 'tqlltl' => 'tql', 'echoltl' => 'echoLogistics', 'daylightltl' => 'daylight', 'chr' => 'chr', 'fqchrltl' => 'chr', 'upslandcostapi' => 'UPSLandedCost'];
+            'seflltl' => 'southeastern', 'southeastern' => 'southeastern', 'parcel_12usps' => 'usps', 'tqlltl' => 'tql', 'echoltl' => 'echoLogistics', 'daylightltl' => 'daylight', 'chr' => 'chr', 'fqchrltl' => 'chr', 'upslandcostapi' => 'UPSLandedCost'];
         return $carrierCodesWithName[$carrierCode] ?? null;
     }
 
@@ -202,7 +202,7 @@ class Functions
             'fqltl' => 'Freight Quote', 'fqchrltl' => 'C.H. Robinson', 'parcel_12Purolator' => 'Purolator Small', 'parcel_12usps' => 'United State Postal Service',
             'tqlltl' => 'Total Quality Logistics', 'yrcltl' => 'YRC Freight', 'odflltl' => 'Old Dominion Freight Lines', 'dayrossltl' => 'Day & Ross Ltl',
             'estesltl' => 'Estes Express Ltl', 'echoltl' => 'Echo Global Logistics', 'saialtl' => 'SAIA LTL Freight', 'abfltl' => 'ABF Freight', 'daylightltl' => 'DayLight LTL Freight',
-            'SouthEastern' => 'Southeastern LTL Freight'];
+            'seflltl' => 'Southeastern LTL Freight'];
         return $carrierCodesWithName[$carrierCode] ?? null;
 
 
@@ -216,7 +216,7 @@ class Functions
             'fqltl' => 'freightquote', 'fqchrltl' => 'freightquotechr', 'parcel_12Purolator' => 'purolator_small', 'parcel_12usps' => 'usps_small',
             'tqlltl' => 'tql', 'yrcltl' => 'yrc', 'odflltl' => 'odfl4me', 'dayrossltl' => 'dayross',
             'estesltl' => 'estes', 'echoltl' => 'echoLogistics', 'saialtl' => 'saia', 'abfltl' => 'abf', 'daylightltl' => 'daylight',
-            'SouthEastern' => 'southeastern'];
+            'seflltl' => 'southeastern'];
 
         return $carrierCodesWithName[$carrierCode] ?? null;
     }
@@ -797,7 +797,7 @@ class Functions
     public static function getOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi, $insideDelivery = false, $laccess = false, $notifyDelivery = false, $resiPickup = false, $lgPickup = false, $storeId = null, $isSurchargeRates = false)
     {
         $CompileQuotes = new CompileQuotes();
-        $serviceCode = !($carrName == 'SouthEastern' || $carrName == 'yrcltl' || $carrName == 'upsltl' || $carrName == 'saialtl' || $carrName == 'fedexltl' || $carrName == 'tqlltl' || $carrName == 'abfltl' || $carrName == 'daylightltl' || $carrName == 'dayrossltl') && isset($data['serviceType']) ? $data['serviceType'] : '';
+        $serviceCode = !($carrName == 'seflltl' || $carrName == 'yrcltl' || $carrName == 'upsltl' || $carrName == 'saialtl' || $carrName == 'fedexltl' || $carrName == 'tqlltl' || $carrName == 'abfltl' || $carrName == 'daylightltl' || $carrName == 'dayrossltl') && isset($data['serviceType']) ? $data['serviceType'] : '';
         $serviceCode = $data['ratquoteNumber'] ?? $data['scac'] ?? $data['CarrierSCAC'] ?? $serviceCode;
 
         $isUpsLtl = false;
