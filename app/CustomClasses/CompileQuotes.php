@@ -4039,9 +4039,17 @@ class CompileQuotes
                     $hazShipmentArr[$origin] = 'N';
                 }
 
-                $quotesArr[] = $quote['q'];
+                
+                if(!isset($quote['q'][0])){
+                    $quotesArr[] = $quote['q'];
+                } else {
+                    $quotesArr = $quote['q'];
+                }
                 foreach ($quotesArr as $key => $data) {
                     $srvcType = $data['serviceType'] ?? '';
+                    if(isset($data['soapBody']['soapFault'])){
+                        continue;
+                    }
                     if (isset($srvcType)) {
                         // Below commit use for future.
                         //$data = $this->applyOverrideRatesRule($connectionSettings, $data);
@@ -4063,6 +4071,7 @@ class CompileQuotes
                         $days = $data['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = $dayRossLtl->getShipmentDateAndDays($data);
                         $title = $this->getTitle($data['serviceDesc'], false, false, $days, [], $dateAndDays);
+                        $isLGFee = !empty($data['surcharges']['liftgateFee']) ? true : false;
 
                         $arraySorting['simple'][$key] = $price;
                         $originQuotes[$key]['simple']['code'] = 'dayrossltl' . $access;
@@ -4070,7 +4079,7 @@ class CompileQuotes
                         $originQuotes[$key]['simple']['title'] = $title;
 
                         //if(!$this->isOverrideRates){
-                        if ($lgQuotes) {
+                        if ($lgQuotes && $isLGFee) {
                             $lgAccess = $this->getAccessorialCode(true);
                             $lgPrice = $this->calculatePrice($data, true);
                             $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $days, [], $dateAndDays);
@@ -4084,8 +4093,10 @@ class CompileQuotes
                             $offerTwoManDelAsOpt = isset($this->quoteSettings['offer_two_man_delivery']) && $this->quoteSettings['offer_two_man_delivery'] ? true : false;
                             $offerAppDelAsOpt = isset($this->quoteSettings['offer_appointment_delivery']) && $this->quoteSettings['offer_appointment_delivery'] ? true : false;
                             $this->quoteSettings['label_as'] = '';
+                            $isTwoManFee = !empty($data['surcharges']['twoManFee']) ? true : false;
+                            $isAppointFee = !empty($data['surcharges']['appointmentFee']) ? true : false;
 
-                            if ($twoManQuotes && !$lgQuotes) {
+                            if ($twoManQuotes && $isTwoManFee && !$lgQuotes) {
                                 $tmAccess = $this->getAccessorialCode(false, false, '', '', false, true, false);
                                 $tmPrice = $this->calculatePrice($data, false, false, false, false, false, true, false);
                                 $tmTitle = $this->getTitle($data['serviceDesc'], false, false, $days, [], $dateAndDays, false, false, false, $offerTwoManDelAsOpt, false);
@@ -4096,7 +4107,7 @@ class CompileQuotes
                                 $originQuotes[$key]['twoManDel']['title'] = $tmTitle;
                             }
 
-                            if ($appointmentQuotes && !$lgQuotes) {
+                            if ($appointmentQuotes && $isAppointFee && !$lgQuotes) {
                                 $aptAccess = $this->getAccessorialCode(false, false, '', '', false, false, true);
                                 $aptPrice = $this->calculatePrice($data, false, false, false, false, false, false, true);
                                 $tmTitle = $this->getTitle($data['serviceDesc'], false, false, $days, [], $dateAndDays, false, false, false, false, $offerAppDelAsOpt);
@@ -4107,7 +4118,7 @@ class CompileQuotes
                                 $originQuotes[$key]['aptDel']['title'] = $tmTitle;
                             }
 
-                            if ($twoManQuotes && $appointmentQuotes && !$lgQuotes) {
+                            if ($twoManQuotes && $isTwoManFee && $appointmentQuotes && $isAppointFee && !$lgQuotes) {
                                 $aptAccess = $this->getAccessorialCode(false, false, '', '', false, true, true);
                                 $aptPrice = $this->calculatePrice($data, false, false, false, false, false, true, true);
                                 $tmTitle = $this->getTitle($data['serviceDesc'], false, false, $days, [], $dateAndDays, false, false, false, $offerTwoManDelAsOpt, $offerAppDelAsOpt);
@@ -4123,7 +4134,19 @@ class CompileQuotes
                 }
             }
 
-            $compiledQuotes = $originQuotes;
+            if($this->isMultiShipment){
+                $sliced = [];
+                asort($arraySorting['simple']);
+    
+                foreach ($arraySorting as $key => $value) {
+                    $sliced =  array_slice($arraySorting[$key], 0, 1, true);
+                }
+    
+                $compiledQuotes = array_intersect_key($originQuotes, $sliced);
+            } else {
+                $compiledQuotes = $originQuotes;
+            }
+
             if ($compiledQuotes !== null && !empty($compiledQuotes)) {
                 if (count($compiledQuotes) > 1) {
                     foreach ($compiledQuotes as $k => $service) {
