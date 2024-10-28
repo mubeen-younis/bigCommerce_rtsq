@@ -344,7 +344,6 @@ class ProductSettingController extends Controller
                                 $products[$key]['name'] = isset($product['name']) ? $product['name'] : '' ?? '';
                                 $products[$key]['source_product_id'] = isset($variant['product_id']) ? $variant['product_id'] : '' ?? '';
                                 $products[$key]['variant_id'] = isset($variant['id']) ? $variant['id'] : null ?? null;
-                                // $products[$key]['id'] = isset($variant['id']) ? $variant['id'] : null ?? null;
                                 $products[$key]['settings'] = $this->setShippingMethod($variant, $request['store_id']);
                             }   
                         }
@@ -359,7 +358,6 @@ class ProductSettingController extends Controller
                 } else {
 
                     $products = $this->getProductIndex($product, $products);
-                    // $products[0]['id'] = isset($product['id']) ? $product['id'] : null ?? null;
                     $products[0]['source_product_id'] = isset($product['id']) ? $product['id'] : null ?? null;
                     $products[0]['variant_id'] = isset($product['base_variant_id']) ? $product['base_variant_id'] : null ?? null;
                     $products[0]['settings'] = $this->setShippingMethod($product, $request['store_id']);
