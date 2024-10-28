@@ -24,6 +24,7 @@ use Illuminate\Filesystem\Filesystem;
 use App\CurlRequest;
 use Carbon\Carbon;
 use App\CustomClasses\Functions;
+use App\Http\Controllers\GetRatesController as ProductSettings;
 
 class ExportImportProducts extends Controller
 {
@@ -73,7 +74,13 @@ class ExportImportProducts extends Controller
             $dropShips[$location['id']] = $location;
         }
         
-        $productsChunk = ProductSetting::where('store_id', $request['store_id']);
+        $headers = BigCommerceFunctions::getHeaders($request['store_hash']);
+        $endpoint = BigCommerceFunctions::$initalUrl . $request['store_hash'] . "/v3/catalog/products";
+        $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
+        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+            $response = json_decode($response['response'], true);
+            $productsChunk = collect($response['data']);
+        }
         if (!$productsChunk->count()) {
             return [];
         }
@@ -90,7 +97,7 @@ class ExportImportProducts extends Controller
             $folderName = $request['folderName'];
             $folderNamePath = [];
             
-            $productsChunk->chunk(2500, function ($products, $chunkCount = 0) use ($comma, $folderName, $dropShips, $weightUnit, $dimensionsUnit) {
+            $productsChunk->chunk(2000)->each(function ($products, $chunkCount = 0) use ($request, $comma, $folderName, $dropShips, $weightUnit, $dimensionsUnit, $headers) {
                 $fileName = $chunkCount++ . '-export.csv';
                 $filename = $folderName . '/' . $fileName;
                 $folderNamePath[] = $filename;
@@ -100,74 +107,34 @@ class ExportImportProducts extends Controller
                     $line .= "\n";
                     fputs($fp, $line);
                 }
+                $ProductSettings = new ProductSettings();
                 foreach ($products as $key => $product) {
-                    // Check: if product variant id is null then product will not add in CSV file.
-                    if(!isset($product->variant_id) && $product->variant_id == null){
-                        continue;
-                    }
-                    $productLine = [];
-                    $productLine[] = 'P' . $product->source_product_id;
-                    $productLine[] = 'V' . $product->variant_id;
-                    $productLine[] = $product->name ?? '';
-                    $productLine[] = $product->sku ?? '';
-                    $productLine[] = $product->weight ?? '';
-                    $productLine[] = $product->length ?? '';
-                    $productLine[] = $product->width ?? '';
-                    $productLine[] = $product->height ?? '';
-                    $productLine[] = $product->nmfc ?? '';
-                    $productLine[] = $product->product_markup ?? '';
+                    // Check: if product variant id is null then the null variant id product will not add in CSV file.
+                    if($product['base_variant_id'] == null){
+                        $variantEndPoint = BigCommerceFunctions::$initalUrl . $request['store_hash'] . '/v3/catalog/products/' . $product['id'] . '/variants?limit=250' ;
+                        $response = $this->curlRequest->enSingleCurlRequest($variantEndPoint, [], $headers, 'GET', false);
+                        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+                            $response = json_decode($response['response'], true);
+                            $productsVar = collect($response['data']);
+                            
+                            foreach($productsVar as $variant){
+                                $variant['base_variant_id'] = $variant['id'];
+                                $variant['id'] = $product['id'];
+                                $variant['name'] = $product['name'];
+                                $DBProductSettings = $ProductSettings->getProductSetting($variant['id'], $variant['base_variant_id'], $request['store_id']);
+                                $productLine = $this->createDataSet($variant, $DBProductSettings, $dropShips);
+                                fputcsv($fp, $productLine);
+                            }
 
-                    $settings = json_decode($product->settings);
-                    $quoteMethod = '';
-                    // Added INstore and local quoting methods
-                    if (isset($settings->freight_enabled) && $settings->freight_enabled) {
-                        $quoteMethod = 'L';
-                    } else if (isset($settings->parcel_enabled) && $settings->parcel_enabled) {
-                        $quoteMethod = 'S';
-                    } else if (isset($settings->quote_as_local) && $settings->quote_as_local) {
-                        $quoteMethod = 'PD';
-                    }
-                    $productLine[] = $quoteMethod;
-                    $productLine[] = $settings->freight_class ?? '';
-                    $productLine[] = isset($settings->hazardous_enabled) && $settings->hazardous_enabled ? 1 : 0;
-                    $productLine[] = isset($settings->insurance) && $settings->insurance ? 1 : 0;
-
-                    $nickname = $zip = $city = $state = $country = '';
-                    if (isset($product->dropship_enabled) && $product->dropship_enabled) {
-                        $location = $product->dropship_location ?? false;
-                        if ($location) {
-                            $dropShip = $dropShips[$location] ?? [];
-                            $nickname = $dropShip['nickname'] ?? '';
-                            $city = $dropShip['city'] ?? '';
-                            $state = $dropShip['state'] ?? '';
-                            $zip = $dropShip['zip_code'] ?? '';
-                            $country = $dropShip['country'] ?? '';
                         }
+                    } else {
+                        $DBProductSettings = $ProductSettings->getProductSetting($product['id'], $product['base_variant_id'], $request['store_id']);
+                        $productLine = $this->createDataSet($product, $DBProductSettings, $dropShips);
+                        fputcsv($fp, $productLine);
                     }
-                    $boxingProperty = '';
-                    // Added Boxing Properties
-                    if (isset($settings->ship_own_package) && $settings->ship_own_package) {
-                        $boxingProperty = '1';
-                    } else if (isset($settings->allow_vertical) && $settings->allow_vertical) {
-                        $boxingProperty = '2';
-                    } else if (isset($product->ship_multiple_package) && $product->ship_multiple_package) {
-                        $boxingProperty = '3';
-                    } else if (isset($product->ship_multiple_package) && !$product->ship_multiple_package && 
-                            isset($settings->ship_own_package) && !$settings->ship_own_package && 
-                            isset($settings->allow_vertical) && !$settings->allow_vertical) {
-                        $boxingProperty = '0';
-                    }
-                    $productLine[] = $nickname;
-                    $productLine[] = $zip;
-                    $productLine[] = $city;
-                    $productLine[] = $state;
-                    $productLine[] = $country;
-                    $productLine[] = $boxingProperty;
-                    $productLine[] = isset($product->own_pallet) && $product->own_pallet ? 1 : 0;
-                    $productLine[] = isset($product->pallet_vertical_rotation) && $product->pallet_vertical_rotation ? 1 : 0;
-                    fputcsv($fp, $productLine);
                 }
             });
+
             $isupdate = ExportProductsModel::find($request['exportProductsId'])->update(['status' => 1]);
             $this->makeZipWithFiles($folderName);
             $this->sendEmail($request['email'], $hash);
@@ -185,6 +152,75 @@ class ExportImportProducts extends Controller
             }
         }
     }
+
+    public function createDataSet($product, $DBProductSettings, $dropShips)
+    {
+        $productLine = [];
+        $productLine[] = 'P' . $product['id'];
+        $productLine[] = 'V' . $product['base_variant_id'];
+        $productLine[] = $product['name'] ?? '';
+        $productLine[] = $product['sku'] ?? '';
+        $productLine[] = $product['weight'] ?? '';
+        $productLine[] = $product['depth'] ?? '';
+        $productLine[] = $product['width'] ?? '';
+        $productLine[] = $product['height'] ?? '';
+        $productLine[] = $DBProductSettings['nmfc'] ?? '';
+        $productLine[] = $DBProductSettings['product_markup'] ?? '';
+
+        $quoteMethod = '';
+        // Added INstore and local quoting methods
+        if (isset($DBProductSettings['freight_enabled']) && $DBProductSettings['freight_enabled']) {
+            $quoteMethod = 'L';
+        } else if (isset($DBProductSettings['parcel_enabled']) && $DBProductSettings['parcel_enabled']) {
+            $quoteMethod = 'S';
+        } else if (isset($DBProductSettings['quote_as_local']) && $DBProductSettings['quote_as_local']) {
+            $quoteMethod = 'PD';
+        }
+
+        $productLine[] = $quoteMethod;
+        $productLine[] = $DBProductSettings['freight_class'] ?? '';
+        $productLine[] = isset($DBProductSettings['hazardous_enabled']) && $DBProductSettings['hazardous_enabled'] ? 1 : 0;
+        $productLine[] = isset($DBProductSettings['insurance']) && $DBProductSettings['insurance'] ? 1 : 
+        $nickname = $zip = $city = $state = $country = '';
+
+        if (isset($DBProductSettings['dropship_enabled']) && $DBProductSettings['dropship_enabled']) {
+            $location = $DBProductSettings['dropship_location'] ?? false;
+            if ($location) {
+                $dropShip = $dropShips[$location] ?? [];
+                $nickname = $dropShip['nickname'] ?? '';
+                $city = $dropShip['city'] ?? '';
+                $state = $dropShip['state'] ?? '';
+                $zip = $dropShip['zip_code'] ?? '';
+                $country = $dropShip['country'] ?? '';
+            }
+        }
+
+        $boxingProperty = '';
+        // Added Boxing Properties
+        if (isset($DBProductSettings['ship_own_package']) && $DBProductSettings['ship_own_package']) {
+            $boxingProperty = '1';
+        } else if (isset($DBProductSettings['allow_vertical']) && $DBProductSettings['allow_vertical']) {
+            $boxingProperty = '2';
+        } else if (isset($DBProductSettings['ship_multiple_package']) && $DBProductSettings['ship_multiple_package']) {
+            $boxingProperty = '3';
+        } else if (isset($DBProductSettings['ship_multiple_package']) && !$DBProductSettings['ship_multiple_package'] && 
+                isset($DBProductSettings['ship_own_package']) && !$DBProductSettings['ship_own_package'] && 
+                isset($DBProductSettings['allow_vertical']) && !$DBProductSettings['allow_vertical']) {
+            $boxingProperty = '0';
+        }
+
+        $productLine[] = $nickname;
+        $productLine[] = $zip;
+        $productLine[] = $city;
+        $productLine[] = $state;
+        $productLine[] = $country;
+        $productLine[] = $boxingProperty;
+        $productLine[] = isset($DBProductSettings['own_pallet']) && $DBProductSettings['own_pallet'] ? 1 : 0;
+        $productLine[] = isset($DBProductSettings['pallet_vertical_rotation']) && $DBProductSettings['pallet_vertical_rotation'] ? 1 : 0;
+        
+        return $productLine;
+    }
+
     // Create CSV export download link for display on the dashboard of the app
     public function createCSVDownloadLink($exportProductId,$hash)
     {  
