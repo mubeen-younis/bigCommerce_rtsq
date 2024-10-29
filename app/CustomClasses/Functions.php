@@ -1607,17 +1607,6 @@ class Functions
         return ['isLtl' => $isLtlRate && !$isSmallRate, 'IsLtlSmall' => $isLtlRate && $isSmallRate];
     }
 
-    public static function getAccessCode($code)
-    {   
-        $accessCode = '';
-        if(!empty($code)){
-            if(strpos($code, '+LAD')){
-
-            }
-        }
-        return $accessCode;
-    }
-
     public static function findCheapestQuotes($data, $quotes)
     {
         // Calculate min rate for each index
