@@ -12,9 +12,10 @@ use App\Http\Controllers\ShippingRuleController;
 
 class QuotesResults
 {
-    public function __construct()
+    public function __construct($suppressParcelRates = [])
     {
         $this->CompileQuotes = new CompileQuotes();
+        $this->SuppressParcelRates = $suppressParcelRates;
     }
 
 
@@ -191,6 +192,9 @@ class QuotesResults
 
         foreach ($shipments as $origin => $quote) {
 
+            if(in_array($origin, $this->SuppressParcelRates)){
+                continue;
+            }
             if ((isset($quote['severity']) || (isset($quote['q']) && empty($quote['q'])) || (!isset($quote['q']) && !empty($quote['InstorPickupLocalDelivery'])))) {
                 $allQuotes = $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);
                 $returnResp['resp'] = $allQuotes;

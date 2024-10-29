@@ -48,6 +48,7 @@ class Shipping
         $this->multiOrigins = false;
         $this->dbscRates = [];
         $this->dbscOrdWid = [];
+        $this->SuppressParcelRates = [];
 
     }
 
@@ -186,7 +187,7 @@ class Shipping
         if (empty($requestArr)) {
             return [];
         }
-        $SuppressParcelRates = isset($requestArr['SuppressParcelRates']) ? $requestArr['SuppressParcelRates'] : false;
+        $this->SuppressParcelRates = isset($requestArr['SuppressParcelRates']) ? $requestArr['SuppressParcelRates'] : [];
         unset($requestArr['SuppressParcelRates']);
         $url = Constant::QUOTES_URL;
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
@@ -230,7 +231,7 @@ class Shipping
             $freeRNL = true;
         }
         $quotesFromWs = $quotes ?? [];
-        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $package['items'], $SuppressParcelRates, $store_id, $totalHazmatBoxes);
+        $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $package['items'], $this->SuppressParcelRates, $store_id, $totalHazmatBoxes);
 
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
@@ -421,7 +422,7 @@ class Shipping
 
     private function makeMultishipmentSmallLtl($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr, $storeId)
     {
-        $ltlSmallCompileQuotes = new LtlSmallCompileQuotes();
+        $ltlSmallCompileQuotes = new LtlSmallCompileQuotes($this->SuppressParcelRates);
         /*
          * Need to add entry if every carrier here as well
          * there is some caompatibility code of multi shipment here

@@ -8,7 +8,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    update-webhook-fucntionality:
+    update-multishipment-functionality:
       - step:
           caches:
             - composer
