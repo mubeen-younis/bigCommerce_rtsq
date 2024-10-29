@@ -18,7 +18,7 @@ use App\Models\NestingItemsDetail;
 use App\CustomClasses\Functions;
 use stdClass;
 use App\CustomClasses\BigCommerceFunctions;
-
+use App\Http\Controllers\GetRatesController;
 
 class ProductSettingController extends Controller
 {
@@ -40,6 +40,14 @@ class ProductSettingController extends Controller
     {
         set_time_limit(0);
         Log::info('started sync process');
+        // return back due to store plan expired
+        $GetRatesController = new GetRatesController();
+        if (!$GetRatesController->storePlanStatus($request['store_id'])) {
+            return response()->json(['error' => true,
+                    'data' => [],
+                    'message' => 'Your current plan has expired. Please renew your plan.',
+                ], 200);
+        }
         $isSyncinProgress = ImportProductsModel::where('store_id', $request['store_id'])->where('status', '=', 1)->where('created_at', '>', Carbon::now()->subDay()->toDateTimeString())->exists();
         if (!$isSyncinProgress) {
             $importPrdModel = new ImportProductsModel();
@@ -1048,12 +1056,19 @@ class ProductSettingController extends Controller
             //allow only create/update orders actions
             if ($scope == "store/sku/deleted") {
                 ProductSetting::where('source_product_id', $productId)->where('variant_id', $variant_id)->where('store_id', $store->id)->delete();
-                return response()->json(true);
+                return response()->json(true, 200);
             }
             $onlyScopes = ['store/sku/created', 'store/sku/updated'];
             if (empty($store) || !in_array($scope, $onlyScopes)) {
-                return response()->json(true);
+                return response()->json(true, 200);
             }
+
+            // webhook call return back due to store plan expired
+            $GetRatesController = new GetRatesController();
+            if (!$GetRatesController->storePlanStatus($store->id)) {
+                return response()->json(true, 200);
+            }
+
             /*
              * get variant details from bigcommerce
              * update details and save product into db
@@ -1080,10 +1095,10 @@ class ProductSettingController extends Controller
                 $this->saveProducts->setVariantNullProduct($product, $store->id);
                 $this->saveProducts->saveProduct($product, $store->id);
             }
-
+            return response()->json(true, 200);
         } catch (\Exception $exception) {
             Log::info('Sku Webhook Exception ' . json_encode([$exception->getMessage(), $exception->getLine()]));
-
+            return response()->json(true, 200);
         }
 
     }

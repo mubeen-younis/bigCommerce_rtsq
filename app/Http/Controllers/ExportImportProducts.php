@@ -25,6 +25,7 @@ use App\CurlRequest;
 use Carbon\Carbon;
 use App\CustomClasses\Functions;
 use App\Http\Controllers\GetRatesController as ProductSettings;
+use App\Http\Controllers\GetRatesController;
 
 class ExportImportProducts extends Controller
 {
@@ -39,6 +40,15 @@ class ExportImportProducts extends Controller
 
     public function exportProductsTemplate(Request $request)
     {
+        // return back due to store plan expired
+        $GetRatesController = new GetRatesController();
+        if (!$GetRatesController->storePlanStatus($request['store_id'])) {
+            return response()->json(['error' => true,
+                    'data' => [],
+                    'message' => 'Your current plan has expired. Please renew your plan.',
+                ], 200);
+        }
+
         if (isset($request['onlyResponse']) && $request['onlyResponse'] === true) {
             $productsChunk = ProductSetting::where('store_id', $request['store_id']);
             if (!$productsChunk->count()) {
@@ -62,7 +72,7 @@ class ExportImportProducts extends Controller
     }
 
     public function createExportData($request)
-    {
+    {   
         $locations = Locations::where('store_id', $request['store_id'])->where('type', 2)->get()->toArray();
         $storeHash = $request['store_hash'] ?? null;
         $weightDimensionUnits = $this->getweightDimensionUnits($storeHash);
@@ -392,6 +402,16 @@ class ExportImportProducts extends Controller
         ini_set('memory_limit', '-1');
         try {
             Log::info('started import products process');
+
+            // return back due to store plan expired
+            $GetRatesController = new GetRatesController();
+            if (!$GetRatesController->storePlanStatus($request['store_id'])) {
+                return response()->json(['error' => true,
+                    'data' => [],
+                    'message' => 'Your current plan has expired. Please renew your plan.',
+                ], 200);
+            }
+
             $delay = 2;
             $data['filename'] = $request['filename'];
             $data['firstHeader'] = $request['firstHeader'];
