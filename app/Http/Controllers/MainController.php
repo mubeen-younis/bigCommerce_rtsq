@@ -395,7 +395,7 @@ class MainController extends BaseController
             // Update,delete,create from  webhook
             $scope = $postData['scope'];
             $storeID = Store::where('hash', $storeHash)->first();
-            if ($storeID === null || ($storeID->app_status == 0)) {
+            if ($storeID->id === null || ($storeID->app_status == 0)) {
                 return response()->json(true, 200);
             }
             // webhook call return back due to store plan expired
@@ -404,16 +404,20 @@ class MainController extends BaseController
                 return response()->json(true, 200);
             }
 
-            $toRequest['store_id'] = $storeID->id;
-            $toRequest['store_name'] = $storeHash;
-            $toRequest['product_id'] = $productId;
             // If product is deleted through webhook
             if ($scope == "store/product/deleted") {
                 ProductSetting::where('source_product_id', $productId)->where('store_id', $storeID->id)->delete();
                 return response()->json(true, 200);
             }
-            $prodSetCon = new ProductSettingController();
-            $prodSetCon->getSingleProductFromApi($toRequest, $scope);
+
+            //  Below commit code use for create/update product through webhooks
+            // $toRequest['store_id'] = $storeID->id;
+            // $toRequest['store_name'] = $storeHash;
+            // $toRequest['product_id'] = $productId;
+            
+            // $prodSetCon = new ProductSettingController();
+            // $prodSetCon->getSingleProductFromApi($toRequest, $scope);
+
             return response()->json(true, 200);
         } catch (\Exception $exception) {
             Log::info('Products data Exception ' . $exception->getMessage());

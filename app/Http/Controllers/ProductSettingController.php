@@ -1053,15 +1053,6 @@ class ProductSettingController extends Controller
             // Update,delete,create from  webhook
             $scope = $postData['scope'];
             $store = Store::where('hash', $storeHash)->first();
-            //allow only create/update orders actions
-            if ($scope == "store/sku/deleted") {
-                ProductSetting::where('source_product_id', $productId)->where('variant_id', $variant_id)->where('store_id', $store->id)->delete();
-                return response()->json(true, 200);
-            }
-            $onlyScopes = ['store/sku/created', 'store/sku/updated'];
-            if (empty($store) || !in_array($scope, $onlyScopes)) {
-                return response()->json(true, 200);
-            }
 
             // webhook call return back due to store plan expired
             $GetRatesController = new GetRatesController();
@@ -1069,10 +1060,21 @@ class ProductSettingController extends Controller
                 return response()->json(true, 200);
             }
 
+            //allow only create/update orders actions
+            if ($scope == "store/sku/deleted") {
+                ProductSetting::where('source_product_id', $productId)->where('variant_id', $variant_id)->where('store_id', $store->id)->delete();
+                return response()->json(true, 200);
+            }
+
             /*
              * get variant details from bigcommerce
-             * update details and save product into db
-             * */
+             * update details and save product into db through webhooks
+             * Below commit code will use in future
+
+            $onlyScopes = ['store/sku/created', 'store/sku/updated'];
+            if ($store->id === null || !in_array($scope, $onlyScopes)) {
+                return response()->json(true, 200);
+            }
             $storeToken = $this->mainController->getCustAccessTok($store->id);
             $storeUrl = 'https://api.bigcommerce.com/stores/' . $storeHash . '/v3/catalog/products/' . $productId . '/variants' . '/' . $variant_id;
             $headers[] = 'X-Auth-Client: ' . $this->mainController->getAppClientId();
@@ -1094,7 +1096,8 @@ class ProductSettingController extends Controller
                 $product['id'] = $variant['product_id'];
                 $this->saveProducts->setVariantNullProduct($product, $store->id);
                 $this->saveProducts->saveProduct($product, $store->id);
-            }
+            } * */
+
             return response()->json(true, 200);
         } catch (\Exception $exception) {
             Log::info('Sku Webhook Exception ' . json_encode([$exception->getMessage(), $exception->getLine()]));
