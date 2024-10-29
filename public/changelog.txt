@@ -1,3 +1,7 @@
+= 2.2.26 2024-10-29 =
+
+* Update - Update multishipment functionality (Ticket:2509435914) [#492] (https://bitbucket.org/eniture/big-commerce/pull-requests/492)
+
 = 2.2.25 2024-10-10 =
 
 * Update - update google api url with ws remote url, add google lookup data cache functionality (Shafique sir + Paul Instructions) [#491] (https://bitbucket.org/eniture/big-commerce/pull-requests/491)
