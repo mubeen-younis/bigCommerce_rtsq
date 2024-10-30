@@ -20,7 +20,7 @@ pipelines:
                 MODE: 'command'
                 COMMAND: '/var/www/html/bigcommerce/bc/remote-script.sh'
 
-    feature/google-lookup-cache:
+    update-prod-settings-working:
       - step:
           caches:
             - composer
