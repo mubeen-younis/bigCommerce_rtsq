@@ -519,7 +519,7 @@ class ProductSettingController extends Controller
                         $resp[$key]['height'] = isset($product['height']) ? $product['height'] : null ?? null;
                         $resp[$key]['price'] = isset($product['price']) ? $product['price'] : null ?? null;
                         $resp[$key]['brand_id'] = isset($product['brand_id']) && !empty($product['brand_id']) ? $product['brand_id'] : null ?? null;
-                        $resp[$key]['categories_id'] =  isset($product['categories']) && !empty($product['categories']) ? json_encode($product['categories']) : '' ?? '';
+                        $resp[$key]['categories_id'] =  isset($product['categories']) && !empty($product['categories']) ? $product['categories'] : [] ?? [];
                     }
                 }
                 $products = $this->isLtlParcelBothEnabled($resp, $request);
@@ -541,14 +541,6 @@ class ProductSettingController extends Controller
         $brandArray = [];
         $storeSettings = $this->productSettings->getStoreSettings($request['store_id']);
         
-        $uniqueBrandIds = collect($products)->unique('brand_id')->values()->all();
-            
-            foreach($uniqueBrandIds as $product){
-                
-                $brandName = $this->productBrand($request, $product) ?? '';
-                $brandArray['brand_' . $product['brand_id']] = $brandName;
-
-            }
 
         foreach($products as $key => $product){
             $freightEnabled = $parcelEnabled = false;
@@ -624,67 +616,9 @@ class ProductSettingController extends Controller
             }
             $product['settings'] = json_encode($settings) ?? '';
             $products[$key] = $product;
-
-            $products[$key]['brand_name'] = $brandArray['brand_' . $product['brand_id']] ?? '';
-            $products[$key]['category_name'] = $this->productCategory($request, $product) ?? '';
         }
 
         return $products;
-    }
-
-    public function productBrand($request, $product)
-    {
-        $store = Store::where('hash', $request['store_hash'])->first();
-        if (empty($store)) {
-            return [];
-        }
-        $headers[] = 'X-Auth-Token: ' . $store->access_token;
-        $headers[] = 'Content-Type: application/json';
-        $headers[] = 'Accept: application/json';
-        $endpoint = "https://api.bigcommerce.com/stores/" . $store->hash . "/v3/catalog/brands/" . $product['brand_id'];
-        $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
-        
-        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
-            $brand = json_decode($response['response'], true);
-            return $brand['data']['name'] ?? '';
-        }
-    }
-
-    public function productCategory($request, $product)
-    {
-        $categoriesNames = [];
-        $categories = json_decode($product['categories_id']) ?? [];
-        $store = Store::where('hash', $request['store_hash'])->first();
-
-        if (empty($store)) {
-            return [];
-        }
-
-        foreach ($categories as $category) {
-
-            if (isset($this->categoryArray['category_' . $category])) {
-                
-                $categoriesNames[] = $this->categoryArray['category_' . $category];
-                continue;
-            }
-
-            $headers[] = 'X-Auth-Token: ' . $store->access_token;
-            $headers[] = 'Content-Type: application/json';
-            $headers[] = 'Accept: application/json';
-            $endpoint = "https://api.bigcommerce.com/stores/" . $store->hash . "/v3/catalog/categories/" . $category;
-            $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
-
-            $name = null;
-            if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
-                $response = json_decode($response['response'], true);
-                $name = $response['data']['name'] ?? null;
-                $categoriesNames[] = $name;
-            }
-            $this->categoryArray['category_' . $category] = $name;
-
-        }
-
-        return $categoriesNames;
     }
 
     public function editProduct(Request $request)
