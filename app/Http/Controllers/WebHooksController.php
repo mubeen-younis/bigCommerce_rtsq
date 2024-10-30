@@ -40,8 +40,8 @@ class WebHooksController extends Controller
         $this->curlRequest = new CurlRequest();
         $this->mainController = new MainController();
         $this->orderWebHooks = ['store/order/created'];
-        $this->productWebHooks = [/*'store/product/created',*/ 'store/product/updated', 'store/product/deleted'];
-        $this->skuWebHooks = [/*'store/sku/created',*/ 'store/sku/updated', 'store/sku/deleted'];
+        $this->productWebHooks = [/*'store/product/created', 'store/product/updated',*/ 'store/product/deleted'];
+        $this->skuWebHooks = [/*'store/sku/created', 'store/sku/updated', 'store/sku/deleted'*/];
         $this->webHookRequests = [];
         $this->webhookEndpoint = '';
         $this->headers = [];
