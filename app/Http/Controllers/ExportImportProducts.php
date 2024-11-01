@@ -449,6 +449,14 @@ class ExportImportProducts extends Controller
                     } catch (\Exception $exception) {
                         if(isset($product['Product Id']) && isset($product['Variant Id'])){
                             $exceptionProducts[] = $product['Product Id'] . ' : ' . $product['Variant Id'] . ' => ' . $exception->getMessage() ?? '';
+                        } else {
+                            $error = [
+                                'line' => $exception->getLine(),
+                                'message' => $exception->getMessage(),
+                                'file' => $exception->getFile(),
+                            ];
+
+                            $exceptionProducts[] = $error;
                         }
     
                         if(Functions::isEnabledLogs($request['store_hash'])){
