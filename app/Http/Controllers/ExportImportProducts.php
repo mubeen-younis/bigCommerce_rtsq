@@ -494,7 +494,7 @@ class ExportImportProducts extends Controller
 
     function getUpdateData($product, $indexes, $store_id, $access_token, $hash)
     {
-        $update = []; $shipMultiPackage = null;
+        $update = [];
         if (isset($indexes['id']) && $indexes['id'] && isset($indexes['variantid']) && $indexes['variantid']) {
             $key = $indexes['id'];
             $variant_key = $indexes['variantid'];
