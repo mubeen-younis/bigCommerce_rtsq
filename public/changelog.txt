@@ -1,3 +1,7 @@
+= 2.2.27 2024-11-04 =
+
+* Update - Create a table and functionality to record CSV import entry. (Instruction Azhar sir) [#493] (https://bitbucket.org/eniture/big-commerce/pull-requests/493)
+
 = 2.2.26 2024-10-29 =
 
 * Update - Update multishipment functionality (Ticket:2509435914) [#492] (https://bitbucket.org/eniture/big-commerce/pull-requests/492)
