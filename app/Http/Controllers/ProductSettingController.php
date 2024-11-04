@@ -433,6 +433,7 @@ class ProductSettingController extends Controller
     {
         $products[$key]['name'] = isset($product['name']) ? $product['name'] : null ?? null;
         $products[$key]['sku'] = isset($product['sku']) ? $product['sku'] : null ?? null;
+        $products[$key]['price'] = isset($product['price']) ? $product['price'] : $products[$key]['price'] ?? null;
         $products[$key]['weight'] = isset($product['weight']) ? $product['weight'] : null ?? null;
         $products[$key]['length'] = isset($product['depth']) ? $product['depth'] : null ?? null;
         $products[$key]['width'] = isset($product['width']) ? $product['width'] : null ?? null;
