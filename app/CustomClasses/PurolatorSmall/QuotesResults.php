@@ -251,7 +251,7 @@ class QuotesResults
             $shipmentCount++;
         }
 
-        if ($isMultiShipment) {
+        if ($isMultiShipment && count($multiShipmentQuotes) > 1) {
             $originQuotesMulti = [];
             $multiShipPrice = 0;
             foreach ($originQuotes as $shipmentKey => $shipment) {
@@ -287,6 +287,7 @@ class QuotesResults
                 $allQuotes = $this->CompileQuotes->inStoreLocalDeliveryQuotes($originQuotes, $inStoreLdData, $allOrigins);
                 $resp = $allQuotes;
             }
+            unset($returnResp['isMultiShipment']);
             $returnResp['resp'] = $resp;
             return $returnResp;
         }
