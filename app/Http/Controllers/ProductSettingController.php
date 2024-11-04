@@ -720,15 +720,13 @@ class ProductSettingController extends Controller
             $product->save();
             $prd['id'] = $product->id;
             // updating Nesting Items details
-            if(isset($prd['is_nesting_enabled']) && $prd['is_nesting_enabled']){
-                $nestingItemsDetails = $this->updateNestingItemsDetail($prd, $request['store_id']);
-                if(!empty($nestingItemsDetails)){
-                    $product->nested_diamensions = $prd['nested_diamensions'] ?? 0;
-                    $product->nesting_percentage = $prd['nesting_percentage'] ?? null;
-                    $product->stacking_property = $prd['stacking_property'] ?? 0;
-                    $product->max_nested_items = $prd['max_nested_items'] ?? null;
-                    $product->is_nesting_enabled = $prd['is_nesting_enabled'] ?? 0;
-                }
+            $nestingItemsDetails = $this->updateNestingItemsDetail($prd, $request['store_id']);
+            if(!empty($nestingItemsDetails)){
+                $product->nested_diamensions = $prd['nested_diamensions'] ?? 0;
+                $product->nesting_percentage = $prd['nesting_percentage'] ?? null;
+                $product->stacking_property = $prd['stacking_property'] ?? 0;
+                $product->max_nested_items = $prd['max_nested_items'] ?? null;
+                $product->is_nesting_enabled = $prd['is_nesting_enabled'] ?? 0;
             }
 
             $prd['store_id'] = $request['store_id'];
