@@ -345,7 +345,7 @@ class GetRatesController extends Controller
                     'shipMultiplePackage' => $product_settings['ship_multiple_package'] ?? 0,
                     'shipBinAlone' => $shipBinAlone,
                     'lineItemId' => $product['product_id'] ?? '',
-                    'lineItemPrice' => $product_price ?? 0,
+                    'lineItemPrice' => $product['declared_value']['amount'] ?? $product['discounted_price']['amount'] ?? 0,
                     'lineItemName' => $product['name'] ?? '',
                     'lineItemLength' => number_format($length, 2, '.', ''),
                     'lineItemWidth' => number_format($width, 2, '.', ''),
@@ -370,7 +370,7 @@ class GetRatesController extends Controller
                     'lineItemHSCode' => isset($product_settings['hs_code']) && !empty($product_settings['hs_code']) ? $product_settings['hs_code'] : '',
                     'lineItemNMFC' => isset($product_settings['nmfc']) && !empty($product_settings['nmfc']) ? $product_settings['nmfc'] : '',
                 ];
-
+                
                 if (!$details['items'][$key]['shipMultiplePackage']) {
                     if (
                         (blank($details['items'][$key]['lineItemLength']) || $details['items'][$key]['lineItemLength'] <= 0) ||
