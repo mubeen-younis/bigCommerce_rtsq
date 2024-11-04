@@ -339,6 +339,7 @@ class ProductSettingController extends Controller
                             foreach ($DBproducts as $key => $DBvariant) {
 
                                 $variant = collect($variants)->firstWhere('id', $DBvariant->variant_id);
+                                $variant = $this->setVariantDimensions($variant, $product);
                                 $products = $this->getProductIndex($variant, $DBproducts, $key);
                                 $products[$key]['name'] = isset($product['name']) ? $product['name'] : '' ?? '';
                             }
@@ -348,6 +349,7 @@ class ProductSettingController extends Controller
                         if (count($variants)) {
                             foreach ($variants as $key => $variant) {
                                 
+                                $variant = $this->setVariantDimensions($variant, $product);
                                 $products = $this->getProductIndex($variant, $products, $key);
                                 $products[$key]['name'] = isset($product['name']) ? $product['name'] : '' ?? '';
                                 $products[$key]['source_product_id'] = isset($variant['product_id']) ? $variant['product_id'] : '' ?? '';
@@ -403,6 +405,18 @@ class ProductSettingController extends Controller
         ], 200);
     }
 
+    public function setVariantDimensions($variant, $product)
+    {
+        $variant['price'] = empty($variant['price']) ? $product['price'] : $variant['price'] ?? '';
+        $variant['weight'] = empty($variant['weight']) ? $product['weight'] : $variant['weight'] ?? '';
+        $variant['depth'] = empty($variant['depth']) ? $product['depth'] : $variant['depth'] ?? '';
+        $variant['width'] = empty($variant['width']) ? $product['width'] : $variant['width'] ?? '';
+        $variant['height'] = empty($variant['height']) ? $product['height'] : $variant['height'] ?? '';
+
+        return $variant;
+
+    }
+
     public function setShippingMethod($product, $storeId)
     {
         $parcelEnabled = $freightEnabled = false;
@@ -433,7 +447,7 @@ class ProductSettingController extends Controller
     {
         $products[$key]['name'] = isset($product['name']) ? $product['name'] : null ?? null;
         $products[$key]['sku'] = isset($product['sku']) ? $product['sku'] : null ?? null;
-        $products[$key]['price'] = isset($product['price']) ? $product['price'] : $products[$key]['price'] ?? null;
+        $products[$key]['price'] = !empty($product['price']) ? $product['price'] : null ?? null;
         $products[$key]['weight'] = isset($product['weight']) ? $product['weight'] : null ?? null;
         $products[$key]['length'] = isset($product['depth']) ? $product['depth'] : null ?? null;
         $products[$key]['width'] = isset($product['width']) ? $product['width'] : null ?? null;
@@ -679,7 +693,6 @@ class ProductSettingController extends Controller
                 $product->sku = $prd['sku'];
                 $product->brand_id = isset($apiProduct['brand_id']) && !empty($apiProduct['brand_id']) ? $apiProduct['brand_id'] : null ?? null;
                 $product->categories_id = isset($apiProduct['categories']) && !empty($apiProduct['categories']) ? json_encode($apiProduct['categories']) : null ?? null;
-                $product->price = isset($apiProduct['price']) && !empty($apiProduct['price']) ? json_encode($apiProduct['price']) : null ?? null;
                 $product->product_type = isset($apiProduct['type']) ? $apiProduct['type'] : '' ?? '';
             }
 
