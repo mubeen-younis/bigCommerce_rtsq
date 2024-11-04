@@ -759,7 +759,7 @@ class ProductSettingController extends Controller
         $nestingItemsDetails->nesting_percentage = $product['nesting_percentage'] ?? null;
         $nestingItemsDetails->stacked_type = $product['stacked_type'] ?? 0;
         $nestingItemsDetails->max_nested_items = $product['max_nested_items'] ?? null;
-        $nestingItemsDetails->is_nesting_enabled = $product['is_nesting_enabled'] ? 1 : 0;
+        $nestingItemsDetails->is_nesting_enabled = isset($product['is_nesting_enabled']) && $product['is_nesting_enabled'] ? 1 : 0;
         $nestingItemsDetails->save();
         
         return $product;
