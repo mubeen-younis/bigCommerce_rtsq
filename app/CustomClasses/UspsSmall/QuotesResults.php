@@ -109,7 +109,7 @@ class QuotesResults
         }
 
         // Check for multi-shipment, finding lowest price in each shipment and adding them for multi shipment
-        if ($isMultiShipment) {
+        if ($isMultiShipment && count($multiShipmentQuotes) > 1) {
             $multishipmentCheckoutQuotes = [];
             $multiShipmentPrice = 0;
 
@@ -151,7 +151,7 @@ class QuotesResults
             $allQuotes = $this->CompileQuotes->inStoreLocalDeliveryQuotes($originQuotes, $inStoreLdData, $allOrigins);
             $resp = $allQuotes;
         }
-
+        unset($returnResp['isMultiShipment']);
         $returnResp['resp'] = isset($resp) && !empty($resp) ? $resp : [];
         return $returnResp;
     }

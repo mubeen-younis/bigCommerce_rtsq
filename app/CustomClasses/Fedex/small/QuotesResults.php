@@ -354,7 +354,7 @@ class QuotesResults
         }
         // $multiShipmentQuotes
         // Check for mukti shipment finding lowest price in each shipment and adding them for multi shipment
-        if ($this->isMultiShipment) {
+        if ($this->isMultiShipment && count($multiShipmentQuotes) > 1) {
             $originQuotesMulti = [];
             $multiShipPrice = 0;
             if (isset($originQuotes)) {
@@ -391,6 +391,7 @@ class QuotesResults
                 'resp' => $resp ?? [],
                 'isMultiShipment' => $isMultiShipment
             ];
+            unset($returnResp['isMultiShipment']);
             return $returnResp;
         }
         /**

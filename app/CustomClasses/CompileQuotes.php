@@ -1194,7 +1194,7 @@ class CompileQuotes
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
-        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) >= 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
+        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $allQuotes,
@@ -1362,7 +1362,7 @@ class CompileQuotes
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
-        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) >= 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
+        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
 
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
@@ -1530,7 +1530,7 @@ class CompileQuotes
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
-        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) >= 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
+        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
 
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
@@ -1730,7 +1730,7 @@ class CompileQuotes
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
 
-        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) >= 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
+        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $this->arrangeOwnFreight($allQuotes),
@@ -2003,7 +2003,7 @@ class CompileQuotes
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
-        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) >= 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
+        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $this->arrangeOwnFreight($allQuotes),
@@ -2366,7 +2366,7 @@ class CompileQuotes
             $hatShipments = Functions::setEmptyHATQuotesArray($allOrigins, $inStoreLdData, $hatShipments);
         }
 
-        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) >= 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
+        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
 
             if (isset($hatShipments[0]['serviceDesc']) && !empty($hatShipments)) {
                 $allQuotes = $this->forceChangeTitle($allQuotes);
@@ -2608,7 +2608,7 @@ class CompileQuotes
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
-        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) >= 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
+        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
 
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
@@ -2847,7 +2847,7 @@ class CompileQuotes
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
-        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) >= 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
+        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
 
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
@@ -3073,7 +3073,7 @@ class CompileQuotes
             $HAT = Functions::setEmptyHATQuotesArray($allOrigins, $inStoreLdData, $HAT);
         }
         
-        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) >= 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
+        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
             if (!empty($HAT)) {
                 $allQuotes = $this->forceChangeTitle($allQuotes);
                 $hatLabel = explode('|', $HAT[0]['serviceDesc']);
@@ -3272,7 +3272,7 @@ class CompileQuotes
             $hatShipments = Functions::setEmptyHATQuotesArray($allOrigins, $inStoreLdData, $hatShipments);
         }
 
-        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) >= 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
+        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
 
             if (!empty($hatShipments)) {
                 $allQuotes = $this->forceChangeTitle($allQuotes);
@@ -3553,7 +3553,7 @@ class CompileQuotes
             $HATS = Functions::setEmptyHATQuotesArray($allOrigins, $inStoreLdData, $HATS);
         }
 
-        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) >= 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
+        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
             if (!empty($HATS)) {
                 $allQuotes = $this->forceChangeTitle($allQuotes);
                 $hatLabel = explode('|', $HATS[0]['serviceDesc']);
@@ -3703,7 +3703,7 @@ class CompileQuotes
         }
         // $multiShipmentQuotes
         // Check for mukti shipment finding lowest price in each shipment and adding them for multi shipment
-        if ($this->isMultiShipment) {
+        if ($this->isMultiShipment && count($multiShipmentQuotes) > 1) {
             $originQuotesMulti = $multiShipmentQuote = [];
             $multiShipPrice = 0;
             foreach ($originQuotes as $shipmentKey => $shipment) {
@@ -3939,7 +3939,7 @@ class CompileQuotes
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
-        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) >= 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
+        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
 
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
@@ -4185,7 +4185,7 @@ class CompileQuotes
         // }
 
         /* Multishipment quotes with LGD  */
-        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) >= 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
+        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
             if (!empty($hatShipments)) {
                 $allQuotes = $this->forceChangeTitle($allQuotes);
                 $hatLabel = explode('|', $hatShipments[0]['serviceDesc']);
@@ -4628,7 +4628,7 @@ class CompileQuotes
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
 
-        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) >= 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1) || (!empty($multiShipmentQuotes['Truckload']) && count($multiShipmentQuotes['Truckload']) > 1))) {
+        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1) || (!empty($multiShipmentQuotes['Truckload']) && count($multiShipmentQuotes['Truckload']) > 1))) {
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $allQuotes,
@@ -4796,7 +4796,7 @@ class CompileQuotes
         }
 
         /* Multishipment quotes with LGD  */
-        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) >= 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
+        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $allQuotes,
@@ -5006,7 +5006,7 @@ class CompileQuotes
         }
 
         /* Multishipment quotes with LGD  */
-        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) >= 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
+        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
 
             if (!empty($hatShipments)) {
                 $allQuotes = $this->forceChangeTitle($allQuotes);
@@ -5214,7 +5214,7 @@ class CompileQuotes
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
 
-        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) >= 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
+        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $allQuotes,
@@ -5416,7 +5416,7 @@ class CompileQuotes
         }
 
         /* Multishipment quotes with LGD  */
-        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) >= 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
+        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $allQuotes,
@@ -5529,7 +5529,7 @@ class CompileQuotes
         }
 
         /* Multishipment quotes with LGD  */
-        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) >= 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
+        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $allQuotes,
@@ -5672,7 +5672,7 @@ class CompileQuotes
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
 
-        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) >= 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1) || (!empty($multiShipmentQuotes['Truckload']) && count($multiShipmentQuotes['Truckload']) > 1))) {
+        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1) || (!empty($multiShipmentQuotes['Truckload']) && count($multiShipmentQuotes['Truckload']) > 1))) {
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $allQuotes,
@@ -5821,7 +5821,7 @@ class CompileQuotes
         if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
             $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
         }
-        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) >= 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
+        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
             $allQuotes = $this->forceChangeTitle($allQuotes);
             $resp = [
                 'checkoutQuotes' => $allQuotes,
