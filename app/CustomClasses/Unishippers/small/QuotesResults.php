@@ -9,9 +9,10 @@ use App\Http\Controllers\ShippingRuleController;
 
 class QuotesResults
 {
-    public function __construct()
+    public function __construct($suppressParcelRates = [])
     {
         $this->CompileQuotes = new CompileQuotes();
+        $this->SuppressParcelRates = $suppressParcelRates;
     }
 
     public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $isSbsEnable, $isMultiShipment, $items, $storeId = '', $carrierName = '', $totalHazmatBoxes)
@@ -46,6 +47,11 @@ class QuotesResults
         $shipmentCount = 0;
         $count = 0;
         foreach ($shipments as $origin => $quote) {
+            
+            if(in_array($origin, $this->SuppressParcelRates)){
+                continue;
+            }
+
             if (isset($quote['severity'])) {
                 return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -206,6 +212,11 @@ class QuotesResults
         $shipmentCount = 0;
         $count = 0;
         foreach ($shipments as $origin => $quote) {
+
+            if(in_array($origin, $this->SuppressParcelRates)){
+                continue;
+            }
+            
             if (isset($quote['severity'])) {
                 return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }

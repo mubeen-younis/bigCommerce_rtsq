@@ -8,7 +8,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    update-webhook-fucntionality:
+    save-csv-import-data:
       - step:
           caches:
             - composer

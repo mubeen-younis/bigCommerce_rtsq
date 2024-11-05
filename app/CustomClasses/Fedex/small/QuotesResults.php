@@ -9,12 +9,14 @@ use App\CustomClasses\CompileQuotes;
 use App\CustomClasses\Functions;
 use Illuminate\Support\Str;
 use App\Http\Controllers\ShippingRuleController;
+use Illuminate\Support\Facades\Log;
 
 class QuotesResults
 {
-    public function __construct()
+    public function __construct($suppressParcelRates = [])
     {
         $this->CompileQuotes = new CompileQuotes();
+        $this->SuppressParcelRates = $suppressParcelRates;
     }
 
 
@@ -235,6 +237,11 @@ class QuotesResults
         $shipmentCount = 0;
         $count = 0;
         foreach ($shipments as $origin => $quote) {
+            
+            if(in_array($origin, $this->SuppressParcelRates)){
+                continue;
+            }
+
             if ((isset($quote['severity']) || empty($quote) || !isset($quote['q']))) {
                 return ['resp' => $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins)];
             }
@@ -447,8 +454,9 @@ class QuotesResults
 
     public function toCheckInternationalQuote($quotes){
         if(isset($quotes['q'])){
+            
             foreach($quotes['q'] as $quote){
-                if (str_contains($quote['serviceType'], 'INTERNATIONAL')) {
+                if (isset($quote['serviceType']) && str_contains($quote['serviceType'], 'INTERNATIONAL')) {
                     $this->internationalQuotes = true;
                 }
             }
@@ -481,6 +489,7 @@ class QuotesResults
                 if ($serviceName == 'fedexAirServices') {
                     $isAir = true;
                 }
+
                 $this->toCheckInternationalQuote($quotes);
                 if (isset($quotes['q']) && !empty($quotes['q'])) {
                     foreach ($quotes['q'] as $key => $quote) {

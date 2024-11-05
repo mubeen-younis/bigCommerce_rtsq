@@ -26,6 +26,7 @@ use Carbon\Carbon;
 use App\CustomClasses\Functions;
 use App\Http\Controllers\GetRatesController as ProductSettings;
 use App\Http\Controllers\GetRatesController;
+use App\Models\CSVimportExport;
 
 class ExportImportProducts extends Controller
 {
@@ -422,8 +423,14 @@ class ExportImportProducts extends Controller
             $data['store_name'] = $request['store_name'];
             $data['path'] = public_path('import_files/' . $request['store_hash'] . '/' . $request['filename']);
 
+            $CSVimportPrdModel = new CSVimportExport();
+            $CSVimportPrdModel->store_id = $data['store_id'];
+            $CSVimportPrdModel->file_name = $data['filename'];
+            $CSVimportPrdModel->save();
+            $data['CSVinsertedId'] = $CSVimportPrdModel->id;
+
             ImportProductsJob::dispatch($data)->delay(Carbon::now()->addSeconds($delay));
-            unset($data['path']);
+            unset($data['path'], $data['CSVinsertedId']);
 
             Log::info('ended import products process');
 
@@ -433,6 +440,16 @@ class ExportImportProducts extends Controller
             ], 200);
 
         } catch (\Exception $exception) {
+
+            CSVimportExport::where('id', $data['CSVinsertedId'])->update([
+                'error_at_rows' => json_encode([
+                    'line' => $exception->getLine(),
+                    'message' => $exception->getMessage(),
+                    'file' => $exception->getFile(),
+                ]),
+                'status' => 3,
+            ]);
+
             Log::info(json_encode([
                 'line' => $exception->getLine(),
                 'message' => $exception->getMessage(),
@@ -486,10 +503,9 @@ class ExportImportProducts extends Controller
                         $this->getUpdateData($product, $indexes, $store_id, $store->access_token, $request['store_hash']);
     
                     } catch (\Exception $exception) {
-                        $exceptionProducts[] = [
-                            'productId' => $product['Product Id'] ?? '',
-                            'varientId' => $product['Variant Id'] ?? '',
-                        ];
+                        if(isset($product['Product Id']) && isset($product['Variant Id'])){
+                            $exceptionProducts[] = $product['Product Id'] . ' : ' . $product['Variant Id'] . ' => ' . $exception->getMessage() ?? '';
+                        }
     
                         if(Functions::isEnabledLogs($request['store_hash'])){
                             Log::info('CSV Products Exception Array: ' . json_encode($exceptionProducts));
@@ -502,12 +518,27 @@ class ExportImportProducts extends Controller
                     }
                 }
             }
+
+            CSVimportExport::where('id', $request['CSVinsertedId'])->update([
+                'total_rows'=> count($csvArray),
+                'error_at_rows' => json_encode($exceptionProducts),
+                'status' => count($exceptionProducts) == count($csvArray) ? 3 : (empty($exceptionProducts) ? 1 : 2),
+            ]);
     
             $this->ImportNotifyEmail($emailNotify);
             if(Functions::isEnabledLogs($request['store_hash'])){
                 Log::info('CSV Import Poducts Email Send.');
             }
         } catch (\Exception $exception) {
+            CSVimportExport::where('id', $request['CSVinsertedId'])->update([
+                'total_rows'=> count($csvArray),
+                'error_at_rows' => json_encode([
+                    'line' => $exception->getLine(),
+                    'message' => $exception->getMessage(),
+                    'file' => $exception->getFile(),
+                ]),
+                'status' => 3,
+            ]);
             Log::info(json_encode([
                 'line' => $exception->getLine(),
                 'message' => $exception->getMessage(),
