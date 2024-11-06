@@ -96,6 +96,10 @@ class ExportImportProducts extends Controller
             return [];
         }
         $comma = ",";
+
+        if(Functions::isEnabledLogs($request['store_hash'])){
+            Log::info('CSV export products from BC : ' . json_encode($productsChunk));
+        }
         
         try {
             if (!isset($request['rerunrequest'])) {
@@ -109,6 +113,11 @@ class ExportImportProducts extends Controller
             $folderNamePath = [];
             
             $productsChunk->chunk(2000)->each(function ($products, $chunkCount = 0) use ($request, $comma, $folderName, $dropShips, $weightUnit, $dimensionsUnit, $headers) {
+                
+                if(Functions::isEnabledLogs($request['store_hash'])){
+                    Log::info('CSV export products : ' . json_encode($products));
+                }
+
                 $fileName = $chunkCount++ . '-export.csv';
                 $filename = $folderName . '/' . $fileName;
                 $folderNamePath[] = $filename;
@@ -155,6 +164,10 @@ class ExportImportProducts extends Controller
         } catch (RequestException $e) {
             $statusCode = $e->getResponse()->getStatusCode();
             $errorMessage = "An error occurred.";
+
+            if(Functions::isEnabledLogs($request['store_hash'])){
+                Log::info('Exception on CSV export products: ' . json_encode($e->getResponse()));
+            }
 
             if ($e->hasResponse()) {
                 if ($statusCode != 500) {
