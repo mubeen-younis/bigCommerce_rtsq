@@ -73,8 +73,6 @@ class SubscriptionController extends Controller
     //*************************************
     public function savePaymentMethodInDB($returnCustomer, $storeId, $paymentMethods = [])
     {
-        // $fingerPrint = isset($returnCustomer->sources->data[0]->fingerprint) ? md5($returnCustomer->sources->data[0]->fingerprint) : null;
-        // $last4 = isset($returnCustomer->sources->data[0]->last4) ? encrypt($returnCustomer->sources->data[0]->last4) : null;
         $fingerPrint = isset($paymentMethods->data[0]->card->fingerprint) ? md5($paymentMethods->data[0]->card->fingerprint) : null;
         $last4 = isset($paymentMethods->data[0]->card->last4) ? encrypt($paymentMethods->data[0]->card->last4) : null;
         $paymentMethod = $fingerPrint != null ? PaymentMethod::whereStoreId($storeId)->whereCardFingerPrint($fingerPrint)->first() : null;
