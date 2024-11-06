@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\CustomClasses\BigCommerceFunctions;
 use App\Jobs\ImportProducts as ImportProductsJob;
+use App\Jobs\ExportProductsFromBCStore;
 use App\Jobs\ImportProductsNotification;
 use App\Models\Locations;
 use App\Models\ProductSetting;
@@ -32,11 +33,15 @@ class ExportImportProducts extends Controller
 {
     public $curlRequest;
     public $csvChunksLength;
+    public $mainController;
+    public $productSetting;
 
     public function __construct()
     {
         $this->curlRequest = new CurlRequest();
         $this->csvChunksLength = 20;
+        $this->mainController = new MainController();
+        $this->productSetting = new ProductSettingController();
     }
 
     public function exportProductsTemplate(Request $request)
@@ -49,10 +54,12 @@ class ExportImportProducts extends Controller
                     'message' => 'Your current plan has expired. Please renew your plan.',
                 ], 200);
         }
-
+        $request['store_token'] = $this->mainController->getCustAccessTok($request['store_id']);
+        $request['perpage'] = 2000;
+        
         if (isset($request['onlyResponse']) && $request['onlyResponse'] === true) {
-            $productsChunk = ProductSetting::where('store_id', $request['store_id']);
-            if (!$productsChunk->count()) {
+            $totalpages = $this->productSetting->importProductsGetPages($request);
+            if (count($totalpages) > 0) {
                 return response()->json(['error' => true,
                     'data' => [],
                     'message' => 'Products not available for import template',
@@ -68,12 +75,15 @@ class ExportImportProducts extends Controller
                 ], 200);
             }
         } else {
+            return ExportProductsFromBCStore::dispatch($request);
             return $this->createExportData($request);
         }
     }
 
     public function createExportData($request)
     {   
+        ini_set('memory_limit', '-1');
+        ini_set('max_execution_time', '0');
         $locations = Locations::where('store_id', $request['store_id'])->where('type', 2)->get()->toArray();
         $storeHash = $request['store_hash'] ?? null;
         $weightDimensionUnits = $this->getweightDimensionUnits($storeHash);
@@ -85,21 +95,8 @@ class ExportImportProducts extends Controller
             $dropShips[$location['id']] = $location;
         }
         
+        $totalpages = $this->productSetting->importProductsGetPages($request);
         $headers = BigCommerceFunctions::getHeaders($request['store_hash']);
-        $endpoint = BigCommerceFunctions::$initalUrl . $request['store_hash'] . "/v3/catalog/products";
-        $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
-        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
-            $response = json_decode($response['response'], true);
-            $productsChunk = collect($response['data']);
-        }
-        if (!$productsChunk->count()) {
-            return [];
-        }
-        $comma = ",";
-
-        if(Functions::isEnabledLogs($request['store_hash'])){
-            Log::info('CSV export products from BC : ' . json_encode($productsChunk));
-        }
         
         try {
             if (!isset($request['rerunrequest'])) {
@@ -111,11 +108,27 @@ class ExportImportProducts extends Controller
             }
             $folderName = $request['folderName'];
             $folderNamePath = [];
-            
-            $productsChunk->chunk(2000)->each(function ($products, $chunkCount = 0) use ($request, $comma, $folderName, $dropShips, $weightUnit, $dimensionsUnit, $headers) {
-                
+            $chunkCount = 0;
+    
+            for ($page = 1; $page <= $totalpages; $page++) {
+    
+                $this->products = [];
+                $endpoint = BigCommerceFunctions::$initalUrl . $request['store_hash'] . "/v3/catalog/products?limit=" . $request['perpage'] . "&page=" . $page;
+                $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
+    
+                if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+                    $response = json_decode($response['response'], true);
+                    $this->products = collect($response['data']);
+                }
+    
+                if (!$this->products->count()) {
+                    return [];
+                }
+
+                $comma = ",";
+    
                 if(Functions::isEnabledLogs($request['store_hash'])){
-                    Log::info('CSV export products : ' . json_encode($products));
+                    Log::info('CSV export products from BC : ' . json_encode($this->products));
                 }
 
                 $fileName = $chunkCount++ . '-export.csv';
@@ -128,7 +141,7 @@ class ExportImportProducts extends Controller
                     fputs($fp, $line);
                 }
                 $ProductSettings = new ProductSettings();
-                foreach ($products as $key => $product) {
+                foreach ($this->products as $key => $product) {
                     // Check: if product variant id is null then the null variant id product will not add in CSV file.
                     if($product['base_variant_id'] == null){
                         $variantEndPoint = BigCommerceFunctions::$initalUrl . $request['store_hash'] . '/v3/catalog/products/' . $product['id'] . '/variants?limit=250' ;
@@ -153,7 +166,7 @@ class ExportImportProducts extends Controller
                         fputcsv($fp, $productLine);
                     }
                 }
-            });
+            }
 
             $isupdate = ExportProductsModel::find($request['exportProductsId'])->update(['status' => 1]);
             $this->makeZipWithFiles($folderName);
@@ -161,19 +174,24 @@ class ExportImportProducts extends Controller
             if($isupdate){
               return  $this->createCSVDownloadLink($request['exportProductsId'],$hash);
             }
-        } catch (RequestException $e) {
-            $statusCode = $e->getResponse()->getStatusCode();
-            $errorMessage = "An error occurred.";
+        } catch (\Exception $exception) {
 
             if(Functions::isEnabledLogs($request['store_hash'])){
-                Log::info('Exception on CSV export products: ' . json_encode($e->getResponse()));
+                Log::info(json_encode([
+                    'line' => $exception->getLine(),
+                    'message' => $exception->getMessage(),
+                    'file' => $exception->getFile(),
+                ]));
             }
 
-            if ($e->hasResponse()) {
-                if ($statusCode != 500) {
-                    echo $errorMessage = Psr7\str($e->getResponse());
-                }
-            }
+            return response()->json([
+                'error' => true,
+                'message' => [
+                    'line' => $exception->getLine(),
+                    'message' => $exception->getMessage(),
+                    'file' => $exception->getFile(),
+                ]
+            ], 200);
         }
     }
 
