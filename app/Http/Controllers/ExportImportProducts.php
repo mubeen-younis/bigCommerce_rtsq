@@ -59,7 +59,7 @@ class ExportImportProducts extends Controller
         
         if (isset($request['onlyResponse']) && $request['onlyResponse'] === true) {
             $totalpages = $this->productSetting->importProductsGetPages($request);
-            if (count($totalpages) > 0) {
+            if ($totalpages < 0) {
                 return response()->json(['error' => true,
                     'data' => [],
                     'message' => 'Products not available for import template',
