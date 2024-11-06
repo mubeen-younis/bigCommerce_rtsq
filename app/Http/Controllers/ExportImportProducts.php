@@ -42,6 +42,7 @@ class ExportImportProducts extends Controller
         $this->csvChunksLength = 20;
         $this->mainController = new MainController();
         $this->productSetting = new ProductSettingController();
+        $this->fileSize = 0;
     }
 
     public function exportProductsTemplate(Request $request)
@@ -126,7 +127,7 @@ class ExportImportProducts extends Controller
             }
             $folderName = $request['folderName'];
             $folderNamePath = [];
-            $chunkCount = 0;
+            $this->chunkCount = 0;
     
             for ($page = 1; $page <= $totalpages; $page++) {
     
@@ -149,17 +150,11 @@ class ExportImportProducts extends Controller
                     Log::info('CSV export products from BC : ' . json_encode($this->products));
                 }
 
-                $fileName = $chunkCount++ . '-export.csv';
-                $filename = $folderName . '/' . $fileName;
-                $folderNamePath[] = $filename;
-                $fp = fopen($filename, "w");
-                if (true) {
-                    $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (' . $dimensionsUnit . '), Width (' . $dimensionsUnit . '), Height (' . $dimensionsUnit . '), NMFC, Markup, Quote Method, Freight Class, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Boxing Properties, Ships Own Pallet, Pallet Vertical Rotation';
-                    $line .= "\n";
-                    fputs($fp, $line);
-                }
                 $ProductSettings = new ProductSettings();
                 foreach ($this->products as $key => $product) {
+                    if($this->fileSize < 1) {
+                        $fp = $this->setCSVfileSize($folderName, $weightUnit, $dimensionsUnit);
+                    }
                     // Check: if product variant id is null then the null variant id product will not add in CSV file.
                     if($product['base_variant_id'] == null){
                         $variantEndPoint = BigCommerceFunctions::$initalUrl . $request['store_hash'] . '/v3/catalog/products/' . $product['id'] . '/variants?limit=250' ;
@@ -167,8 +162,12 @@ class ExportImportProducts extends Controller
                         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
                             $response = json_decode($response['response'], true);
                             $productsVar = collect($response['data']);
-                            
+
                             foreach($productsVar as $variant){
+                                if($this->fileSize < 1) {
+                                    $fp = $this->setCSVfileSize($folderName, $weightUnit, $dimensionsUnit);
+                                }
+                                $this->fileSize--;
                                 $variant['base_variant_id'] = $variant['id'];
                                 $variant['id'] = $product['id'];
                                 $variant['name'] = $product['name'];
@@ -179,6 +178,7 @@ class ExportImportProducts extends Controller
 
                         }
                     } else {
+                        $this->fileSize--;
                         $DBProductSettings = $ProductSettings->getProductSetting($product['id'], $product['base_variant_id'], $request['store_id']);
                         $productLine = $this->createDataSet($product, $DBProductSettings, $dropShips);
                         fputcsv($fp, $productLine);
@@ -209,6 +209,23 @@ class ExportImportProducts extends Controller
                 ]
             ], 200);
         }
+    }
+
+    public function setCSVfileSize($folderName, $weightUnit, $dimensionsUnit)
+    {    
+        $fileName = $this->chunkCount++ . '-export.csv';
+        $filename = $folderName . '/' . $fileName;
+        $folderNamePath[] = $filename;
+        $fp = fopen($filename, "w");
+        if (true) {
+            $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (' . $dimensionsUnit . '), Width (' . $dimensionsUnit . '), Height (' . $dimensionsUnit . '), NMFC, Markup, Quote Method, Freight Class, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Boxing Properties, Ships Own Pallet, Pallet Vertical Rotation';
+            $line .= "\n";
+            fputs($fp, $line);
+        }
+        // Set minimium file size
+        $this->fileSize = 2500;
+
+        return $fp;
     }
 
     public function createDataSet($product, $DBProductSettings, $dropShips)
