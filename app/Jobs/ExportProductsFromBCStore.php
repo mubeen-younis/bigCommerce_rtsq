@@ -33,6 +33,6 @@ class ExportProductsFromBCStore implements ShouldQueue
     public function handle()
     {
         $ExportImportProducts = new ExportImportProducts;
-        $ExportImportProducts->importProductsJob($this->data);
+        $ExportImportProducts->createExportData($this->data);
     }
 }
