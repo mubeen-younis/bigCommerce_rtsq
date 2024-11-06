@@ -283,6 +283,7 @@ class SubscriptionController extends Controller
             $subscription = \Stripe\Subscription::retrieve($subId);
             $subscription->plan = $planId;
             $subscription->proration_behavior = 'always_invoice';
+            $subscription->cancel_at_period_end = false;
             $subResponce = $subscription->save();
 
             $responce = [
