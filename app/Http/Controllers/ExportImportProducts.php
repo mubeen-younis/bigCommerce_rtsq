@@ -56,9 +56,9 @@ class ExportImportProducts extends Controller
         }
         $request['store_token'] = $this->mainController->getCustAccessTok($request['store_id']);
         $request['perpage'] = 2000;
+        $totalpages = $this->productSetting->importProductsGetPages($request);
         
         if (isset($request['onlyResponse']) && $request['onlyResponse'] === true) {
-            $totalpages = $this->productSetting->importProductsGetPages($request);
             if ($totalpages < 1) {
                 return response()->json(['error' => true,
                     'data' => [],
@@ -75,6 +75,13 @@ class ExportImportProducts extends Controller
                 ], 200);
             }
         } else {
+
+            if ($totalpages < 1) {
+                return response()->json(['error' => true,
+                    'data' => [],
+                    'message' => 'Products not available for import template',
+                ], 200);
+            }
 
             $data = $request->all() ?? [];
             ExportProductsFromBCStore::dispatch($data);
