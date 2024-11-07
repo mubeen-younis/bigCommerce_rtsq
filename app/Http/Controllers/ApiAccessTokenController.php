@@ -14,6 +14,7 @@ use App\Models\ShippingGroup;
 use App\Http\Controllers\ExportImportProducts;
 use Illuminate\Support\Facades\Log;
 use App\Models\NestingItemsDetail;
+use App\Http\Controllers\GetRatesController;
 
 class ApiAccessTokenController extends Controller
 {
@@ -53,6 +54,17 @@ class ApiAccessTokenController extends Controller
             $this->storeId = isset($request->store_id) ? $request->store_id : '';
             $isSetProduct = !empty($request->data) && !empty($request->data->attributes) ? true : false;
             $product['data'] = !empty($request->data) ? $request->data : [];
+            
+            // return back due to store plan expired
+            $GetRatesController = new GetRatesController();
+            if (!$GetRatesController->storePlanStatus($this->storeId)) {
+                return response()->json([
+                    'error' => true,
+                    'data' => [],
+                    'message' => 'Your current plan has expired. Please renew your plan.',
+                ], 200);
+            }
+
             if (!empty($product['data'])){
 
                 $rules = [

@@ -255,15 +255,21 @@ class GetRatesController extends Controller
     {
         $subsciption = Subscription::where('store_id', $store_id)->latest()->first();
         if (empty($subsciption) || $subsciption->status === 3) { // not plan or expired plan
-            Log::info('Expired Subscription ' . json_encode($subsciption));
+            if(Functions::isEnabledLogs('', $store_id)){
+                Log::info('Expired Subscription ' . json_encode($subsciption));
+            }
             return false;
         }
         if ($subsciption->status === 2 && Functions::isExpiredSubscription($subsciption->ends_at)) { // not plan or expired plan
-            Log::info('Expired Subscription with status 2' . json_encode($subsciption));
+            if(Functions::isEnabledLogs('', $store_id)){
+                Log::info('Expired Subscription with status 2' . json_encode($subsciption));
+            }
             return false;
         }
         if (Functions::isExpiredSubscription($subsciption->ends_at)) { // Expiry date is less then current date
-            Log::info('Expired Subscription due to expiry date' . json_encode($subsciption));
+            if(Functions::isEnabledLogs('', $store_id)){
+                Log::info('Expired Subscription due to expiry date' . json_encode($subsciption));
+            }
             return false;
         }
         return true;
@@ -339,7 +345,7 @@ class GetRatesController extends Controller
                     'shipMultiplePackage' => $product_settings['ship_multiple_package'] ?? 0,
                     'shipBinAlone' => $shipBinAlone,
                     'lineItemId' => $product['product_id'] ?? '',
-                    'lineItemPrice' => $product_price ?? 0,
+                    'lineItemPrice' => $product['declared_value']['amount'] ?? $product['discounted_price']['amount'] ?? 0,
                     'lineItemName' => $product['name'] ?? '',
                     'lineItemLength' => number_format($length, 2, '.', ''),
                     'lineItemWidth' => number_format($width, 2, '.', ''),
@@ -364,7 +370,7 @@ class GetRatesController extends Controller
                     'lineItemHSCode' => isset($product_settings['hs_code']) && !empty($product_settings['hs_code']) ? $product_settings['hs_code'] : '',
                     'lineItemNMFC' => isset($product_settings['nmfc']) && !empty($product_settings['nmfc']) ? $product_settings['nmfc'] : '',
                 ];
-
+                
                 if (!$details['items'][$key]['shipMultiplePackage']) {
                     if (
                         (blank($details['items'][$key]['lineItemLength']) || $details['items'][$key]['lineItemLength'] <= 0) ||

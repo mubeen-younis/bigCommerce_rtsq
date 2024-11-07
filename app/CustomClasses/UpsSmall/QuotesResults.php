@@ -291,7 +291,7 @@ class QuotesResults
         //print_r($originQuotes);  exit;
         // Check for mukti shipment finding lowest price in each shipment and adding them for multi shipment
 
-        if ($isMultiShipment) {
+        if ($isMultiShipment && count($multiShipmentQuotes) > 1) {
             $originQuotesMulti = [];
             $multiShipPrice = 0;
             foreach ($originQuotes as $shipmentKey => $shipment) {
@@ -334,6 +334,7 @@ class QuotesResults
                 $allQuotes = $this->CompileQuotes->inStoreLocalDeliveryQuotes($originQuotes, $inStoreLdData, $allOrigins);
                 $resp = $allQuotes;
             }
+            unset($returnResp['isMultiShipment']);
             $returnResp['resp'] = $resp;
             return $returnResp;
         }

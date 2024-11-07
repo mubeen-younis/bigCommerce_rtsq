@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Log;
 use App\CustomClasses\PalletPackaging;
 use App\Models\DBSC\DbscShippingProfile;
 use App\Models\WeightThresholdSettings;
+use App\Http\Controllers\GetRatesController;
 
 class OrderController extends Controller
 {
@@ -1101,8 +1102,15 @@ class OrderController extends Controller
         //allow only create/update orders actions
         $onlyScopes = ['store/order/created', 'store/order/updated'];
         if (empty($store) || !in_array($scope, $onlyScopes)) {
-            return null;
+            return response()->json(true, 200);
         }
+
+        // webhook call return back due to store plan expired
+        $GetRatesController = new GetRatesController();
+        if (!$GetRatesController->storePlanStatus($storeID->id)) {
+            return response()->json(true, 200);
+        }
+
         $toRequest['store_id'] = $store->id;
         $toRequest['store_name'] = $store->name;
         $toRequest['store_hash'] = $storeHash;

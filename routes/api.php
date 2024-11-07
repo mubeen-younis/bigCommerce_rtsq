@@ -101,8 +101,8 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     //========Product Routes
     Route::get('/getProducts', [ProductSettingController::class, 'getAllProducts']);
     Route::get('/import_products', [ProductSettingController::class, 'importProducts']);
-    Route::get('/get_products', [ProductSettingController::class, 'getStoreProductsFromDb']);
     Route::get('/get_product', [ProductSettingController::class, 'getSingleProductDetail']);
+    Route::get('/get_products', [ProductSettingController::class, 'getStoreProductsFromAPI']);
     Route::get('/edit_product', [ProductSettingController::class, 'editProduct']);
     Route::post('/update_product', [ProductSettingController::class, 'updateProductDetail']);
 

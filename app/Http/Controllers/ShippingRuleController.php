@@ -16,6 +16,7 @@ use App\Models\Store;
 use App\CurlRequest;
 use App\Models\ProductSetting;
 use App\Models\Carrier;
+use App\CustomClasses\BigCommerceFunctions;
 
 class ShippingRuleController extends Controller
 {
@@ -595,56 +596,61 @@ class ShippingRuleController extends Controller
     public function getshippingRuleProductsFromDb(Request $request)
     {
         try {
-            
-            $search = $request['search'] ?? null;
+            $store = Store::where('hash', $request['store_hash'])->first();
+            if (empty($store)) {
+                return null;
+            }
+            $data = $products = $response = [];
             $perPage = 50;
-            
-            if ($search != null || $search == '') {
-                $count = ProductSetting::where('store_id', $request->store_id)
-                    ->where(function ($query) use ($search) {
-                        $query->where('name', 'LIKE', '%' . $search . '%')
-                            ->orWhere('sku', 'LIKE', '%' . $search . '%')
-                            ->orWhere('variant_id', $search)
-                            ->orWhere('source_product_id', $search);
-                    })
-                    ->orderBy('name', 'ASC')
-                    ->get();
+            $sortProd = (isset($request['sortProd']) && $request['sortProd'] === "true") ? 'desc' : 'asc';
+            $search = $request['search'] ?? null;
+    
+            if ($search) {
+                $headers = BigCommerceFunctions::getHeaders($request['store_hash']);
+                $endpoint = BigCommerceFunctions::$initalUrl . $request['store_hash'] . "/v3/catalog/products?keyword=" . urlencode($search) . "&limit=" . $perPage . "&direction=" . $sortProd;
+                $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
             }
-
-            if ($count->count()) {
-                $count = $count->groupBy('source_product_id')->count();
-            } else {
-                $count = 0;
+    
+            if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+                $response = json_decode($response['response'], true);
+    
+                if (!empty($response['data'])) {
+                    $data =  $response['data'] ?? [];
+    
+                    if (empty($data)) {
+                        return response()->json(['error' => true,
+                            'data' => [],
+                            'message' => 'No Products Available',
+                        ], 200);
+                    }
+    
+                    if (count($data)) {
+                        foreach ($data as $key => $product) {
+                            $products[$key]['name'] = isset($product['name']) ? $product['name'] : '' ?? '';
+                            $products[$key]['source_product_id'] = isset($product['id']) ? $product['id'] : '' ?? '';
+                            $products[$key]['variant_id'] = isset($product['base_variant_id']) ? $product['base_variant_id'] : null ?? null;
+                            $products[$key]['sku'] = isset($product['sku']) ? $product['sku'] : null ?? null;
+                        }
+                    }
+                }
             }
-            
-            if ($search != null || $search == '') {
-                $products = ProductSetting::where(function ($query) use ($search) {
-                    $query->where('name', 'LIKE', '%' . $search . '%')
-                        ->orWhere('sku', 'LIKE', '%' . $search . '%')
-                        ->orWhere('variant_id', $search)
-                        ->orWhere('source_product_id', $search);
-                })->where('store_id', $request->store_id)
-                    ->orderBy('name', 'ASC')
-                    ->groupBy('source_product_id')
-                    ->take($perPage)->get();
-            }
-
-            if ($products->isEmpty()) {
+    
+            if (empty($products)) {
                 return response()->json(['error' => true,
                     'data' => [],
                     'message' => 'No Products Available',
                 ], 200);
             }
 
-            $resp = response()->json(['error' => false,
+            $resp = response()->json([
+                'error' => false,
                 'data' => $products,
                 'message' => '',
             ], 200);
             return $resp;
         } catch (\Exception $exception) {
             Log::info('catch: ' . json_encode($exception->getMessage()));
-        }
-
+        } 
     }
 
     public function checkProdExistInShipment($rule, $cartItems, $originKey, $allOrigins)
