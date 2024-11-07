@@ -72,13 +72,13 @@ class SubscriptionController extends Controller
     //*************************************
     // This function is used to save the payment method in DB after creating a stripe customer
     //*************************************
-    public function savePaymentMethodInDB($returnCustomer, $storeId)
+    public function savePaymentMethodInDB($returnCustomer, $storeId, $paymentMethods = [])
     {
-        $fingerPrint = isset($returnCustomer->sources->data[0]->fingerprint) ? md5($returnCustomer->sources->data[0]->fingerprint) : null;
-        $last4 = isset($returnCustomer->sources->data[0]->last4) ? encrypt($returnCustomer->sources->data[0]->last4) : null;
+        $fingerPrint = isset($paymentMethods->data[0]->card->fingerprint) ? md5($paymentMethods->data[0]->card->fingerprint) : null;
+        $last4 = isset($paymentMethods->data[0]->card->last4) ? encrypt($paymentMethods->data[0]->card->last4) : null;
         $paymentMethod = $fingerPrint != null ? PaymentMethod::whereStoreId($storeId)->whereCardFingerPrint($fingerPrint)->first() : null;
         if (PaymentMethod::where('store_id', $storeId)->exists()) {
-            $paymentMethodId = PaymentMethod::where('store_id', $storeId)->update([
+            $paymentMethodDB = PaymentMethod::where('store_id', $storeId)->update([
                 'store_id' => $storeId,
                 'stripe_customer_object' => isset($returnCustomer) ? encrypt(json_encode($returnCustomer)) : null,
                 'stripe_id' => isset($returnCustomer->id) ? encrypt($returnCustomer->id) : null,
@@ -88,9 +88,8 @@ class SubscriptionController extends Controller
                 'is_default' => 1
             ]);
             Subscription::where('store_id', $storeId)->where('status', 1)->update(['payment_method' => $returnCustomer->default_source]);
-            return $paymentMethodId;
         } else {
-            $paymentMethod = PaymentMethod::create([
+            $paymentMethodDB = PaymentMethod::create([
                 'store_id' => $storeId,
                 'stripe_customer_object' => isset($returnCustomer) ? encrypt(json_encode($returnCustomer)) : null,
                 'stripe_id' => isset($returnCustomer->id) ? encrypt($returnCustomer->id) : null,
@@ -100,7 +99,7 @@ class SubscriptionController extends Controller
                 'is_default' => 1
             ]);
         }
-        return $paymentMethod->id;
+        return PaymentMethod::where('store_id', $storeId)->value('id');
     }
 
     //*************************************
@@ -215,17 +214,53 @@ class SubscriptionController extends Controller
     //*************************************
     // This function is used to create new subscription in case of previous subscription is cancelled
     //*************************************
-    public function createNewSubscriptionPlan($customerId, $planId)
+    public function createNewSubscriptionPlan($customerId, $planId, $defaultSource = null)
     {
         try {
-            $subscription = \Stripe\Subscription::create(array(
+        
+            $subsArray = array(
                 'customer' => $customerId,
-                'plan' => $planId
-            ));
+                'plan' => $planId, 
+            );
+
+            if($defaultSource != null){
+                $subsArray['default_source'] = $defaultSource;
+            }
+
+            $subscription = \Stripe\Subscription::create($subsArray);
             $responce = [
                 'error' => false,
                 'message' => 'Plan is subscribed successfully.',
                 'data' => $subscription,
+            ];
+
+        } catch (\Exception $e) {
+            $responce = [
+                'error' => true,
+                'data' => [],
+                'message' => $e->getMessage()
+            ];
+        }
+        return $responce;
+    }
+
+    //*************************************
+    // This function is used to get Stripe Payment Methods
+    //*************************************
+    public function getStripePaymentMethods($customerId)
+    {
+        try {
+        
+            $subsArray = array(
+                'customer' => $customerId,
+                'type' => 'card', 
+            );
+
+            $stripePaymentMethods = \Stripe\PaymentMethod::all($subsArray);
+            $responce = [
+                'error' => false,
+                'message' => 'Get Stripe Payment Methods From Stripe.',
+                'data' => $stripePaymentMethods,
             ];
 
         } catch (\Exception $e) {
@@ -247,6 +282,7 @@ class SubscriptionController extends Controller
             $subscription = \Stripe\Subscription::retrieve($subId);
             $subscription->plan = $planId;
             $subscription->proration_behavior = 'always_invoice';
+            $subscription->cancel_at_period_end = false;
             $subResponce = $subscription->save();
 
             $responce = [
@@ -408,7 +444,16 @@ class SubscriptionController extends Controller
                     if ($updateCustomerCardRes['error'] == true) {
                         return response()->json($updateCustomerCardRes);
                     }
-                    $this->savePaymentMethodInDB($updateCustomerCardRes['data'], $data['store_id']);
+
+                    $paymentMethodsResponse = $this->getStripePaymentMethods($updateCustomerCardRes['data']['id']);
+                    // if Stripe Payment Methods is not found then return the error
+                    if (isset($paymentMethodsResponse['error']) && $paymentMethodsResponse['error'] == true) {
+                        return response()->json($paymentMethodsResponse);
+                    }
+
+                    $paymentMethods = isset($paymentMethodsResponse['data']) ? $paymentMethodsResponse['data'] : null;
+
+                    $this->savePaymentMethodInDB($updateCustomerCardRes['data'], $data['store_id'], $paymentMethods);
                 }
                 //Added this isExpiredSubscription because of the bug it creates of creating new subscription when status was 2
                 if ($oldSubscription->status == 2 && Functions::isExpiredSubscription($oldSubscription->ends_at)) { //If the previous subscription is expired
@@ -446,18 +491,32 @@ class SubscriptionController extends Controller
             //If stripeplan (null) means, it is trial.
             if ($stripePlanId != null) {
                 $customerResponse = $this->createCustomerOnStripe($data);
+                // if stripe customer is not created successfully then return the error
+                if (isset($customerResponse['error']) && $customerResponse['error'] == true) {
+                    return response()->json($customerResponse);
+                }
+                
+                $updateSubResponse = $this->createNewSubscriptionPlan($customerResponse['data']['id'], $stripePlanId, $customerResponse['data']['default_source']);
+                // if stripe subscription is not created successfully then return the error
+                if (isset($updateSubResponse['error']) && $updateSubResponse['error'] == true) {
+                    return response()->json($updateSubResponse);
+                }
+
+                $paymentMethodsResponse = $this->getStripePaymentMethods($customerResponse['data']['id']);
+                // if Stripe Payment Methods is not found then return the error
+                if (isset($paymentMethodsResponse['error']) && $paymentMethodsResponse['error'] == true) {
+                    return response()->json($paymentMethodsResponse);
+                }
             }
-            // if stripe customer is not created successfully then return the error
-            if (isset($customerResponse['error']) && $customerResponse['error'] == true) {
-                return response()->json($customerResponse);
-            }
+            
             //If the stripe customer is created and subscription is done
             $customerId = isset($customerResponse['data']->id) ? $customerResponse['data']->id : null;
-            $subscriptions = isset($customerResponse['data']->subscriptions) ? $customerResponse['data']->subscriptions : null;
+            $subscriptions = isset($updateSubResponse['data']) ? $updateSubResponse['data'] : null;
+            $paymentMethods = isset($paymentMethodsResponse['data']) ? $paymentMethodsResponse['data'] : null;
             //If the stripe customer is created and plan is subscribed successfully then it means the PAID plan is subscribed.
             //else, otherwise we consider it to be a trial
             if (!is_null($customerId) && !is_null($subscriptions)) {
-                $paymentMethodId = $this->savePaymentMethodInDB($customerResponse['data'], $data['store_id']);
+                $paymentMethodId = $this->savePaymentMethodInDB($customerResponse['data'], $data['store_id'], $paymentMethods);
 
                 $user = [
                     'email' => $data['email'],
@@ -580,7 +639,16 @@ class SubscriptionController extends Controller
             //   $updateCustomerCardRes['data'] = $subscriptionDetail;
             return response()->json($updateCustomerCardRes);
         }
-        $this->savePaymentMethodInDB($updateCustomerCardRes['data'], $data['store_id']);
+
+        $paymentMethodsResponse = $this->getStripePaymentMethods($updateCustomerCardRes['data']['id']);
+        // if Stripe Payment Methods is not found then return the error
+        if (isset($paymentMethodsResponse['error']) && $paymentMethodsResponse['error'] == true) {
+            return response()->json($paymentMethodsResponse);
+        }
+
+        $paymentMethods = isset($paymentMethodsResponse['data']) ? $paymentMethodsResponse['data'] : null;
+
+        $this->savePaymentMethodInDB($updateCustomerCardRes['data'], $data['store_id'], $paymentMethods);
         $subscriptionDetail = $this->subscriptionDetailFromDB($storeId);
         $updateCustomerCardRes['data'] = $subscriptionDetail;
         // $updateCustomerCardRes['data'] = $this->getSubscriptionDetail($request);
@@ -709,7 +777,6 @@ class SubscriptionController extends Controller
             $responce = \Stripe\Customer::create(array(
                 "name" => $cName,
                 "email" => $email,
-                "plan" => $stripePlanId,
                 "description" => $stripeDescription,
                 "metadata" => $metadata,
                 "source" => $token
