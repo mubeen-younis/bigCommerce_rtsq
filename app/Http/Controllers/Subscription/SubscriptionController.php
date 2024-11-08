@@ -216,10 +216,10 @@ class SubscriptionController extends Controller
     public function createNewSubscriptionPlan($customerId, $planId, $defaultSource = null)
     {
         try {
-        
+
             $subsArray = array(
                 'customer' => $customerId,
-                'plan' => $planId, 
+                'plan' => $planId,
             );
 
             if($defaultSource != null){
@@ -249,10 +249,10 @@ class SubscriptionController extends Controller
     public function getStripePaymentMethods($customerId)
     {
         try {
-        
+
             $subsArray = array(
                 'customer' => $customerId,
-                'type' => 'card', 
+                'type' => 'card',
             );
 
             $stripePaymentMethods = \Stripe\PaymentMethod::all($subsArray);
@@ -479,7 +479,7 @@ class SubscriptionController extends Controller
                 if (isset($customerResponse['error']) && $customerResponse['error'] == true) {
                     return response()->json($customerResponse);
                 }
-                
+
                 $updateSubResponse = $this->createNewSubscriptionPlan($customerResponse['data']['id'], $stripePlanId, $customerResponse['data']['default_source']);
                 // if stripe subscription is not created successfully then return the error
                 if (isset($updateSubResponse['error']) && $updateSubResponse['error'] == true) {
@@ -492,7 +492,7 @@ class SubscriptionController extends Controller
                     return response()->json($paymentMethodsResponse);
                 }
             }
-            
+
             //If the stripe customer is created and subscription is done
             $customerId = isset($customerResponse['data']->id) ? $customerResponse['data']->id : null;
             $subscriptions = isset($updateSubResponse['data']) ? $updateSubResponse['data'] : null;
@@ -579,10 +579,6 @@ class SubscriptionController extends Controller
                 Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, 1));
 
             }
-            /*
-            * Update WS graph data
-            * */
-            SaleGraphController::updateGraphData();
 
             return response()->json([
                 'error' => false,
@@ -1150,10 +1146,6 @@ class SubscriptionController extends Controller
             Mail::to($email)->send(new PaymentFailedByWebHookEmail($emailData, $paymentStatus));
         }
         if ($userLost) {
-            /*
-             * Update WS graph data
-             * */
-            SaleGraphController::updateGraphData();
             /*
              * Create Hub spot user and activate trial
              */
