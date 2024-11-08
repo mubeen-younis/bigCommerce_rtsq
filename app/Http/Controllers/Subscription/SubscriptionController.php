@@ -31,6 +31,7 @@ use Illuminate\Support\Facades\Validator;
 use PHPUnit\Exception;
 use Stripe\Charge;
 use Stripe\Stripe;
+use App\Models\Subscription\PackageSubscription;
 
 class SubscriptionController extends Controller
 {
@@ -341,6 +342,21 @@ class SubscriptionController extends Controller
             $hubSpotController = new HubSpotController();
             //Check: If current carriers installed are more than the choosed plan then return with message
             $currentSubscriptionDetail = $this->subscriptionDetailFromDB($request['store_id']);
+
+            // Expired add-on packages if store convert from sandbox to live
+            if (!empty($currentSubscriptionDetail) && $currentSubscriptionDetail->plan_id == 2 && $currentSubscriptionDetail->plan_id != $request['plan']){
+                
+                $currentPackageSub = PackageSubscription::where('store_id', $request['store_id'])->latest()->get();
+                if(count($currentPackageSub) > 0){
+                    foreach($currentPackageSub as $package){
+                        if($package['payment_method_id'] == null && $package['stripe_charge_id'] == null && $package['status']){
+                            $package->update(['status' => 0]);
+                        }
+                    }
+
+                }
+            }
+
             $isTestStore = $request['is_test_store'] ?? false;
             self::getPlansDetails($request['plan'], $isTestStore);   //Getting Plan detail from DB
             $newPlanAllowedCarriers = self::$plansData['carrier_count'];
