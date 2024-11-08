@@ -83,7 +83,9 @@ class ExportImportProducts extends Controller
                     'message' => 'Products not available for import template',
                 ], 200);
             }
-
+            if(Functions::isEnabledLogs($request['store_hash'])){
+                Log::info('CSV Export Products Job Start.');
+            }
             $data = $request->all() ?? [];
             ExportProductsFromBCStore::dispatch($data);
 
@@ -128,6 +130,9 @@ class ExportImportProducts extends Controller
             $folderName = $request['folderName'];
             $folderNamePath = [];
             $this->chunkCount = 0;
+            if(Functions::isEnabledLogs($request['store_hash'])){
+                Log::info('CSV Export Products Job Inprogress.');
+            }
     
             for ($page = 1; $page <= $totalpages; $page++) {
     
@@ -189,6 +194,9 @@ class ExportImportProducts extends Controller
             $isupdate = ExportProductsModel::find($request['exportProductsId'])->update(['status' => 1]);
             $this->makeZipWithFiles($folderName);
             $this->sendEmail($request['email'], $hash);
+            if(Functions::isEnabledLogs($request['store_hash'])){
+                Log::info('CSV Export Products Job Ended.');
+            }
 
         } catch (\Exception $exception) {
 
