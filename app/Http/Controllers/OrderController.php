@@ -1107,7 +1107,7 @@ class OrderController extends Controller
 
         // webhook call return back due to store plan expired
         $GetRatesController = new GetRatesController();
-        if (!$GetRatesController->storePlanStatus($storeID->id)) {
+        if (!$GetRatesController->storePlanStatus($store->id)) {
             return response()->json(true, 200);
         }
 

@@ -10,7 +10,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
-class ImportProducts implements ShouldQueue
+class UpdateBCProductsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -19,12 +19,11 @@ class ImportProducts implements ShouldQueue
      *
      * @return void
      */
-    public $chunk, $request, $headerRow;
-    public function __construct($chunk, $request, $headerRow)
+    public $batches, $request;
+    public function __construct($batches, $request)
     {
-        $this->chunk = $chunk;
+        $this->batches = $batches;
         $this->request = $request;
-        $this->headerRow = $headerRow;
     }
 
     /**
@@ -35,6 +34,6 @@ class ImportProducts implements ShouldQueue
     public function handle()
     {
         $ExportImportProducts = new ExportImportProducts();
-        $ExportImportProducts->importProductCsvJob($this->chunk, $this->request, $this->headerRow);
+        $ExportImportProducts->importProductCsvJob2($this->batches, $this->request);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\CustomClasses\BigCommerceFunctions;
 use App\Jobs\ImportProducts as ImportProductsJob;
+use App\Jobs\UpdateBCProductsJob;
 use App\Jobs\ExportProductsFromBCStore;
 use App\Jobs\ImportProductsNotification;
 use App\Models\Locations;
@@ -28,6 +29,7 @@ use App\CustomClasses\Functions;
 use App\Http\Controllers\GetRatesController as ProductSettings;
 use App\Http\Controllers\GetRatesController;
 use App\Models\CSVimportExport;
+use Illuminate\Support\Facades\DB;
 
 class ExportImportProducts extends Controller
 {
@@ -39,10 +41,12 @@ class ExportImportProducts extends Controller
     public function __construct()
     {
         $this->curlRequest = new CurlRequest();
-        $this->csvChunksLength = 20;
+        $this->csvChunksLength = 250;
+        $this->batchLength = 50;
         $this->mainController = new MainController();
         $this->productSetting = new ProductSettingController();
         $this->fileSize = 0;
+        $this->BCProductsBatches = [];
     }
 
     public function exportProductsTemplate(Request $request)
@@ -461,10 +465,6 @@ class ExportImportProducts extends Controller
     {
         $path = public_path('import_files/' . $request['store_hash'] . '/' . $request['filename']);
         $csv = array_map('str_getcsv', file($path));
-        //dd($csv[0]);
-        /*array_walk($csv, function(&$a) use ($csv) {
-            $a = array_combine($csv[0], $a);
-        });*/
 
         if (isset($request['hasheaders']) && $request['hasheaders'] === "false") {
             $heading = range('A', 'ZZ');
@@ -495,7 +495,6 @@ class ExportImportProducts extends Controller
                 ], 200);
             }
 
-            $delay = 2;
             $data['filename'] = $request['filename'];
             $data['firstHeader'] = $request['firstHeader'];
             $data['importEmailAddress'] = $request['importEmailAddress'];
@@ -510,8 +509,7 @@ class ExportImportProducts extends Controller
             $CSVimportPrdModel->file_name = $data['filename'];
             $CSVimportPrdModel->save();
             $data['CSVinsertedId'] = $CSVimportPrdModel->id;
-
-            ImportProductsJob::dispatch($data)->delay(Carbon::now()->addSeconds($delay));
+            $this->importProductCsvProcess($data);
             unset($data['path'], $data['CSVinsertedId']);
 
             Log::info('ended import products process');
@@ -545,18 +543,16 @@ class ExportImportProducts extends Controller
         }
     }
 
-    public function importProductCsvJob($request)
+    public function importProductCsvProcess($request)
     {
         try {
-            if(Functions::isEnabledLogs($request['store_hash'])){
-                Log::info('CSV Import Products Job Start: ' . json_encode($request));
-            }
             $indexes = $request['indexes'];
             $store_id = $request['store_id'];
             $store = Store::where('id', $store_id)->first();
             $emailNotify = $request['importEmailAddress'] ?? '';
             $path = $request['path'];
             $exceptionProducts = [];
+            $delay = 2;
     
             if (!file_exists($path)) {
                 return false;
@@ -578,35 +574,13 @@ class ExportImportProducts extends Controller
             });
     
             $csvChunks = array_chunk($csvArray, $this->csvChunksLength);
+            $request['CSV_count'] = count($csvArray);
     
-            foreach ($csvChunks as $chunkKey => $csv) {
-                foreach ($csv as $key => $product) {
-                    try {
-                        $this->getUpdateData($product, $indexes, $store_id, $store->access_token, $request['store_hash']);
-    
-                    } catch (\Exception $exception) {
-                        if(isset($product['Product Id']) && isset($product['Variant Id'])){
-                            $exceptionProducts[] = $product['Product Id'] . ' : ' . $product['Variant Id'] . ' => ' . $exception->getMessage() ?? '';
-                        }
-    
-                        if(Functions::isEnabledLogs($request['store_hash'])){
-                            Log::info('CSV Products Exception Array: ' . json_encode($exceptionProducts));
-                            Log::info(json_encode([
-                                'line' => $exception->getLine(),
-                                'message' => $exception->getMessage(),
-                                'file' => $exception->getFile(),
-                            ]));
-                        }
-                    }
-                }
+            foreach ($csvChunks as $chunk) {
+                // Dispatch a job for each chunk
+                ImportProductsJob::dispatch($chunk, $request, $headerRow)->delay(Carbon::now()->addSeconds($delay));
             }
-
-            CSVimportExport::where('id', $request['CSVinsertedId'])->update([
-                'total_rows'=> count($csvArray),
-                'error_at_rows' => json_encode($exceptionProducts),
-                'status' => count($exceptionProducts) == count($csvArray) ? 3 : (empty($exceptionProducts) ? 1 : 2),
-            ]);
-    
+            
             $this->ImportNotifyEmail($emailNotify);
             if(Functions::isEnabledLogs($request['store_hash'])){
                 Log::info('CSV Import Poducts Email Send.');
@@ -628,6 +602,143 @@ class ExportImportProducts extends Controller
             ]));
         }
         
+    }
+
+    public function importProductCsvJob($chunk, $request, $headerRow)
+    {
+        try {
+
+            $indexes = $request['indexes'];
+            $store_id = $request['store_id'];
+            $store = Store::where('id', $store_id)->first();
+            $emailNotify = $request['importEmailAddress'] ?? '';
+            $path = $request['path'];
+            $exceptionProducts = [];
+            $this->BCProductsBatches = $this->Batches = [];
+            $data = []; $this->count = 0;
+            $delay = 2;
+
+            foreach ($chunk as $key => $product) {
+                try {
+                    $data[] = $this->getUpdateData($product, $indexes, $store_id, $store->access_token, $request['store_hash']);
+                
+                } catch (\Exception $exception) {
+                    if(isset($product['Product Id']) && isset($product['Variant Id'])){
+                        $exceptionProducts[] = $this->formatError($product, $exception);
+                    } else {
+                        $exceptionProducts[] = [
+                            'line' => $exception->getLine(),
+                            'message' => $exception->getMessage(),
+                            'file' => $exception->getFile(),
+                        ];
+                    }
+
+                    if(Functions::isEnabledLogs($request['store_hash'])){
+                        Log::info('CSV Products Exception Array: ' . json_encode($exceptionProducts));
+                        Log::info(json_encode([
+                            'line' => $exception->getLine(),
+                            'message' => $exception->getMessage(),
+                            'file' => $exception->getFile(),
+                        ]));
+                    }
+                }
+            }
+
+            try {
+                foreach($data as $record){
+                    unset($record['updated_at']);
+                    if(!empty($record) && !empty($record['variant_id'])){
+                        $this->createBCProductsUpdateBatches($record);
+                    }
+                }
+                $this->BCProductsBatches[] = $this->Batches;
+            } catch (\Exception $exception) {
+
+                if(!empty($data)){
+                    $exceptionProducts[] = $this->formatError($data, $exception);
+                } else {
+                    $exceptionProducts[] = $this->formatError([], $exception);
+                }
+
+                if(Functions::isEnabledLogs($request['store_hash'])){
+                    Log::info('CSV batch update in DB Exception Array: ' . json_encode($exceptionProducts));
+                    Log::info(json_encode([
+                        'line' => $exception->getLine(),
+                        'message' => $exception->getMessage(),
+                        'file' => $exception->getFile(),
+                    ]));
+                }
+            }
+
+            CSVimportExport::where('id', $request['CSVinsertedId'])->update([
+                'total_rows'=> $request['CSV_count'],
+                'error_at_rows' => json_encode($exceptionProducts),
+                'status' => count($exceptionProducts) == $request['CSV_count'] ? 3 : (empty($exceptionProducts) ? 1 : 2),
+            ]);
+
+            // Optionally, handle successful API calls
+            if (!empty($this->BCProductsBatches)) {
+                UpdateBCProductsJob::dispatch($this->BCProductsBatches, $request)->delay(Carbon::now()->addSeconds($delay));
+                
+            }
+        } catch (\Exception $exception) {
+            CSVimportExport::where('id', $request['CSVinsertedId'])->update([
+                'total_rows'=> $request['CSV_count'],
+                'error_at_rows' => json_encode([
+                    'line' => $exception->getLine(),
+                    'message' => $exception->getMessage(),
+                    'file' => $exception->getFile(),
+                ]),
+                'status' => 3,
+            ]);
+            Log::info(json_encode([
+                'line' => $exception->getLine(),
+                'message' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+            ]));
+        }
+        
+    }
+
+    public function importProductCsvJob2($batches, $request)
+    {
+        $this->updateBCProductBatches($batches, $request);
+    }
+
+    protected function formatError($batch, $exception)
+    {
+        return [
+            'line' => $exception->getLine(),
+            'message' => $exception->getMessage(),
+            'file' => $exception->getFile(),
+            'data' => $batch ?? [],
+        ];
+    }
+
+    public function createBCProductsUpdateBatches($product)
+    {
+        if(count($this->Batches) == $this->batchLength){
+            $this->BCProductsBatches[] = $this->Batches;
+            $this->Batches = [];
+            $this->count++;
+        }
+
+        $this->Batches[] = [
+            "id" => $product['variant_id'],
+        ];
+        
+        if (!empty($product['weight'])) {
+            $this->Batches[count($this->Batches) - 1]["weight"] = $product['weight'];
+        }
+        if (!empty($product['length'])) {
+            $this->Batches[count($this->Batches) - 1]["depth"] = $product['length'];
+        }
+        if (!empty($product['width'])) {
+            $this->Batches[count($this->Batches) - 1]["width"] = $product['width'];
+        }
+        if (!empty($product['height'])) {
+            $this->Batches[count($this->Batches) - 1]["height"] = $product['height'];
+        }
     }
 
     function getUpdateData($product, $indexes, $store_id, $access_token, $hash)
@@ -747,10 +858,6 @@ class ExportImportProducts extends Controller
         }
         // END //
 
-        if(Functions::isEnabledLogs('', $store_id)){
-            Log::info('CSV Import products Data: ' . $variant_id . " " . json_encode($update));
-        }
-
         if (!empty($update)) {
             if ($variant_id) {
                 ProductSetting::where('source_product_id', $source_product_id)
@@ -761,9 +868,9 @@ class ExportImportProducts extends Controller
                     ->whereNull('variant_id')
                     ->where('store_id', $store_id)->update($update);
             }
-            unset($update['settings']);
-            $this->updateBCProduct($source_product_id, $variant_id, $store_id, $update, $access_token, $hash);
+            $update['variant_id'] = $variant_id;
         }
+        return $update;
     }
 
     public function getSettings($oldSettings, $product, $indexes, $store_id)
@@ -949,6 +1056,43 @@ class ExportImportProducts extends Controller
             }
         }
         return $dropShipId;
+    }
+
+    public function updateBCProductBatches($batches, $request)
+    {
+        unset($headers);
+        $headers[] = 'X-Auth-Token: ' . $this->mainController->getCustAccessTok($request['store_id']);
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $endpoint = BigCommerceFunctions::$initalUrl . $request['store_hash'] . "/v3/catalog/variants";
+
+        foreach($batches as $batch){
+            try {
+                $response = $this->curlRequest->enSingleCurlRequest($endpoint, json_encode($batch), $headers, 'PUT');  
+                $response = json_decode($response['response'], true);
+                if (!empty($response['status']) || !empty($response['errors']['status'])) {
+                    if(Functions::isEnabledLogs($request['store_hash'])){
+                        Log::info(json_encode([
+                            'message' =>'CSV batch update BC Failed.',
+                            'response' => $response,
+                            'batch' => $batch,
+                        ]));
+                    }
+                }
+            } catch (\Exception $exception) {
+
+                if(Functions::isEnabledLogs($request['store_hash'])){
+                    Log::info('CSV batch update BC Exception Array: ' . json_encode($exceptionProducts));
+                    Log::info(json_encode([
+                        'line' => $exception->getLine(),
+                        'message' => $exception->getMessage(),
+                        'file' => $exception->getFile(),
+                    ]));
+                }
+            }
+            
+        }
+        
     }
 
     public function updateBCProduct($source_product_id, $variant_id, $store_id, $update, $access_token, $hash)
