@@ -651,37 +651,20 @@ class ExportImportProducts extends Controller
                 }
             }
 
-            try {
-                foreach($data as $record){
-                    unset($record['updated_at']);
-                    if(!empty($record) && !empty($record['variant_id'])){
-                        $this->createBCProductsUpdateBatches($record);
-                    }
-                }
-                $this->BCProductsBatches[] = $this->Batches;
-            } catch (\Exception $exception) {
-
-                if(!empty($data)){
-                    $exceptionProducts[] = $this->formatError($data, $exception);
-                } else {
-                    $exceptionProducts[] = $this->formatError([], $exception);
-                }
-
-                if(Functions::isEnabledLogs($request['store_hash'])){
-                    Log::info('CSV batch update in DB Exception Array: ' . json_encode($exceptionProducts));
-                    Log::info(json_encode([
-                        'line' => $exception->getLine(),
-                        'message' => $exception->getMessage(),
-                        'file' => $exception->getFile(),
-                    ]));
-                }
-            }
-
             CSVimportExport::where('id', $request['CSVinsertedId'])->update([
                 'total_rows'=> $request['csv_count'],
                 'error_at_rows' => json_encode($exceptionProducts),
                 'status' => count($exceptionProducts) == $request['csv_count'] ? 3 : (empty($exceptionProducts) ? 1 : 2),
             ]);
+
+            foreach($data as $record){
+                unset($record['updated_at']);
+                if(!empty($record) && !empty($record['variant_id'])){
+                    $this->createBCProductsUpdateBatches($record);
+                }
+            }
+            
+            $this->BCProductsBatches[] = $this->Batches;
 
             // handle successful API calls
             if (!empty($this->BCProductsBatches)) {
