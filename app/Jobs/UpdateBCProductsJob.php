@@ -34,6 +34,6 @@ class UpdateBCProductsJob implements ShouldQueue
     public function handle()
     {
         $ExportImportProducts = new ExportImportProducts();
-        $ExportImportProducts->importProductCsvJob2($this->batches, $this->request);
+        $ExportImportProducts->importBCProductCsvJob($this->batches, $this->request);
     }
 }
