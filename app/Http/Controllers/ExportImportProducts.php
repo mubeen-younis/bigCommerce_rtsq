@@ -46,7 +46,7 @@ class ExportImportProducts extends Controller
     public function __construct()
     {
         $this->curlRequest = new CurlRequest();
-        $this->csvChunksLength = 2;
+        $this->csvChunksLength = 250;
         $this->batchLength = 50;
         $this->mainController = new MainController();
         $this->productSetting = new ProductSettingController();
