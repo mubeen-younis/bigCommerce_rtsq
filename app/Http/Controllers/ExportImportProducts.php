@@ -576,8 +576,10 @@ class ExportImportProducts extends Controller
             $csvChunks = array_chunk($csvArray, $this->csvChunksLength);
             $request['csv_count'] = count($csvArray);
             $request['csv_chunk_count'] = count($csvChunks) ?? 0;
+
             // Initialize the counter and dispatch jobs
             Cache::put('chunks_processed', 0, now()->addHours(2));
+
             foreach ($csvChunks as $chunk) {
                 // Dispatch a job for each chunk
                 ImportProductsJob::dispatch($chunk, $request, $headerRow)->delay(Carbon::now()->addSeconds($delay));
@@ -675,27 +677,7 @@ class ExportImportProducts extends Controller
                 
             }
 
-            // Increment the counter and reset expiration to avoid early cache expiry
-            $processedChunks = Cache::increment('chunks_processed');
-            Cache::put('chunks_processed', $processedChunks, now()->addHours(2));
-
-             // Check if all chunks are complete
-            if ($processedChunks >= $this->csvChunkCount) {
-
-                CSVimportExport::where('id', $request['CSVinsertedId'])->update([
-                    'total_rows'=> $request['csv_count'],
-                    'error_at_rows' => json_encode($exceptionProducts),
-                    'status' => count($exceptionProducts) == $request['csv_count'] ? 3 : (empty($exceptionProducts) ? 1 : 2),
-                ]);
-
-                $this->ImportNotifyEmail($emailNotify);
-                if(Functions::isEnabledLogs($request['store_hash'])){
-                    Log::info('CSV Import Poducts Email Send.');
-                    Log::info('ended import products process');
-                } 
-                // Clear the cache counter to reset for next use
-                Cache::forget('chunks_processed');
-            }
+            return $exceptionProducts;
 
         } catch (\Exception $exception) {
             CSVimportExport::where('id', $request['CSVinsertedId'])->update([
