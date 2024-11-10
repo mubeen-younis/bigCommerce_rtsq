@@ -514,13 +514,7 @@ class ExportImportProducts extends Controller
             $data['store_name'] = $request['store_name'];
             $data['path'] = public_path('import_files/' . $request['store_hash'] . '/' . $request['filename']);
 
-            $CSVimportPrdModel = new CSVimportExport();
-            $CSVimportPrdModel->store_id = $data['store_id'];
-            $CSVimportPrdModel->file_name = $data['filename'];
-            $CSVimportPrdModel->save();
-            $data['CSVinsertedId'] = $CSVimportPrdModel->id;
             $this->importProductCsvProcess($data);
-            unset($data['path'], $data['CSVinsertedId']);
 
             return response()->json([
                 'error' => false,
@@ -529,14 +523,16 @@ class ExportImportProducts extends Controller
 
         } catch (\Exception $exception) {
 
-            CSVimportExport::where('id', $data['CSVinsertedId'])->update([
-                'error_at_rows' => json_encode([
-                    'line' => $exception->getLine(),
-                    'message' => $exception->getMessage(),
-                    'file' => $exception->getFile(),
-                ]),
-                'status' => 3,
+            $CSVimportPrdModel = new CSVimportExport();
+            $CSVimportPrdModel->store_id = $request['store_id'];
+            $CSVimportPrdModel->file_name = $request['filename'];
+            $CSVimportPrdModel->error_at_rows = json_encode([
+                'line' => $exception->getLine(),
+                'message' => $exception->getMessage(),
+                'file' => $exception->getFile(),
             ]);
+            $CSVimportPrdModel->status = 3;
+            $CSVimportPrdModel->save();
 
             Log::info(json_encode([
                 'line' => $exception->getLine(),
@@ -554,6 +550,12 @@ class ExportImportProducts extends Controller
     public function importProductCsvProcess($request)
     {
         try {
+            $CSVimportPrdModel = new CSVimportExport();
+            $CSVimportPrdModel->store_id = $request['store_id'];
+            $CSVimportPrdModel->file_name = $request['filename'];
+            $CSVimportPrdModel->save();
+            $request['CSVinsertedId'] = $CSVimportPrdModel->id;
+
             $indexes = $request['indexes'];
             $store_id = $request['store_id'];
             $store = Store::where('id', $store_id)->first();
