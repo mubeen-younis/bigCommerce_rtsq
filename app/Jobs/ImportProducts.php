@@ -9,6 +9,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Cache;
 
 class ImportProducts implements ShouldQueue
 {
@@ -34,6 +35,9 @@ class ImportProducts implements ShouldQueue
      */
     public function handle()
     {
+        if (!Cache::has('chunks_processed')) {
+            Cache::put('chunks_processed', 0, now()->addHours(2));
+        }
         $ExportImportProducts = new ExportImportProducts();
         $ExportImportProducts->importProductCsvJob($this->chunk, $this->request, $this->headerRow);
     }
