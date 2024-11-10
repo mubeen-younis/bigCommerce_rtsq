@@ -43,7 +43,7 @@ class ImportProducts implements ShouldQueue
         if (!Cache::has('chunks_processed')) {
             Cache::put('chunks_processed', 0, now()->addHours(2));
         }
-        Log::info(Cache::has('chunks_processed'));
+        Log::info('chunks_processed count ; ' . Cache::has('chunks_processed'));
         $ExportImportProducts = new ExportImportProducts();
         $ExportImportProducts->importProductCsvJob($this->chunk, $this->request, $this->headerRow);
     }
