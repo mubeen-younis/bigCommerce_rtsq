@@ -44,28 +44,6 @@ class ImportProducts implements ShouldQueue
             Cache::put('chunks_processed', 0, now()->addHours(2));
         }
         $ExportImportProducts = new ExportImportProducts();
-        $exceptionProducts = $ExportImportProducts->importProductCsvJob($this->chunk, $this->request, $this->headerRow);
-
-        // Increment the counter and reset expiration to avoid early cache expiry
-        $processedChunks = Cache::increment('chunks_processed');
-        Cache::put('chunks_processed', $processedChunks, now()->addHours(2));
-
-         // Check if all chunks are complete
-        if ($processedChunks >= $this->csvChunkCount) {
-
-            CSVimportExport::where('id', $this->request['CSVinsertedId'])->update([
-                'total_rows'=> $this->request['csv_count'],
-               'error_at_rows' => json_encode($exceptionProducts),
-                'status' => count($exceptionProducts) == $this->request['csv_count'] ? 3 : (empty($exceptionProducts) ? 1 : 2),
-            ]);
-
-            $ExportImportProducts->ImportNotifyEmail($this->emailNotify);
-            if(Functions::isEnabledLogs($this->request['store_hash'])){
-                Log::info('CSV Import Poducts Email Send.');
-                Log::info('ended import products process');
-            } 
-            // Clear the cache counter to reset for next use
-            Cache::forget('chunks_processed');
-        }
+        $ExportImportProducts->importProductCsvJob($this->chunk, $this->request, $this->headerRow);
     }
 }
