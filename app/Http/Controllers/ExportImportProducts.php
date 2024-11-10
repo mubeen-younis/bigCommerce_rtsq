@@ -675,7 +675,7 @@ class ExportImportProducts extends Controller
                     ]));
                 }
             }
-
+            Log::info('before 2nd job call : ' . json_encode($this->BCProductsBatches));
             // handle successful API calls
             if (!empty($this->BCProductsBatches)) {
                 Log::info('2nd job call');
