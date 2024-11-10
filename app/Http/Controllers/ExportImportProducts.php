@@ -55,7 +55,7 @@ class ExportImportProducts extends Controller
         $this->fileSize = 0;
         $this->csvChunkCount = 0;
         $this->BCProductsBatches = [];
-        $this->errorProducts = [];
+        $this->errorProducts = null;
         $this->processedChunks = null;
     }
 
@@ -559,7 +559,7 @@ class ExportImportProducts extends Controller
             $store = Store::where('id', $store_id)->first();
             $emailNotify = $request['importEmailAddress'] ?? '';
             $path = $request['path'];
-            $delay = 2;
+            $delay = 1;
     
             if (!file_exists($path)) {
                 return false;
@@ -584,13 +584,12 @@ class ExportImportProducts extends Controller
             $request['csv_count'] = count($csvArray);
             $request['csv_chunk_count'] = count($csvChunks) ?? 0;
 
-            // Initialize the counter and dispatch jobs
-            Cache::put('chunks_processed', 0, now()->addHours(2));
-
             foreach ($csvChunks as $chunk) {
                 // Dispatch a job for each chunk
-                ImportProductsJob::dispatch($chunk, $request, $headerRow)->delay(Carbon::now()->addSeconds($delay));
+                ImportProductsJob::dispatch($chunk, $request, $headerRow)->delay(Carbon::now()->addSeconds($delay++));
             }
+
+            ImportProductsToBCStoreStatusUpdate::dispatch($request)->delay(Carbon::now()->addSeconds(5));
 
         } catch (\Exception $exception) {
             CSVimportExport::where('id', $request['CSVinsertedId'])->update([
@@ -678,12 +677,16 @@ class ExportImportProducts extends Controller
                 }
             }
 
+            CSVimportExport::where('id', $request['CSVinsertedId'])->update([
+                'total_rows'=> $request['csv_count'],
+                'error_at_rows' => json_encode($exceptionProducts),
+                'status' => count($exceptionProducts) == $request['csv_count'] ? 3 : (empty($exceptionProducts) ? 1 : 2),
+            ]);
+
             // handle successful API calls
             if (!empty($this->BCProductsBatches)) {
                 ImportBCProductsJob::dispatch($this->BCProductsBatches, $request)->onQueue('default');
             }
-
-            ImportProductsToBCStoreStatusUpdate::dispatch($exceptionProducts, $request)->delay(Carbon::now()->addSeconds(5));
 
         } catch (\Exception $exception) {
             CSVimportExport::where('id', $request['CSVinsertedId'])->update([

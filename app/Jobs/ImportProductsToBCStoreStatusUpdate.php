@@ -25,11 +25,9 @@ class ImportProductsToBCStoreStatusUpdate implements ShouldQueue
      * @return void
      */
     public $request;
-    public $exceptionProducts;
-    public function __construct($exceptionProducts, $request)
+    public function __construct($request)
     {
         $this->request = $request;
-        $this->exceptionProducts = $exceptionProducts;
     }
 
     /**
@@ -39,14 +37,7 @@ class ImportProductsToBCStoreStatusUpdate implements ShouldQueue
      */
     public function handle()
     {
-        Log::info('$this->exceptionProducts :' . json_encode($this->exceptionProducts));
-        $ExportImportProducts = new ExportImportProducts();
-        CSVimportExport::where('id', $this->request['CSVinsertedId'])->update([
-            'total_rows'=> $this->request['csv_count'],
-            'error_at_rows' => json_encode($this->exceptionProducts),
-            'status' => count($this->exceptionProducts) == $this->request['csv_count'] ? 3 : (empty($this->exceptionProducts) ? 1 : 2),
-        ]);
-
+        $ExportImportProducts = new ExportImportProducts(); 
         $ExportImportProducts->ImportNotifyEmail($this->request['importEmailAddress']);
         if(Functions::isEnabledLogs($this->request['store_hash'])){
             Log::info('CSV Import Poducts Email Send.');
