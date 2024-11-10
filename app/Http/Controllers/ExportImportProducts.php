@@ -667,13 +667,6 @@ class ExportImportProducts extends Controller
                 }
             }
 
-
-            // Optionally, handle successful API calls
-            if (!empty($this->BCProductsBatches)) {
-                UpdateBCProductsJob::dispatch($this->BCProductsBatches, $request)->delay(Carbon::now()->addSeconds($delay));
-                
-            }
-
             CSVimportExport::where('id', $request['CSVinsertedId'])->update([
                 'total_rows'=> $request['csv_count'],
                 'error_at_rows' => json_encode($exceptionProducts),
@@ -684,6 +677,13 @@ class ExportImportProducts extends Controller
             if(Functions::isEnabledLogs($request['store_hash'])){
                 Log::info('CSV Import Poducts Email Send.');
                 Log::info('ended import products process');
+            }
+
+
+            // handle successful API calls
+            if (!empty($this->BCProductsBatches)) {
+                UpdateBCProductsJob::dispatch($this->BCProductsBatches, $request);
+                
             }
 
         } catch (\Exception $exception) {
