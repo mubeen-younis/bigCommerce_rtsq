@@ -41,20 +41,18 @@ class ExportImportProducts extends Controller
     public $fileSize;
     public $csvChunkCount;
     public $BCProductsBatches;
-    public $exceptionProducts;
     public $processedChunks;
 
     public function __construct()
     {
         $this->curlRequest = new CurlRequest();
-        $this->csvChunksLength = 250;
+        $this->csvChunksLength = 2;
         $this->batchLength = 50;
         $this->mainController = new MainController();
         $this->productSetting = new ProductSettingController();
         $this->fileSize = 0;
         $this->csvChunkCount = 0;
         $this->BCProductsBatches = [];
-        $this->exceptionProducts = [];
         $this->processedChunks = null;
     }
 
@@ -588,29 +586,10 @@ class ExportImportProducts extends Controller
 
             foreach ($csvChunks as $chunk) {
                 // Dispatch a job for each chunk
+                Log::info('1st job call');
                 ImportProductsJob::dispatch($chunk, $request, $headerRow)->delay(Carbon::now()->addSeconds($delay));
             }
 
-            // Check if all chunks are complete
-        if ($this->processedChunks >= $this->csvChunkCount) {
-
-            CSVimportExport::where('id', $request['CSVinsertedId'])->update([
-                'total_rows'=> $request['csv_count'],
-               'error_at_rows' => json_encode($this->exceptionProducts),
-                'status' => count($this->exceptionProducts) == $request['csv_count'] ? 3 : (empty($this->exceptionProducts) ? 1 : 2),
-            ]);
-
-            $this->ImportNotifyEmail($emailNotify);
-            if(Functions::isEnabledLogs($request['store_hash'])){
-                Log::info('CSV Import Poducts Email Send.');
-                Log::info('ended import products process');
-            } 
-            // Clear the cache counter to reset for next use
-            Cache::forget('chunks_processed');
-        } else{
-            Log::info('else condition');
-        }
-            
         } catch (\Exception $exception) {
             CSVimportExport::where('id', $request['CSVinsertedId'])->update([
                 'total_rows'=> count($csvArray),
@@ -641,6 +620,7 @@ class ExportImportProducts extends Controller
             $path = $request['path'];
             $this->BCProductsBatches = $this->Batches = [];
             $data = []; $this->count = 0;
+            $exceptionProducts = [];
             $delay = 2;
             $this->csvChunkCount = $request['csv_chunk_count'];
 
@@ -650,9 +630,9 @@ class ExportImportProducts extends Controller
                 
                 } catch (\Exception $exception) {
                     if(isset($product['Product Id']) && isset($product['Variant Id'])){
-                        $this->exceptionProducts[] = $this->formatError($product, $exception);
+                        $exceptionProducts[] = $this->formatError($product, $exception);
                     } else {
-                        $this->exceptionProducts[] = [
+                        $exceptionProducts[] = [
                             'line' => $exception->getLine(),
                             'message' => $exception->getMessage(),
                             'file' => $exception->getFile(),
@@ -660,7 +640,7 @@ class ExportImportProducts extends Controller
                     }
 
                     if(Functions::isEnabledLogs($request['store_hash'])){
-                        Log::info('CSV Products Exception Array: ' . json_encode($this->exceptionProducts));
+                        Log::info('CSV Products Exception Array: ' . json_encode($exceptionProducts));
                         Log::info(json_encode([
                             'line' => $exception->getLine(),
                             'message' => $exception->getMessage(),
@@ -681,13 +661,13 @@ class ExportImportProducts extends Controller
             } catch (\Exception $exception) {
 
                 if(!empty($data)){
-                    $this->exceptionProducts[] = $this->formatError($data, $exception);
+                    $exceptionProducts[] = $this->formatError($data, $exception);
                 } else {
-                    $this->exceptionProducts[] = $this->formatError([], $exception);
+                    $exceptionProducts[] = $this->formatError([], $exception);
                 }
 
                 if(Functions::isEnabledLogs($request['store_hash'])){
-                    Log::info('CSV batch update in DB Exception Array: ' . json_encode($this->exceptionProducts));
+                    Log::info('CSV batch update in DB Exception Array: ' . json_encode($exceptionProducts));
                     Log::info(json_encode([
                         'line' => $exception->getLine(),
                         'message' => $exception->getMessage(),
@@ -696,14 +676,34 @@ class ExportImportProducts extends Controller
                 }
             }
 
-            // Increment the counter and reset expiration to avoid early cache expiry
-            $this->processedChunks = Cache::increment('chunks_processed');
-            Cache::put('chunks_processed', $this->processedChunks, now()->addHours(2));
-
             // handle successful API calls
             if (!empty($this->BCProductsBatches)) {
-                UpdateBCProductsJob::dispatch($this->BCProductsBatches, $request);
-                
+                Log::info('2nd job call');
+                UpdateBCProductsJob::dispatch($this->BCProductsBatches, $request)->onQueue('default');
+            }
+
+            // Increment the counter and reset expiration to avoid early cache expiry
+            $processedChunks = Cache::increment('chunks_processed');
+            Cache::put('chunks_processed', $processedChunks, now()->addHours(2));
+
+            // Check if all chunks are complete
+            if ($processedChunks >= $request['csv_chunk_count']) {
+
+                CSVimportExport::where('id', $request['CSVinsertedId'])->update([
+                    'total_rows'=> $request['csv_count'],
+                    'error_at_rows' => json_encode($exceptionProducts),
+                    'status' => count($exceptionProducts) == $request['csv_count'] ? 3 : (empty($exceptionProducts) ? 1 : 2),
+                ]);
+
+                $this->ImportNotifyEmail($emailNotify);
+                if(Functions::isEnabledLogs($request['store_hash'])){
+                    Log::info('CSV Import Poducts Email Send.');
+                    Log::info('ended import products process');
+                } 
+                // Clear the cache counter to reset for next use
+                Cache::forget('chunks_processed');
+            } else{
+                Log::info('else condition');
             }
 
         } catch (\Exception $exception) {
