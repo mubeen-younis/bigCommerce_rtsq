@@ -674,18 +674,16 @@ class ExportImportProducts extends Controller
                 
             }
 
-            if($this->csvChunkCount == $request['csv_chunk_count']){
-                CSVimportExport::where('id', $request['CSVinsertedId'])->update([
-                    'total_rows'=> $request['csv_count'],
-                    'error_at_rows' => json_encode($exceptionProducts),
-                    'status' => count($exceptionProducts) == $request['csv_count'] ? 3 : (empty($exceptionProducts) ? 1 : 2),
-                ]);
-    
-                $this->ImportNotifyEmail($emailNotify);
-                if(Functions::isEnabledLogs($request['store_hash'])){
-                    Log::info('CSV Import Poducts Email Send.');
-                    Log::info('ended import products process');
-                }
+            CSVimportExport::where('id', $request['CSVinsertedId'])->update([
+                'total_rows'=> $request['csv_count'],
+                'error_at_rows' => json_encode($exceptionProducts),
+                'status' => count($exceptionProducts) == $request['csv_count'] ? 3 : (empty($exceptionProducts) ? 1 : 2),
+            ]);
+
+            $this->ImportNotifyEmail($emailNotify);
+            if(Functions::isEnabledLogs($request['store_hash'])){
+                Log::info('CSV Import Poducts Email Send.');
+                Log::info('ended import products process');
             }
 
         } catch (\Exception $exception) {
