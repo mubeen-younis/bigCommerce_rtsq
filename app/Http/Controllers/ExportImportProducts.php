@@ -6,6 +6,7 @@ use App\CustomClasses\BigCommerceFunctions;
 use App\Jobs\ImportProducts as ImportProductsJob;
 use App\Jobs\UpdateBCProductsJob as ImportBCProductsJob;
 use App\Jobs\ExportProductsFromBCStore;
+use App\Jobs\ImportProductsToBCStoreStatusUpdate;
 use App\Jobs\ImportProductsNotification;
 use App\Models\Locations;
 use App\Models\ProductSetting;
@@ -42,6 +43,7 @@ class ExportImportProducts extends Controller
     public $csvChunkCount;
     public $BCProductsBatches;
     public $processedChunks;
+    public $errorProducts;
 
     public function __construct()
     {
@@ -53,6 +55,7 @@ class ExportImportProducts extends Controller
         $this->fileSize = 0;
         $this->csvChunkCount = 0;
         $this->BCProductsBatches = [];
+        $this->errorProducts = [];
         $this->processedChunks = null;
     }
 
@@ -586,7 +589,6 @@ class ExportImportProducts extends Controller
 
             foreach ($csvChunks as $chunk) {
                 // Dispatch a job for each chunk
-                Log::info('1st job call');
                 ImportProductsJob::dispatch($chunk, $request, $headerRow)->delay(Carbon::now()->addSeconds($delay));
             }
 
@@ -676,36 +678,12 @@ class ExportImportProducts extends Controller
                 }
             }
 
-            Log::info('before 2nd job call : ' . json_encode($this->BCProductsBatches));
             // handle successful API calls
             if (!empty($this->BCProductsBatches)) {
-                Log::info('2nd job call');
                 ImportBCProductsJob::dispatch($this->BCProductsBatches, $request)->onQueue('default');
             }
 
-            // Increment the counter and reset expiration to avoid early cache expiry
-            $processedChunks = Cache::increment('chunks_processed');
-            Cache::put('chunks_processed', $processedChunks, now()->addHours(2));
-
-            // Check if all chunks are complete
-            if ($processedChunks >= $request['csv_chunk_count']) {
-
-                CSVimportExport::where('id', $request['CSVinsertedId'])->update([
-                    'total_rows'=> $request['csv_count'],
-                    'error_at_rows' => json_encode($exceptionProducts),
-                    'status' => count($exceptionProducts) == $request['csv_count'] ? 3 : (empty($exceptionProducts) ? 1 : 2),
-                ]);
-
-                $this->ImportNotifyEmail($emailNotify);
-                if(Functions::isEnabledLogs($request['store_hash'])){
-                    Log::info('CSV Import Poducts Email Send.');
-                    Log::info('ended import products process');
-                } 
-                // Clear the cache counter to reset for next use
-                Cache::forget('chunks_processed');
-            } else{
-                Log::info('else condition');
-            }
+            ImportProductsToBCStoreStatusUpdate::dispatch($exceptionProducts, $request)->delay(Carbon::now()->addSeconds(5));
 
         } catch (\Exception $exception) {
             CSVimportExport::where('id', $request['CSVinsertedId'])->update([
@@ -1108,7 +1086,7 @@ class ExportImportProducts extends Controller
             } catch (\Exception $exception) {
 
                 if(Functions::isEnabledLogs($request['store_hash'])){
-                    Log::info('CSV batch update BC Exception Array: ' . json_encode($exceptionProducts));
+                    Log::info('CSV batch update BC Exception Array: ' . json_encode($batch));
                     Log::info(json_encode([
                         'line' => $exception->getLine(),
                         'message' => $exception->getMessage(),
