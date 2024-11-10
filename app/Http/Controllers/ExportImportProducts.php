@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\CustomClasses\BigCommerceFunctions;
 use App\Jobs\ImportProducts as ImportProductsJob;
-use App\Jobs\UpdateBCProductsJob;
+use App\Jobs\UpdateBCProductsJob as ImportBCProductsJob;
 use App\Jobs\ExportProductsFromBCStore;
 use App\Jobs\ImportProductsNotification;
 use App\Models\Locations;
@@ -588,6 +588,13 @@ class ExportImportProducts extends Controller
                 // Dispatch a job for each chunk
                 Log::info('1st job call');
                 ImportProductsJob::dispatch($chunk, $request, $headerRow)->delay(Carbon::now()->addSeconds($delay));
+                Log::info('before 2nd job call : ' . json_encode($this->BCProductsBatches));
+            // dd($this->BCProductsBatches);
+            // handle successful API calls
+            if (!empty($this->BCProductsBatches)) {
+                Log::info('2nd job call');
+                ImportBCProductsJob::dispatch($this->BCProductsBatches, $request)->onQueue('default');
+            }
             }
 
         } catch (\Exception $exception) {
@@ -674,12 +681,6 @@ class ExportImportProducts extends Controller
                         'file' => $exception->getFile(),
                     ]));
                 }
-            }
-            Log::info('before 2nd job call : ' . json_encode($this->BCProductsBatches));
-            // handle successful API calls
-            if (!empty($this->BCProductsBatches)) {
-                Log::info('2nd job call');
-                UpdateBCProductsJob::dispatch($this->BCProductsBatches, $request)->onQueue('default');
             }
 
             // Increment the counter and reset expiration to avoid early cache expiry
