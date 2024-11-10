@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\CustomClasses\BigCommerceFunctions;
 use App\Jobs\ImportProducts as ImportProductsJob;
-use App\Jobs\UpdateBCProductsJob as ImportBCProductsJob;
+use App\Jobs\UpdateBCProductsJob;
 use App\Jobs\ExportProductsFromBCStore;
 use App\Jobs\ImportProductsToBCStoreStatusUpdate;
 use App\Jobs\ImportProductsNotification;
@@ -581,7 +581,7 @@ class ExportImportProducts extends Controller
             });
     
             $csvChunks = array_chunk($csvArray, $this->csvChunksLength);
-            $request['csv_count'] = count($csvArray);
+            $request['CSV_count'] = count($csvArray);
             $request['csv_chunk_count'] = count($csvChunks) ?? 0;
 
             foreach ($csvChunks as $chunk) {
@@ -652,9 +652,9 @@ class ExportImportProducts extends Controller
             }
 
             CSVimportExport::where('id', $request['CSVinsertedId'])->update([
-                'total_rows'=> $request['csv_count'],
+                'total_rows'=> $request['CSV_count'],
                 'error_at_rows' => json_encode($exceptionProducts),
-                'status' => count($exceptionProducts) == $request['csv_count'] ? 3 : (empty($exceptionProducts) ? 1 : 2),
+                'status' => count($exceptionProducts) == $request['CSV_count'] ? 3 : (empty($exceptionProducts) ? 1 : 2),
             ]);
 
             foreach($data as $record){
@@ -663,17 +663,16 @@ class ExportImportProducts extends Controller
                     $this->createBCProductsUpdateBatches($record);
                 }
             }
-            
-            $this->BCProductsBatches[] = $this->Batches;
 
-            // handle successful API calls
+            $this->BCProductsBatches[] = $this->Batches;
+            // Optionally, handle successful API calls
             if (!empty($this->BCProductsBatches)) {
-                ImportBCProductsJob::dispatch($this->BCProductsBatches, $request)->onQueue('default');
+                UpdateBCProductsJob::dispatch($this->BCProductsBatches, $request)->delay(Carbon::now()->addSeconds($delay));
             }
 
         } catch (\Exception $exception) {
             CSVimportExport::where('id', $request['CSVinsertedId'])->update([
-                'total_rows'=> $request['csv_count'],
+                'total_rows'=> $request['CSV_count'],
                 'error_at_rows' => json_encode([
                     'line' => $exception->getLine(),
                     'message' => $exception->getMessage(),
