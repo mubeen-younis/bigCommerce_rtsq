@@ -40,7 +40,7 @@ class ExportImportProducts extends Controller
     public $mainController;
     public $productSetting;
     public $fileSize;
-    public $csvChunkCount;
+    public $totalChunks;
     public $BCProductsBatches;
     public $processedChunks;
     public $errorProducts;
@@ -53,7 +53,7 @@ class ExportImportProducts extends Controller
         $this->mainController = new MainController();
         $this->productSetting = new ProductSettingController();
         $this->fileSize = 0;
-        $this->csvChunkCount = 0;
+        $this->totalChunks = 0;
         $this->BCProductsBatches = [];
         $this->errorProducts = null;
         $this->processedChunks = null;
@@ -578,12 +578,13 @@ class ExportImportProducts extends Controller
             $CSVimportPrdModel->save();
             $request['CSVinsertedId'] = $CSVimportPrdModel->id;
 
+            // Initialize the counter and dispatch jobs
+            Cache::put('chunks_processed', 0, now()->addHours(2));
+
             foreach ($csvChunks as $chunk) {
                 // Dispatch a job for each chunk
                 ImportProductsJob::dispatch($chunk, $request, $headerRow)->delay(Carbon::now()->addSeconds($delay++));
             }
-
-            ImportProductsToBCStoreStatusUpdate::dispatch($request)->delay(Carbon::now()->addSeconds(5));
 
         } catch (\Exception $exception) {
             $this->createImportCsvStatusInDB($request, $exception);
@@ -624,7 +625,7 @@ class ExportImportProducts extends Controller
             $data = []; $this->count = 0;
             $exceptionProducts = [];
             $delay = 2;
-            $this->csvChunkCount = $request['csv_chunk_count'];
+            $this->totalChunks = $request['csv_chunk_count'];
 
             foreach ($chunk as $key => $product) {
                 try {
@@ -669,6 +670,20 @@ class ExportImportProducts extends Controller
             // Optionally, handle successful API calls
             if (!empty($this->BCProductsBatches)) {
                 UpdateBCProductsJob::dispatch($this->BCProductsBatches, $request)->delay(Carbon::now()->addSeconds($delay));
+            }
+
+            $processedChunks = Cache::increment('chunks_processed');
+            Cache::put('chunks_processed', $processedChunks, now()->addHours(2));
+
+            if ($processedChunks >= $this->totalChunks) {
+                
+                $this->ImportNotifyEmail($emailNotify);
+                if(Functions::isEnabledLogs($this->request['store_hash'])){
+                    Log::info('CSV Import Poducts Email Send.');
+                    Log::info('ended import products process');
+                }
+
+                Cache::forget('chunks_processed');
             }
 
         } catch (\Exception $exception) {
