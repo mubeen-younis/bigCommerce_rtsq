@@ -678,7 +678,7 @@ class ExportImportProducts extends Controller
             if ($processedChunks >= $this->totalChunks) {
                 
                 $this->ImportNotifyEmail($emailNotify);
-                if(Functions::isEnabledLogs($this->request['store_hash'])){
+                if(Functions::isEnabledLogs($request['store_hash'])){
                     Log::info('CSV Import Poducts Email Send.');
                     Log::info('ended import products process');
                 }
