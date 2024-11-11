@@ -1091,23 +1091,45 @@ class ExportImportProducts extends Controller
             
         }
 
-        $processedChunks = Cache::increment('chunks_processed');
+        $maxRetries = 3; // Retry 3 times if lock is not acquired
+        $retries = 0;
 
-        if ($processedChunks >= $request['csv_chunk_count']) {
+        while ($retries < $maxRetries) {
+            $lock = Cache::lock('chunks_processed_lock', 5);
 
-            CSVimportExport::where('id', $request['CSVinsertedId'])->update([
-                'error_at_rows' => json_encode($exceptionProducts),
-                'status' => count($exceptionProducts) == $request['CSV_count'] ? 3 : (empty($exceptionProducts) ? 1 : 2),
-            ]);
-                
-            $this->ImportNotifyEmail($request['importEmailAddress'], $exceptionProducts);
-            if(Functions::isEnabledLogs($request['store_hash'])){
-                Log::info('CSV Import Poducts Email Send.');
-                Log::info('ended import products process');
-            }
-            Cache::forget('chunks_processed');
-        }
+            if ($lock->get()) {
+
+                try {
+
+                    $processedChunks = Cache::increment('chunks_processed');
+
+                    if ($processedChunks >= $request['csv_chunk_count']) {
         
+                        CSVimportExport::where('id', $request['CSVinsertedId'])->update([
+                            'error_at_rows' => json_encode($exceptionProducts),
+                            'status' => count($exceptionProducts) == $request['CSV_count'] ? 3 : (empty($exceptionProducts) ? 1 : 2),
+                        ]);
+                            
+                        $this->ImportNotifyEmail($request['importEmailAddress'], $exceptionProducts);
+                        if(Functions::isEnabledLogs($request['store_hash'])){
+                            Log::info('CSV Import Poducts Email Send.');
+                            Log::info('ended import products process');
+                        }
+                        Cache::forget('chunks_processed');
+                    }
+
+                    break;
+                    
+                } finally {
+                    $lock->release();
+                }
+                break; // Exit loop if increment was successful
+            } else {
+                // Wait briefly before retrying to acquire the lock
+                usleep(100000); // Wait for 0.1 seconds
+                $retries++;
+            }
+        }   
     }
 
     public function updateBCProduct($source_product_id, $variant_id, $store_id, $update, $access_token, $hash)
