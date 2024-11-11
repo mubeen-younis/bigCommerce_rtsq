@@ -411,9 +411,9 @@ class ExportImportProducts extends Controller
         Mail::to($email)->send(new CsvNotifyEmail($hash));
     }
 
-    public function ImportNotifyEmail($email)
+    public function ImportNotifyEmail($email, $data)
     {
-        Mail::to($email)->send(new ImportProductsEmail());
+        Mail::to($email)->send(new ImportProductsEmail($data));
     }
 
     public function makeZipWithFiles($folderName)
@@ -633,12 +633,6 @@ class ExportImportProducts extends Controller
                 } catch (\Exception $exception) {
                     if(isset($product['Product Id']) && isset($product['Variant Id'])){
                         $exceptionProducts[] = $this->formatError($product, $exception);
-                    } else {
-                        $exceptionProducts[] = [
-                            'line' => $exception->getLine(),
-                            'message' => $exception->getMessage(),
-                            'file' => $exception->getFile(),
-                        ];
                     }
 
                     if(Functions::isEnabledLogs($request['store_hash'])){
@@ -690,14 +684,9 @@ class ExportImportProducts extends Controller
         $this->updateBCProductBatches($batches, $request, $exceptionProducts);
     }
 
-    protected function formatError($batch, $exception)
+    protected function formatError($product, $exception)
     {
-        return [
-            'line' => $exception->getLine(),
-            'message' => $exception->getMessage(),
-            'file' => $exception->getFile(),
-            'data' => $batch ?? [],
-        ];
+        return 'Product ' . $product['Product Id'] . ' : ' . $product['Variant Id'] . ' => ' . $exception->getMessage();
     }
 
     public function createBCProductsUpdateBatches($product)
@@ -844,14 +833,38 @@ class ExportImportProducts extends Controller
         // END //
 
         if (!empty($update)) {
-            if ($variant_id) {
+
+            $recordExists = ProductSetting::where('source_product_id', $source_product_id)
+            ->where('variant_id', $variant_id)
+            ->where('store_id', $store_id)->exists();
+            
+            if ($recordExists) {
                 ProductSetting::where('source_product_id', $source_product_id)
                     ->where('variant_id', $variant_id)
                     ->where('store_id', $store_id)->update($update);
             } else {
-                ProductSetting::where('source_product_id', $source_product_id)
-                    ->whereNull('variant_id')
-                    ->where('store_id', $store_id)->update($update);
+                $settings = $this->getSettings([], $product, $indexes, $store_id);
+                $createProduct = new ProductSetting();
+                $createProduct->source_product_id = $source_product_id;
+                $createProduct->variant_id = $variant_id;
+                $createProduct->name = isset($update['name']) ? $update['name'] : '' ?? '';
+                $createProduct->sku = isset($update['sku']) ? $update['sku'] : null ?? null;
+                $createProduct->weight = isset($update['weight']) ? $update['weight'] : null ?? null;
+                $createProduct->length = isset($update['length']) ? $update['length'] : null ?? null;
+                $createProduct->width = isset($update['width']) ? $update['width'] : null ?? null;
+                $createProduct->height = isset($update['height']) ? $update['height'] : null ?? null;
+                $createProduct->nmfc = isset($update['nmfc']) ? $update['nmfc'] : null ?? null;
+                $createProduct->product_markup = isset($update['product_markup']) ? $update['product_markup'] : null ?? null;
+                $createProduct->own_pallet = isset($update['own_pallet']) ? $update['own_pallet'] : null ?? null;
+                $createProduct->pallet_vertical_rotation = isset($update['pallet_vertical_rotation']) ? $update['pallet_vertical_rotation'] : null ?? null;
+                $createProduct->settings = json_encode($settings);
+                $createProduct->ship_multiple_package = isset($update['ship_multiple_package']) ? $update['ship_multiple_package'] : '{}' ?? '{}';
+                $createProduct->store_id = $store_id;
+                $createProduct->dropship_enabled = isset($update['dropship_enabled']) ? $update['dropship_enabled'] : null ?? null;
+                $createProduct->dropship_location = isset($update['dropship_location']) ? $update['dropship_location'] : null ?? null;
+                $createProduct->brand_id = isset($update['brand_id']) && !empty($update['brand_id']) ? $update['brand_id'] : null ?? null;
+                $createProduct->categories_id = isset($update['categories']) && !empty($update['categories']) ? json_encode($update['categories']) : null ?? null;
+                $createProduct->save();
             }
             $update['variant_id'] = $variant_id;
         }
@@ -1088,7 +1101,7 @@ class ExportImportProducts extends Controller
                 'status' => count($exceptionProducts) == $request['CSV_count'] ? 3 : (empty($exceptionProducts) ? 1 : 2),
             ]);
                 
-            $this->ImportNotifyEmail($request['importEmailAddress']);
+            $this->ImportNotifyEmail($request['importEmailAddress'], $exceptionProducts);
             if(Functions::isEnabledLogs($request['store_hash'])){
                 Log::info('CSV Import Poducts Email Send.');
                 Log::info('ended import products process');
