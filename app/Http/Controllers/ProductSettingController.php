@@ -333,7 +333,7 @@ class ProductSettingController extends Controller
                 if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
                     $response = json_decode($response['response'], true);
                     $variants = $response['data'] ?? [];
-                    if($DBproducts->count()){
+                    if($DBproducts->count() == count($variants)){
 
                         if (count($DBproducts)) {
                             foreach ($DBproducts as $key => $DBvariant) {
