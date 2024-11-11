@@ -624,7 +624,7 @@ class ExportImportProducts extends Controller
             $this->BCProductsBatches = $this->Batches = [];
             $data = []; $this->count = 0;
             $exceptionProducts = [];
-            $delay = 2;
+            $delay = 1;
             $this->totalChunks = $request['csv_chunk_count'];
 
             foreach ($chunk as $key => $product) {
@@ -669,21 +669,7 @@ class ExportImportProducts extends Controller
 
             // Optionally, handle successful API calls
             if (!empty($this->BCProductsBatches)) {
-                UpdateBCProductsJob::dispatch($this->BCProductsBatches, $request)->delay(Carbon::now()->addSeconds($delay));
-            }
-
-            $processedChunks = Cache::increment('chunks_processed');
-            Cache::put('chunks_processed', $processedChunks, now()->addHours(2));
-
-            if ($processedChunks >= $this->totalChunks) {
-                
-                $this->ImportNotifyEmail($emailNotify);
-                if(Functions::isEnabledLogs($request['store_hash'])){
-                    Log::info('CSV Import Poducts Email Send.');
-                    Log::info('ended import products process');
-                }
-
-                Cache::forget('chunks_processed');
+                UpdateBCProductsJob::dispatch($this->BCProductsBatches, $request)->delay(Carbon::now()->addSeconds($delay++));
             }
 
         } catch (\Exception $exception) {
@@ -1096,6 +1082,18 @@ class ExportImportProducts extends Controller
                 }
             }
             
+        }
+        $processedChunks = Cache::increment('chunks_processed');
+        Cache::put('chunks_processed', $processedChunks, now()->addHours(2));
+        Log::info('processedChunks : ' . $processedChunks);
+        if ($processedChunks >= $request['csv_chunk_count']) {
+                
+            $this->ImportNotifyEmail($request['importEmailAddress']);
+            if(Functions::isEnabledLogs($request['store_hash'])){
+                Log::info('CSV Import Poducts Email Send.');
+                Log::info('ended import products process');
+            }
+            Cache::forget('chunks_processed');
         }
         
     }
