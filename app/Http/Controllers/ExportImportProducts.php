@@ -1092,7 +1092,6 @@ class ExportImportProducts extends Controller
         }
 
         $processedChunks = Cache::increment('chunks_processed');
-        Cache::put('chunks_processed', $processedChunks, now()->addHours(2));
 
         if ($processedChunks >= $request['csv_chunk_count']) {
 
