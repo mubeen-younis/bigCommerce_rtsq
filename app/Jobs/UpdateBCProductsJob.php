@@ -19,11 +19,12 @@ class UpdateBCProductsJob implements ShouldQueue
      *
      * @return void
      */
-    public $batches, $request;
-    public function __construct($batches, $request)
+    public $batches, $request, $exceptionProducts;
+    public function __construct($batches, $request, $exceptionProducts)
     {
         $this->batches = $batches;
         $this->request = $request;
+        $this->exceptionProducts = $exceptionProducts;
     }
 
     /**
@@ -34,6 +35,6 @@ class UpdateBCProductsJob implements ShouldQueue
     public function handle()
     {
         $ExportImportProducts = new ExportImportProducts();
-        $ExportImportProducts->importBCProductCsvJob($this->batches, $this->request);
+        $ExportImportProducts->importBCProductCsvJob($this->batches, $this->request, $this->exceptionProducts);
     }
 }

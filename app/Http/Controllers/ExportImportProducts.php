@@ -652,11 +652,6 @@ class ExportImportProducts extends Controller
                 }
             }
 
-            CSVimportExport::where('id', $request['CSVinsertedId'])->update([
-                'error_at_rows' => json_encode($exceptionProducts),
-                'status' => count($exceptionProducts) == $request['CSV_count'] ? 3 : (empty($exceptionProducts) ? 1 : 2),
-            ]);
-
             foreach($data as $record){
                 unset($record['updated_at']);
                 if(!empty($record) && !empty($record['variant_id'])){
@@ -668,7 +663,7 @@ class ExportImportProducts extends Controller
 
             // Optionally, handle successful API calls
             if (!empty($this->BCProductsBatches)) {
-                UpdateBCProductsJob::dispatch($this->BCProductsBatches, $request)->delay(Carbon::now()->addSeconds($delay++));
+                UpdateBCProductsJob::dispatch($this->BCProductsBatches, $request, $exceptionProducts)->delay(Carbon::now()->addSeconds($delay++));
             }
 
         } catch (\Exception $exception) {
@@ -690,9 +685,9 @@ class ExportImportProducts extends Controller
         
     }
 
-    public function importBCProductCsvJob($batches, $request)
+    public function importBCProductCsvJob($batches, $request, $exceptionProducts)
     {
-        $this->updateBCProductBatches($batches, $request);
+        $this->updateBCProductBatches($batches, $request, $exceptionProducts);
     }
 
     protected function formatError($batch, $exception)
@@ -1048,7 +1043,7 @@ class ExportImportProducts extends Controller
         return $dropShipId;
     }
 
-    public function updateBCProductBatches($batches, $request)
+    public function updateBCProductBatches($batches, $request, $exceptionProducts)
     {
         unset($headers);
         $headers[] = 'X-Auth-Token: ' . $this->mainController->getCustAccessTok($request['store_id']);
@@ -1087,6 +1082,11 @@ class ExportImportProducts extends Controller
         Cache::put('chunks_processed', $processedChunks, now()->addHours(2));
 
         if ($processedChunks >= $request['csv_chunk_count']) {
+
+            CSVimportExport::where('id', $request['CSVinsertedId'])->update([
+                'error_at_rows' => json_encode($exceptionProducts),
+                'status' => count($exceptionProducts) == $request['CSV_count'] ? 3 : (empty($exceptionProducts) ? 1 : 2),
+            ]);
                 
             $this->ImportNotifyEmail($request['importEmailAddress']);
             if(Functions::isEnabledLogs($request['store_hash'])){
