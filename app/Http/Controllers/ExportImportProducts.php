@@ -6,7 +6,6 @@ use App\CustomClasses\BigCommerceFunctions;
 use App\Jobs\ImportProducts as ImportProductsJob;
 use App\Jobs\UpdateBCProductsJob;
 use App\Jobs\ExportProductsFromBCStore;
-use App\Jobs\ImportProductsToBCStoreStatusUpdate;
 use App\Jobs\ImportProductsNotification;
 use App\Models\Locations;
 use App\Models\ProductSetting;
@@ -1083,9 +1082,10 @@ class ExportImportProducts extends Controller
             }
             
         }
+
         $processedChunks = Cache::increment('chunks_processed');
         Cache::put('chunks_processed', $processedChunks, now()->addHours(2));
-        Log::info('processedChunks : ' . $processedChunks);
+
         if ($processedChunks >= $request['csv_chunk_count']) {
                 
             $this->ImportNotifyEmail($request['importEmailAddress']);

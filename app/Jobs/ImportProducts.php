@@ -40,7 +40,6 @@ class ImportProducts implements ShouldQueue
      */
     public function handle()
     {
-        Log::info('chunks_processed : ' . Cache::has('chunks_processed'));
         $ExportImportProducts = new ExportImportProducts();
         $ExportImportProducts->importProductCsvJob($this->chunk, $this->request, $this->headerRow);
     }
