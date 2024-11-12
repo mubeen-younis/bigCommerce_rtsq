@@ -277,7 +277,11 @@ class ExportImportProducts extends Controller
         $productLine[] = $DBProductSettings['freight_class'] ?? '';
         $productLine[] = isset($DBProductSettings['hazardous_enabled']) && $DBProductSettings['hazardous_enabled'] ? 1 : 0;
         $productLine[] = isset($DBProductSettings['insurance']) && $DBProductSettings['insurance'] ? 1 : 
-        $nickname = $zip = $city = $state = $country = '';
+        $nickname = '';
+        $zip = '';
+        $city = '';
+        $state = '';
+        $country = '';
 
         if (isset($DBProductSettings['dropship_enabled']) && $DBProductSettings['dropship_enabled']) {
             $location = $DBProductSettings['dropship_location'] ?? false;
