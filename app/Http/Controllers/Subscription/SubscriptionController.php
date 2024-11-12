@@ -31,6 +31,7 @@ use Illuminate\Support\Facades\Validator;
 use PHPUnit\Exception;
 use Stripe\Charge;
 use Stripe\Stripe;
+use App\Models\Subscription\PackageSubscription;
 
 class SubscriptionController extends Controller
 {
@@ -39,6 +40,7 @@ class SubscriptionController extends Controller
     public static $isTrial = false;
     public static $chargeAmount = 0;
     public static $trial = 1;
+    public static $devPlan = 5;
     public static $email = '';
     public static $plansData = [];
     public static $testUsers = [];
@@ -340,6 +342,21 @@ class SubscriptionController extends Controller
             $hubSpotController = new HubSpotController();
             //Check: If current carriers installed are more than the choosed plan then return with message
             $currentSubscriptionDetail = $this->subscriptionDetailFromDB($request['store_id']);
+
+            // Expired add-on packages if store convert from sandbox to live
+            if (!empty($currentSubscriptionDetail) && $currentSubscriptionDetail->plan_id == 5 && $currentSubscriptionDetail->plan_id != $request['plan']){
+                
+                $currentPackageSub = PackageSubscription::where('store_id', $request['store_id'])->latest()->get();
+                if(count($currentPackageSub) > 0){
+                    foreach($currentPackageSub as $package){
+                        if($package['payment_method_id'] == null && $package['stripe_charge_id'] == null && $package['status']){
+                            $package->update(['status' => 0]);
+                        }
+                    }
+
+                }
+            }
+
             $isTestStore = $request['is_test_store'] ?? false;
             self::getPlansDetails($request['plan'], $isTestStore);   //Getting Plan detail from DB
             $newPlanAllowedCarriers = self::$plansData['carrier_count'];
@@ -365,7 +382,22 @@ class SubscriptionController extends Controller
                 }
             }
             //END:Check
-            if ($request['plan'] != self::$trial) {
+            /*Added check for development plan
+            if the store already taken development plan*/
+            if ($request['plan'] == self::$devPlan) {
+                $storeDetail = Store::where('id', $request['store_id'])->first();
+                if (!blank($storeDetail)) {
+                    if ($storeDetail->is_trial_completed) {
+                        return response()->json([
+                            'error' => true,
+                            'data' => [],
+                            'message' => 'You have already taken development plan! Please subscribe to a paid plan if you want to continue using our services.'
+                        ], 200);
+                    }
+                }
+            }
+            //END:Check
+            if ($request['plan'] != self::$trial || $request['plan'] != self::$devPlan) {
                 $data = [
                     // 'card_number' => '4242424242424242',
                     'card_number' => preg_replace("/\s+/", "", $request['card_number']),
@@ -520,7 +552,7 @@ class SubscriptionController extends Controller
                 //Else part will be executed in case of trial and we need to update the subscription table for a trial
                 /*This block of code will check if customer already subscribe trial plan
                 and is allowed to subscribe trial plan*/
-                $trialDays = Carbon::now()->addDays(14);
+                $trialDays = Carbon::now()->addDays(self::$plansData['plan_id'] == 5 ? 1825 : 14);
                 $trialSubscription = Subscription::where('store_id', $data['store_id'])->where('plan_id', self::$plansData['plan_id'])->first();
                 if (!blank($trialSubscription)) {
                     $dbTrialEndDate = $trialSubscription->ends_at;
@@ -529,7 +561,7 @@ class SubscriptionController extends Controller
                             return response()->json([
                                 'error' => true,
                                 'data' => [],
-                                'message' => 'You have already taken trial plan! Please subscribe to a paid plan if you want to continue using our services.'
+                                'message' => 'You have already taken ' . self::$plansData['plan_id'] == 5 ? 'development' : 'trial' . ' plan! Please subscribe to a paid plan if you want to continue using our services.'
                             ], 200);
                         }
                         /*Setting remaining trial days for customer*/
@@ -572,9 +604,9 @@ class SubscriptionController extends Controller
                 'endsAt' => $subscriptionDetail->ends_at,
                 'action' => 'IPF'       // Invoice Payment Failed
             );
-            if ($request['plan'] == self::$trial) { // if planId is null then it's a trial and we need to send an email for trial
+            if ($request['plan'] == self::$trial || $request['plan'] == self::$devPlan) { // if planId is null then it's a trial and we need to send an email for trial
 
-                Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, 3));
+                Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, self::$devPlan ? 4 : 3));
             } else {
                 Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, 1));
 
@@ -912,12 +944,12 @@ class SubscriptionController extends Controller
         }
 
         $subscriptionDetail = (array)$subscriptionDetail;
-        if ($subscriptionDetail['plan_id'] == self::$trial && Carbon::now() > Carbon::parse($subscriptionDetail['ends_at'])) {
-            //If Trial is expired then update expired (2) status to DB
+        if (($subscriptionDetail['plan_id'] == self::$trial || $subscriptionDetail['plan_id'] == self::$devPlan) && Carbon::now() > Carbon::parse($subscriptionDetail['ends_at'])) {
+            //If Trial or development plan is expired then update expired (2) status to DB
             Subscription::where('id', $subscriptionDetail['subscription_id'])->update([
                 'status' => 2
             ]);
-            $subscriptionDetail['status'] = 2; //Trial is expired
+            $subscriptionDetail['status'] = 2; //Trial or Development is expired
         }
         $plan = Plan::find($subscriptionDetail['plan_id']);
         /*Added for paid plan expiry date*/

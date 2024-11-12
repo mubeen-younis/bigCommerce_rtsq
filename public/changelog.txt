@@ -2,6 +2,10 @@
 
 * Update - Update CSV import functionality (Ticket:6197880205, 16184692330, 16188165982) [#499] (https://bitbucket.org/eniture/big-commerce/pull-requests/499)
 
+= 2.2.32 2024-11-12 =
+
+* Update - Feature/sandbox store functionality (Ticket:15856244281) [#500] (https://bitbucket.org/eniture/big-commerce/pull-requests/500)
+
 = 2.2.30 2024-11-08 =
 
 * Update - Update CSV export functionality (Ticket:2593063812) [#498] (https://bitbucket.org/eniture/big-commerce/pull-requests/498)
