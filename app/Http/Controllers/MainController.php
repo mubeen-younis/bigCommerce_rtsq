@@ -158,10 +158,6 @@ class MainController extends BaseController
                     $addons = optional(Addons::get())->toArray() ?? [];
                     $addonsController->addonsOnAppInstallation($addons, $store);
                 }
-                /*
-                 * Update WS graph data
-                 * */
-                SaleGraphController::updateGraphData();
 
                 // If the merchant installed the app via an external link, redirect back to the
                 // BC installation success page for this app
@@ -209,10 +205,7 @@ class MainController extends BaseController
                     $hubSpotController = new HubSpotController();
                     $hubSpotController->createUpdateHubSpotUser($store['id'], $user, $status);
                 }
-                /*
-                 * Update WS graph data
-                 * */
-                SaleGraphController::updateGraphData();
+
             }
         }
         echo 'uninstall';
@@ -414,7 +407,7 @@ class MainController extends BaseController
             // $toRequest['store_id'] = $storeID->id;
             // $toRequest['store_name'] = $storeHash;
             // $toRequest['product_id'] = $productId;
-            
+
             // $prodSetCon = new ProductSettingController();
             // $prodSetCon->getSingleProductFromApi($toRequest, $scope);
 

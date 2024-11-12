@@ -165,7 +165,7 @@ class ProductSettingController extends Controller
         $headers[] = 'Accept: application/json';
         $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
         $response = json_decode($response['response'], true);
-        return $response['meta']['pagination']['total_pages'];
+        return $response['meta']['pagination']['total_pages'] ?? 0;
     }
 
     public function getSingleProductFromApi($request, $scope = null)
