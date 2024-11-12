@@ -273,7 +273,7 @@ class ExportImportProducts extends Controller
             $quoteMethod = 'PD';
         }
 
-        $productLine[] = $quoteMethod;
+        $productLine[] = $quoteMethod ?? '';
         $productLine[] = $DBProductSettings['freight_class'] ?? '';
         $productLine[] = isset($DBProductSettings['hazardous_enabled']) && $DBProductSettings['hazardous_enabled'] ? 1 : 0;
         $productLine[] = isset($DBProductSettings['insurance']) && $DBProductSettings['insurance'] ? 1 : 
@@ -305,12 +305,12 @@ class ExportImportProducts extends Controller
             $boxingProperty = '0';
         }
 
-        $productLine[] = $nickname;
-        $productLine[] = $zip;
-        $productLine[] = $city;
-        $productLine[] = $state;
-        $productLine[] = $country;
-        $productLine[] = $boxingProperty;
+        $productLine[] = $nickname ?? '';
+        $productLine[] = $zip ?? '';
+        $productLine[] = $city ?? '';
+        $productLine[] = $state ?? '';
+        $productLine[] = $country ?? '';
+        $productLine[] = $boxingProperty ?? '';
         $productLine[] = isset($DBProductSettings['own_pallet']) && $DBProductSettings['own_pallet'] ? 1 : 0;
         $productLine[] = isset($DBProductSettings['pallet_vertical_rotation']) && $DBProductSettings['pallet_vertical_rotation'] ? 1 : 0;
         
