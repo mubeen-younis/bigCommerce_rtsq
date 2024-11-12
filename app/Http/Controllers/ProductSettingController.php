@@ -313,15 +313,10 @@ class ProductSettingController extends Controller
                 'message' => 'No Product Id',
             ], 200);
         }
-        $DBproducts = ProductSetting::where('source_product_id', $request->product_id)
-            ->whereNotNull('variant_id')
-            ->where('store_id', $request->store_id)
-            ->get();
 
         $headers = BigCommerceFunctions::getHeaders($request['store_hash']);
         $storeUrl = BigCommerceFunctions::$initalUrl . $request['store_hash'] . '/v3/catalog/products/' . $request['product_id'];
         $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
-        Log::info('DB products ' . json_encode($DBproducts));
 
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
             $response = json_decode($response['response'], true);
@@ -335,45 +330,51 @@ class ProductSettingController extends Controller
                 if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
                     $response = json_decode($response['response'], true);
                     $variants = $response['data'] ?? [];
-                    if($DBproducts->count() == count($variants)){
 
-                        if (count($DBproducts)) {
-                            foreach ($DBproducts as $key => $DBvariant) {
+                    if(count($variants)){
+                        foreach ($variants as $key => $variant) {
 
-                                $variant = collect($variants)->firstWhere('id', $DBvariant->variant_id);
-                                $variant = $this->setVariantDimensions($variant, $product);
-                                $products = $this->getProductIndex($variant, $DBproducts, $key);
-                                $products[$key]['name'] = isset($product['name']) ? $product['name'] : '' ?? '';
+                            $DBproduct = ProductSetting::where('source_product_id', $variant['product_id'])
+                            ->where('variant_id', $variant['id'])
+                            ->where('store_id', $request->store_id)
+                            ->first();
+
+                            $variant = $this->setVariantDimensions($variant, $product);
+                            $variant['name'] = isset($product['name']) ? $product['name'] : '' ?? '';
+                            $variant['source_product_id'] = isset($variant['product_id']) ? $variant['product_id'] : '' ?? '';
+                            $variant['variant_id'] = isset($variant['id']) ? $variant['id'] : null ?? null;
+                            $variant['store_id'] = isset($request->store_id) ? $request->store_id : null ?? null;
+                            $variant['settings'] = $this->setShippingMethod($variant, $request['store_id']);
+
+                            if(!empty($DBproduct)){
+                                $variant = $this->getProductIndex($variant, $DBproduct);
+                            } else{
+                                unset($variant['id']);
                             }
-                        }
 
-                    } else {
-                        if (count($variants)) {
-                            foreach ($variants as $key => $variant) {
-                                
-                                $variant = $this->setVariantDimensions($variant, $product);
-                                $products = $this->getProductIndex($variant, $products, $key);
-                                $products[$key]['name'] = isset($product['name']) ? $product['name'] : '' ?? '';
-                                $products[$key]['source_product_id'] = isset($variant['product_id']) ? $variant['product_id'] : '' ?? '';
-                                $products[$key]['variant_id'] = isset($variant['id']) ? $variant['id'] : null ?? null;
-                                $products[$key]['settings'] = $this->setShippingMethod($variant, $request['store_id']);
-                            }   
+                            $products[$key] = $variant;
                         }
                     }
                 }                    
             } else {
 
-                if($DBproducts->count()){
-                    
-                    $products = $this->getProductIndex($product, $DBproducts);
+                $DBproduct = ProductSetting::where('source_product_id', $request->product_id)
+                    ->where('variant_id', $request->variant_id)
+                    ->where('store_id', $request->store_id)
+                    ->first();
 
-                } else {
+                $product = $this->setVariantDimensions($product, []);
+                $product['source_product_id'] = isset($product['id']) ? $product['id'] : null ?? null;
+                $product['variant_id'] = isset($product['base_variant_id']) ? $product['base_variant_id'] : null ?? null;
+                $product['settings'] = $this->setShippingMethod($product, $request['store_id']);
 
-                    $products = $this->getProductIndex($product, $products);
-                    $products[0]['source_product_id'] = isset($product['id']) ? $product['id'] : null ?? null;
-                    $products[0]['variant_id'] = isset($product['base_variant_id']) ? $product['base_variant_id'] : null ?? null;
-                    $products[0]['settings'] = $this->setShippingMethod($product, $request['store_id']);
+                if(!empty($DBproduct)){
+                    $product = $this->getProductIndex($product, $DBproduct);
+                } else{
+                    unset($product['id']);
                 }
+                
+                $products[0] = $product;
             }
         } else {
             return response()->json(['error' => true,
@@ -394,7 +395,7 @@ class ProductSettingController extends Controller
                 }
             }
         }
-        
+
         if (empty($products)) {
             return response()->json(['error' => true,
                 'data' => [],
@@ -407,13 +408,14 @@ class ProductSettingController extends Controller
         ], 200);
     }
 
-    public function setVariantDimensions($variant, $product)
+    public function setVariantDimensions($variant, $product = [])
     {
         $variant['price'] = empty($variant['price']) ? $product['price'] : $variant['price'] ?? '';
         $variant['weight'] = empty($variant['weight']) ? $product['weight'] : $variant['weight'] ?? '';
-        $variant['depth'] = empty($variant['depth']) ? $product['depth'] : $variant['depth'] ?? '';
+        $variant['length'] = empty($variant['depth']) ? $product['depth'] : $variant['depth'] ?? '';
         $variant['width'] = empty($variant['width']) ? $product['width'] : $variant['width'] ?? '';
         $variant['height'] = empty($variant['height']) ? $product['height'] : $variant['height'] ?? '';
+        unset($variant['depth']);
 
         return $variant;
 
@@ -445,17 +447,23 @@ class ProductSettingController extends Controller
         return json_encode($settings);
     }
 
-    public function getProductIndex($product, $products = [], $key = 0)
+    public function getProductIndex($apiProduct, $product = [])
     {
-        $products[$key]['name'] = isset($product['name']) ? $product['name'] : null ?? null;
-        $products[$key]['sku'] = isset($product['sku']) ? $product['sku'] : null ?? null;
-        $products[$key]['price'] = !empty($product['price']) ? $product['price'] : null ?? null;
-        $products[$key]['weight'] = isset($product['weight']) ? $product['weight'] : null ?? null;
-        $products[$key]['length'] = isset($product['depth']) ? $product['depth'] : null ?? null;
-        $products[$key]['width'] = isset($product['width']) ? $product['width'] : null ?? null;
-        $products[$key]['height'] = isset($product['height']) ? $product['height'] : null ?? null;
+        $apiProduct['id'] = isset($product['id']) ? $product['id'] : null ?? null;
+        $apiProduct['dropship_enabled'] = isset($product['dropship_enabled']) ? $product['dropship_enabled'] : null ?? null;
+        $apiProduct['dropship_location'] = isset($product['dropship_location']) ? $product['dropship_location'] : null ?? null;
+        $apiProduct['shipping_group_enabled'] = isset($product['shipping_group_enabled']) ? $product['shipping_group_enabled'] : null ?? null;
+        $apiProduct['shipping_group'] = isset($product['shipping_group']) ? $product['shipping_group'] : null ?? null;
+        $apiProduct['shipping_class_enabled'] = isset($product['shipping_class_enabled']) ? $product['shipping_class_enabled'] : null ?? null;
+        $apiProduct['shipping_class'] = isset($product['shipping_class']) ? $product['shipping_class'] : null ?? null;
+        $apiProduct['own_pallet'] = isset($product['own_pallet']) ? $product['own_pallet'] : null ?? null;
+        $apiProduct['pallet_vertical_rotation'] = isset($product['pallet_vertical_rotation']) ? $product['pallet_vertical_rotation'] : null ?? null;
+        $apiProduct['nmfc'] = isset($product['nmfc']) ? $product['nmfc'] : null ?? null;
+        $apiProduct['product_markup'] = isset($product['product_markup']) ? $product['product_markup'] : null ?? null;
+        $apiProduct['ship_multiple_package'] = isset($product['ship_multiple_package']) ? $product['ship_multiple_package'] : null ?? null;
+        $apiProduct['settings'] = isset($product['settings']) ? $product['settings'] : null ?? null;
 
-        return $products;
+        return $apiProduct;
     }
 
     public function deleteDuplicateProducts($request)
