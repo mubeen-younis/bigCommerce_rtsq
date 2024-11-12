@@ -321,9 +321,11 @@ class ProductSettingController extends Controller
         $headers = BigCommerceFunctions::getHeaders($request['store_hash']);
         $storeUrl = BigCommerceFunctions::$initalUrl . $request['store_hash'] . '/v3/catalog/products/' . $request['product_id'];
         $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
+        Log::info('DB products ' . json_encode($DBproducts));
 
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
             $response = json_decode($response['response'], true);
+            Log::info('BC response ' . json_encode($response));
             $product = $response['data'] ?? [];
             $products = [];
 
