@@ -10,6 +10,7 @@ use App\CustomClasses\BigCommerceFunctions;
 use App\CurlRequest;
 use App\Models\NestingItemsDetail;
 use App\CustomClasses\Functions;
+use Illuminate\Support\Facades\Log;
 
 class FDOProductController extends Controller
 {
