@@ -163,10 +163,6 @@ class ExportImportProducts extends Controller
                 }
 
                 $comma = ",";
-    
-                if(Functions::isEnabledLogs($request['store_hash'])){
-                    Log::info('CSV export products from BC : ' . json_encode($this->products));
-                }
 
                 $ProductSettings = new ProductSettings();
                 foreach ($this->products as $key => $product) {
