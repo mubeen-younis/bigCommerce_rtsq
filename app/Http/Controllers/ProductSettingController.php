@@ -410,11 +410,11 @@ class ProductSettingController extends Controller
 
     public function setVariantDimensions($variant, $product = [])
     {
-        $variant['price'] = !empty($variant['price']) ? $variant['price'] : (!empty($product['price']) ? $product['price'] : '' ?? '');
-        $variant['weight'] = !empty($variant['weight']) ? $variant['weight'] : (!empty($product['weight']) ? $product['weight'] : '' ?? '');
-        $variant['length'] = !empty($variant['depth']) ? $variant['depth'] : (!empty($product['depth']) ? $product['depth'] : '' ?? '');
-        $variant['width'] = !empty($variant['width']) ? $variant['width'] : (!empty($product['width']) ? $product['width'] : '' ?? '');
-        $variant['height'] = !empty($variant['height']) ? $variant['height'] : (!empty($product['height']) ? $product['height'] : '' ?? '');
+        $variant['price'] = isset($variant['price']) && $variant['price'] != 0 ? $variant['price'] : (!empty($product['price']) ? $product['price'] : '' ?? '');
+        $variant['weight'] = isset($variant['weight']) && $variant['weight'] != 0 ? $variant['weight'] : (!empty($product['weight']) ? $product['weight'] : '' ?? '');
+        $variant['length'] = isset($variant['depth']) && $variant['depth'] != 0 ? $variant['depth'] : (!empty($product['depth']) ? $product['depth'] : '' ?? '');
+        $variant['width'] = isset($variant['width']) && $variant['width'] != 0 ? $variant['width'] : (!empty($product['width']) ? $product['width'] : '' ?? '');
+        $variant['height'] = isset($variant['height']) && $variant['height'] != 0 ? $variant['height'] : (!empty($product['height']) ? $product['height'] : '' ?? '');
         unset($variant['depth']);
 
         return $variant;
