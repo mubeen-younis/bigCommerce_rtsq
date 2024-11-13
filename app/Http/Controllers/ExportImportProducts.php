@@ -175,8 +175,9 @@ class ExportImportProducts extends Controller
                         $response = $this->curlRequest->enSingleCurlRequest($variantEndPoint, [], $headers, 'GET', false);
                         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
                             $response = json_decode($response['response'], true);
-                            
+
                             if (empty($response['data'])) {
+                                Log::info('Response from BC on empty Data ' . json_encode($response));
                                 continue;
                             }
 
