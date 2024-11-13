@@ -42,9 +42,7 @@ class FDOProductController extends Controller
         $headers = BigCommerceFunctions::getHeaders($request['store_hash']);
         $storeUrl = BigCommerceFunctions::$initalUrl . $request['store_hash'] . '/v3/catalog/products/' . $request['product_id'];
         $response = $ProductSettings->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
-        if(Functions::isEnabledLogs($request['store_hash'])){
-            Log::info('Get products from BC using FDO call' . json_encode($response));
-        }
+
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
             $response = json_decode($response['response'], true);
             $product = $response['data'] ?? [];
