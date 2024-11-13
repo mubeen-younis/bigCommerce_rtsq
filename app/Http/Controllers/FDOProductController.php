@@ -9,6 +9,7 @@ use App\Http\Controllers\ProductSettingController;
 use App\CustomClasses\BigCommerceFunctions;
 use App\CurlRequest;
 use App\Models\NestingItemsDetail;
+use App\CustomClasses\Functions;
 
 class FDOProductController extends Controller
 {
@@ -33,17 +34,16 @@ class FDOProductController extends Controller
             return response()->json(['error' => true,
                 'data' => [],
                 'message' => 'No Product Id',
-            ], 404);
+            ], 200);
         }
-        $DBproducts = ProductSetting::where('source_product_id', $request->product_id)
-            ->whereNotNull('variant_id')
-            ->where('store_id', $request->store_id)
-            ->get();
 
         $ProductSettings = new ProductSettingController();
         $headers = BigCommerceFunctions::getHeaders($request['store_hash']);
         $storeUrl = BigCommerceFunctions::$initalUrl . $request['store_hash'] . '/v3/catalog/products/' . $request['product_id'];
         $response = $ProductSettings->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
+        if(Functions::isEnabledLogs($request['store_hash'])){
+            Log::info('Get products from BC using FDO call' . json_encode($response));
+        }
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
             $response = json_decode($response['response'], true);
             $product = $response['data'] ?? [];
@@ -55,43 +55,51 @@ class FDOProductController extends Controller
                 if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
                     $response = json_decode($response['response'], true);
                     $variants = $response['data'] ?? [];
-                    if($DBproducts->count()){
 
-                        if (count($DBproducts)) {
-                            foreach ($DBproducts as $key => $DBvariant) {
+                    if(count($variants)){
+                        foreach ($variants as $key => $variant) {
 
-                                $variant = collect($variants)->firstWhere('id', $DBvariant->variant_id);
-                                $products = $ProductSettings->getProductIndex($variant, $DBproducts, $key);
-                                $products[$key]['name'] = isset($product['name']) ? $product['name'] : '' ?? '';
+                            $DBproduct = ProductSetting::where('source_product_id', $variant['product_id'])
+                            ->where('variant_id', $variant['id'])
+                            ->where('store_id', $request->store_id)
+                            ->first();
+
+                            $variant = $ProductSettings->setVariantDimensions($variant, $product);
+                            $variant['name'] = isset($product['name']) ? $product['name'] : '' ?? '';
+                            $variant['source_product_id'] = isset($variant['product_id']) ? $variant['product_id'] : '' ?? '';
+                            $variant['variant_id'] = isset($variant['id']) ? $variant['id'] : null ?? null;
+                            $variant['store_id'] = isset($request->store_id) ? $request->store_id : null ?? null;
+                            $variant['settings'] = $ProductSettings->setShippingMethod($variant, $request['store_id']);
+
+                            if(!empty($DBproduct)){
+                                $variant = $ProductSettings->getProductIndex($variant, $DBproduct);
+                            } else{
+                                unset($variant['id']);
                             }
-                        }
 
-                    } else {
-                        if (count($variants)) {
-                            foreach ($variants as $key => $variant) {
-                                
-                                $products = $ProductSettings->getProductIndex($variant, $products, $key);
-                                $products[$key]['name'] = isset($product['name']) ? $product['name'] : '' ?? '';
-                                $products[$key]['source_product_id'] = isset($variant['product_id']) ? $variant['product_id'] : '' ?? '';
-                                $products[$key]['variant_id'] = isset($variant['id']) ? $variant['id'] : null ?? null;
-                                $products[$key]['settings'] = $ProductSettings->setShippingMethod($variant, $request['store_id']);
-                            }   
+                            $products[$key] = $variant;
                         }
                     }
                 }                    
             } else {
 
-                if($DBproducts->count()){
-                    
-                    $products = $ProductSettings->getProductIndex($product, $DBproducts);
+                $DBproduct = ProductSetting::where('source_product_id', $request->product_id)
+                    ->where('variant_id', $product['base_variant_id'])
+                    ->where('store_id', $request->store_id)
+                    ->first();
 
-                } else {
+                $product = $ProductSettings->setVariantDimensions($product, []);
+                $product['source_product_id'] = isset($product['id']) ? $product['id'] : null ?? null;
+                $product['variant_id'] = isset($product['base_variant_id']) ? $product['base_variant_id'] : null ?? null;
+                $product['settings'] = $ProductSettings->setShippingMethod($product, $request['store_id']);
 
-                    $products = $ProductSettings->getProductIndex($product, $products);
-                    $products[0]['source_product_id'] = isset($product['id']) ? $product['id'] : null ?? null;
-                    $products[0]['variant_id'] = isset($product['base_variant_id']) ? $product['base_variant_id'] : null ?? null;
-                    $products[0]['settings'] = $ProductSettings->setShippingMethod($product, $request['store_id']);
+                if(!empty($DBproduct)){
+                    $product = $ProductSettings->getProductIndex($product, $DBproduct);
+                } else{
+                    unset($product['id']);
                 }
+                
+                $products[0] = $product;
             }
         } else {
             return response()->json(['error' => true,
@@ -112,7 +120,7 @@ class FDOProductController extends Controller
                 }
             }
         }
-        
+
         if (empty($products)) {
             return response()->json(['error' => true,
                 'data' => [],
