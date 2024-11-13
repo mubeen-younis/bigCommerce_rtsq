@@ -177,11 +177,19 @@ class ExportImportProducts extends Controller
                             $response = json_decode($response['response'], true);
 
                             if (empty($response['data'])) {
-                                Log::info('Response from BC on empty Data ' . json_encode($response));
-                                continue;
+                                sleep(30);
+                                $response = $this->curlRequest->enSingleCurlRequest($variantEndPoint, [], $headers, 'GET', false);
+                                if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+                                    $response = json_decode($response['response'], true);
+                                }
+                                //continue;
                             }
 
-                            $productsVar = collect($response['data']);
+                            $productsVar = collect($response['data'] ?? []);
+                            
+                            if (empty($productsVar)) {
+                                continue;
+                            }
 
 
                             foreach ($productsVar as $variant) {
