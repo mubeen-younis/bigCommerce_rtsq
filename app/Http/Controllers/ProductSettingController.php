@@ -320,7 +320,7 @@ class ProductSettingController extends Controller
 
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
             $response = json_decode($response['response'], true);
-            Log::info('BC response ' . json_encode($response));
+
             $product = $response['data'] ?? [];
             $products = [];
 
