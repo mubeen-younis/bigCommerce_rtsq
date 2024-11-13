@@ -175,7 +175,11 @@ class FDOOrderController extends Controller
 
         $lineItem->items = $this->formatItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
         $lineItem->origin = $this->formatOrigins($requestToWS->requestArr->carriers);
+        $isMultiShipment = false;
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
+        if (!blank($multiShipmentresponse)) {
+            $isMultiShipment = true;
+        }
         $liftGateStatus = 'n';
         $LimitedAccessDel = strpos($rateId, '+lad') ? 'Y' : 'n';
         $notifyBeforeDel = strpos($rateId, '+nbd') ? 'Y' : 'n';
