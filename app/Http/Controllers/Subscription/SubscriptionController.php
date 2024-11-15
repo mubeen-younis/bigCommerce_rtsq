@@ -873,12 +873,20 @@ class SubscriptionController extends Controller
         $dbSub = Subscription::where('store_id', $storeId)->latest()->first();
 
         if (isset($request['cancel']) && $request['cancel'] == 1) {
-            $res = $this->cencelStripeSubscription($dbSub->subscription_id);
+            $res = !empty($dbSub->subscription_id) ?  $this->cencelStripeSubscription($dbSub->subscription_id) : null; 
             if (isset($res['error']) && $res['error'] == false) {
                 //Because of simaltaneous execution of stripe and DB
                 Subscription::where('id', $dbSub->id)->update([
                     'status' => 2
                 ]);
+            }
+            if (isset($request['isSandboxStore']) && $request['isSandboxStore'] == 1) {
+                Subscription::where('id', $dbSub->id)->delete();
+
+                $res = [
+                    'error' => false,
+                    'message' => 'Your subscription has been cancelled.',
+                ];
             }
         } else {
             $subId = $dbSub->subscription_id;
