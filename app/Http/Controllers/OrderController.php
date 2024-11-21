@@ -11,6 +11,7 @@ use App\Constants\Constant;
 use App\Models\RequestData;
 use Illuminate\Http\Request;
 use App\Models\ShippingGroup;
+use App\Models\ShippingRule;
 use App\Models\RequestTempData;
 use App\CustomClasses\Functions;
 use Illuminate\Http\JsonResponse;
@@ -196,6 +197,10 @@ class OrderController extends Controller
         if (is_string($index[0]) && $index[0] == "shippingGroup") {
             return $this->shippingGroupOrderWidget($data, $order);
         }
+
+        if (is_string($index[0]) && $index[0] == "flatRateRule") {
+            return $this->flatRateRuleOrderWidget($data, $order);
+        }
         // DBSC order widget
         if (is_string($index[0]) && strpos($index[0], 'dbsc') !== false) {
             return $this->dbscOrderWidget($data, $order);
@@ -231,6 +236,7 @@ class OrderController extends Controller
         $originalItemsReq = json_decode(json_encode($lineItem->items));
         $responseFromWS = json_decode($data['quotes']);
         $shippingGroupResp = !blank($data['shipping_group_resp']) ? json_decode($data['shipping_group_resp']) : [];
+        $flatRateResp = !blank($data['flat_rate_resp']) ? json_decode($data['flat_rate_resp']) : [];
 
         $requestToWS = json_decode($data['request']);
         // TODO: Need to chenage implementation e.g new FormatItems
@@ -464,6 +470,13 @@ class OrderController extends Controller
                     $shippingGroupRate = $shippingGroupResp[0]->rate ?? 0;
                     $sRate = $sRate + $shippingGroupRate;
                 }
+
+                /*Added condition if in case of multi shipment
+                The rate of shipping group will be added to warehouse rate*/
+                if ($flatRateResp != null && $orderWidget[$zip]['locationtype'] == "Warehouse") {
+                    $flatRate = $flatRateResp[0]->rate ?? 0;
+                    $sRate = $sRate + $flatRate;
+                }
                 $isMulti = true;
             }
 
@@ -645,7 +658,18 @@ class OrderController extends Controller
             }
         }
 
-        $fdoShipmenst = json_decode($data['fdo_shipments_data'], true) ?? [];
+        $itemsWithFlatRate = collect($items)->where('isFreeShipping', true)->all();
+        if (!blank($itemsWithFlatRate)) {
+            $itemsForm = [];
+            foreach ($itemsWithFlatRate as $item) {
+                $itemsForm[] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
+            }
+            foreach ($orderWidget as $key => $data) {
+                $orderWidget[$key]['freeShippingItems'] = $itemsForm;
+            }
+        }
+
+        $fdoShipmenst = json_decode($data['fdo_shipments_data'] ?? '', true) ?? [];
         $sbs = '';
 
         $resp = [
@@ -697,6 +721,15 @@ class OrderController extends Controller
     public function shippingGroupOrderWidget($data, $order)
     {
         $orderWidget = ShippingGroup::shippingGroupOrderWidget($data, $order);
+        $resp = [
+            'widget' => $this->objectToArray($orderWidget)
+        ];
+        return $resp;
+    }
+
+    public function flatRateRuleOrderWidget($data, $order)
+    {
+        $orderWidget = ShippingRule::flatRateRuleOrderWidget($data, $order);
         $resp = [
             'widget' => $this->objectToArray($orderWidget)
         ];

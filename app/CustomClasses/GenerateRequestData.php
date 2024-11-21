@@ -772,6 +772,14 @@ class GenerateRequestData
                 $carriersArray = $errorManagmentResp['carriersArray'];
                 $itemsArr = $errorManagmentResp['itemsArr'];
             }
+            foreach($itemsArr as $key => $item){
+                if (isset($item['isFreeShipping']) && $item['isFreeShipping']){
+                    foreach ($carriersArray['carriers'] as $carr => $carrier) {
+                        unset($carriersArray['carriers'][$carr]['originAddress'][$key]);
+                        unset($itemsArr[$key]);
+                    }
+                }
+            }
         }
 
         $carriers = $carriersArray['carriers'];

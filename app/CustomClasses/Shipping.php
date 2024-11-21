@@ -6,6 +6,7 @@ use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
 use App\CustomClasses\DBSC\GetRatesDbsc;
 use App\Models\ShippingGroup;
+use App\Models\ShippingRule;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use App\Models\RequestTempData;
@@ -29,6 +30,7 @@ class Shipping
     private $isInsurance = 'N';
     private $isRequestMultishipment = false;
     private $shippingGroupResponse;
+    private $flatRateShippingResponse;
     private $showOnlyLocAndInstoreQuote;
     private $instoreQuotes;
     private $locDelQuotes;
@@ -42,6 +44,7 @@ class Shipping
         $this->shipmentPkg = new WweLTLShipmentPackage();
         $this->compileQuotes = new CompileQuotes();
         $this->shippingGroupResponse = [];
+        $this->flatRateShippingResponse = [];
         $this->showOnlyLocAndInstoreQuote = false;
         $this->instoreQuotes = false;
         $this->locDelQuotes = false;
@@ -93,6 +96,26 @@ class Shipping
             }
         } catch (\Exception $exception) {
             Functions::log('DBSC rates exception ', $exception);
+        }
+
+        // Items that is not associated with Flat rate Shipping Rule and no need to get rates from Ws
+        $itemsWithFreeShipping = collect($request['lineItemData']['items'])->where('isFreeShipping', true)->all();
+        // Items that is not associated with Shipping Group and need to get rates from Ws
+        $itemsWithoutFreeShipping = collect($request['lineItemData']['items'])->where('isFreeShipping', false)->all();
+
+        $originsWithoutFreeShipping = $this->getOriginsAccShipGroup($itemsWithoutFreeShipping, $origins);
+
+        // Items that is associated with Free Shipping
+        $originsWithFreeShipping = $this->getOriginsAccShipGroup($itemsWithFreeShipping, $origins);
+
+        if (!blank($itemsWithFreeShipping)) {
+            $this->setFlatRateShippingRuleResponse($itemsWithFreeShipping);
+
+            if (blank($itemsWithoutFreeShipping)) {
+                $finalResp = $this->formattedFlatRateRuleResponse();
+                $this->orderWidgetSave($request, [], [], $finalResp['finalQuotes'], $finalResp['formattedResp'], $cartInfo, [], []);
+                return $finalResp['formattedResp'];
+            }
         }
 
         // Items that is not associated with Shipping Group and need to get rates from Ws
@@ -300,6 +323,9 @@ class Shipping
             $request['lineItemData']['items'] = $items;
             $finalQuotes = $this->addShipGroupRatesInQuotes($finalQuotes);
         }
+        if (!blank($this->flatRateShippingResponse)) {
+            $finalQuotes = $this->addFlatRatesResponseInQuotes($finalQuotes);
+        }
 
         $finalQuotes = $this->addRateId($finalQuotes);
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
@@ -371,6 +397,18 @@ class Shipping
         $this->shippingGroupResponse = ShippingGroup::setShippingGroup($shippingGroupItems);
     }
 
+    protected function setFlatRateShippingRuleResponse($flatRateitems)
+    {
+        $this->flatRateShippingResponse = ShippingRule::setFlatRates($flatRateitems);
+    }
+
+    protected function formattedFlatRateRuleResponse(): array
+    {
+        $finalQuotes = $this->addRateId($this->flatRateShippingResponse);
+        $resp = $this->generateQuoteFormatResponse($finalQuotes);
+        return ['finalQuotes' => $finalQuotes, 'formattedResp' => $resp];
+    }
+
 
     /**
      * @return array
@@ -391,6 +429,14 @@ class Shipping
     {
         foreach ($finalQuotes as $key => $quote) {
             $finalQuotes[$key]['rate'] = $quote['rate'] + $this->shippingGroupResponse[0]['rate'];
+        }
+        return $finalQuotes;
+    }
+
+    protected function addFlatRatesResponseInQuotes($finalQuotes): array
+    {
+        foreach ($finalQuotes as $key => $quote) {
+            $finalQuotes[$key]['rate'] = $quote['rate'] + $this->flatRateShippingResponse[0]['rate'];
         }
         return $finalQuotes;
     }
@@ -737,6 +783,7 @@ class Shipping
             $requestTempData->is_draft_order = $cartInfo['is_draft_order'] ?? false;
             $requestTempData->box_bins = json_encode($boxbins);
             $requestTempData->shipping_group_resp = !blank($this->shippingGroupResponse) ? json_encode($this->shippingGroupResponse) : null;
+            $requestTempData->flat_rate_resp = !blank($this->flatRateShippingResponse) ? json_encode($this->flatRateShippingResponse) : null;
             $requestTempData->dbsc_resp = !blank($this->dbscOrdWid) ? json_encode($this->dbscOrdWid) : null;
             $requestTempData->save();
         }

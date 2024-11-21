@@ -267,6 +267,19 @@ class ShippingRule extends Model
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
+                case 10:
+                    $shippingRule->filter_name = $shippingRuleData['filter_country'] ?? '';
+                    $settings = [
+                        "filter_categories" => $shippingRuleData['filter_categories'] ?? [],
+                        "filter_products" => $shippingRuleData['filter_products'] ?? [], 
+			            "filter_brands" => $shippingRuleData['filter_brands'] ?? [],
+                        "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
+			            "filter_state_province" => $shippingRuleData['filter_state_province'] ?? '',
+                        "filter_flat_shipping_rate" => $shippingRuleData['filter_flat_shipping_rate'] ?? '',
+                        "isFilterFlatPrice" => $shippingRuleData['isFilterFlatPrice'] ?? '', 
+                    ];
+                    $shippingRule->filter_settings = json_encode($settings) ?? '';
+                    break;
                     
             }
 
@@ -404,6 +417,9 @@ class ShippingRule extends Model
             case 9:
                 $shippingRule = self::updateLargeCartSettingsParams($shippingRule);
                 break;
+            case 10:
+                $shippingRule = self::updateFlatShippingPriceParams($shippingRule);
+                break;
             default:
                 break;
         } 
@@ -493,6 +509,21 @@ class ShippingRule extends Model
         return $shippingRule;
     }
 
+    public static function updateFlatShippingPriceParams($shippingRule)
+    {
+        $shippingRule['filter_country'] = $shippingRule['filter_name'];
+        $settings = json_decode($shippingRule['filter_settings'], true);
+        $shippingRule['products'] = $settings['filter_products'] ?? [];
+        $shippingRule['categories'] = $settings['filter_categories'] ?? [];
+        $shippingRule['brands'] = $settings['filter_brands'] ?? [];
+        $shippingRule['filter_state_province'] = $settings['filter_state_province'];
+        $shippingRule['filter_flat_shipping_rate'] = $settings['filter_flat_shipping_rate'] ?? '';
+        $shippingRule['isFilterFlatPrice'] = $settings['isFilterFlatPrice'] ?? false;
+        $shippingRule['apply_rule_to'] = $settings['apply_rule_to'] ?? 1;
+
+        return $shippingRule;
+    }
+
     public static function updateRestrictfilterPostalCodeParams($shippingRule)
     {
         $shippingRule['filter_country'] = $shippingRule['filter_name'];
@@ -526,5 +557,101 @@ class ShippingRule extends Model
         $shippingRule['max_package_weight'] = $settings['max_package_weight'] ?? [];
 
         return $shippingRule;
+    }
+
+    public static function setFlatRates($flatRateitems)
+    {
+        if (blank($flatRateitems)) {
+            return [];
+        }
+        
+        $groupItemsByFlatRateRule = [];
+        foreach ($flatRateitems as $item) {
+            $groupItemsByFlatRateRule[$item['flatRateRule']][] = $item;
+        }
+
+        $rate = 0;
+        $response = [];
+        $title = [];
+        foreach ($groupItemsByFlatRateRule as $flatRateRuleId => $rule) {
+            $ruleDetail = self::getFlatRateRuleDetail($rule[0]['flatRateUuid']);
+            $ruleDetailSettings = json_decode($ruleDetail['filter_settings'], true) ?? [];
+            $response[0]['title'] = $title[] = $ruleDetail['rule_name'];
+            if ($ruleDetailSettings['isFilterFlatPrice']) {
+                $rate += self::getSumAftermultiplyItemwithQty($rule, $ruleDetailSettings['filter_flat_shipping_rate']);
+            } else {
+                $rate += $ruleDetailSettings['filter_flat_shipping_rate'];
+            }
+        }
+
+        if (count($groupItemsByFlatRateRule) > 1) {
+            if (count(array_unique($title)) == 1) {
+                $response[0]['title'] = $title[0] ?? "Shipping";
+            } else {
+                $response[0]['title'] = "Shipping";
+
+            }
+        }
+        $response[0]['rate'] = $rate;
+        $response[0]['code'] = "flatRateRule";
+        return $response;
+    }
+
+    public static function getFlatRateRuleDetail($uuid): array
+    {
+        return optional(self::where('uuid', $uuid)->first())->toArray() ?? [];
+    }
+
+    public static function getSumAftermultiplyItemwithQty($rule, $rate)
+    {
+        $noOfQuantity = collect($rule)->sum('piecesOfLineItem');
+        return $noOfQuantity * $rate;
+    }
+
+    public static function flatRateRuleOrderWidget($data, $order)
+    {
+        $lineItem = json_decode($data['lineitems'])->lineItemData;
+        $origins = $lineItem->origin;
+        $items = $lineItem->items;
+        $count = 0;
+        $insertedIds = $insertedNames = [];
+        //print_r($items); exit;
+        $code = '';
+        foreach ($origins as $key => $origin) {
+            $item = $items->$key;
+            $city = $origin->senderCity ? $origin->senderCity . ',' : '';
+            $state = $origin->senderState ?? '';
+            $zip = $origin->locationId != '' ? $origin->locationId : $origin->senderZip;
+            $senderZip = $origin->senderZip ?? '';
+            $orderWidget[$zip]['sbs'] = [];
+            $orderWidget[$zip]['locationtype'] = $item->dropship_enabled == 'N' ? 'Warehouse' : 'Dropship';
+            $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
+            $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
+            $sRate = $order['shipping_rate'];
+
+            $shipping_name = explode('(', $order['shipping_name']);
+            $sName = $shipping_name[0] ?? '';
+            $sName = str_replace(Constant::RESI_LABEL, '', $sName);
+            $sName = str_replace(Constant::LIFT_LABEL, '', $sName);
+            $sName = str_replace(Constant::RESI_LIFT_LABEL, '', $sName);
+            $sMethod = isset($shipping_name[1]) ? '(' . $shipping_name[1] : '';
+
+            $orderWidget[$zip]['shipping_method'] = $sName . $sMethod;
+            $orderWidget[$zip]['shipping_rate'] = '$' . number_format((float)$sRate, 2,);
+            if ($item->shipMultiplePackage) {
+                if ((!in_array($item->lineItemName, $insertedNames))) {
+                    $insertedNames[] = $item->lineItemName;
+                    $orderWidget[$zip]['freeShippingItems'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
+                }
+            } else {
+                if ((!in_array($item->id, $insertedIds))) {
+                    $insertedIds[] = $item->id;
+                    $orderWidget[$zip]['freeShippingItems'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
+                }
+            }
+            $orderWidget[$zip]['accessories'] = [];
+            $count++;
+        }
+        return $orderWidget;
     }
 }
