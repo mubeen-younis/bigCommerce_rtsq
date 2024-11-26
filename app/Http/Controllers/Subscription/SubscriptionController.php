@@ -104,6 +104,37 @@ class SubscriptionController extends Controller
     }
 
     //*************************************
+    // This function is used to save the payment method in DB using postman 
+    //*************************************
+    public function savePaymentMethodUsingScript(Request $request)
+    {
+        try {
+
+            $customerResponse = \Stripe\Customer::retrieve($request->customerId);
+            $paymentMethodsResponse = $this->getStripePaymentMethods($request->customerId);
+            if(isset($paymentMethodsResponse['error']) && $paymentMethodsResponse['error']) {
+                return $paymentMethodsResponse;
+            }
+            $paymentMethods = isset($paymentMethodsResponse['data']) ? $paymentMethodsResponse['data'] : null;
+            $paymentMethodId = $this->savePaymentMethodInDB($customerResponse, $request['store_id'], $paymentMethods);
+
+            $responce = [
+                'error' => false,
+                'message' => 'Successfully Save Stripe Payment Methods In DB.',
+                'data' => $customerResponse->toArray(),
+            ];
+
+        } catch (\Exception $e) {
+            $responce = [
+                'error' => true,
+                'data' => [],
+                'message' => $e->getMessage()
+            ];
+        }
+        return $responce;
+    }
+
+    //*************************************
     // This function is used to save the new subscription in DB or update the existing subscription when plan is upgraded or downgraded
     //*************************************
     public function saveSubscriptionInDB($customerResponse, $subscriptionReponse, $paymentMethodId, $storeId, $oldSubscription = null)

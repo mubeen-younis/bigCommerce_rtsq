@@ -230,6 +230,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/cancel-subscription', [SubscriptionController::class, 'cancelSubscriptionPlan']);
     Route::get('/get-subscription-details', [SubscriptionController::class, 'getSubscriptionDetail']);
     Route::post('/change-payment-method', [SubscriptionController::class, 'changePaymentMethod']);
+    Route::post('/payment_method', [SubscriptionController::class, 'savePaymentMethodUsingScript']);
     //END: Subscription Routes
     //Start: SBS Routes
     Route::get('/get-all-pacakges', [PackageSubscriptionController::class, 'getAllPackagesList']);
