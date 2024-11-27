@@ -242,7 +242,7 @@ class OrderController extends Controller
         // TODO: Need to chenage implementation e.g new FormatItems
         $lineItem->items = $this->formateItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
 
-        $lineItem->origin = $this->formateOrigins($requestToWS->requestArr->carriers);
+        // $lineItem->origin = $this->formateOrigins($requestToWS->requestArr->carriers);
         $isMultiShipment = false;
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
         if (!blank($multiShipmentresponse)) {
@@ -470,13 +470,7 @@ class OrderController extends Controller
                     $shippingGroupRate = $shippingGroupResp[0]->rate ?? 0;
                     $sRate = $sRate + $shippingGroupRate;
                 }
-
-                /*Added condition if in case of multi shipment
-                The rate of shipping group will be added to warehouse rate*/
-                if ($flatRateResp != null && $orderWidget[$zip]['locationtype'] == "Warehouse") {
-                    $flatRate = $flatRateResp[0]->rate ?? 0;
-                    $sRate = $sRate + $flatRate;
-                }
+                
                 $isMulti = true;
             }
 
@@ -539,7 +533,8 @@ class OrderController extends Controller
             } else {
                 if (isset($item->id) && (!in_array($item->id, $insertedIds))) {
                     $insertedIds[] = $item->id;
-                    $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
+                    $keyText = isset($item->isFreeShipping) ? 'freeShippingItems' : 'items';
+                    $orderWidget[$zip][$keyText][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
                 }
             }
 
@@ -655,17 +650,6 @@ class OrderController extends Controller
                     $items = array_merge($items, $itemsForm);
                 }
                 $orderWidget[$key]['items'] = $items;
-            }
-        }
-
-        $itemsWithFlatRate = collect($items)->where('isFreeShipping', true)->all();
-        if (!blank($itemsWithFlatRate)) {
-            $itemsForm = [];
-            foreach ($itemsWithFlatRate as $item) {
-                $itemsForm[] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
-            }
-            foreach ($orderWidget as $key => $data) {
-                $orderWidget[$key]['freeShippingItems'] = $itemsForm;
             }
         }
 
