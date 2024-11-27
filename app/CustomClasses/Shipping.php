@@ -109,10 +109,26 @@ class Shipping
         $originsWithFreeShipping = $this->getOriginsAccShipGroup($itemsWithFreeShipping, $origins);
 
         if (!blank($itemsWithFreeShipping)) {
-            $this->setFlatRateShippingRuleResponse($itemsWithFreeShipping);
+            $this->setFlatRateShippingRuleResponse($itemsWithFreeShipping, $originsWithFreeShipping);
+            $finalQuotes = [];
+            // Check for multishipment flat items
+            if(empty($originsWithoutFreeShipping) && empty($itemsWithoutFreeShipping) && count($this->flatRateShippingResponse) > 1){
+                
+                $rate = 0;
+                foreach($this->flatRateShippingResponse as $flatRate){
+                
+                    $rate = $rate + $flatRate['rate'];
+                    $finalResp = [
+                        'code' => $flatRate['code'],
+                        'rate' => $rate,
+                        'title' => $flatRate['title']
+                    ];
+                }
+                $finalQuotes[] = $finalResp;
+            }
 
             if (blank($itemsWithoutFreeShipping)) {
-                $finalResp = $this->formattedFlatRateRuleResponse();
+                $finalResp = $this->formattedFlatRateRuleResponse($finalQuotes);
                 $this->orderWidgetSave($request, [], [], $finalResp['finalQuotes'], $finalResp['formattedResp'], $cartInfo, [], []);
                 return $finalResp['formattedResp'];
             }
@@ -324,7 +340,9 @@ class Shipping
             $finalQuotes = $this->addShipGroupRatesInQuotes($finalQuotes);
         }
         if (!blank($this->flatRateShippingResponse)) {
-            $finalQuotes = $this->addFlatRatesResponseInQuotes($finalQuotes);
+            $flatRate = $this->addFlatRatesResponseInQuotes($finalQuotes, $multiShipmentQuotes, $originsWithoutFreeShipping);
+            $finalQuotes = $flatRate['finalQuotes'];
+            $multiShipmentQuotes = $flatRate['multiShipmentQuotes'];
         }
 
         $finalQuotes = $this->addRateId($finalQuotes);
@@ -397,14 +415,18 @@ class Shipping
         $this->shippingGroupResponse = ShippingGroup::setShippingGroup($shippingGroupItems);
     }
 
-    protected function setFlatRateShippingRuleResponse($flatRateitems)
+    protected function setFlatRateShippingRuleResponse($flatRateitems, $origins)
     {
-        $this->flatRateShippingResponse = ShippingRule::setFlatRates($flatRateitems);
+        $this->flatRateShippingResponse = ShippingRule::setFlatRates($flatRateitems, $origins);
     }
 
-    protected function formattedFlatRateRuleResponse(): array
+    protected function formattedFlatRateRuleResponse($finalQuotes): array
     {
-        $finalQuotes = $this->addRateId($this->flatRateShippingResponse);
+        if(count($this->flatRateShippingResponse) > 1){
+            $finalQuotes = $this->addRateId($finalQuotes);
+        } else {
+            $finalQuotes = $this->addRateId($this->flatRateShippingResponse);
+        }
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
         return ['finalQuotes' => $finalQuotes, 'formattedResp' => $resp];
     }
@@ -433,12 +455,153 @@ class Shipping
         return $finalQuotes;
     }
 
-    protected function addFlatRatesResponseInQuotes($finalQuotes): array
+    protected function addFlatRatesResponseInQuotes($finalQuotes, $multiShipmentQuotes, $originsWithoutFreeShipping): array
     {
-        foreach ($finalQuotes as $key => $quote) {
-            $finalQuotes[$key]['rate'] = $quote['rate'] + $this->flatRateShippingResponse[0]['rate'];
+        if ($this->multiOrigins && empty($multiShipmentQuotes)){
+
+            $filteredParcel = collect($finalQuotes)->filter(function ($quote) {
+                return str_contains($quote['code'], 'parcel_12');
+            });
+
+            if(count($filteredParcel)){
+                unset($finalQuotes);
+                $cheapest = collect($filteredParcel)->sortBy('rate')->first();
+                foreach($originsWithoutFreeShipping as $origin){
+                    if(isset($this->flatRateShippingResponse[$origin['locationId']]) && $this->flatRateShippingResponse[$origin['locationId']]['code'] == 'flatRateRule'){
+                        $cheapest['rate'] += $this->flatRateShippingResponse[$origin['locationId']]['rate'];
+                    }
+                    $this->flatRateShippingResponse[$origin['locationId']] = $cheapest;
+                    break;
+                }
+
+                $flatRate['simple'] = $this->flatRateShippingResponse;
+                $multiShipmentQuotes[] = $flatRate;
+                $rate = 0;
+                
+                foreach($this->flatRateShippingResponse as $quote){
+                    $rate = $rate + $quote['rate'];
+                    $sName = explode(' (Delivery', $cheapest['title'])[0] ?? '';
+                    $sName = explode(' (Intransit', $cheapest['title'])[0] ?? '';
+                    $method = explode('w/',  $sName)[1] ?? '';
+                    $finalResp = [
+                        'code' => 'Multi+',
+                        'rate' => $rate,
+                        'title' => Functions::$smallMultiTitle . ' w/' . $method,
+                    ];
+                }
+                $finalQuotes[] = $finalResp;
+
+            } else {
+
+                foreach($originsWithoutFreeShipping as $origin){
+                    foreach($finalQuotes as $quote){
+                        $flatRate = []; $code = 'Multi+';
+
+                        if(isset($this->flatRateShippingResponse[$origin['locationId']]) && $this->flatRateShippingResponse[$origin['locationId']]['code'] == 'flatRateRule'){
+                            $quote['rate'] += $this->flatRateShippingResponse[$origin['locationId']]['rate'];
+                        }
+
+                        if (strpos($quote['code'], '+LG+ID+NBD') !== false) {
+                            $flatRate['lginsidenotifydelivery'] = $this->flatRateShippingResponse;
+                            $flatRate['lginsidenotifydelivery'][$origin['locationId']] = $quote;
+                            $code = 'Multi+LG+ID+NBD';
+                        } else if (strpos($quote['code'], '+LG+ID+LAD') !== false) {
+                            $flatRate['lglaccessinsidedelivery'] = $this->flatRateShippingResponse;
+                            $flatRate['lglaccessinsidedelivery'][$origin['locationId']] = $quote;
+                            $code = 'Multi+LG+ID+LAD';
+                        } else if (strpos($quote['code'], '+LG+NBD') !== false) {
+                            $flatRate['lgnotifydelivery'] = $this->flatRateShippingResponse;
+                            $flatRate['lgnotifydelivery'][$origin['locationId']] = $quote;
+                            $code = 'Multi+LG+NBD';
+                        } else if (strpos($quote['code'], '+ID+NBD') !== false) {
+                            $flatRate['insidenotifydelivery'] = $this->flatRateShippingResponse;
+                            $flatRate['insidenotifydelivery'][$origin['locationId']] = $quote;
+                            $code = 'Multi+ID+NBD';
+                        } else if (strpos($quote['code'], '+LG+LAD') !== false) {
+                            $flatRate['limitedaccessLG'] = $this->flatRateShippingResponse;
+                            $flatRate['limitedaccessLG'][$origin['locationId']] = $quote;
+                            $code = 'Multi+LG+LAD';
+                        } else if (strpos($quote['code'], '+ID+LAD') !== false) {
+                            $flatRate['laccessinsidedelivery'] = $this->flatRateShippingResponse;
+                            $flatRate['laccessinsidedelivery'][$origin['locationId']] = $quote;
+                            $code = 'Multi+ID+LAD';
+                        } else if (strpos($quote['code'], '+LG+ID') !== false) {
+                            $flatRate['insideLiftGateDelivery'] = $this->flatRateShippingResponse;
+                            $flatRate['insideLiftGateDelivery'][$origin['locationId']] = $quote;
+                            $code = 'Multi+LG+ID';
+                        } else if (strpos($quote['code'], '+NBD') !== false) {
+                            $flatRate['notifydelivery'] = $this->flatRateShippingResponse;
+                            $flatRate['notifydelivery'][$origin['locationId']] = $quote;
+                            $code = 'Multi+NBD';
+                        } else if (strpos($quote['code'], '+LG') !== false) {
+                            $flatRate['liftgate'] = $this->flatRateShippingResponse;
+                            $flatRate['liftgate'][$origin['locationId']] = $quote;
+                            $code = 'Multi+LG';
+                        } else if (strpos($quote['code'], '+LAD') !== false) {
+                            $flatRate['limitedaccess'] = $this->flatRateShippingResponse;
+                            $flatRate['limitedaccess'][$origin['locationId']] = $quote;
+                            $code = 'Multi+LAD';
+                        } else if (strpos($quote['code'], '+ID') !== false) {
+                            $flatRate['insideDelivery'] = $this->flatRateShippingResponse;
+                            $flatRate['insideDelivery'][$origin['locationId']] = $quote;
+                            $code = 'Multi+ID';
+                        } else {
+                            $flatRate['simple'] = $this->flatRateShippingResponse;
+                            $flatRate['simple'][$origin['locationId']] = $quote;
+                            $code = 'Multi+';
+                        }
+
+                        $multiShipmentQuotes[] = $flatRate;
+                        $rate = 0;
+
+                        foreach($flatRate as $rates){
+                            foreach($rates as $flatQuote){
+                                $rate = $rate + $flatQuote['rate'];
+                                $sName = explode(' (Delivery', $quote['title'])[0] ?? '';
+                                $sName = explode(' (Intransit', $quote['title'])[0] ?? '';
+                                $method = explode('w/',  $sName)[1] ?? '';
+                                $finalResp = [
+                                    'code' => $code,
+                                    'rate' => $rate,
+                                    'title' => Functions::$ltlMultiTitle . ' w/' . $method,
+                                ];
+                            }
+                        }
+                        $resp[] = $finalResp;
+                    }
+                    $finalQuotes = $resp;
+                    break;
+                }
+            }
+        } elseif ($this->multiOrigins && !empty($multiShipmentQuotes)){
+            $index = 0;
+
+            while(isset($multiShipmentQuotes[$index])){
+                foreach($multiShipmentQuotes[$index] as $key => $quotes){
+                    foreach($quotes as $origin => $quote){
+                        if(isset($this->flatRateShippingResponse[$origin]['rate'])){
+                            $multiShipmentQuotes[$index][$key][$origin]['rate'] += $this->flatRateShippingResponse[$origin]['rate'];
+                        }
+                    }
+                }
+                $index++;
+            }
+
+            foreach ($finalQuotes as $key => $quote) {
+                foreach($this->flatRateShippingResponse as $flatRate){
+                    $finalQuotes[$key]['rate'] = $quote['rate'] + $flatRate['rate'];
+                }
+            }
+        } else {
+
+            foreach ($finalQuotes as $key => $quote) {
+                foreach($this->flatRateShippingResponse as $flatRate){
+                    $finalQuotes[$key]['rate'] = $quote['rate'] + $flatRate['rate'];
+                }
+            }
         }
-        return $finalQuotes;
+        
+        return ['finalQuotes' => $finalQuotes, 'multiShipmentQuotes' => $multiShipmentQuotes];
     }
 
     private function removeParcelIfLtl($finalQuotes)
