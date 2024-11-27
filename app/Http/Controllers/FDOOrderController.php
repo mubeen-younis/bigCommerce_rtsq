@@ -11,6 +11,7 @@ use App\Models\RequestData;
 use App\Models\RequestTempData;
 use App\Models\Store;
 use Illuminate\Http\Request;
+use App\Models\ShippingRule;
 
 class FDOOrderController extends Controller
 {
@@ -211,7 +212,7 @@ class FDOOrderController extends Controller
         $code = '';
         $orderDetails = [];
         foreach ($origins as $key => $origin) {
-
+            $isFlatRate = false;
             $item = $items->$key;
             $city = $origin->senderCity ?? '';
             $state = $origin->senderState ?? '';
@@ -272,6 +273,7 @@ class FDOOrderController extends Controller
                 $carrierName = $code ? Functions::getCarrierNameOrCode($code) : "Multi Carrier";
                 $wsCarrierCode = Functions::getCarrierNameOrCode($rateId, 1);
                 $isSmall = Functions::isSmallCarrier($code);
+                $isFlatRate = strpos($code, 'flatRateRule') === 0 ? true : false;
                 /*Added condition if in case of multi shipment
              The rate of shipping group will be added to warehouse rate*/
                 if ($shippingGroupResp != null && $orderWidget[$zip]['locationtype'] == "Warehouse") {
@@ -356,7 +358,7 @@ class FDOOrderController extends Controller
             }
 
             $isHAT ? array_push($orderWidget[$zip]['accessorials'], 'Hold At Terminal') : '';
-            if (!$isSmall) {
+            if (!$isSmall && !$isFlatRate) {
                 $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Residential Pickup') : '';
                 $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Lift Gate Delivery') : '';
                 $liftGatePickup != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Lift Gate Pickup') : '';
