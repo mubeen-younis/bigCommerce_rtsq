@@ -559,7 +559,7 @@ class ShippingRule extends Model
         return $shippingRule;
     }
 
-    public static function setFlatRates($flatRateitems)
+    public static function setFlatRates($flatRateitems, $origins)
     {
         if (blank($flatRateitems)) {
             return [];
@@ -567,33 +567,39 @@ class ShippingRule extends Model
         
         $groupItemsByFlatRateRule = [];
         foreach ($flatRateitems as $item) {
-            $groupItemsByFlatRateRule[$item['flatRateRule']][] = $item;
+            $key = $item['variant_id'];
+            $groupItemsByFlatRateRule[$origins[$key]['locationId']][] = $item;
         }
 
-        $rate = 0;
         $response = [];
         $title = [];
-        foreach ($groupItemsByFlatRateRule as $flatRateRuleId => $rule) {
-            $ruleDetail = self::getFlatRateRuleDetail($rule[0]['flatRateUuid']);
-            $ruleDetailSettings = json_decode($ruleDetail['filter_settings'], true) ?? [];
-            $response[0]['title'] = $title[] = $ruleDetail['rule_name'];
-            if ($ruleDetailSettings['isFilterFlatPrice']) {
-                $rate += self::getSumAftermultiplyItemwithQty($rule, $ruleDetailSettings['filter_flat_shipping_rate']);
-            } else {
-                $rate += $ruleDetailSettings['filter_flat_shipping_rate'];
+        foreach ($groupItemsByFlatRateRule as $flatRateRuleId => $rules) {
+            $rate = 0;
+            foreach($rules as $rule){
+                $ruleDetail = self::getFlatRateRuleDetail($rule['flatRateUuid']);
+                $ruleDetailSettings = json_decode($ruleDetail['filter_settings'], true) ?? [];
+                $response[$flatRateRuleId]['title'] = $title[] = $ruleDetail['rule_name'];
+
+                if ($ruleDetailSettings['isFilterFlatPrice']) {
+                    $rate += self::getSumAftermultiplyItemwithQty($rule, $ruleDetailSettings['filter_flat_shipping_rate']);
+                } else {
+                    $rate += $ruleDetailSettings['filter_flat_shipping_rate'];
+                }
+
+                if (count($groupItemsByFlatRateRule) > 1 || count($rules) > 1) {
+                    if (count(array_unique($title)) == 1) {
+                        $response[$flatRateRuleId]['title'] = $title[0] ?? "Shipping";
+                    } else {
+                        $response[$flatRateRuleId]['title'] = "Shipping";
+        
+                    }
+                }
             }
+
+            $response[$flatRateRuleId]['rate'] = $rate;
+            $response[$flatRateRuleId]['code'] = "flatRateRule";
         }
 
-        if (count($groupItemsByFlatRateRule) > 1) {
-            if (count(array_unique($title)) == 1) {
-                $response[0]['title'] = $title[0] ?? "Shipping";
-            } else {
-                $response[0]['title'] = "Shipping";
-
-            }
-        }
-        $response[0]['rate'] = $rate;
-        $response[0]['code'] = "flatRateRule";
         return $response;
     }
 
@@ -604,7 +610,7 @@ class ShippingRule extends Model
 
     public static function getSumAftermultiplyItemwithQty($rule, $rate)
     {
-        $noOfQuantity = collect($rule)->sum('piecesOfLineItem');
+        $noOfQuantity = $rule['piecesOfLineItem'];
         return $noOfQuantity * $rate;
     }
 
@@ -615,7 +621,7 @@ class ShippingRule extends Model
         $items = $lineItem->items;
         $count = 0;
         $insertedIds = $insertedNames = [];
-        //print_r($items); exit;
+        $flatRateResp = !blank($data['flat_rate_resp']) ? json_decode($data['flat_rate_resp']) : [];
         $code = '';
         foreach ($origins as $key => $origin) {
             $item = $items->$key;
@@ -627,9 +633,9 @@ class ShippingRule extends Model
             $orderWidget[$zip]['locationtype'] = $item->dropship_enabled == 'N' ? 'Warehouse' : 'Dropship';
             $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
-            $sRate = $order['shipping_rate'];
+            $sRate = $flatRateResp->$zip->rate;
 
-            $shipping_name = explode('(', $order['shipping_name']);
+            $shipping_name = explode('(', $flatRateResp->$zip->title);
             $sName = $shipping_name[0] ?? '';
             $sName = str_replace(Constant::RESI_LABEL, '', $sName);
             $sName = str_replace(Constant::LIFT_LABEL, '', $sName);
