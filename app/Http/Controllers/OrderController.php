@@ -391,6 +391,7 @@ class OrderController extends Controller
 
         foreach ($origins as $key => $origin) {
             $item = optional($items)->$key;
+            $isFlatRate = false;
             if (blank($item)) {
                 continue;
             }
@@ -463,6 +464,7 @@ class OrderController extends Controller
                 }
                 $carrierHasInsurance = $code ? $this->hasInsureCarrier($code) : false;
                 $isSurcharge = strpos($code, '+SC' ) ? 'Y' : 'n';
+                $isFlatRate = strpos($code, 'flatRateRule') === 0 ? true : false;
 
                 /*Added condition if in case of multi shipment
                 The rate of shipping group will be added to warehouse rate*/
@@ -609,7 +611,7 @@ class OrderController extends Controller
             $isOriginMarkup ? array_push($orderWidget[$zip]['accessories'], 'Origin Markup') : '';
             $isSurcharge != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Surcharge Included') : '';
 
-            if (!$isSmall) {
+            if (!$isSmall && !$isFlatRate) {
                 $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Pickup') : '';
                 $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Delivery') : '';
                 $liftGatePickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Pickup') : '';
