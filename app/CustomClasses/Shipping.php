@@ -486,13 +486,13 @@ class Shipping
                     $finalResp = [
                         'code' => 'Multi+',
                         'rate' => $rate,
-                        'title' => Functions::$smallMultiTitle . !empty($method) ? ' w/' . $method : '',
+                        'title' => !empty($method) ? Functions::$smallMultiTitle . ' w/' . $method : Functions::$smallMultiTitle
                     ];
                 }
                 $finalQuotes[] = $finalResp;
 
             } else {
-
+                $resp = [];
                 foreach($originsWithoutFreeShipping as $origin){
                     foreach($finalQuotes as $quote){
                         $flatRate = []; $code = 'Multi+';
@@ -563,7 +563,7 @@ class Shipping
                                 $finalResp = [
                                     'code' => $code,
                                     'rate' => $rate,
-                                    'title' => Functions::$ltlMultiTitle . !empty($method) ? ' w/' . $method : '',
+                                    'title' => !empty($method) ? Functions::$ltlMultiTitle . ' w/' . $method : Functions::$ltlMultiTitle
                                 ];
                             }
                         }
