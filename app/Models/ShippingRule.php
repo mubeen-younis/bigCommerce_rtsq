@@ -572,9 +572,9 @@ class ShippingRule extends Model
         }
 
         $response = [];
-        $title = [];
         foreach ($groupItemsByFlatRateRule as $flatRateRuleId => $rules) {
             $rate = 0;
+            $title = [];
             foreach($rules as $rule){
                 $ruleDetail = self::getFlatRateRuleDetail($rule['flatRateUuid']);
                 $ruleDetailSettings = json_decode($ruleDetail['filter_settings'], true) ?? [];

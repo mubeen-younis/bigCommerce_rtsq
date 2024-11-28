@@ -121,7 +121,7 @@ class Shipping
                     $finalResp = [
                         'code' => $flatRate['code'],
                         'rate' => $rate,
-                        'title' => $flatRate['title']
+                        'title' => 'Shipping'
                     ];
                 }
                 $finalQuotes[] = $finalResp;
