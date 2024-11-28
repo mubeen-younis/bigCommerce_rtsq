@@ -563,7 +563,7 @@ class Shipping
                                 $finalResp = [
                                     'code' => $code,
                                     'rate' => $rate,
-                                    'title' => Functions::$ltlMultiTitle . ' w/' . $method,
+                                    'title' => Functions::$ltlMultiTitle . !empty($method) ? ' w/' . $method : '',
                                 ];
                             }
                         }
