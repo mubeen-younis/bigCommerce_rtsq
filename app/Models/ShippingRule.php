@@ -172,6 +172,10 @@ class ShippingRule extends Model
                         "priceTo" => $shippingRuleData['price_to'] ?? '',
                         "quantityFrom" => $shippingRuleData['quantity_from'] ?? '',
                         "quantityTo" => $shippingRuleData['quantity_to'] ?? '',
+                        "filter_categories" => $shippingRuleData['filter_categories'] ?? [],
+                        "filter_products" => $shippingRuleData['filter_products'] ?? [], 
+			            "filter_brands" => $shippingRuleData['filter_brands'] ?? [],
+                        "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
@@ -458,22 +462,18 @@ class ShippingRule extends Model
         $shippingRule['price_to'] = $settings['priceTo'];
         $shippingRule['quantity_from'] = $settings['quantityFrom'];
         $shippingRule['quantity_to'] = $settings['quantityTo'];
+        $shippingRule['products'] = $settings['filter_products'] ?? [];
+        $shippingRule['categories'] = $settings['filter_categories'] ?? [];
+        $shippingRule['brands'] = $settings['filter_brands'] ?? []; 
+        $shippingRule['apply_rule_to'] = $settings['apply_rule_to'] ?? 1;
 
         if($isOverrideRates){
             $shippingRule['filter_services'] = $settings['filter_services'];
             $shippingRule['service_rates'] = $settings['service_rates'];
-            $shippingRule['products'] = $settings['filter_products'] ?? [];
-            $shippingRule['categories'] = $settings['filter_categories'] ?? [];
-            $shippingRule['brands'] = $settings['filter_brands'] ?? []; 
-            $shippingRule['apply_rule_to'] = $settings['apply_rule_to'] ?? 1;
         }
         if($isSurchargeRates){
             $shippingRule['filter_provider'] = '';
             $shippingRule['filter_name'] = '';
-            $shippingRule['products'] = $settings['filter_products'] ?? [];
-            $shippingRule['categories'] = $settings['filter_categories'] ?? [];
-            $shippingRule['brands'] = $settings['filter_brands'] ?? []; 
-            $shippingRule['apply_rule_to'] = $settings['apply_rule_to'] ?? 1;
             $shippingRule['service_rates'] = $settings['service_rates']; 
         }
 
