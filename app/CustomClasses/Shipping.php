@@ -486,7 +486,7 @@ class Shipping
                     $finalResp = [
                         'code' => 'Multi+',
                         'rate' => $rate,
-                        'title' => Functions::$smallMultiTitle . ' w/' . $method,
+                        'title' => Functions::$smallMultiTitle . !empty($method) ? ' w/' . $method : '',
                     ];
                 }
                 $finalQuotes[] = $finalResp;
