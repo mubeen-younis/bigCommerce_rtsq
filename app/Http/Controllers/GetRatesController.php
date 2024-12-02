@@ -729,7 +729,7 @@ class GetRatesController extends Controller
 
     public function isShippingRule($storeData, $formatReq)
     {
-        $isRestriction = false;
+        $isRestriction = false; $isApplyFlatRate = true; $count = 0;
         $storeId = $storeData['store']['id'];
         $this->storeData = $storeData ?? [];
 
@@ -754,19 +754,48 @@ class GetRatesController extends Controller
                 if ($isAvailable) {
                     switch ($applyRuleTo) {
                         case 1:
-                            $isRestriction = $this->applyRuleOnCategories($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            if($rule['rule_type'] == 10) {
+                                // if all the rules are not valid then return true;
+                                $isValidRule = $this->applyRuleOnCategories($rule, $cartItems, $origins, $destination, $statesProvinces);
+                                $isApplyFlatRate = $isApplyFlatRate && $isValidRule;
+                                $count++;
+                            } else {
+                                // if one of the rule is not valid then return true;
+                                $isRestriction = $isRestriction || $this->applyRuleOnCategories($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            }
                             break;
                         case 2:
-                            $isRestriction = $this->applyRuleOnBrands($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            if($rule['rule_type'] == 10) {
+                                // if all the rules are not valid then return true;
+                                $isValidRule = $this->applyRuleOnBrands($rule, $cartItems, $origins, $destination, $statesProvinces);
+                                $isApplyFlatRate = $isApplyFlatRate && $isValidRule;
+                                $count++;
+                            } else {
+                                // if one of the rule is not valid then return true;
+                                $isRestriction = $isRestriction || $this->applyRuleOnBrands($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            }
                             break;
                         case 3:
-                            $isRestriction = $this->applyRuleOnProducts($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            if($rule['rule_type'] == 10) {
+                                // if all the rules are not valid then return true;
+                                $isValidRule = $this->applyRuleOnProducts($rule, $cartItems, $origins, $destination, $statesProvinces);
+                                $isApplyFlatRate = $isApplyFlatRate && $isValidRule;
+                                $count++;
+                            } else {
+                                // if one of the rule is not valid then return true;
+                                $isRestriction = $isRestriction || $this->applyRuleOnProducts($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            }
                             break;
                         default:
                             break;
                     }
                 }
             }
+            // This check only for Flat Shipping Rate Rule.
+            if($rule['rule_type'] == 10 && $isApplyFlatRate && $count > 0) {
+                return $isApplyFlatRate;
+            }
+
             return $isRestriction;
         }
         return false;
@@ -774,7 +803,6 @@ class GetRatesController extends Controller
 
     public function applyRuleOnCategories($rule, $cartItems, $origins, $destination, $statesProvinces)
     {
-
         $restrictedCategories = isset($rule['categories']) ? $rule['categories'] : [];
         $stateProvince = isset($rule['filter_state_province']) && !empty($rule['filter_state_province']) ? $rule['filter_state_province'] : [];
 
@@ -865,12 +893,16 @@ class GetRatesController extends Controller
         if ($isSameCountry && $isSameState && $isSamePostalCode && $ruleType == 4) {
             return false;
         } elseif ($isSameCountry && $isSameState && ($ruleType == 3 || $ruleType == 10)) {
-            // Apply Flate Rate Shipping Rule
+            // Apply Flate Rate Shipping Rule for country and state
             if($ruleType == 10 && !empty($products)){
                 $this->applyFlatRatesShippingRule($products, $rule);
             }
             return false;
-        } elseif ($isSameCountry && $ruleType == 1) {
+        } elseif ($isSameCountry && ($ruleType == 1 || $ruleType == 10 && empty($rule['filter_state_province']))) {
+            // Apply Flate Rate Shipping Rule for only country
+            if($ruleType == 10 && !empty($products)){
+                $this->applyFlatRatesShippingRule($products, $rule);
+            }
             return false;
         } else {
             return true;
@@ -880,9 +912,23 @@ class GetRatesController extends Controller
     public function applyFlatRatesShippingRule($products, $rule)
     {
         foreach($products as $key => $product){
-            $this->formatReq['lineItemData']['items'][$key]['isFreeShipping'] = true;
-            $this->formatReq['lineItemData']['items'][$key]['flatRateUuid'] = $rule['uuid'];
-            $this->formatReq['lineItemData']['items'][$key]['flatRateRule'] = $rule['id'];
+            // check to assign cheapest flat rate rule
+            $flatRate = isset($this->formatReq['lineItemData']['items'][$key]['flatRate']) ? $this->formatReq['lineItemData']['items'][$key]['flatRate'] : null;
+            if($rule['filter_flat_shipping_rate'] <= $flatRate){
+
+                $this->formatReq['lineItemData']['items'][$key]['isFreeShipping'] = true;
+                $this->formatReq['lineItemData']['items'][$key]['flatRateUuid'] = $rule['uuid'];
+                $this->formatReq['lineItemData']['items'][$key]['flatRateRule'] = $rule['id'];
+                $this->formatReq['lineItemData']['items'][$key]['flatRate'] = $rule['filter_flat_shipping_rate'];
+
+            } elseif ($flatRate === null) {
+
+                $this->formatReq['lineItemData']['items'][$key]['isFreeShipping'] = true;
+                $this->formatReq['lineItemData']['items'][$key]['flatRateUuid'] = $rule['uuid'];
+                $this->formatReq['lineItemData']['items'][$key]['flatRateRule'] = $rule['id'];
+                $this->formatReq['lineItemData']['items'][$key]['flatRate'] = $rule['filter_flat_shipping_rate'];
+            }
+            
         }
     }
 
