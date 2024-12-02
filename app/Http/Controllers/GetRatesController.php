@@ -23,6 +23,8 @@ use App\CustomClasses\CompareRates;
 use App\Constants\Constant;
 use App\Models\ShippingRule;
 use App\Models\NestingItemsDetail;
+use App\CustomClasses\BigCommerceFunctions;
+use App\CurlRequest;
 
 class GetRatesController extends Controller
 {
@@ -33,6 +35,7 @@ class GetRatesController extends Controller
     public $installedAddons = [];
     public $updatedWarehouses = [];
     public $setRulePriority = null;
+    public $curlRequest;
 
     /**
      * @var WweLTLShipmentPackage
@@ -48,6 +51,7 @@ class GetRatesController extends Controller
         $this->shipping = new Shipping();
         $this->shipmentPkg = new WweLTLShipmentPackage();
         $this->isDbscInstalled = false;
+        $this->curlRequest = new CurlRequest();
     }
 
     /*
@@ -280,6 +284,8 @@ class GetRatesController extends Controller
     public function formatRequest($data, $storeData)
     {
         $storeId = $storeData['store']['id'];
+        $storeHash = $storeData['store']['hash'];
+
         $details = [
             'destination' => [
                 'street_1' => $data['base_options']['destination']['street_1'] ?? null,
@@ -297,8 +303,9 @@ class GetRatesController extends Controller
         if (count($data['base_options']['items'])) {
             foreach ($data['base_options']['items'] as $productKey => $product) {
                 $product_settings = $this->getProductSetting($product['product_id'], $product['variant_id'], $storeId);
-                $productBrandId = $this->getProductBrand($product['product_id'], $product['variant_id'], $storeId);
-                $categoriesId = $this->getProductCategories($product['product_id'], $product['variant_id'], $storeId);
+                $productBrandAndCategory = $this->getProductBrandAndCategory($product['product_id'], $storeHash);
+                $productBrandId = $productBrandAndCategory['brandId'] ?? '';
+                $categoriesId = $productBrandAndCategory['categories'] ?? [];
                 $product_price = $this->getProductPrice($product['product_id'], $product['variant_id'], $storeId);
                 $weight = (isset($product['weight']['value']) && isset($product['weight']['units'])) ? $this->convertWeight($product['weight']['value'], strtolower($product['weight']['units'])) : 0;
                 $length = (isset($product['length']['value']) && isset($product['length']['units'])) ? $this->convertDimensionUnit($product['length']['value'], strtolower($product['length']['units'])) : 0;
@@ -338,7 +345,7 @@ class GetRatesController extends Controller
                     'product_id' => $product['product_id'] ?? '',
                     'variant_id' => $product['variant_id'] ?? '',
                     'brand_id' => $productBrandId ?? '',
-                    'categories_id' => json_decode($categoriesId) ?? [],
+                    'categories_id' => $categoriesId ?? [],
                     'sku' => $product['sku'] ?? '',
                     'piecesOfLineItem' => $product['quantity'] ?? '',
                     'originalPiecesOfLineItem' => $product['quantity'] ?? '',
@@ -497,14 +504,16 @@ class GetRatesController extends Controller
         return $settings;
     }
 
-    public function getProductBrand($productId, $variantId, $storeId)
+    public function getProductBrandAndCategory($productId, $storeHash)
     {
-        $productBrand = ProductSetting::select('brand_id')
-            ->where(['source_product_id' => $productId, 'variant_id' => $variantId, 'store_id' => $storeId])
-            ->first();
+        $headers = BigCommerceFunctions::getHeaders($storeHash);
+        $storeUrl = BigCommerceFunctions::$initalUrl . $storeHash . '/v3/catalog/products/' . $productId;
+        $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
+        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+            $response = json_decode($response['response'], true);
+            $product = $response['data'] ?? [];
 
-        if (!empty(optional($productBrand)->toArray())) {
-            return $productBrand['brand_id'];
+            return ['brandId' => $product['brand_id'], 'categories' => $product['categories']];
         }
         return null;
     }
@@ -836,10 +845,22 @@ class GetRatesController extends Controller
         $warehouses = isset($rule['warehouses']) ? $rule['warehouses'] : [];
         $isSameOrigin = false;
         $ruleType = !empty($rule['rule_type']) ? (int)$rule['rule_type'] : null;
+        $applyTo = !empty($rule['apply_to']) ? (int)$rule['apply_to'] : null;
+        $provider = isset($rule['filter_provider']) ? $rule['filter_provider'] : '';
         if($ruleType == 7){
             $this->applyHideDeliveryEstimatesRule($rule);
             return false;
         }
+        
+        if($ruleType == 2 && $applyTo == 2){
+            foreach($this->connectionSettings as $key => $carrier){
+                if($key == $provider){
+                    unset($this->connectionSettings[$key]);
+                }
+            }
+            return false;
+        }
+
         $isSameCountry = $destination['country'] == $filterCountry ?? false;
         $isSameState = in_array($destination['state'], $statesCode) ?? false;
         $isSamePostalCode = CountryState::isSamePostalCode($destination['zip'], $postalCodes) ?? false;
