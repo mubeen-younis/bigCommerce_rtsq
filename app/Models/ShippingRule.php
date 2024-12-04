@@ -656,8 +656,8 @@ class ShippingRule extends Model
                     $orderWidget[$zip]['freeShippingItems'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
                 }
             } else {
-                if ((!in_array($item->id, $insertedIds))) {
-                    $insertedIds[] = $item->id;
+                if ((!in_array($item->variant_id, $insertedIds))) {
+                    $insertedIds[] = $item->variant_id;
                     $orderWidget[$zip]['freeShippingItems'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
                 }
             }

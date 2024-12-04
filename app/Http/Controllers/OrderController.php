@@ -526,15 +526,15 @@ class OrderController extends Controller
             } elseif (isset($sbsItems[$zip]) && !empty($sbsItems[$zip])) {
                 foreach ($sbsItems[$zip] as $sbsVariantKey => $sbsItem) {
                     $itemDetail = $this->getSbsItemDetail($sbsVariantKey, $items);
-                    if (!blank($itemDetail) && (!in_array($itemDetail->lineItemName, $insertedNames)) && (!in_array($itemDetail->id, $insertedIds))) {
+                    if (!blank($itemDetail) && (!in_array($itemDetail->lineItemName, $insertedNames)) && (!in_array($itemDetail->variant_id, $insertedIds))) {
                         $insertedNames[] = $itemDetail->lineItemName;
-                        $insertedIds[] = $itemDetail->id;
+                        $insertedIds[] = $itemDetail->variant_id;
                         $orderWidget[$zip]['items'][] = $itemDetail->originalPiecesOfLineItem . ' X ' . $itemDetail->lineItemName;
                     }
                 }
             } else {
-                if (isset($item->id) && (!in_array($item->id, $insertedIds))) {
-                    $insertedIds[] = $item->id;
+                if (isset($item->variant_id) && (!in_array($item->variant_id, $insertedIds))) {
+                    $insertedIds[] = $item->variant_id;
                     $keyText = isset($item->isFreeShipping) ? 'freeShippingItems' : 'items';
                     $orderWidget[$zip][$keyText][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
                 }
