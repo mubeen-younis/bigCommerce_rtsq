@@ -1,3 +1,7 @@
+= 2.2.32 2024-12-04 =
+
+* Update - Free shipping only to Contiguous 48 for certain items (new Shipping Rule) (Ticket:15698378014) [#510] (https://bitbucket.org/eniture/big-commerce/pull-requests/510)
+
 = 2.2.31 2024-11-12 =
 
 * Update - Update CSV import functionality (Ticket:6197880205, 16184692330, 16188165982) [#499] (https://bitbucket.org/eniture/big-commerce/pull-requests/499)
