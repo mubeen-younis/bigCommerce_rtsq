@@ -1,6 +1,16 @@
 <div>
     The CSV file containing your product shipping parameter data has been processed.
     <br/>
+    @if(!empty($data))
+    The products that are not updated : 
+    <ul>
+        @foreach($data as $item)
+            <li>{{ $item }}</li>
+        @endforeach
+    </ul>
+    @else
+    @endif
+    <br/>
 
     <p>Sincerely,<br />
         Customer Support<br />

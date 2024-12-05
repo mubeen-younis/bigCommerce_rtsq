@@ -48,7 +48,7 @@ class Bin3D
                 $binRequest[$key] = $this->generateBinRequest($bins, $item, [], $storeId);
             }
             $responseFromSBS = $this->binRequest($binRequest, $storeId, $hits, $cartInfo);
-            
+
             if ($isMultishipment) {
                 $items = $items + $itemsAlone;
                 $responseFromSBSAlone = $this->generateShipAloneBinResponse($itemsAlone);
@@ -85,14 +85,8 @@ class Bin3D
     public function multiShipmentOneShipHasBoth($responseFromSBS, $responseFromSBSAlone)
     {
         $responseFromSBS = json_decode($responseFromSBS)->response;
-        if ($this->isPalletPkgReq) {
-            foreach ($responseFromSBSAlone->pallets_packed as $packed) {
-                array_push($responseFromSBS->pallets_packed, $packed);
-            }
-        } else {
-            foreach ($responseFromSBSAlone->bins_packed as $packed) {
-                array_push($responseFromSBS->bins_packed, $packed);
-            }
+        foreach ($responseFromSBSAlone->bins_packed as $packed) {
+            array_push($responseFromSBS->bins_packed, $packed);
         }
         return [
             'response' => $responseFromSBS
@@ -139,12 +133,7 @@ class Bin3D
             if (count($not_packed_items)) {
                 foreach ($not_packed_items as $not_packed_item) {
                     $not_packed_item = (array)$not_packed_item;
-
-                    if ($this->isPalletPkgReq) {
-                        array_push($data[$key]->pallets_packed, $this->createItemOwnPallet($not_packed_item));
-                    } else {
-                        array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
-                    }
+                    array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
                 }
             }
         }
@@ -165,11 +154,7 @@ class Bin3D
                      * Commented quantity because it was repeating product
                      * now it will be handled by index 'piecesOfLineItem'
                      */
-                    if ($this->isPalletPkgReq) {
-                        array_push($data[$key]->pallets_packed, $this->createItemOwnPallet($not_packed_item));
-                    } else {
-                        array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
-                    }
+                    array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
                 }
             }
         }
@@ -199,11 +184,7 @@ class Bin3D
                         for ($i = 1; $i <= $notPackedQuantity; $i++) {
                             $not_packed_item = (array)$not_packed_item;
                             $not_packed_item['q'] = 1;
-                            if ($this->isPalletPkgReq) {
-                                array_push($data[$key]->pallets_packed, $this->createItemOwnPallet($not_packed_item));
-                            } else {
-                                array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
-                            }
+                            array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
                         }
                     }
 
@@ -215,20 +196,10 @@ class Bin3D
 
     public function AddBoxNicknameAndFee($packedResponse)
     {
-        if (!$this->isPalletPkgReq) {
-            foreach ($packedResponse->bins_packed as $key => $packedBox) {
-                $boxDetail = BoxSize::getBoxNicknameAndFee($packedBox->bin_data->id);
-                $packedResponse->bins_packed[$key]->bin_data->boxname = $boxDetail->nickname ?? null;
-                $packedResponse->bins_packed[$key]->bin_data->boxfee = $boxDetail->box_fee ?? 0;
-            }
-        } else {
-            foreach ($packedResponse->pallets_packed as $key => $packedBox) {
-                if (isset($packedBox->pallet_data)) {
-                    $boxDetail = BoxSize::getBoxNicknameAndFee($packedBox->pallet_data->id);
-                    $packedResponse->pallets_packed[$key]->pallet_data->boxname = $boxDetail->nickname ?? null;
-                    $packedResponse->pallets_packed[$key]->pallet_data->boxfee = $boxDetail->box_fee ?? 0;
-                }
-            }
+        foreach ($packedResponse->bins_packed as $key => $packedBox) {
+            $boxDetail = BoxSize::getBoxNicknameAndFee($packedBox->bin_data->id);
+            $packedResponse->bins_packed[$key]->bin_data->boxname = $boxDetail->nickname ?? null;
+            $packedResponse->bins_packed[$key]->bin_data->boxfee = $boxDetail->box_fee ?? 0;
         }
 
         return $packedResponse;
@@ -280,16 +251,13 @@ class Bin3D
 
         if (!$this->isPalletPkgReq) {
             $params['optimization_mode'] = $optimizationMode;
+        } else {
+            $params['optimization_mode'] = 'bins_number';
         }
         $finalRequest['username'] = $this->userName;
         $finalRequest['api_key'] = $this->apiKey;
         $finalRequest['params'] = $params;
-
-        if ($this->isPalletPkgReq) {
-            $finalRequest['pallet'] = $bins;
-        } else {
-            $finalRequest['bins'] = $bins;
-        }
+        $finalRequest['bins'] = $bins;
         $finalRequest['items'] = $item;
 
         return $finalRequest;
@@ -321,6 +289,10 @@ class Bin3D
             }
         }
 
+        if(Functions::isEnabledLogs('', $storeId)){
+            Log::info('3DbinRequest Data ' . json_encode($binRequest));
+        }
+
         $binRequestLog = new BinRequestLog();
         $binRequestLog->store_id = $storeId;
         $binRequestLog->cart_id = $cartInfo['cartId'];
@@ -332,7 +304,6 @@ class Bin3D
         $binRequestLogId = $binRequestLog->id;
 
         $endpoint = $this->endURL;
-        $this->endURL = $this->isPalletPkgReq ? Functions::$palletPkgUrl : $this->endURL;
         // create array for curl handles
         $chs = [];
         // create array for responses
@@ -384,6 +355,9 @@ class Bin3D
         $binRequestLog->not_updated_api_response = json_encode($responses);
         $binRequestLog->response_time = now();
         $binRequestLog->save();
+        if(Functions::isEnabledLogs('', $storeId)){
+            Log::info('3DbinResponse Data ' . json_encode($extBoxDimOfPackBoxes));
+        }
         return $extBoxDimOfPackBoxes;
     }
 
@@ -539,11 +513,7 @@ class Bin3D
             $notPacked['response_time'] = 0;
             $notPacked['id'] = rand();
             $notPacked['total_cost'] = 0;
-            if ($this->isPalletPkgReq) {
-                $notPacked['pallets_packed'] = [];
-            } else {
-                $notPacked['bins_packed'] = [];
-            }
+            $notPacked['bins_packed'] = [];
             $notPacked['status'] = 1;
             $notPacked['errors'] = [];
             $notPacked['boxFee'] = $items['boxFee'] ?? 0;

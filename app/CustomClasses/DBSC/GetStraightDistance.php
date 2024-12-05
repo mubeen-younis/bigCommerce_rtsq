@@ -5,13 +5,16 @@ namespace App\CustomClasses\DBSC;
 use App\Models\DBSC\DistanceLookup;
 use App\Models\DBSC\AddressLookup;
 use Illuminate\Support\Facades\Log;
+use App\CustomClasses\Functions;
+use App\Constants\Constant;
 
 class GetStraightDistance extends GetDistance
 {
+    protected $storeData = [];
 
-
-    public function getStraightLineDistance($origin, $destination)
+    public function getStraightLineDistance($origin, $destination, $storeData)
     {
+        $this->storeData = $storeData;
         foreach($origin as $key =>$orig){
             $origin['city'] = trim($orig['city']);
             $origin['state'] = trim($orig['state']);
@@ -147,26 +150,26 @@ class GetStraightDistance extends GetDistance
             }
         }
 
+        $apiResponse = '';
         if (!empty($geoCodeUrl)) {
             // If origin url is set, then we right trim the '|' sign from the string. There can be multiple origins in
             // url string.
             // i.e. 'Chicago+IL+60701+US|Chicago+IL+60701+US|' to 'Chicago+IL+60701+US|Chicago+IL+60701+US'
             $geoCodeUrl = rtrim($geoCodeUrl, '|');
             $addressCount = count($enabledCombinations);
-            $geocodeObj = $this->getGeoCodeDataApi($geoCodeUrl, $this->googleGeocodingApiKey, $addressCount);
-        }
-
-
-        if ($geocodeObj != 'server_error') {
-            $apiResponse = json_decode($geocodeObj);
-        } else {
-            return ['error' => 'Google API Error'];
-        }
-        // Check only when origin url is set
-        if (!empty($geoCodeUrl)) {
-            if ($this->googleAPIErrorExist($apiResponse)) {
+            $geocodeObj = $this->getGeoCodeDataApi($geoCodeUrl, $addressCount);
+            
+            if ($geocodeObj != 'server_error') {
+                $apiResponse = json_decode($geocodeObj);
+            } else {
                 return ['error' => 'Google API Error'];
-            };
+            }
+            // Check only when origin url is set
+            if (!empty($geoCodeUrl)) {
+                if ($this->googleAPIErrorExist($apiResponse)) {
+                    return ['error' => 'Google API Error'];
+                };
+            }
         }
 
         // Declare an array for holding final array.
@@ -204,11 +207,11 @@ class GetStraightDistance extends GetDistance
         return $geoCode;
     }
 
-    public function getGeoCodeDataApi($origin, $apiKey, $addressCount)
+    public function getGeoCodeDataApi($origin, $addressCount)
     {
-        $url = "https://maps.googleapis.com/maps/api/geocode/json?";
-        $url .= "address=" . $origin . "&";
-        $url .= "key=" . $apiKey;
+        $url = Constant::wsRemoteBaseUrl . "&";
+        $url .= "storeName=" . $this->storeData['name'] . "&";
+        $url .= "address=" . $origin;
 
         $headers = array(
             "Content-type: text/xml;charset=\"utf-8\"",
@@ -248,9 +251,9 @@ class GetStraightDistance extends GetDistance
                 $finalData[] = $this->insertOrUpdateGeoCodeData($apiResponse, $combination);
             }else {
                 // send request to google api again
-                $geoCodeUrl = urlencode("{$combination['city']}  {$combination['province']} {$combination['postal_code']}  ");
+                $geoCodeUrl = urlencode("{$combination['city']}  {$combination['state']} {$combination['zip']}  ");
 
-                $geocode_obj = $this->getGeoCodeDataApi($geoCodeUrl, $this->geoCodeApiKey, 1);
+                $geocode_obj = $this->getGeoCodeDataApi($geoCodeUrl, 1);
 
                 $secondApiResponse = '';
                 if ($geocode_obj != 'server_error') {
@@ -320,7 +323,7 @@ class GetStraightDistance extends GetDistance
                 'city' => $combination['city'],
                 'latitude' => $location->lat,
                 'longitude' => $location->lng,
-                'lookup_count' => isset($combination['lookup_count']) ? $combination['lookup_count']  : 0,
+                'lookup_count' => isset($combination['lookup_count']) ? $combination['lookup_count']  : 1,
             ];
             if ($combination_id_valid) {
                 $result = AddressLookup::where("id", $combination['update_id'])->update($locationData);
@@ -345,6 +348,13 @@ class GetStraightDistance extends GetDistance
 
         $result = DistanceLookup::create($straightLineData);
 
+    }
+
+    public function googleAPIErrorExist($apiResponse)
+    {
+        return isset($apiResponse->error_message) || (isset($apiResponse->status) &&
+                $apiResponse->status == 'INVALID_REQUEST') || 
+                (isset($apiResponse->rows[0]->elements[0]->status) && $apiResponse->rows[0]->elements[0]->status != 'OK');
     }
 
 }

@@ -9,6 +9,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Models\LocAssociatedAccountNo;
 use App\Models\ShippingRule;
+use App\CustomClasses\Functions;
+use App\Models\CacheAddressLookup;
+use App\Constants\Constant;
 
 class LocationsController extends Controller
 {
@@ -217,6 +220,9 @@ class LocationsController extends Controller
 
             $additionals = [
                 'instore_pickup' => $request->enable_instore ?? '',
+                'enable_instore_distance' => $request->enable_instore_distance ?? false,
+                'enable_instore_address' => $request->enable_instore_address ?? false,
+                'enable_instore_phone' => $request->enable_instore_phone ?? false,
                 'local_delivery' => $request->enable_ld ?? '',
                 'ld_enable_supress' => $request->ld_enable_supress ?? '',
                 'instore_pickup_data' => [
@@ -368,28 +374,40 @@ class LocationsController extends Controller
             ], 200);
         }
         $zipCode = $request->zip_code;
-        $url = "https://maps.googleapis.com/maps/api/geocode/json?address=" . urlencode($zipCode) . "&key=AIzaSyADPlm4GliK0B0HpHn6kKLJ2XAH7b3hd2w";
-        $zipcodeDetail = $this->curlRequest->enSingleCurlRequest($url, [], [], 'GET', false);
-        if ($zipcodeDetail['info']['http_code'] != 200) {
-            return response()->json(['error' => true,
-                'data' => [],
-                'message' => 'Unable to connect to server',
-            ], $zipcodeDetail['info']['http_code']);
+        // To check is address already exist in the database then no api call
+        $addressLookupData = CacheAddressLookup::getAddressLookupDatabase($zipCode);
+        if(empty($addressLookupData)){
+            $url = Constant::wsRemoteBaseUrl . "&";
+            $url .= "storeName=" . $request['store_name'] . "&";
+            $url .= "address=" . urlencode($zipCode);
+            $zipcodeDetail = $this->curlRequest->enSingleCurlRequest($url, [], [], 'GET', false);
+            if ($zipcodeDetail['info']['http_code'] != 200) {
+                return response()->json(['error' => true,
+                    'data' => [],
+                    'message' => 'Unable to connect to server',
+                ], $zipcodeDetail['info']['http_code']);
+            }
+
+            $mapResult = json_decode($zipcodeDetail['response'], true);
+
+            if (isset($mapResult['error_message']) || $mapResult['status'] != 'OK') {
+                return response()->json(['error' => true,
+                    'data' => [],
+                    'message' => isset($mapResult['error_message']) ? $mapResult['error_message'] : " Error! Please enter valid US or Canada zip code.",
+                ], 200);
+            }
+
+            CacheAddressLookup::insertAddressData($zipCode, $mapResult);
+
+        } else {
+            $mapResult = json_decode($addressLookupData, true);
         }
 
-        $mapResult = json_decode($zipcodeDetail['response'], true);
-
-        if (isset($mapResult['error_message']) || $mapResult['status'] != 'OK') {
-            return response()->json(['error' => true,
-                'data' => [],
-                'message' => isset($mapResult['error_message']) ? $mapResult['error_message'] : " Error! Please enter valid US or Canada zip code.",
-            ], 200);
-        }
         $city = [];
         $state = "";
         $country = "";
         if (count($mapResult['results']) > 0) {
-            //dd($mapResult['results']);
+
             $arrComponents = $mapResult['results'][0]['address_components'] ?? [];
             if (isset($mapResult['results'][0]['postcode_localities'])) {
                 foreach ($mapResult['results'][0]['postcode_localities'] as $index => $component) {
