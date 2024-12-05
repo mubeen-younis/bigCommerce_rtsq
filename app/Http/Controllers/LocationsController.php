@@ -354,7 +354,11 @@ class LocationsController extends Controller
             }
         } catch (\Exception $exception) {
             return response()->json(['error' => true,
-                'data' => [$exception->getMessage()],
+                'data' => [
+                    'line' => $exception->getLine(),
+                    'file' => $exception->getFile(),
+                    'message' => $exception->getMessage()
+                ],
                 'message' => 'Something went Wrong',
             ], 404);
         }
