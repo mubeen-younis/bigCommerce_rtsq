@@ -214,7 +214,7 @@ class FDOOrderController extends Controller
         $orderDetails = [];
         foreach ($origins as $key => $origin) {
             $isFlatRate = false;
-            $isFlatRate = strpos($rateId, 'flatRateRule') === 0 ? true : false;
+            $isFlatRate = strpos($rateId, 'flatraterule') === 0 ? true : false;
             $item = $items->$key;
             $city = $origin->senderCity ?? '';
             $state = $origin->senderState ?? '';
@@ -275,7 +275,6 @@ class FDOOrderController extends Controller
                 $carrierName = $code ? Functions::getCarrierNameOrCode($code) : "Multi Carrier";
                 $wsCarrierCode = Functions::getCarrierNameOrCode($rateId, 1);
                 $isSmall = Functions::isSmallCarrier($code);
-                $isFlatRate = strpos($code, 'flatRateRule') === 0 ? true : false;
                 /*Added condition if in case of multi shipment
              The rate of shipping group will be added to warehouse rate*/
                 if ($shippingGroupResp != null && $orderWidget[$zip]['locationtype'] == "Warehouse") {
