@@ -174,8 +174,7 @@ class FDOOrderController extends Controller
         $handlingUnitWeight = $requestToWS->requestArr->carriers->$wsCarrierCode->api->handlingUnitWeight ?? 0;
         $maxWeightPerHandlingUnit = $requestToWS->requestArr->carriers->$wsCarrierCode->api->maxWeightPerHandlingUnit ?? 0;
 
-        // $lineItem->items = $this->formatItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
-        // $lineItem->origin = $this->formatOrigins($requestToWS->requestArr->carriers);
+
         $isMultiShipment = false;
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
         if (!blank($multiShipmentresponse)) {
@@ -284,7 +283,7 @@ class FDOOrderController extends Controller
 
                 $isMulti = true;
             }
-            
+
             if ($flatRateResp != null && $multiShipmentresponse == null && $isFlatRate) {
                 $isFlatRate = true;
                 $sRate = $flatRateResp->$zip->rate ?? 0;
