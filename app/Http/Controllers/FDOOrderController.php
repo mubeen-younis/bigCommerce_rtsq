@@ -214,6 +214,7 @@ class FDOOrderController extends Controller
         $orderDetails = [];
         foreach ($origins as $key => $origin) {
             $isFlatRate = false;
+            $isFlatRate = strpos($rateId, 'flatRateRule') === 0 ? true : false;
             $item = $items->$key;
             $city = $origin->senderCity ?? '';
             $state = $origin->senderState ?? '';
@@ -285,7 +286,7 @@ class FDOOrderController extends Controller
                 $isMulti = true;
             }
             
-            if ($flatRateResp != null && $multiShipmentresponse == null) {
+            if ($flatRateResp != null && $multiShipmentresponse == null && $isFlatRate) {
                 $isFlatRate = true;
                 $sRate = $flatRateResp->$zip->rate ?? 0;
             }
