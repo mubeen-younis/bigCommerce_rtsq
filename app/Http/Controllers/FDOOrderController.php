@@ -174,13 +174,14 @@ class FDOOrderController extends Controller
         $handlingUnitWeight = $requestToWS->requestArr->carriers->$wsCarrierCode->api->handlingUnitWeight ?? 0;
         $maxWeightPerHandlingUnit = $requestToWS->requestArr->carriers->$wsCarrierCode->api->maxWeightPerHandlingUnit ?? 0;
 
-        $lineItem->items = $this->formatItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
-        $lineItem->origin = $this->formatOrigins($requestToWS->requestArr->carriers);
+        // $lineItem->items = $this->formatItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
+        // $lineItem->origin = $this->formatOrigins($requestToWS->requestArr->carriers);
         $isMultiShipment = false;
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
         if (!blank($multiShipmentresponse)) {
             $isMultiShipment = true;
         }
+        $flatRateResp = !blank($data['flat_rate_resp']) ? json_decode($data['flat_rate_resp']) : null;
         $liftGateStatus = 'n';
         $LimitedAccessDel = strpos($rateId, '+lad') ? 'Y' : 'n';
         $notifyBeforeDel = strpos($rateId, '+nbd') ? 'Y' : 'n';
@@ -283,6 +284,12 @@ class FDOOrderController extends Controller
 
                 $isMulti = true;
             }
+            
+            if ($flatRateResp != null && $multiShipmentresponse == null) {
+                $isFlatRate = true;
+                $sRate = $flatRateResp->$zip->rate ?? 0;
+            }
+
             $handlingUnitDetails = optional($responseFromWS)->$wsCarrierCode->$zip->debug ?? [];
             if (blank($handlingUnitDetails)) {
                 $handlingUnitDetails = optional($responseFromWS)->$wsCarrierCode->$zip->DEBUG ?? [];
