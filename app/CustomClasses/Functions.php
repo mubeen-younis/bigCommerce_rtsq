@@ -1530,7 +1530,7 @@ class Functions
         $finalCHeapestQuotes = [];
         $accessorialServices = [];
 
-        if(count($multiShipmentQuotes) >= 2 && count($checkoutQuotes) >= 2){
+        if(count($multiShipmentQuotes) >= 1 && count($checkoutQuotes) >= 2){
             
             $isParcel = $isLTL = false;
             foreach ($multiShipmentQuotes as $index => $shipment) {
@@ -1558,6 +1558,10 @@ class Functions
                 if($isParcel && $isLTL){
                     return $shipmentQuotes;
                 } else {
+                    return $quotes;
+                } 
+            } elseif (isset($ThresholdSettings['parcel_rates']) && $ThresholdSettings['parcel_rates'] == 1) {
+                if(!($isParcel)){
                     return $quotes;
                 } 
             }
