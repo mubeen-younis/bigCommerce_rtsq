@@ -55,17 +55,18 @@ class WweSmallQuoteResults
 
     }
 
-    public function addHazmatAmountsInServices($amount, $serviceCode, $quoteSettings)
+    public function addHazmatAmountsInServices($amount, $serviceCode, $quoteSettings, $isSbsEnable = false, $items = [], $hazmatBoxes = 1)
     {
+        $totalHazmatBoxes = Functions::getHazmatItemBoxes($isSbsEnable, $quoteSettings, $items, $hazmatBoxes);
         // Adding hazmat fee to Ground Service
-        if ($serviceCode == "GND") {
+        if ($serviceCode == "GND" || $serviceCode == "3DS" || $serviceCode == "03") {
             if (isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
-                $amount = $amount + $quoteSettings['ground_hazardous_material_fee'];
+                $amount = $amount + $quoteSettings['ground_hazardous_material_fee'] * $totalHazmatBoxes;
             }
             // Adding hazmat fee to Air Services
         } else {
             if (isset($quoteSettings['air_hazardous_material_fee']) && is_numeric($quoteSettings['air_hazardous_material_fee']) && !empty($quoteSettings['air_hazardous_material_fee'])) {
-                $amount = $amount + $quoteSettings['air_hazardous_material_fee'];
+                $amount = $amount + $quoteSettings['air_hazardous_material_fee'] * $totalHazmatBoxes;
             }
         }
         // $amount = $this->addHandlingMarkupOfHazmat($amount, $quoteSettings['handling_fee_markup']);

@@ -13,6 +13,7 @@ use App\Models\PackagingDetail;
 use App\CustomClasses\BigCommerceFunctions;
 use App\CurlRequest;
 use Carbon\Carbon;
+use App\Models\EnableLog;
 class LogToDbController extends Controller
 {
     /**
@@ -49,6 +50,11 @@ class LogToDbController extends Controller
             return 'deleted';
         }
 
+    }
+
+    public function enableLogs(Request $request)
+    {
+        return EnableLog::enableAppLogs($request);
     }
 
     public function sendCurlRequest($url, $postData)

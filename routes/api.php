@@ -22,6 +22,7 @@ use App\Http\Controllers\StoreController;
 use App\Http\Controllers\Subscription\SubscriptionController;
 use App\Http\Controllers\Subscription\PackageSubscriptionController;
 use App\Http\Middleware\EnsureTokenIsValid;
+use App\Http\Middleware\EnsureProductApiTokenIsValid;
 use App\Models\CarrierServices;
 use App\Models\Locations;
 use Illuminate\Http\Request;
@@ -36,6 +37,7 @@ use App\Http\Controllers\DBSC\ShippingZoneController;
 use App\Http\Controllers\DBSC\ShippingRatesController;
 use App\Http\Controllers\DBSC\OtherSettingsController;
 use App\Http\Controllers\BigCommerceListingController;
+use App\Http\Controllers\ApiAccessTokenController;
 
 /*
 |--------------------------------------------------------------------------
@@ -83,23 +85,26 @@ Route::post('connection_update_from_va', [\App\Http\Controllers\AddressValidatio
 Route::post('connection_update_from_fdo', [\App\Http\Controllers\FDOController::class, 'connectionUpdateFromFdo']);
 
 
-/////
-
+// Update Product API Route
+Route::middleware(['customThrottle:60,1', EnsureProductApiTokenIsValid::class])->group(function () {
+    Route::post('/products', [ApiAccessTokenController::class, 'updateProduct']);
+});
 
 // Ws Route For Adding Plan
 Route::post('/save_plan_detail', [CarrierPlanController::class, 'addPlanFromWs']);
+//========Delete duplicate variants
+Route::post('/delete_duplicate_variants', [ProductSettingController::class, 'deleteDuplicateVariants']);
+Route::post('/delete_null_variants', [ProductSettingController::class, 'deleteNullVariants']);
 Route::middleware([EnsureTokenIsValid::class])->group(function () {
     //======Webhook Manually
     Route::get('/reg_webhooks_man', [\App\Http\Controllers\WebHooksController::class, 'registerStoreWebhooksManually']);
     //========Product Routes
     Route::get('/getProducts', [ProductSettingController::class, 'getAllProducts']);
     Route::get('/import_products', [ProductSettingController::class, 'importProducts']);
-    Route::get('/get_products', [ProductSettingController::class, 'getStoreProductsFromDb']);
     Route::get('/get_product', [ProductSettingController::class, 'getSingleProductDetail']);
+    Route::get('/get_products', [ProductSettingController::class, 'getStoreProductsFromAPI']);
     Route::get('/edit_product', [ProductSettingController::class, 'editProduct']);
     Route::post('/update_product', [ProductSettingController::class, 'updateProductDetail']);
-    //========Delete duplicate variants
-    Route::post('/delete_duplicate_variants', [ProductSettingController::class, 'deleteDuplicateVariants']);
 
     //=======Logs Routes
     Route::get('/get_logs', [App\Http\Controllers\LogToDbController::class, 'getStoreLogs']);
@@ -225,6 +230,7 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/cancel-subscription', [SubscriptionController::class, 'cancelSubscriptionPlan']);
     Route::get('/get-subscription-details', [SubscriptionController::class, 'getSubscriptionDetail']);
     Route::post('/change-payment-method', [SubscriptionController::class, 'changePaymentMethod']);
+    Route::post('/payment_method', [SubscriptionController::class, 'savePaymentMethodUsingScript']);
     //END: Subscription Routes
     //Start: SBS Routes
     Route::get('/get-all-pacakges', [PackageSubscriptionController::class, 'getAllPackagesList']);
@@ -297,6 +303,9 @@ Route::middleware([EnsureTokenIsValid::class])->group(function () {
     Route::post('/submit_staffnote_settings', [QuoteSettingsController::class, 'saveStaffNoteSettings']);
 
     Route::get('/get_carrs_conn_settings', [ConnectionController::class, 'getConnSettings']);
+    // Update Product API Route
+    Route::post('/generateApiToken', [ApiAccessTokenController::class, 'create']);
+    Route::post('/getApiAccessToken', [ApiAccessTokenController::class, 'show']);
 });
 //Webhook
 Route::post('/bc-subscription-update', [SubscriptionController::class, 'paymentByStripeWebHook']);
@@ -341,6 +350,7 @@ Route::get('/test_bin', [App\CustomClasses\Bin3D\Bin3D::class, 'getBinResponse']
 // app logs
 Route::get('/api_logs', [App\Http\Controllers\LogToDbController::class, 'index']);
 Route::get('/truncate_logs', [App\Http\Controllers\LogToDbController::class, 'truncateLogs']);
+Route::post('/enable_logs', [App\Http\Controllers\LogToDbController::class, 'enableLogs']);
 
 // Eniture licenses routes
 Route::get('/get_customers_list', [BigCommerceListingController::class, 'listCustomers']);

@@ -11,6 +11,7 @@ use App\Models\RequestData;
 use App\Models\RequestTempData;
 use App\Models\Store;
 use Illuminate\Http\Request;
+use App\Models\ShippingRule;
 
 class FDOOrderController extends Controller
 {
@@ -173,9 +174,13 @@ class FDOOrderController extends Controller
         $handlingUnitWeight = $requestToWS->requestArr->carriers->$wsCarrierCode->api->handlingUnitWeight ?? 0;
         $maxWeightPerHandlingUnit = $requestToWS->requestArr->carriers->$wsCarrierCode->api->maxWeightPerHandlingUnit ?? 0;
 
-        $lineItem->items = $this->formatItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
-        $lineItem->origin = $this->formatOrigins($requestToWS->requestArr->carriers);
+
+        $isMultiShipment = false;
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
+        if (!blank($multiShipmentresponse)) {
+            $isMultiShipment = true;
+        }
+        $flatRateResp = !blank($data['flat_rate_resp']) ? json_decode($data['flat_rate_resp']) : null;
         $liftGateStatus = 'n';
         $LimitedAccessDel = strpos($rateId, '+lad') ? 'Y' : 'n';
         $notifyBeforeDel = strpos($rateId, '+nbd') ? 'Y' : 'n';
@@ -207,7 +212,8 @@ class FDOOrderController extends Controller
         $code = '';
         $orderDetails = [];
         foreach ($origins as $key => $origin) {
-
+            $isFlatRate = false;
+            $isFlatRate = strpos($rateId, 'flatraterule') === 0 ? true : false;
             $item = $items->$key;
             $city = $origin->senderCity ?? '';
             $state = $origin->senderState ?? '';
@@ -277,9 +283,24 @@ class FDOOrderController extends Controller
 
                 $isMulti = true;
             }
+
+            if ($flatRateResp != null && $multiShipmentresponse == null && $isFlatRate) {
+                $isFlatRate = true;
+                $sRate = $flatRateResp->$zip->rate ?? 0;
+            }
+
             $handlingUnitDetails = optional($responseFromWS)->$wsCarrierCode->$zip->debug ?? [];
             if (blank($handlingUnitDetails)) {
                 $handlingUnitDetails = optional($responseFromWS)->$wsCarrierCode->$zip->DEBUG ?? [];
+            }
+
+            /**
+             * Add Quote ID
+             * */
+            if (!$isSmallLtlrate && empty($multiShipmentresponse)){
+                $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($rateId, $responseFromWS, $zip);
+            } elseif (!$isSmallLtlrate && $isMultiShipment) {
+                $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($code, $responseFromWS, $zip);
             }
 
             if (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Delivery')){
@@ -343,7 +364,7 @@ class FDOOrderController extends Controller
             }
 
             $isHAT ? array_push($orderWidget[$zip]['accessorials'], 'Hold At Terminal') : '';
-            if (!$isSmall) {
+            if (!$isSmall && !$isFlatRate) {
                 $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Residential Pickup') : '';
                 $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Lift Gate Delivery') : '';
                 $liftGatePickup != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Lift Gate Pickup') : '';
