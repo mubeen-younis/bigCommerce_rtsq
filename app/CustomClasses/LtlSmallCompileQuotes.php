@@ -869,6 +869,18 @@ class LtlSmallCompileQuotes
                 $count++;
             }
 
+            if (isset($quotes['LADNBD'][0])) {
+                $multiShipments[$count]['limitedaccessLG'][$indexes['ltl'][0]] = $quotes['LADNBD'][0];
+                $multiShipments[$count]['limitedaccessLG'][$indexes['small'][0]] = $parcel;
+                $count++;
+            }
+
+            if (isset($quotes['LGLADNBD'][0])) {
+                $multiShipments[$count]['limitedaccessLG'][$indexes['ltl'][0]] = $quotes['LGLADNBD'][0];
+                $multiShipments[$count]['limitedaccessLG'][$indexes['small'][0]] = $parcel;
+                $count++;
+            }
+
             if (isset($quotes['TL'][0])) {
                 $multiShipments[$count]['Truckload'][$indexes['ltl'][0]] = $quotes['TL'][0];
                 $multiShipments[$count]['Truckload'][$indexes['small'][0]] = $parcel;
