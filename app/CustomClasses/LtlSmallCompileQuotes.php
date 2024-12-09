@@ -869,18 +869,6 @@ class LtlSmallCompileQuotes
                 $count++;
             }
 
-            if (isset($quotes['LADNBD'][0])) {
-                $multiShipments[$count]['limitedaccessLG'][$indexes['ltl'][0]] = $quotes['LADNBD'][0];
-                $multiShipments[$count]['limitedaccessLG'][$indexes['small'][0]] = $parcel;
-                $count++;
-            }
-
-            if (isset($quotes['LGLADNBD'][0])) {
-                $multiShipments[$count]['limitedaccessLG'][$indexes['ltl'][0]] = $quotes['LGLADNBD'][0];
-                $multiShipments[$count]['limitedaccessLG'][$indexes['small'][0]] = $parcel;
-                $count++;
-            }
-
             if (isset($quotes['TL'][0])) {
                 $multiShipments[$count]['Truckload'][$indexes['ltl'][0]] = $quotes['TL'][0];
                 $multiShipments[$count]['Truckload'][$indexes['small'][0]] = $parcel;
@@ -914,6 +902,18 @@ class LtlSmallCompileQuotes
             if (isset($quotes['LGNBD'][0])) {
                 $multiShipments[$count]['lgnotifydelivery'][$indexes['ltl'][0]] = $quotes['LGNBD'][0];
                 $multiShipments[$count]['lgnotifydelivery'][$indexes['small'][0]] = $parcel;
+                $count++;
+            }
+
+            if (isset($quotes['LADNBD'][0])) {
+                $multiShipments[$count]['laccessnotifydelivery'][$indexes['ltl'][0]] = $quotes['LADNBD'][0];
+                $multiShipments[$count]['laccessnotifydelivery'][$indexes['small'][0]] = $parcel;
+                $count++;
+            }
+
+            if (isset($quotes['LGLADNBD'][0])) {
+                $multiShipments[$count]['lglaccessnotifydelivery'][$indexes['ltl'][0]] = $quotes['LGLADNBD'][0];
+                $multiShipments[$count]['lglaccessnotifydelivery'][$indexes['small'][0]] = $parcel;
                 $count++;
             }
         }
