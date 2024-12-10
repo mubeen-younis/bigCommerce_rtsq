@@ -265,14 +265,23 @@ class LtlSmallCompileQuotes
                     $quote['isResi'] = $residential['xpoLtl'] == 'Y';
                     $quote['isLG'] = isset($connectionSettings['xpo-ltl']['quote_settings']['offerLiftGateDelivery']) && $connectionSettings['xpo-ltl']['quote_settings']['offerLiftGateDelivery'];
                     $quote['isNBD'] = isset($connectionSettings['xpo-ltl']['quote_settings']['offer_notify_as_option']) && $connectionSettings['xpo-ltl']['quote_settings']['offer_notify_as_option'];
+                    $quote['isLAD'] = isset($connectionSettings['xpo-ltl']['quote_settings']['offer_limited_access_delivery']) && $connectionSettings['xpo-ltl']['quote_settings']['offer_limited_access_delivery'];
                     $quoteSettings = isset($connectionSettings['xpo-ltl']['quote_settings']) ? $connectionSettings['xpo-ltl']['quote_settings'] : [];
 
-                    if (strpos($quote['code'], '+LG+NBD') !== false) {
+                    if (strpos($quote['code'], '+LG+LAD+NBD') !== false) {
+                        $quotesCarrier['ltl']['xpo']['LGLADNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+NBD') !== false) {
                         $quotesCarrier['ltl']['xpo']['LGNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LAD+NBD') !== false) {
+                        $quotesCarrier['ltl']['xpo']['LADNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+LAD') !== false) {
+                        $quotesCarrier['ltl']['xpo']['LGLAD'][] = $quote;
                     } else if (strpos($quote['code'], '+NBD') !== false) {
                         $quotesCarrier['ltl']['xpo']['NBD'][] = $quote;
                     } else if (strpos($quote['code'], '+LG') !== false) {
                         $quotesCarrier['ltl']['xpo']['LG'][] = $quote;
+                    } else if (strpos($quote['code'], '+LAD') !== false) {
+                        $quotesCarrier['ltl']['xpo']['LAD'][] = $quote;
                     } else {
                         $quotesCarrier['ltl']['xpo']['simple'][] = $quote;
                     }
