@@ -83,14 +83,23 @@ class LtlSmallCompileQuotes
                     $quote['isResi'] = $residential['priority1Ltl'] == 'Y';
                     $quote['isLG'] = isset($connectionSettings['priority-one-ltl']['quote_settings']['offerLiftGateDelivery']) && $connectionSettings['priority-one-ltl']['quote_settings']['offerLiftGateDelivery'];
                     $quote['isNBD'] = isset($connectionSettings['priority-one-ltl']['quote_settings']['offer_notify_as_option']) && $connectionSettings['priority-one-ltl']['quote_settings']['offer_notify_as_option'];
+                    $quote['isLAD'] = isset($connectionSettings['priority-one-ltl']['quote_settings']['offer_limited_access_delivery']) && $connectionSettings['priority-one-ltl']['quote_settings']['offer_limited_access_delivery'];
                     $quoteSettings = isset($connectionSettings['priority-one-ltl']['quote_settings']) ? $connectionSettings['priority-one-ltl']['quote_settings'] : [];
 
-                    if (strpos($quote['code'], '+LG+NBD') !== false) {
+                    if (strpos($quote['code'], '+LG+LAD+NBD') !== false) {
+                        $quotesCarrier['ltl']['priority1']['LGLADNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+NBD') !== false) {
                         $quotesCarrier['ltl']['priority1']['LGNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LAD+NBD') !== false) {
+                        $quotesCarrier['ltl']['priority1']['LADNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+LAD') !== false) {
+                        $quotesCarrier['ltl']['priority1']['LGLAD'][] = $quote;
                     } else if (strpos($quote['code'], '+NBD') !== false) {
                         $quotesCarrier['ltl']['priority1']['NBD'][] = $quote;
                     } else if (strpos($quote['code'], '+LG') !== false) {
                         $quotesCarrier['ltl']['priority1']['LG'][] = $quote;
+                    } else if (strpos($quote['code'], '+LAD') !== false) {
+                        $quotesCarrier['ltl']['priority1']['LAD'][] = $quote;
                     } else {
                         $quotesCarrier['ltl']['priority1']['simple'][] = $quote;
                     }

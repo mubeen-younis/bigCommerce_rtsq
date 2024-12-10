@@ -5497,9 +5497,9 @@ class CompileQuotes
                 // $insideDelivery = (isset($this->quoteSettings['offer_inside_delivery']) && $this->quoteSettings['offer_inside_delivery']) ||
                 //     (isset($this->quoteSettings['always_inside_delivery']) && $this->quoteSettings['always_inside_delivery']);
 
-                // $limitedAccess =
-                //     (isset($this->quoteSettings['offer_limited_access_delivery']) && $this->quoteSettings['offer_limited_access_delivery']) ||
-                //     (isset($this->quoteSettings['always_limited_access_delivery']) && $this->quoteSettings['always_limited_access_delivery']) ?? false;
+                $limitedAccess =
+                    (isset($this->quoteSettings['offer_limited_access_delivery']) && $this->quoteSettings['offer_limited_access_delivery']) ||
+                    (isset($this->quoteSettings['always_limited_access_delivery']) && $this->quoteSettings['always_limited_access_delivery']) ?? false;
             }
             $originQuotes = [];
             $arraySorting = [];
@@ -5511,8 +5511,14 @@ class CompileQuotes
 
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices)) {
 
+                        if($limitedAccess && isset($this->quoteSettings['limited_access_fee'])){
+                            $data['totalNetCharge']['Amount'] += $this->quoteSettings['limited_access_fee'] ?? 0;
+                            $data['surcharges']['limitedAccessDeliveryFee'] = (float) $this->quoteSettings['limited_access_fee'];
+                        }
+
                         $isliftgateFee = isset($data['surcharges']['liftgateFee']);
                         $isnotifyDeliveryFee = isset($data['surcharges']['notifyDeliveryFee']);
+                        $islimitedDeliveryFee = isset($data['surcharges']['limitedAccessDeliveryFee']) ?? false;
                         $isResidentialFee = !isset($data['surcharges']['residentialFee']) && ($this->isResi || $this->alwaysResi);
 
                         /*
@@ -5524,7 +5530,7 @@ class CompileQuotes
                         $date = $data['deliveryDate'] ?? null;
                         $days = $data['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
-                        $enableFeaturesArray = Functions::getEnableFeaturesArr($lgQuotes && $isliftgateFee, false, $notifyDelivery && $isnotifyDeliveryFee, false);
+                        $enableFeaturesArray = Functions::getEnableFeaturesArr($lgQuotes && $isliftgateFee, false, $notifyDelivery && $isnotifyDeliveryFee, $limitedAccess && $islimitedDeliveryFee ?? false);
                         foreach ($enableFeaturesArray as $index => $feature) {
                             if ($feature['isEnable']) {
                                 $compileNotifyDeliveryQuotes = Functions::getOriginQuotes(
