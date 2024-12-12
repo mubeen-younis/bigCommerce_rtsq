@@ -12,9 +12,10 @@ use App\Http\Controllers\ShippingRuleController;
 
 class QuotesResults
 {
-    public function __construct()
+    public function __construct($suppressParcelRates = [])
     {
         $this->CompileQuotes = new CompileQuotes();
+        $this->SuppressParcelRates = $suppressParcelRates;
     }
 
 
@@ -48,17 +49,18 @@ class QuotesResults
      * @param $groundServiceCodes
      * @return string
      */
-    public function addHazmatAmountsInServices($amount, $serviceCode, $quoteSettings, $groundServiceCodes)
+    public function addHazmatAmountsInServices($amount, $serviceCode, $quoteSettings, $groundServiceCodes, $hazmatBoxes = 1)
     {
+        $totalHazmatBoxes = Functions::getHazmatItemBoxes($this->isSbsEnable, $quoteSettings, $this->items, $hazmatBoxes);
         // Adding hazmat fee to Ground Service
         if (in_array($serviceCode, $groundServiceCodes)) {
             if (isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
-                $amount = $amount + $quoteSettings['ground_hazardous_material_fee'];
+                $amount = $amount + $quoteSettings['ground_hazardous_material_fee'] * $totalHazmatBoxes;
             }
             // Adding hazmat fee to Air Services
         } else {
             if (isset($quoteSettings['air_hazardous_material_fee']) && is_numeric($quoteSettings['air_hazardous_material_fee']) && !empty($quoteSettings['air_hazardous_material_fee'])) {
-                $amount = $amount + $quoteSettings['air_hazardous_material_fee'];
+                $amount = $amount + $quoteSettings['air_hazardous_material_fee'] * $totalHazmatBoxes;
             }
         }
         return number_format($amount, 2);
@@ -130,6 +132,7 @@ class QuotesResults
 
     public function getServiceLabel($title, $serviceType, $quoteSettings)
     {
+        $title = $serviceType == 'ups_standard_international' ? 'UPS Standard International®' : $title;
         $labelIndex =  strtolower($serviceType) . '_label';
         return !empty($quoteSettings['carrier_services'][$labelIndex]) ? $quoteSettings['carrier_services'][$labelIndex] : $title;
     }
@@ -159,12 +162,15 @@ class QuotesResults
     /*
      * Returns compiled quotes of shipengine
      * */
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items, $storeId = '', $carrierName = '')
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $isSbsEnable, $isMultiShipment, $items, $storeId = '', $carrierName = '', $totalHazmatBoxes)
     {
         $shippingRule = new ShippingRuleController();
         $shipments = $this->formateQuoteBeforeCompile($shipments);
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
         $this->quoteSettings = $connectionSettings['ups-ship-engine']['quote_settings'] ?? '';
+        $this->isSbsEnable = $isSbsEnable;
+        $this->items = $items;
+        $access = $this->CompileQuotes->getAccessorialCodeSmall();
 
         if (!$isMultiShipment) {
             $isMultiShipment = is_countable($shipments) && count($shipments) > 1;
@@ -178,7 +184,7 @@ class QuotesResults
         $shipmentCount = 0;
         $count = 0;
         $access2 = $access;
-        $groundServiceCodes = ["ups_ground"];
+        $groundServiceCodes = ["ups_ground", "ups_3_day_select", "ups_standard", "ups_standard_international"];
         $carrierCode = "shipEng";
 
         $rad_settings = Functions::getRADsettings($storeId) ?? [];
@@ -186,6 +192,9 @@ class QuotesResults
 
         foreach ($shipments as $origin => $quote) {
 
+            if(in_array($origin, $this->SuppressParcelRates)){
+                continue;
+            }
             if ((isset($quote['severity']) || (isset($quote['q']) && empty($quote['q'])) || (!isset($quote['q']) && !empty($quote['InstorPickupLocalDelivery'])))) {
                 $allQuotes = $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);
                 $returnResp['resp'] = $allQuotes;
@@ -248,12 +257,13 @@ class QuotesResults
                     
                     // Checking hazmat and adding hazmat amounts in services
                     if ($isHazmat) {
+                        $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin]['normal'] : 1;
                         if ($isMultiShipment) {
                             if ($hazmatAllItems[$origin] == 'Y') {
-                                $price = $this->addHazmatAmountsInServices($price, $serviceCode, $this->quoteSettings, $groundServiceCodes);
+                                $price = $this->addHazmatAmountsInServices($price, $serviceCode, $this->quoteSettings, $groundServiceCodes, $hazmatBoxes);
                             }
                         } else {
-                            $price = $this->addHazmatAmountsInServices($price, $serviceCode, $this->quoteSettings, $groundServiceCodes);
+                            $price = $this->addHazmatAmountsInServices($price, $serviceCode, $this->quoteSettings, $groundServiceCodes, $hazmatBoxes);
                         }
                     }
 
@@ -274,7 +284,7 @@ class QuotesResults
         }
 
         // Check for mukti shipment finding lowest price in each shipment and adding them for multi shipment
-        if ($isMultiShipment) {
+        if ($isMultiShipment && count($multiShipmentQuotes) > 1) {
             $originQuotesMulti = [];
             $multiShipPrice = 0;
 
@@ -317,6 +327,7 @@ class QuotesResults
                 $allQuotes = $this->CompileQuotes->inStoreLocalDeliveryQuotes($originQuotes, $inStoreLdData, $allOrigins);
                 $resp = $allQuotes;
             }
+            unset($returnResp['isMultiShipment']);
             $returnResp['resp'] = $resp;
             return $returnResp;
         }

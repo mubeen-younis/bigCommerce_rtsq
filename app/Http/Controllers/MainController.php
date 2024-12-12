@@ -24,6 +24,7 @@ use App\Models\Carrier;
 use App\Http\Controllers\CarrierController;
 use App\Models\Addons;
 use App\Http\Controllers\AddonsController;
+use App\Http\Controllers\GetRatesController;
 
 
 class MainController extends BaseController
@@ -157,10 +158,6 @@ class MainController extends BaseController
                     $addons = optional(Addons::get())->toArray() ?? [];
                     $addonsController->addonsOnAppInstallation($addons, $store);
                 }
-                /*
-                 * Update WS graph data
-                 * */
-                SaleGraphController::updateGraphData();
 
                 // If the merchant installed the app via an external link, redirect back to the
                 // BC installation success page for this app
@@ -208,10 +205,7 @@ class MainController extends BaseController
                     $hubSpotController = new HubSpotController();
                     $hubSpotController->createUpdateHubSpotUser($store['id'], $user, $status);
                 }
-                /*
-                 * Update WS graph data
-                 * */
-                SaleGraphController::updateGraphData();
+
             }
         }
         echo 'uninstall';
@@ -394,22 +388,33 @@ class MainController extends BaseController
             // Update,delete,create from  webhook
             $scope = $postData['scope'];
             $storeID = Store::where('hash', $storeHash)->first();
-            if ($storeID === null) {
-                return null;
+            if ($storeID->id === null || ($storeID->app_status == 0)) {
+                return response()->json(true, 200);
             }
-            $toRequest['store_id'] = $storeID->id;
-            $toRequest['store_name'] = $storeHash;
-            $toRequest['product_id'] = $productId;
+            // webhook call return back due to store plan expired
+            $GetRatesController = new GetRatesController();
+            if (!$GetRatesController->storePlanStatus($storeID->id)) {
+                return response()->json(true, 200);
+            }
+
             // If product is deleted through webhook
             if ($scope == "store/product/deleted") {
                 ProductSetting::where('source_product_id', $productId)->where('store_id', $storeID->id)->delete();
-                return true;
+                return response()->json(true, 200);
             }
-            $prodSetCon = new ProductSettingController();
-            $prodSetCon->getSingleProductFromApi($toRequest, $scope);
+
+            //  Below commit code use for create/update product through webhooks
+            // $toRequest['store_id'] = $storeID->id;
+            // $toRequest['store_name'] = $storeHash;
+            // $toRequest['product_id'] = $productId;
+
+            // $prodSetCon = new ProductSettingController();
+            // $prodSetCon->getSingleProductFromApi($toRequest, $scope);
+
             return response()->json(true, 200);
         } catch (\Exception $exception) {
             Log::info('Products data Exception ' . $exception->getMessage());
+            return response()->json(true, 200);
         }
 
     }
