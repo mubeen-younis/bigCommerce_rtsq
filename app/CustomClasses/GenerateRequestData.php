@@ -3091,6 +3091,8 @@ class GenerateRequestData
         $this->resiCarrier['echoLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['echoLtl'] = $alwaysResi;
         $notify = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']);
+        $limitedAccess = isset($connSettings['quote_settings']['offer_limited_access_delivery']) && $connSettings['quote_settings']['offer_limited_access_delivery'] ||
+            isset($connSettings['quote_settings']['always_limited_access_delivery']) && $connSettings['quote_settings']['always_limited_access_delivery'];
 
         $accessorial = [];
         if ($alwaysResi || $residential != 'N') {
@@ -3101,6 +3103,9 @@ class GenerateRequestData
         }
         if ($notify) {
             array_push($accessorial, 'NOTIFYPRIORTODELIVERY');
+        }
+        if ($limitedAccess) {
+            array_push($accessorial, 'LIMITEDACCESSFEE');
         }
 
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
@@ -3301,10 +3306,14 @@ class GenerateRequestData
         $this->resiCarrier['uspsSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['uspsSmall'] = $alwaysResi;
 
+        $limitedAccess = (isset($connSettings['quote_settings']['offer_limited_access_delivery']) && $connSettings['quote_settings']['offer_limited_access_delivery'] ||
+                         isset($connSettings['quote_settings']['always_limited_access_delivery']) && $connSettings['quote_settings']['always_limited_access_delivery']) ? 'Y' : 'N';
+
         $resp = [
             'residential' => $residential,
             'alwaysResi' => $alwaysResi,
-            'liftGate' => $liftGate
+            'liftGate' => $liftGate,
+            'limitedAccess' => $limitedAccess
         ];
         return $resp;
     }
