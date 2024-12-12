@@ -3655,7 +3655,7 @@ class CompileQuotes
 
                 $surcharges = $data['surcharges'] ?? [];
                 unset($data['surcharges']);
-                $data['surcharges'] = ['residentialFee' => 0, 'liftgateFee' => 0, 'notifyDeliveryFee' => 0];
+                $data['surcharges'] = ['residentialFee' => 0, 'liftgateFee' => 0, 'notifyDeliveryFee' => 0, 'limitedAccessFee' => 0];
                 foreach ($surcharges as $surcharge) {
                     if ((isset($surcharge['Type']['Code']) && $surcharge['Type']['Code'] === 'RESI_PU_DEL') || (isset($surcharge['code']) && $surcharge['code'] == 'RESD')) {
                         $data['surcharges']['residentialFee'] = $surcharge['Factor']['Value'] ?? $surcharge['value'] ?? 0;
@@ -3668,6 +3668,9 @@ class CompileQuotes
                     }
                     if ((isset($surcharge['Type']['Code']) && $surcharge['Type']['Code'] === 'ADV_NOTF') || (isset($surcharge['code']) && $surcharge['code'] == 'NTFN')) {
                         $data['surcharges']['notifyDeliveryFee'] = $surcharge['Factor']['Value'] ?? $surcharge['value'] ?? 0;
+                    }
+                    if ((isset($surcharge['Type']['Code']) && $surcharge['Type']['Code'] === 'LIM_ACC_PU_DEL') || (isset($surcharge['code']) && $surcharge['code'] == 'LADL')) {
+                        $data['surcharges']['limitedAccessFee'] = $surcharge['Factor']['Value'] ?? $surcharge['value'] ?? 0;
                     }
                 }
                 // Apply override rates shipping rule
@@ -3685,7 +3688,6 @@ class CompileQuotes
                 $date = $data['deliveryTimestamp'] ?? null;
                 $days = $data['totalTransitTimeInDays'] ?? null;
                 $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
-                $title = $this->getTitle($lableAs, false, false, $data['totalTransitTimeInDays'], [], $dateAndDays);
 
                 $enableFeaturesArray = Functions::getEnableFeaturesArr($lgQuotes, $insideDelivery ?? false, $notifyDelivery, $limitedAccess);
                 foreach ($enableFeaturesArray as $index => $feature) {
@@ -4854,7 +4856,7 @@ class CompileQuotes
                             if($feature['isEnable']){
                                 $compileNotifyDeliveryQuotes = Functions::getOriginQuotes(
                                     $index, $data['serviceDesc'], $originQuotes, $data, $origin, $days, 
-                                    $dateAndDays, $feature['index']['isLG'] ?? false, "SouthEastern", 
+                                    $dateAndDays, $feature['index']['isLG'] ?? false, "seflltl", 
                                     $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, 
                                     $this->isResi, $this->alwaysResi, $feature['index']['isID'] ?? false, 
                                     $feature['index']['isLAD'] ?? false, $feature['index']['isNBD'] ?? false,
