@@ -50,6 +50,11 @@ class ConnectionSettings extends CarriersConnectionSettings
             'MeterNumber' => $data->meter_number ?? '',
             'password' => $data->password ?? '',
             'key' => $data->api_access_key ?? '',
+            // New Api Test Connection Params
+            'clientId' => $data->clientId,
+            'clientSecret' => $data->clientSecret,
+            'requestForNewAPI' => '1',
+            // ---------------- //
             'shippingChargesAccount' => $data->shipping_account_number ?? '',
             'billingLineAddress' => $data->billing_address ?? '',
             'billingCountry' => $data->billing_country ?? '',
@@ -63,6 +68,15 @@ class ConnectionSettings extends CarriersConnectionSettings
             'physicalPostalCode' => $data->physical_zip ?? '',
             'third_party_account' => $data->third_party_account ?? '',
         );
+
+        if (isset($data->api_type) && $data->api_type === 'new_api'){
+            unset($params['AccountNumber'], $params['MeterNumber'], $params['password'], $params['key']);
+
+        } else {
+            unset($params['clientId'], $params['clientSecret'], $params['requestForNewAPI']);
+
+        }
+
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
 
@@ -73,7 +87,15 @@ class ConnectionSettings extends CarriersConnectionSettings
             ];
         }
         $output = json_decode($output['response'], true);
-        if (isset($output['severity']) && $output['severity'] === 'SUCCESS') {
+
+        if (isset($output['severity']) && $output['severity'] === 'ERROR') {
+            $response = [
+                'error' => true,
+                'message' => $output['Message'] ?? 'Invalid authentication',
+                'data' => [],
+            ];
+
+        } elseif (isset($output['severity']) && $output['severity'] === 'SUCCESS') {
             $response = [
                 'error' => false,
                 'message' => 'Test connection successful.',

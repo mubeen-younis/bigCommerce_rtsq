@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\CustomClasses\BigCommerceFunctions;
 use App\Jobs\ImportProducts as ImportProductsJob;
+use App\Jobs\UpdateBCProductsJob;
+use App\Jobs\ExportProductsFromBCStore;
 use App\Jobs\ImportProductsNotification;
 use App\Models\Locations;
 use App\Models\ProductSetting;
@@ -23,23 +25,55 @@ use ZipArchive;
 use Illuminate\Filesystem\Filesystem;
 use App\CurlRequest;
 use Carbon\Carbon;
+use App\CustomClasses\Functions;
+use App\Http\Controllers\GetRatesController as ProductSettings;
+use App\Http\Controllers\GetRatesController;
+use App\Models\CSVimportExport;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class ExportImportProducts extends Controller
 {
     public $curlRequest;
     public $csvChunksLength;
+    public $mainController;
+    public $productSetting;
+    public $fileSize;
+    public $totalChunks;
+    public $BCProductsBatches;
+    public $processedChunks;
+    public $errorProducts;
 
     public function __construct()
     {
         $this->curlRequest = new CurlRequest();
-        $this->csvChunksLength = 20;
+        $this->csvChunksLength = 250;
+        $this->batchLength = 50;
+        $this->mainController = new MainController();
+        $this->productSetting = new ProductSettingController();
+        $this->fileSize = 0;
+        $this->totalChunks = 0;
+        $this->BCProductsBatches = [];
+        $this->errorProducts = null;
+        $this->processedChunks = null;
     }
 
     public function exportProductsTemplate(Request $request)
     {
+        // return back due to store plan expired
+        $GetRatesController = new GetRatesController();
+        if (!$GetRatesController->storePlanStatus($request['store_id'])) {
+            return response()->json(['error' => true,
+                'data' => [],
+                'message' => 'Your current plan has expired. Please renew your plan.',
+            ], 200);
+        }
+        $request['store_token'] = $this->mainController->getCustAccessTok($request['store_id']);
+        $request['perpage'] = 2000;
+        $totalpages = $this->productSetting->importProductsGetPages($request);
+
         if (isset($request['onlyResponse']) && $request['onlyResponse'] === true) {
-            $productsChunk = ProductSetting::where('store_id', $request['store_id']);
-            if (!$productsChunk->count()) {
+            if ($totalpages < 1) {
                 return response()->json(['error' => true,
                     'data' => [],
                     'message' => 'Products not available for import template',
@@ -55,29 +89,49 @@ class ExportImportProducts extends Controller
                 ], 200);
             }
         } else {
-            return $this->createExportData($request);
+
+            if ($totalpages < 1) {
+                return response()->json(['error' => true,
+                    'data' => [],
+                    'message' => 'Products not available for import template',
+                ], 200);
+            }
+            if (Functions::isEnabledLogs($request['store_hash'])) {
+                Log::info('CSV Export Products Job Start.');
+            }
+            $data = $request->all() ?? [];
+            ExportProductsFromBCStore::dispatch($data);
+
+            $CSVDownloadLink = $this->createCSVDownloadLink($request);
+
+            if (isset($CSVDownloadLink['status']) && $CSVDownloadLink['status']) {
+                return response()->json([
+                    "error" => false,
+                    'message' => $CSVDownloadLink['message'],
+                    'data' => $CSVDownloadLink['data'],
+                ], 200);
+            }
         }
     }
 
     public function createExportData($request)
     {
+        ini_set('memory_limit', '-1');
+        ini_set('max_execution_time', '0');
         $locations = Locations::where('store_id', $request['store_id'])->where('type', 2)->get()->toArray();
         $storeHash = $request['store_hash'] ?? null;
         $weightDimensionUnits = $this->getweightDimensionUnits($storeHash);
         $weightUnit = isset($weightDimensionUnits['weight_units']) && !blank($weightDimensionUnits['weight_units']) ? strtolower($weightDimensionUnits['weight_units']) : 'lbs' ?? 'lbs';
         $dimensionsUnit = isset($weightDimensionUnits['dimension_units']) && $weightDimensionUnits['dimension_units'] === 'Centimeters' ? 'cm' : 'in' ?? 'in';
-        
+
         $dropShips = [];
         foreach ($locations as $location) {
             $dropShips[$location['id']] = $location;
         }
-        
-        $productsChunk = ProductSetting::where('store_id', $request['store_id']);
-        if (!$productsChunk->count()) {
-            return [];
-        }
-        $comma = ",";
-        
+
+        $totalpages = $this->productSetting->importProductsGetPages($request);
+        $headers = BigCommerceFunctions::getHeaders($request['store_hash']);
+
         try {
             if (!isset($request['rerunrequest'])) {
                 $fileName = '/export_files/' . $request['store_hash'] . '/' . time();
@@ -88,114 +142,221 @@ class ExportImportProducts extends Controller
             }
             $folderName = $request['folderName'];
             $folderNamePath = [];
-            
-            $productsChunk->chunk(2500, function ($products, $chunkCount = 0) use ($comma, $folderName, $dropShips, $weightUnit, $dimensionsUnit) {
-                $fileName = $chunkCount++ . '-export.csv';
-                $filename = $folderName . '/' . $fileName;
-                $folderNamePath[] = $filename;
-                $fp = fopen($filename, "w");
-                if (true) {
-                    $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (' . $dimensionsUnit . '), Width (' . $dimensionsUnit . '), Height (' . $dimensionsUnit . '), NMFC, Markup, Quote Method, Freight Class, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Boxing Properties, Ships Own Pallet, Pallet Vertical Rotation';
-                    $line .= "\n";
-                    fputs($fp, $line);
+            $this->chunkCount = 0;
+            if (Functions::isEnabledLogs($request['store_hash'])) {
+                Log::info('CSV Export Products Job Inprogress.');
+            }
+
+            for ($page = 1; $page <= $totalpages; $page++) {
+
+                $this->products = [];
+                $endpoint = BigCommerceFunctions::$initalUrl . $request['store_hash'] . "/v3/catalog/products?limit=" . $request['perpage'] . "&page=" . $page;
+                $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
+
+                if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+                    $response = json_decode($response['response'], true);
+                    $this->products = collect($response['data']);
                 }
-                foreach ($products as $key => $product) {
-                    // Check: if product variant id is null then product will not add in CSV file.
-                    if(!isset($product->variant_id) && $product->variant_id == null){
-                        continue;
-                    }
-                    $productLine = [];
-                    $productLine[] = 'P' . $product->source_product_id;
-                    $productLine[] = 'V' . $product->variant_id;
-                    $productLine[] = $product->name ?? '';
-                    $productLine[] = $product->sku ?? '';
-                    $productLine[] = $product->weight ?? '';
-                    $productLine[] = $product->length ?? '';
-                    $productLine[] = $product->width ?? '';
-                    $productLine[] = $product->height ?? '';
-                    $productLine[] = $product->nmfc ?? '';
-                    $productLine[] = $product->product_markup ?? '';
 
-                    $settings = json_decode($product->settings);
-                    $quoteMethod = '';
-                    // Added INstore and local quoting methods
-                    if (isset($settings->freight_enabled) && $settings->freight_enabled) {
-                        $quoteMethod = 'L';
-                    } else if (isset($settings->parcel_enabled) && $settings->parcel_enabled) {
-                        $quoteMethod = 'S';
-                    } else if (isset($settings->quote_as_local) && $settings->quote_as_local) {
-                        $quoteMethod = 'PD';
-                    }
-                    $productLine[] = $quoteMethod;
-                    $productLine[] = $settings->freight_class ?? '';
-                    $productLine[] = isset($settings->hazardous_enabled) && $settings->hazardous_enabled ? 1 : 0;
-                    $productLine[] = isset($settings->insurance) && $settings->insurance ? 1 : 0;
+                if (!$this->products->count()) {
+                    return [];
+                }
 
-                    $nickname = $zip = $city = $state = $country = '';
-                    if (isset($product->dropship_enabled) && $product->dropship_enabled) {
-                        $location = $product->dropship_location ?? false;
-                        if ($location) {
-                            $dropShip = $dropShips[$location] ?? [];
-                            $nickname = $dropShip['nickname'] ?? '';
-                            $city = $dropShip['city'] ?? '';
-                            $state = $dropShip['state'] ?? '';
-                            $zip = $dropShip['zip_code'] ?? '';
-                            $country = $dropShip['country'] ?? '';
+                $comma = ",";
+
+                $ProductSettings = new ProductSettings();
+                foreach ($this->products as $key => $product) {
+                    if ($this->fileSize < 1) {
+                        $fp = $this->setCSVfileSize($folderName, $weightUnit, $dimensionsUnit);
+                    }
+                    // Check: if product variant id is null then the null variant id product will not add in CSV file.
+                    if ($product['base_variant_id'] == null) {
+                        $variantEndPoint = BigCommerceFunctions::$initalUrl . $request['store_hash'] . '/v3/catalog/products/' . $product['id'] . '/variants?limit=250';
+                        $response = $this->curlRequest->enSingleCurlRequest($variantEndPoint, [], $headers, 'GET', false);
+                        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+                            $response = json_decode($response['response'], true);
+
+                            if (empty($response['data'])) {
+                                Log::info('empty response from BC .' . json_encode($response));
+                                sleep(30);
+                                Log::info('recalled bc request again .');
+                                $response = $this->curlRequest->enSingleCurlRequest($variantEndPoint, [], $headers, 'GET', false);
+                                if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+                                    $response = json_decode($response['response'], true);
+                                }
+                                Log::info('logged request which was empty .' . json_encode($response));
+                                //continue;
+                            }
+
+                            $productsVar = collect($response['data'] ?? []);
+
+                            if (empty($productsVar)) {
+                                continue;
+                            }
+
+
+                            foreach ($productsVar as $variant) {
+                                if ($this->fileSize < 1) {
+                                    $fp = $this->setCSVfileSize($folderName, $weightUnit, $dimensionsUnit);
+                                }
+                                $this->fileSize--;
+                                $variant['base_variant_id'] = $variant['id'];
+                                $variant['id'] = $product['id'];
+                                $variant['name'] = $product['name'];
+                                $DBProductSettings = $ProductSettings->getProductSetting($variant['id'], $variant['base_variant_id'], $request['store_id']);
+                                $productLine = $this->createDataSet($variant, $DBProductSettings, $dropShips);
+                                fputcsv($fp, $productLine);
+                            }
+
                         }
+                    } else {
+                        $this->fileSize--;
+                        $DBProductSettings = $ProductSettings->getProductSetting($product['id'], $product['base_variant_id'], $request['store_id']);
+                        $productLine = $this->createDataSet($product, $DBProductSettings, $dropShips);
+                        fputcsv($fp, $productLine);
                     }
-                    $boxingProperty = '';
-                    // Added Boxing Properties
-                    if (isset($settings->ship_own_package) && $settings->ship_own_package) {
-                        $boxingProperty = '1';
-                    } else if (isset($settings->allow_vertical) && $settings->allow_vertical) {
-                        $boxingProperty = '2';
-                    } else if (isset($product->ship_multiple_package) && $product->ship_multiple_package) {
-                        $boxingProperty = '3';
-                    } else if (isset($product->ship_multiple_package) && !$product->ship_multiple_package && 
-                            isset($settings->ship_own_package) && !$settings->ship_own_package && 
-                            isset($settings->allow_vertical) && !$settings->allow_vertical) {
-                        $boxingProperty = '0';
-                    }
-                    $productLine[] = $nickname;
-                    $productLine[] = $zip;
-                    $productLine[] = $city;
-                    $productLine[] = $state;
-                    $productLine[] = $country;
-                    $productLine[] = $boxingProperty;
-                    $productLine[] = isset($product->own_pallet) && $product->own_pallet ? 1 : 0;
-                    $productLine[] = isset($product->pallet_vertical_rotation) && $product->pallet_vertical_rotation ? 1 : 0;
-                    fputcsv($fp, $productLine);
                 }
-            });
+            }
+
             $isupdate = ExportProductsModel::find($request['exportProductsId'])->update(['status' => 1]);
             $this->makeZipWithFiles($folderName);
             $this->sendEmail($request['email'], $hash);
-            if($isupdate){
-              return  $this->createCSVDownloadLink($request['exportProductsId'],$hash);
+            if (Functions::isEnabledLogs($request['store_hash'])) {
+                Log::info('CSV Export Products Job Ended.');
             }
-        } catch (RequestException $e) {
-            $statusCode = $e->getResponse()->getStatusCode();
-            $errorMessage = "An error occurred.";
 
-            if ($e->hasResponse()) {
-                if ($statusCode != 500) {
-                    echo $errorMessage = Psr7\str($e->getResponse());
-                }
+        } catch (\Exception $exception) {
+
+            if (Functions::isEnabledLogs($request['store_hash'])) {
+                Log::info(json_encode([
+                    'line' => $exception->getLine(),
+                    'message' => $exception->getMessage(),
+                    'file' => $exception->getFile(),
+                ]));
             }
+
+            return response()->json([
+                'error' => true,
+                'message' => [
+                    'line' => $exception->getLine(),
+                    'message' => $exception->getMessage(),
+                    'file' => $exception->getFile(),
+                ]
+            ], 200);
         }
     }
+
+    public function setCSVfileSize($folderName, $weightUnit, $dimensionsUnit)
+    {
+        $fileName = $this->chunkCount++ . '-export.csv';
+        $filename = $folderName . '/' . $fileName;
+        $folderNamePath[] = $filename;
+        $fp = fopen($filename, "w");
+        if (true) {
+            $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (' . $dimensionsUnit . '), Width (' . $dimensionsUnit . '), Height (' . $dimensionsUnit . '), NMFC, Markup, Quote Method, Freight Class, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Boxing Properties, Ships Own Pallet, Pallet Vertical Rotation';
+            $line .= "\n";
+            fputs($fp, $line);
+        }
+        // Set minimium file size
+        $this->fileSize = 2500;
+
+        return $fp;
+    }
+
+    public function createDataSet($product, $DBProductSettings, $dropShips)
+    {
+        $productLine = [];
+        $productLine[] = 'P' . $product['id'];
+        $productLine[] = 'V' . $product['base_variant_id'];
+        $productLine[] = $product['name'] ?? '';
+        $productLine[] = $product['sku'] ?? '';
+        $productLine[] = $product['weight'] ?? '';
+        $productLine[] = $product['depth'] ?? '';
+        $productLine[] = $product['width'] ?? '';
+        $productLine[] = $product['height'] ?? '';
+        $productLine[] = $DBProductSettings['nmfc'] ?? '';
+        $productLine[] = $DBProductSettings['product_markup'] ?? '';
+
+        $quoteMethod = '';
+        // Added INstore and local quoting methods
+        if (isset($DBProductSettings['freight_enabled']) && $DBProductSettings['freight_enabled']) {
+            $quoteMethod = 'L';
+        } else if (isset($DBProductSettings['parcel_enabled']) && $DBProductSettings['parcel_enabled']) {
+            $quoteMethod = 'S';
+        } else if (isset($DBProductSettings['quote_as_local']) && $DBProductSettings['quote_as_local']) {
+            $quoteMethod = 'PD';
+        }
+
+        $productLine[] = $quoteMethod ?? '';
+        $productLine[] = $DBProductSettings['freight_class'] ?? '';
+        $productLine[] = isset($DBProductSettings['hazardous_enabled']) && $DBProductSettings['hazardous_enabled'] ? 1 : 0;
+        $productLine[] = isset($DBProductSettings['insurance']) && $DBProductSettings['insurance'] ? 1 :
+            $nickname = '';
+        $zip = '';
+        $city = '';
+        $state = '';
+        $country = '';
+
+        if (isset($DBProductSettings['dropship_enabled']) && $DBProductSettings['dropship_enabled']) {
+            $location = $DBProductSettings['dropship_location'] ?? false;
+            if ($location) {
+                $dropShip = $dropShips[$location] ?? [];
+                $nickname = $dropShip['nickname'] ?? '';
+                $city = $dropShip['city'] ?? '';
+                $state = $dropShip['state'] ?? '';
+                $zip = $dropShip['zip_code'] ?? '';
+                $country = $dropShip['country'] ?? '';
+            }
+        }
+
+        $boxingProperty = '';
+        // Added Boxing Properties
+        if (isset($DBProductSettings['ship_own_package']) && $DBProductSettings['ship_own_package']) {
+            $boxingProperty = '1';
+        } else if (isset($DBProductSettings['allow_vertical']) && $DBProductSettings['allow_vertical']) {
+            $boxingProperty = '2';
+        } else if (isset($DBProductSettings['ship_multiple_package']) && $DBProductSettings['ship_multiple_package']) {
+            $boxingProperty = '3';
+        } else if (isset($DBProductSettings['ship_multiple_package']) && !$DBProductSettings['ship_multiple_package'] &&
+            isset($DBProductSettings['ship_own_package']) && !$DBProductSettings['ship_own_package'] &&
+            isset($DBProductSettings['allow_vertical']) && !$DBProductSettings['allow_vertical']) {
+            $boxingProperty = '0';
+        }
+
+        $productLine[] = $nickname ?? '';
+        $productLine[] = $zip ?? '';
+        $productLine[] = $city ?? '';
+        $productLine[] = $state ?? '';
+        $productLine[] = $country ?? '';
+        $productLine[] = $boxingProperty ?? '';
+        $productLine[] = isset($DBProductSettings['own_pallet']) && $DBProductSettings['own_pallet'] ? 1 : 0;
+        $productLine[] = isset($DBProductSettings['pallet_vertical_rotation']) && $DBProductSettings['pallet_vertical_rotation'] ? 1 : 0;
+
+        return $productLine;
+    }
+
     // Create CSV export download link for display on the dashboard of the app
-    public function createCSVDownloadLink($exportProductId,$hash)
-    {  
-        $available = ExportProductsModel::where(['id' => $exportProductId,'status' => 1])->exists();
-        if($available){
-           $url = URL::to('api/downloadcsv/'.$hash);
-           $message =  "The export CSV template has been finished.";
-           return response()->json([
-            "error" => false,
-            'message' => $message,
-            'data' => $url,
-           ],200); 
+    public function createCSVDownloadLink($request)
+    {
+        $status = ExportProductsModel::where('store_id', $request['store_id'])->latest()->first() ?? [];
+
+        if (empty($status) || $status->status == 0 || $status->is_link_invisible == 1 || ($status->request_time <= time() - 24 * 3600)) {
+            return [
+                "status" => false,
+                'message' => 'Download link has been expired',
+                'data' => ''
+            ];
+        }
+
+        if (!empty($status)) {
+            $url = URL::to('api/downloadcsv/' . $status['hash']);
+            $message = "The export CSV template has been finished.";
+
+            return [
+                "status" => true,
+                'message' => $message,
+                'data' => $url
+            ];
         }
     }
 
@@ -203,14 +364,14 @@ class ExportImportProducts extends Controller
     {
         $status = ExportProductsModel::where('store_id', $request['store_id'])->latest()->first() ?? [];
 
-        if(isset($request['is_link_invisible']) && $request['is_link_invisible'] == 'true' ){
+        if (isset($request['is_link_invisible']) && $request['is_link_invisible'] == 'true') {
             $status->is_link_invisible = 1;
             $status->save();
             return response()->json([
                 "error" => false,
                 'message' => 'Download link has been invisible',
                 'data' => '',
-               ], 200
+            ], 200
             );
         }
 
@@ -219,18 +380,18 @@ class ExportImportProducts extends Controller
                 "error" => true,
                 'message' => 'Download link has been expired',
                 'data' => '',
-               ], 200
+            ], 200
             );
         }
-        
-        if(!empty($status)){
-           $url = URL::to('api/downloadcsv/'.$status['hash']);
-           $message =  "The export CSV template has been finished.";
-           return response()->json([
-            "error" => false,
-            'message' => $message,
-            'data' => $url,
-           ],200); 
+
+        if (!empty($status)) {
+            $url = URL::to('api/downloadcsv/' . $status['hash']);
+            $message = "The export CSV template has been finished.";
+            return response()->json([
+                "error" => false,
+                'message' => $message,
+                'data' => $url,
+            ], 200);
         }
     }
 
@@ -268,9 +429,9 @@ class ExportImportProducts extends Controller
         Mail::to($email)->send(new CsvNotifyEmail($hash));
     }
 
-    public function ImportNotifyEmail($email)
+    public function ImportNotifyEmail($email, $data)
     {
-        Mail::to($email)->send(new ImportProductsEmail());
+        Mail::to($email)->send(new ImportProductsEmail($data));
     }
 
     public function makeZipWithFiles($folderName)
@@ -331,10 +492,6 @@ class ExportImportProducts extends Controller
     {
         $path = public_path('import_files/' . $request['store_hash'] . '/' . $request['filename']);
         $csv = array_map('str_getcsv', file($path));
-        //dd($csv[0]);
-        /*array_walk($csv, function(&$a) use ($csv) {
-            $a = array_combine($csv[0], $a);
-        });*/
 
         if (isset($request['hasheaders']) && $request['hasheaders'] === "false") {
             $heading = range('A', 'ZZ');
@@ -355,7 +512,16 @@ class ExportImportProducts extends Controller
         ini_set('memory_limit', '-1');
         try {
             Log::info('started import products process');
-            $delay = 2;
+
+            // return back due to store plan expired
+            $GetRatesController = new GetRatesController();
+            if (!$GetRatesController->storePlanStatus($request['store_id'])) {
+                return response()->json(['error' => true,
+                    'data' => [],
+                    'message' => 'Your current plan has expired. Please renew your plan.',
+                ], 200);
+            }
+
             $data['filename'] = $request['filename'];
             $data['firstHeader'] = $request['firstHeader'];
             $data['importEmailAddress'] = $request['importEmailAddress'];
@@ -365,10 +531,7 @@ class ExportImportProducts extends Controller
             $data['store_name'] = $request['store_name'];
             $data['path'] = public_path('import_files/' . $request['store_hash'] . '/' . $request['filename']);
 
-            ImportProductsJob::dispatch($data)->delay(Carbon::now()->addSeconds($delay));
-            unset($data['path']);
-
-            Log::info('ended import products process');
+            $this->importProductCsvProcess($data);
 
             return response()->json([
                 'error' => false,
@@ -376,6 +539,9 @@ class ExportImportProducts extends Controller
             ], 200);
 
         } catch (\Exception $exception) {
+
+            $this->createImportCsvStatusInDB($request, $exception);
+
             Log::info(json_encode([
                 'line' => $exception->getLine(),
                 'message' => $exception->getMessage(),
@@ -389,52 +555,183 @@ class ExportImportProducts extends Controller
         }
     }
 
-    public function importProductCsvJob($request)
+    public function importProductCsvProcess($request)
     {
-        $indexes = $request['indexes'];
-        $store_id = $request['store_id'];
-        $store = Store::where('id', $store_id)->first();
-        $emailNotify = $request['importEmailAddress'] ?? '';
-        $path = $request['path'];
-        $exceptionProducts = [];
+        try {
+            $indexes = $request['indexes'];
+            $store_id = $request['store_id'];
+            $store = Store::where('id', $store_id)->first();
+            $emailNotify = $request['importEmailAddress'] ?? '';
+            $path = $request['path'];
+            $delay = 1;
 
-        if (!file_exists($path)) {
-            return false;
+            if (!file_exists($path)) {
+                return false;
+            }
+
+            // Converting Csv TO String
+            $csvArray = array_map('str_getcsv', file($path));
+            if (count($csvArray) < 1) {
+                return false;
+            }
+
+            $headerRow = array_slice(range('A', 'Z'), 0, count($csvArray[0]));
+            if ($request['firstHeader'] == "true") {
+                $headerRow = $csvArray[0];
+                unset($csvArray[0]);
+            }
+            array_walk($csvArray, function (&$a) use ($csvArray, $headerRow) {
+                $a = array_combine(array_map('trim', $headerRow), array_map('trim', $a));
+            });
+
+            $csvChunks = array_chunk($csvArray, $this->csvChunksLength);
+            $request['CSV_count'] = count($csvArray);
+            $request['csv_chunk_count'] = count($csvChunks) ?? 0;
+
+            $CSVimportPrdModel = new CSVimportExport();
+            $CSVimportPrdModel->store_id = $request['store_id'];
+            $CSVimportPrdModel->file_name = $request['filename'];
+            $CSVimportPrdModel->total_rows = $request['CSV_count'];
+            $CSVimportPrdModel->save();
+            $request['CSVinsertedId'] = $CSVimportPrdModel->id;
+
+            // Initialize the counter and dispatch jobs
+            Cache::put('chunks_processed', 0, now()->addHours(2));
+
+            foreach ($csvChunks as $chunk) {
+                // Dispatch a job for each chunk
+                ImportProductsJob::dispatch($chunk, $request, $headerRow)->delay(Carbon::now()->addSeconds($delay++));
+            }
+
+        } catch (\Exception $exception) {
+            $this->createImportCsvStatusInDB($request, $exception);
+
+            Log::info(json_encode([
+                'line' => $exception->getLine(),
+                'message' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+            ]));
         }
 
-        // Converting Csv TO String
-        $csvArray = array_map('str_getcsv', file($path));
-        if (count($csvArray) < 1) {
-            return false;
-        }
+    }
 
-        $headerRow = array_slice(range('A', 'Z'), 0, count($csvArray[0]));
-        if ($request['firstHeader'] == "true") {
-            $headerRow = $csvArray[0];
-             unset($csvArray[0]);
-        }
-        array_walk($csvArray, function (&$a) use ($csvArray, $headerRow) {
-            $a = array_combine(array_map('trim', $headerRow), array_map('trim', $a));
-        });
+    public function createImportCsvStatusInDB($request, $exception)
+    {
+        $CSVimportPrdModel = new CSVimportExport();
+        $CSVimportPrdModel->store_id = $request['store_id'];
+        $CSVimportPrdModel->file_name = $request['filename'];
+        $CSVimportPrdModel->error_at_rows = json_encode([
+            'line' => $exception->getLine(),
+            'message' => $exception->getMessage(),
+            'file' => $exception->getFile(),
+        ]);
+        $CSVimportPrdModel->status = 3;
+        $CSVimportPrdModel->save();
+    }
 
-        $csvChunks = array_chunk($csvArray, $this->csvChunksLength);
+    public function importProductCsvJob($chunk, $request, $headerRow)
+    {
+        try {
 
-        foreach ($csvChunks as $chunkKey => $csv) {
-            foreach ($csv as $key => $product) {
+            $indexes = $request['indexes'];
+            $store_id = $request['store_id'];
+            $store = Store::where('id', $store_id)->first();
+            $emailNotify = $request['importEmailAddress'] ?? '';
+            $path = $request['path'];
+            $this->BCProductsBatches = $this->Batches = [];
+            $data = [];
+            $this->count = 0;
+            $exceptionProducts = [];
+            $delay = 1;
+            $this->totalChunks = $request['csv_chunk_count'];
+
+            foreach ($chunk as $key => $product) {
                 try {
-                    $this->getUpdateData($product, $indexes, $store_id, $store->access_token, $request['store_hash']);
+                    $data[] = $this->getUpdateData($product, $indexes, $store_id, $store->access_token, $request['store_hash']);
 
                 } catch (\Exception $exception) {
-                    $exceptionProducts[] = [
-                        'productId' => $product['Product Id'],
-                        'varientId' => $product['Variant Id'],
-                        'productName' => $product['Product Name'],
-                    ];
+                    if (isset($product['Product Id']) && isset($product['Variant Id'])) {
+                        $exceptionProducts[] = $this->formatError($product, $exception);
+                    }
+
+                    if (Functions::isEnabledLogs($request['store_hash'])) {
+                        Log::info('CSV Products Exception Array: ' . json_encode($exceptionProducts));
+                        Log::info(json_encode([
+                            'line' => $exception->getLine(),
+                            'message' => $exception->getMessage(),
+                            'file' => $exception->getFile(),
+                        ]));
+                    }
                 }
             }
+
+            foreach ($data as $record) {
+                unset($record['updated_at']);
+                if (!empty($record) && !empty($record['variant_id'])) {
+                    $this->createBCProductsUpdateBatches($record);
+                }
+            }
+            // if $this->Batches array is less then batch size records
+            $this->BCProductsBatches[] = $this->Batches;
+
+            // Optionally, handle successful API calls
+            if (!empty($this->BCProductsBatches)) {
+                UpdateBCProductsJob::dispatch($this->BCProductsBatches, $request, $exceptionProducts)->delay(Carbon::now()->addSeconds($delay++));
+            }
+
+        } catch (\Exception $exception) {
+            CSVimportExport::where('id', $request['CSVinsertedId'])->update([
+                'total_rows' => $request['CSV_count'],
+                'error_at_rows' => json_encode([
+                    'line' => $exception->getLine(),
+                    'message' => $exception->getMessage(),
+                    'file' => $exception->getFile(),
+                ]),
+                'status' => 3,
+            ]);
+            Log::info(json_encode([
+                'line' => $exception->getLine(),
+                'message' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+            ]));
         }
 
-        $this->ImportNotifyEmail($emailNotify);
+    }
+
+    public function importBCProductCsvJob($batches, $request, $exceptionProducts)
+    {
+        $this->updateBCProductBatches($batches, $request, $exceptionProducts);
+    }
+
+    protected function formatError($product, $exception)
+    {
+        return 'Product ' . $product['Product Id'] . ' : ' . $product['Variant Id'] . ' => ' . $exception->getMessage();
+    }
+
+    public function createBCProductsUpdateBatches($product)
+    {
+        if (count($this->Batches) == $this->batchLength) {
+            $this->BCProductsBatches[] = $this->Batches;
+            $this->Batches = [];
+            $this->count++;
+        }
+
+        $this->Batches[] = [
+            "id" => $product['variant_id'],
+        ];
+
+        if (!empty($product['weight'])) {
+            $this->Batches[count($this->Batches) - 1]["weight"] = $product['weight'];
+        }
+        if (!empty($product['length'])) {
+            $this->Batches[count($this->Batches) - 1]["depth"] = $product['length'];
+        }
+        if (!empty($product['width'])) {
+            $this->Batches[count($this->Batches) - 1]["width"] = $product['width'];
+        }
+        if (!empty($product['height'])) {
+            $this->Batches[count($this->Batches) - 1]["height"] = $product['height'];
+        }
     }
 
     function getUpdateData($product, $indexes, $store_id, $access_token, $hash)
@@ -472,42 +769,42 @@ class ExportImportProducts extends Controller
         if (isset($indexes['weight']) && $indexes['weight']) {
             $key = $indexes['weight'];
             $data = $product["$key"];
-            if(is_numeric($data) || empty($data)){
+            if (is_numeric($data) || empty($data)) {
                 $update['weight'] = $data != '' ? round($data, 2) : '';
             }
         }
         if (isset($indexes['length']) && $indexes['length']) {
             $key = $indexes['length'];
             $data = $product["$key"];
-            if(is_numeric($data) || empty($data)){
+            if (is_numeric($data) || empty($data)) {
                 $update['length'] = $data != '' ? round($data, 2) : '';
             }
         }
         if (isset($indexes['width']) && $indexes['width']) {
             $key = $indexes['width'];
             $data = $product["$key"];
-            if(is_numeric($data) || empty($data)){
+            if (is_numeric($data) || empty($data)) {
                 $update['width'] = $data != '' ? round($data, 2) : '';
             }
         }
         if (isset($indexes['height']) && $indexes['height']) {
             $key = $indexes['height'];
             $data = $product["$key"];
-            if(is_numeric($data) || empty($data)){
+            if (is_numeric($data) || empty($data)) {
                 $update['height'] = $data != '' ? round($data, 2) : '';
             }
         }
         if (isset($indexes['nmfc']) && $indexes['nmfc']) {
             $key = $indexes['nmfc'];
             $data = $product["$key"];
-            if(is_numeric($data) || empty($data)){
+            if (is_numeric($data) || empty($data)) {
                 $update['nmfc'] = $data != '' ? round($data, 2) : '';
             }
         }
         if (isset($indexes['product_markup']) && $indexes['product_markup']) {
             $key = $indexes['product_markup'];
             $data = $product["$key"];
-            if(is_numeric($data) || empty($data)){
+            if (is_numeric($data) || empty($data)) {
                 $update['product_markup'] = $data != '' ? round($data, 2) : '';
             }
         }
@@ -528,9 +825,9 @@ class ExportImportProducts extends Controller
             }
         }
 
-        if ($shipMultiPackage){
-            $update['ship_multiple_package'] = true;    
-        } else if ($shipMultiPackage === null){
+        if ($shipMultiPackage) {
+            $update['ship_multiple_package'] = true;
+        } else if ($shipMultiPackage === null) {
             $update['ship_multiple_package'] = null;
         } else {
             $update['ship_multiple_package'] = false;
@@ -538,11 +835,10 @@ class ExportImportProducts extends Controller
 
         /*Start -  For Dropship CHange*/
         if (isset($indexes['drop_ship_nickname']) && $indexes['drop_ship_nickname']
-        && isset($indexes['drop_ship_city']) && $indexes['drop_ship_city']
-        && isset($indexes['drop_ship_state']) && $indexes['drop_ship_state']
-        && isset($indexes['drop_ship_zip']) && $indexes['drop_ship_zip']
-        && isset($indexes['drop_ship_country']) && $indexes['drop_ship_country'])
-        {
+            && isset($indexes['drop_ship_city']) && $indexes['drop_ship_city']
+            && isset($indexes['drop_ship_state']) && $indexes['drop_ship_state']
+            && isset($indexes['drop_ship_zip']) && $indexes['drop_ship_zip']
+            && isset($indexes['drop_ship_country']) && $indexes['drop_ship_country']) {
             $dropShipId = $this->updateDropShip($product, $indexes, $store_id);
             if ($dropShipId != false) {
                 $update['dropship_enabled'] = true;
@@ -555,24 +851,48 @@ class ExportImportProducts extends Controller
         // END //
 
         if (!empty($update)) {
-            if ($variant_id) {
+
+            $recordExists = ProductSetting::where('source_product_id', $source_product_id)
+                ->where('variant_id', $variant_id)
+                ->where('store_id', $store_id)->exists();
+
+            if ($recordExists) {
                 ProductSetting::where('source_product_id', $source_product_id)
                     ->where('variant_id', $variant_id)
                     ->where('store_id', $store_id)->update($update);
             } else {
-                ProductSetting::where('source_product_id', $source_product_id)
-                    ->whereNull('variant_id')
-                    ->where('store_id', $store_id)->update($update);
+                $settings = $this->getSettings([], $product, $indexes, $store_id);
+                $createProduct = new ProductSetting();
+                $createProduct->source_product_id = $source_product_id;
+                $createProduct->variant_id = $variant_id;
+                $createProduct->name = isset($update['name']) ? $update['name'] : '' ?? '';
+                $createProduct->sku = isset($update['sku']) ? $update['sku'] : null ?? null;
+                $createProduct->weight = isset($update['weight']) ? $update['weight'] : null ?? null;
+                $createProduct->length = isset($update['length']) ? $update['length'] : null ?? null;
+                $createProduct->width = isset($update['width']) ? $update['width'] : null ?? null;
+                $createProduct->height = isset($update['height']) ? $update['height'] : null ?? null;
+                $createProduct->nmfc = isset($update['nmfc']) ? $update['nmfc'] : null ?? null;
+                $createProduct->product_markup = isset($update['product_markup']) ? $update['product_markup'] : null ?? null;
+                $createProduct->own_pallet = isset($update['own_pallet']) ? $update['own_pallet'] : null ?? null;
+                $createProduct->pallet_vertical_rotation = isset($update['pallet_vertical_rotation']) ? $update['pallet_vertical_rotation'] : null ?? null;
+                $createProduct->settings = json_encode($settings);
+                $createProduct->ship_multiple_package = isset($update['ship_multiple_package']) ? $update['ship_multiple_package'] : '{}' ?? '{}';
+                $createProduct->store_id = $store_id;
+                $createProduct->dropship_enabled = isset($update['dropship_enabled']) ? $update['dropship_enabled'] : null ?? null;
+                $createProduct->dropship_location = isset($update['dropship_location']) ? $update['dropship_location'] : null ?? null;
+                $createProduct->brand_id = isset($update['brand_id']) && !empty($update['brand_id']) ? $update['brand_id'] : null ?? null;
+                $createProduct->categories_id = isset($update['categories']) && !empty($update['categories']) ? json_encode($update['categories']) : null ?? null;
+                $createProduct->save();
             }
-            unset($update['settings']);
-            $this->updateBCProduct($source_product_id, $variant_id, $store_id, $update, $access_token, $hash);
+            $update['variant_id'] = $variant_id;
         }
+        return $update;
     }
 
     public function getSettings($oldSettings, $product, $indexes, $store_id)
     {
         $settings = isset($oldSettings[0]) && $oldSettings[0] ? json_decode($oldSettings[0]) : new \stdClass();
-       
+
         if (isset($indexes['quote_method']) && $indexes['quote_method']) {
             $key = $indexes['quote_method'];
             $quoteMethod = strtolower($product["$key"]);
@@ -745,9 +1065,89 @@ class ExportImportProducts extends Controller
                     $location->save();
                     $dropShipId = $location->id;
                 }
+
+                if (Functions::isEnabledLogs("", $store_id)) {
+                    Log::info('Import Products Dropship: ' . $dropShipId . " " . json_encode($location));
+                }
             }
         }
         return $dropShipId;
+    }
+
+    public function updateBCProductBatches($batches, $request, $exceptionProducts)
+    {
+        unset($headers);
+        $headers[] = 'X-Auth-Token: ' . $this->mainController->getCustAccessTok($request['store_id']);
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Accept: application/json';
+        $endpoint = BigCommerceFunctions::$initalUrl . $request['store_hash'] . "/v3/catalog/variants";
+
+        foreach ($batches as $batch) {
+            try {
+                $response = $this->curlRequest->enSingleCurlRequest($endpoint, json_encode($batch), $headers, 'PUT');
+                $response = json_decode($response['response'], true);
+                if (!empty($response['status']) || !empty($response['errors']['status'])) {
+                    if (Functions::isEnabledLogs($request['store_hash'])) {
+                        Log::info(json_encode([
+                            'message' => 'CSV batch update BC Failed.',
+                            'response' => $response,
+                            'batch' => $batch,
+                        ]));
+                    }
+                }
+            } catch (\Exception $exception) {
+
+                if (Functions::isEnabledLogs($request['store_hash'])) {
+                    Log::info('CSV batch update BC Exception Array: ' . json_encode($batch));
+                    Log::info(json_encode([
+                        'line' => $exception->getLine(),
+                        'message' => $exception->getMessage(),
+                        'file' => $exception->getFile(),
+                    ]));
+                }
+            }
+
+        }
+
+        $maxRetries = 3; // Retry 3 times if lock is not acquired
+        $retries = 0;
+
+        while ($retries < $maxRetries) {
+            $lock = Cache::lock('chunks_processed_lock', 5);
+
+            if ($lock->get()) {
+
+                try {
+
+                    $processedChunks = Cache::increment('chunks_processed');
+
+                    if ($processedChunks >= $request['csv_chunk_count']) {
+
+                        CSVimportExport::where('id', $request['CSVinsertedId'])->update([
+                            'error_at_rows' => json_encode($exceptionProducts),
+                            'status' => count($exceptionProducts) == $request['CSV_count'] ? 3 : (empty($exceptionProducts) ? 1 : 2),
+                        ]);
+
+                        $this->ImportNotifyEmail($request['importEmailAddress'], $exceptionProducts);
+                        if (Functions::isEnabledLogs($request['store_hash'])) {
+                            Log::info('CSV Import Poducts Email Send.');
+                            Log::info('ended import products process');
+                        }
+                        Cache::forget('chunks_processed');
+                    }
+
+                    break;
+
+                } finally {
+                    $lock->release();
+                }
+                break; // Exit loop if increment was successful
+            } else {
+                // Wait briefly before retrying to acquire the lock
+                usleep(100000); // Wait for 0.1 seconds
+                $retries++;
+            }
+        }
     }
 
     public function updateBCProduct($source_product_id, $variant_id, $store_id, $update, $access_token, $hash)

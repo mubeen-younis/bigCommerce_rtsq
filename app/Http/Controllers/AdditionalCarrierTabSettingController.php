@@ -38,7 +38,7 @@ class AdditionalCarrierTabSettingController extends Controller
                 $storeId = $request['store_id'] ?? $request->store_id ?? null;
                 $services = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
                     ->where('installed_carriers.id', $installed_carrier)
-                    ->where('shopify_freights.store_id', $storeId)
+                    ->where('shopify_freights.store_id', 1)
                     ->orderBy('speed_freight_carrierSCAC')->get();
             } elseif ($carrierType === 'NEWAPI') {
                 $services = CarrierServices::where('app_id', '=', 1)->orderBy('speed_freight_carrierName')->get();
