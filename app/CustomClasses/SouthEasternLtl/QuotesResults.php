@@ -80,6 +80,12 @@ class QuotesResults
                             }
                             $formattedShipments[$shipment]['q']['surcharges']['notifyDeliveryFee'] = (float)$quotes['q']['details']['charges'][$key] ?? 0;
                         }
+                        if(!empty($description) && (gettype($description) === "string") && str_contains($description, 'LIMITED ACC DELIVERY')){
+                            if($quotes['q']['details']['charges'][$key] === []){
+                                continue;
+                            }
+                            $formattedShipments[$shipment]['q']['surcharges']['limitedAccessFee'] = (float)$quotes['q']['details']['charges'][$key] ?? 0;
+                        }
                         if(!empty($description) && (gettype($description) === "string") && str_contains($description, 'PVT RESIDEN')){
                             if($quotes['q']['details']['charges'][$key] === []){
                                 continue;

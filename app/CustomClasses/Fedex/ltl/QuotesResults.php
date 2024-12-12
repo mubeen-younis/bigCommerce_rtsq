@@ -266,6 +266,12 @@ class QuotesResults
                                 $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $surcharge['amount'] ?? 0;
                             }
 
+                            if (isset($surcharge['SurchargeType']) && $surcharge['SurchargeType'] === 'LIMITED_ACCESS_DELIVERY') {
+                                $shipments[$shipment]['q'][$key]['surcharges']['limitedAccessFee'] = $surcharge['Amount']['Amount'] ?? 0;
+                            } elseif (isset($surcharge['type']) && $surcharge['type'] === 'LIMITED_ACCESS_DELIVERY') {
+                                $shipments[$shipment]['q'][$key]['surcharges']['limitedAccessFee'] = $surcharge['amount'] ?? 0;
+                            }
+
                             if (isset($surcharge['SurchargeType']) && $surcharge['SurchargeType'] === 'RESIDENTIAL_DELIVERY') {
                                 $shipments[$shipment]['q'][$key]['surcharges']['residentialFee'] = $surcharge['Amount']['Amount'] ?? 0;
                             } elseif (isset($surcharge['type']) && $surcharge['type'] === 'RESIDENTIAL_DELIVERY') {
