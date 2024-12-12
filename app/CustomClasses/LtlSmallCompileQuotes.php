@@ -137,28 +137,36 @@ class LtlSmallCompileQuotes
                     $quote['isID'] = isset($connectionSettings['gtz-ltl']['quote_settings']['offer_inside_delivery']) && $connectionSettings['gtz-ltl']['quote_settings']['offer_inside_delivery'];
                     $quote['isLAD'] = isset($connectionSettings['gtz-ltl']['quote_settings']['offer_limited_access_delivery']) && $connectionSettings['gtz-ltl']['quote_settings']['offer_limited_access_delivery'];
 
-                    if (strpos($quote['code'], '+LG+ID+NBD') !== false) {
+                    if (strpos($quote['code'], '+LG+ID+LAD+NBD') !== false) {
+                        $quotesCarrier['ltl']['gtznew']['LGIDLADNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+ID+NBD') !== false) {
                         $quotesCarrier['ltl']['gtznew']['LGIDNBD'][] = $quote;
                     } else if (strpos($quote['code'], '+LG+ID+LAD') !== false) {
                         $quotesCarrier['ltl']['gtznew']['LGIDLAD'][] = $quote;
-                    } else if (strpos($quote['code'], '+LG+NBD') !== false) {
-                        $quotesCarrier['ltl']['gtznew']['LGNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+LAD+NBD') !== false) {
+                        $quotesCarrier['ltl']['gtznew']['LGLADNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+ID+LAD+NBD') !== false) {
+                        $quotesCarrier['ltl']['gtznew']['IDLADNBD'][] = $quote;
                     } else if (strpos($quote['code'], '+ID+NBD') !== false) {
                         $quotesCarrier['ltl']['gtznew']['IDNBD'][] = $quote;
-                    } else if (strpos($quote['code'], '+LG+LAD') !== false) {
-                        $quotesCarrier['ltl']['gtznew']['LGLAD'][] = $quote;
                     } else if (strpos($quote['code'], '+ID+LAD') !== false) {
                         $quotesCarrier['ltl']['gtznew']['IDLAD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LAD+NBD') !== false) {
+                        $quotesCarrier['ltl']['gtznew']['LADNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+NBD') !== false) {
+                        $quotesCarrier['ltl']['gtznew']['LGNBD'][] = $quote;
                     } else if (strpos($quote['code'], '+LG+ID') !== false) {
                         $quotesCarrier['ltl']['gtznew']['LGID'][] = $quote;
-                    } else if (strpos($quote['code'], '+NBD') !== false) {
-                        $quotesCarrier['ltl']['gtznew']['NBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+LAD') !== false) {
+                        $quotesCarrier['ltl']['gtznew']['LGLAD'][] = $quote;
                     } else if (strpos($quote['code'], '+LG') !== false) {
                         $quotesCarrier['ltl']['gtznew']['LG'][] = $quote;
-                    } else if (strpos($quote['code'], '+LAD') !== false) {
-                        $quotesCarrier['ltl']['gtznew']['LAD'][] = $quote;
+                    } else if (strpos($quote['code'], '+NBD') !== false) {
+                        $quotesCarrier['ltl']['gtznew']['NBD'][] = $quote;
                     } else if (strpos($quote['code'], '+ID') !== false) {
                         $quotesCarrier['ltl']['gtznew']['ID'][] = $quote;
+                    } else if (strpos($quote['code'], '+LAD') !== false) {
+                        $quotesCarrier['ltl']['gtznew']['LAD'][] = $quote;
                     } else {
                         $quotesCarrier['ltl']['gtznew']['simple'][] = $quote;
                     }
@@ -566,28 +574,36 @@ class LtlSmallCompileQuotes
                     $quote['isLAD'] = isset($connectionSettings['ltl-quotes']['quote_settings']['offer_limited_access_delivery']) && $connectionSettings['ltl-quotes']['quote_settings']['offer_limited_access_delivery'];
                     $quoteSettings = isset($connectionSettings['ltl-quotes']['quote_settings']) ? $connectionSettings['ltl-quotes']['quote_settings'] : [];
 
-                    if (strpos($quote['code'], '+LG+ID+NBD') !== false) {
+                    if (strpos($quote['code'], '+LG+ID+LAD+NBD') !== false) {
+                        $quotesCarrier['ltl']['wwe']['LGIDLADNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+ID+NBD') !== false) {
                         $quotesCarrier['ltl']['wwe']['LGIDNBD'][] = $quote;
                     } else if (strpos($quote['code'], '+LG+ID+LAD') !== false) {
                         $quotesCarrier['ltl']['wwe']['LGIDLAD'][] = $quote;
-                    } else if (strpos($quote['code'], '+LG+NBD') !== false) {
-                        $quotesCarrier['ltl']['wwe']['LGNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+LAD+NBD') !== false) {
+                        $quotesCarrier['ltl']['wwe']['LGLADNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+ID+LAD+NBD') !== false) {
+                        $quotesCarrier['ltl']['wwe']['IDLADNBD'][] = $quote;
                     } else if (strpos($quote['code'], '+ID+NBD') !== false) {
                         $quotesCarrier['ltl']['wwe']['IDNBD'][] = $quote;
-                    } else if (strpos($quote['code'], '+LG+LAD') !== false) {
-                        $quotesCarrier['ltl']['wwe']['LGLAD'][] = $quote;
                     } else if (strpos($quote['code'], '+ID+LAD') !== false) {
                         $quotesCarrier['ltl']['wwe']['IDLAD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LAD+NBD') !== false) {
+                        $quotesCarrier['ltl']['wwe']['LADNBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+NBD') !== false) {
+                        $quotesCarrier['ltl']['wwe']['LGNBD'][] = $quote;
                     } else if (strpos($quote['code'], '+LG+ID') !== false) {
                         $quotesCarrier['ltl']['wwe']['LGID'][] = $quote;
-                    } else if (strpos($quote['code'], '+NBD') !== false) {
-                        $quotesCarrier['ltl']['wwe']['NBD'][] = $quote;
+                    } else if (strpos($quote['code'], '+LG+LAD') !== false) {
+                        $quotesCarrier['ltl']['wwe']['LGLAD'][] = $quote;
                     } else if (strpos($quote['code'], '+LG') !== false) {
                         $quotesCarrier['ltl']['wwe']['LG'][] = $quote;
-                    } else if (strpos($quote['code'], '+LAD') !== false) {
-                        $quotesCarrier['ltl']['wwe']['LAD'][] = $quote;
+                    } else if (strpos($quote['code'], '+NBD') !== false) {
+                        $quotesCarrier['ltl']['wwe']['NBD'][] = $quote;
                     } else if (strpos($quote['code'], '+ID') !== false) {
                         $quotesCarrier['ltl']['wwe']['ID'][] = $quote;
+                    } else if (strpos($quote['code'], '+LAD') !== false) {
+                        $quotesCarrier['ltl']['wwe']['LAD'][] = $quote;
                     } else {
                         $quotesCarrier['ltl']['wwe']['simple'][] = $quote;
                     }
@@ -702,13 +718,13 @@ class LtlSmallCompileQuotes
 
                     // Create Multi Quotes Array of inside, Limited Access and noftify before Delivery, When Small and Ltl Products
 
-                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, false, $ltlQuot['isID'], $ltlQuot['isNBD'], $ltlQuot['isLAD']);
+                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, false, $ltlQuot['isID'], $ltlQuot['isNBD'], $ltlQuot['isLAD'], false, false, $storeId);
 
                     
 
                     $newQuotes[] = [
 
-                        'code' => 'multi' . $rCode . 'ID+LAD+NBD',
+                        'code' => 'multi' . $rCode . '+ID+LAD+NBD',
 
                         'rate' => ($parcel['rate'] ?? 0) + $ltlQuot['rate'],
 
@@ -720,7 +736,7 @@ class LtlSmallCompileQuotes
 
                     // Create Multi Quotes Array of liftgate, inside, Limited Access and notify before Delivery, When Small and Ltl Products
 
-                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, $ltlQuot['isLG'], $ltlQuot['isID'], $ltlQuot['isNBD'], $ltlQuot['isLAD']);
+                    $rtitle = Functions:: getAccessTitle($quoteSettings, $isResi, $ltlQuot['isLG'], $ltlQuot['isID'], $ltlQuot['isNBD'], $ltlQuot['isLAD'], false, false, $storeId);
 
                     
 
@@ -927,6 +943,54 @@ class LtlSmallCompileQuotes
             if (isset($quotes['LGNBD'][0])) {
                 $multiShipments[$count]['lgnotifydelivery'][$indexes['ltl'][0]] = $quotes['LGNBD'][0];
                 $multiShipments[$count]['lgnotifydelivery'][$indexes['small'][0]] = $parcel;
+                $count++;
+            }
+
+            if (isset($quotes['IDNBD'][0])) {
+                $multiShipments[$count]['insidenotifydelivery'][$indexes['ltl'][0]] = $quotes['IDNBD'][0];
+                $multiShipments[$count]['insidenotifydelivery'][$indexes['small'][0]] = $parcel;
+                $count++;
+            }
+
+            if (isset($quotes['LGIDNBD'][0])) {
+                $multiShipments[$count]['lginsidenotifydelivery'][$indexes['ltl'][0]] = $quotes['LGIDNBD'][0];
+                $multiShipments[$count]['lginsidenotifydelivery'][$indexes['small'][0]] = $parcel;
+                $count++;
+            }
+
+            if (isset($quotes['LADNBD'][0])) {
+                $multiShipments[$count]['laccessnotifydelivery'][$indexes['ltl'][0]] = $quotes['LADNBD'][0];
+                $multiShipments[$count]['laccessnotifydelivery'][$indexes['small'][0]] = $parcel;
+                $count++;
+            }
+
+            if (isset($quotes['LGLADNBD'][0])) {
+                $multiShipments[$count]['lglaccessnotifydelivery'][$indexes['ltl'][0]] = $quotes['LGLADNBD'][0];
+                $multiShipments[$count]['lglaccessnotifydelivery'][$indexes['small'][0]] = $parcel;
+                $count++;
+            }
+
+            if (isset($quotes['IDLAD'][0])) {
+                $multiShipments[$count]['laccessinsidedelivery'][$indexes['ltl'][0]] = $quotes['IDLAD'][0];
+                $multiShipments[$count]['laccessinsidedelivery'][$indexes['small'][0]] = $parcel;
+                $count++;
+            }
+
+            if (isset($quotes['LGIDLAD'][0])) {
+                $multiShipments[$count]['lglaccessinsidedelivery'][$indexes['ltl'][0]] = $quotes['LGIDLAD'][0];
+                $multiShipments[$count]['lglaccessinsidedelivery'][$indexes['small'][0]] = $parcel;
+                $count++;
+            }
+
+            if (isset($quotes['IDLADNBD'][0])) {
+                $multiShipments[$count]['laccessinsideNotifydelivery'][$indexes['ltl'][0]] = $quotes['IDLADNBD'][0];
+                $multiShipments[$count]['laccessinsideNotifydelivery'][$indexes['small'][0]] = $parcel;
+                $count++;
+            }
+
+            if (isset($quotes['LGIDLADNBD'][0])) {
+                $multiShipments[$count]['lglaccessinsideNotifydelivery'][$indexes['ltl'][0]] = $quotes['LGIDLADNBD'][0];
+                $multiShipments[$count]['lglaccessinsideNotifydelivery'][$indexes['small'][0]] = $parcel;
                 $count++;
             }
         }
