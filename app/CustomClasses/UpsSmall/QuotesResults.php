@@ -7,14 +7,16 @@ namespace App\CustomClasses\UpsSmall;
 use App\Constants\Constant;
 use App\CustomClasses\CompileQuotes;
 use App\CustomClasses\Functions;
+use Illuminate\Support\Str;
 use App\Http\Controllers\ShippingRuleController;
 
 class QuotesResults
 {
     private $isSurchargeRates = false;
-    public function __construct()
+    public function __construct($suppressParcelRates = [])
     {
         $this->CompileQuotes = new CompileQuotes();
+        $this->SuppressParcelRates = $suppressParcelRates;
     }
 
 
@@ -25,7 +27,7 @@ class QuotesResults
 
         if (isset($quoteSettings['rate_source']) && $quoteSettings['rate_source'] === 1) {
             $boxFee = isset($data['boxFees']['Amount']) ? $data['boxFees']['Amount'] : 0 ?? 0;
-            $amount = $data['NegotiatedRates']['Amount'] > 0 ? $data['NegotiatedRates']['Amount'] + $boxFee : $amount;
+            $amount = $data['NegotiatedRates']['Amount'] > 0 ? $data['NegotiatedRates']['Amount'] : $amount;
         }
 
         $markupIndex = strtolower(str_replace(' ', '_', $serviceDesc) . '_markup');
@@ -44,17 +46,18 @@ class QuotesResults
 
     }
 
-    public function addHazmatAmountsInServices($amount, $serviceCode, $quoteSettings)
+    public function addHazmatAmountsInServices($amount, $serviceCode, $quoteSettings, $hazmatBoxes = 1)
     {
+        $totalHazmatBoxes = Functions::getHazmatItemBoxes($this->isSbsEnable, $quoteSettings, $this->items, $hazmatBoxes);
         // Adding hazmat fee to Ground Service
-        if ($serviceCode == "03" || $serviceCode = 'SR_03' || $serviceCode == "03S" || $serviceCode == 'SR_03S') {
+        if ($serviceCode == "03" || $serviceCode == 'SR_03' || $serviceCode == "03S" || $serviceCode == 'SR_03S' || $serviceCode == "SR_12S" || $serviceCode == "12S" || $serviceCode == "11" || $serviceCode == "12" || $serviceCode == "GFP") {
             if (isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
-                $amount = $amount + $quoteSettings['ground_hazardous_material_fee'];
+                $amount = $amount + $quoteSettings['ground_hazardous_material_fee'] * $totalHazmatBoxes;
             }
             // Adding hazmat fee to Air Services
         } else {
             if (isset($quoteSettings['air_hazardous_material_fee']) && is_numeric($quoteSettings['air_hazardous_material_fee']) && !empty($quoteSettings['air_hazardous_material_fee'])) {
-                $amount = $amount + $quoteSettings['air_hazardous_material_fee'];
+                $amount = $amount + $quoteSettings['air_hazardous_material_fee'] * $totalHazmatBoxes;
             }
         }
         // $amount = $this->addHandlingMarkupOfHazmat($amount, $quoteSettings['handling_fee_markup']);
@@ -82,6 +85,8 @@ class QuotesResults
 
     public function getServiceTitle($title, $data, $serviceCode, $quoteSettings, $isResi = false, $showRadNotation = false)
     {
+        $title = $this->getServiceLabel($title, $data['serviceType'], $quoteSettings);
+
         if ($isResi && $showRadNotation) {
             $title = $title . Constant::RESI_LABEL;
         }
@@ -91,6 +96,14 @@ class QuotesResults
             $title = $title . ' (Delivery by ' . date('m-d-Y', strtotime($data['deliveryTimestamp'])) . ')';
         }
         return $title;
+    }
+
+    public function getServiceLabel($title, $serviceType, $quoteSettings)
+    {
+        $title = str_replace(' ', '_', $title);
+        $title = str_replace('.', '', $title);
+        $labelIndex =  strtolower($title) . '_label';
+        return !empty($quoteSettings['carrier_services'][$labelIndex]) ? $quoteSettings['carrier_services'][$labelIndex] : str_replace('_', ' ', $title);
     }
 
     public function checkGroundTransit($quote, $quoteSettings)
@@ -111,13 +124,17 @@ class QuotesResults
     }
 
 
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items, $storeId = '', $carrierName = '')
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $isSbsEnable, $isMultiShipment, $items, $storeId = '', $carrierName = '', $totalHazmatBoxes)
     {
         $shippingRule = new ShippingRuleController();
         $shipments = $this->formateQuoteBeforeCompile($shipments);
         $this->quoteSettings = [];
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
         $this->quoteSettings = $connectionSettings['ups-small']['quote_settings'] ?? '';
+        $this->isSbsEnable = $isSbsEnable;
+        $this->items = $items;
+        $access = $this->CompileQuotes->getAccessorialCodeSmall();
+
         $numberOfShipments = 0;
         $overrideRuleCount = 0;
         foreach ($shipments as $ship) {
@@ -147,6 +164,10 @@ class QuotesResults
         unset($shipments['air'],$shipments['ground']);
         foreach ($shipments as $origin => $quote) {
 
+            if(in_array($origin, $this->SuppressParcelRates)){
+                continue;
+            }
+            
             if ((isset($quote['severity']) || (isset($quote['q']) && empty($quote['q'])))) {
                 return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);                
             }
@@ -183,8 +204,15 @@ class QuotesResults
                             continue;
                         }
                     }
+
+                    if(Str::contains($key, 'SR_')){
+                        $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]['simple-rate']) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin]['simple-rate'] : 1;
+                    } else{
+                        $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]['normal']) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin]['normal'] : 1;
+                    }
+
                     //  CHeck FOr Ups ground transit days
-                    if ($data['serviceType'] == "03" || $data['serviceType'] == "SR_03" || $data['serviceType'] == "03S" || $data['serviceType'] == "SR_03S") {
+                    if ($data['serviceType'] == "03" || $data['serviceType'] == "SR_03" || $data['serviceType'] == "03S" || $data['serviceType'] == "SR_03S" || $data['serviceType'] == "SR_12S" || $data['serviceType'] == "12S" || $data['serviceType'] == "11" || $data['serviceType'] == "12" || $data['serviceType'] == "GFP") {
                         if (isset($this->quoteSettings['number_of_transit_days']) && $this->quoteSettings['number_of_transit_days'] != null && isset($this->quoteSettings['ground_metric']) && $this->quoteSettings['ground_metric'] != null) {
                             $islimited = $this->checkGroundTransit($data, $this->quoteSettings);
                             if ($islimited) {
@@ -194,7 +222,7 @@ class QuotesResults
                     }
                     //  CHecks FOr Only quote ground service if hazardous
                     if ($isHazmat && isset($this->quoteSettings['ground_service_for_hazardous_material']) && $this->quoteSettings['ground_service_for_hazardous_material']) {
-                        if ($data['serviceType'] != "03" && $data['serviceType'] != "SR_03" && $data['serviceType'] != "03S" && $data['serviceType'] != "SR_03S") {
+                        if ($data['serviceType'] != "03" && $data['serviceType'] != "SR_03" && $data['serviceType'] != "03S" && $data['serviceType'] != "SR_03S" && $data['serviceType'] != "SR_12S" && $data['serviceType'] != "12S" && $data['serviceType'] != "11" && $data['serviceType'] != "12" && $data['serviceType'] != "GFP") {
                             continue;
                         }
                     }
@@ -229,10 +257,10 @@ class QuotesResults
                     if ($isHazmat) {
                         if ($isMultiShipment) {
                             if ($hazmatAllItems[$origin] == 'Y') {
-                                $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
+                                $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings, $hazmatBoxes);
                             }
                         } else {
-                            $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
+                            $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings, $hazmatBoxes);
                         }
                     }
 
@@ -263,7 +291,7 @@ class QuotesResults
         //print_r($originQuotes);  exit;
         // Check for mukti shipment finding lowest price in each shipment and adding them for multi shipment
 
-        if ($isMultiShipment) {
+        if ($isMultiShipment && count($multiShipmentQuotes) > 1) {
             $originQuotesMulti = [];
             $multiShipPrice = 0;
             foreach ($originQuotes as $shipmentKey => $shipment) {
@@ -306,6 +334,7 @@ class QuotesResults
                 $allQuotes = $this->CompileQuotes->inStoreLocalDeliveryQuotes($originQuotes, $inStoreLdData, $allOrigins);
                 $resp = $allQuotes;
             }
+            unset($returnResp['isMultiShipment']);
             $returnResp['resp'] = $resp;
             return $returnResp;
         }
@@ -360,6 +389,10 @@ class QuotesResults
             }
             foreach ($quotes['q'] as $key => $quote) {
                 if (!isset($quote['severity']) && isset($servicesDesc[$key])) {
+                    // Adding landed cost api charges
+                    $landedQuotes = !empty($quote['landCostQuoteAPICharges']) ? $quote['landCostQuoteAPICharges'] : 0;
+                    $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] = $quote['totalNetCharge']['Amount'] + $landedQuotes;
+                    $shipments[$shipment]['q'][$key]['NegotiatedRates']['Amount'] = $quote['NegotiatedRates']['Amount'] > 0 ? (float) $quote['NegotiatedRates']['Amount'] + (float) $landedQuotes : $quote['totalNetCharge']['Amount'];
 
                     if (!in_array($quote['totalNetCharge']['Amount'], $temp)) {
                         $temp[] = $quote['totalNetCharge']['Amount'] ?? 0;

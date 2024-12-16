@@ -9,12 +9,8 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Cache;
-use App\Models\CSVimportExport;
-use App\CustomClasses\Functions;
-use Illuminate\Support\Facades\Log;
 
-class ImportProducts implements ShouldQueue
+class UpdateBCProductsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -23,14 +19,12 @@ class ImportProducts implements ShouldQueue
      *
      * @return void
      */
-    public $chunk, $request, $headerRow, $csvChunkCount, $emailNotify;
-    public function __construct($chunk, $request, $headerRow)
+    public $batches, $request, $exceptionProducts;
+    public function __construct($batches, $request, $exceptionProducts)
     {
-        $this->chunk = $chunk;
+        $this->batches = $batches;
         $this->request = $request;
-        $this->headerRow = $headerRow;
-        $this->csvChunkCount = $request['csv_chunk_count'];
-        $this->emailNotify = $request['importEmailAddress'] ?? '';
+        $this->exceptionProducts = $exceptionProducts;
     }
 
     /**
@@ -41,6 +35,6 @@ class ImportProducts implements ShouldQueue
     public function handle()
     {
         $ExportImportProducts = new ExportImportProducts();
-        $ExportImportProducts->importProductCsvJob($this->chunk, $this->request, $this->headerRow);
+        $ExportImportProducts->importBCProductCsvJob($this->batches, $this->request, $this->exceptionProducts);
     }
 }

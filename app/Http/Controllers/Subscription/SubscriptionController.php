@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Subscription;
 
 
+use App\CustomClasses\CurlRequest;
 use App\CustomClasses\Functions;
 use App\Helpers\Helpers;
 use App\Http\Controllers\Controller;
@@ -15,7 +16,11 @@ use App\Models\Subscription\CarrierCount;
 use App\Models\Subscription\PaymentMethod;
 use App\Models\Subscription\Plan;
 use App\Models\Subscription\Subscription;
+use App\Models\SubscriptionPayments;
+use App\Models\SubscriptionStripePayments;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +31,7 @@ use Illuminate\Support\Facades\Validator;
 use PHPUnit\Exception;
 use Stripe\Charge;
 use Stripe\Stripe;
+use App\Models\Subscription\PackageSubscription;
 
 class SubscriptionController extends Controller
 {
@@ -34,6 +40,7 @@ class SubscriptionController extends Controller
     public static $isTrial = false;
     public static $chargeAmount = 0;
     public static $trial = 1;
+    public static $devPlan = 5;
     public static $email = '';
     public static $plansData = [];
     public static $testUsers = [];
@@ -66,13 +73,13 @@ class SubscriptionController extends Controller
     //*************************************
     // This function is used to save the payment method in DB after creating a stripe customer
     //*************************************
-    public function savePaymentMethodInDB($returnCustomer, $storeId)
+    public function savePaymentMethodInDB($returnCustomer, $storeId, $paymentMethods = [])
     {
-        $fingerPrint = isset($returnCustomer->sources->data[0]->fingerprint) ? md5($returnCustomer->sources->data[0]->fingerprint) : null;
-        $last4 = isset($returnCustomer->sources->data[0]->last4) ? encrypt($returnCustomer->sources->data[0]->last4) : null;
+        $fingerPrint = isset($paymentMethods->data[0]->card->fingerprint) ? md5($paymentMethods->data[0]->card->fingerprint) : null;
+        $last4 = isset($paymentMethods->data[0]->card->last4) ? encrypt($paymentMethods->data[0]->card->last4) : null;
         $paymentMethod = $fingerPrint != null ? PaymentMethod::whereStoreId($storeId)->whereCardFingerPrint($fingerPrint)->first() : null;
         if (PaymentMethod::where('store_id', $storeId)->exists()) {
-            $paymentMethodId = PaymentMethod::where('store_id', $storeId)->update([
+            $paymentMethodDB = PaymentMethod::where('store_id', $storeId)->update([
                 'store_id' => $storeId,
                 'stripe_customer_object' => isset($returnCustomer) ? encrypt(json_encode($returnCustomer)) : null,
                 'stripe_id' => isset($returnCustomer->id) ? encrypt($returnCustomer->id) : null,
@@ -82,9 +89,8 @@ class SubscriptionController extends Controller
                 'is_default' => 1
             ]);
             Subscription::where('store_id', $storeId)->where('status', 1)->update(['payment_method' => $returnCustomer->default_source]);
-            return $paymentMethodId;
         } else {
-            $paymentMethod = PaymentMethod::create([
+            $paymentMethodDB = PaymentMethod::create([
                 'store_id' => $storeId,
                 'stripe_customer_object' => isset($returnCustomer) ? encrypt(json_encode($returnCustomer)) : null,
                 'stripe_id' => isset($returnCustomer->id) ? encrypt($returnCustomer->id) : null,
@@ -94,7 +100,38 @@ class SubscriptionController extends Controller
                 'is_default' => 1
             ]);
         }
-        return $paymentMethod->id;
+        return PaymentMethod::where('store_id', $storeId)->value('id');
+    }
+
+    //*************************************
+    // This function is used to save the payment method in DB using postman 
+    //*************************************
+    public function savePaymentMethodUsingScript(Request $request)
+    {
+        try {
+
+            $customerResponse = \Stripe\Customer::retrieve($request->customerId);
+            $paymentMethodsResponse = $this->getStripePaymentMethods($request->customerId);
+            if(isset($paymentMethodsResponse['error']) && $paymentMethodsResponse['error']) {
+                return $paymentMethodsResponse;
+            }
+            $paymentMethods = isset($paymentMethodsResponse['data']) ? $paymentMethodsResponse['data'] : null;
+            $paymentMethodId = $this->savePaymentMethodInDB($customerResponse, $request['store_id'], $paymentMethods);
+
+            $responce = [
+                'error' => false,
+                'message' => 'Successfully Save Stripe Payment Methods In DB.',
+                'data' => $customerResponse->toArray(),
+            ];
+
+        } catch (\Exception $e) {
+            $responce = [
+                'error' => true,
+                'data' => [],
+                'message' => $e->getMessage()
+            ];
+        }
+        return $responce;
     }
 
     //*************************************
@@ -158,7 +195,10 @@ class SubscriptionController extends Controller
             $this->updateCarrierCountsinDB($newSubscription->id, $oldSubscription->store_id);
             return $newSubscription->id;
         }
-        $carrierCounts = CarrierCount::where('plan_id', $oldSubscription->plan_id)->where('subscription_id', $oldSubscription->id)->first();
+        Log::info('Old subscription ' . json_encode($oldSubscription));
+
+        $carrierCounts = CarrierCount::where('subscription_id', $oldSubscription->id)->first();
+        Log::info('Carrier counts ' . json_encode($carrierCounts));
         $oldSubscription->plan_id = self::$plansData['plan_id'];
         $oldSubscription->status = 1; //Active Status
         $oldSubscription->ends_at = gmdate("Y-m-d\TH:i:s\Z", $subscriptionReponse->current_period_end);
@@ -206,17 +246,53 @@ class SubscriptionController extends Controller
     //*************************************
     // This function is used to create new subscription in case of previous subscription is cancelled
     //*************************************
-    public function createNewSubscriptionPlan($customerId, $planId)
+    public function createNewSubscriptionPlan($customerId, $planId, $defaultSource = null)
     {
         try {
-            $subscription = \Stripe\Subscription::create(array(
+
+            $subsArray = array(
                 'customer' => $customerId,
-                'plan' => $planId
-            ));
+                'plan' => $planId,
+            );
+
+            if($defaultSource != null){
+                $subsArray['default_source'] = $defaultSource;
+            }
+
+            $subscription = \Stripe\Subscription::create($subsArray);
             $responce = [
                 'error' => false,
                 'message' => 'Plan is subscribed successfully.',
                 'data' => $subscription,
+            ];
+
+        } catch (\Exception $e) {
+            $responce = [
+                'error' => true,
+                'data' => [],
+                'message' => $e->getMessage()
+            ];
+        }
+        return $responce;
+    }
+
+    //*************************************
+    // This function is used to get Stripe Payment Methods
+    //*************************************
+    public function getStripePaymentMethods($customerId)
+    {
+        try {
+
+            $subsArray = array(
+                'customer' => $customerId,
+                'type' => 'card',
+            );
+
+            $stripePaymentMethods = \Stripe\PaymentMethod::all($subsArray);
+            $responce = [
+                'error' => false,
+                'message' => 'Get Stripe Payment Methods From Stripe.',
+                'data' => $stripePaymentMethods,
             ];
 
         } catch (\Exception $e) {
@@ -238,6 +314,7 @@ class SubscriptionController extends Controller
             $subscription = \Stripe\Subscription::retrieve($subId);
             $subscription->plan = $planId;
             $subscription->proration_behavior = 'always_invoice';
+            $subscription->cancel_at_period_end = false;
             $subResponce = $subscription->save();
 
             $responce = [
@@ -296,6 +373,21 @@ class SubscriptionController extends Controller
             $hubSpotController = new HubSpotController();
             //Check: If current carriers installed are more than the choosed plan then return with message
             $currentSubscriptionDetail = $this->subscriptionDetailFromDB($request['store_id']);
+
+            // Expired add-on packages if store convert from sandbox to live
+            if (!empty($currentSubscriptionDetail) && $currentSubscriptionDetail->plan_id == 5 && $currentSubscriptionDetail->plan_id != $request['plan']){
+                
+                $currentPackageSub = PackageSubscription::where('store_id', $request['store_id'])->latest()->get();
+                if(count($currentPackageSub) > 0){
+                    foreach($currentPackageSub as $package){
+                        if($package['payment_method_id'] == null && $package['stripe_charge_id'] == null && $package['status']){
+                            $package->update(['status' => 0]);
+                        }
+                    }
+
+                }
+            }
+
             $isTestStore = $request['is_test_store'] ?? false;
             self::getPlansDetails($request['plan'], $isTestStore);   //Getting Plan detail from DB
             $newPlanAllowedCarriers = self::$plansData['carrier_count'];
@@ -321,7 +413,22 @@ class SubscriptionController extends Controller
                 }
             }
             //END:Check
-            if ($request['plan'] != self::$trial) {
+            /*Added check for development plan
+            if the store already taken development plan*/
+            if ($request['plan'] == self::$devPlan) {
+                $storeDetail = Store::where('id', $request['store_id'])->first();
+                if (!blank($storeDetail)) {
+                    if ($storeDetail->is_trial_completed) {
+                        return response()->json([
+                            'error' => true,
+                            'data' => [],
+                            'message' => 'You have already taken development plan! Please subscribe to a paid plan if you want to continue using our services.'
+                        ], 200);
+                    }
+                }
+            }
+            //END:Check
+            if ($request['plan'] != self::$trial || $request['plan'] != self::$devPlan) {
                 $data = [
                     // 'card_number' => '4242424242424242',
                     'card_number' => preg_replace("/\s+/", "", $request['card_number']),
@@ -370,7 +477,12 @@ class SubscriptionController extends Controller
             //Start: Upgrade or DownGrade Plans
             if (!is_null($paymentMethod) && !is_null($oldSubscription) && $stripePlanId != null && $oldSubscription->subscription_id != null) {
                 $oldPaymentMethod = PaymentMethod::where('store_id', $data['store_id'])->first();
-                $last4 = decrypt($oldPaymentMethod->last4);
+                try {
+                    $last4 = decrypt($oldPaymentMethod->last4);
+                } catch (\Exception $exception) {
+                    $last4 = '****';
+                    Log::info('Card Decrypt Exception' . $exception->getMessage());
+                }
                 //Update: the customer card if the defaultpayment is false OR the last4 digits of the current card does not match with the new given card
                 if ((isset($data['defaultpayment']) && $data['defaultpayment'] == false) && substr($data['cNumber'], -4) != $last4) {
                     $customerId = $oldSubscription->stripe_id;
@@ -379,7 +491,16 @@ class SubscriptionController extends Controller
                     if ($updateCustomerCardRes['error'] == true) {
                         return response()->json($updateCustomerCardRes);
                     }
-                    $this->savePaymentMethodInDB($updateCustomerCardRes['data'], $data['store_id']);
+
+                    $paymentMethodsResponse = $this->getStripePaymentMethods($updateCustomerCardRes['data']['id']);
+                    // if Stripe Payment Methods is not found then return the error
+                    if (isset($paymentMethodsResponse['error']) && $paymentMethodsResponse['error'] == true) {
+                        return response()->json($paymentMethodsResponse);
+                    }
+
+                    $paymentMethods = isset($paymentMethodsResponse['data']) ? $paymentMethodsResponse['data'] : null;
+
+                    $this->savePaymentMethodInDB($updateCustomerCardRes['data'], $data['store_id'], $paymentMethods);
                 }
                 //Added this isExpiredSubscription because of the bug it creates of creating new subscription when status was 2
                 if ($oldSubscription->status == 2 && Functions::isExpiredSubscription($oldSubscription->ends_at)) { //If the previous subscription is expired
@@ -388,14 +509,15 @@ class SubscriptionController extends Controller
 
                 } else { //If the previous subscription is active
                     $updateSubResponse = $this->updateSubscriptionPlan($oldSubscription->subscription_id, $stripePlanId);
+
                 }
 
                 if ($updateSubResponse['error'] == true) {
                     return response()->json($updateSubResponse);
                 }
 
-
                 $this->updateSubscriptionInDB($updateSubResponse['data'], $oldSubscription, $isTestStore);
+
                 //Getting Current Plan Detail
                 $updateSubResponse['data'] = $this->subscriptionDetailFromDB($data['store_id']);
 
@@ -416,18 +538,32 @@ class SubscriptionController extends Controller
             //If stripeplan (null) means, it is trial.
             if ($stripePlanId != null) {
                 $customerResponse = $this->createCustomerOnStripe($data);
+                // if stripe customer is not created successfully then return the error
+                if (isset($customerResponse['error']) && $customerResponse['error'] == true) {
+                    return response()->json($customerResponse);
+                }
+
+                $updateSubResponse = $this->createNewSubscriptionPlan($customerResponse['data']['id'], $stripePlanId, $customerResponse['data']['default_source']);
+                // if stripe subscription is not created successfully then return the error
+                if (isset($updateSubResponse['error']) && $updateSubResponse['error'] == true) {
+                    return response()->json($updateSubResponse);
+                }
+
+                $paymentMethodsResponse = $this->getStripePaymentMethods($customerResponse['data']['id']);
+                // if Stripe Payment Methods is not found then return the error
+                if (isset($paymentMethodsResponse['error']) && $paymentMethodsResponse['error'] == true) {
+                    return response()->json($paymentMethodsResponse);
+                }
             }
-            // if stripe customer is not created successfully then return the error
-            if (isset($customerResponse['error']) && $customerResponse['error'] == true) {
-                return response()->json($customerResponse);
-            }
+
             //If the stripe customer is created and subscription is done
             $customerId = isset($customerResponse['data']->id) ? $customerResponse['data']->id : null;
-            $subscriptions = isset($customerResponse['data']->subscriptions) ? $customerResponse['data']->subscriptions : null;
+            $subscriptions = isset($updateSubResponse['data']) ? $updateSubResponse['data'] : null;
+            $paymentMethods = isset($paymentMethodsResponse['data']) ? $paymentMethodsResponse['data'] : null;
             //If the stripe customer is created and plan is subscribed successfully then it means the PAID plan is subscribed.
             //else, otherwise we consider it to be a trial
             if (!is_null($customerId) && !is_null($subscriptions)) {
-                $paymentMethodId = $this->savePaymentMethodInDB($customerResponse['data'], $data['store_id']);
+                $paymentMethodId = $this->savePaymentMethodInDB($customerResponse['data'], $data['store_id'], $paymentMethods);
 
                 $user = [
                     'email' => $data['email'],
@@ -447,7 +583,7 @@ class SubscriptionController extends Controller
                 //Else part will be executed in case of trial and we need to update the subscription table for a trial
                 /*This block of code will check if customer already subscribe trial plan
                 and is allowed to subscribe trial plan*/
-                $trialDays = Carbon::now()->addDays(14);
+                $trialDays = Carbon::now()->addDays(self::$plansData['plan_id'] == 5 ? 1825 : 14);
                 $trialSubscription = Subscription::where('store_id', $data['store_id'])->where('plan_id', self::$plansData['plan_id'])->first();
                 if (!blank($trialSubscription)) {
                     $dbTrialEndDate = $trialSubscription->ends_at;
@@ -456,7 +592,7 @@ class SubscriptionController extends Controller
                             return response()->json([
                                 'error' => true,
                                 'data' => [],
-                                'message' => 'You have already taken trial plan! Please subscribe to a paid plan if you want to continue using our services.'
+                                'message' => 'You have already taken ' . self::$plansData['plan_id'] == 5 ? 'development' : 'trial' . ' plan! Please subscribe to a paid plan if you want to continue using our services.'
                             ], 200);
                         }
                         /*Setting remaining trial days for customer*/
@@ -499,25 +635,21 @@ class SubscriptionController extends Controller
                 'endsAt' => $subscriptionDetail->ends_at,
                 'action' => 'IPF'       // Invoice Payment Failed
             );
-            if ($request['plan'] == self::$trial) { // if planId is null then it's a trial and we need to send an email for trial
+            if ($request['plan'] == self::$trial || $request['plan'] == self::$devPlan) { // if planId is null then it's a trial and we need to send an email for trial
 
-                Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, 3));
+                Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, self::$devPlan ? 4 : 3));
             } else {
                 Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, 1));
 
             }
-            /*
-            * Update WS graph data
-            * */
-            SaleGraphController::updateGraphData();
 
             return response()->json([
                 'error' => false,
                 'data' => $subscriptionDetail,
                 'message' => 'The plan subscribed successfully.'
             ], 200);
-        } catch (\Exception $exception) {
-            Log::info('Exception on subscribing plan ' . json_encode($exception->getTraceAsString()));
+        } catch (\Exception|\Throwable $exception) {
+            Log::info('Exception on subscribing plan ' . json_encode(Functions::returnFormExceptionArray($exception)));
             return response()->json([
                 'error' => true,
                 'data' => [],
@@ -550,7 +682,16 @@ class SubscriptionController extends Controller
             //   $updateCustomerCardRes['data'] = $subscriptionDetail;
             return response()->json($updateCustomerCardRes);
         }
-        $this->savePaymentMethodInDB($updateCustomerCardRes['data'], $data['store_id']);
+
+        $paymentMethodsResponse = $this->getStripePaymentMethods($updateCustomerCardRes['data']['id']);
+        // if Stripe Payment Methods is not found then return the error
+        if (isset($paymentMethodsResponse['error']) && $paymentMethodsResponse['error'] == true) {
+            return response()->json($paymentMethodsResponse);
+        }
+
+        $paymentMethods = isset($paymentMethodsResponse['data']) ? $paymentMethodsResponse['data'] : null;
+
+        $this->savePaymentMethodInDB($updateCustomerCardRes['data'], $data['store_id'], $paymentMethods);
         $subscriptionDetail = $this->subscriptionDetailFromDB($storeId);
         $updateCustomerCardRes['data'] = $subscriptionDetail;
         // $updateCustomerCardRes['data'] = $this->getSubscriptionDetail($request);
@@ -679,7 +820,6 @@ class SubscriptionController extends Controller
             $responce = \Stripe\Customer::create(array(
                 "name" => $cName,
                 "email" => $email,
-                "plan" => $stripePlanId,
                 "description" => $stripeDescription,
                 "metadata" => $metadata,
                 "source" => $token
@@ -764,12 +904,20 @@ class SubscriptionController extends Controller
         $dbSub = Subscription::where('store_id', $storeId)->latest()->first();
 
         if (isset($request['cancel']) && $request['cancel'] == 1) {
-            $res = $this->cencelStripeSubscription($dbSub->subscription_id);
+            $res = !empty($dbSub->subscription_id) ?  $this->cencelStripeSubscription($dbSub->subscription_id) : null; 
             if (isset($res['error']) && $res['error'] == false) {
                 //Because of simaltaneous execution of stripe and DB
                 Subscription::where('id', $dbSub->id)->update([
                     'status' => 2
                 ]);
+            }
+            if (isset($request['isSandboxStore']) && $request['isSandboxStore'] == 1) {
+                Subscription::where('id', $dbSub->id)->delete();
+
+                $res = [
+                    'error' => false,
+                    'message' => 'Your subscription has been cancelled.',
+                ];
             }
         } else {
             $subId = $dbSub->subscription_id;
@@ -835,12 +983,12 @@ class SubscriptionController extends Controller
         }
 
         $subscriptionDetail = (array)$subscriptionDetail;
-        if ($subscriptionDetail['plan_id'] == self::$trial && Carbon::now() > Carbon::parse($subscriptionDetail['ends_at'])) {
-            //If Trial is expired then update expired (2) status to DB
+        if (($subscriptionDetail['plan_id'] == self::$trial || $subscriptionDetail['plan_id'] == self::$devPlan) && Carbon::now() > Carbon::parse($subscriptionDetail['ends_at'])) {
+            //If Trial or development plan is expired then update expired (2) status to DB
             Subscription::where('id', $subscriptionDetail['subscription_id'])->update([
                 'status' => 2
             ]);
-            $subscriptionDetail['status'] = 2; //Trial is expired
+            $subscriptionDetail['status'] = 2; //Trial or Development is expired
         }
         $plan = Plan::find($subscriptionDetail['plan_id']);
         /*Added for paid plan expiry date*/
@@ -963,7 +1111,7 @@ class SubscriptionController extends Controller
                 'updated_date' => $paymentDetail->data->object->webhooks_delivered_at,
                 'subscriptionId' => $paymentDetail->data->object->subscription
             );
-
+            SubscriptionStripePayments::addOrUpdateSubscriptionPayment($subscriptionPlanObj, $paymentDetail);
         } else {
             $params = array(
                 'subscriptionId' => $paymentDetail->data->object->items->data[0]->subscription
@@ -1070,10 +1218,6 @@ class SubscriptionController extends Controller
         }
         if ($userLost) {
             /*
-             * Update WS graph data
-             * */
-            SaleGraphController::updateGraphData();
-            /*
              * Create Hub spot user and activate trial
              */
             $user = ['email' => $email];
@@ -1112,8 +1256,6 @@ class SubscriptionController extends Controller
         } elseif ($eventType == 'invoice.payment_failed') {
             $msg = 'Subscription Failed';
             $this->invoicePaymentActionByWebHook($paymentDetail, 0);
-        } else {
-            //Do Nothing
         }
 
 
@@ -1169,5 +1311,52 @@ class SubscriptionController extends Controller
         ], 200);
     }
 
+
+    /**
+     * @return JsonResponse
+     */
+    public function getPayments(Request $request): JsonResponse
+    {
+        $storeId = $request['store_id'] ?? null;
+        if (blank($storeId)) {
+            return Helpers::sendJsonResponse(true, "No store ID in request");
+
+        }
+        return Helpers::sendJsonResponse(false, "", SubscriptionStripePayments::getSubscriptionStripePayments($storeId));
+    }
+
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getReceipt(Request $request)
+    {
+        $notFoundMessage = "The specified receipt cannot be found.";
+
+        $id = $request->id ?? "";
+        $invoiceDetail = SubscriptionStripePayments::getInvoiceDetail($id);
+        $receiptUrl = $invoiceDetail['receipt_url'] ?? "";
+
+        if (blank($receiptUrl)) {
+            return Helpers::sendJsonResponse(true, $notFoundMessage);
+        }
+
+        if ($invoiceDetail['is_addon']) {
+            $fileUrl = $receiptUrl;
+        } else {
+            $curlResponse = (new CurlRequest())->enSingleCurlRequest($receiptUrl, '', [], 'GET');
+            $curlResponse = json_decode($curlResponse['response'] ?? "", true);
+            $fileUrl = $curlResponse['file_url'] ?? "";
+        }
+
+        if (!blank($fileUrl)) {
+            return Helpers::sendJsonResponse(false, '', ['file_url' => $fileUrl]);
+
+        }
+
+        return Helpers::sendJsonResponse(true, $notFoundMessage);
+
+
+    }
 
 }

@@ -53,6 +53,7 @@ class GenerateRequestData
     public $simpleRate = false;
     public $homeDeliveryServices = false;
     public $storeDateTime;
+    public $Boxes = [];
 
     /**
      * constructor of class that accepts request object
@@ -283,6 +284,12 @@ class GenerateRequestData
                     $p1LtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['priority1'] = $p1LtlArr;
                     $errorManagment['priority1'] = $con1['quote_settings']['error_managment'] ?? 1;
+                    break;
+                case 'ups-land-cost-small':
+                    $p1LtlArr = $this->upsLandedCostApiEnitArr($con1, $destination);
+                    $p1LtlArr['originAddress'] = $enitOrigin;
+                    $carriersArr['carriers']['UPSLandedCost'] = $p1LtlArr;
+                    $errorManagment['UPSLandedCost'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
             }
         }
@@ -569,13 +576,17 @@ class GenerateRequestData
 
     public function tqlLtlEnitArr($connSettings, $destination)
     {
+        $liftGate = (!empty($connSettings['quote_settings']['offerLiftGateDelivery']) || !empty($connSettings['quote_settings']['alwaysLiftGateDelivery'])) ? true : false ?? false;
+        $notify = (!empty($connSettings['quote_settings']['offer_notify_as_option']) || !empty($connSettings['quote_settings']['always_quote_notify'])) ? true : false ?? false;
+
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
             'carrierMode' => 'pro',
             'quotestType' => 'ltl',
             'version' => '1.0.0',
-            'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ?? '0',
+            'liftGateAsAnOption' => $liftGate,
+            'notifyAsAnOption' => $notify,
             'returnQuotesOnExceedWeight' => '1',
             'api' => $this->getApiInfoArrTqlLtl($connSettings, $destination),
         ];
@@ -624,6 +635,7 @@ class GenerateRequestData
 
     public function abfLtlEnitArr($connSettings, $destination)
     {
+        $api = $this->getApiInfoArrAbfLtl($connSettings, $destination);
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -631,7 +643,10 @@ class GenerateRequestData
             'quotestType' => 'ltl',
             'version' => '1.0',
             'returnQuotesOnExceedWeight' => 1,
-            'api' => $this->getApiInfoArrAbfLtl($connSettings, $destination),
+            'liftGateAsAnOption' => isset($api['accessorial']['Acc_GRD_DEL']) && $api['accessorial']['Acc_GRD_DEL'] == 'Y' ? true : false,
+            'notifyAsAnOption' => isset($api['accessorial']['Acc_ARR']) && $api['accessorial']['Acc_ARR'] == 'Y' ? true : false,
+            'residentialAsAnOption' => isset($api['accessorial']['Acc_RDEL']) && $api['accessorial']['Acc_RDEL'] == 'Y' ? true : false,
+            'api' => $api,
         ];
     }
 
@@ -717,6 +732,19 @@ class GenerateRequestData
         ];
     }
 
+    public function upsLandedCostApiEnitArr($connSettings, $destination)
+    {
+        return [
+            'licenseKey' => '',
+            'serverName' => Functions::getServerName($this->storeData),
+            'carrierMode' => 'pro',
+            'quotestType' => '',
+            'version' => '1.0.0',
+            'returnQuotesOnExceedWeight' => 1,
+            'api' => $this->getApiInfoArrUpsLandedCost($connSettings, $destination),
+        ];
+    }
+
     function calculatePrice($lineItems)
     {
         $price = 0;
@@ -743,6 +771,14 @@ class GenerateRequestData
             } else {
                 $carriersArray = $errorManagmentResp['carriersArray'];
                 $itemsArr = $errorManagmentResp['itemsArr'];
+            }
+            foreach($itemsArr as $key => $item){
+                if (isset($item['isFreeShipping']) && $item['isFreeShipping']){
+                    foreach ($carriersArray['carriers'] as $carr => $carrier) {
+                        unset($carriersArray['carriers'][$carr]['originAddress'][$key]);
+                        unset($itemsArr[$key]);
+                    }
+                }
             }
         }
 
@@ -794,6 +830,82 @@ class GenerateRequestData
             $this->itemsArr = $itemsArr;
             $this->carriers = $carriers;
 
+            // Apply Large Cart Settings Shipping Rule
+            $shippingRule = new ShippingRuleController();
+            $isLargeCartShippingRule = $shippingRule->checkLargeCartRuleApply($itemsArr, $this->storeData['store']->id) ?? [];
+            // Check: Large Cart Settings Shipping Rule is apply
+            if(!empty($isLargeCartShippingRule)){
+
+                if (!empty($this->origins)) {
+                    // get total shipments based on cart items
+                    $totalShipments = collect($this->origins)->pluck('locationId')->unique()->toArray() ?? [];
+                    foreach($totalShipments as $shipment){   
+                        $q = $shipmentWeight = $shipmentPrice = $total_weight = 0;
+                        // get total products in a shipment                 
+                        $variantKeys = collect($this->origins)->filter(function ($orig) use ($shipment) {
+                            return $orig['locationId'] == $shipment;
+                        })->keys()->all() ?? [];
+
+                        foreach($variantKeys as $variant_id){
+                            // get total shipment weight and price
+                            $shipmentWeight += $itemsArr[$variant_id]['lineItemWeight'] * $itemsArr[$variant_id]['piecesOfLineItem'] ?? 0;
+                            $shipmentPrice += $itemsArr[$variant_id]['lineItemPrice'] * $itemsArr[$variant_id]['piecesOfLineItem'] ?? 0;
+                        }
+                        // calcluate total no of packages of the shipment weight
+                        $totalNoOfPackages = ceil($shipmentWeight/$isLargeCartShippingRule['max_package_weight']) ?? 0;
+                        $pricePerPackage = round($shipmentPrice/$totalNoOfPackages, 2) ?? 0;
+                        $maxWeightPackage = $isLargeCartShippingRule['max_package_weight'] ?? 0;
+
+                        
+                        // creating custom packages
+                        for($i=0; $i<$totalNoOfPackages; $i++){
+
+                            if(isset($variantKeys[$i])){
+                                $index =  $variantKeys[$i];
+                                $item = $itemsArr[$variantKeys[$i]] ?? [];
+                                $origin = $this->origins[$variantKeys[$i]] ?? [];    
+                            }else {
+                                $index =  $variantKeys[0] . $i;
+                                $item = $itemsArr[$variantKeys[0]] ?? [];
+                                $origin = $this->origins[$variantKeys[0]] ?? [];    
+                            }
+                            
+                            $shipmentWeight = $shipmentWeight - $maxWeightPackage ?? 0;
+                            /** 
+                            * Check: if last package weight is less than the max per package weight 
+                            * then assign only minimum weight not max per package weight
+                            **/
+                            if($shipmentWeight < 0){
+                                $lineItemWeight = $shipmentWeight + $maxWeightPackage;
+                            } else {
+                                $lineItemWeight = $maxWeightPackage;
+                            }
+                            $item['piecesOfLineItem'] = 1;
+                            $item['lineItemWeight'] = $lineItemWeight ?? 0;
+                            $item['lineItemWidth'] = '';
+                            $item['lineItemHeight'] = '';
+                            $item['lineItemLength'] = '';
+                            $item['shipBinAlone'] = 1;
+                            $item['shipItemAlone'] = 1;
+                            $item['lineItemPrice'] = $pricePerPackage > 0 ? $pricePerPackage / 100 : 0;
+                            $total_weight += $maxWeightPackage;
+                            $lineItems[$index] = $item ?? [];
+                            $origins[$index] = $origin;
+                        }
+                    }
+                    unset($itemsArr);
+                    // update lineitems with custom packages and origins with package id
+                    $itemsArr = $lineItems ?? [];
+                    foreach(Functions::$smallCarriersArray as $carrierName){
+                        if(isset($carriers[$carrierName])){
+                            $carriers[$carrierName]['originAddress'] = $origins ?? [];
+                            Log::info('Large Cart Settings Shipping Rule Applied');
+                        }
+                    }
+                }
+            }
+            // End Apply Large Cart Settings Shipping Rule
+
             $hasSmall = isset($carriers['wweSmall'])
                 || isset($carriers['upsSmall'])
                 || isset($carriers['fedexSmall'])
@@ -803,7 +915,7 @@ class GenerateRequestData
                 || isset($carriers['shipEngine'])
                 || isset($carriers['wweSmallN']);
 
-            if ($hasSmall) {
+            if ($hasSmall && empty($isLargeCartShippingRule)) {
                 $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
                 if (empty($multiplePackaging)) {
                     return null;
@@ -1093,6 +1205,7 @@ class GenerateRequestData
             'carriers' => $carriers,
             'receiverAddress' => $receiverAddress,
             'commdityDetails' => $itemsArr,
+            'hazmatBoxes' => $this->Boxes,
         ];
 
         if (isset($carriers['fedexSmall'])) {
@@ -1478,6 +1591,8 @@ class GenerateRequestData
             'senderZip' => $connSettings['creds']['billing_postal_Code'],
             'thresholdWeightLimit' => $weightThreshold,
             'accessorial' => $accessorial,
+            'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
+            'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
 
         ];
 
@@ -1765,10 +1880,15 @@ class GenerateRequestData
         }
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $apiArray = [
-            'AccountNumber' => $connSettings['creds']['account_number'] ?? '',
-            'MeterNumber' => $connSettings['creds']['meter_number'] ?? '',
-            'password' => $connSettings['creds']['password'] ?? '',
-            'key' => $connSettings['creds']['api_access_key'] ?? '',
+            'AccountNumber' => isset($connSettings['creds']['account_number']) ? $connSettings['creds']['account_number'] : '',
+            'MeterNumber' => isset($connSettings['creds']['meter_number']) ? $connSettings['creds']['meter_number'] : '',
+            'password' => isset($connSettings['creds']['password']) ? $connSettings['creds']['password'] : '',
+            'key' => isset($connSettings['creds']['api_access_key']) ? $connSettings['creds']['api_access_key'] : '',
+            // New Api Test Connection Params
+            'clientId' => isset($connSettings['creds']['clientId']) ? $connSettings['creds']['clientId'] : '',
+            'clientSecret' => isset($connSettings['creds']['clientSecret']) ? $connSettings['creds']['clientSecret'] : '',
+            'requestForNewAPI' => '1',
+            // ---------------- //
             'shippingChargesAccount' => $connSettings['creds']['shipping_account_number'] ?? '',
             'billingLineAddress' => $connSettings['creds']['billing_address'] ?? '',
             'billingCountry' => $connSettings['creds']['billing_country'] ?? '',
@@ -1810,6 +1930,15 @@ class GenerateRequestData
             'accessorial' => $accessorial,
             /*array('DANGEROUS_GOODS', 'LIFTGATE_DELIVERY'),*/
         ];
+
+        if (isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api') {
+            unset($apiArray['AccountNumber'], $apiArray['MeterNumber'], $apiArray['password'], $apiArray['key']);
+
+        } else {
+            unset($apiArray['clientId'], $apiArray['clientSecret'], $apiArray['requestForNewAPI']);
+
+        }
+
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
 
@@ -2058,11 +2187,12 @@ class GenerateRequestData
             $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
-        $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
+        $sbsEnabled = $this->checkIsSBSActive($this->storeData['store']['id']);
         $ratingMethod = $this->getPackagingRatingMethod($connSettings);
 
         $this->resiCarrier['wweSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['wweSmall'] = $alwaysResi;
+        $this->resiCarrier['isSbsEnable'] = $sbsEnabled && $this->storeData['enabled_addon_sbs'];
 
         $apiArray = [
             'speed_ship_username' => isset($connSettings['creds']['username']) ? $connSettings['creds']['username'] : '',
@@ -2113,12 +2243,13 @@ class GenerateRequestData
             $alwaysResi = $this->checkIsALwaysQuoteResDel($rad_settings);
         }
 
-        $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
+        $sbsEnabled = $this->checkIsSBSActive($this->storeData['store']['id']);
         $ratingMethod = $this->getPackagingRatingMethod($connSettings);
 
         $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
         $this->resiCarrier['purolatorSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['purolatorSmall'] = $alwaysResi;
+        $this->resiCarrier['isSbsEnable'] = $sbsEnabled && $this->storeData['enabled_addon_sbs'];
 
         $apiArray = [
             'productionKey' => $connSettings['creds']['productionKey'],
@@ -2140,6 +2271,7 @@ class GenerateRequestData
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
+        $sbsEnabled = $this->checkIsSBSActive($this->storeData['store']['id']);
         if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
@@ -2154,12 +2286,14 @@ class GenerateRequestData
         $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
         $this->resiCarrier['upsSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['upsSmall'] = $alwaysResi;
+        $this->resiCarrier['isSbsEnable'] = $sbsEnabled && $this->storeData['enabled_addon_sbs'];
 
-        $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
         $ratingMethod = $this->getPackagingRatingMethod($connSettings);
 
         $upsSmall = new UpsSmallQuotesResults();
         $saturdayDelivery = $upsSmall->isSaturdayDeliveryEnabled($connSettings) ? '1' : '0';
+
+        $isUpsLandedCost = !empty($connSettings['quote_settings']['isUpsLandedCost']) ? 1 : 0;
 
         $apiArray = [
             'ups_small_pkg_username' => isset($connSettings['creds']['username']) ? $connSettings['creds']['username'] : '',
@@ -2211,6 +2345,13 @@ class GenerateRequestData
                 $apiArray['ups_small_pkg_password'],
                 $apiArray['ups_small_pkg_authentication_key'],
             );
+
+            $apiArray['taxAPIFlag'] = $isUpsLandedCost;
+            $apiArray['taxAPIParam'] = [
+                'currencyCode' => 'USD', // default will be USD
+                'transModes' => '', // optional
+                'shipmentType' => 'SALE', // optional - default SALE
+            ];
         } else {
             unset(
                 $apiArray['clientId'],
@@ -2248,11 +2389,12 @@ class GenerateRequestData
             $alwaysResi = $this->checkIsALwaysQuoteResDel($radSettings);
         }
 
-        $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
+        $sbsEnabled = $this->checkIsSBSActive($this->storeData['store']['id']);
         $ratingMethod = $this->getPackagingRatingMethod($connSettings);
 
         $this->resiCarrier['shipEngine'] = $residential;
         $this->resiCarrier['alwaysResi']['shipEngine'] = $alwaysResi;
+        $this->resiCarrier['isSbsEnable'] = $sbsEnabled && $this->storeData['enabled_addon_sbs'];
 
 
         $apiArray = [
@@ -2284,6 +2426,7 @@ class GenerateRequestData
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
+        $sbsEnabled = $this->checkIsSBSActive($this->storeData['store']['id']);
         if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
@@ -2298,8 +2441,8 @@ class GenerateRequestData
         $this->setIsSmartPost($connSettings);
         $this->resiCarrier['fedexSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['fedexSmall'] = $alwaysResi;
+        $this->resiCarrier['isSbsEnable'] = $sbsEnabled && $this->storeData['enabled_addon_sbs'];
 
-        $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
         $ratingMethod = $this->getPackagingRatingMethod($connSettings);
 
         $hubIdindicia = isset($connSettings['creds']['hub_id']) ? explode('(', $connSettings['creds']['hub_id']) : '';
@@ -2325,10 +2468,16 @@ class GenerateRequestData
 
             'residentialDelivery' => ($alwaysResi ? 'Y' : $residential == 'Y') ? 'on' : 'off',
 
-            'MeterNumber' => $connSettings['creds']['meter_number'],
-            'password' => $connSettings['creds']['password'],
-            'key' => $connSettings['creds']['api_access_key'],
-            'AccountNumber' => $connSettings['creds']['account_number'],
+            'MeterNumber' => $connSettings['creds']['meter_number'] ?? '',
+            'password' => $connSettings['creds']['password'] ?? '',
+            'key' => $connSettings['creds']['api_access_key'] ?? '',
+            'AccountNumber' => $connSettings['creds']['account_number'] ?? '',
+            // New Api Test Connection Params
+            'clientId' => $connSettings['creds']['clientId'] ?? '',
+            'clientSecret' => $connSettings['creds']['clientSecret'] ?? '',
+            'accountNumber' => $connSettings['creds']['new_api_account_number'] ?? '',
+            'requestForNewAPI' => '1',
+
             'prefferedCurrency' => 'USD',
             'pkgType' => '00',
             'saturdayDelivery' => 'on',
@@ -2336,6 +2485,23 @@ class GenerateRequestData
             'homeDeliveryPremiumType' => $premiumType,
             'packagesType' => !$sbsEnabled ? $ratingMethod : '',
         ];
+
+        if (isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api') {
+            unset(
+                $apiArray['MeterNumber'],
+                $apiArray['password'],
+                $apiArray['AccountNumber'],
+                $apiArray['key'],
+            );
+        } else {
+            unset(
+                $apiArray['clientId'],
+                $apiArray['clientSecret'],
+                $apiArray['accountNumber'],
+                $apiArray['requestForNewAPI'],
+            );
+        }
+
         if ($this->smartPost) {
             $apiArray['smartPostData'] = [
                 'hubId' => $hubId,
@@ -2366,8 +2532,9 @@ class GenerateRequestData
 
         $accessorial = ($alwaysResi ? 'Y' : $residential == 'Y') ? ['REP'] : [];
 
-        $sbsEnabled = isset($this->storeData['enabled_addon_sbs']) && $this->storeData['enabled_addon_sbs'] ?? false;
+        $sbsEnabled = $this->checkIsSBSActive($this->storeData['store']['id']);
         $ratingMethod = $this->getPackagingRatingMethod($connSettings);
+        $this->resiCarrier['isSbsEnable'] = $sbsEnabled && $this->storeData['enabled_addon_sbs'];
 
         if (isset($connSettings['creds']['api_type']) &&  $connSettings['creds']['api_type'] === 'new_api') {
             $this->resiCarrier['isUnishipperNewApi'] = true;
@@ -2537,7 +2704,8 @@ class GenerateRequestData
         $apiArray = [
 
             'id' => $connSettings['creds']['business_id'],
-            'senderConsignee' => $connSettings['creds']['request_freight_quotes'] ?? 'ShipAff',
+            'senderConsignee' => !empty($connSettings['creds']['request_freight_quotes']) ? $connSettings['creds']['request_freight_quotes'] : 'ShipAff',
+            'dimWeightBaseAccount' => !empty($connSettings['creds']['weight_base_account']) ? $connSettings['creds']['weight_base_account'] : '0',
             'thresholdWeightLimit' => $weightThreshold,
             'accessorial' => $accessorial,
             'holdAtTerminal' => isset($connSettings['quote_settings']['hold_at_terminal']) && $connSettings['quote_settings']['hold_at_terminal'] ? '1' : '0',
@@ -3052,6 +3220,23 @@ class GenerateRequestData
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
 
+    function getApiInfoArrUpsLandedCost($connSettings, $destination)
+    {
+        $apiArray = [
+            'clientId' => isset($connSettings['creds']['clientId']) ? $connSettings['creds']['clientId'] : '',
+            'clientSecret' => isset($connSettings['creds']['clientSecret']) ? $connSettings['creds']['clientSecret'] : '',
+            'upsAccountNumber' => isset($connSettings['creds']['account_number']) ? $connSettings['creds']['account_number'] : '', // optional
+
+            'currencyCode' => isset($connSettings['quote_settings']['currencyCode']) ? $connSettings['quote_settings']['currencyCode'] : '', // Specifies the currency of transaction.
+            'commoditiesCurrencyCode' => isset($connSettings['quote_settings']['currencyCode']) ? $connSettings['quote_settings']['currencyCode'] : '', // Specifies the Currency Code used for commodity price
+
+            'transModes' => isset($connSettings['quote_settings']['TransportationModes']) ? $connSettings['quote_settings']['TransportationModes'] : '', // optional
+            'shipmentType' => isset($connSettings['quote_settings']['ShipmentType']) ? $connSettings['quote_settings']['ShipmentType'] : 'SALE', // optional
+        ];
+
+        return $apiArray;
+    }
+
     private function verifyRADStatus($connSettings, $destination): array
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
@@ -3263,9 +3448,9 @@ class GenerateRequestData
                         "variant_id" => $key,
                         "id" => $key,
                         "wg" => $itemsArr[$key]['lineItemWeight'] ?? 0,
-                        "h" => Helpers::floatValue($itemsArr[$key]['lineItemHeight'] ?? 0),
-                        "d" => Helpers::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
-                        "w" => Helpers::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
+                        "h" => Functions::floatValue($itemsArr[$key]['lineItemHeight'] ?? 0),
+                        "d" => Functions::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
+                        "w" => Functions::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
                         "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
                         "vr" => 0, //vertical 0 or 1
                         "boxFee" => 0,
@@ -3276,9 +3461,9 @@ class GenerateRequestData
                         "variant_id" => $key,
                         "id" => $key,
                         "wg" => $itemsArr[$key]['lineItemWeight'] ?? 0,
-                        "h" => Helpers::floatValue($itemsArr[$key]['lineItemHeight'] ?? 0),
-                        "d" => Helpers::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
-                        "w" => Helpers::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
+                        "h" => Functions::floatValue($itemsArr[$key]['lineItemHeight'] ?? 0),
+                        "d" => Functions::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
+                        "w" => Functions::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
                         "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
                         "vr" => $itemsArr[$key]['vertical_rotation'] ?? 0, //vertical 0 or 1
                         "boxFee" => $itemsArr[$key]['boxFee'] ?? 0
@@ -3350,6 +3535,7 @@ class GenerateRequestData
                 'id' => $box->id,
                 'max_wg' => $box->max_weight,
                 'box_weight' => $box->box_weight,
+                'box_height' => $box->height,
                 /*Start- Added in case of Customer removes external dimesnions and bin request log issue
                 NO use of it in3dbin Request
                 Just adding in array For Request Hash*/
@@ -3390,8 +3576,8 @@ class GenerateRequestData
                 $binResponse = $this->addPackagingID($binResponse, $boxBins);
                 $counting = 0;
                 $counting = 0;
-
                 foreach ($binResponse as $locationId => $bins) {
+                    $totalHazmatBoxes = 0;
                     foreach ($bins->bins_packed as $key => $binPacked) {
                         $binPacked->image_complete = Functions::replace3DBinUrl($binPacked->image_complete);
 
@@ -3400,6 +3586,8 @@ class GenerateRequestData
                                 $item->image_separated = Functions::replace3DBinUrl($item->image_separated);
                                 $item->image_sbs = Functions::replace3DBinUrl($item->image_sbs);
                             }
+                            // Check which box has hazmat material and get count how much hazmat boxes
+                            $totalHazmatBoxes += Functions::verifyAndCountHazmatBox($binPacked, $itemsArr);
                         }
 
                         $bin = $binPacked;
@@ -3417,6 +3605,7 @@ class GenerateRequestData
                         $totalBoxWeight = $bin->bin_data->weight + $boxWeight ?? 0;
                         $binResponse[$locationId]->bins_packed[$key]->bin_data->totalBoxWeight = $totalBoxWeight;
                     }
+                    $this->Boxes['totalHazmatBoxes'][$locationId][$this->fedexType] = $totalHazmatBoxes ?? 0;
                 }
             } else {
                 $newOrigins = $this->origins;
@@ -3444,29 +3633,34 @@ class GenerateRequestData
         return $number;
     }
 
-    public function updatCommdityDetails($item, $bin, $boxBins, $itemsArr)
+    public function updatCommdityDetails($item, $bin, $boxBins, $itemsArr, $palletPkgReq = false)
     {
-        $boxWeight = 0;
+        $boxWeight = $boxHeight = 0;
         $price = $item['lineItemPrice'] ?? 0;
         $hazmat = 'N';
         if (isset($bin->bin_data->id) && isset($boxBins[$bin->bin_data->id])) {
             $boxWeight = $boxBins[$bin->bin_data->id]['box_weight'];
+            $boxHeight = $boxBins[$bin->bin_data->id]['box_height'];
             $price = 0;
             if (isset($bin->items)) {
                 foreach ($bin->items as $itemData) {
                     if ($hazmat == 'N') {
-                        $hazmat = $itemsArr[$itemData->id]['isHazmatLineItem'];
+                        $item['isHazmatLineItem'] = $hazmat = $itemsArr[$itemData->id]['isHazmatLineItem'];
                     }
                     $price += $itemsArr[$itemData->id]['lineItemPrice'] ?? 0;
                 }
             }
         }
+
+        if($palletPkgReq && !isset($bin->bin_data->type)){
+            $palletHeight = $bin->bin_data->stack_height + $boxHeight ?? 0;
+        }
+
         $item['lineItemLength'] = $bin->bin_data->d ?? 0;
         $item['lineItemWidth'] = $bin->bin_data->w ?? 0;
-        $item['lineItemHeight'] = $bin->bin_data->h ?? 0;
+        $item['lineItemHeight'] = $palletPkgReq && !isset($bin->bin_data->type) ? $palletHeight : $bin->bin_data->h ?? 0;
         $item['lineItemPrice'] = $price; //$item['lineItemPrice']*$quantityPacked;
         $item['lineItemWeight'] = $bin->bin_data->weight + $boxWeight;
-        $item['isHazmatLineItem'] = $hazmat;
 
         //$item['piecesOfLineItem'] = 1 ?? 0;
         $item['shipItemAlone'] = 1;
@@ -3686,11 +3880,27 @@ class GenerateRequestData
         if ($packagingRatingMethod == 2) {
             $ratingMethod = 'ship_combine_and_alone';
         } elseif ($packagingRatingMethod == 3) {
-            $ratingMethod = 'eniture_packaging';
+            $ratingMethod = 'ship_as_one';
         } else {
             $ratingMethod = 'ship_alone';
         }
 
         return $ratingMethod;
+    }
+
+    private function checkIsSBSActive($storeId)
+    {
+        $currentPackageSub = DB::table('package_subscriptions as ps')
+            ->leftjoin('package_sub_to_be_charge as pstbc', 'pstbc.subscription_id', '=', 'ps.id')
+            ->leftjoin('packages as p', 'ps.package_id', '=', 'p.id')
+            ->select('ps.id', 'ps.package_id as package_id', 'ps.expiry_time', 'ps.status', 'ps.created_at', 'ps.total_count as consumed_hits', 'p.htis as total_hits', 'pstbc.status as package_to_to_charge_status', 'pstbc.package_id as to_be_charge_package_id')
+            ->where('store_id', $storeId)->where('p.addon_type', 'SBS')->latest()->first();
+        if (isset($currentPackageSub->status) && $currentPackageSub->status == 1) {
+            return true;
+        } else if (isset($currentPackageSub->status) && $currentPackageSub->status == 3) {
+            return false;
+        } else {
+            return false;
+        }
     }
 }

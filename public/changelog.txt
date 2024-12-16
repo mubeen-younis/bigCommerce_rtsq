@@ -1,3 +1,123 @@
+= 2.2.32 2024-12-04 =
+
+* Update - Free shipping only to Contiguous 48 for certain items (new Shipping Rule) (Ticket:15698378014) [#510] (https://bitbucket.org/eniture/big-commerce/pull-requests/510)
+
+= 2.2.31 2024-11-12 =
+
+* Update - Update CSV import functionality (Ticket:6197880205, 16184692330, 16188165982) [#499] (https://bitbucket.org/eniture/big-commerce/pull-requests/499)
+
+= 2.2.32 2024-11-12 =
+
+* Update - Feature/sandbox store functionality (Ticket:15856244281) [#500] (https://bitbucket.org/eniture/big-commerce/pull-requests/500)
+
+= 2.2.30 2024-11-08 =
+
+* Update - Update CSV export functionality (Ticket:2593063812) [#498] (https://bitbucket.org/eniture/big-commerce/pull-requests/498)
+
+= 2.2.29 2024-11-06 =
+
+* Update - update stripe subscription functionality (Ticket:null) [#496] (https://bitbucket.org/eniture/big-commerce/pull-requests/496)
+
+= 2.2.28 2024-11-05 =
+
+* Update - Update Functionality of Products Listing, import/export and search/save/update Settings (Ticket:2593063812) [#494] (https://bitbucket.org/eniture/big-commerce/pull-requests/494)
+
+= 2.2.27 2024-11-04 =
+
+* Update - Create a table and functionality to record CSV import entry. (Instruction Azhar sir) [#493] (https://bitbucket.org/eniture/big-commerce/pull-requests/493)
+
+= 2.2.26 2024-10-29 =
+
+* Update - Update multishipment functionality (Ticket:2509435914) [#492] (https://bitbucket.org/eniture/big-commerce/pull-requests/492)
+
+= 2.2.25 2024-10-10 =
+
+* Update - update google api url with ws remote url, add google lookup data cache functionality (Shafique sir + Paul Instructions) [#491] (https://bitbucket.org/eniture/big-commerce/pull-requests/491)
+
+= 2.2.24 2024-09-30 =
+
+* Update - Update pallet packaging api (Ticket:2657775383) [#485] (https://bitbucket.org/eniture/big-commerce/pull-requests/485)
+
+= 2.2.23 2024-09-23 =
+
+* Update - Update override rates rule functionality in BC (Ticket:2970084986) [#484] (https://bitbucket.org/eniture/big-commerce/pull-requests/484)
+
+= 2.2.22 2024-09-18 =
+
+* Update - Update Product API in BC (Ticket:2202219416) [#483] (https://bitbucket.org/eniture/big-commerce/pull-requests/483)
+
+= 2.2.21 2024-09-18 =
+
+* Update - Update instore label fields (Ticket:2721818958) [#482] (https://bitbucket.org/eniture/big-commerce/pull-requests/482)
+
+= 2.2.20 2024-09-04 =
+
+* Update - Add FedEx LTL New API in BC (Ticket:2294982745) [#476] (https://bitbucket.org/eniture/big-commerce/pull-requests/476)
+
+= 2.2.19 2024-08-28 =
+
+* Update - Add Hazmat fee per box in BC (Ticket:2262559649) [#473] (https://bitbucket.org/eniture/big-commerce/pull-requests/473)
+
+= 2.2.18 2024-08-20 =
+
+* Fix - fixes staff note update functionality issue (Ticket:3056110929) [#471] (https://bitbucket.org/eniture/big-commerce/pull-requests/471)
+
+= 2.2.17 2024-08-19 =
+
+* Update - Add FedEx Parcel New API in BC (Ticket:2294982745) [#470] (https://bitbucket.org/eniture/big-commerce/pull-requests/470)
+
+= 2.2.16 2024-07-25 =
+
+* Update - rename parcel shipment services feature (chunk-2) (Ticket:2801730131) [#465] (https://bitbucket.org/eniture/big-commerce/pull-requests/465)
+
+= 2.2.15 2024-07-16 =
+
+* Update - introduce "Nesting Products" Fetaure in BC (Ticket:2504095504) [#464] (https://bitbucket.org/eniture/big-commerce/pull-requests/464)
+
+= 2.2.14 2024-07-16 =
+
+* Update - rename parcel shipment services feature (chunk-1) (Ticket:2801730131) [#463] (https://bitbucket.org/eniture/big-commerce/pull-requests/463)
+
+= 2.2.13 2024-07-10 =
+
+* Update - Landed Cost Quote API for international shipping with Updated functionality (Ticket:2720770325) [#459] (https://bitbucket.org/eniture/big-commerce/pull-requests/459)
+
+= 2.2.12 2024-06-12 =
+
+* Update - Landed Cost Quote API for international shipping (Ticket:2720770325) [#455] (https://bitbucket.org/eniture/big-commerce/pull-requests/455)
+
+= 2.2.11 2024-06-07 =
+
+* Fix - update TQL compilation and format functionality (Ticket:2753649845 ) [#454] (https://bitbucket.org/eniture/big-commerce/pull-requests/454)
+
+= 2.2.10 2024-06-03 =
+
+* Update - Introduce "Surcharge" shipping rule in BC (Ticket:2451812923) [#450] (https://bitbucket.org/eniture/big-commerce/pull-requests/450)
+
+= 2.2.9 2024-05-30 =
+
+* Update - Introduce "Large Cart Settings" shipping rule in BC (Ticket:2386490400) [#451] (https://bitbucket.org/eniture/big-commerce/pull-requests/451)
+
+= 2.2.8 2024-05-28 =
+
+* Update - Add new settings in the ABF connection settings page (Ticket:2677122393) [#449] (https://bitbucket.org/eniture/big-commerce/pull-requests/449)
+
+= 2.2.7 2024-05-27 =
+
+* Update - Add Feature/hide delivery estimates (Ticket:2227216656) [#448] (https://bitbucket.org/eniture/big-commerce/pull-requests/448)
+
+= 2.2.6 2024-05-22 =
+
+* Update - create api get box sizes and get origin address for fdo (Ticket:No) [#444] (https://bitbucket.org/eniture/big-commerce/pull-requests/444)
+
+= 2.2.5 2024-05-21 =
+
+* Fix - update dispatch date format according to BC new update (Ticket:2746175568) [#443] (https://bitbucket.org/eniture/big-commerce/pull-requests/443)
+
+= 2.2.4 2024-05-13 =
+
+* Fix - Update abf compilation quotes (Ticket:2677122393) [#442] (https://bitbucket.org/eniture/big-commerce/pull-requests/442)
+
 = 2.2.3 2024-05-02 =
 
 * Update - add functionality to install all carriers on app installation (Ticket:2295363422) [#440] (https://bitbucket.org/eniture/big-commerce/pull-requests/440)

@@ -9,18 +9,20 @@ use App\CustomClasses\CompileQuotes;
 use App\CustomClasses\Functions;
 use Illuminate\Support\Str;
 use App\Http\Controllers\ShippingRuleController;
+use Illuminate\Support\Facades\Log;
 
 class QuotesResults
 {
-    public function __construct()
+    public function __construct($suppressParcelRates = [])
     {
         $this->CompileQuotes = new CompileQuotes();
+        $this->SuppressParcelRates = $suppressParcelRates;
     }
 
 
     public function getServiceRate($data, $serviceDesc, $quoteSettings)
     {
-        $amount = $data;
+        $amount = (float)str_replace(',', '', $data);
         if (isset($quoteSettings['rate_source']) && $quoteSettings['rate_source'] === 1) {
             $boxFee = $data['boxFees']['Amount'] ?? 0;
             $amount = $data['NegotiatedRates']['Amount'] > 0 ? $data['NegotiatedRates']['Amount'] + $boxFee : $amount;
@@ -40,17 +42,18 @@ class QuotesResults
 
     }
 
-    public function addHazmatAmountsInServices($amount, $serviceCode, $quoteSettings)
+    public function addHazmatAmountsInServices($amount, $serviceCode, $quoteSettings, $hazmatBoxes = 1)
     {
+        $totalHazmatBoxes = Functions::getHazmatItemBoxes($this->isSbsEnable, $quoteSettings, $this->items, $hazmatBoxes);
         // Adding hazmat fee to Ground Service
-        if ($serviceCode == "FEDEX_GROUND" || $serviceCode == "GROUND_HOME_DELIVERY" || $serviceCode == "FEDEX_GROUND_HOME_DELIVERY" || $serviceCode == "GROUND_HOME_DELIVERY_AIR_SERVICE" || $serviceCode == "FEDEX_APPOINTMENT_HOME_DELIVERY" || $serviceCode == "FEDEX_DATE_CERTAIN_HOME_DELIVERY" || $serviceCode == "FEDEX_EVENING_HOME_DELIVERY") {
+        if ($serviceCode == "FEDEX_GROUND" || $serviceCode == "GROUND_HOME_DELIVERY" || $serviceCode == "FEDEX_GROUND_HOME_DELIVERY" || $serviceCode == "GROUND_HOME_DELIVERY_AIR_SERVICE") {
             if (isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
-                $amount = $amount + $quoteSettings['ground_hazardous_material_fee'];
+                $amount = $amount + $quoteSettings['ground_hazardous_material_fee'] * $totalHazmatBoxes;
             }
             // Adding hazmat fee to Air Services
         } else {
             if (isset($quoteSettings['air_hazardous_material_fee']) && is_numeric($quoteSettings['air_hazardous_material_fee']) && !empty($quoteSettings['air_hazardous_material_fee'])) {
-                $amount = $amount + $quoteSettings['air_hazardous_material_fee'];
+                $amount = $amount + $quoteSettings['air_hazardous_material_fee'] * $totalHazmatBoxes;
             }
         }
         // $amount = $this->addHandlingMarkupOfHazmat($amount, $quoteSettings['handling_fee_markup']);
@@ -82,6 +85,12 @@ class QuotesResults
             $title = "Fedex SmartPost";
         }
 
+        if ($this->international && $title == "Fedex Ground") {
+            $title = "Fedex International Ground";
+        }
+
+        $title = $this->getServiceLabel($title, $data['serviceType'], $quoteSettings);
+
         if ($isResi && $showRadNotation) {
             $title = $title . Constant::RESI_LABEL;
         }
@@ -91,6 +100,15 @@ class QuotesResults
             $title = $title . ' (Delivery by ' . date('m-d-Y', strtotime($data['deliveryTimestamp'])) . ')';
         }
         return $title;
+    }
+
+    public function getServiceLabel($title, $serviceType, $quoteSettings)
+    {
+        $serviceType = $this->international && $title == 'Fedex International Ground' ? 'international_ground' : $serviceType;
+        $stringTrim = str_replace('_', ' ', $serviceType);
+        $serviceType = !$this->international && strpos($stringTrim, 'FEDEX ') === false ? 'FEDEX_' . $serviceType: $serviceType;
+        $labelIndex =  strtolower($serviceType) . '_label';
+        return !empty($quoteSettings['carrier_services'][$labelIndex]) ? $quoteSettings['carrier_services'][$labelIndex] : $title;
     }
 
     public function checkGroundTransit($quote, $quoteSettings)
@@ -138,7 +156,7 @@ class QuotesResults
     }
 
 
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $destination, $items, $storeId = '', $carrierName = '')
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $isSbsEnable, $isMultiShipment, $destination, $items, $storeId = '', $carrierName = '', $totalHazmatBoxes)
     {
         $shippingRule = new ShippingRuleController();
         $this->allOrigins = $this->originIndexToShipment($allOrigins);
@@ -147,6 +165,9 @@ class QuotesResults
         $this->quoteSettings = $connectionSettings['fedex-small']['quote_settings'] ?? [];
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
         $allConfigServices['services'] = $allConfigServices = [];
+        $this->isSbsEnable = $isSbsEnable;
+        $this->items = $items;
+        $access = $this->CompileQuotes->getAccessorialCodeSmall();
 
         $rad_settings = Functions::getRADsettings($storeId) ?? [];
         $isRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
@@ -216,6 +237,11 @@ class QuotesResults
         $shipmentCount = 0;
         $count = 0;
         foreach ($shipments as $origin => $quote) {
+            
+            if(in_array($origin, $this->SuppressParcelRates)){
+                continue;
+            }
+
             if ((isset($quote['severity']) || empty($quote) || !isset($quote['q']))) {
                 return ['resp' => $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins)];
             }
@@ -226,6 +252,15 @@ class QuotesResults
             $lowestAmount = 0;
             if (isset($quote['q'])) {
                 foreach ($quote['q'] as $key => $data) {
+
+                    if(Str::contains($data['serviceType'], '_ONE_RATE')){
+                        $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]['fedex']) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin]['fedex'] : 1;
+                    } elseif(Str::contains($data['serviceType'], '_AIR_SERVICE')){
+                        $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]['both']) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin]['both'] : 1;
+                    } else{
+                        $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]['normal']) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin]['normal'] : 1;
+                    }
+
                     // Check if service type is checked to show
                     $serviceName = str_replace('_ONE_RATE', '', $data['serviceType']);
                     $serviceName = str_replace('_AIR_SERVICE', '', $serviceName);
@@ -237,7 +272,7 @@ class QuotesResults
                         continue;
                     }
                     //  CHeck FOr Ups ground transit days
-                    if ($serviceName == "GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "APPOINTMENT_HOME_DELIVERY" || $serviceName == "DATE_CERTAIN_HOME_DELIVERY" || $serviceName == "EVENING_HOME_DELIVERY") {
+                    if ($serviceName == "GROUND" || $serviceName == "GROUND_HOME_DELIVERY") {
                         if (isset($this->quoteSettings['number_of_transit_days']) && $this->quoteSettings['number_of_transit_days'] != null && isset($this->quoteSettings['ground_metric']) && $this->quoteSettings['ground_metric'] != null) {
                             $islimited = $this->checkGroundTransit($data, $this->quoteSettings);
                             if ($islimited) {
@@ -247,7 +282,7 @@ class QuotesResults
                     }
                     //  CHecks FOr Only quote ground service if hazardous
                     if ($isHazmat && isset($this->quoteSettings['ground_service_for_hazardous_material']) && $this->quoteSettings['ground_service_for_hazardous_material']) {
-                        if (!($serviceName == "GROUND" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "GROUND_HOME_DELIVERY" || $serviceName == "APPOINTMENT_HOME_DELIVERY" || $serviceName == "DATE_CERTAIN_HOME_DELIVERY" || $serviceName == "EVENING_HOME_DELIVERY")) {
+                        if (!($serviceName == "GROUND" || $serviceName == "GROUND_HOME_DELIVERY")) {
                             continue;
                         }
                     }
@@ -274,10 +309,10 @@ class QuotesResults
                     if ($isHazmat) {
                         if ($this->isMultiShipment) {
                             if ($hazmatAllItems[$origin] == 'Y') {
-                                $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
+                                $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings, $hazmatBoxes);
                             }
                         } else {
-                            $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings);
+                            $price = $this->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings, $hazmatBoxes);
                         }
                     }
 
@@ -319,7 +354,7 @@ class QuotesResults
         }
         // $multiShipmentQuotes
         // Check for mukti shipment finding lowest price in each shipment and adding them for multi shipment
-        if ($this->isMultiShipment) {
+        if ($this->isMultiShipment && count($multiShipmentQuotes) > 1) {
             $originQuotesMulti = [];
             $multiShipPrice = 0;
             if (isset($originQuotes)) {
@@ -356,6 +391,7 @@ class QuotesResults
                 'resp' => $resp ?? [],
                 'isMultiShipment' => $isMultiShipment
             ];
+            unset($returnResp['isMultiShipment']);
             return $returnResp;
         }
         /**
@@ -417,11 +453,22 @@ class QuotesResults
         return $serviceName;
     }
 
+    public function toCheckInternationalQuote($quotes){
+        if(isset($quotes['q'])){
+            
+            foreach($quotes['q'] as $quote){
+                if (isset($quote['serviceType']) && str_contains($quote['serviceType'], 'INTERNATIONAL')) {
+                    $this->internationalQuotes = true;
+                }
+            }
+        }
+    }
+
 
     public
     function formateQuoteBeforeCompile($shipments)
     {
-        
+        $this->internationalQuotes = false;
         foreach ($shipments as $shipment => $serviceTypes) {
 
             $ship = $this->formateQuoteHomeDelivery($serviceTypes);
@@ -443,6 +490,8 @@ class QuotesResults
                 if ($serviceName == 'fedexAirServices') {
                     $isAir = true;
                 }
+
+                $this->toCheckInternationalQuote($quotes);
                 if (isset($quotes['q']) && !empty($quotes['q'])) {
                     foreach ($quotes['q'] as $key => $quote) {
                         if (isset($quote['serviceType'])) {
@@ -459,6 +508,7 @@ class QuotesResults
                                 $quote['serviceType'] = $quote['serviceType'] . $append;
                                 $shipments[$shipment]['q'][$key] = $quote;
                                 $shipments[$shipment]['q'][$key]['serviceDesc'] = ucwords(strtolower(str_replace('_', ' ', $quote['serviceType'])));
+                                $shipments[$shipment]['q'][$key]['isInternationQuote'] = $this->internationalQuotes ?? false;
                             }
                             if (!empty($inStoreLocal)) {
                                 $shipments[$shipment]['InstorPickupLocalDelivery'] = $inStoreLocal;
@@ -546,7 +596,7 @@ class QuotesResults
 
     function isGroundService($service)
     {
-        $groundServices = ['FEDEX_GROUND', 'HOME_DELIVERY', 'DATE_CERTAIN_HOME_DELIVERY', 'EVENING_HOME_DELIVERY', 'APPOINTMENT_HOME_DELIVERY', 'SMART_POST'];
+        $groundServices = ['FEDEX_GROUND', 'HOME_DELIVERY', 'SMART_POST'];
         return in_array($service, $groundServices);
     }
 

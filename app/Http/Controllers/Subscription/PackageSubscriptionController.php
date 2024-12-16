@@ -19,6 +19,7 @@ use function GuzzleHttp\Promise\all;
 use App\Models\InstalledAddon;
 use App\Models\AddonSettings;
 use App\CustomClasses\Functions;
+use App\Models\SubscriptionStripePayments;
 
 class PackageSubscriptionController extends Controller
 {
@@ -34,6 +35,10 @@ class PackageSubscriptionController extends Controller
     public static $updateToBeChargeonly = 1;
     public static $minSbsPaidPackage = 2;
     public static $palletPkgDynamicTrial = 15;
+    public static $dynamicDevPlan = '';
+    public static $SBSPkgDynamicDev = 21;
+    public static $RadPkgDynamicDev = 22;
+    public static $palletPkgDynamicDev = 23;
 
     public function __construct()
     {
@@ -49,13 +54,16 @@ class PackageSubscriptionController extends Controller
         $message = '';
         if ($addonType == self::$addonTypeSBS) {
             self::$dynamicTrial = 1;
+            self::$dynamicDevPlan = self::$SBSPkgDynamicDev;
             $data = $this->getPkgDetails($addonType);
             $data['binPackMode'] = $this->getBinMode($request);
         } elseif ($addonType == self::$addonTypeRAD) {
             self::$dynamicTrial = 7;
+            self::$dynamicDevPlan = self::$RadPkgDynamicDev;
             $data = $this->getPkgDetails($addonType);
         } elseif ($addonType == self::$addonTypePLT) {
             self::$dynamicTrial = self::$palletPkgDynamicTrial;
+            self::$dynamicDevPlan = self::$palletPkgDynamicDev;
             $data = $this->getPkgDetails($addonType);
         } else {
             $error = true;
@@ -81,7 +89,7 @@ class PackageSubscriptionController extends Controller
             ->leftjoin('package_sub_to_be_charge as pstbc', 'pstbc.subscription_id', '=', 'ps.id')
             ->select('ps.id', 'ps.package_id as package_id', 'ps.subscription_time', 'ps.update_time', 'ps.expiry_time', 'ps.status', 'ps.created_at', 'ps.total_count as consumed_hits', 'p.htis as total_hits', 'pstbc.package_id as pacakgeId_to_be_charge', 'pstbc.status as package_to_be_charge_status')
             ->where('ps.store_id', self::$storeId)->where('p.addon_type', $addonType)->latest()->first();
-//dd($currentPackageSub);
+
         if (!is_null($currentPackageSub)) {
             $currentPkg = Package::where('id', $currentPackageSub->package_id)->first();
             $toBeChargepkg = Package::where('id', $currentPackageSub->pacakgeId_to_be_charge)->first();
@@ -107,6 +115,9 @@ class PackageSubscriptionController extends Controller
             if ($currentPackageSub->to_be_charge_package_id == self::$dynamicTrial) {
                 $currentPackageSub->package_to_be_charge_status = 'Trial';
             }
+            if ($currentPackageSub->to_be_charge_package_id == self::$dynamicDevPlan) {
+                $currentPackageSub->package_to_be_charge_status = 'Development Plan';
+            }
             $currentPackageSub->to_be_charge_package_name = $toBeChargepkg->name ?? '';
             $currentPackageSub->to_be_charge_package_period = $toBeChargepkg->period ?? '';
             $currentPackageSub->to_be_charge_package_cost = $toBeChargepkg->cost ?? '';
@@ -129,7 +140,7 @@ class PackageSubscriptionController extends Controller
         if (is_null($currentPackageSub)) {
             $addonPackages = Package::where('addon_type', $addonType)->orderBy('sort_by', 'ASC')->get();
         } else {
-            $addonPackages = Package::where('addon_type', $addonType)->where('id', '!=', self::$dynamicTrial)->orderBy('sort_by', 'ASC')->get();
+            $addonPackages = Package::where('addon_type', $addonType)->where('id', '!=', self::$dynamicTrial)->where('id', '!=', self::$dynamicDevPlan)->orderBy('sort_by', 'ASC')->get();
         }
         $addonPkgParam = $addonType == self::$addonTypeSBS ? 'allSbsPackages' : 'allPalletPackages';
         if ($addonType == self::$addonTypeRAD) {
@@ -153,14 +164,17 @@ class PackageSubscriptionController extends Controller
         $addonType = $request['addon_type'];
         if ($addonType == self::$addonTypeSBS) {
             self::$dynamicTrial = 1;
+            self::$dynamicDevPlan = self::$SBSPkgDynamicDev;
             $responce = $this->subscribeToAddonPackage($data, $addonType);
             $responce['data']['binPackMode'] = $this->getBinMode($request);
         } elseif ($addonType == self::$addonTypeRAD) {
             self::$dynamicTrial = 7;
+            self::$dynamicDevPlan = self::$RadPkgDynamicDev;
             $responce = $this->subscribeToAddonPackage($data, $addonType);
             //Do Nothing Yet
         } elseif ($addonType == self::$addonTypePLT) {
             self::$dynamicTrial = self::$palletPkgDynamicTrial;
+            self::$dynamicDevPlan = self::$palletPkgDynamicDev;
             $responce = $this->subscribeToAddonPackage($data, $addonType);
         } else {
             $responce = [
@@ -181,12 +195,14 @@ class PackageSubscriptionController extends Controller
         $chargeResponse = [];
         $chargeId = null;
 
+
         $updateSubscription = 0;
         $package = Package::find($data['package']);
         $mainSubscription = DB::table('subscriptions as s')
             ->leftJoin('payment_methods as p', 'p.store_id', '=', 's.store_id')
             ->select('s.stripe_id as stripe_customer_id', 's.payment_method', 's.plan_id', 's.email', 's.created_at', 'p.id as payment_method_id')
             ->where('s.store_id', self::$storeId)->latest()->first();
+
 
         if (is_null($mainSubscription)) {
             return [
@@ -195,7 +211,7 @@ class PackageSubscriptionController extends Controller
                 'message' => "You don't have any Real-time Shipping Quotes Plan to subscribe the Addon",
             ];
         }
-        if (isset($mainSubscription->plan_id) && $mainSubscription->plan_id == self::$mainSubTrial && $data['package'] != self::$dynamicTrial) {
+        if (isset($mainSubscription->plan_id) && $mainSubscription->plan_id == self::$mainSubTrial && ($data['package'] != self::$dynamicTrial && $data['package'] != self::$dynamicDevPlan)) {
             return [
                 'error' => true,
                 'data' => [],
@@ -209,9 +225,14 @@ class PackageSubscriptionController extends Controller
             ->select('package_subscriptions.id', 'package_subscriptions.created_at', 'package_subscriptions.package_id', 'package_subscriptions.payment_method_id', 'package_subscriptions.status', 'package_subscriptions.subscription_time', 'package_subscriptions.update_time', 'package_subscriptions.expiry_time', 'package_subscriptions.total_count', 'package_subscriptions.stripe_charge_id', 'package_subscriptions.charge_cost')
             ->latest()->first();
 
+        //Setting either to update subscription,create charge and create subscription
+        // self::$updateToBeChargeonly means we only need t update the package_to_be_charge table
+        // self::$updateFullSubscription means we will update both current package and  update the package_to_be_charge table as well
         //If current subscription is active and it is trial
         if (!is_null($currentPackageSub) && $currentPackageSub->status == 1 && $currentPackageSub->package_id == self::$dynamicTrial && Carbon::parse($currentPackageSub->expiry_time) > Carbon::now()) {
-            $updateSubscription = self::$updateFullSubscription;
+            //Earlier when it was trial and whenever customer selects the paid plan, it was updating that to the paid plan rather just updating the auto-renewal
+            //it was set to $updateSubscription = $updateFullSubscription;
+            $updateSubscription = self::$updateToBeChargeonly;
         } elseif (!is_null($currentPackageSub) && $currentPackageSub->status == 1 && Carbon::parse($currentPackageSub->expiry_time) > Carbon::now()) {
             //If current subscription is active
             $updateSubscription = self::$updateToBeChargeonly;
@@ -221,23 +242,28 @@ class PackageSubscriptionController extends Controller
         } elseif (!is_null($currentPackageSub) && ($currentPackageSub->status == 3 || Carbon::parse($currentPackageSub->expiry_time) < Carbon::now())) {
             //If current subscription suspended
             $updateSubscription = self::$updateToBeChargeonly;
-        } elseif (is_null($currentPackageSub) && isset($data['package']) && $data['package'] != self::$dynamicTrial && $data['package'] != self::$disableAddon) {
+        } elseif (is_null($currentPackageSub) && isset($data['package']) && ($data['package'] != self::$dynamicTrial && $data['package'] != self::$dynamicDevPlan) && $data['package'] != self::$disableAddon) {
             // if No Current subscription exist and selected package is not a trial or disable
             $updateSubscription = self::$updateFullSubscription;
         }
-        if (($data['package'] != self::$dynamicTrial && $data['package'] != self::$disableAddon) || $updateSubscription == self::$updateFullSubscription) {
-            if ($updateSubscription == self::$updateFullSubscription) {
-                $chargeResponse = $this->createStripeChargeForPackage($package, $mainSubscription, $addonType);
-            }
+
+
+        if ((($data['package'] != self::$dynamicTrial && $data['package'] != self::$dynamicDevPlan) && $data['package'] != self::$disableAddon) && $updateSubscription == self::$updateFullSubscription) {
+            $chargeResponse = $this->createStripeChargeForPackage($package, $mainSubscription, $addonType);
         }
-        if (!empty($chargeResponse['error']) && $chargeResponse['error'] == true) {
+
+        if (!empty($chargeResponse['error']) && $chargeResponse['error']) {
             return $chargeResponse;
         } else {
             $chargeId = isset($chargeResponse['data']['chargeId']) ? $chargeResponse['data']['chargeId'] : null;
         }
+
+        //Means customer want to disable the auto-renewal
         if ($chargeId == null && $data['package'] == self::$disableAddon) {
             $updateSubscription = self::$updateToBeChargeonly;
         }
+
+
         if (!is_null($currentPackageSub) && ($updateSubscription == self::$updateToBeChargeonly || $updateSubscription == self::$updateFullSubscription)) {
             //Updating the current package Subscription in database
             $this->updatePackageSubscriptionInDB($data, $package, $paymentMethod, $chargeId, $currentPackageSub, $updateSubscription);
@@ -245,10 +271,16 @@ class PackageSubscriptionController extends Controller
             //Saving a new trial or package Subscription in database
             $this->createPackageSubscriptionInDB($data, $package, $paymentMethod, $chargeId);
         }
+
         $currentPackageDetails = $this->getPkgDetails($addonType);
-        if ($updateSubscription == self::$updateFullSubscription && !empty($mainSubscription->email)) {
+
+        if ($updateSubscription == self::$updateFullSubscription &&
+            !empty($mainSubscription->email) &&
+            (isset($data['package']) && ($data['package'] != self::$dynamicTrial && $data['package'] != self::$dynamicDevPlan))
+        ) {
             Mail::to($mainSubscription->email)->send(new AddonPackageUpdateMail($addonType, $currentPackageDetails['currentPackage']));
         }
+
         return [
             'error' => false,
             'data' => $currentPackageDetails,
@@ -260,15 +292,15 @@ class PackageSubscriptionController extends Controller
     //***********************************
     public function updatePackageSubscriptionInDB($data, $package, $paymentMethod, $chargeId, $currentPackageSub, $updateSubscription)
     {
-        //  $package_id = isset($data['package']) ? $data['package'] : $currentPackageSub->package_id;
-        $package_id = isset($data['package']) ? $data['package'] : $package->id;
-        $addDays = (isset($data['package']) && $data['package'] == self::$dynamicTrial) ? 15 : 30;
+        $packageID = $data['package'] ?? $package->id;
+        $addDays = (isset($data['package']) && $data['package'] == self::$dynamicTrial) ? 15 : ((isset($data['package']) && $data['package'] == self::$dynamicDevPlan) ? 1825 : 30);
         $currentPackageSub = PackageSubscription::find($currentPackageSub->id);
+
         if ($updateSubscription == self::$updateFullSubscription) {
             $currentPackageSub->update([
                 'store_id' => $data['store_id'],
-                'package_id' => $package_id,
-                'payment_method_id' => ($package_id != self::$dynamicTrial) ? $paymentMethod : null,
+                'package_id' => $packageID,
+                'payment_method_id' => ($packageID != self::$dynamicTrial && $packageID != self::$dynamicDevPlan) ? $paymentMethod : null,
                 'status' => 1,
                 'subscription_time' => now(),
                 'update_time' => now(),
@@ -279,25 +311,28 @@ class PackageSubscriptionController extends Controller
             ]);
         }
 
-        if ((!isset($data['package']) || (!isset($data['package']) && $data['package'] != self::$disableAddon)) && ($updateSubscription == self::$updateToBeChargeonly || $updateSubscription == self::$updateFullSubscription)) {
-
+        if ((!isset($data['package'])) &&
+            ($updateSubscription == self::$updateToBeChargeonly || $updateSubscription == self::$updateFullSubscription)) {
             PackageToBeCharge::where('subscription_id', $currentPackageSub->id)->update([
-                'package_id' => $package_id,
-                'status' => ($package_id != self::$dynamicTrial && $package_id != self::$disableAddon) ? 1 : 0,
+                'package_id' => $packageID,
+                'status' => ($packageID != self::$dynamicTrial && $packageID != self::$disableAddon && $packageID != self::$dynamicDevPlan ) ? 1 : 0,
                 'requested_date' => now(),
             ]);
         }
+        //Customer wants to disable auto-renewal
         if (isset($data['package']) && $data['package'] == self::$disableAddon && $updateSubscription == self::$updateToBeChargeonly) {
             PackageToBeCharge::where('subscription_id', $currentPackageSub->id)->update([
-                'status' => ($data['package'] != self::$dynamicTrial && $data['package'] != self::$disableAddon) ? 1 : 0,
+                'status' => ($packageID != self::$dynamicTrial && $packageID != self::$disableAddon && $packageID != self::$dynamicDevPlan ) ? 1 : 0,
                 'requested_date' => now(),
             ]);
         }
-        if (isset($data['package']) && $data['package'] != self::$disableAddon && ($updateSubscription == self::$updateToBeChargeonly || $updateSubscription == self::$updateFullSubscription)) {
+
+        if (isset($data['package']) && $data['package'] != self::$disableAddon &&
+            ($updateSubscription == self::$updateToBeChargeonly || $updateSubscription == self::$updateFullSubscription)) {
 
             PackageToBeCharge::where('subscription_id', $currentPackageSub->id)->update([
                 'package_id' => $data['package'],
-                'status' => ($data['package'] != self::$dynamicTrial && $data['package'] != self::$disableAddon) ? 1 : 0,
+                'status' => ($packageID != self::$dynamicTrial && $packageID != self::$disableAddon && $packageID != self::$dynamicDevPlan ) ? 1 : 0,
                 'requested_date' => now(),
             ]);
         }
@@ -307,11 +342,11 @@ class PackageSubscriptionController extends Controller
     //***********************************
     public function createPackageSubscriptionInDB($data, $package, $paymentMethod, $chargeId)
     {
-        $addDays = (isset($data['package']) && $data['package'] == self::$dynamicTrial) ? 15 : 30;
+        $addDays = (isset($data['package']) && $data['package'] == self::$dynamicTrial) ? 15 : ((isset($data['package']) && $data['package'] == self::$dynamicDevPlan) ? 1825 : 30);
         $packageSub = PackageSubscription::create([
             'store_id' => $data['store_id'],
             'package_id' => $data['package'],
-            'payment_method_id' => ($data['package'] != self::$dynamicTrial) ? $paymentMethod : null,
+            'payment_method_id' => ($data['package'] != self::$dynamicTrial && $data['package'] != self::$dynamicDevPlan) ? $paymentMethod : null,
             'status' => 1,
             'subscription_time' => now(),
             'update_time' => now(),
@@ -323,7 +358,7 @@ class PackageSubscriptionController extends Controller
         PackageToBeCharge::create([
             'subscription_id' => $packageSub->id,
             'package_id' => $data['package'],
-            'status' => ($data['package'] != self::$dynamicTrial) ? 1 : 0,
+            'status' => ($data['package'] != self::$dynamicTrial && $data['package'] != self::$dynamicDevPlan) ? 1 : 0,
             'requested_date' => now(),
         ]);
     }
@@ -334,15 +369,25 @@ class PackageSubscriptionController extends Controller
     {
         $stripeCustomerId = $mainSubscription->stripe_customer_id;
         try {
+            $packageCost = bcmul($package->cost, 100);
+        } catch (\Exception|\Throwable $exception) {
+            $packageCost = $package->cost * 100;
+
+        }
+        try {
             $chargeData = [
-                'amount' => bcmul($package->cost, 100),
+                'amount' => $packageCost,
                 'currency' => 'usd',
                 'customer' => $stripeCustomerId,
                 "description" => 'Real-time Shipping Quotes (BigCommerce ' . $addonType . ') Charge',
                 'source' => $mainSubscription->payment_method
             ];
             $charge = Charge::create($chargeData);
-
+            if (isset($charge['error']) && $charge['error']) {
+                return $charge;
+            }
+            //Saving charge details to display in payments tab
+            SubscriptionStripePayments::addOrUpdateAddonsPayment($package, $charge, $stripeCustomerId);
             $response = [
                 'chargeId' => $charge->id
             ];
@@ -370,12 +415,15 @@ class PackageSubscriptionController extends Controller
         $addonType = $request['addon_type'];
         if ($addonType == self::$addonTypeSBS) {
             self::$dynamicTrial = 1;
+            self::$dynamicDevPlan = self::$SBSPkgDynamicDev;
             $responce = $this->consumeAddonHits($data, $addonType);
         } elseif ($addonType == self::$addonTypeRAD) {
             self::$dynamicTrial = 7;
+            self::$dynamicDevPlan = self::$RadPkgDynamicDev;
             $responce = $this->consumeAddonHits($data, $addonType);
         } elseif ($addonType == self::$addonTypePLT) {
             self::$dynamicTrial = self::$palletPkgDynamicTrial;
+            self::$dynamicDevPlan = self::$palletPkgDynamicDev;
             $responce = $this->consumeAddonHits($data, $addonType);
         } else {
             $responce = [
@@ -449,7 +497,7 @@ class PackageSubscriptionController extends Controller
                 ->select('package_subscriptions.id', 'package_subscriptions.created_at', 'package_subscriptions.package_id', 'package_subscriptions.payment_method_id', 'package_subscriptions.status', 'package_subscriptions.subscription_time', 'package_subscriptions.update_time', 'package_subscriptions.expiry_time', 'package_subscriptions.total_count', 'package_subscriptions.stripe_charge_id', 'package_subscriptions.charge_cost')
                 ->latest()->first();
             //If the trials Hits has consumed then Update the package subscription status to zero
-            if ($currentPackageSub->package_id == self::$dynamicTrial) {
+            if ($currentPackageSub->package_id == self::$dynamicTrial || $currentPackageSub->package_id == self::$dynamicDevPlan) {
                 $packageSub->update([
                     'status' => 0
                 ]);
@@ -470,7 +518,7 @@ class PackageSubscriptionController extends Controller
 
         $package = Package::find($currentPackageSub->to_be_charge_package_id);
 
-        if ($currentPackageSub->package_id != self::$dynamicTrial || $updateSubscription == self::$updateFullSubscription) {
+        if (($currentPackageSub->package_id != self::$dynamicTrial && $currentPackageSub->package_id != self::$dynamicDevPlan) || $updateSubscription == self::$updateFullSubscription) {
             $chargeResponse = $this->createStripeChargeForPackage($package, $mainSubscription, $addonType);
         }
         if (!empty($chargeResponse['error']) && $chargeResponse['error'] == true) {
@@ -522,8 +570,10 @@ class PackageSubscriptionController extends Controller
 
         if ($addonType == self::$addonTypeSBS) {
             self::$dynamicTrial = 1;
+            self::$dynamicDevPlan = self::$SBSPkgDynamicDev;
         } elseif ($addonType == self::$addonTypeRAD) {
             self::$dynamicTrial = 7;
+            self::$dynamicDevPlan = self::$RadPkgDynamicDev;
         }
         $currentPackageSub = $this->getPkgDetails($addonType);
         if (is_null($currentPackageSub)) {
@@ -551,13 +601,16 @@ class PackageSubscriptionController extends Controller
         $addonType = $request['addon_type'];
         if ($addonType == self::$addonTypeSBS) {
             self::$dynamicTrial = 1;
+            self::$dynamicDevPlan = self::$SBSPkgDynamicDev;
             $responce = $this->suspendUsage($data, $addonType);
             $responce['data']['binPackMode'] = $this->getBinMode($request);
         } elseif ($addonType == self::$addonTypeRAD) {
             self::$dynamicTrial = 7;
+            self::$dynamicDevPlan = self::$RadPkgDynamicDev;
             $responce = $this->suspendUsage($data, $addonType);
         } elseif ($addonType == self::$addonTypePLT) {
             self::$dynamicTrial = self::$palletPkgDynamicTrial;
+            self::$dynamicDevPlan = self::$palletPkgDynamicDev;
             $responce = $this->suspendUsage($data, $addonType);
         } else {
             $responce = [
@@ -631,4 +684,5 @@ class PackageSubscriptionController extends Controller
 
         return isset($getSBSAddonSettings->bins_pack_mode) ? $getSBSAddonSettings->bins_pack_mode : 0;
     }
+
 }

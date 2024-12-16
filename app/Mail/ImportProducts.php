@@ -17,9 +17,10 @@ class ImportProducts extends Mailable
      *
      * @return void
      */
-    public function __construct()
+    public $errorProducts;
+    public function __construct($errorProducts)
     {
-        //
+        $this->errorProducts = $errorProducts;
     }
 
     /**
@@ -29,8 +30,9 @@ class ImportProducts extends Mailable
      */
     public function build()
     {
+        $data = $this->errorProducts;
         return $this->subject('Batch import was successful')
             ->replyTo([Constant::ENITURE_SUPPORT_EMAIL])
-            ->view('emails.importproducts');
+            ->view('emails.importproducts', compact('data'));
     }
 }

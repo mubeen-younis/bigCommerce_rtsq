@@ -9,6 +9,11 @@ use Illuminate\Support\Facades\Log;
 
 class LtlSmallCompileQuotes
 {
+    public function __construct($suppressParcelRates = [])
+    {
+        $this->SuppressParcelRates = $suppressParcelRates;
+    }
+
     public function compileQuotes($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr, $storeId)
     {
         $quoteSettings = $connectionSettings['ltl-quotes']['quote_settings'] ?? [];
@@ -45,6 +50,10 @@ class LtlSmallCompileQuotes
                         $alwaysResi = (isset($requestArr['carriers']['uspsSmall']['api']['residentials_delivery']) && $requestArr['carriers']['uspsSmall']['api']['residential_delivery'] == 'yes');
                         $quote['alwaysResi'] = $alwaysResi;
                         $quote['isResi'] = $residential['uspsSmall'] == 'Y';
+                    } else if (strpos($quote['code'], 'parcel_12shipEng') !== false) {
+                        $alwaysResi = (isset($requestArr['carriers']['shipEngine']['api']['residentials_delivery']) && $requestArr['carriers']['shipEngine']['api']['residential_delivery'] == 'yes');
+                        $quote['alwaysResi'] = $alwaysResi;
+                        $quote['isResi'] = $residential['shipEngine'] == 'Y';
                     } else {
                         $alwaysResi = (isset($requestArr['carriers']['wweSmall']['api']['residentials_delivery']) && $requestArr['carriers']['wweSmall']['api']['residentials_delivery'] == 'yes');
                         $quote['alwaysResi'] = $alwaysResi;
@@ -69,7 +78,7 @@ class LtlSmallCompileQuotes
                     } else {
                         $quotesCarrier['ltl']['ups']['simple'][] = $quote;
                     }
-                } else if (strpos($quote['code'], 'priority1') !== false) {
+                } else if (strpos($quote['code'], 'priority1ltl') !== false) {
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
                     $quote['isResi'] = $residential['priority1Ltl'] == 'Y';
                     $quote['isLG'] = isset($connectionSettings['priority-one-ltl']['quote_settings']['offerLiftGateDelivery']) && $connectionSettings['priority-one-ltl']['quote_settings']['offerLiftGateDelivery'];
@@ -405,7 +414,7 @@ class LtlSmallCompileQuotes
                     } else {
                         $quotesCarrier['ltl']['daylight']['simple'][] = $quote;
                     }
-                } else if (strpos($quote['code'], 'SouthEastern') !== false) {
+                } else if (strpos($quote['code'], 'seflltl') !== false) {
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
                     $quote['isResi'] = isset($residential['SouthEastern']) && $residential['SouthEastern'] == 'Y';
                     $quote['isLG'] = isset($connectionSettings['southeastern-ltl']['quote_settings']['offerLiftGateDelivery']) && $connectionSettings['southeastern-ltl']['quote_settings']['offerLiftGateDelivery'];
@@ -423,7 +432,7 @@ class LtlSmallCompileQuotes
                     } else {
                         $quotesCarrier['ltl']['SouthEastern']['simple'][] = $quote;
                     }
-                } else if (strpos($quote['code'], 'unl') !== false) {
+                } else if (strpos($quote['code'], 'unlltl') !== false) {
                     $quote['alwaysResi'] = strpos($quote['code'], '+R') !== false;
                     $quote['isResi'] = $residential['uniLtl'] == 'Y';
                     $quote['isLG'] = isset($connectionSettings['unishipper-ltl']['quote_settings']['offerLiftGateDelivery']) && $connectionSettings['unishipper-ltl']['quote_settings']['offerLiftGateDelivery'];
@@ -809,8 +818,11 @@ class LtlSmallCompileQuotes
             $ltl[] = $key;
         }
 
-        $smallQuotes = $quotes['wweSmall'] ?? $quotes['wweSmallN'] ?? $quotes['upsSmall'] ?? $quotes['fedexSmall'] ?? $quotes['unishippersSmall'] ?? $quotes['usps'] ?? $quotes['purolator'] ?? [];
+        $smallQuotes = $quotes['wweSmall'] ?? $quotes['wweSmallN'] ?? $quotes['upsSmall'] ?? $quotes['fedexSmall'] ?? $quotes['unishippersSmall'] ?? $quotes['usps'] ?? $quotes['purolator'] ?? $quotes['shipEngine'] ?? [];
         foreach ($smallQuotes as $key => $quote) {
+            if(in_array($key, $this->SuppressParcelRates)){
+                continue;
+            }
             $small[] = $key;
         }
         $indexes['small'] = $small;
