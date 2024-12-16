@@ -243,20 +243,14 @@ class ShippingRuleController extends Controller
                             $carrierType = isset($settings['carrier_type']) ? $settings['carrier_type'] : null;
                         }
                         
-                        $request = new \Illuminate\Http\Request();
+                        if ($providerSlug == 'unishippers-small'){
+                            if (isset($value['api_type']) && $value['api_type'] == 'new_api'){
+                                $providerSlug = 'unishippers-small-new';
+                            }
+                        }                      
     
                         $carrIndexName = Functions::getCarrIndexBySlug($providerSlug);
-                        $request->installed_carrier_id = $carrierId;
-                        $request->store_id = $storeId;
-                        if ($providerSlug == 'gtz-ltl'){
-                            $request->carrier_type = $value['api_type'] ?? '';
-                            $request->store_id = $value['store_id'] ?? '';
-                            if (isset($value['api_type']) && $value['api_type'] == 'NEWAPI'){
-                                $providerSlug = 'gtz-new';
-                            } elseif (isset($value['api_type']) && $value['api_type'] == 'CRS'){
-                                $providerSlug = 'cltl';
-                            }
-                        }
+                        
                         if($carrierType == 2 && $carrierId !== null && $carrierName == $carrIndexName){
                             switch ($rule['apply_to']) {
                                 case 0:
@@ -276,17 +270,17 @@ class ShippingRuleController extends Controller
                                     break;
                             }
                             if(!$isRuletrue){
-                                $serviceDesc = isset($quote['timeInTransit']['serviceDescription']) ? $quote['timeInTransit']['serviceDescription'] : '';
-                                $serviceDesc = isset($quote['serviceDesc']) && !is_array($quote['serviceDesc']) ? str_replace('®', '' , $quote['serviceDesc']) : $serviceDesc;
-                                $serviceDesc = str_replace(' Saturday', '' , $serviceDesc) ?? $serviceDesc;
-                                if(isset($quote['serviceDesc'])){
-                                    if ($serviceDesc == $quote['serviceDesc']){
+                                if (isset($rule['service_rates']) && $rule['service_rates'] >= 0){
+                                    
+                                    if(isset($quote['totalNetCharge']['Amount'])){
                                         $quote['totalNetCharge']['Amount'] += (float) $rule['service_rates'] ?? 0;
+                                    }
+                                    if(isset($quote['shipping_amount']['amount'])){
+                                        $quote['shipping_amount']['amount'] += (float) $rule['service_rates'] ?? 0;
+                                    }
+                                    if(isset($quote['NegotiatedRates']['Amount'])){
                                         $quote['NegotiatedRates']['Amount'] = $quote['NegotiatedRates']['Amount'] > 0 ? (float) $quote['NegotiatedRates']['Amount'] + (float) $rule['service_rates'] : 0;
-                                        $isSurchargeRates = true;
-                                    } 
-                                } else if ($providerSlug == 'usps-small') { 
-                                    $quote['totalNetCharge']['Amount'] += (float) $rule['service_rates'] ?? 0;
+                                    }
                                     $isSurchargeRates = true;
                                 } 
                             }

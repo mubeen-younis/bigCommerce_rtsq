@@ -1420,6 +1420,7 @@ class CompileQuotes
         }
         foreach ($shipments as $origin => $quote) {
             $this->originKey = $origin;
+            $this->isSurchargeRates = false;
             if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -1467,6 +1468,10 @@ class CompileQuotes
                         if (($insideDelivery || $lgQuotes || $notifyDelivery || $limitedAccess) && !isset($data['surcharges'])) {
                             continue;
                         }
+
+                        // Apply Surcharge rates shipping rule
+                        $data = $this->applySurchargeRatesRule($connectionSettings, $data);
+
                         /*
                          * Date 01-07-22
                          * Adding Functionality of Delivery Estimate Options
@@ -1489,6 +1494,7 @@ class CompileQuotes
                                     $resiPickup,
                                     $lgPickup,
                                     $this->storeId,
+                                    $this->isSurchargeRates,
                                 );
 
                                 $arraySorting[$index][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -1781,6 +1787,7 @@ class CompileQuotes
         }
         foreach ($shipments as $origin => $quote) {
             $this->originKey = $origin;
+            $this->isSurchargeRates = false;
             if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -1898,6 +1905,8 @@ class CompileQuotes
                         }
                         // Below commit use for future.
                         //$data = $this->applyOverrideRatesRule($connectionSettings, $data);
+                        // Apply Surcharge rates shipping rule
+                        $data = $this->applySurchargeRatesRule($connectionSettings, $data);
                         $access = $data['scac'] . $this->getAccessorialCode() . $resiPickup;
                         $isLgSurcharges = isset($data['surcharges']['liftgateFee']) && $data['surcharges']['liftgateFee'];
                         $isNbdSurcharges = isset($data['surcharges']['notifyDeliveryFee']);
@@ -1940,6 +1949,7 @@ class CompileQuotes
                                 $resiPickup,
                                 false,
                                 $this->storeId,
+                                $this->isSurchargeRates,
                             );
 
                             $arraySorting['notifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -1959,6 +1969,7 @@ class CompileQuotes
                                 $resiPickup,
                                 false,
                                 $this->storeId,
+                                $this->isSurchargeRates,
                             );
 
                             $arraySorting['lgnotifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
