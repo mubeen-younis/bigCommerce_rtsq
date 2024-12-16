@@ -55,17 +55,18 @@ class WweSmallQuoteResults
 
     }
 
-    public function addHazmatAmountsInServices($amount, $serviceCode, $quoteSettings)
+    public function addHazmatAmountsInServices($amount, $serviceCode, $quoteSettings, $isSbsEnable = false, $items = [], $hazmatBoxes = 1)
     {
+        $totalHazmatBoxes = Functions::getHazmatItemBoxes($isSbsEnable, $quoteSettings, $items, $hazmatBoxes);
         // Adding hazmat fee to Ground Service
-        if ($serviceCode == "GND") {
+        if ($serviceCode == "GND" || $serviceCode == "3DS" || $serviceCode == "03") {
             if (isset($quoteSettings['ground_hazardous_material_fee']) && is_numeric($quoteSettings['ground_hazardous_material_fee']) && !empty($quoteSettings['ground_hazardous_material_fee'])) {
-                $amount = $amount + $quoteSettings['ground_hazardous_material_fee'];
+                $amount = $amount + $quoteSettings['ground_hazardous_material_fee'] * $totalHazmatBoxes;
             }
             // Adding hazmat fee to Air Services
         } else {
             if (isset($quoteSettings['air_hazardous_material_fee']) && is_numeric($quoteSettings['air_hazardous_material_fee']) && !empty($quoteSettings['air_hazardous_material_fee'])) {
-                $amount = $amount + $quoteSettings['air_hazardous_material_fee'];
+                $amount = $amount + $quoteSettings['air_hazardous_material_fee'] * $totalHazmatBoxes;
             }
         }
         // $amount = $this->addHandlingMarkupOfHazmat($amount, $quoteSettings['handling_fee_markup']);
@@ -95,6 +96,8 @@ class WweSmallQuoteResults
 
     public function getServiceTitle($title, $dateAndDays, $serviceCode, $quoteSettings, $isResi = false, $showRadNotation = false)
     {
+        $title = $this->getServiceLabel($title, $serviceCode, $quoteSettings);
+
         if ($isResi && $showRadNotation) {
             $title = $title . Constant::RESI_LABEL;
         }
@@ -106,6 +109,13 @@ class WweSmallQuoteResults
             $title = !blank($date) ? $title . " (Delivery by " . date('m-d-Y', strtotime($date)) . ")" : $title;
         }
         return $title;
+    }
+
+    public function getServiceLabel($title, $serviceType, $quoteSettings)
+    {
+        $title = str_replace(' ', '_', $title);
+        $labelIndex =  strtolower($title) . '_label';
+        return !empty($quoteSettings['carrier_services'][$labelIndex]) ? $quoteSettings['carrier_services'][$labelIndex] : str_replace('_', ' ', $title);
     }
 
     public function serviceCodeOfWweSmallService($service)

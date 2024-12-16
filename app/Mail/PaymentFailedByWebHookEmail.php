@@ -39,8 +39,10 @@ class PaymentFailedByWebHookEmail extends Mailable
             $subject = 'Real-time Shipping Quotes Subscription Payment Successful';
         } elseif($this->paymentStatus == 2){
             $subject = 'Real-time Shipping Quotes Subscription Expired';
-        }elseif($this->paymentStatus == 3){
+        } elseif($this->paymentStatus == 3){
             $subject = 'Real-time Shipping Quotes Trial Activated';
+        } elseif($this->paymentStatus == 4){
+            $subject = 'Real-time Shipping Quotes Development Plan Activated';
         }
         return $this->subject($subject)
             ->replyTo([Constant::ENITURE_SUPPORT_EMAIL])

@@ -9,9 +9,10 @@ use App\Http\Controllers\ShippingRuleController;
 
 class QuotesResults
 {
-    public function __construct()
+    public function __construct($suppressParcelRates = [])
     {
         $this->CompileQuotes = new CompileQuotes();
+        $this->SuppressParcelRates = $suppressParcelRates;
     }
 
     public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items, $storeId = '', $carrierName = '')
@@ -43,6 +44,11 @@ class QuotesResults
         $count = 0;
 
         foreach ($shipments as $origin => $quote) {
+
+            if(in_array($origin, $this->SuppressParcelRates)){
+                continue;
+            }
+            
             if (isset($quote['severity'])) {
                 return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);;
             }
@@ -103,7 +109,7 @@ class QuotesResults
         }
 
         // Check for multi-shipment, finding lowest price in each shipment and adding them for multi shipment
-        if ($isMultiShipment) {
+        if ($isMultiShipment && count($multiShipmentQuotes) > 1) {
             $multishipmentCheckoutQuotes = [];
             $multiShipmentPrice = 0;
 
@@ -145,7 +151,7 @@ class QuotesResults
             $allQuotes = $this->CompileQuotes->inStoreLocalDeliveryQuotes($originQuotes, $inStoreLdData, $allOrigins);
             $resp = $allQuotes;
         }
-
+        unset($returnResp['isMultiShipment']);
         $returnResp['resp'] = isset($resp) && !empty($resp) ? $resp : [];
         return $returnResp;
     }
