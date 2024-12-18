@@ -247,7 +247,15 @@ class ShippingRuleController extends Controller
                             if (isset($value['api_type']) && $value['api_type'] == 'new_api'){
                                 $providerSlug = 'unishippers-small-new';
                             }
-                        }                      
+                        }             
+                        
+                        if ($providerSlug == 'gtz-ltl'){
+                            if (isset($value['api_type']) && $value['api_type'] == 'NEWAPI'){
+                                $providerSlug = 'gtz-new';
+                            } elseif (isset($value['api_type']) && $value['api_type'] == 'CRS'){
+                                $providerSlug = 'cltl';
+                            }
+                        }
     
                         $carrIndexName = Functions::getCarrIndexBySlug($providerSlug);
                         
