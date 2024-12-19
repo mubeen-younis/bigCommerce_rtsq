@@ -7052,7 +7052,6 @@ class CompileQuotes
             return [];
         }
         $sliced = [];
-        asort($arraySorting['simple']);
         $this->quoteSettings['method'] = $this->quoteSettings['method'] ?? 1;
         if ($this->quoteSettings['method'] == 2 && $this->isMultiShipment == false) { //Cheapest method
             $options = (int) $this->quoteSettings['number_of_options'] ?? 1;
@@ -7063,6 +7062,7 @@ class CompileQuotes
         }
 
         foreach ($arraySorting as $key => $value) {
+            asort($arraySorting[$key]);
             $sliced =  array_slice($arraySorting[$key], 0, $options, true);
         }
 
