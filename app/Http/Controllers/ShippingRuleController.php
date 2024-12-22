@@ -182,7 +182,7 @@ class ShippingRuleController extends Controller
                                     $isOverrideRates = true;
                                 } else if ($providerSlug == 'unishippers-small') { 
                                     $serviceTitle = $this->unishippers->getServiceTitleFromServiceType($quote['serviceType']);
-                                    if(in_array(ucwords(str_replace('_', ' ' , $serviceTitle)), $rule['filter_services'])){                                    
+                                    if($serviceTitle == $rule['filter_services']){
                                         $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
                                         $quote['NegotiatedRates']['Amount'] = $rule['service_rates'];
                                         $isOverrideRates = true;
@@ -191,7 +191,7 @@ class ShippingRuleController extends Controller
                                     $serviceDesc = preg_replace('/(?<=[a-zA-Z])(?=\d)|(?<=\d)(?=[a-zA-Z])|(?<=[a-z])(?=[A-Z])/', ' ', $quote['serviceType']);
                                     $serviceDesc = str_replace('Am', 'AM' , $serviceDesc);
 
-                                    if (in_array($serviceDesc, $rule['filter_services'])){
+                                    if ($serviceDesc == $rule['filter_services']){
                                         $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
                                         $isOverrideRates = true;
                                     }
@@ -199,8 +199,7 @@ class ShippingRuleController extends Controller
 
                                 } else if ($providerSlug == 'usps-small') { 
                                     $serviceType = 'USPS ' . $quote['serviceType'];
-
-                                    if(in_array($serviceType, $rule['filter_services'])){                                    
+                                    if($serviceType == $rule['filter_services']){
                                         $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
                                         $isOverrideRates = true;
                                     }

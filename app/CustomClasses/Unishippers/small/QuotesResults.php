@@ -84,37 +84,32 @@ class QuotesResults
                     if ($this->onylQuoteGroundServices($isHazmat, $srvcType)) {
                         continue;
                     }
+                    // Apply override rates shipping rule
+                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
+                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data; 
                     // Adding Product and Origin Markup in services if added
                     $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
                     $data['totalNetCharge']['Amount'] = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
                     
                     // Adding markup values if available
                     $data['totalNetCharge']['Amount'] = $this->addHandlingMarkupOfHazmat($data['totalNetCharge']['Amount']);
-
-                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName);
-                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
                     $price = $data['totalNetCharge']['Amount'];
-                    // check: is override rule is applied, if yes then skip to add other features fee
-                    if(isset($overrideRates['isOverrideRates']) && $overrideRates['isOverrideRates']){
-                        $access2 = '';
-                        $showRadNotation = false;
-                    } else {
-                        $access2 = $access;
-                        $showRadNotation = $isRadNotation;
-                        // Checking hazmat and adding hazmat amounts in services
-                        if ($isHazmat) {
-                            $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin]['normal'] : 1;
-                            if ($isMultiShipment) {
-                                if ($hazmatAllItems[$origin] == 'Y') {
-                                    $price = $this->addHazmatAmountsInServices($price, $srvcType, $hazmatBoxes);
-                                }
-                            } else {
+                    
+                    $access2 = $access;
+                    $showRadNotation = $isRadNotation;
+                    // Checking hazmat and adding hazmat amounts in services
+                    if ($isHazmat) {
+                        $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin]['normal'] : 1;
+                        if ($isMultiShipment) {
+                            if ($hazmatAllItems[$origin] == 'Y') {
                                 $price = $this->addHazmatAmountsInServices($price, $srvcType, $hazmatBoxes);
                             }
+                        } else {
+                            $price = $this->addHazmatAmountsInServices($price, $srvcType, $hazmatBoxes);
                         }
-
-                        $price = $this->getServiceRate($price, $srvcType);
                     }
+
+                    $price = $this->getServiceRate($price, $srvcType);
 
                     // Get service title
                     $title = $this->getServiceTitle($data, $srvcType, $this->quoteSettings, $residential, $showRadNotation);
@@ -250,38 +245,32 @@ class QuotesResults
                     if ($this->onylQuoteGroundServices($isHazmat, $srvcType)) {
                         continue;
                     }
+                    // Apply override rates shipping rule
+                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
+                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data; 
                     // Adding Product and Origin Markup in services if added
                     $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
                     $data['totalNetCharge']['Amount'] = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
 
                     // Adding markup values if available
                     $data['totalNetCharge']['Amount'] = $this->addHandlingMarkupOfHazmat($data['totalNetCharge']['Amount']);
-
-                    
-                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName);
-                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
                     $price = $data['totalNetCharge']['Amount'];
-                    // check: is override rule is applied, if yes then skip to add other features fee
-                    if(isset($overrideRates['isOverrideRates']) && $overrideRates['isOverrideRates']){
-                        $access2 = '';
-                        $showRadNotation = false;
-                    } else {
-                        $access2 = $access;
-                        $showRadNotation = $isRadNotation;
-                        // Checking hazmat and adding hazmat amounts in services
-                        if ($isHazmat) {
-                            $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin]['normal'] : 1;
-                            if ($isMultiShipment) {
-                                if ($hazmatAllItems[$origin] == 'Y') {
-                                    $price = $this->addHazmatAmountsInServices($price, $srvcType, $hazmatBoxes);
-                                }
-                            } else {
+                    
+                    $access2 = $access;
+                    $showRadNotation = $isRadNotation;
+                    // Checking hazmat and adding hazmat amounts in services
+                    if ($isHazmat) {
+                        $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin]['normal'] : 1;
+                        if ($isMultiShipment) {
+                            if ($hazmatAllItems[$origin] == 'Y') {
                                 $price = $this->addHazmatAmountsInServices($price, $srvcType, $hazmatBoxes);
                             }
+                        } else {
+                            $price = $this->addHazmatAmountsInServices($price, $srvcType, $hazmatBoxes);
                         }
-
-                        $price = $this->getServiceRate($price, $srvcType);
                     }
+
+                    $price = $this->getServiceRate($price, $srvcType);
 
                     // Get service title
                     $title = $this->getServiceTitle($data, $srvcType, $this->quoteSettings, $residential, $showRadNotation);

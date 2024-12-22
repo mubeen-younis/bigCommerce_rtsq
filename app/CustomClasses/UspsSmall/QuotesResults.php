@@ -69,6 +69,10 @@ class QuotesResults
                         continue;
                     }
 
+                    // Apply override rates shipping rule
+                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
+                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data; 
+
                     // Apply Surcharge rates shipping rule
                     $surchargeRates = $shippingRule->surchargeRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
                     $isSurchargeRates = isset($surchargeRates['isSurchargeRates']) && $surchargeRates['isSurchargeRates'];
@@ -80,17 +84,10 @@ class QuotesResults
 
                     // Adding markup values if available
                     $price = $this->addHandlingMarkupOfHazmat($data['totalNetCharge']['Amount']);
-
-                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName);
-                    if (isset($overrideRates['isOverrideRates']) && $overrideRates['isOverrideRates']) {
-                        $access2 = '';
-                        $showRadNotation = false;
-                    } else {
-                        $access2 = $access;
-                        $showRadNotation = $isRadNotation;
-                        $price = $this->getServiceRate($price, $srvcType);
-                    }
-                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
+                    
+                    $access2 = $access;
+                    $showRadNotation = $isRadNotation;
+                    $price = $this->getServiceRate($price, $srvcType);
 
                     $access2 = $isSurchargeRates ? $access2 . '+SC' : $access2;
                     
