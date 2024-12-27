@@ -1560,6 +1560,12 @@ class Functions
                 } else {
                     return $quotes;
                 } 
+            } elseif (isset($ThresholdSettings['parcel_rates']) && $ThresholdSettings['parcel_rates'] == 1) {
+                if(!($isParcel)){
+                    return $quotes;
+                } elseif ($isParcel && $isLTL){
+                    return $quotes;
+                }
             }
 
             foreach ($multiShipmentQuotes as $shipment) {
@@ -1604,7 +1610,7 @@ class Functions
             $isSmallRate = isset($quote['code']) ? ($isSmallRate || substr($quote['code'], 0, 9) == 'parcel_12') : false;
             $isLtlRate = isset($quote['code']) ? ($isLtlRate || strpos($quote['code'], 'ltl') != false) : false;
         }
-        return ['isLtl' => $isLtlRate && !$isSmallRate, 'IsLtlSmall' => $isLtlRate && $isSmallRate];
+        return ['isLtl' => $isLtlRate && !$isSmallRate, 'IsLtlSmall' => $isLtlRate && $isSmallRate, 'isSmall' => $isSmallRate];
     }
 
     public static function findCheapestQuotes($data, $quotes)
