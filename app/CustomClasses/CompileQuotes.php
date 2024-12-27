@@ -1003,7 +1003,7 @@ class CompileQuotes
                     continue;
                 }
 
-                if (count($quote['multiShipmentQuotes']['simple']) === 1 && $carrier['isLtl'] && $this->isLTLHasSingleShip) {
+                if (isset($quote['multiShipmentQuotes']['simple']) && count($quote['multiShipmentQuotes']['simple']) === 1 && $carrier['isLtl'] && $this->isLTLHasSingleShip) {
                     
                     foreach ($quote['multiShipmentQuotes'] as $key => $quotes) {
                         foreach($quotes as $index => $value){
