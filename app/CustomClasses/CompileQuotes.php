@@ -996,7 +996,7 @@ class CompileQuotes
             $count = 0;
             $this->toFindCheapestParcels($quotes);
             foreach ($quotes as $car => $quote) {
-                $carrier = Functions::checkIsLtlSmall($quote['multiShipmentQuotes']['simple']);
+                $carrier = Functions::checkIsLtlSmall($quote['multiShipmentQuotes']['simple'] ?? []);
                 if($carrier['isSmall'] && $this->isLTLHasSingleShip){
                     $multiParcel = $quotes[$this->carrier]['multiShipmentQuotes']['simple'] ?? [];
                     $checkoutParcel = $quotes[$this->carrier]['checkoutQuotes'] ?? [];
