@@ -1046,6 +1046,10 @@ class Functions
                     'isNBD' => $notifyDelivery,
                 ],
             ],
+            'Truckload' => [
+                'isEnable' => false,
+                'index' => [],
+            ],
         ];
 
         return $enableFeaturesArray;

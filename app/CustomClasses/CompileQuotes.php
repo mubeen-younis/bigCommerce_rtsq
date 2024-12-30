@@ -130,6 +130,7 @@ class CompileQuotes
         'lglaccessinsidedelivery' => '+LG+ID+LAD',
         'laccessinsideNotifydelivery' => '+ID+LAD+NBD',
         'lglaccessinsideNotifydelivery' => '+LG+ID+LAD+NBD',
+        'Truckload' => '+TL',
     ];
 
     /*
@@ -987,13 +988,13 @@ class CompileQuotes
         }
 
         if(!empty($newArr) && count($newArr) == 1){
-            $final = [];
+            $finalSingleShipQuotes = [];
             foreach($newArr as $quotes){
                 foreach($quotes as $quote){
-                    $final = array_merge($final, $quote);
+                    $finalSingleShipQuotes = array_merge($finalSingleShipQuotes, $quote);
                 }
             }
-            return array_values($final);
+            return array_values($finalSingleShipQuotes);
         }
 
 
@@ -1054,8 +1055,6 @@ class CompileQuotes
                 if(isset($rateData['code']) && (strpos($rateData['code'], 'ltl') != false) && substr($rateData['code'], 0, 9) != 'parcel_12'){
                     $isLTL = true;
                 }
-                $arr[$rateType][$locationId] = $rateData;
-                $multiShipmentArr['multiShipmentQuotes'][] = $arr;
             }
         }
 
@@ -1074,14 +1073,15 @@ class CompileQuotes
         
                 // Add the rate to the total if the location has the rate type
                 $totalRate += $types[$rateType]['rate'];
+                $arr[$rateType][$locationId] = $types[$rateType];
             }
-        
             // If all locations have this rate type, add the total rate to the final array
             if ($allHaveRateType) {
                 $finalArray['code'] = 'Multi' . $this->accessorialsIndexes[$rateType];
                 $finalArray['rate'] = $totalRate;
                 $finalArray['title'] = $isLTL ? Functions::$ltlMultiTitle : Functions::$smallMultiTitle;
                 $finalCheckoutResp['checkoutQuotes'][] = $finalArray;
+                $multiShipmentArr['multiShipmentQuotes'][] = $arr;
             }
         }
         
@@ -5717,7 +5717,7 @@ class CompileQuotes
             
             $arraySorting = [];
             $TLquotes = $fqChrQuotes->truckLoadQuotes($quote, $connectionSettings, $origin, $this->items, $this->allOrigins, $this->carrierName);
-            $TLquotes = $this->getCompiledQuotes($TLquotes[0], $TLquotes[1], false);
+            $compiledTLquotes = $this->getCompiledQuotes($TLquotes[0], $TLquotes[1], false);
 
             if (isset($quote['q'])) {
                 if (isset($quote['hazardousStatus'])) {
@@ -5764,10 +5764,13 @@ class CompileQuotes
                     }
                 }
             }
-            
-            // $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
-            // dd($compiledQuotes);
-            // return $compiledQuotes;
+
+            $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
+            if ($compiledTLquotes !== null && !empty($compiledTLquotes)) {
+                $compiledQuotes = array_merge($compiledQuotes, $compiledTLquotes);
+            }
+
+            $finalCompiledQuotes[$origin] = $compiledQuotes;
             // if ($compiledQuotes !== null && !empty($compiledQuotes)) {
             //     if (count($compiledQuotes) > 1) {
             //         foreach ($compiledQuotes as $k => $service) {
@@ -5800,7 +5803,7 @@ class CompileQuotes
 
             // $count++;
         }
-        return $originQuotes;
+        return $finalCompiledQuotes;
         if (!(isset($this->quoteSettings['quoteltl_and_truckload']) && $this->quoteSettings['quoteltl_and_truckload']) && $this->isMultiShipment) {
 
             $ltlTruckloadQuotes = Functions::quotesLtlTruckLoad($allQuotes, $shipments);
@@ -7195,7 +7198,7 @@ class CompileQuotes
         }
         $sliced = [];
         $this->quoteSettings['method'] = $this->quoteSettings['method'] ?? 1;
-        if ($this->quoteSettings['method'] == 2 && $this->isMultiShipment == false) { //Cheapest method
+        if ($this->quoteSettings['method'] == 2) { //Cheapest method
             $options = (int) $this->quoteSettings['number_of_options'] ?? 1;
         } elseif ($this->quoteSettings['method'] == 3) { //Average rate
             $options = (int) $this->quoteSettings['number_of_options'];
@@ -7209,8 +7212,8 @@ class CompileQuotes
         }
 
         if ($this->quoteSettings['method'] == 3) {
-            $services = array_values($services);
-            if (isset($services[0]['Truckload']) && !empty($services[0]['Truckload'])) {
+
+            if (isset($services[$this->originKey]['Truckload']) && !empty($services[$this->originKey]['Truckload'])) {
                 $AVR = $this->averageRattingMethod($arraySorting, $options, $lgQuotes);
 
                 if (isset($this->isFQChr) && $this->isFQChr) {
@@ -7218,19 +7221,27 @@ class CompileQuotes
                 } else {
                     $title = ($this->quoteSettings['label_as'] ?? Functions::$simpleLTLTitle) . ' - Truckload Service';
                 }
-                $averageRateService[0]['Truckload'] = [
+                $averageRateService['Truckload'][0] = [
                     'title' => $title,
-                    'code' => $AVR[0]['simple']['code'] . '+TL',
-                    'rate' => $AVR[0]['simple']['rate'],
+                    'code' => $AVR['Truckload'][0]['code'] . '+TL',
+                    'rate' => $AVR['Truckload'][0]['rate'],
                 ];
                 return $averageRateService;
             }
 
             return $this->averageRattingMethod($arraySorting, $options, $lgQuotes, $resiPickup, $lgPickup, $insideDelivery, $limitedAccess, $notifyDelivery);
         }
-dd($services[$this->originKey], $sliced);
-        $resp = array_intersect_key($services[$this->originKey], $sliced);
-        return $resp;
+
+        $resp = collect($services[$this->originKey])->map(function ($items) use ($sliced) {
+            return collect($items)
+                ->only(array_keys($sliced)) // Filter the required indexes
+                ->all(); // Return the filtered array
+        });
+
+        return $resp->toArray();
+
+        // $resp = array_intersect_key($services, $sliced);
+        // return $resp;
     }
 
     public function getCompiledQuotesTQL($services, $arraySorting, $lgQuotes, $notifyDelivery)
@@ -7294,7 +7305,7 @@ dd($services[$this->originKey], $sliced);
                 asort($ratesArray[$key]);
                 $sliced = array_slice($ratesArray[$key], 0, $options, true);
                 $price = $this->getAveragePrice($sliced, $options);
-                $averageRateService[0][$key] = [
+                $averageRateService[$key][] = [
                     'title' => $this->getTitle($serviceName, $lgQuotes, false, '', [], [], $insideDelivery, $limitedAccessDelivery, false, false, false, false, $notifyDelivery),
                     'code' => $prefix . $this->getAccessorialCode($lgQuotes, $insideDelivery, $resiPickup, $lgPickup, $limitedAccessDelivery, false, false, $notifyDelivery),
                     'rate' => $price,

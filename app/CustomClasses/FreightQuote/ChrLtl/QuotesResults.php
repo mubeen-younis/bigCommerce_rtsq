@@ -53,10 +53,10 @@ class QuotesResults
                     $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
                     
                     $title = $this->getTruckLoadTitle($data['serviceDesc'], $quoteSettings, $data['totalTransitTimeInDays'], $dateAndDays, $data['serviceType']);
-                    $arraySorting['simple'][$key] = $price;
-                    $originQuotes[$key]['Truckload']['code'] = 'fqchrltl' . $data['serviceType'] . '+TL' . $access;
-                    $originQuotes[$key]['Truckload']['rate'] = $price;
-                    $originQuotes[$key]['Truckload']['title'] = $title;
+                    $arraySorting['Truckload'][$key] = $price;
+                    $originQuotes[$origin]['Truckload'][$key]['code'] = 'fqchrltl' . $data['serviceType'] . '+TL' . $access;
+                    $originQuotes[$origin]['Truckload'][$key]['rate'] = $price;
+                    $originQuotes[$origin]['Truckload'][$key]['title'] = $title;
                 }
             }
         }
