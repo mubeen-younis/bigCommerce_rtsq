@@ -274,16 +274,21 @@ class QuotesResults
 
                     $title = $this->getServiceTitle($data['serviceDesc'], $data, $data['serviceType'], $this->quoteSettings, $residential, $isRadNotation);
                     $price = (float)str_replace(',', '', $price);
-                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12ups' . $data['serviceType'] . $access2;
-                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
-                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
+                    // $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12ups' . $data['serviceType'] . $access2;
+                    // $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
+                    // $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
+                    $originQuotes[$origin]['simple'][$key]['code'] = 'parcel_12ups' . $data['serviceType'] . $access2;
+                    $originQuotes[$origin]['simple'][$key]['rate'] = $price;
+                    $originQuotes[$origin]['simple'][$key]['title'] = $title;
 
-                    $multiShipmentQuotes[$origin][$key] = $originQuotes[$shipmentCount]['shipment'][$key]['simple'];
+                    // $multiShipmentQuotes[$origin][$key] = $originQuotes[$shipmentCount]['shipment'][$key]['simple'];
 
                 }
             }
             $shipmentCount++;
         }
+        return $originQuotes;
+        dd($originQuotes);
         //dd($multiShipmentQuotes);
         //dd($originQuotes);
 
