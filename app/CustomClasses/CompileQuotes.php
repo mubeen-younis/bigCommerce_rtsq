@@ -1089,9 +1089,11 @@ class CompileQuotes
                 $title = $title . ' w/ truckload delivery';
             }
 
+            $resi = $this->isResi ? '+R' : '';
+
             // If all locations have this rate type, add the total rate to the final array
             if ($allHaveRateType) {
-                $finalArray['code'] = 'Multi' . $this->accessorialsIndexes[$rateType];
+                $finalArray['code'] = 'Multi' . $resi . $this->accessorialsIndexes[$rateType];
                 $finalArray['rate'] = $totalRate;
                 $finalArray['title'] = $isLTL ? $title : Functions::$smallMultiTitle;
                 $finalCheckoutResp['checkoutQuotes'][] = $finalArray;
