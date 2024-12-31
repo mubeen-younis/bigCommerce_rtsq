@@ -5729,6 +5729,8 @@ class CompileQuotes
             if ($count == 0) {
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
                 $lgQuotes = $fqChrQuotes->isLGQuotes($this->quoteSettings, $this->isResi);
+                $isAlwaysLG = (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery']) || 
+                            (isset($this->quoteSettings['autoDetectedResidentialAddressesLfg']) && $this->quoteSettings['autoDetectedResidentialAddressesLfg'] && $this->isResi);
                 $isTlQuotes = isset($this->quoteSettings['truckload_weight_threshold']) && $this->quoteSettings['truckload_weight_threshold'] ?? null;
             }
 
@@ -5768,6 +5770,10 @@ class CompileQuotes
                         $originQuotes[$origin]['simple'][$key]['code'] = $data['serviceType'] . 'fqchrltl' . $access;
                         $originQuotes[$origin]['simple'][$key]['rate'] = $price;
                         $originQuotes[$origin]['simple'][$key]['title'] = $title;
+
+                        if($isAlwaysLG){
+                            unset($originQuotes[$origin]['simple']);
+                        }
 
                         if ($lgQuotes) {
                             $lgAccess = $data['serviceType'] . 'fqchrltl' . $this->getAccessorialCode(true);
