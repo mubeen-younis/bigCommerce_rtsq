@@ -1015,7 +1015,9 @@ class CompileQuotes
             }
         }
 
-        if(count($this->allOrigins) == count($cheapestArr)){
+        $allOrigins = collect($this->allOrigins)->unique('locationId')->toArray();
+
+        if(count($allOrigins) == count($cheapestArr)){
             $finalQuotesArr = $this->finalMultiShipmentResp($cheapestArr) ?? [];
         }
         
