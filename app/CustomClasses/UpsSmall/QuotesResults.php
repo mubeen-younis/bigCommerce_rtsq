@@ -285,7 +285,10 @@ class QuotesResults
 
                 }
             }
-            $shipmentCount++;
+            // $shipmentCount++;
+            if (isset($inStoreLdData) && $inStoreLdData) {
+                $originQuotes[$origin] = $this->CompileQuotes->inStoreLocalDeliveryQuotes($originQuotes[$origin], $inStoreLdData, $allOrigins);
+            }
         }
         return $originQuotes;
         dd($originQuotes);
