@@ -1564,6 +1564,10 @@ class Functions
                 } else {
                     return $quotes;
                 } 
+            } elseif (isset($ThresholdSettings['parcel_rates']) && $ThresholdSettings['parcel_rates'] == 1) {
+                if(!$isParcel && $isLTL){
+                    return $quotes;
+                }
             }
 
             foreach ($multiShipmentQuotes as $shipment) {
@@ -1719,5 +1723,34 @@ class Functions
     {
         $store = Store::where('id', $storeId)->orwhere('hash', $storeHash)->select('id')->first() ?? [];
         return EnableLog::where('store_id', $store->id)->where('log_status', 1)->exists() ?? 0;
+    }
+
+    public static function getEnabledAccessorials($key)
+    {
+        // check liftgate key with other features enable
+        $isLiftGate = ($key == 'liftgate' || $key == 'lgnotifydelivery' || $key == 'lginsidenotifydelivery'
+        || $key == 'insideLiftGateDelivery' || $key == 'limitedaccessLG' || $key == 'lglaccessnotifydelivery'
+        || $key == 'lglaccessinsidedelivery' || $key == 'lglaccessinsideNotifydelivery') ? true : false;
+
+        // check inside delivery key with other features enable
+        $isInsideDelivery = ($key == 'insideDelivery' || $key == 'insideLiftGateDelivery' || $key == 'lglaccessinsideNotifydelivery'
+        || $key == 'insidenotifydelivery' || $key == 'lginsidenotifydelivery' || $key == 'laccessinsidedelivery'
+        || $key == 'lglaccessinsidedelivery' || $key == 'laccessinsideNotifydelivery') ? true : false;
+
+        // check limited access delivery key with other features enable
+        $isLimitedAccess = ($key == 'limitedaccess' || $key == 'limitedaccessLG' || $key == 'laccessnotifydelivery'
+        || $key == 'laccessinsidedelivery' || $key == 'lglaccessnotifydelivery' || $key == 'laccessinsideNotifydelivery'
+        || $key == 'lglaccessinsidedelivery' || $key == 'lglaccessinsideNotifydelivery') ? true : false;
+
+        // check two man and appointment delivery enable
+        $twoManDel = ($key == 'twoManDel' || $key == 'twoManAptDel') ? true : false;
+        $aptDel = ($key == 'aptDel' || $key == 'twoManAptDel') ? true : false;
+
+        // check notify before delivery key with other features enable
+        $isNotifydelivery = ($key == 'notifydelivery' || $key == 'insidenotifydelivery' || $key == 'lglaccessinsideNotifydelivery'
+        || $key == 'lgnotifydelivery' || $key == 'lginsidenotifydelivery' || $key == 'laccessinsideNotifydelivery'
+        || $key == 'laccessnotifydelivery' || $key == 'lglaccessnotifydelivery') ? true : false;
+
+        return ['isLG' => $isLiftGate, 'isID' => $isInsideDelivery, 'isLAD' => $isLimitedAccess, 'isNBD' => $isNotifydelivery, 'isTMD' => $twoManDel, 'isAPD' => $aptDel];
     }
 }
