@@ -277,60 +277,60 @@ class Shipping
             $finalQuotes = $finalQuotes['checkoutQuotes'];
         }
 
-        $_finalQuotes = $finalTitlesTemp = $finalCodesTemp = [];
-        $finalTitles = array_column($finalQuotes, 'title');
-        $finalCodes = array_column($finalQuotes, 'code');
+        // $_finalQuotes = $finalTitlesTemp = $finalCodesTemp = [];
+        // $finalTitles = array_column($finalQuotes, 'title');
+        // $finalCodes = array_column($finalQuotes, 'code');
 
-        foreach ($finalTitles as $key => $finalTitle) {
-            $finalTitlesTemp[$key] = explode(' ', $finalTitle)[0];
-        }
-        foreach ($finalCodes as $key => $finalCode) {
-            $finalCodesTemp[$key] = explode('+', $finalCode)[0];
-        }
+        // foreach ($finalTitles as $key => $finalTitle) {
+        //     $finalTitlesTemp[$key] = explode(' ', $finalTitle)[0];
+        // }
+        // foreach ($finalCodes as $key => $finalCode) {
+        //     $finalCodesTemp[$key] = explode('+', $finalCode)[0];
+        // }
 
         /*TODO :Need to Add LTL Carriers here as well*/
-        $isFreightTitleExist = array_search(Functions::$ltlMultiTitle, $finalTitlesTemp);
-        $isShippingTitleExist = array_search(Functions::$smallMultiTitle, $finalTitlesTemp);
-        $isAVGCodeExist = gettype(array_search('AVG', $finalCodesTemp)) == 'integer';
-        $isUpsLtlCodeExist = gettype(array_search('upsltl', $finalCodesTemp)) == 'integer';
-        $isFedexLtlCodeExist = gettype(array_search('fedexltl', $finalCodesTemp)) == 'integer';
-        $isxpoLtlCodeExist = gettype(array_search('xpoltl', $finalCodesTemp)) == 'integer';
-        $isYrcLtlCodeExist = gettype(array_search('yrcltl', $finalCodesTemp)) == 'integer';
-        $isFreightQuoteLtlCodeExist = gettype(array_search('fqltl', $finalCodesTemp)) == 'integer';
-        $isEstesLtlCodeExist = gettype(array_search('estesltl', $finalCodesTemp)) == 'integer';
-        $isDayRossLtlCodeExist = gettype(array_search('dayrossltl', $finalCodesTemp)) == 'integer';
-        $isOdflLtlCodeExist = gettype(array_search('odflltl', $finalCodesTemp)) == 'integer';
-        $isSaiaLtlCodeExist = gettype(array_search('saialtl', $finalCodesTemp)) == 'integer';
-        $isAbfLtlCodeExist = gettype(array_search('abfltl', $finalCodesTemp)) == 'integer';
-        $isSouthEasternLtlCodeExist = gettype(array_search('southeastltl', $finalCodesTemp)) == 'integer';
-        $isTqlLtlCodeExist = gettype(array_search('tqlltl', $finalCodesTemp)) == 'integer';
-        $isEchoLtlCodeExist = gettype(array_search('echoltl', $finalCodesTemp)) == 'integer';
-        $isDayLightLtlCodeExist = gettype(array_search('daylightltl', $finalCodesTemp)) == 'integer';
-        $isFreightQuoteChrLtlCodeExist = gettype(array_search('fqchrltl', $finalCodesTemp)) == 'integer';
-        $isFreightQuoteUnishipperLtlCodeExist = gettype(array_search('uniltl', $finalCodesTemp)) == 'integer';
-        $freightCode = '';
-        $finalCost = 0;
+        // $isFreightTitleExist = array_search(Functions::$ltlMultiTitle, $finalTitlesTemp);
+        // $isShippingTitleExist = array_search(Functions::$smallMultiTitle, $finalTitlesTemp);
+        // $isAVGCodeExist = gettype(array_search('AVG', $finalCodesTemp)) == 'integer';
+        // $isUpsLtlCodeExist = gettype(array_search('upsltl', $finalCodesTemp)) == 'integer';
+        // $isFedexLtlCodeExist = gettype(array_search('fedexltl', $finalCodesTemp)) == 'integer';
+        // $isxpoLtlCodeExist = gettype(array_search('xpoltl', $finalCodesTemp)) == 'integer';
+        // $isYrcLtlCodeExist = gettype(array_search('yrcltl', $finalCodesTemp)) == 'integer';
+        // $isFreightQuoteLtlCodeExist = gettype(array_search('fqltl', $finalCodesTemp)) == 'integer';
+        // $isEstesLtlCodeExist = gettype(array_search('estesltl', $finalCodesTemp)) == 'integer';
+        // $isDayRossLtlCodeExist = gettype(array_search('dayrossltl', $finalCodesTemp)) == 'integer';
+        // $isOdflLtlCodeExist = gettype(array_search('odflltl', $finalCodesTemp)) == 'integer';
+        // $isSaiaLtlCodeExist = gettype(array_search('saialtl', $finalCodesTemp)) == 'integer';
+        // $isAbfLtlCodeExist = gettype(array_search('abfltl', $finalCodesTemp)) == 'integer';
+        // $isSouthEasternLtlCodeExist = gettype(array_search('southeastltl', $finalCodesTemp)) == 'integer';
+        // $isTqlLtlCodeExist = gettype(array_search('tqlltl', $finalCodesTemp)) == 'integer';
+        // $isEchoLtlCodeExist = gettype(array_search('echoltl', $finalCodesTemp)) == 'integer';
+        // $isDayLightLtlCodeExist = gettype(array_search('daylightltl', $finalCodesTemp)) == 'integer';
+        // $isFreightQuoteChrLtlCodeExist = gettype(array_search('fqchrltl', $finalCodesTemp)) == 'integer';
+        // $isFreightQuoteUnishipperLtlCodeExist = gettype(array_search('uniltl', $finalCodesTemp)) == 'integer';
+        // $freightCode = '';
+        // $finalCost = 0;
 
-        if (!empty($_finalQuotes)) {
-            $_finalQuotes[$key]['code'] = $freightCode;
-            $_finalQuotes[$key]['title'] = Functions::$ltlMultiTitle;
-            $_finalQuotes[$key]['rate'] = $finalCost;
-            $_finalQuotes = array_values($_finalQuotes);
-            $finalQuotes = $_finalQuotes;
-        } else {
-            $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
-            //TODO : Need to Add LTL Carriers Here as well
-            if (!$isShippingOrFreight && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist || $isEstesLtlCodeExist || $isDayRossLtlCodeExist || $isOdflLtlCodeExist || $isSaiaLtlCodeExist || $isAbfLtlCodeExist || $isSouthEasternLtlCodeExist || $isTqlLtlCodeExist || $isEchoLtlCodeExist || $isDayLightLtlCodeExist || $isFreightQuoteChrLtlCodeExist || $isFreightQuoteUnishipperLtlCodeExist)) {
-                $isShippingOrFreight = false;
-            }
+        // if (!empty($_finalQuotes)) {
+        //     $_finalQuotes[$key]['code'] = $freightCode;
+        //     $_finalQuotes[$key]['title'] = Functions::$ltlMultiTitle;
+        //     $_finalQuotes[$key]['rate'] = $finalCost;
+        //     $_finalQuotes = array_values($_finalQuotes);
+        //     $finalQuotes = $_finalQuotes;
+        // } else {
+        //     $isShippingOrFreight = gettype($isFreightTitleExist) == 'integer' || gettype($isShippingTitleExist) == 'integer';
+        //     //TODO : Need to Add LTL Carriers Here as well
+        //     if (!$isShippingOrFreight && ($isAVGCodeExist || $isUpsLtlCodeExist || $isFedexLtlCodeExist || $isxpoLtlCodeExist || $isYrcLtlCodeExist || $isFreightQuoteLtlCodeExist || $isEstesLtlCodeExist || $isDayRossLtlCodeExist || $isOdflLtlCodeExist || $isSaiaLtlCodeExist || $isAbfLtlCodeExist || $isSouthEasternLtlCodeExist || $isTqlLtlCodeExist || $isEchoLtlCodeExist || $isDayLightLtlCodeExist || $isFreightQuoteChrLtlCodeExist || $isFreightQuoteUnishipperLtlCodeExist)) {
+        //         $isShippingOrFreight = false;
+        //     }
 
-            if ($this->isRequestMultishipment && !$isShippingOrFreight) {
-                $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings, $residential, $quotesFromWs, $requestArr['requestArr'], $store_id);
-                $finalQuotes = $finalQuotesMulti['checkoutQuotes'] ?? [];
-                $multiShipmentQuotes = $finalQuotesMulti['multiShipmentQuotes'] ?? [];
-            }
-            /*Removed Code of removing parcel and ltl*/
-        }
+        //     if ($this->isRequestMultishipment && !$isShippingOrFreight) {
+        //         $finalQuotesMulti = $this->makeMultishipmentSmallLtl($finalQuotes, $connectionSettings, $residential, $quotesFromWs, $requestArr['requestArr'], $store_id);
+        //         $finalQuotes = $finalQuotesMulti['checkoutQuotes'] ?? [];
+        //         $multiShipmentQuotes = $finalQuotesMulti['multiShipmentQuotes'] ?? [];
+        //     }
+        //     /*Removed Code of removing parcel and ltl*/
+        // }
         /*Adding shipping group rates response in quotes
          */
         if (!blank($this->shippingGroupResponse)) {

@@ -168,8 +168,9 @@ class QuotesResults
                 continue;
             }
             
-            if ((isset($quote['severity']) || (isset($quote['q']) && empty($quote['q'])))) {
-                return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);                
+            if ((isset($quote['severity']) || (isset($quote['q']) && empty($quote['q']) || (!isset($quote['q']) && isset($quote['InstorPickupLocalDelivery']))))) {
+                $instoreResp[$origin] = $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins) ?? [];                
+                return $instoreResp;
             }
             if ($count == 0) { //To be checked only once
                 // $this->getAutoResidentialTitle('');
@@ -388,7 +389,11 @@ class QuotesResults
         foreach ($shipments as $shipment => $quotes) {
             $temp = [];
             if (!isset($quotes['q']) || !isset($quotes['q']) && isset($quotes['tnt'])) {
-                $shipments = [];
+                if(isset($quotes['InstorPickupLocalDelivery'])){
+                    $shipments[$shipment] = $quotes;    
+                } else {
+                    $shipments = [];
+                }
                 continue;
             }
 
