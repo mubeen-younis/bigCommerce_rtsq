@@ -281,7 +281,7 @@ class QuotesResults
 
         $hatQuotes = [];
 
-        foreach ($shipments as $ship) {
+        foreach ($shipments as $origin => $ship) {
             $isError = isset($ship['q']['soapBody']['soapFault']);
             if ($isError) {
                 continue;
@@ -310,7 +310,7 @@ class QuotesResults
                     $terminal['serviceDesc'] = Functions::getHATTitle($title, $address, $distance, $phoneNumber);
                     $terminal['totalNetCharge']['Amount'] = Functions::getHATPrice($charges, $quoteSettings['hold_at_terminal_price'] ?? 0);
 
-                    $hatQuotes[] = $terminal;
+                    $hatQuotes[$origin]['hat'][] = $terminal;
                 }
             }
         }

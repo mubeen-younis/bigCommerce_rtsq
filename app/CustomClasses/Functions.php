@@ -1054,6 +1054,19 @@ class Functions
                 'isEnable' => false,
                 'index' => [],
             ],
+
+            'twoManDel' => [
+                'isEnable' => false,
+                'index' => [],
+            ],
+            'aptDel' => [
+                'isEnable' => false,
+                'index' => [],
+            ],
+            'twoManAptDel' => [
+                'isEnable' => false,
+                'index' => [],
+            ],
         ];
 
         return $enableFeaturesArray;
