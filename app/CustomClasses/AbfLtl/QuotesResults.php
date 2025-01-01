@@ -207,15 +207,18 @@ class QuotesResults
         }
 
         $newQuotes = [];
-        foreach ($HATQuotes as $data) {
-            $newQuotes[] = [
-                'code' => $data['serviceType'],
-                'title' => $data['serviceDesc'],
-                'rate' => $data['totalNetCharge']['Amount'],
-            ];
+        foreach ($HATQuotes as $locId => $quotes) {
+            foreach($quotes as $data){
+                $finalQuotes[$locId]['hat'][] = [
+                    'code' => $data[0]['serviceType'],
+                    'title' => $data[0]['serviceDesc'],
+                    'rate' => $data[0]['totalNetCharge']['Amount'],
+                ];
+            }
+            
         }
 
-        return array_merge($finalQuotes, $newQuotes);
+        return $finalQuotes;
     }
 
     public function getCompiledQuotes($services, $arraySorting, $isMulitshipment)

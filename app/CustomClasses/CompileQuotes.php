@@ -131,6 +131,7 @@ class CompileQuotes
         'laccessinsideNotifydelivery' => '+ID+LAD+NBD',
         'lglaccessinsideNotifydelivery' => '+LG+ID+LAD+NBD',
         'Truckload' => '+TL',
+        'hat' => '+HAT'
     ];
 
     /*
@@ -1091,7 +1092,13 @@ class CompileQuotes
                 $title = $title . ' w/ truckload delivery';
             }
 
-            $resi = $this->isResi ? '+R' : '';
+            if ($rateType == 'hat') {
+                $hatLabel = explode('|', $types[$rateType]['title']);
+                unset($hatLabel[0]);
+                $title = Functions::$ltlMultiTitle . ' |' . implode('|', $hatLabel);
+            }
+
+            $resi = $this->isResi && $rateType !== 'hat' ? '+R' : '';
 
             // If all locations have this rate type, add the total rate to the final array
             if ($allHaveRateType) {
@@ -5000,7 +5007,7 @@ class CompileQuotes
         }
 
         $labelAs = $this->quoteSettings['label_as'] ?? '';
-        $hatShipments = [];
+        $hatShipments = $finalCompiledQuotes = $compiledQuotes = $originQuotes = [];
 
         foreach ($shipments as $origin => $quote) {
             $this->originKey = $origin;
@@ -5026,8 +5033,6 @@ class CompileQuotes
                     (isset($this->quoteSettings['always_quote_notify']) && $this->quoteSettings['always_quote_notify']) ||
                     (isset($this->quoteSettings['offer_notify_as_option']) && $this->quoteSettings['offer_notify_as_option']);
             }
-
-            $originQuotes = [];
             $arraySorting = [];
 
             if (isset($quote['q']) && !$abfLtl->isSuppressedRatesShipment($shipments)) {
@@ -5044,7 +5049,7 @@ class CompileQuotes
                 foreach ($quote as $key => $data) {
                     $isHATQuote = isset($data['holdAtTerminalResponse']['serviceType']) && strpos($data['holdAtTerminalResponse']['serviceType'], 'HAT+') !== false;
                     if ($isHATQuote) {
-                        $hatShipments[] = $data['holdAtTerminalResponse'];
+                        $hatShipments[$origin]['hat'][] = $data['holdAtTerminalResponse'];
                     }
 
                     $srvcType = $data['serviceType'] ?? '';
@@ -5066,18 +5071,18 @@ class CompileQuotes
                         $title = $this->getTitle($data['serviceDesc'], false, false, $days, [], $dateAndDays);
 
                         $arraySorting['simple'][$origin] = $price;
-                        $originQuotes[$origin]['simple']['code'] = 'abfltl' . $access;
-                        $originQuotes[$origin]['simple']['rate'] = $price;
-                        $originQuotes[$origin]['simple']['title'] = $title;
+                        $originQuotes[$origin]['simple'][$count]['code'] = 'abfltl' . $access;
+                        $originQuotes[$origin]['simple'][$count]['rate'] = $price;
+                        $originQuotes[$origin]['simple'][$count]['title'] = $title;
 
                         if ($lgQuotes) {
                             $lgAccess = $this->getAccessorialCode(true);
                             $lgPrice = $this->calculatePrice($data, true);
                             $lgTitle = $this->getTitle($data['serviceDesc'], true, false, $days, [], $dateAndDays);
                             $arraySorting['liftgate'][$origin] = $lgPrice;
-                            $originQuotes[$origin]['liftgate']['code'] = 'abfltl' . $lgAccess;
-                            $originQuotes[$origin]['liftgate']['rate'] = $lgPrice;
-                            $originQuotes[$origin]['liftgate']['title'] = $lgTitle;
+                            $originQuotes[$origin]['liftgate'][$count]['code'] = 'abfltl' . $lgAccess;
+                            $originQuotes[$origin]['liftgate'][$count]['rate'] = $lgPrice;
+                            $originQuotes[$origin]['liftgate'][$count]['title'] = $lgTitle;
                         }
                         // Get Notify Before Delivery Origin Quotes
                         if ($notifyDelivery) {
@@ -5086,6 +5091,7 @@ class CompileQuotes
                                 $originQuotes,
                                 $data,
                                 $origin,
+                                $count,
                                 $days,
                                 $dateAndDays,
                                 false,
@@ -5107,6 +5113,7 @@ class CompileQuotes
                                 $originQuotes,
                                 $data,
                                 $origin,
+                                $count,
                                 $days,
                                 $dateAndDays,
                                 true,
@@ -5126,72 +5133,92 @@ class CompileQuotes
                 }
             }
 
-            $compiledQuotes = $abfLtl->getCompiledQuotes($originQuotes, $arraySorting, $this->isMultiShipment);
+            // $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
+            // dump($originQuotes);
+            // if ($compiledTLquotes !== null && !empty($compiledTLquotes)) {
+            //     $compiledQuotes = array_merge($compiledQuotes, $compiledTLquotes);
+            // }
 
-            if ($compiledQuotes !== null && !empty($compiledQuotes)) {
-                // Get Quotes Array
-                if (count($compiledQuotes) > 1) {
-                    foreach ($compiledQuotes as $k => $service) {
-                        foreach ($service as $serKey => $ser) {
-                            $quotes = Functions::getQuotesArray($service, $allQuotes, $multiShipmentQuotes, $origin, $serKey);
-                            $allQuotes = $quotes['allQuotes'];
-                            $multiShipmentQuotes = $quotes['multiShipmentQuotes'];
-                        }
-                    }
-                } else {
-                    $service = reset($compiledQuotes);
-                    foreach ($service as $serKey => $ser) {
-                        $quotes = Functions::getQuotesArray($service, $allQuotes, $multiShipmentQuotes, $origin, $serKey);
-                        $allQuotes = $quotes['allQuotes'];
-                        $multiShipmentQuotes = $quotes['multiShipmentQuotes'];
-                    }
-                }
+            if (isset($inStoreLdData) && !empty($inStoreLdData)) {
+                $originQuotes[$origin] = $this->inStoreLocalDeliveryQuotes($originQuotes[$origin], $inStoreLdData, $allOrigins);
             }
 
-            if ($this->isMultiShipment) {
-                $odwArr[$origin]['quotes'] = $compiledQuotes;
-            }
+            // $finalCompiledQuotes[$origin] = $originQuotes;
+
+            // $compiledQuotes = $abfLtl->getCompiledQuotes($originQuotes, $arraySorting, $this->isMultiShipment);
+
+            // if ($compiledQuotes !== null && !empty($compiledQuotes)) {
+            //     // Get Quotes Array
+            //     if (count($compiledQuotes) > 1) {
+            //         foreach ($compiledQuotes as $k => $service) {
+            //             foreach ($service as $serKey => $ser) {
+            //                 $quotes = Functions::getQuotesArray($service, $allQuotes, $multiShipmentQuotes, $origin, $serKey);
+            //                 $allQuotes = $quotes['allQuotes'];
+            //                 $multiShipmentQuotes = $quotes['multiShipmentQuotes'];
+            //             }
+            //         }
+            //     } else {
+            //         $service = reset($compiledQuotes);
+            //         foreach ($service as $serKey => $ser) {
+            //             $quotes = Functions::getQuotesArray($service, $allQuotes, $multiShipmentQuotes, $origin, $serKey);
+            //             $allQuotes = $quotes['allQuotes'];
+            //             $multiShipmentQuotes = $quotes['multiShipmentQuotes'];
+            //         }
+            //     }
+            // }
+
+            // if ($this->isMultiShipment) {
+            //     $odwArr[$origin]['quotes'] = $compiledQuotes;
+            // }
 
             $count++;
         }
 
-        $allQuotes = $this->getFinalQuotesArray($allQuotes);
-
-        /* Quotes for instore delivery */
-        if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
-            $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
-            $hatShipments = Functions::setEmptyHATQuotesArray($allOrigins, $inStoreLdData, $hatShipments);
-        }
-
-        /* Multishipment quotes with LGD  */
-        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
-
-            if (!empty($hatShipments)) {
-                $allQuotes = $this->forceChangeTitle($allQuotes);
-                $hatLabel = explode('|', $hatShipments[0]['serviceDesc']);
-                unset($hatLabel[0]);
-                $lableAs = 'Freight |' . implode('|', $hatLabel);
-                $resp = [
-                    'checkoutQuotes' => Functions::arrangeHATFreight($allQuotes, $hatShipments, $lableAs),
-                    'multiShipmentQuotes' => Functions::arrangeHATMulti($multiShipmentQuotes, $hatShipments),
-                ];
-            } else {
-                $allQuotes = $this->forceChangeTitle($allQuotes);
-                $resp = [
-                    'checkoutQuotes' => $allQuotes,
-                    'multiShipmentQuotes' => $multiShipmentQuotes,
-                ];
-            }
-
-            return $resp;
-        }
+        $allQuotes = $this->getFinalQuotesArray($originQuotes);
 
         if (!empty($hatShipments)) {
             return $abfLtl->arrangeHATFreight($allQuotes, $hatShipments);
         }
 
-        $resp = $allQuotes;
-        return $resp;
+        return $allQuotes;
+
+        // $allQuotes = $this->getFinalQuotesArray($allQuotes);
+
+        // /* Quotes for instore delivery */
+        // if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
+        //     $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
+        //     $hatShipments = Functions::setEmptyHATQuotesArray($allOrigins, $inStoreLdData, $hatShipments);
+        // }
+
+        // /* Multishipment quotes with LGD  */
+        // if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) >= 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
+
+            // if (!empty($hatShipments)) {
+            //     $allQuotes = $this->forceChangeTitle($allQuotes);
+            //     $hatLabel = explode('|', $hatShipments[0]['serviceDesc']);
+            //     unset($hatLabel[0]);
+            //     $lableAs = 'Freight |' . implode('|', $hatLabel);
+            //     $resp = [
+            //         'checkoutQuotes' => Functions::arrangeHATFreight($allQuotes, $hatShipments, $lableAs),
+            //         'multiShipmentQuotes' => Functions::arrangeHATMulti($multiShipmentQuotes, $hatShipments),
+            //     ];
+            // } else {
+        //         $allQuotes = $this->forceChangeTitle($allQuotes);
+        //         $resp = [
+        //             'checkoutQuotes' => $allQuotes,
+        //             'multiShipmentQuotes' => $multiShipmentQuotes,
+        //         ];
+        //     }
+
+        //     return $resp;
+        // }
+
+        // if (!empty($hatShipments)) {
+        //     return $abfLtl->arrangeHATFreight($allQuotes, $hatShipments);
+        // }
+
+        // $resp = $allQuotes;
+        // return $resp;
     }
 
     private function compileSouthEasternQuotes($shipments, $connectionSettings, $allOrigins, $residential)

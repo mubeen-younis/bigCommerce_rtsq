@@ -237,7 +237,7 @@ class Shipping
         /*
          * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
          */
-        $this->isRequestMultishipment = $ltlSmallCompileQuotes->checkIsRequestMiltiShipment($requestArr['requestArr'], $quotes);
+        //$this->isRequestMultishipment = $ltlSmallCompileQuotes->checkIsReque1stMiltiShipment($requestArr['requestArr'], $quotes);
         /* Catering Usps carrier packaging response */
         $uspsCarrierArr = $requestArr['requestArr']['carriers']['usps'] ?? [];
         if (isset($uspsCarrierArr) && !empty($uspsCarrierArr)) {
@@ -604,42 +604,42 @@ class Shipping
         return ['finalQuotes' => $finalQuotes, 'multiShipmentQuotes' => $multiShipmentQuotes];
     }
 
-    private function removeParcelIfLtl($finalQuotes)
-    {
-        $finalQuotes = $finalQuotes['checkoutQuotes'] ?? $finalQuotes;
-        $hasLtl = false;
-        $hasParcel = false;
-        foreach ($finalQuotes as $quote) {
-            $notCustomAdded = isset($quote['code']) && strpos($quote['code'], 'own_arrangement') === false && strpos($quote['code'], 'INSP') === false && strpos($quote['code'], 'LOCDEL') === false;
-            if ($notCustomAdded) {
-                if (strpos($quote['code'], 'parcel_12') === 0) {
-                    $hasParcel = true;
-                } else {
-                    $hasLtl = true;
-                }
-            }
-        }
-        if ($hasLtl && $hasParcel) {
-            foreach ($finalQuotes as $key => $quote) {
-                if (strpos($quote['code'], 'parcel') === 0) {
-                    unset($finalQuotes[$key]);
-                }
-            }
-        }
-        return $finalQuotes;
-    }
+    // private function removeParcelIfLtl($finalQuotes)
+    // {
+    //     $finalQuotes = $finalQuotes['checkoutQuotes'] ?? $finalQuotes;
+    //     $hasLtl = false;
+    //     $hasParcel = false;
+    //     foreach ($finalQuotes as $quote) {
+    //         $notCustomAdded = isset($quote['code']) && strpos($quote['code'], 'own_arrangement') === false && strpos($quote['code'], 'INSP') === false && strpos($quote['code'], 'LOCDEL') === false;
+    //         if ($notCustomAdded) {
+    //             if (strpos($quote['code'], 'parcel_12') === 0) {
+    //                 $hasParcel = true;
+    //             } else {
+    //                 $hasLtl = true;
+    //             }
+    //         }
+    //     }
+    //     if ($hasLtl && $hasParcel) {
+    //         foreach ($finalQuotes as $key => $quote) {
+    //             if (strpos($quote['code'], 'parcel') === 0) {
+    //                 unset($finalQuotes[$key]);
+    //             }
+    //         }
+    //     }
+    //     return $finalQuotes;
+    // }
 
-    private function makeMultishipmentSmallLtl($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr, $storeId)
-    {
-        $ltlSmallCompileQuotes = new LtlSmallCompileQuotes($this->SuppressParcelRates);
-        /*
-         * Need to add entry if every carrier here as well
-         * there is some caompatibility code of multi shipment here
-         *
-         * */
-        $resp = $ltlSmallCompileQuotes->compileQuotes($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr, $storeId);
-        return $resp;
-    }
+    // private function makeMultishipmentSmallLtl($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr, $storeId)
+    // {
+    //     $ltlSmallCompileQuotes = new LtlSmallCompileQuotes($this->SuppressParcelRates);
+    //     /*
+    //      * Need to add entry if every carrier here as well
+    //      * there is some caompatibility code of multi shipment here
+    //      *
+    //      * */
+    //     $resp = $ltlSmallCompileQuotes->compileQuotes($quotes, $connectionSettings, $residential, $quotesFromWs, $requestArr, $storeId);
+    //     return $resp;
+    // }
 
     private function addBinResponseToQuotes($binReponse, $quotes, $uspsRes = false)
     {

@@ -794,7 +794,7 @@ class Functions
     }
 
     // Create Origin Quotes Array in case of notify before delivery enable
-    public static function getOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi, $insideDelivery = false, $laccess = false, $notifyDelivery = false, $resiPickup = false, $lgPickup = false, $storeId = null, $isSurchargeRates = false)
+    public static function getOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $count, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi, $insideDelivery = false, $laccess = false, $notifyDelivery = false, $resiPickup = false, $lgPickup = false, $storeId = null, $isSurchargeRates = false)
     {
         $CompileQuotes = new CompileQuotes();
         $serviceCode = !($carrName == 'seflltl' || $carrName == 'yrcltl' || $carrName == 'upsltl' || $carrName == 'saialtl' || $carrName == 'fedexltl' || $carrName == 'tqlltl' || $carrName == 'abfltl' || $carrName == 'daylightltl' || $carrName == 'dayrossltl') && isset($data['serviceType']) ? $data['serviceType'] : '';
@@ -821,9 +821,9 @@ class Functions
             }
             $originQuotes[$origin][$index]['titleQuickest'] = $titleQuickest ?? '';
         }
-        $originQuotes[$origin][$index]['code'] = $carrName . $serviceCode . $ndAccess;
-        $originQuotes[$origin][$index]['rate'] = $ndPrice;
-        $originQuotes[$origin][$index]['title'] = $ndTitle;
+        $originQuotes[$origin][$index][$count]['code'] = $carrName . $serviceCode . $ndAccess;
+        $originQuotes[$origin][$index][$count]['rate'] = $ndPrice;
+        $originQuotes[$origin][$index][$count]['title'] = $ndTitle;
 
         return ['originQuotes' => $originQuotes, 'ndPrice' => $ndPrice];
     }
@@ -1047,6 +1047,10 @@ class Functions
                 ],
             ],
             'Truckload' => [
+                'isEnable' => false,
+                'index' => [],
+            ],
+            'hat' => [
                 'isEnable' => false,
                 'index' => [],
             ],
