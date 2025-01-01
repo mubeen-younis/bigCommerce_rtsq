@@ -972,6 +972,7 @@ class CompileQuotes
     private function handleMultiCarriersResp($carrierQuotes)
     {
         $newArr = $cheapestArr = $finalQuotesArr = [];
+        $allOrigins = collect($this->allOrigins)->unique('locationId')->toArray();
         foreach ($carrierQuotes as $car => $originQuotes) {
             foreach($originQuotes as $locId => $combinationQuotes){
                 foreach ($combinationQuotes as $key => $quotes) {
@@ -982,7 +983,7 @@ class CompileQuotes
             }
         }
 
-        if(!empty($newArr) && count($newArr) == 1){
+        if(!empty($newArr) && count($newArr) == 1 && count($allOrigins) == count($newArr)){
             $finalSingleShipQuotes = [];
             foreach($newArr as $quotes){
                 foreach($quotes as $quote){
@@ -1006,8 +1007,6 @@ class CompileQuotes
                 }
             }
         }
-
-        $allOrigins = collect($this->allOrigins)->unique('locationId')->toArray();
 
         if(count($allOrigins) == count($cheapestArr)){
             $finalQuotesArr = $this->finalMultiShipmentResp($cheapestArr) ?? [];
@@ -1077,7 +1076,11 @@ class CompileQuotes
 
             $accessorials = Functions::getEnabledAccessorials($rateType);
 
-            $title = $this->getTitle(Functions::$ltlMultiTitle, $accessorials['isLG'], true, '', [], [], $accessorials['isID'], $accessorials['isLAD'], false, $accessorials['isTMD'], $accessorials['isAPD'], false, $accessorials['isNBD'], $this->isResi);
+            if($isLTL){
+                $title = $this->getTitle(Functions::$ltlMultiTitle, $accessorials['isLG'], true, '', [], [], $accessorials['isID'], $accessorials['isLAD'], false, $accessorials['isTMD'], $accessorials['isAPD'], false, $accessorials['isNBD'], $this->isResi);
+            } else {
+                $title = $this->getTitle(Functions::$smallMultiTitle, $accessorials['isLG'], true, '', [], [], $accessorials['isID'], $accessorials['isLAD'], false, $accessorials['isTMD'], $accessorials['isAPD'], false, $accessorials['isNBD'], $this->isResi);
+            }
 
             if($rateType == 'Truckload'){
                 $title = $title . ' w/ truckload delivery';
@@ -1095,7 +1098,7 @@ class CompileQuotes
             if ($allHaveRateType) {
                 $finalArray['code'] = 'Multi' . $resi . $this->accessorialsIndexes[$rateType];
                 $finalArray['rate'] = $totalRate;
-                $finalArray['title'] = $isLTL ? $title : Functions::$smallMultiTitle;
+                $finalArray['title'] = $title;
                 $finalCheckoutResp['checkoutQuotes'][] = $finalArray;
                 $multiShipmentArr['multiShipmentQuotes'][] = $arr;
             }
@@ -2135,11 +2138,6 @@ class CompileQuotes
         $isSbsEnable = isset($residential['isSbsEnable']) ? $residential['isSbsEnable'] : false;
 
         return $res = $this->upsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $isSbsEnable, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
-        if (!$this->isMultiShipment) {
-            $this->isMultiShipment = $res['isMultiShipment'] ?? false;
-        }
-
-        return $res['resp'] ?? [];
     }
 
     public function compileUnishipSmallNewApiQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
@@ -2156,12 +2154,7 @@ class CompileQuotes
         $this->alwaysResi = $this->residential['alwaysResi']['unishippersSmallNewApi'] ?? false;
         $isSbsEnable = isset($residential['isSbsEnable']) ? $residential['isSbsEnable'] : false;
 
-        $res = $this->unishippersSmallQuotesResults->compileQuotesNewApi($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $isSbsEnable, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
-        if (!$this->isMultiShipment) {
-            $this->isMultiShipment = $res['isMultiShipment'] ?? false;
-        }
-
-        return $res['resp'] ?? [];
+        return $this->unishippersSmallQuotesResults->compileQuotesNewApi($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $isSbsEnable, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
     }
 
     /**
@@ -2188,7 +2181,7 @@ class CompileQuotes
         $isSbsEnable = isset($residential['isSbsEnable']) ? $residential['isSbsEnable'] : false;
 
         try {
-            $res = $quoteResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $isSbsEnable, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
+            return $quoteResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $isSbsEnable, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
         } catch (\Exception $exception) {
             Log::info('Exception on shipengine results ' . json_encode([
                 'line' => $exception->getLine(),
@@ -2197,12 +2190,6 @@ class CompileQuotes
 
             return [];
         }
-
-        if (!$this->isMultiShipment) {
-            $this->isMultiShipment = $res['isMultiShipment'] ?? false;
-        }
-
-        return $res['resp'] ?? [];
     }
 
     public function compilePurolatorSmallQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
@@ -2217,12 +2204,7 @@ class CompileQuotes
         }
         $this->alwaysResi = $this->residential['alwaysResi']['purolatorSmall'] ?? false;
         $isSbsEnable = isset($residential['isSbsEnable']) ? $residential['isSbsEnable'] : false;
-        $res = $this->purolatorSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $isSbsEnable, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
-        if (!$this->isMultiShipment) {
-            $this->isMultiShipment = isset($res['isMultiShipment']) ? $res['isMultiShipment'] : [];
-        }
-
-        return $res['resp'];
+        return $this->purolatorSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $isSbsEnable, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
     }
 
     public function compileEstesltlQuotes($shipments, $connectionSettings, $allOrigins)
@@ -2424,11 +2406,7 @@ class CompileQuotes
         }
         $this->alwaysResi = $this->residential['alwaysResi']['fedexSmall'] ?? false;
         $isSbsEnable = isset($residential['isSbsEnable']) ? $residential['isSbsEnable'] : false;
-        $res = $this->fedexSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $isSbsEnable, $this->isMultiShipment, $destination, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
-        if (!$this->isMultiShipment) {
-            $this->isMultiShipment = $res['isMultiShipment'] ?? false;
-        }
-        return $res['resp'] ?? [];
+        return $this->fedexSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $isSbsEnable, $this->isMultiShipment, $destination, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
     }
 
     public function compileGlobalTranzLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
@@ -3457,9 +3435,10 @@ class CompileQuotes
             if(in_array($origin, $this->SuppressParcelRates)){
                 continue;
             }
-            
-            if (isset($quote['severity'])) {
-                return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
+
+            if ((isset($quote['severity']) || (isset($quote['q']) && empty($quote['q'])) || (!isset($quote['q']) && !empty($quote['InstorPickupLocalDelivery'])))) {
+                $instoreResp[$origin] = $this->getInsPicAndLocDelQuotes($quote, $allOrigins) ?? [];                
+                return $instoreResp;
             }
             if ($count == 0) { //To be checked only once
                 $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
@@ -3523,60 +3502,16 @@ class CompileQuotes
                     $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
                     $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $dateAndDays, $data['serviceType'], $this->quoteSettings, $this->isResi, $isRadNotation);
                     $price = (float) str_replace(',', '', $price);
-                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12wwe' . $data['serviceType'] . $access;
-                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
-                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
-                    $multiShipmentQuotes[$origin][$key] = $originQuotes[$shipmentCount]['shipment'][$key]['simple'];
+                    $originQuotes[$origin]['simple'][$key]['code'] = 'parcel_12wwe' . $data['serviceType'] . $access;
+                    $originQuotes[$origin]['simple'][$key]['rate'] = $price;
+                    $originQuotes[$origin]['simple'][$key]['title'] = $title;
                 }
             }
-            $shipmentCount++;
-        }
-        // $multiShipmentQuotes
-        // Check for mukti shipment finding lowest price in each shipment and adding them for multi shipment
-        if ($this->isMultiShipment && count($multiShipmentQuotes) > 1) {
-            $originQuotesMulti = $multiShipmentQuote = [];
-            $multiShipPrice = 0;
-            foreach ($originQuotes as $shipmentKey => $shipment) {
-                $netChargeArray = array_column($shipment['shipment'], 'simple');
-                $minValueFromNetChargeArr = min(array_column($netChargeArray, 'rate'));
-                $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
-                $originQuotesMulti[0]['code'] = $this->isResi || $this->alwaysResi ? 'Multi+R' : 'Multi';
-                $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
-                $originQuotesMulti[0]['title'] = $this->isResi ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
+            if (isset($inStoreLdData) && $inStoreLdData) {
+                $originQuotes[$origin] = $this->inStoreLocalDeliveryQuotes($originQuotes[$origin], $inStoreLdData, $allOrigins);
             }
-            foreach ($multiShipmentQuotes as $shipmentKey => $shipment) {
-                $keys = array_column($shipment, 'rate');
-                array_multisort($keys, SORT_ASC, $shipment);
-                $multiShipmentQuote['simple'][$shipmentKey] = array_values($shipment)[0];
-            }
-            $resp = [
-                'checkoutQuotes' => $originQuotesMulti,
-                'multiShipmentQuotes' => $multiShipmentQuote,
-            ];
-            return $resp;
         }
-        // Doing For SIngle Shipment
-        if (!empty($originQuotes)) {
-            $originQuotes = array_column(array_values($originQuotes), 'shipment');
-            $originQuotes = reset($originQuotes);
-            $originQuotes = array_column(array_values($originQuotes), 'simple');
-            // Checkking for instore pickup
-            if (!$this->isMultiShipment && isset($inStoreLdData) && $inStoreLdData) {
-                $allQuotes = $this->inStoreLocalDeliveryQuotes($originQuotes, $inStoreLdData, $allOrigins);
-                return $allQuotes;
-            }
-            return $originQuotes;
-        }
-        /**
-         * get quotes if supress is enables
-         * refferce issue: https://eniture.atlassian.net/browse/QA-5458
-         */
-        if (!$this->isMultiShipment && isset($inStoreLdData) && $inStoreLdData) {
-            $allQuotes = $this->inStoreLocalDeliveryQuotes($quote, $inStoreLdData, $allOrigins);
-            return $allQuotes;
-        }
-
-        return [];
+        return $originQuotes;
     }
 
     private function compileUpsLtlQuotes($shipments, $connectionSettings, $allOrigins)
@@ -3762,13 +3697,7 @@ class CompileQuotes
         }
         $this->alwaysResi = $this->residential['alwaysResi']['unishippersSmall'] ?? false;
         $isSbsEnable = isset($residential['isSbsEnable']) ? $residential['isSbsEnable'] : false;
-        $res = $this->unishippersSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $isSbsEnable, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
-
-        if (!$this->isMultiShipment) {
-            $this->isMultiShipment = $res['isMultiShipment'] ?? false;
-        }
-
-        return $res['resp'] ?? [];
+        return $this->unishippersSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $isSbsEnable, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
     }
 
     private function compileDayRossLtlQuotes($shipments, $connectionSettings, $allOrigins, $hazmatAllItems, $residential)
@@ -4948,13 +4877,7 @@ class CompileQuotes
         $this->alwaysResi = false;
 
         $access = $this->getAccessorialCodeSmall();
-        $res = $uspsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName);
-
-        if (!$this->isMultiShipment) {
-            $this->isMultiShipment = $res['isMultiShipment'] ?? false;
-        }
-
-        return $res['resp'] ?? [];
+        return $uspsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName);
     }
 
     private function compileEchoLogisticsLtlQuotes($shipments, $connectionSettings, $allOrigins, $hazmatAllItems, $residential)
