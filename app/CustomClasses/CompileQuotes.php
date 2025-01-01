@@ -1564,6 +1564,7 @@ class CompileQuotes
         }
         $numberOfShipments = 0;
         $resiPickup = $lgPickup = '';
+        $originQuotes = [];
         foreach ($shipments as $ship) {
             if (!isset($ship['severity'])) {
                 $numberOfShipments++;
@@ -1602,7 +1603,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['offer_limited_access_delivery']) && $this->quoteSettings['offer_limited_access_delivery']) ||
                     (isset($this->quoteSettings['always_limited_access_delivery']) && $this->quoteSettings['always_limited_access_delivery']) ?? false;
             }
-            $originQuotes = [];
+            
             $arraySorting = [];
             $preCode = 'unishipperLtl';
             if (isset($quote['q'])) {
@@ -1636,6 +1637,7 @@ class CompileQuotes
                                     $index, $data['serviceDesc'],
                                     $originQuotes,
                                     $data,
+                                    $origin,
                                     $key, $data['totalTransitTimeInDays'],
                                     $dateAndDays, $feature['index']['isLG'] ?? false,
                                     "unlltl", $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings,
@@ -1654,48 +1656,16 @@ class CompileQuotes
             }
 
             $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes, $resiPickup, $lgPickup, $insideDelivery, $notifyDelivery, $limitedAccess);
-            if ($compiledQuotes !== null && !empty($compiledQuotes)) {
-                if (count($compiledQuotes) > 1) {
-                    foreach ($compiledQuotes as $k => $service) {
-                        foreach ($service as $serKey => $ser) {
-                            $quotes = Functions::getQuotesArray($service, $allQuotes, $multiShipmentQuotes, $origin, $serKey);
-                            $allQuotes = $quotes['allQuotes'];
-                            $multiShipmentQuotes = $quotes['multiShipmentQuotes'];
-                        }
-                    }
-                } else {
-                    $service = reset($compiledQuotes);
-                    foreach ($service as $serKey => $ser) {
-                        $quotes = Functions::getQuotesArray($service, $allQuotes, $multiShipmentQuotes, $origin, $serKey);
-                        $allQuotes = $quotes['allQuotes'];
-                        $multiShipmentQuotes = $quotes['multiShipmentQuotes'];
-                    }
-                }
+
+            if (isset($inStoreLdData) && !empty($inStoreLdData)) {
+                $compiledQuotes = $this->inStoreLocalDeliveryQuotes($compiledQuotes, $inStoreLdData, $allOrigins);
             }
 
-            if ($this->isMultiShipment) {
-                $odwArr[$origin]['quotes'] = $compiledQuotes;
-            }
+            $finalCompiledQuotes[$origin] = $compiledQuotes;
             $count++;
         }
 
-        $allQuotes = $this->getFinalQuotesArray($allQuotes);
-         if ($allowOwnArrangement) {
-            $allQuotes = $this->arrangeOwnFreight($allQuotes);
-        }
-        if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
-            $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
-        }
-        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
-
-            $allQuotes = $this->forceChangeTitle($allQuotes);
-            $resp = [
-                'checkoutQuotes' => $allQuotes,
-                'multiShipmentQuotes' => $multiShipmentQuotes,
-            ];
-            return $resp;
-        }
-
+        $allQuotes = $this->getFinalQuotesArray($finalCompiledQuotes);
         return $allQuotes;
     }
 
