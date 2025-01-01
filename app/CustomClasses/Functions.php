@@ -819,7 +819,7 @@ class Functions
                 $explodTitle = $explodTitle[1];
                 $titleQuickest = $quickLabelAs . ' w/' . $explodTitle;
             }
-            $originQuotes[$origin][$index]['titleQuickest'] = $titleQuickest ?? '';
+            $originQuotes[$origin][$index][$count]['titleQuickest'] = $titleQuickest ?? '';
         }
         $originQuotes[$origin][$index][$count]['code'] = $carrName . $serviceCode . $ndAccess;
         $originQuotes[$origin][$index][$count]['rate'] = $ndPrice;
