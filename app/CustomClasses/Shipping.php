@@ -1264,6 +1264,10 @@ class Shipping
             if($quote['code'] === 'INSP'){
                 return $res[0];
             }
+            if(strpos(strtolower($quote['code']), '+hat')){
+                $res = explode(" |", $quote['title']);
+                return str_replace($res[0], Functions::$simpleLTLTitle, $quote['title']);
+            }
             $string = str_replace('residential', 'resi', $res[1]);
             $res = Functions::$simpleLTLTitle . ' w/' . $string;
         } else if ($quote['title'] == "") {
