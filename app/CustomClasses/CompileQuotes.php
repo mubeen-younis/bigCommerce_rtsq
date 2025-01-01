@@ -1711,6 +1711,7 @@ class CompileQuotes
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
         $lgQuotes = false;
+        $originQuotes = [];
 
         $numberOfShipments = 0;
         foreach ($shipments as $ship) {
@@ -1724,13 +1725,15 @@ class CompileQuotes
         }
 
         $lableAs = $this->quoteSettings['label_as'] ?? 'Freight';
-        $key = 1;
+        $key = 0;
 
         foreach ($shipments as $origin => $quote) {
             $this->originKey = $origin;
             $this->isSurchargeRates = false;
-            if (isset($quote['severity'])) {
-                return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
+
+            if ((isset($quote['severity']) || !isset($quote['q']) || (isset($quote['q']) && empty($quote['q'])))) {
+                $instoreResp[$origin] = $this->getInsPicAndLocDelQuotes($quote, $allOrigins) ?? [];                
+                return $instoreResp;
             }
 
             if ($count == 0) {
@@ -1749,7 +1752,6 @@ class CompileQuotes
                     (isset($this->quoteSettings['offer_notify_as_option']) && $this->quoteSettings['offer_notify_as_option']);
             }
 
-            $originQuotes = [];
             $arraySorting = [];
 
             if (isset($quote['q']) && isset($quote['q']['success']) && $quote['q']['success'] == "true") {
@@ -1790,18 +1792,18 @@ class CompileQuotes
                 $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
                 $title = $this->getTitle($lableAs, false, false, $days, [], $dateAndDays);
                 $arraySorting['simple'][$origin] = $price;
-                $originQuotes[$origin]['simple']['code'] = 'odflltl' . $access;
-                $originQuotes[$origin]['simple']['rate'] = $price;
-                $originQuotes[$origin]['simple']['title'] = $title;
+                $originQuotes[$origin]['simple'][$key]['code'] = 'odflltl' . $access;
+                $originQuotes[$origin]['simple'][$key]['rate'] = $price;
+                $originQuotes[$origin]['simple'][$key]['title'] = $title;
 
                 if ($lgQuotes) {
                     $lgAccess = $this->getAccessorialCode(true);
                     $lgPrice = $this->calculatePrice($data, $lgOption = 1);
                     $lgTitle = $this->getTitle($lableAs, true, false, $days, [], $dateAndDays);
                     $arraySorting['liftgate'][$origin] = $lgPrice;
-                    $originQuotes[$origin]['liftgate']['code'] = 'odflltl' . $lgAccess;
-                    $originQuotes[$origin]['liftgate']['rate'] = $lgPrice;
-                    $originQuotes[$origin]['liftgate']['title'] = $lgTitle;
+                    $originQuotes[$origin]['liftgate'][$key]['code'] = 'odflltl' . $lgAccess;
+                    $originQuotes[$origin]['liftgate'][$key]['rate'] = $lgPrice;
+                    $originQuotes[$origin]['liftgate'][$key]['title'] = $lgTitle;
                 }
                 // Get Notify Before Delivery Origin Quotes
                 if ($notifyDelivery) {
@@ -1810,7 +1812,8 @@ class CompileQuotes
                         $lableAs,
                         $originQuotes,
                         $data,
-                        $origin, $data['totalTransitTimeInDays'],
+                        $origin, 
+                        $key, $data['totalTransitTimeInDays'],
                         $dateAndDays,
                         false,
                         'odflltl', $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi,
@@ -1832,7 +1835,8 @@ class CompileQuotes
                         $lableAs,
                         $originQuotes,
                         $data,
-                        $origin, $data['totalTransitTimeInDays'],
+                        $origin,
+                        $key, $data['totalTransitTimeInDays'],
                         $dateAndDays,
                         true,
                         'odflltl', $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings, $this->isResi, $this->alwaysResi,
@@ -1852,50 +1856,13 @@ class CompileQuotes
                 $key++;
             }
 
-            $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
-
-            if ($compiledQuotes !== null && !empty($compiledQuotes)) {
-                // Get Quotes Array
-                if (count($compiledQuotes) > 1) {
-                    foreach ($compiledQuotes as $k => $service) {
-                        foreach ($service as $serKey => $ser) {
-                            $quotes = Functions::getQuotesArray($service, $allQuotes, $multiShipmentQuotes, $origin, $serKey);
-                            $allQuotes = $quotes['allQuotes'];
-                            $multiShipmentQuotes = $quotes['multiShipmentQuotes'];
-                        }
-                    }
-                } else {
-                    $service = reset($compiledQuotes);
-                    foreach ($service as $serKey => $ser) {
-                        $quotes = Functions::getQuotesArray($service, $allQuotes, $multiShipmentQuotes, $origin, $serKey);
-                        $allQuotes = $quotes['allQuotes'];
-                        $multiShipmentQuotes = $quotes['multiShipmentQuotes'];
-                    }
-                }
-            }
-
-            if ($this->isMultiShipment) {
-                $odwArr[$origin]['quotes'] = $compiledQuotes;
+            if (isset($inStoreLdData) && !empty($inStoreLdData)) {
+                $originQuotes[$origin] = $this->inStoreLocalDeliveryQuotes($originQuotes[$origin], $inStoreLdData, $allOrigins);
             }
             $count++;
         }
 
-        $allQuotes = $this->getFinalQuotesArray($allQuotes);
-
-        if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
-            $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
-        }
-
-        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
-            $allQuotes = $this->forceChangeTitle($allQuotes);
-            $resp = [
-                'checkoutQuotes' => $this->arrangeOwnFreight($allQuotes),
-                'multiShipmentQuotes' => $multiShipmentQuotes,
-            ];
-
-            return $resp;
-        }
-
+        $allQuotes = $this->getFinalQuotesArray($originQuotes);
         return $allQuotes;
     }
 
