@@ -170,6 +170,7 @@ class QuotesResults
         $access = $this->CompileQuotes->getAccessorialCodeSmall();
 
         $rad_settings = Functions::getRADsettings($storeId) ?? [];
+        $originQuotes = [];
         $isRadNotation = isset($rad_settings['suppress_rad_notation']) && $rad_settings['suppress_rad_notation'];
 
         if (isset($this->quoteSettings['carrier_services'])) {
