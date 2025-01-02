@@ -3618,9 +3618,9 @@ dd($quotesRes);
 
                 $this->isAlwaysAccessorials();
 
-                $lgQuotes = $dayRossLtl->isLGQuotes($this->quoteSettings);
-                if (!$lgQuotes && !$this->isSameDayApi) {
-                    $lgQuotes = $dayRossLtl->isRADEnabled($this->quoteSettings, $this->isResi);
+                $lgQuotes = $dayRossLtl->isLGQuotes($this->quoteSettings) && !$this->alwaysLG;
+                if (!$this->alwaysLG && !$this->isSameDayApi) {
+                    $this->alwaysLG = $dayRossLtl->isRADEnabled($this->quoteSettings, $this->isResi);
                 }
 
                 if ($this->isSameDayApi) {
