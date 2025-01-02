@@ -237,7 +237,7 @@ class Shipping
         /*
          * $this->isRequestMultishipment => Check if one product ltl and other small with different origin
          */
-        //$this->isRequestMultishipment = $ltlSmallCompileQuotes->checkIsReque1stMiltiShipment($requestArr['requestArr'], $quotes);
+        // $this->isRequestMultishipment = $ltlSmallCompileQuotes->checkIsRequestMiltiShipment($requestArr['requestArr'], $quotes);
         /* Catering Usps carrier packaging response */
         $uspsCarrierArr = $requestArr['requestArr']['carriers']['usps'] ?? [];
         if (isset($uspsCarrierArr) && !empty($uspsCarrierArr)) {

@@ -207,8 +207,7 @@ class QuotesResults
 
     public function isLGQuotes($quoteSettings, $isResi): bool
     {
-        $isLG = (isset($quoteSettings['alwaysLiftGateDelivery']) && $quoteSettings['alwaysLiftGateDelivery']) ||
-            (isset($quoteSettings['offerLiftGateDelivery']) && $quoteSettings['offerLiftGateDelivery']);
+        $isLG = (isset($quoteSettings['offerLiftGateDelivery']) && $quoteSettings['offerLiftGateDelivery']);
 
         if (!$isLG) {
             $isLG = $this->isRADEnabled($quoteSettings, $isResi);
