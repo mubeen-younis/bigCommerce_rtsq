@@ -6383,6 +6383,9 @@ dd($quotesRes);
         foreach ($HATQuotes as $locId => $quotes) {
             foreach($quotes as $quote){
                 foreach($quote as $key => $data){
+                    if (empty($data)) {
+                        return $finalQuotes;
+                    }
                     $finalQuotes[$locId]['hat'][$key] = [
                         'code' => $data['serviceType'],
                         'title' => $data['serviceDesc'],
