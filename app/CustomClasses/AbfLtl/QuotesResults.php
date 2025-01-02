@@ -209,6 +209,9 @@ class QuotesResults
         $newQuotes = [];
         foreach ($HATQuotes as $locId => $quotes) {
             foreach($quotes as $data){
+                if (empty($data)) {
+                    return $finalQuotes;
+                }
                 $finalQuotes[$locId]['hat'][] = [
                     'code' => $data[0]['serviceType'],
                     'title' => $data[0]['serviceDesc'],
