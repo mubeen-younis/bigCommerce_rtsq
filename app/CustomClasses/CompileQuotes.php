@@ -4630,12 +4630,12 @@ class CompileQuotes
     private function compileUspsSmallQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
     {
         $uspsSmallQuotesResults = new uspsSmallQuotesResults($this->SuppressParcelRates);
-        $this->isResi = false;
+        $isResi = false;
         $this->residentialDlvry = 0;
         $this->alwaysResi = false;
 
         $access = $this->getAccessorialCodeSmall();
-        return $uspsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $access, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName);
+        return $uspsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $isResi, $access, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName);
     }
 
     private function compileEchoLogisticsLtlQuotes($shipments, $connectionSettings, $allOrigins, $hazmatAllItems, $residential)
