@@ -146,6 +146,8 @@ class CompileQuotes
     public $alwaysID = false;
     public $alwaysNBD = false;
     public $alwaysLAD = false;
+    public $alwaysAPD = false;
+    public $alwaysTMD = false;
 
     private $carrierServices = [];
     private $alwaysResi = false;
