@@ -3418,8 +3418,9 @@ class CompileQuotes
         foreach ($shipments as $origin => $quote) {
             $this->originKey = $origin;
             $this->isSurchargeRates = false;
-            if (isset($quote['severity'])) {
-                return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
+            if ((isset($quote['InstorPickupLocalDelivery']['suppress']) || isset($quote['severity']) || !isset($quote['q']) || (isset($quote['q']) && empty($quote['q'])))) {
+                $instoreResp[$origin] = $this->getInsPicAndLocDelQuotes($quote, $allOrigins) ?? [];                
+                return $instoreResp;
             }
 
             if ($count == 0) { //To be checked only once
