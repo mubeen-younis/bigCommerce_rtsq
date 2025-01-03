@@ -5504,13 +5504,13 @@ class CompileQuotes
      */
     public function calculatePrice($data, $lgOption = false, $getCost = false, $isUpsLtl = false, $insideDel = false, $laccess = false, $twoManDel = false, $appDel = false, $notifyDelivery = false, $originKey = '', $items = [], $allOrigins = [], $quoteSettings = [], $isResi = false)
     {
-        $lgCost = $lgOption ? 0 : $this->getLiftGateCost($data, $getCost, $isUpsLtl);
-        $IDCost = $insideDel ? 0 : $this->getInsideDeliveryCost($data);
-        $LADCost = $laccess ? 0 : $data['limitedAccessDeliveryFee'] ?? $data['surcharges']['limitedAccessDeliveryFee'] ?? 0;
+        $lgCost = $lgOption || $this->alwaysLG ? 0 : $this->getLiftGateCost($data, $getCost, $isUpsLtl);
+        $IDCost = $insideDel || $this->alwaysID ? 0 : $this->getInsideDeliveryCost($data);
+        $LADCost = $laccess || $this->alwaysLAD ? 0 : $data['limitedAccessDeliveryFee'] ?? $data['surcharges']['limitedAccessDeliveryFee'] ?? 0;
         $ResiCost = ($this->isResi || $this->alwaysResi || $isResi) ? 0 : $data['surcharges']['residentialFee'] ?? 0;
         $TMDCost = $twoManDel ? 0 : $data['surcharges']['twoManFee'] ?? 0;
         $APDCost = $appDel ? 0 : $data['surcharges']['appointmentFee'] ?? 0;
-        $NBDCost = $notifyDelivery ? 0 : $this->getNotifyDeliveryCost($data, $isUpsLtl);
+        $NBDCost = $notifyDelivery || $this->alwaysNBD ? 0 : $this->getNotifyDeliveryCost($data, $isUpsLtl);
         $basePrice = str_replace(',', '', $data['totalNetCharge']['Amount']);
         $basePrice = (float) $basePrice;
         $basePrice = $basePrice - $lgCost - $LADCost - $IDCost - $TMDCost - $APDCost - $NBDCost - $ResiCost;
@@ -5641,6 +5641,7 @@ class CompileQuotes
         // Here  Making Access title
         $accessTitle = '';
         $isResi = $isResi ? $isResi : $this->isResi;
+        $lgOption = $lgOption ? $lgOption : $this->alwaysLG;
 
         // Get Access Title
         $accessTitle = Functions::getAccessTitle($this->quoteSettings, $isResi, $lgOption, $insideDel, $notifyDelivery, $laccess, $twoManDel, $appDel, $this->storeId ?? $storeId);
