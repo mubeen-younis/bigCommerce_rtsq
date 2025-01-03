@@ -1825,6 +1825,7 @@ class CompileQuotes
         $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
         $count = 0;
         $lgQuotes = false;
+        $originQuotes = [];
         $numberOfShipments = 0;
         foreach ($shipments as $ship) {
             if (!isset($ship['severity'])) {
@@ -1854,77 +1855,79 @@ class CompileQuotes
                 $this->notifyDelivery =
                     (isset($this->quoteSettings['offer_notify_as_option']) && $this->quoteSettings['offer_notify_as_option']);
             }
-            $originQuotes = $standard = $guaranteed = [];
+            $standard = $guaranteed = [];
             $arraySorting = [];
 
-            $standardQuotes = collect($quote['q'])->filter(function ($q) {
-                if (isset($q['scac']) && in_array($q['scac'], $this->allConfigServices)) {
-                    if ($this->lgQuotes || $this->notifyDelivery) {
-                        foreach ($q['priceCharges'] as $charge) {
-                            if (isset($charge['description']) && $charge['description'] === 'Lift Gate' || isset($charge['description']) && $charge['description'] === 'Delivery Call Ahead') {
-                                return isset($q["serviceLevel"]) && $q["serviceLevel"] == 'Standard';
+            if(isset($quote['q'])){
+                $standardQuotes = collect($quote['q'])->filter(function ($q) {
+                    if (isset($q['scac']) && in_array($q['scac'], $this->allConfigServices)) {
+                        if ($this->lgQuotes || $this->notifyDelivery) {
+                            foreach ($q['priceCharges'] as $charge) {
+                                if (isset($charge['description']) && $charge['description'] === 'Lift Gate' || isset($charge['description']) && $charge['description'] === 'Delivery Call Ahead') {
+                                    return isset($q["serviceLevel"]) && $q["serviceLevel"] == 'Standard';
+                                }
                             }
+                        } else {
+                            return isset($q["serviceLevel"]) && $q["serviceLevel"] == 'Standard';
                         }
-                    } else {
-                        return isset($q["serviceLevel"]) && $q["serviceLevel"] == 'Standard';
                     }
-                }
-            })->toArray() ?? [];
+                })->toArray() ?? [];
 
-            $guaranteedQuotes = collect($quote['q'])->filter(function ($q) {
-                if (isset($q['scac']) && in_array($q['scac'], $this->allConfigServices)) {
-                    if ($this->lgQuotes || $this->notifyDelivery) {
-                        foreach ($q['priceCharges'] as $charge) {
-                            if (isset($charge['description']) && $charge['description'] === 'Lift Gate' || isset($charge['description']) && $charge['description'] === 'Delivery Call Ahead') {
-                                return isset($q["serviceLevel"]) && ($q["serviceLevel"] == 'Guaranteed 5 PM' || $q["serviceLevel"] == 'Guaranteed 12 PM');
+                $guaranteedQuotes = collect($quote['q'])->filter(function ($q) {
+                    if (isset($q['scac']) && in_array($q['scac'], $this->allConfigServices)) {
+                        if ($this->lgQuotes || $this->notifyDelivery) {
+                            foreach ($q['priceCharges'] as $charge) {
+                                if (isset($charge['description']) && $charge['description'] === 'Lift Gate' || isset($charge['description']) && $charge['description'] === 'Delivery Call Ahead') {
+                                    return isset($q["serviceLevel"]) && ($q["serviceLevel"] == 'Guaranteed 5 PM' || $q["serviceLevel"] == 'Guaranteed 12 PM');
+                                }
                             }
+                        } else {
+                            return isset($q["serviceLevel"]) && ($q["serviceLevel"] == 'Guaranteed 5 PM' || $q["serviceLevel"] == 'Guaranteed 12 PM');
                         }
-                    } else {
-                        return isset($q["serviceLevel"]) && ($q["serviceLevel"] == 'Guaranteed 5 PM' || $q["serviceLevel"] == 'Guaranteed 12 PM');
                     }
-                }
-            })->toArray() ?? [];
+                })->toArray() ?? [];
 
-            if ($isStandardChecked && !$isGuaranteedChecked) {
-                $quote['q'] = $standardQuotes;
-            } elseif (!$isStandardChecked && $isGuaranteedChecked) {
-                $quote['q'] = $guaranteedQuotes;
-            } elseif ($isStandardChecked && $isGuaranteedChecked) {
-                if ($ratingMethod == 1 || $ratingMethod == 2 || $ratingMethod == 3) {
-                    $quote['q'] = $quote['q'];
-                } elseif ($ratingMethod == 4) {
-                    $quotes['q'] = $standardQuotes;
-                    $standard[] = $this->getCheapestQuotesArr($quotes);
-                    if (!$this->isMultiShipment){
-                        $quotes['q'] = $guaranteedQuotes;
-                        $guaranteed[] = $this->getCheapestQuotesArr($quotes);
-                    } else {
-                        $guaranteed = [];
-                    }
-                    $bothService = array_merge($standard, $guaranteed);
-                    $quote['q'] = $bothService;
-
-                } elseif ($ratingMethod == 5) {
-                    $options = (int) $this->quoteSettings['number_of_options'];
-                    $standardSort = collect($standardQuotes)->sortBy('customerRate')->toArray();
-                    $standardSliced = array_slice($standardSort, 0, $options, true);
-                    $guaranteedSort = collect($guaranteedQuotes)->sortBy('customerRate')->toArray();
-                    $guaranteedSliced = array_slice($guaranteedSort, 0, $options, true);
-                    $bothService = array_merge($standardSliced, $guaranteedSliced);
-                    unset($quote['q']);
-                    $quote['q'] = $bothService;
-
-                } elseif ($ratingMethod == 6) {
-                    $options = (int) $this->quoteSettings['number_of_options'];
-                    $standardSort = collect($standardQuotes)->sortBy('customerRate')->toArray();
-                    $standardPrice = $this->averageOfEachService($standardSort, $options, $this->allConfigServices, $this->lgQuotes, $this->notifyDelivery, false, $standardLabel);
-                    if (!$this->isMultiShipment){
+                if ($isStandardChecked && !$isGuaranteedChecked) {
+                    $quote['q'] = $standardQuotes;
+                } elseif (!$isStandardChecked && $isGuaranteedChecked) {
+                    $quote['q'] = $guaranteedQuotes;
+                } elseif ($isStandardChecked && $isGuaranteedChecked) {
+                    if ($ratingMethod == 1 || $ratingMethod == 2 || $ratingMethod == 3) {
+                        $quote['q'] = $quote['q'];
+                    } elseif ($ratingMethod == 4) {
+                        $quotes['q'] = $standardQuotes;
+                        $standard[] = $this->getCheapestQuotesArr($quotes);
+                        if (!$this->isMultiShipment){
+                            $quotes['q'] = $guaranteedQuotes;
+                            $guaranteed[] = $this->getCheapestQuotesArr($quotes);
+                        } else {
+                            $guaranteed = [];
+                        }
+                        $bothService = array_merge($standard, $guaranteed);
+                        $quote['q'] = $bothService;
+    
+                    } elseif ($ratingMethod == 5) {
+                        $options = (int) $this->quoteSettings['number_of_options'];
+                        $standardSort = collect($standardQuotes)->sortBy('customerRate')->toArray();
+                        $standardSliced = array_slice($standardSort, 0, $options, true);
                         $guaranteedSort = collect($guaranteedQuotes)->sortBy('customerRate')->toArray();
-                        $guaranteedPrice = $this->averageOfEachService($guaranteedSort, $options, $this->allConfigServices, $this->lgQuotes, $this->notifyDelivery, false, $guaranteedLabel);
-                    } else {
-                        $guaranteedPrice = [];
+                        $guaranteedSliced = array_slice($guaranteedSort, 0, $options, true);
+                        $bothService = array_merge($standardSliced, $guaranteedSliced);
+                        unset($quote['q']);
+                        $quote['q'] = $bothService;
+    
+                    } elseif ($ratingMethod == 6) {
+                        $options = (int) $this->quoteSettings['number_of_options'];
+                        $standardSort = collect($standardQuotes)->sortBy('customerRate')->toArray();
+                        $standardPrice = $this->averageOfEachService($standardSort, $options, $this->allConfigServices, $this->lgQuotes, $this->notifyDelivery, false, $standardLabel);
+                        if (!$this->isMultiShipment){
+                            $guaranteedSort = collect($guaranteedQuotes)->sortBy('customerRate')->toArray();
+                            $guaranteedPrice = $this->averageOfEachService($guaranteedSort, $options, $this->allConfigServices, $this->lgQuotes, $this->notifyDelivery, false, $guaranteedLabel);
+                        } else {
+                            $guaranteedPrice = [];
+                        }
+                        $quote['q'] = $originQuotes = array_merge($standardPrice, $guaranteedPrice);
                     }
-                    $quote['q'] = $originQuotes = array_merge($standardPrice, $guaranteedPrice);
                 }
             }
 
@@ -1964,9 +1967,9 @@ class CompileQuotes
                         $arraySorting['simple'][$key] = $price ?? [];
                         $method = $this->quoteSettings['method'];
 
-                        $originQuotes[$key]['simple']['code'] = 'tqlltl' . $access;
-                        $originQuotes[$key]['simple']['rate'] = $price;
-                        $originQuotes[$key]['simple']['title'] = $title;
+                        $originQuotes[$origin]['simple'][$key]['code'] = 'tqlltl' . $access;
+                        $originQuotes[$origin]['simple'][$key]['rate'] = $price;
+                        $originQuotes[$origin]['simple'][$key]['title'] = $title;
 
                         //if(!$this->isOverrideRates){
                         if ($this->lgQuotes && $isLgSurcharges) {
@@ -1974,9 +1977,9 @@ class CompileQuotes
                             $lgPrice = $this->calculatePrice($data, true);
                             $lgTitle = $this->getTitle($data['carrier'] . $serviceType, true, false, $data['totalCalenderDaysInTransit'], [], $dateAndDays);
                             $arraySorting['liftgate'][$key] = $lgPrice ?? [];
-                            $originQuotes[$key]['liftgate']['code'] = $lgAccess;
-                            $originQuotes[$key]['liftgate']['rate'] = $lgPrice;
-                            $originQuotes[$key]['liftgate']['title'] = $lgTitle;
+                            $originQuotes[$origin]['liftgate'][$key]['code'] = $lgAccess;
+                            $originQuotes[$origin]['liftgate'][$key]['rate'] = $lgPrice;
+                            $originQuotes[$origin]['liftgate'][$key]['title'] = $lgTitle;
                         }
                         // Get Notify Before Delivery Origin Quotes
                         if ($this->notifyDelivery && $isNbdSurcharges) {
@@ -1984,6 +1987,7 @@ class CompileQuotes
                                 'notifydelivery', $data['carrier'] . $serviceType,
                                 $originQuotes,
                                 $data,
+                                $origin,
                                 $key, $data['totalCalenderDaysInTransit'],
                                 $dateAndDays,
                                 false,
@@ -2003,6 +2007,7 @@ class CompileQuotes
                                 'lgnotifydelivery', $data['carrier'] . $serviceType,
                                 $originQuotes,
                                 $data,
+                                $origin,
                                 $key, $data['totalCalenderDaysInTransit'],
                                 $dateAndDays,
                                 $this->lgQuotes,
@@ -2027,46 +2032,20 @@ class CompileQuotes
             } elseif($this->isMultiShipment && $ratingMethod == 5) {
                 $compiledQuotes = $this->getCompiledQuotesTQL($originQuotes, $arraySorting, $this->lgQuotes, $this->notifyDelivery);
             } else {
-                $compiledQuotes = $originQuotes;
-            }
-            if ($compiledQuotes !== null && !empty($compiledQuotes)) {
-                if (count($compiledQuotes) > 1) {
-                    foreach ($compiledQuotes as $k => $service) {
-                        foreach ($service as $serKey => $ser) {
-                            $quotes = Functions::getQuotesArray($service, $allQuotes, $multiShipmentQuotes, $origin, $serKey);
-                            $allQuotes = $quotes['allQuotes'];
-                            $multiShipmentQuotes = $quotes['multiShipmentQuotes'];
-                        }
-                    }
-                } else {
-                    $service = reset($compiledQuotes);
-                    foreach ($service as $serKey => $ser) {
-                        $quotes = Functions::getQuotesArray($service, $allQuotes, $multiShipmentQuotes, $origin, $serKey);
-                        $allQuotes = $quotes['allQuotes'];
-                        $multiShipmentQuotes = $quotes['multiShipmentQuotes'];
-                    }
-                }
+                $compiledQuotes = $originQuotes[$origin];
             }
 
-            if ($this->isMultiShipment) {
-                $odwArr[$origin]['quotes'] = $compiledQuotes;
+            if (isset($inStoreLdData) && !empty($inStoreLdData)) {
+                $compiledQuotes = $this->inStoreLocalDeliveryQuotes($compiledQuotes, $inStoreLdData, $allOrigins);
             }
+
+            $finalCompiledQuotes[$origin] = $compiledQuotes;
+
             $count++;
         }
 
-        $allQuotes = $this->getFinalQuotesArray($allQuotes);
-        if (!$this->isMultiShipment && isset($inStoreLdData) && !empty($inStoreLdData)) {
-            $allQuotes = $this->inStoreLocalDeliveryQuotes($allQuotes, $inStoreLdData, $allOrigins);
-        }
-        if ($this->multiOrigins && ((!empty($multiShipmentQuotes['simple']) && count($multiShipmentQuotes['simple']) > 1) || (!empty($multiShipmentQuotes['liftgate']) && count($multiShipmentQuotes['liftgate']) > 1))) {
-            $allQuotes = $this->forceChangeTitle($allQuotes);
-            $resp = [
-                'checkoutQuotes' => $this->arrangeOwnFreight($allQuotes),
-                'multiShipmentQuotes' => $multiShipmentQuotes
-            ];
-            return $resp;
-        }
-        return $this->arrangeOwnFreight($allQuotes);
+        return $finalCompiledQuotes ?? [];
+
     }
 
     private function getCheapestQuotesArr($quotes): array
@@ -6198,8 +6177,16 @@ class CompileQuotes
             return $this->averageRattingMethod($arraySorting, $options, $lgQuotes, '', '', false, $notifyDelivery);
         }
 
-        $resp = array_intersect_key($services, $sliced);
-        return $resp;
+        $resp = collect($services[$this->originKey])->map(function ($items) use ($sliced) {
+            return collect($items)
+                ->only(array_keys($sliced)) // Filter the required indexes
+                ->all(); // Return the filtered array
+        });
+
+        return $resp->toArray();
+
+        // $resp = array_intersect_key($services, $sliced);
+        // return $resp;
     }
 
     /**

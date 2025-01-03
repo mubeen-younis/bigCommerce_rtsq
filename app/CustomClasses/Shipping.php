@@ -1190,7 +1190,7 @@ class Shipping
         if (!empty($finalCheapestQuotes)) {
             foreach ($finalCheapestQuotes as $key => $data) {
 
-                $sameTitle = $this->getSameTitleQuotes($data['title'], $finalCheapestQuotes);
+                $sameTitle = $this->getSameTitleQuotes($data['title'] ?? '', $finalCheapestQuotes);
                 if (!empty($sameTitle) && count($sameTitle) > 1) {
 
                     foreach ($sameTitle as $key) {
