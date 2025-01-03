@@ -972,7 +972,7 @@ class CompileQuotes
         if (isset($quotesRes['multiShipmentQuotes']) && !empty($quotesRes['multiShipmentQuotes']) && isset($quotesRes['checkoutQuotes']) && !empty($quotesRes['checkoutQuotes'])) {
             $quotesRes = Functions::addUpCheapestQuotes($quotesRes, $this->storeId);
         }
-// dd($quotesRes);
+// dump($quotesRes);
         return $quotesRes;
     }
 
@@ -1045,7 +1045,7 @@ class CompileQuotes
         // First, find all rate types across all locations
         $allRateTypes = [];
 
-        $isLTL =  false;
+        $isLTL =  $this->alwaysLG = false;
         $hatLabel = '';
         
         // Loop through each location and gather all rate types
@@ -1059,10 +1059,12 @@ class CompileQuotes
             }
         }
 
+        $accesArray = Functions::getEnabledAccessorials($rateType);
         // Now, for each rate type, check if all locations have it and sum the rates
         foreach ($allRateTypes as $rateType) {
             $allHaveRateType = true; // Flag to check if all locations have this rate type
             $totalRate = 0;
+            $accessorials = [];
         
             // Loop through each location to check if it has this rate type
             foreach ($locations as $locationId => $types) {
@@ -1074,6 +1076,12 @@ class CompileQuotes
         
                 // Add the rate to the total if the location has the rate type
                 $totalRate += $types[$rateType]['rate'];
+                foreach($accesArray as $key => $value){
+                    if(strpos(strtolower($types[$rateType]['code']), $value)){
+                        $accessorials[$key] = true;
+                    }
+                }
+                
                 $arr[$rateType][$locationId] = $types[$rateType];
 
                 // To check that LTL shipment exist or not
@@ -1086,29 +1094,40 @@ class CompileQuotes
                 }
             }
 
-            $accessorials = Functions::getEnabledAccessorials($rateType);
-
             if($isLTL){
-                $title = $this->getTitle(Functions::$ltlMultiTitle, $accessorials['isLG'], true, '', [], [], $accessorials['isID'], $accessorials['isLAD'], false, $accessorials['isTMD'], $accessorials['isAPD'], false, $accessorials['isNBD'], $this->isResi);
+                $title = $this->getTitle(Functions::$ltlMultiTitle, $accessorials['isLG'] ?? false, true, '', [], [], $accessorials['isID'] ?? false, $accessorials['isLAD'] ?? false, false, $accessorials['isTMD'] ?? false, $accessorials['isAPD'] ?? false, false, $accessorials['isNBD'] ?? false, $this->isResi);
             } else {
-                $title = $this->getTitle(Functions::$smallMultiTitle, $accessorials['isLG'], true, '', [], [], $accessorials['isID'], $accessorials['isLAD'], false, $accessorials['isTMD'], $accessorials['isAPD'], false, $accessorials['isNBD'], $this->isResi);
+                $title = $this->getTitle(Functions::$smallMultiTitle, $accessorials['isLG'] ?? false, true, '', [], [], $accessorials['isID'] ?? false, $accessorials['isLAD'] ?? false, false, $accessorials['isTMD'] ?? false, $accessorials['isAPD'] ?? false, false, $accessorials['isNBD'] ?? false, $this->isResi);
             }
+
+            $access = [];
+            foreach(Functions::getEnableFeaturesArr($accessorials['isLG'] ?? false, $accessorials['isID'] ?? false, $accessorials['isNBD'] ?? false, $accessorials['isLAD'] ?? false) as $key => $value){
+                if($value['isEnable'] && in_array($key, $allRateTypes)){
+                    if(!empty($value['index'])){
+                        foreach($value['index'] as $index => $v){
+                            $access[$index] = true;
+                        }
+                    }
+                }
+            }
+
+            $code = $this->getAccessorialCode($access['isLG'] ?? false, $access['isID'] ?? false, $accessorials['isPU'] ?? false, $accessorials['isLGPU']  ?? false, $access['isLAD'] ?? false, $accessorials['isTMD'] ?? false, $accessorials['isAPD'] ?? false, $access['isNBD'] ?? false, $this->isResi ?? false, $isAlwaysResidential ?? false, $isSurchargeRates ?? false);
 
             if($rateType == 'Truckload'){
                 $title = $title . ' w/ truckload delivery';
+                $code = '+TL';
             }
 
             if ($rateType == 'hat') {
                 $hatLabel = explode('|', $hatLabel);
                 unset($hatLabel[0]);
                 $title = Functions::$ltlMultiTitle . ' |' . implode('|', $hatLabel);
+                $code = '+hat';
             }
-
-            $resi = $this->isResi && $rateType !== 'hat' ? '+R' : '';
 
             // If all locations have this rate type, add the total rate to the final array
             if ($allHaveRateType) {
-                $finalArray['code'] = 'Multi' . $resi . $this->accessorialsIndexes[$rateType];
+                $finalArray['code'] = 'Multi' . $code;
                 $finalArray['rate'] = $totalRate;
                 $finalArray['title'] = $title;
                 $finalCheckoutResp['checkoutQuotes'][] = $finalArray;

@@ -801,6 +801,10 @@ class Functions
         $laccess = (isset($quoteSettings['always_limited_access_delivery']) && $quoteSettings['always_limited_access_delivery']) ? true : $laccess;
         $insideDelivery = (isset($quoteSettings['always_inside_delivery']) && $quoteSettings['always_inside_delivery']) ? true : $insideDelivery;
 
+        if (!$lgQuotes) {
+            $lgQuotes = (isset($quoteSettings['autoDetectedResidentialAddressesLfg']) && $quoteSettings['autoDetectedResidentialAddressesLfg']) && $isResi;
+        }
+
         $CompileQuotes = new CompileQuotes();
         $serviceCode = !($carrName == 'seflltl' || $carrName == 'yrcltl' || $carrName == 'upsltl' || $carrName == 'saialtl' || $carrName == 'fedexltl' || $carrName == 'tqlltl' || $carrName == 'abfltl' || $carrName == 'daylightltl' || $carrName == 'dayrossltl') && isset($data['serviceType']) ? $data['serviceType'] : '';
         $serviceCode = $data['ratquoteNumber'] ?? $data['scac'] ?? $data['CarrierSCAC'] ?? $serviceCode;
@@ -1749,30 +1753,6 @@ class Functions
 
     public static function getEnabledAccessorials($key)
     {
-        // check liftgate key with other features enable
-        $isLiftGate = ($key == 'liftgate' || $key == 'lgnotifydelivery' || $key == 'lginsidenotifydelivery'
-        || $key == 'insideLiftGateDelivery' || $key == 'limitedaccessLG' || $key == 'lglaccessnotifydelivery'
-        || $key == 'lglaccessinsidedelivery' || $key == 'lglaccessinsideNotifydelivery') ? true : false;
-
-        // check inside delivery key with other features enable
-        $isInsideDelivery = ($key == 'insideDelivery' || $key == 'insideLiftGateDelivery' || $key == 'lglaccessinsideNotifydelivery'
-        || $key == 'insidenotifydelivery' || $key == 'lginsidenotifydelivery' || $key == 'laccessinsidedelivery'
-        || $key == 'lglaccessinsidedelivery' || $key == 'laccessinsideNotifydelivery') ? true : false;
-
-        // check limited access delivery key with other features enable
-        $isLimitedAccess = ($key == 'limitedaccess' || $key == 'limitedaccessLG' || $key == 'laccessnotifydelivery'
-        || $key == 'laccessinsidedelivery' || $key == 'lglaccessnotifydelivery' || $key == 'laccessinsideNotifydelivery'
-        || $key == 'lglaccessinsidedelivery' || $key == 'lglaccessinsideNotifydelivery') ? true : false;
-
-        // check two man and appointment delivery enable
-        $twoManDel = ($key == 'twoManDel' || $key == 'twoManAptDel') ? true : false;
-        $aptDel = ($key == 'aptDel' || $key == 'twoManAptDel') ? true : false;
-
-        // check notify before delivery key with other features enable
-        $isNotifydelivery = ($key == 'notifydelivery' || $key == 'insidenotifydelivery' || $key == 'lglaccessinsideNotifydelivery'
-        || $key == 'lgnotifydelivery' || $key == 'lginsidenotifydelivery' || $key == 'laccessinsideNotifydelivery'
-        || $key == 'laccessnotifydelivery' || $key == 'lglaccessnotifydelivery') ? true : false;
-
-        return ['isLG' => $isLiftGate, 'isID' => $isInsideDelivery, 'isLAD' => $isLimitedAccess, 'isNBD' => $isNotifydelivery, 'isTMD' => $twoManDel, 'isAPD' => $aptDel];
+        return ['isLG' => '+lg', 'isNBD' => '+nbd', 'isLAD' => '+lad', 'isID' => '+id', 'isAPD' => '+apd', 'isTMD' => '+tmd', 'isPU' => '+pu', 'isLGPU' => '+lfgp'];
     }
 }
