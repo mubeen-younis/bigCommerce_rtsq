@@ -2001,7 +2001,7 @@ class GenerateRequestData
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
             'thresholdWeightLimit' => $weightThreshold,
-            'holdAtTerminal' => $connSettings['quote_settings']['hold_at_terminal'] ? '1' : '0',
+            'holdAtTerminal' => !empty($connSettings['quote_settings']['hold_at_terminal']) ? '1' : '0',
             'basicAccessToken' => $accessToken,
             'accessorial' => $accessorial
         ];
