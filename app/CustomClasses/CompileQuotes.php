@@ -3664,6 +3664,7 @@ class CompileQuotes
                                 $access = $this->getAccessorialCode();
                             } else {
                                 $access = '';
+                                $access = $this->getAccessorialCode();
                             }
                         } else {
                             $access = $this->getAccessorialCode();
@@ -5456,11 +5457,10 @@ class CompileQuotes
         if($this->isSurchargeRates || $isSurchargeRates){
             $access .= '+SC';
         }
-        if ($twoManDel && $appDel) {
-            $access .= Functions::$twoManAptDelAccess;
-        } elseif ($twoManDel) {
+        if ($twoManDel || $this->alwaysTMD) {
             $access .= Functions::$twoManDelAccess;
-        } elseif ($appDel) {
+        }
+        if ($appDel || $this->alwaysAPD) {
             $access .= Functions::$appointmentDelAccess;
         }
 
@@ -5488,8 +5488,8 @@ class CompileQuotes
         $IDCost = $insideDel || $this->alwaysID ? 0 : $this->getInsideDeliveryCost($data);
         $LADCost = $laccess || $this->alwaysLAD ? 0 : $data['limitedAccessDeliveryFee'] ?? $data['surcharges']['limitedAccessDeliveryFee'] ?? 0;
         $ResiCost = ($this->isResi || $this->alwaysResi || $isResi) ? 0 : $data['surcharges']['residentialFee'] ?? 0;
-        $TMDCost = $twoManDel ? 0 : $data['surcharges']['twoManFee'] ?? 0;
-        $APDCost = $appDel ? 0 : $data['surcharges']['appointmentFee'] ?? 0;
+        $TMDCost = $twoManDel || $this->alwaysTMD ? 0 : $data['surcharges']['twoManFee'] ?? 0;
+        $APDCost = $appDel || $this->alwaysAPD ? 0 : $data['surcharges']['appointmentFee'] ?? 0;
         $NBDCost = $notifyDelivery || $this->alwaysNBD ? 0 : $this->getNotifyDeliveryCost($data, $isUpsLtl);
         $basePrice = str_replace(',', '', $data['totalNetCharge']['Amount']);
         $basePrice = (float) $basePrice;
@@ -6426,7 +6426,7 @@ class CompileQuotes
 
     public function isAlwaysAccessorials()
     {
-        $this->alwaysLG = false; $this->alwaysID = false; $this->alwaysNBD = false; $this->alwaysLAD = false;
+        $this->alwaysLG = $this->alwaysAPD = $this->alwaysTMD = $this->alwaysID = $this->alwaysNBD = $this->alwaysLAD = false;
 
         $this->alwaysLG =
         (isset($this->quoteSettings['alwaysLiftGateDelivery']) && $this->quoteSettings['alwaysLiftGateDelivery']);
@@ -6443,5 +6443,11 @@ class CompileQuotes
 
         $this->alwaysID =
         (isset($this->quoteSettings['always_inside_delivery']) && $this->quoteSettings['always_inside_delivery']);
+
+        $this->alwaysTMD =
+        (isset($this->quoteSettings['always_two_man_delivery']) && $this->quoteSettings['always_two_man_delivery']);
+
+        $this->alwaysAPD =
+        (isset($this->quoteSettings['always_appointment_delivery']) && $this->quoteSettings['always_appointment_delivery']);
     }
 }

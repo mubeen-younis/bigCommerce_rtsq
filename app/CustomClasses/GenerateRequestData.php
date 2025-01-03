@@ -2804,6 +2804,8 @@ class GenerateRequestData
         $this->resiCarrier['dayrossLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['dayrossLtl'] = $alwaysResi;
         $notify = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']);
+        $isTMD = (isset($connSettings['quote_settings']['always_two_man_delivery']) && $connSettings['quote_settings']['always_two_man_delivery']) || (isset($connSettings['quote_settings']['offer_two_man_delivery']) && $connSettings['quote_settings']['offer_two_man_delivery']);
+        $isAPD = (isset($connSettings['quote_settings']['always_appointment_delivery']) && $connSettings['quote_settings']['always_appointment_delivery']) || (isset($connSettings['quote_settings']['offer_appointment_delivery']) && $connSettings['quote_settings']['offer_appointment_delivery']);
 
         $accessorial = [];
         if ($alwaysResi || $residential != 'N') {
@@ -2818,12 +2820,12 @@ class GenerateRequestData
 
         if ($isSameDayApi) {
             // 2-Man delivery
-            if (QuotesResults::isTwoManDeliveryEnabled($connSettings)) {
+            if ($isTMD) {
                 $accessorial['2-MAN'] = '2-Man Delivery';
             }
 
             // Appointment delivery
-            if (QuotesResults::isAppointmentManDeliveryEnabled($connSettings)) {
+            if ($isAPD) {
                 $accessorial['APPT'] = 'Delivery Appointment';
             }
         }

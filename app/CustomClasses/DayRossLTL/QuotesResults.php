@@ -404,7 +404,7 @@ class QuotesResults
 
     public static function isTwoManDeliveryEnabled($connSettings)
     {
-        if (isset($connSettings['quote_settings']['always_two_man_delivery']) && $connSettings['quote_settings']['always_two_man_delivery'] || (isset($connSettings['quote_settings']['offer_two_man_delivery']) && $connSettings['quote_settings']['offer_two_man_delivery'])) {
+        if ((isset($connSettings['quote_settings']['offer_two_man_delivery']) && $connSettings['quote_settings']['offer_two_man_delivery'])) {
             return true;
         }
 
@@ -413,7 +413,7 @@ class QuotesResults
 
     public static function isAppointmentManDeliveryEnabled($connSettings)
     {
-        if (isset($connSettings['quote_settings']['always_appointment_delivery']) && $connSettings['quote_settings']['always_appointment_delivery'] || (isset($connSettings['quote_settings']['offer_appointment_delivery']) && $connSettings['quote_settings']['offer_appointment_delivery'])) {
+        if ((isset($connSettings['quote_settings']['offer_appointment_delivery']) && $connSettings['quote_settings']['offer_appointment_delivery'])) {
             return true;
         }
 
