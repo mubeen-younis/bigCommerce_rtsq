@@ -162,7 +162,7 @@ class QuotesResults
     /*
      * Returns compiled quotes of shipengine
      * */
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $isSbsEnable, $isMultiShipment, $items, $storeId = '', $carrierName = '', $totalHazmatBoxes)
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $alwaysResi, $isSbsEnable, $isMultiShipment, $items, $storeId = '', $carrierName = '', $totalHazmatBoxes)
     {
         $shippingRule = new ShippingRuleController();
         $shipments = $this->formateQuoteBeforeCompile($shipments);
@@ -170,7 +170,7 @@ class QuotesResults
         $this->quoteSettings = $connectionSettings['ups-ship-engine']['quote_settings'] ?? '';
         $this->isSbsEnable = $isSbsEnable;
         $this->items = $items;
-        $access = $this->CompileQuotes->getAccessorialCodeSmall();
+        $access = $this->CompileQuotes->getAccessorialCodeSmall($residential || $alwaysResi);
 
         if (!$isMultiShipment) {
             $isMultiShipment = is_countable($shipments) && count($shipments) > 1;

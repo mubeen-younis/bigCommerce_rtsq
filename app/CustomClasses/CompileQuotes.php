@@ -1047,7 +1047,7 @@ class CompileQuotes
         // First, find all rate types across all locations
         $allRateTypes = [];
 
-        $isLTL =  $this->alwaysLG = false;
+        $isLTL = $isSmall = $this->alwaysLG = false;
         $hatLabel = '';
         
         // Loop through each location and gather all rate types
@@ -1086,9 +1086,15 @@ class CompileQuotes
                 
                 $arr[$rateType][$locationId] = $types[$rateType];
 
-                // To check that LTL shipment exist or not
-                if(isset($types[$rateType]['code']) && (strpos($types[$rateType]['code'], 'ltl') != false) && substr($types[$rateType]['code'], 0, 9) != 'parcel_12'){
+                $IsLtlSmall = Functions::checkIsLtlSmall($types);
+
+                // To check that LTL shipment exist
+                if(isset($IsLtlSmall['isLtl']) && $IsLtlSmall['isLtl']){
                     $isLTL = true;
+                }
+                // // To check that Parcel shipment exist
+                if(isset($IsLtlSmall['isSmall']) && $IsLtlSmall['isSmall']){
+                    $isSmall = true;
                 }
 
                 if($rateType == 'hat'){
@@ -1096,14 +1102,17 @@ class CompileQuotes
                 }
             }
 
-            if($isLTL){
+            if($isLTL || ($isLTL && $isSmall)){
+                if($isLTL && $isSmall){
+                    $accessorials['isLG'] = false;
+                }
+
                 $title = $this->getTitle(Functions::$ltlMultiTitle, $accessorials['isLG'] ?? false, true, '', [], [], $accessorials['isID'] ?? false, $accessorials['isLAD'] ?? false, false, $accessorials['isTMD'] ?? false, $accessorials['isAPD'] ?? false, false, $accessorials['isNBD'] ?? false, $this->isResi);
             } else {
-                $title = $this->getTitle(Functions::$smallMultiTitle, $accessorials['isLG'] ?? false, true, '', [], [], $accessorials['isID'] ?? false, $accessorials['isLAD'] ?? false, false, $accessorials['isTMD'] ?? false, $accessorials['isAPD'] ?? false, false, $accessorials['isNBD'] ?? false, $this->isResi);
+                $title = $this->getTitle(Functions::$smallMultiTitle, false, true, '', [], [], $accessorials['isID'] ?? false, $accessorials['isLAD'] ?? false, false, $accessorials['isTMD'] ?? false, $accessorials['isAPD'] ?? false, false, $accessorials['isNBD'] ?? false, $this->isResi);
             }
 
             $access = [];
-            $this->alwaysLG = $this->alwaysAPD = $this->alwaysTMD = $this->alwaysID = $this->alwaysNBD = $this->alwaysLAD = false;
             foreach(Functions::getEnableFeaturesArr($accessorials['isLG'] ?? false, $accessorials['isID'] ?? false, $accessorials['isNBD'] ?? false, $accessorials['isLAD'] ?? false) as $key => $value){
                 if($value['isEnable'] && in_array($key, $allRateTypes)){
                     if(!empty($value['index'])){
@@ -2106,7 +2115,7 @@ class CompileQuotes
         $this->alwaysResi = $this->residential['alwaysResi']['upsSmall'] ?? false;
         $isSbsEnable = isset($residential['isSbsEnable']) ? $residential['isSbsEnable'] : false;
 
-        return $res = $this->upsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $isSbsEnable, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
+        return $res = $this->upsSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $this->alwaysResi, $isSbsEnable, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
     }
 
     public function compileUnishipSmallNewApiQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
@@ -2123,7 +2132,7 @@ class CompileQuotes
         $this->alwaysResi = $this->residential['alwaysResi']['unishippersSmallNewApi'] ?? false;
         $isSbsEnable = isset($residential['isSbsEnable']) ? $residential['isSbsEnable'] : false;
 
-        return $this->unishippersSmallQuotesResults->compileQuotesNewApi($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $isSbsEnable, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
+        return $this->unishippersSmallQuotesResults->compileQuotesNewApi($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $this->alwaysResi, $isSbsEnable, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
     }
 
     /**
@@ -2150,7 +2159,7 @@ class CompileQuotes
         $isSbsEnable = isset($residential['isSbsEnable']) ? $residential['isSbsEnable'] : false;
 
         try {
-            return $quoteResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $isSbsEnable, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
+            return $quoteResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $this->alwaysResi, $isSbsEnable, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
         } catch (\Exception $exception) {
             Log::info('Exception on shipengine results ' . json_encode([
                 'line' => $exception->getLine(),
@@ -2173,7 +2182,7 @@ class CompileQuotes
         }
         $this->alwaysResi = $this->residential['alwaysResi']['purolatorSmall'] ?? false;
         $isSbsEnable = isset($residential['isSbsEnable']) ? $residential['isSbsEnable'] : false;
-        return $this->purolatorSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $isSbsEnable, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
+        return $this->purolatorSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $this->alwaysResi, $isSbsEnable, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
     }
 
     public function compileEstesltlQuotes($shipments, $connectionSettings, $allOrigins)
@@ -2373,7 +2382,7 @@ class CompileQuotes
         }
         $this->alwaysResi = $this->residential['alwaysResi']['fedexSmall'] ?? false;
         $isSbsEnable = isset($residential['isSbsEnable']) ? $residential['isSbsEnable'] : false;
-        return $this->fedexSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $isSbsEnable, $this->isMultiShipment, $destination, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
+        return $this->fedexSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $this->alwaysResi, $isSbsEnable, $this->isMultiShipment, $destination, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
     }
 
     public function compileGlobalTranzLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
@@ -3274,10 +3283,10 @@ class CompileQuotes
         }
         $this->alwaysResi = $this->residential['alwaysResi']['wweSmall'] ?? false;
         $isSbsEnable = isset($this->residential['isSbsEnable']) ? $this->residential['isSbsEnable'] : false;
-        $this->quoteSettings = [];
+        $quoteSettings = [];
         //$isHazmat = $isHazmat == "Y" ? true : false;
         $isHazmat = $smalLtlHazmat['smallHazmat'] ?? false;
-        $this->quoteSettings = $connectionSettings['small-package']['quote_settings'] ?? '';
+        $quoteSettings = $connectionSettings['small-package']['quote_settings'] ?? '';
         $allConfigServices = $connectionSettings['small-package']['quote_settings']['carrier_services'] ?? [];
 
         // Removing Markup indexes from services
@@ -3330,15 +3339,15 @@ class CompileQuotes
                     //  CHeck FOr Ups ground transit days
                     if ($data['serviceType'] == "GND" || $data['serviceType'] == "3DS" || $data['serviceType'] == "03") {
                         // TODO: ALso We have to check plan here
-                        if (isset($this->quoteSettings['number_of_transit_days']) && $this->quoteSettings['number_of_transit_days'] != null && isset($this->quoteSettings['ground_metric']) && $this->quoteSettings['ground_metric'] != null) {
-                            $islimited = $this->wweSmallQuoteRes->checkGroundTransit($data, $this->quoteSettings);
+                        if (isset($quoteSettings['number_of_transit_days']) && $quoteSettings['number_of_transit_days'] != null && isset($quoteSettings['ground_metric']) && $quoteSettings['ground_metric'] != null) {
+                            $islimited = $this->wweSmallQuoteRes->checkGroundTransit($data, $quoteSettings);
                             if ($islimited) {
                                 continue;
                             }
                         }
                     }
                     //  CHecks FOr Only quote ground service if hazardous
-                    if ($isHazmat && isset($this->quoteSettings['ground_service_for_hazardous_material']) && $this->quoteSettings['ground_service_for_hazardous_material']) {
+                    if ($isHazmat && isset($quoteSettings['ground_service_for_hazardous_material']) && $quoteSettings['ground_service_for_hazardous_material']) {
                         if ($data['serviceType'] != "GND" && $data['serviceType'] != "3DS" && $data['serviceType'] != "03") {
                             continue;
                         }
@@ -3354,7 +3363,6 @@ class CompileQuotes
                     $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $this->originKey, $this->items, $this->allOrigins);
                     $data['totalNetCharge']['Amount'] = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
                     // Adding Markup in services if enabled
-                    $quoteSettings = $this->quoteSettings;
 
                     $data['totalNetCharge']['Amount'] = $this->wweSmallQuoteRes->addHandlingMarkupOfHazmat($data['totalNetCharge']['Amount'], $quoteSettings['handling_fee_markup'] ?? 0);
                     $price = $data['totalNetCharge']['Amount'];
@@ -3363,19 +3371,19 @@ class CompileQuotes
                         $hazmatBoxes = isset($this->totalHazmatBoxes['totalHazmatBoxes'][$origin]) ? $this->totalHazmatBoxes['totalHazmatBoxes'][$origin]['normal'] : 1;
                         if ($this->isMultiShipment) {
                             if ($hazmatAllItems[$origin] == 'Y') {
-                                $price = $this->wweSmallQuoteRes->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings, $isSbsEnable, $this->items, $hazmatBoxes);
+                                $price = $this->wweSmallQuoteRes->addHazmatAmountsInServices($price, $data['serviceType'], $quoteSettings, $isSbsEnable, $this->items, $hazmatBoxes);
                             }
                         } else {
-                            $price = $this->wweSmallQuoteRes->addHazmatAmountsInServices($price, $data['serviceType'], $this->quoteSettings, $isSbsEnable, $this->items, $hazmatBoxes);
+                            $price = $this->wweSmallQuoteRes->addHazmatAmountsInServices($price, $data['serviceType'], $quoteSettings, $isSbsEnable, $this->items, $hazmatBoxes);
                         }
                     }
 
-                    $price = $this->wweSmallQuoteRes->getServiceRate($price, $data['serviceType'], $this->quoteSettings);
+                    $price = $this->wweSmallQuoteRes->getServiceRate($price, $data['serviceType'], $quoteSettings);
                 
                     $date = $data['deliveryTimestamp'] ?? null;
                     $days = $data['totalTransitTimeInDays'] ?? null;
                     $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
-                    $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $dateAndDays, $data['serviceType'], $this->quoteSettings, $this->isResi, $isRadNotation);
+                    $title = $this->wweSmallQuoteRes->getServiceTitle($data['serviceDesc'], $dateAndDays, $data['serviceType'], $quoteSettings, $this->isResi, $isRadNotation);
                     $price = (float) str_replace(',', '', $price);
                     $originQuotes[$origin]['simple'][$key]['code'] = 'parcel_12wwe' . $data['serviceType'] . $access;
                     $originQuotes[$origin]['simple'][$key]['rate'] = $price;
@@ -3571,7 +3579,7 @@ class CompileQuotes
         }
         $this->alwaysResi = $this->residential['alwaysResi']['unishippersSmall'] ?? false;
         $isSbsEnable = isset($residential['isSbsEnable']) ? $residential['isSbsEnable'] : false;
-        return $this->unishippersSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $isSbsEnable, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
+        return $this->unishippersSmallQuotesResults->compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $this->isResi, $this->alwaysResi, $isSbsEnable, $this->isMultiShipment, $this->items, $this->storeId, $this->carrierName, $this->totalHazmatBoxes);
     }
 
     private function compileDayRossLtlQuotes($shipments, $connectionSettings, $allOrigins, $hazmatAllItems, $residential)
@@ -6422,9 +6430,9 @@ class CompileQuotes
         return $restriction;
     }
 
-    public function getAccessorialCodeSmall()
+    public function getAccessorialCodeSmall($resi = false)
     {
-        return $this->alwaysResi || $this->isResi ? '+R' : '';
+        return $this->alwaysResi || $this->isResi || $resi ? '+R' : '';
     }
 
     public function isAlwaysAccessorials()

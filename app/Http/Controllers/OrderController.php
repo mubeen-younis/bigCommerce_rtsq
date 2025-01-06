@@ -385,14 +385,10 @@ class OrderController extends Controller
         $items = $lineItem->items;
         $count = 0;
         $addedInsurance = $addHazmat = $isOriginMarkup = $isProductMarkup = false;
-        $isMulti = false;
+        $isMulti = $isLGate = false;
         $insertedIds = $insertedNames = [];
         $code = '';
 
-        if ($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement) {
-            $enableFeaturesArray = Functions::getEnableFeaturesArr($isLG, $insideDelivery == 'Y', $notifyBeforeDelivery == 'Y', $LimitedAccessDel == 'Y');
-            $enableFeaturesArray = array_reverse($enableFeaturesArray);
-        }
 
         foreach ($origins as $key => $origin) {
             $item = optional($items)->$key;
@@ -427,6 +423,8 @@ class OrderController extends Controller
             $sRate = $order['shipping_rate'] ?? null;
 
             if ($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement) {
+                $enableFeaturesArray = Functions::getEnableFeaturesArr($isLG, $insideDelivery == 'Y', $notifyBeforeDelivery == 'Y', $LimitedAccessDel == 'Y');
+                $enableFeaturesArray = array_reverse($enableFeaturesArray);
                 foreach($enableFeaturesArray as $key => $feature){
                     if ($isHAT) {
                         $sRate = $multiShipmentresponse->$index->hat->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
@@ -468,10 +466,8 @@ class OrderController extends Controller
                 $carrierHasInsurance = $code ? $this->hasInsureCarrier($code) : false;
                 $isSurcharge = strpos($code, '+SC' ) ? 'Y' : 'n';
                 $isFlatRate = strpos($code, 'flatRateRule') === 0 ? true : false;
-                $liftGateStatus = strpos($code, '+LG') ? 'Y' : 'n';
-                $insideDelivery = strpos($code, '+ID') ? 'Y' : 'n';
-                $notifyBeforeDelivery = strpos($code, '+NBD') ? 'Y' : 'n';
-                $LimitedAccessDel = strpos($code, '+LAD') ? 'Y' : 'n';
+                $isLGate = strpos($code, '+LG') ? 'Y' : 'n';
+                $autoResidentialsStatus = strpos($code, '+r') ? 'Y' : 'n';
 
                 /*Added condition if in case of multi shipment
                 The rate of shipping group will be added to warehouse rate*/
@@ -620,7 +616,7 @@ class OrderController extends Controller
 
             if (!$isSmall && !$isFlatRate) {
                 $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Pickup') : '';
-                $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Delivery') : '';
+                $liftGateStatus != 'n' || $isLGate ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Delivery') : '';
                 $liftGatePickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Pickup') : '';
                 $insideDelivery != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Inside Delivery') : '';
                 $LimitedAccessDel != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Limited Access Delivery') : '';

@@ -1638,7 +1638,7 @@ class Functions
             $isSmallRate = isset($quote['code']) ? ($isSmallRate || substr($quote['code'], 0, 9) == 'parcel_12') : false;
             $isLtlRate = isset($quote['code']) ? ($isLtlRate || strpos($quote['code'], 'ltl') != false) : false;
         }
-        return ['isLtl' => $isLtlRate && !$isSmallRate, 'IsLtlSmall' => $isLtlRate && $isSmallRate];
+        return ['isLtl' => $isLtlRate && !$isSmallRate, 'IsLtlSmall' => $isLtlRate && $isSmallRate, 'isSmall' => $isSmallRate];
     }
 
     public static function findCheapestQuotes($data, $quotes)
