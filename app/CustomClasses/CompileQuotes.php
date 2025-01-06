@@ -6085,8 +6085,8 @@ class CompileQuotes
         }
 
         foreach ($arraySorting as $key => $value) {
-            asort($arraySorting[$key]);
-            $sliced =  array_slice($arraySorting[$key], 0, $options, true);
+            asort($arraySorting['simple']);
+            $sliced =  array_slice($arraySorting['simple'], 0, $options, true);
         }
 
         if ($this->quoteSettings['method'] == 3) {
