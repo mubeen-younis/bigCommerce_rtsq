@@ -389,6 +389,11 @@ class OrderController extends Controller
         $insertedIds = $insertedNames = [];
         $code = '';
 
+        if ($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement) {
+            $enableFeaturesArray = Functions::getEnableFeaturesArr($isLG, $insideDelivery == 'Y', $notifyBeforeDelivery == 'Y', $LimitedAccessDel == 'Y');
+            $enableFeaturesArray = array_reverse($enableFeaturesArray);
+        }
+
         foreach ($origins as $key => $origin) {
             $item = optional($items)->$key;
             $isFlatRate = false;
@@ -422,8 +427,6 @@ class OrderController extends Controller
             $sRate = $order['shipping_rate'] ?? null;
 
             if ($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement) {
-                $enableFeaturesArray = Functions::getEnableFeaturesArr($isLG, $insideDelivery == 'Y', $notifyBeforeDelivery == 'Y', $LimitedAccessDel == 'Y');
-                $enableFeaturesArray = array_reverse($enableFeaturesArray);
                 foreach($enableFeaturesArray as $key => $feature){
                     if ($isHAT) {
                         $sRate = $multiShipmentresponse->$index->hat->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
@@ -466,6 +469,9 @@ class OrderController extends Controller
                 $isSurcharge = strpos($code, '+SC' ) ? 'Y' : 'n';
                 $isFlatRate = strpos($code, 'flatRateRule') === 0 ? true : false;
                 $liftGateStatus = strpos($code, '+LG') ? 'Y' : 'n';
+                $insideDelivery = strpos($code, '+ID') ? 'Y' : 'n';
+                $notifyBeforeDelivery = strpos($code, '+NBD') ? 'Y' : 'n';
+                $LimitedAccessDel = strpos($code, '+LAD') ? 'Y' : 'n';
 
                 /*Added condition if in case of multi shipment
                 The rate of shipping group will be added to warehouse rate*/

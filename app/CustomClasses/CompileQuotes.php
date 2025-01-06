@@ -1103,6 +1103,7 @@ class CompileQuotes
             }
 
             $access = [];
+            $this->alwaysLG = $this->alwaysAPD = $this->alwaysTMD = $this->alwaysID = $this->alwaysNBD = $this->alwaysLAD = false;
             foreach(Functions::getEnableFeaturesArr($accessorials['isLG'] ?? false, $accessorials['isID'] ?? false, $accessorials['isNBD'] ?? false, $accessorials['isLAD'] ?? false) as $key => $value){
                 if($value['isEnable'] && in_array($key, $allRateTypes)){
                     if(!empty($value['index'])){
