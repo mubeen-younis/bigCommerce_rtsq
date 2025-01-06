@@ -467,7 +467,7 @@ class OrderController extends Controller
                 $isSurcharge = strpos($code, '+SC' ) ? 'Y' : 'n';
                 $isFlatRate = strpos($code, 'flatRateRule') === 0 ? true : false;
                 $isLGate = strpos($code, '+LG') ? 'Y' : 'n';
-                $autoResidentialsStatus = strpos($code, '+r') ? 'Y' : 'n';
+                $autoResidentialsStatus = strpos($code, '+R') ? 'Y' : 'n';
 
                 /*Added condition if in case of multi shipment
                 The rate of shipping group will be added to warehouse rate*/

@@ -208,14 +208,10 @@ class FDOOrderController extends Controller
         $count = 0;
         $addedInsurance = $addHazmat = false;
 
-        $isMulti = false;
+        $isMulti = $isLGate = false;
         $code = '';
         $orderDetails = [];
 
-        if ($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement) {
-            $enableFeaturesArray = Functions::getEnableFeaturesArr($isLG, $insideDelivery == 'Y', $notifyBeforeDelivery == 'Y', $LimitedAccessDel == 'Y');
-            $enableFeaturesArray = array_reverse($enableFeaturesArray);
-        }
 
         foreach ($origins as $key => $origin) {
             $isFlatRate = false;
@@ -236,6 +232,8 @@ class FDOOrderController extends Controller
             $sRate = $order['shipping_rate'];
             //print_r($multiShipmentresponse); exit;
             if ($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement) {
+                $enableFeaturesArray = Functions::getEnableFeaturesArr($isLG, $insideDelivery == 'Y', $notifyBeforeDelivery == 'Y', $LimitedAccessDel == 'Y');
+                $enableFeaturesArray = array_reverse($enableFeaturesArray);
                 foreach($enableFeaturesArray as $key => $feature){
                     if ($isHAT) {
                         $sRate = $multiShipmentresponse->$index->hat->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
@@ -285,10 +283,8 @@ class FDOOrderController extends Controller
                     $sRate = $sRate + $shippingGroupRate;
                 }
 
-                $liftGateStatus = strpos($code, '+LG') ? 'Y' : 'n';
-                $insideDelivery = strpos($code, '+ID') ? 'Y' : 'n';
-                $notifyBeforeDelivery = strpos($code, '+NBD') ? 'Y' : 'n';
-                $LimitedAccessDel = strpos($code, '+LAD') ? 'Y' : 'n';
+                $isLGate = strpos($code, '+LG') ? 'Y' : 'n';
+                $autoResidentialsStatus = strpos($code, '+R') ? 'Y' : 'n';
 
                 $isMulti = true;
             }
@@ -375,7 +371,7 @@ class FDOOrderController extends Controller
             $isHAT ? array_push($orderWidget[$zip]['accessorials'], 'Hold At Terminal') : '';
             if (!$isSmall && !$isFlatRate) {
                 $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Residential Pickup') : '';
-                $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Lift Gate Delivery') : '';
+                $liftGateStatus != 'n' || $isLGate ? array_push($orderWidget[$zip]['accessorials'], 'Lift Gate Delivery') : '';
                 $liftGatePickup != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Lift Gate Pickup') : '';
                 $insideDelivery != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Inside Delivery') : '';
                 $LimitedAccessDel != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Limited Access Delivery') : '';
