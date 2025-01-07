@@ -283,7 +283,7 @@ class FDOOrderController extends Controller
                     $sRate = $sRate + $shippingGroupRate;
                 }
 
-                $isLGate = strpos($code, '+LG') ? 'Y' : 'n';
+                $isLGate = strpos($code, '+LG') ? true : false;
                 $autoResidentialsStatus = strpos($code, '+R') ? 'Y' : 'n';
 
                 $isMulti = true;

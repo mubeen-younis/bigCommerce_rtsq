@@ -466,7 +466,7 @@ class OrderController extends Controller
                 $carrierHasInsurance = $code ? $this->hasInsureCarrier($code) : false;
                 $isSurcharge = strpos($code, '+SC' ) ? 'Y' : 'n';
                 $isFlatRate = strpos($code, 'flatRateRule') === 0 ? true : false;
-                $isLGate = strpos($code, '+LG') ? 'Y' : 'n';
+                $isLGate = strpos($code, '+LG') ? true : false;
                 $autoResidentialsStatus = strpos($code, '+R') ? 'Y' : 'n';
 
                 /*Added condition if in case of multi shipment
