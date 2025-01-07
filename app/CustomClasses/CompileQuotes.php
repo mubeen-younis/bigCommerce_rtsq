@@ -1103,10 +1103,6 @@ class CompileQuotes
             }
 
             if($isLTL || ($isLTL && $isSmall)){
-                if($isLTL && $isSmall){
-                    $accessorials['isLG'] = false;
-                }
-
                 $title = $this->getTitle(Functions::$ltlMultiTitle, $accessorials['isLG'] ?? false, true, '', [], [], $accessorials['isID'] ?? false, $accessorials['isLAD'] ?? false, false, $accessorials['isTMD'] ?? false, $accessorials['isAPD'] ?? false, false, $accessorials['isNBD'] ?? false, $this->isResi);
             } else {
                 $title = $this->getTitle(Functions::$smallMultiTitle, false, true, '', [], [], $accessorials['isID'] ?? false, $accessorials['isLAD'] ?? false, false, $accessorials['isTMD'] ?? false, $accessorials['isAPD'] ?? false, false, $accessorials['isNBD'] ?? false, $this->isResi);
