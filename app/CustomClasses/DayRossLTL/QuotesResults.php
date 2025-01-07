@@ -137,7 +137,7 @@ class QuotesResults
         return $data;
     }
 
-    public function formatCharges($charges): int
+    public function formatCharges($charges)
     {
         $amount = $charges ?? 0;
         $amount = str_replace(',', '', $amount);
