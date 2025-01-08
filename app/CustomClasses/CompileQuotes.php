@@ -30,7 +30,7 @@ use App\CustomClasses\EstesLTL\QuotesResults as estesLtlQuotesResults;
 use App\CustomClasses\UpsShipEngineSmall\QuotesResults as upsShipEngineSmallQuotesResults;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\ShippingRuleController;
-
+use App\CustomClasses\QATestCases;
 
 use App\Http\Controllers\RADController;
 use App\Models\Locations;
