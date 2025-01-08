@@ -130,7 +130,7 @@ class FDOOrderController extends Controller
     {
         $storeId = $detail['store_id'];
         $order = $detail['order_detail'];
-        $rateId = $order['rate_id'] ?? null;
+        $rateId = $order['full_rate_id'] ?? $order['rate_id'] ?? null;
         $cartId = $order['cart_id'] ?? null;
 
         $data = $this->getRequestDataFromDB('RequestData', $storeId, $rateId, $cartId, $order);

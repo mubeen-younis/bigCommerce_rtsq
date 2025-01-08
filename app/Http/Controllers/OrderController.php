@@ -175,7 +175,7 @@ class OrderController extends Controller
 
     public function createOrderWidget($request, $order, $reportingFlag)
     {
-        $rateId = $order['rate_id'] ?? null;
+        $rateId = $order['full_rate_id'] ?? $order['rate_id'] ?? null;
         $cartId = $order['cart_id'] ?? null;
 
         $data = $this->getRequestDataFromDB('RequestData', $request, $rateId, $cartId, $order);
