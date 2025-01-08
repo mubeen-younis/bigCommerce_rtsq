@@ -1110,6 +1110,10 @@ class Shipping
         }
 
         Log::info('Last response for quotes ' . json_encode($resp));
+        if (request()->filled('qa_testing') && request('qa_testing') === 'yes') {
+            $wsQuotes = $GLOBALS['ws_quotes'] ?? [];
+            $resp['ws_response'] = json_decode(json_encode($wsQuotes), true);
+        }
         return $resp;
     }
 

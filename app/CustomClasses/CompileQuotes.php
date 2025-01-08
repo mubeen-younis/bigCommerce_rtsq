@@ -738,6 +738,9 @@ class CompileQuotes
         foreach ($quotes as $key => $shipment) {
             $this->carrierName = $key;
             $this->multiOrigins = $this->carriers[$key]['shipmentsCount'] > 1 ? true : false;
+            if (request()->filled('qa_testing') && request('qa_testing') === 'yes') {
+                QATestCases::verifyRates($key, $shipment);
+            }
             switch ($key) {
                 case "wweLTL":
                     $resp = $this->compileWweLtlQuotes($shipment, $connectionSettings, $allOrigins);
