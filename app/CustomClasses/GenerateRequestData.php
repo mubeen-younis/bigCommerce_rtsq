@@ -53,6 +53,7 @@ class GenerateRequestData
     public $simpleRate = false;
     public $homeDeliveryServices = false;
     public $storeDateTime;
+    public $Boxes = [];
 
     /**
      * constructor of class that accepts request object
@@ -771,6 +772,14 @@ class GenerateRequestData
                 $carriersArray = $errorManagmentResp['carriersArray'];
                 $itemsArr = $errorManagmentResp['itemsArr'];
             }
+            foreach($itemsArr as $key => $item){
+                if (isset($item['isFreeShipping']) && $item['isFreeShipping']){
+                    foreach ($carriersArray['carriers'] as $carr => $carrier) {
+                        unset($carriersArray['carriers'][$carr]['originAddress'][$key]);
+                        unset($itemsArr[$key]);
+                    }
+                }
+            }
         }
 
         $carriers = $carriersArray['carriers'];
@@ -1196,6 +1205,7 @@ class GenerateRequestData
             'carriers' => $carriers,
             'receiverAddress' => $receiverAddress,
             'commdityDetails' => $itemsArr,
+            'hazmatBoxes' => $this->Boxes,
         ];
 
         if (isset($carriers['fedexSmall'])) {
@@ -1870,10 +1880,15 @@ class GenerateRequestData
         }
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $apiArray = [
-            'AccountNumber' => $connSettings['creds']['account_number'] ?? '',
-            'MeterNumber' => $connSettings['creds']['meter_number'] ?? '',
-            'password' => $connSettings['creds']['password'] ?? '',
-            'key' => $connSettings['creds']['api_access_key'] ?? '',
+            'AccountNumber' => isset($connSettings['creds']['account_number']) ? $connSettings['creds']['account_number'] : '',
+            'MeterNumber' => isset($connSettings['creds']['meter_number']) ? $connSettings['creds']['meter_number'] : '',
+            'password' => isset($connSettings['creds']['password']) ? $connSettings['creds']['password'] : '',
+            'key' => isset($connSettings['creds']['api_access_key']) ? $connSettings['creds']['api_access_key'] : '',
+            // New Api Test Connection Params
+            'clientId' => isset($connSettings['creds']['clientId']) ? $connSettings['creds']['clientId'] : '',
+            'clientSecret' => isset($connSettings['creds']['clientSecret']) ? $connSettings['creds']['clientSecret'] : '',
+            'requestForNewAPI' => '1',
+            // ---------------- //
             'shippingChargesAccount' => $connSettings['creds']['shipping_account_number'] ?? '',
             'billingLineAddress' => $connSettings['creds']['billing_address'] ?? '',
             'billingCountry' => $connSettings['creds']['billing_country'] ?? '',
@@ -1915,6 +1930,15 @@ class GenerateRequestData
             'accessorial' => $accessorial,
             /*array('DANGEROUS_GOODS', 'LIFTGATE_DELIVERY'),*/
         ];
+
+        if (isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api') {
+            unset($apiArray['AccountNumber'], $apiArray['MeterNumber'], $apiArray['password'], $apiArray['key']);
+
+        } else {
+            unset($apiArray['clientId'], $apiArray['clientSecret'], $apiArray['requestForNewAPI']);
+
+        }
+
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
 
@@ -1977,7 +2001,7 @@ class GenerateRequestData
             'handlingUnitWeight' => $connSettings['quote_settings']['weight_of_handling_unit'] ?? 0,
             'maxWeightPerHandlingUnit' => $connSettings['quote_settings']['max_weight_per_handling_unit'] ?? 0,
             'thresholdWeightLimit' => $weightThreshold,
-            'holdAtTerminal' => $connSettings['quote_settings']['hold_at_terminal'] ? '1' : '0',
+            'holdAtTerminal' => !empty($connSettings['quote_settings']['hold_at_terminal']) ? '1' : '0',
             'basicAccessToken' => $accessToken,
             'accessorial' => $accessorial
         ];
@@ -2168,6 +2192,7 @@ class GenerateRequestData
 
         $this->resiCarrier['wweSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['wweSmall'] = $alwaysResi;
+        $this->resiCarrier['isSbsEnable'] = $sbsEnabled && $this->storeData['enabled_addon_sbs'];
 
         $apiArray = [
             'speed_ship_username' => isset($connSettings['creds']['username']) ? $connSettings['creds']['username'] : '',
@@ -2224,6 +2249,7 @@ class GenerateRequestData
         $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
         $this->resiCarrier['purolatorSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['purolatorSmall'] = $alwaysResi;
+        $this->resiCarrier['isSbsEnable'] = $sbsEnabled && $this->storeData['enabled_addon_sbs'];
 
         $apiArray = [
             'productionKey' => $connSettings['creds']['productionKey'],
@@ -2245,6 +2271,7 @@ class GenerateRequestData
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
+        $sbsEnabled = $this->checkIsSBSActive($this->storeData['store']['id']);
         if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
@@ -2259,12 +2286,14 @@ class GenerateRequestData
         $carrierServices = $connSettings['quote_settings']['carrier_services'] ?? [];
         $this->resiCarrier['upsSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['upsSmall'] = $alwaysResi;
+        $this->resiCarrier['isSbsEnable'] = $sbsEnabled && $this->storeData['enabled_addon_sbs'];
 
-        $sbsEnabled = $this->checkIsSBSActive($this->storeData['store']['id']);
         $ratingMethod = $this->getPackagingRatingMethod($connSettings);
 
         $upsSmall = new UpsSmallQuotesResults();
         $saturdayDelivery = $upsSmall->isSaturdayDeliveryEnabled($connSettings) ? '1' : '0';
+
+        $isUpsLandedCost = !empty($connSettings['quote_settings']['isUpsLandedCost']) ? 1 : 0;
 
         $apiArray = [
             'ups_small_pkg_username' => isset($connSettings['creds']['username']) ? $connSettings['creds']['username'] : '',
@@ -2316,6 +2345,13 @@ class GenerateRequestData
                 $apiArray['ups_small_pkg_password'],
                 $apiArray['ups_small_pkg_authentication_key'],
             );
+
+            $apiArray['taxAPIFlag'] = $isUpsLandedCost;
+            $apiArray['taxAPIParam'] = [
+                'currencyCode' => 'USD', // default will be USD
+                'transModes' => '', // optional
+                'shipmentType' => 'SALE', // optional - default SALE
+            ];
         } else {
             unset(
                 $apiArray['clientId'],
@@ -2358,6 +2394,7 @@ class GenerateRequestData
 
         $this->resiCarrier['shipEngine'] = $residential;
         $this->resiCarrier['alwaysResi']['shipEngine'] = $alwaysResi;
+        $this->resiCarrier['isSbsEnable'] = $sbsEnabled && $this->storeData['enabled_addon_sbs'];
 
 
         $apiArray = [
@@ -2389,6 +2426,7 @@ class GenerateRequestData
         $residential = 'N';
         $alwaysResi = false;
         $radStatus = $this->checkRadIsSuspend($this->storeData['store']['id']);
+        $sbsEnabled = $this->checkIsSBSActive($this->storeData['store']['id']);
         if ($this->checkIsAutoDetectedResDel($rad_settings)) {
             if ($this->radHitConsumed == 0) {
                 $this->radHitConsumed = 1;
@@ -2403,8 +2441,8 @@ class GenerateRequestData
         $this->setIsSmartPost($connSettings);
         $this->resiCarrier['fedexSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['fedexSmall'] = $alwaysResi;
+        $this->resiCarrier['isSbsEnable'] = $sbsEnabled && $this->storeData['enabled_addon_sbs'];
 
-        $sbsEnabled = $this->checkIsSBSActive($this->storeData['store']['id']);
         $ratingMethod = $this->getPackagingRatingMethod($connSettings);
 
         $hubIdindicia = isset($connSettings['creds']['hub_id']) ? explode('(', $connSettings['creds']['hub_id']) : '';
@@ -2430,10 +2468,16 @@ class GenerateRequestData
 
             'residentialDelivery' => ($alwaysResi ? 'Y' : $residential == 'Y') ? 'on' : 'off',
 
-            'MeterNumber' => $connSettings['creds']['meter_number'],
-            'password' => $connSettings['creds']['password'],
-            'key' => $connSettings['creds']['api_access_key'],
-            'AccountNumber' => $connSettings['creds']['account_number'],
+            'MeterNumber' => $connSettings['creds']['meter_number'] ?? '',
+            'password' => $connSettings['creds']['password'] ?? '',
+            'key' => $connSettings['creds']['api_access_key'] ?? '',
+            'AccountNumber' => $connSettings['creds']['account_number'] ?? '',
+            // New Api Test Connection Params
+            'clientId' => $connSettings['creds']['clientId'] ?? '',
+            'clientSecret' => $connSettings['creds']['clientSecret'] ?? '',
+            'accountNumber' => $connSettings['creds']['new_api_account_number'] ?? '',
+            'requestForNewAPI' => '1',
+
             'prefferedCurrency' => 'USD',
             'pkgType' => '00',
             'saturdayDelivery' => 'on',
@@ -2441,6 +2485,23 @@ class GenerateRequestData
             'homeDeliveryPremiumType' => $premiumType,
             'packagesType' => !$sbsEnabled ? $ratingMethod : '',
         ];
+
+        if (isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api') {
+            unset(
+                $apiArray['MeterNumber'],
+                $apiArray['password'],
+                $apiArray['AccountNumber'],
+                $apiArray['key'],
+            );
+        } else {
+            unset(
+                $apiArray['clientId'],
+                $apiArray['clientSecret'],
+                $apiArray['accountNumber'],
+                $apiArray['requestForNewAPI'],
+            );
+        }
+
         if ($this->smartPost) {
             $apiArray['smartPostData'] = [
                 'hubId' => $hubId,
@@ -2473,6 +2534,7 @@ class GenerateRequestData
 
         $sbsEnabled = $this->checkIsSBSActive($this->storeData['store']['id']);
         $ratingMethod = $this->getPackagingRatingMethod($connSettings);
+        $this->resiCarrier['isSbsEnable'] = $sbsEnabled && $this->storeData['enabled_addon_sbs'];
 
         if (isset($connSettings['creds']['api_type']) &&  $connSettings['creds']['api_type'] === 'new_api') {
             $this->resiCarrier['isUnishipperNewApi'] = true;
@@ -2742,6 +2804,8 @@ class GenerateRequestData
         $this->resiCarrier['dayrossLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['dayrossLtl'] = $alwaysResi;
         $notify = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']);
+        $isTMD = (isset($connSettings['quote_settings']['always_two_man_delivery']) && $connSettings['quote_settings']['always_two_man_delivery']) || (isset($connSettings['quote_settings']['offer_two_man_delivery']) && $connSettings['quote_settings']['offer_two_man_delivery']);
+        $isAPD = (isset($connSettings['quote_settings']['always_appointment_delivery']) && $connSettings['quote_settings']['always_appointment_delivery']) || (isset($connSettings['quote_settings']['offer_appointment_delivery']) && $connSettings['quote_settings']['offer_appointment_delivery']);
 
         $accessorial = [];
         if ($alwaysResi || $residential != 'N') {
@@ -2756,12 +2820,12 @@ class GenerateRequestData
 
         if ($isSameDayApi) {
             // 2-Man delivery
-            if (QuotesResults::isTwoManDeliveryEnabled($connSettings)) {
+            if ($isTMD) {
                 $accessorial['2-MAN'] = '2-Man Delivery';
             }
 
             // Appointment delivery
-            if (QuotesResults::isAppointmentManDeliveryEnabled($connSettings)) {
+            if ($isAPD) {
                 $accessorial['APPT'] = 'Delivery Appointment';
             }
         }
@@ -3386,9 +3450,9 @@ class GenerateRequestData
                         "variant_id" => $key,
                         "id" => $key,
                         "wg" => $itemsArr[$key]['lineItemWeight'] ?? 0,
-                        "h" => Helpers::floatValue($itemsArr[$key]['lineItemHeight'] ?? 0),
-                        "d" => Helpers::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
-                        "w" => Helpers::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
+                        "h" => Functions::floatValue($itemsArr[$key]['lineItemHeight'] ?? 0),
+                        "d" => Functions::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
+                        "w" => Functions::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
                         "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
                         "vr" => 0, //vertical 0 or 1
                         "boxFee" => 0,
@@ -3399,9 +3463,9 @@ class GenerateRequestData
                         "variant_id" => $key,
                         "id" => $key,
                         "wg" => $itemsArr[$key]['lineItemWeight'] ?? 0,
-                        "h" => Helpers::floatValue($itemsArr[$key]['lineItemHeight'] ?? 0),
-                        "d" => Helpers::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
-                        "w" => Helpers::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
+                        "h" => Functions::floatValue($itemsArr[$key]['lineItemHeight'] ?? 0),
+                        "d" => Functions::floatValue($itemsArr[$key]['lineItemLength'] ?? 0),
+                        "w" => Functions::floatValue($itemsArr[$key]['lineItemWidth'] ?? 0),
                         "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
                         "vr" => $itemsArr[$key]['vertical_rotation'] ?? 0, //vertical 0 or 1
                         "boxFee" => $itemsArr[$key]['boxFee'] ?? 0
@@ -3473,6 +3537,7 @@ class GenerateRequestData
                 'id' => $box->id,
                 'max_wg' => $box->max_weight,
                 'box_weight' => $box->box_weight,
+                'box_height' => $box->height,
                 /*Start- Added in case of Customer removes external dimesnions and bin request log issue
                 NO use of it in3dbin Request
                 Just adding in array For Request Hash*/
@@ -3513,8 +3578,8 @@ class GenerateRequestData
                 $binResponse = $this->addPackagingID($binResponse, $boxBins);
                 $counting = 0;
                 $counting = 0;
-
                 foreach ($binResponse as $locationId => $bins) {
+                    $totalHazmatBoxes = 0;
                     foreach ($bins->bins_packed as $key => $binPacked) {
                         $binPacked->image_complete = Functions::replace3DBinUrl($binPacked->image_complete);
 
@@ -3523,6 +3588,8 @@ class GenerateRequestData
                                 $item->image_separated = Functions::replace3DBinUrl($item->image_separated);
                                 $item->image_sbs = Functions::replace3DBinUrl($item->image_sbs);
                             }
+                            // Check which box has hazmat material and get count how much hazmat boxes
+                            $totalHazmatBoxes += Functions::verifyAndCountHazmatBox($binPacked, $itemsArr);
                         }
 
                         $bin = $binPacked;
@@ -3540,6 +3607,7 @@ class GenerateRequestData
                         $totalBoxWeight = $bin->bin_data->weight + $boxWeight ?? 0;
                         $binResponse[$locationId]->bins_packed[$key]->bin_data->totalBoxWeight = $totalBoxWeight;
                     }
+                    $this->Boxes['totalHazmatBoxes'][$locationId][$this->fedexType] = $totalHazmatBoxes ?? 0;
                 }
             } else {
                 $newOrigins = $this->origins;
@@ -3567,29 +3635,34 @@ class GenerateRequestData
         return $number;
     }
 
-    public function updatCommdityDetails($item, $bin, $boxBins, $itemsArr)
+    public function updatCommdityDetails($item, $bin, $boxBins, $itemsArr, $palletPkgReq = false)
     {
-        $boxWeight = 0;
+        $boxWeight = $boxHeight = 0;
         $price = $item['lineItemPrice'] ?? 0;
         $hazmat = 'N';
         if (isset($bin->bin_data->id) && isset($boxBins[$bin->bin_data->id])) {
             $boxWeight = $boxBins[$bin->bin_data->id]['box_weight'];
+            $boxHeight = $boxBins[$bin->bin_data->id]['box_height'];
             $price = 0;
             if (isset($bin->items)) {
                 foreach ($bin->items as $itemData) {
                     if ($hazmat == 'N') {
-                        $hazmat = $itemsArr[$itemData->id]['isHazmatLineItem'];
+                        $item['isHazmatLineItem'] = $hazmat = $itemsArr[$itemData->id]['isHazmatLineItem'];
                     }
                     $price += $itemsArr[$itemData->id]['lineItemPrice'] ?? 0;
                 }
             }
         }
+
+        if($palletPkgReq && !isset($bin->bin_data->type)){
+            $palletHeight = $bin->bin_data->stack_height + $boxHeight ?? 0;
+        }
+
         $item['lineItemLength'] = $bin->bin_data->d ?? 0;
         $item['lineItemWidth'] = $bin->bin_data->w ?? 0;
-        $item['lineItemHeight'] = $bin->bin_data->h ?? 0;
+        $item['lineItemHeight'] = $palletPkgReq && !isset($bin->bin_data->type) ? $palletHeight : $bin->bin_data->h ?? 0;
         $item['lineItemPrice'] = $price; //$item['lineItemPrice']*$quantityPacked;
         $item['lineItemWeight'] = $bin->bin_data->weight + $boxWeight;
-        $item['isHazmatLineItem'] = $hazmat;
 
         //$item['piecesOfLineItem'] = 1 ?? 0;
         $item['shipItemAlone'] = 1;
@@ -3809,7 +3882,7 @@ class GenerateRequestData
         if ($packagingRatingMethod == 2) {
             $ratingMethod = 'ship_combine_and_alone';
         } elseif ($packagingRatingMethod == 3) {
-            $ratingMethod = 'eniture_packaging';
+            $ratingMethod = 'ship_as_one';
         } else {
             $ratingMethod = 'ship_alone';
         }

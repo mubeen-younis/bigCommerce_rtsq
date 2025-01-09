@@ -5,6 +5,7 @@ namespace App\CustomClasses\DayRossLTL;
 use App\CustomClasses\CompileQuotes;
 use App\CustomClasses\Functions;
 use App\Models\TerminalLocation;
+use Illuminate\Support\Facades\Log;
 
 class QuotesResults
 {
@@ -26,16 +27,60 @@ class QuotesResults
             $charges = 0;
 
             if (isset($formattedShipments[$key]['q']) && !$isError) {
-                if (isset($value['q']['ServiceLevelCode']) && $value['q']['ServiceLevelCode'] == 'GL' && isset($value['q']['ShipmentCharges'])) {
+                // This block of code for Day&Ross Domestic and International services
+                if(is_array($value['q']) && isset($value['q'][0])){
+                    foreach($value['q'] as $index => $data){
+                        if (isset($data['Division']) && $data['Division'] == 'Sameday') {
+
+                            $data = $this->getLGQuotes($value, $data);
+                            $serviceDescription = $data['Description'] ?? '';
+                            $resp = $this->compileSameDayApiQuotes($quoteSettings, $data);
+
+                            if (empty($resp)) {
+                                $formattedShipments[$key]['q'][$index]['soapBody']['soapFault'] = 'No quotes found';
+                                continue;
+                            } 
+        
+                            $charges = $resp['charges'];
+                            $formattedShipments[$key]['q'][$index]['serviceType'] = $serviceDescription;
+                            $formattedShipments[$key]['q'][$index]['serviceDesc'] = $serviceDescription;
+                            $formattedShipments[$key]['q'][$index]['surcharges']['twoManFee'] = $resp['twoManFee'];
+                            $formattedShipments[$key]['q'][$index]['surcharges']['appointmentFee'] = $resp['appointmentFee'];
+                            $formattedShipments[$key]['q'][$index]['surcharges']['liftgateFee'] = $resp['liftGateFee'];
+                            $formattedShipments[$key]['q'][$index]['totalNetCharge']['Amount'] = $charges;
+                            unset($formattedShipments[$key]['q'][$index]['ShipmentCharges']);
+                        }
+                    }
+                // This block of code for Day&Ross Premium services
+                } elseif (isset($value['q']['Division']) && $value['q']['Division'] == 'Sameday') {
+                    $data = $this->getLGQuotes($value, $value['q']);
+                    
+                    $serviceDescription = $data['Description'] ?? '';
+                    $resp = $this->compileSameDayApiQuotes($quoteSettings, $data);
+
+                    if (empty($resp)) {
+                        $formattedShipments[$key]['q']['soapBody']['soapFault'] = 'No quotes found';
+                        continue;
+                    } 
+
+                    $charges = $resp['charges'];
+                    $formattedShipments[$key]['q']['serviceType'] = $serviceDescription;
+                    $formattedShipments[$key]['q']['serviceDesc'] = $serviceDescription;
+                    $formattedShipments[$key]['q']['surcharges']['twoManFee'] = $resp['twoManFee'];
+                    $formattedShipments[$key]['q']['surcharges']['appointmentFee'] = $resp['appointmentFee'];
+                    $formattedShipments[$key]['q']['surcharges']['liftgateFee'] = $resp['liftGateFee'];
+                    $formattedShipments[$key]['q']['totalNetCharge']['Amount'] = $charges;
+                    unset($formattedShipments[$key]['q']['ShipmentCharges']);
+                // This block of code for General Freight CA to US addresses
+                } elseif (isset($value['q']['ServiceLevelCode']) && $value['q']['ServiceLevelCode'] == 'GL' && isset($value['q']['ShipmentCharges'])) {
+
                     $serviceDescription = $value['q']['Description'];
                     $charges = $this->formatCharges($value['q']['TotalAmount']);
-                    $charges = $value['q']['TotalAmount'];
 
                     $shipmentCharges = isset($value['quotesWithLiftgate']['soapBody']['GetRate2Response']['GetRate2Result']['ServiceLevels']['ShipmentCharges']['ShipmentCharge']) ? $value['quotesWithLiftgate']['soapBody']['GetRate2Response']['GetRate2Result']['ServiceLevels']['ShipmentCharges']['ShipmentCharge'] : [];
                     foreach ($shipmentCharges as $k => $value) {
-                        if (isset($value['ChargeCode']) && $value['ChargeCode'] == 'TLGDEL' && isset($value['Description']) && $value['Description'] == 'TAILGATE DELIVERY') {
+                        if (isset($value['ChargeCode']) && $value['ChargeCode'] == 'TAIL' && isset($value['Description']) && $value['Description'] == 'TAILGATE DELIVERY') {
                             $formattedShipments[$key]['q']['surcharges']['liftgateFee'] = $this->formatCharges($value['Amount']);
-                            $formattedShipments[$key]['q']['surcharges']['liftgateFee'] = $value['Amount'];
                             // add index liftgateSurcharge for HAT quotes
                             $formattedShipments[$key]['q']['liftgateSurcharge'] = $value['Amount'];
                         }
@@ -46,41 +91,53 @@ class QuotesResults
                         }
                     }
 
+                    $formattedShipments[$key]['q']['serviceType'] = $serviceDescription;
+                    $formattedShipments[$key]['q']['serviceDesc'] = $serviceDescription;
+                    $formattedShipments[$key]['q']['totalNetCharge']['Amount'] = $charges;
                     unset($formattedShipments[$key]['q']['ShipmentCharges']);
-                } elseif (isset($value['q']['Division']) && $value['q']['Division'] == 'Sameday') {
-                    $serviceDescription = $value['q']['Description'] ?? '';
-                    $resp = $this->compileSameDayApiQuotes($quoteSettings, $value);
-
-                    if (empty($resp)) {
-                        $formattedShipments[$key]['q']['soapBody']['soapFault'] = 'No quotes found';
-                        continue;
-                    } 
-
-                    $charges = $resp['charges'];
-                    $formattedShipments[$key]['q']['surcharges']['twoManFee'] = $resp['twoManFee'];
-                    $formattedShipments[$key]['q']['surcharges']['appointmentFee'] = $resp['appointmentFee'];
-                    $formattedShipments[$key]['q']['surcharges']['liftgateFee'] = $resp['liftGateFee'];
-
-                    unset($formattedShipments[$key]['q']['ShipmentCharges']);
+                    unset($formattedShipments[$key]['quotesWithLiftgate']);
+                // This block of code for General Freight CA to CA addresses
                 } else {
                     $serviceDescription = 'Day & Ross';
                     $charges = $this->formatCharges($value['q']['TotalCharges']);
-                    $charges = $value['q']['TotalCharges'];
 
-                    if ($this->isLGQuotes($quoteSettings) && isset($value['q']['liftgateSurcharge'])) {
-                        $formattedShipments[$key]['q']['surcharges']['liftgateFee'] = $value['q']['liftgateSurcharge'];
+                    if ($this->isLGQuotes($quoteSettings) && isset($value['quotesWithLiftgate']['TotalCharges'])) {
+                        $formattedShipments[$key]['q']['surcharges']['liftgateFee'] = $value['quotesWithLiftgate']['TotalCharges'] - $value['q']['TotalCharges'];
+                        $charges = $this->formatCharges($value['quotesWithLiftgate']['TotalCharges']);
+                        unset($formattedShipments[$key]['quotesWithLiftgate']);
                     }
-                }
 
-                $formattedShipments[$key]['q']['serviceType'] = $formattedShipments[$key]['q']['serviceDesc'] = $serviceDescription;
-                $formattedShipments[$key]['q']['totalNetCharge']['Amount'] = $charges;
+                    $formattedShipments[$key]['q']['totalNetCharge']['Amount'] = $charges;
+                    $formattedShipments[$key]['q']['serviceType'] = $serviceDescription;
+                    $formattedShipments[$key]['q']['serviceDesc'] = $serviceDescription;
+                }
             }
         }
 
         return $formattedShipments;
     }
 
-    public function formatCharges($charges): int
+    public function getLGQuotes($value, $data){
+        if(isset($value['quotesWithLiftgate']['soapBody']['GetRate2Response']['GetRate2Result']['ServiceLevels'])){
+
+            $LGservices = $value['quotesWithLiftgate']['soapBody']['GetRate2Response']['GetRate2Result']['ServiceLevels'];
+            $shipmentQuote = collect($LGservices)->filter(function($service) use ($data){
+                return $service['ServiceLevelCode'] == $data['ServiceLevelCode'];
+            })->first();
+            
+            $shipmentCharge = $shipmentQuote['ShipmentCharges']['ShipmentCharge'] ?? [];
+            foreach($shipmentCharge as $service){
+                if(isset($service['ChargeCode']) && $service['ChargeCode'] == 'TAIL'){
+                    $data['ShipmentCharges']['ShipmentCharge'][] = $service;
+                    $data['TotalAmount'] = $shipmentQuote['TotalAmount'];
+                    break;
+                }
+            }
+        }
+        return $data;
+    }
+
+    public function formatCharges($charges)
     {
         $amount = $charges ?? 0;
         $amount = str_replace(',', '', $amount);
@@ -104,8 +161,7 @@ class QuotesResults
 
     public function isLGQuotes($quoteSettings): bool
     {
-        $isLG = (isset($quoteSettings['alwaysLiftGateDelivery']) && $quoteSettings['alwaysLiftGateDelivery']) ||
-            (isset($quoteSettings['offerLiftGateDelivery']) && $quoteSettings['offerLiftGateDelivery']);
+        $isLG = (isset($quoteSettings['offerLiftGateDelivery']) && $quoteSettings['offerLiftGateDelivery']);
 
         return $isLG;
     }
@@ -224,7 +280,7 @@ class QuotesResults
 
         $hatQuotes = [];
 
-        foreach ($shipments as $ship) {
+        foreach ($shipments as $origin => $ship) {
             $isError = isset($ship['q']['soapBody']['soapFault']);
             if ($isError) {
                 continue;
@@ -253,7 +309,7 @@ class QuotesResults
                     $terminal['serviceDesc'] = Functions::getHATTitle($title, $address, $distance, $phoneNumber);
                     $terminal['totalNetCharge']['Amount'] = Functions::getHATPrice($charges, $quoteSettings['hold_at_terminal_price'] ?? 0);
 
-                    $hatQuotes[] = $terminal;
+                    $hatQuotes[$origin]['hat'][] = $terminal;
                 }
             }
         }
@@ -263,16 +319,16 @@ class QuotesResults
 
     private function compileSameDayApiQuotes($quoteSettings, $value)
     {
-        $shipmentCharges = $value['q']['ShipmentCharges']['ShipmentCharge'] ?? [];
+        $shipmentCharges = $value['ShipmentCharges']['ShipmentCharge'] ?? [];
         $standardActiveServicesCodes = $this->setAndGetActiveServices($quoteSettings);
         $premiumFreightServicesCodes = $this->getPremiumFreightServices();
         $allServicesArr = array_merge($standardActiveServicesCodes, $premiumFreightServicesCodes);
 
-        $serviceCode = $value['q']['ServiceLevelCode'] ?? '';
+        $serviceCode = $value['ServiceLevelCode'] ?? '';
         $charges = 0;
 
         if (in_array($serviceCode, $allServicesArr)) {
-            $charges = $value['q']['TotalAmount'];
+            $charges = $value['TotalAmount'];
         } else {
             return [];
         }
@@ -289,7 +345,7 @@ class QuotesResults
                     $appointmentDeliveryFee = $value['Amount'];
                 }
 
-                if (isset($value['ChargeCode']) && $value['ChargeCode'] == 'TLGDEL') {
+                if (isset($value['ChargeCode']) && $value['ChargeCode'] == 'TAIL') {
                     $lgFee = $value['Amount'];
                 }
             }
@@ -348,7 +404,7 @@ class QuotesResults
 
     public static function isTwoManDeliveryEnabled($connSettings)
     {
-        if (isset($connSettings['quote_settings']['always_two_man_delivery']) && $connSettings['quote_settings']['always_two_man_delivery'] || (isset($connSettings['quote_settings']['offer_two_man_delivery']) && $connSettings['quote_settings']['offer_two_man_delivery'])) {
+        if ((isset($connSettings['quote_settings']['offer_two_man_delivery']) && $connSettings['quote_settings']['offer_two_man_delivery'])) {
             return true;
         }
 
@@ -357,7 +413,7 @@ class QuotesResults
 
     public static function isAppointmentManDeliveryEnabled($connSettings)
     {
-        if (isset($connSettings['quote_settings']['always_appointment_delivery']) && $connSettings['quote_settings']['always_appointment_delivery'] || (isset($connSettings['quote_settings']['offer_appointment_delivery']) && $connSettings['quote_settings']['offer_appointment_delivery'])) {
+        if ((isset($connSettings['quote_settings']['offer_appointment_delivery']) && $connSettings['quote_settings']['offer_appointment_delivery'])) {
             return true;
         }
 

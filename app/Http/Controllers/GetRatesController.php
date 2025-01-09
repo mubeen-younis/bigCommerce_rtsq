@@ -22,6 +22,9 @@ use Illuminate\Support\Facades\Log;
 use App\CustomClasses\CompareRates;
 use App\Constants\Constant;
 use App\Models\ShippingRule;
+use App\Models\NestingItemsDetail;
+use App\CustomClasses\BigCommerceFunctions;
+use App\CurlRequest;
 
 class GetRatesController extends Controller
 {
@@ -32,6 +35,7 @@ class GetRatesController extends Controller
     public $installedAddons = [];
     public $updatedWarehouses = [];
     public $setRulePriority = null;
+    public $curlRequest;
 
     /**
      * @var WweLTLShipmentPackage
@@ -47,6 +51,7 @@ class GetRatesController extends Controller
         $this->shipping = new Shipping();
         $this->shipmentPkg = new WweLTLShipmentPackage();
         $this->isDbscInstalled = false;
+        $this->curlRequest = new CurlRequest();
     }
 
     /*
@@ -98,12 +103,102 @@ class GetRatesController extends Controller
         if ($this->isShippingRule($storeData, $this->formatReq)) {
             return [];
         }
+        // Apply Nesting items functionality
+        if(!empty($this->formatReq['lineItemData']['items'])){
+            $this->itemsTobeNested($this->formatReq['lineItemData']['items'], $cartInfo['store_id']);
+        }
 
         $quotes = $this->shipping->collectRates($this->formatReq, $storeData, $this->connectionSettings, $cartInfo, $this->isDbscInstalled);
 
         return $quotes;
 
 
+    }
+
+    public function itemsTobeNested($products, $storeId){
+        foreach($products as $variantId => $product){
+            // Get nesting items details from DB
+            $nestingItemsDetails = optional(NestingItemsDetail::where(['product_settings_id' => $product['id'], 'store_id' => $storeId])->first())->toArray() ?? [];
+            // Check: Nested percentage should be greater then 0
+            if(!empty($nestingItemsDetails) && $nestingItemsDetails['is_nesting_enabled'] && !empty($nestingItemsDetails['max_nested_items'])){
+
+                $params = [
+                    'totalItems' => $product['piecesOfLineItem'] ?? 0,
+                    'length' => $product['lineItemLength'] ?? 0,
+                    'width' => $product['lineItemWidth'] ?? 0,
+                    'height' => $product['lineItemHeight'] ?? 0,
+                    'weight' => $product['lineItemWeight'] ?? 0,
+                    'maxNestingItems' => $nestingItemsDetails['max_nested_items'] ?? 0,
+                    'nestingDimType' => $nestingItemsDetails['dimension_type'] ?? 0,
+                    'nestingPercentage' => $nestingItemsDetails['nesting_percentage'] ?? 0,
+                    'nestingStackType' => $nestingItemsDetails['stacked_type'] ?? 0,
+                ];
+                // Check: cart items greater then maximum nested items
+                if($params['totalItems'] > $params['maxNestingItems']){
+
+                    $totalStacks = $count = (int) ceil($params['totalItems']/$params['maxNestingItems']);
+                    // Check: stack type is even or maximized (0 = evenly type and 1 = maximized type)
+                    if($params['nestingStackType'] == 1){
+
+                        $stackItems = $params['maxNestingItems'];
+                        $products = $this->calcNestingDimensions($products, $product, $params, $count, $stackItems, $variantId);
+
+                    } else{
+
+                        $stackItems = (int) ceil($params['totalItems']/$totalStacks);
+                        $products = $this->calcNestingDimensions($products, $product, $params, $count, $stackItems, $variantId);
+
+                    }
+                } else {
+
+                    $product = $this->selectDimType($params, $product, $params['totalItems']);
+
+                    $product['lineItemWeight'] = $params['weight'] * $params['totalItems'];
+                    $product['piecesOfLineItem'] = 1;
+                    $products[$variantId] = $product;
+                }
+            }
+
+        }
+        $this->formatReq['lineItemData']['items'] = $products;
+    }
+
+    public function calcNestingDimensions($products, $product, $params, $count, $items, $variantId){
+        
+        while($count > 0){
+            // select diamension type and calculate diamension based on diamension type
+            $product = $this->selectDimType($params, $product, $items);
+
+            $product['lineItemWeight'] = $params['weight'] * $items;
+            $product['piecesOfLineItem'] = 1;
+            $params['totalItems'] = $params['totalItems'] - $items;
+            $key = $variantId . $count;
+            $products[$key] = $product;
+            // update formate request
+            $this->formatReq['lineItemData']['origin'][$key] = $this->formatReq['lineItemData']['origin'][$variantId];
+
+            $count--;
+
+            if($count == 1){
+                $items = $params['totalItems'];
+            }
+        }
+        unset($products[$variantId], $this->formatReq['lineItemData']['origin'][$variantId]);
+
+        return $products;
+    }
+
+    public function selectDimType($params, $product, $items){
+        // calculation of diamension based on diamension type
+        if($params['nestingDimType'] == 0){
+            $product['lineItemLength'] = $params['length'] + (($items - 1) * $params['length'] * (1 - ($params['nestingPercentage']/100)));
+        } elseif($params['nestingDimType'] == 1){
+            $product['lineItemWidth'] = $params['width'] + (($items - 1) * $params['width'] * (1 - ($params['nestingPercentage']/100)));
+        } elseif($params['nestingDimType'] == 2){
+            $product['lineItemHeight'] = $params['height'] + (($items - 1) * $params['height'] * (1 - ($params['nestingPercentage']/100)));
+        }
+
+        return $product;
     }
 
     public function getCompareRates(Request $request)
@@ -164,15 +259,21 @@ class GetRatesController extends Controller
     {
         $subsciption = Subscription::where('store_id', $store_id)->latest()->first();
         if (empty($subsciption) || $subsciption->status === 3) { // not plan or expired plan
-            Log::info('Expired Subscription ' . json_encode($subsciption));
+            if(Functions::isEnabledLogs('', $store_id)){
+                Log::info('Expired Subscription ' . json_encode($subsciption));
+            }
             return false;
         }
         if ($subsciption->status === 2 && Functions::isExpiredSubscription($subsciption->ends_at)) { // not plan or expired plan
-            Log::info('Expired Subscription with status 2' . json_encode($subsciption));
+            if(Functions::isEnabledLogs('', $store_id)){
+                Log::info('Expired Subscription with status 2' . json_encode($subsciption));
+            }
             return false;
         }
         if (Functions::isExpiredSubscription($subsciption->ends_at)) { // Expiry date is less then current date
-            Log::info('Expired Subscription due to expiry date' . json_encode($subsciption));
+            if(Functions::isEnabledLogs('', $store_id)){
+                Log::info('Expired Subscription due to expiry date' . json_encode($subsciption));
+            }
             return false;
         }
         return true;
@@ -183,12 +284,15 @@ class GetRatesController extends Controller
     public function formatRequest($data, $storeData)
     {
         $storeId = $storeData['store']['id'];
+        $storeHash = $storeData['store']['hash'];
+
         $details = [
             'destination' => [
                 'street_1' => $data['base_options']['destination']['street_1'] ?? null,
                 'street_2' => $data['base_options']['destination']['street_2'] ?? null,
                 'zip' => $data['base_options']['destination']['zip'] ?? null,
-                'city' => str_replace("'", '', $data['base_options']['destination']['city']) ?? null,
+                // regex use for remove special character from city name
+                'city' => preg_replace('/[^a-zA-Z0-9\s-]/', '', $data['base_options']['destination']['city']),
                 'state' => $data['base_options']['destination']['state_iso2'] ?? null,
                 'country' => $data['base_options']['destination']['country_iso2'] ?? null,
                 'address_type' => $data['base_options']['destination']['address_type'] ?? null,
@@ -199,8 +303,9 @@ class GetRatesController extends Controller
         if (count($data['base_options']['items'])) {
             foreach ($data['base_options']['items'] as $productKey => $product) {
                 $product_settings = $this->getProductSetting($product['product_id'], $product['variant_id'], $storeId);
-                $productBrandId = $this->getProductBrand($product['product_id'], $product['variant_id'], $storeId);
-                $categoriesId = $this->getProductCategories($product['product_id'], $product['variant_id'], $storeId);
+                $productBrandAndCategory = $this->getProductBrandAndCategory($product['product_id'], $storeHash);
+                $productBrandId = $productBrandAndCategory['brandId'] ?? '';
+                $categoriesId = $productBrandAndCategory['categories'] ?? [];
                 $product_price = $this->getProductPrice($product['product_id'], $product['variant_id'], $storeId);
                 $weight = (isset($product['weight']['value']) && isset($product['weight']['units'])) ? $this->convertWeight($product['weight']['value'], strtolower($product['weight']['units'])) : 0;
                 $length = (isset($product['length']['value']) && isset($product['length']['units'])) ? $this->convertDimensionUnit($product['length']['value'], strtolower($product['length']['units'])) : 0;
@@ -232,20 +337,22 @@ class GetRatesController extends Controller
                     $wareHouseShipmentExist = true;
                 }
 
+                $product['name'] = str_replace('"', '', $product['name']);
+
                 $details['origin'][$key] = $originAddress;
                 $details['items'][$key] = [
                     'id' => $product_settings['id'] ?? '',
                     'product_id' => $product['product_id'] ?? '',
                     'variant_id' => $product['variant_id'] ?? '',
                     'brand_id' => $productBrandId ?? '',
-                    'categories_id' => json_decode($categoriesId) ?? [],
+                    'categories_id' => $categoriesId ?? [],
                     'sku' => $product['sku'] ?? '',
                     'piecesOfLineItem' => $product['quantity'] ?? '',
                     'originalPiecesOfLineItem' => $product['quantity'] ?? '',
                     'shipMultiplePackage' => $product_settings['ship_multiple_package'] ?? 0,
                     'shipBinAlone' => $shipBinAlone,
                     'lineItemId' => $product['product_id'] ?? '',
-                    'lineItemPrice' => $product_price ?? 0,
+                    'lineItemPrice' => $product['declared_value']['amount'] ?? $product['discounted_price']['amount'] ?? 0,
                     'lineItemName' => $product['name'] ?? '',
                     'lineItemLength' => number_format($length, 2, '.', ''),
                     'lineItemWidth' => number_format($width, 2, '.', ''),
@@ -270,7 +377,7 @@ class GetRatesController extends Controller
                     'lineItemHSCode' => isset($product_settings['hs_code']) && !empty($product_settings['hs_code']) ? $product_settings['hs_code'] : '',
                     'lineItemNMFC' => isset($product_settings['nmfc']) && !empty($product_settings['nmfc']) ? $product_settings['nmfc'] : '',
                 ];
-
+                
                 if (!$details['items'][$key]['shipMultiplePackage']) {
                     if (
                         (blank($details['items'][$key]['lineItemLength']) || $details['items'][$key]['lineItemLength'] <= 0) ||
@@ -397,14 +504,18 @@ class GetRatesController extends Controller
         return $settings;
     }
 
-    public function getProductBrand($productId, $variantId, $storeId)
+    public function getProductBrandAndCategory($productId, $storeHash)
     {
-        $productBrand = ProductSetting::select('brand_id')
-            ->where(['source_product_id' => $productId, 'variant_id' => $variantId, 'store_id' => $storeId])
-            ->first();
+        $headers = BigCommerceFunctions::getHeaders($storeHash);
+        $storeUrl = BigCommerceFunctions::$initalUrl . $storeHash . '/v3/catalog/products/' . $productId;
+        $response = $this->curlRequest->enSingleCurlRequest($storeUrl, [], $headers, 'GET', true);
 
-        if (!empty(optional($productBrand)->toArray())) {
-            return $productBrand['brand_id'];
+        if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
+            $response = json_decode($response['response'], true);
+
+            $product = $response['data'] ?? [];
+
+            return ['brandId' => $product['brand_id'], 'categories' => $product['categories']];
         }
         return null;
     }
@@ -618,7 +729,7 @@ class GetRatesController extends Controller
 
     public function isShippingRule($storeData, $formatReq)
     {
-        $isRestriction = false;
+        $isRestriction = false; $isApplyFlatRate = true; $count = 0;
         $storeId = $storeData['store']['id'];
         $this->storeData = $storeData ?? [];
 
@@ -634,7 +745,7 @@ class GetRatesController extends Controller
 
             foreach ($shippingRules as $key => $rule) {
 
-                if(isset($rule['rule_type']) && $rule['rule_type'] == 5 || $rule['rule_type'] == 8){
+                if(isset($rule['rule_type']) && ($rule['rule_type'] == 5 || $rule['rule_type'] == 8 || $rule['rule_type'] == 6)){
                     continue;
                 }
 
@@ -643,19 +754,48 @@ class GetRatesController extends Controller
                 if ($isAvailable) {
                     switch ($applyRuleTo) {
                         case 1:
-                            $isRestriction = $this->applyRuleOnCategories($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            if($rule['rule_type'] == 10) {
+                                // if all the rules are not valid then return true;
+                                $isValidRule = $this->applyRuleOnCategories($rule, $cartItems, $origins, $destination, $statesProvinces);
+                                $isApplyFlatRate = $isApplyFlatRate && $isValidRule;
+                                $count++;
+                            } else {
+                                // if one of the rule is not valid then return true;
+                                $isRestriction = $isRestriction || $this->applyRuleOnCategories($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            }
                             break;
                         case 2:
-                            $isRestriction = $this->applyRuleOnBrands($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            if($rule['rule_type'] == 10) {
+                                // if all the rules are not valid then return true;
+                                $isValidRule = $this->applyRuleOnBrands($rule, $cartItems, $origins, $destination, $statesProvinces);
+                                $isApplyFlatRate = $isApplyFlatRate && $isValidRule;
+                                $count++;
+                            } else {
+                                // if one of the rule is not valid then return true;
+                                $isRestriction = $isRestriction || $this->applyRuleOnBrands($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            }
                             break;
                         case 3:
-                            $isRestriction = $this->applyRuleOnProducts($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            if($rule['rule_type'] == 10) {
+                                // if all the rules are not valid then return true;
+                                $isValidRule = $this->applyRuleOnProducts($rule, $cartItems, $origins, $destination, $statesProvinces);
+                                $isApplyFlatRate = $isApplyFlatRate && $isValidRule;
+                                $count++;
+                            } else {
+                                // if one of the rule is not valid then return true;
+                                $isRestriction = $isRestriction || $this->applyRuleOnProducts($rule, $cartItems, $origins, $destination, $statesProvinces);
+                            }
                             break;
                         default:
                             break;
                     }
                 }
             }
+            // This check only for Flat Shipping Rate Rule.
+            if($rule['rule_type'] == 10 && $isApplyFlatRate && $count > 0) {
+                return $isApplyFlatRate;
+            }
+
             return $isRestriction;
         }
         return false;
@@ -663,7 +803,6 @@ class GetRatesController extends Controller
 
     public function applyRuleOnCategories($rule, $cartItems, $origins, $destination, $statesProvinces)
     {
-
         $restrictedCategories = isset($rule['categories']) ? $rule['categories'] : [];
         $stateProvince = isset($rule['filter_state_province']) && !empty($rule['filter_state_province']) ? $rule['filter_state_province'] : [];
 
@@ -753,12 +892,43 @@ class GetRatesController extends Controller
 
         if ($isSameCountry && $isSameState && $isSamePostalCode && $ruleType == 4) {
             return false;
-        } elseif ($isSameCountry && $isSameState && $ruleType == 3) {
+        } elseif ($isSameCountry && $isSameState && ($ruleType == 3 || $ruleType == 10)) {
+            // Apply Flate Rate Shipping Rule for country and state
+            if($ruleType == 10 && !empty($products)){
+                $this->applyFlatRatesShippingRule($products, $rule);
+            }
             return false;
-        } elseif ($isSameCountry && $ruleType == 1) {
+        } elseif ($isSameCountry && ($ruleType == 1 || $ruleType == 10 && empty($rule['filter_state_province']))) {
+            // Apply Flate Rate Shipping Rule for only country
+            if($ruleType == 10 && !empty($products)){
+                $this->applyFlatRatesShippingRule($products, $rule);
+            }
             return false;
         } else {
             return true;
+        }
+    }
+
+    public function applyFlatRatesShippingRule($products, $rule)
+    {
+        foreach($products as $key => $product){
+            // check to assign cheapest flat rate rule
+            $flatRate = isset($this->formatReq['lineItemData']['items'][$key]['flatRate']) ? $this->formatReq['lineItemData']['items'][$key]['flatRate'] : null;
+            if($rule['filter_flat_shipping_rate'] <= $flatRate){
+
+                $this->formatReq['lineItemData']['items'][$key]['isFreeShipping'] = true;
+                $this->formatReq['lineItemData']['items'][$key]['flatRateUuid'] = $rule['uuid'];
+                $this->formatReq['lineItemData']['items'][$key]['flatRateRule'] = $rule['id'];
+                $this->formatReq['lineItemData']['items'][$key]['flatRate'] = $rule['filter_flat_shipping_rate'];
+
+            } elseif ($flatRate === null) {
+
+                $this->formatReq['lineItemData']['items'][$key]['isFreeShipping'] = true;
+                $this->formatReq['lineItemData']['items'][$key]['flatRateUuid'] = $rule['uuid'];
+                $this->formatReq['lineItemData']['items'][$key]['flatRateRule'] = $rule['id'];
+                $this->formatReq['lineItemData']['items'][$key]['flatRate'] = $rule['filter_flat_shipping_rate'];
+            }
+            
         }
     }
 

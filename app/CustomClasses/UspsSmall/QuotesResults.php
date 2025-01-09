@@ -9,9 +9,10 @@ use App\Http\Controllers\ShippingRuleController;
 
 class QuotesResults
 {
-    public function __construct()
+    public function __construct($suppressParcelRates = [])
     {
         $this->CompileQuotes = new CompileQuotes();
+        $this->SuppressParcelRates = $suppressParcelRates;
     }
 
     public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $access, $isMultiShipment, $items, $storeId = '', $carrierName = '')
@@ -43,8 +44,14 @@ class QuotesResults
         $count = 0;
 
         foreach ($shipments as $origin => $quote) {
-            if (isset($quote['severity'])) {
-                return $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);;
+
+            if(in_array($origin, $this->SuppressParcelRates)){
+                continue;
+            }
+            
+            if ((isset($quote['severity']) || (isset($quote['q']) && empty($quote['q'])) || (!isset($quote['q']) && !empty($quote['InstorPickupLocalDelivery'])))) {
+                $instoreResp[$origin] = $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins) ?? [];                
+                return $instoreResp;
             }
 
             if ($count == 0) {
@@ -92,62 +99,16 @@ class QuotesResults
                     $title = $this->getServiceTitle($data, $srvcType, $this->quoteSettings, $residential, $showRadNotation);
                     $price = (float)str_replace(',', '', $price);
 
-                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12usps' . $access2;
-                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
-                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
-
-                    $multiShipmentQuotes[$origin][$key] = $originQuotes[$shipmentCount]['shipment'][$key]['simple'];
+                    $originQuotes[$origin]['simple'][$key]['code'] = 'parcel_12usps' . $access2;
+                    $originQuotes[$origin]['simple'][$key]['rate'] = $price;
+                    $originQuotes[$origin]['simple'][$key]['title'] = $title;
                 }
             }
-            $shipmentCount++;
-        }
-
-        // Check for multi-shipment, finding lowest price in each shipment and adding them for multi shipment
-        if ($isMultiShipment) {
-            $multishipmentCheckoutQuotes = [];
-            $multiShipmentPrice = 0;
-
-            foreach ($originQuotes as $shipmentKey => $shipment) {
-                $netChargeArr = array_column($shipment['shipment'], 'simple');
-                $minRateFromNetChargeArr = min(array_column($netChargeArr, 'rate'));
-
-                $multiShipmentPrice += str_replace(',', '', $minRateFromNetChargeArr);
-                $multishipmentCheckoutQuotes[0]['code'] = 'Multiusps' . $access2;
-                $multishipmentCheckoutQuotes[0]['rate'] = number_format($multiShipmentPrice, 2);
-                $multishipmentCheckoutQuotes[0]['title'] = $residential && $showRadNotation ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
+            if (isset($inStoreLdData) && $inStoreLdData) {
+                $originQuotes[$origin] = $this->CompileQuotes->inStoreLocalDeliveryQuotes($originQuotes[$origin], $inStoreLdData, $allOrigins);
             }
-
-            foreach ($multiShipmentQuotes as $shipmentKey => $shipment) {
-                $keys = array_column($shipment, 'rate');
-                array_multisort($keys, SORT_ASC, $shipment);
-                $multiShipmentQuote['simple'][$shipmentKey] = array_values($shipment)[0];
-            }
-
-            $resp = [
-                'checkoutQuotes' => $multishipmentCheckoutQuotes,
-                'multiShipmentQuotes' => $multiShipmentQuote,
-            ];
-            $returnResp['resp'] = $resp;
-
-            return $returnResp;
         }
-
-        // Handling single shipment
-        if (!empty($originQuotes)) {
-            $originQuotes = array_column(array_values($originQuotes), 'shipment');
-            $originQuotes = reset($originQuotes);
-            $originQuotes = array_column(array_values($originQuotes), 'simple');
-            $resp = $originQuotes;
-        }
-
-        // Compiling instore pickup and local delivery quotes
-        if (!$isMultiShipment && isset($inStoreLdData) && $inStoreLdData) {
-            $allQuotes = $this->CompileQuotes->inStoreLocalDeliveryQuotes($originQuotes, $inStoreLdData, $allOrigins);
-            $resp = $allQuotes;
-        }
-
-        $returnResp['resp'] = isset($resp) && !empty($resp) ? $resp : [];
-        return $returnResp;
+        return $originQuotes;
     }
 
     private function formateQuoteBeforeCompile($shipments): array

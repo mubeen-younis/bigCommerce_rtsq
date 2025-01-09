@@ -16,6 +16,9 @@ use App\Helpers\Helpers;
 use Illuminate\Support\Facades\DB;
 use App\Models\CarrierServices;
 use App\Constants\Constant;
+use App\Models\Store;
+use App\Models\EnableLog;
+use Illuminate\Support\Arr;
 
 class Functions
 {
@@ -129,6 +132,24 @@ class Functions
         'H6' => 'Deliver & packaging removal - 2 man',
     ];
 
+    public static $accessorialsIndexes = [
+        'liftgate',
+        'insideDelivery',
+        'notifydelivery',
+        'limitedaccess',
+        'insideLiftGateDelivery',
+        'lgnotifydelivery',
+        'limitedaccessLG',
+        'insidenotifydelivery',
+        'laccessinsidedelivery',
+        'laccessnotifydelivery',
+        'lginsidenotifydelivery',
+        'lglaccessnotifydelivery',
+        'lglaccessinsidedelivery',
+        'laccessinsideNotifydelivery',
+        'lglaccessinsideNotifydelivery',
+    ];
+
     public static function is3plCarrier($carrier){
         $carriersArray = ['ltl-quotes', 'freightquote-ltl', 'tql-ltl', 'echo-ltl', 'freightquote-chr-ltl', 'priority-one-ltl', 'gtz-ltl', 'gtz-new', 'cltl'];
         return in_array($carrier, $carriersArray);
@@ -147,8 +168,8 @@ class Functions
 
     public static function getCarrierNameOrCode($code, $getWsCode = 0): ?string
     {
-        $carrierCodes = ['wweltl', 'rnlltl', 'xpoltl', 'fedexltl', 'gtzltl_new', 'gtzltl','unl', 'yrcltl', 'cltl', 'upsltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship_new', 'parcel_12uniship', 'parcel_12shipEng',
-            'fqltl', 'estesltl', 'dayrossltl', 'odflltl', 'saialtl', 'parcel_12Purolator', 'abfltl', 'SouthEastern', 'southeastern', 'parcel_12usps', 'tqlltl', 'echoltl', 'daylightltl', 'fqchrltl', 'shipeng', 'priority1', 'upslandcostapi'];
+        $carrierCodes = ['wweltl', 'rnlltl', 'xpoltl', 'fedexltl', 'gtzltl_new', 'gtzltl','unlltl', 'yrcltl', 'cltl', 'upsltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship_new', 'parcel_12uniship', 'parcel_12shipEng',
+            'fqltl', 'estesltl', 'dayrossltl', 'odflltl', 'saialtl', 'parcel_12Purolator', 'abfltl', 'seflltl', 'southeastern', 'parcel_12usps', 'tqlltl', 'echoltl', 'daylightltl', 'fqchrltl', 'shipeng', 'priority1ltl', 'upslandcostapi'];
         foreach ($carrierCodes as $carrierCode) {
             if (strpos($code, $carrierCode) !== false) {
                 if ($getWsCode == 0) {
@@ -163,12 +184,12 @@ class Functions
 
     public static function getCarrierCodeWs($carrierCode): ?string
     {
-        $carrierCodesWithName = ['wweltl' => 'wweLTL', 'gtzltl_new' => 'wweLTLN','unl' => 'wweLTLN','rnlltl' => 'rnl', 'xpoltl' => 'xpoLogistics', 'upsltl' => 'upsLTL',
+        $carrierCodesWithName = ['wweltl' => 'wweLTL', 'gtzltl_new' => 'wweLTLN','unlltl' => 'wweLTLN','rnlltl' => 'rnl', 'xpoltl' => 'xpoLogistics', 'upsltl' => 'upsLTL',
             'fedexltl' => 'fedexLTL', 'yrcltl' => 'yrc', 'gtzltl' => 'globalTranz', 'cltl' => 'cerasis',
             'parcel_12wwe' => 'wweSmall', 'parcel_12uniship_new' => 'wweSmallN', 'parcel_12ups' => 'upsSmall', 'parcel_12fd' => 'fedexSmall', 'parcel_12uniship' => 'unishippersSmall',
-            'parcel_12shipEng' => 'shipEngine', 'shipeng' => 'shipEngine', 'priority1' => 'priority1',
+            'parcel_12shipEng' => 'shipEngine', 'shipeng' => 'shipEngine', 'priority1ltl' => 'priority1',
             'fqltl' => 'freightQuote', 'estesltl' => 'estesLtl', 'dayrossltl' => 'dayross', 'odflltl' => 'OdflLTL', 'saialtl' => 'saia', 'parcel_12Purolator' => 'purolator', 'abfltl' => 'abf',
-            'SouthEastern' => 'southeastern', 'southeastern' => 'southeastern', 'parcel_12usps' => 'usps', 'tqlltl' => 'tql', 'echoltl' => 'echoLogistics', 'daylightltl' => 'daylight', 'chr' => 'chr', 'fqchrltl' => 'chr', 'upslandcostapi' => 'UPSLandedCost'];
+            'seflltl' => 'southeastern', 'southeastern' => 'southeastern', 'parcel_12usps' => 'usps', 'tqlltl' => 'tql', 'echoltl' => 'echoLogistics', 'daylightltl' => 'daylight', 'chr' => 'chr', 'fqchrltl' => 'chr', 'upslandcostapi' => 'UPSLandedCost'];
         return $carrierCodesWithName[$carrierCode] ?? null;
     }
 
@@ -181,7 +202,7 @@ class Functions
             'fqltl' => 'Freight Quote', 'fqchrltl' => 'C.H. Robinson', 'parcel_12Purolator' => 'Purolator Small', 'parcel_12usps' => 'United State Postal Service',
             'tqlltl' => 'Total Quality Logistics', 'yrcltl' => 'YRC Freight', 'odflltl' => 'Old Dominion Freight Lines', 'dayrossltl' => 'Day & Ross Ltl',
             'estesltl' => 'Estes Express Ltl', 'echoltl' => 'Echo Global Logistics', 'saialtl' => 'SAIA LTL Freight', 'abfltl' => 'ABF Freight', 'daylightltl' => 'DayLight LTL Freight',
-            'SouthEastern' => 'Southeastern LTL Freight'];
+            'seflltl' => 'Southeastern LTL Freight'];
         return $carrierCodesWithName[$carrierCode] ?? null;
 
 
@@ -195,7 +216,7 @@ class Functions
             'fqltl' => 'freightquote', 'fqchrltl' => 'freightquotechr', 'parcel_12Purolator' => 'purolator_small', 'parcel_12usps' => 'usps_small',
             'tqlltl' => 'tql', 'yrcltl' => 'yrc', 'odflltl' => 'odfl4me', 'dayrossltl' => 'dayross',
             'estesltl' => 'estes', 'echoltl' => 'echoLogistics', 'saialtl' => 'saia', 'abfltl' => 'abf', 'daylightltl' => 'daylight',
-            'SouthEastern' => 'southeastern'];
+            'seflltl' => 'southeastern'];
 
         return $carrierCodesWithName[$carrierCode] ?? null;
     }
@@ -207,8 +228,8 @@ class Functions
             'small-package' => 'WWE SmPkg', 'small-package-new' => 'WWE Small New API', 'unishippers-small-new' => 'Unishippers Small New API', 'ups-small' => 'UPS Small', 'fedex-small' => 'FedEx Small', 'unishippers-small' => 'unisheppers',
             'freightquote-ltl' => 'b2b', 'freightquote-chr-ltl' => 'b2b', 'purolator-small' => 'purolator', 'usps-small' => 'usps',
             'tql-ltl' => 'tql', 'yrc-ltl' => 'yrc', 'odfl-ltl' => 'odfl4me', 'dayross-ltl' => 'dayross', 'priority-one-ltl' => 'priority1',
-            'estes-ltl' => 'estes', 'echo-ltl' => 'echoLogistics', 'saia-ltl' => 'saia', 'abf-ltl' => 'abf', 'daylight-ltl' => 'daylight',
-            'southeastern-ltl' => 'southeastern', 'unishipper-ltl' => 'Unishippers LTL New API', 'ups-land-cost-small' => 'UPSLandedCost'];
+            'estes-ltl' => 'estes', 'echo-ltl' => 'echoLogistics', 'saia-ltl' => 'saia', 'abf-ltl' => 'abf', 'daylight-ltl' => 'daylight', 'fedex-ltl-new' => 'FedEx LTL New API',
+            'southeastern-ltl' => 'southeastern', 'unishipper-ltl' => 'Unishippers LTL New API', 'ups-land-cost-small' => 'UPSLandedCost', 'fedex-small-new' => 'FedEx Small New API'];
 
         return $carrierCodesWithName[$carrSlug] ?? null;
     }
@@ -703,62 +724,67 @@ class Functions
     {
         try {
             $proKeyW = $proKeyD = [];
-            $warehouseWeight = $dropshipWeight = 0;
+            $warehouseWeight = $dropshipWeight = [];
             if (!empty($carriers)) {
                 foreach ($carriers as $key => $carrier) {
                     $carrierWeightThreshold = isset($carrier['api']['thresholdWeightLimit']) ? $carrier['api']['thresholdWeightLimit'] : null;
                     if ($carrierWeightThreshold === null) {
                         continue;
                     }
-                    foreach ($carrier['originAddress'] as $ori => $origin) {
+                    foreach ($carrier['originAddress'] as $key => $origin) {
                         if (isset($origin['location']) && $origin['location'] === 'warehouse') {
-                            if (!in_array($ori, $proKeyW)) {
-                                $proKeyW[] = $ori;
+                            if (!in_array($key, $proKeyW)) {
+                                $proKeyW[$origin['locationId']][] = $key;
                             }
                         } elseif (isset($origin['location']) && $origin['location'] === 'dropship') {
-                            if (!in_array($ori, $proKeyD)) {
-                                $proKeyD[] = $ori;
+                            if (!in_array($key, $proKeyD)) {
+                                $proKeyD[$origin['locationId']][] = $key;
                             }
                         }
                     }
                     if (!empty($proKeyW)) {
-                        $warehouseWeight = self::calculatItemseWeight($items, $proKeyW);
+                        $warehouseWeight = self::calculatItemseWeight($items, $proKeyW, $carrierWeightThreshold, $storeId);
 
                     }
                     if (!empty($proKeyD)) {
-                        $dropshipWeight = self::calculatItemseWeight($items, $proKeyD);
+                        $dropshipWeight = self::calculatItemseWeight($items, $proKeyD, $carrierWeightThreshold, $storeId);
                     }
 
-                    if ($warehouseWeight > $carrierWeightThreshold || $dropshipWeight > $carrierWeightThreshold) {
-                        $ThresholdSettings = optional(WeightThresholdSettings::where('store_id', $storeId)->first())->toArray() ?? [];
-                        if (isset($ThresholdSettings['parcel_rates']) && $ThresholdSettings['parcel_rates'] == 2) {
-                            return true;
-                        }
-                    }
+                    return array_merge($warehouseWeight, $dropshipWeight);
                 }
             }
-            return false;
+            return [];
         } catch (\Exception $exception) {
             Log::info('Exception on suppress rates ' . json_encode($exception));
             return false;
         }
     }
 
-    public static function calculatItemseWeight($items, $proKeys)
+    public static function calculatItemseWeight($items, $proKeys, $carrierWeightThreshold, $storeId)
     {
         $totalWeight = 0;
+        $shipKeysWithThreshold = [];
         if (!empty($items) && !empty($proKeys)) {
             foreach ($proKeys as $key => $proKey) {
-                foreach ($items as $item) {
-                    if ($item['variant_id'] == $proKey) {
+                $totalWeight = 0;
+                foreach($proKey as $variantId){
+                    $item = Arr::get($items, $variantId);
+                    if ($item['variant_id'] == $variantId) {
                         $weight = isset($item['lineItemWeight']) ? $item['lineItemWeight'] : 0;
                         $quantity = isset($item['piecesOfLineItem']) ? $item['piecesOfLineItem'] : 0;
                         $totalWeight += $weight * $quantity;
                     }
                 }
+
+                if ($totalWeight > $carrierWeightThreshold) {
+                    $ThresholdSettings = optional(WeightThresholdSettings::where('store_id', $storeId)->first())->toArray() ?? [];
+                    if (isset($ThresholdSettings['parcel_rates']) && $ThresholdSettings['parcel_rates'] == 2) {
+                        $shipKeysWithThreshold[] = $key;
+                    }
+                }
             }
         }
-        return $totalWeight;
+        return $shipKeysWithThreshold;
 
     }
 
@@ -768,10 +794,19 @@ class Functions
     }
 
     // Create Origin Quotes Array in case of notify before delivery enable
-    public static function getOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi, $insideDelivery = false, $laccess = false, $notifyDelivery = false, $resiPickup = false, $lgPickup = false, $storeId = null, $isSurchargeRates = false)
+    public static function getOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $count, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi, $insideDelivery = false, $laccess = false, $notifyDelivery = false, $resiPickup = false, $lgPickup = false, $storeId = null, $isSurchargeRates = false)
     {
+        $lgQuotes = (isset($quoteSettings['alwaysLiftGateDelivery']) && $quoteSettings['alwaysLiftGateDelivery']) ? true : $lgQuotes;
+        $notifyDelivery = (isset($quoteSettings['always_quote_notify']) && $quoteSettings['always_quote_notify']) ? true : $notifyDelivery;
+        $laccess = (isset($quoteSettings['always_limited_access_delivery']) && $quoteSettings['always_limited_access_delivery']) ? true : $laccess;
+        $insideDelivery = (isset($quoteSettings['always_inside_delivery']) && $quoteSettings['always_inside_delivery']) ? true : $insideDelivery;
+
+        if (!$lgQuotes) {
+            $lgQuotes = (isset($quoteSettings['autoDetectedResidentialAddressesLfg']) && $quoteSettings['autoDetectedResidentialAddressesLfg']) && $isResi;
+        }
+
         $CompileQuotes = new CompileQuotes();
-        $serviceCode = !($carrName == 'SouthEastern' || $carrName == 'yrcltl' || $carrName == 'upsltl' || $carrName == 'saialtl' || $carrName == 'fedexltl' || $carrName == 'tqlltl' || $carrName == 'abfltl' || $carrName == 'daylightltl' || $carrName == 'dayrossltl') && isset($data['serviceType']) ? $data['serviceType'] : '';
+        $serviceCode = !($carrName == 'seflltl' || $carrName == 'yrcltl' || $carrName == 'upsltl' || $carrName == 'saialtl' || $carrName == 'fedexltl' || $carrName == 'tqlltl' || $carrName == 'abfltl' || $carrName == 'daylightltl' || $carrName == 'dayrossltl') && isset($data['serviceType']) ? $data['serviceType'] : '';
         $serviceCode = $data['ratquoteNumber'] ?? $data['scac'] ?? $data['CarrierSCAC'] ?? $serviceCode;
 
         $isUpsLtl = false;
@@ -793,11 +828,11 @@ class Functions
                 $explodTitle = $explodTitle[1];
                 $titleQuickest = $quickLabelAs . ' w/' . $explodTitle;
             }
-            $originQuotes[$origin][$index]['titleQuickest'] = $titleQuickest ?? '';
+            $originQuotes[$origin][$index][$count]['titleQuickest'] = $titleQuickest ?? '';
         }
-        $originQuotes[$origin][$index]['code'] = $carrName . $serviceCode . $ndAccess;
-        $originQuotes[$origin][$index]['rate'] = $ndPrice;
-        $originQuotes[$origin][$index]['title'] = $ndTitle;
+        $originQuotes[$origin][$index][$count]['code'] = $carrName . $serviceCode . $ndAccess;
+        $originQuotes[$origin][$index][$count]['rate'] = $ndPrice;
+        $originQuotes[$origin][$index][$count]['title'] = $ndTitle;
 
         return ['originQuotes' => $originQuotes, 'ndPrice' => $ndPrice];
     }
@@ -1019,6 +1054,27 @@ class Functions
                     'isID' => $insideDelivery,
                     'isNBD' => $notifyDelivery,
                 ],
+            ],
+            'Truckload' => [
+                'isEnable' => false,
+                'index' => [],
+            ],
+            'hat' => [
+                'isEnable' => false,
+                'index' => [],
+            ],
+
+            'twoManDel' => [
+                'isEnable' => false,
+                'index' => [],
+            ],
+            'aptDel' => [
+                'isEnable' => false,
+                'index' => [],
+            ],
+            'twoManAptDel' => [
+                'isEnable' => false,
+                'index' => [],
             ],
         ];
 
@@ -1495,5 +1551,208 @@ class Functions
         }
 
         return $services->toArray() ?? [];
+    }
+
+    public static function addUpCheapestQuotes($quotes, $storeId)
+    {
+        $multiShipmentQuotes = $quotes['multiShipmentQuotes'] ?? [];
+        $checkoutQuotes = $quotes['checkoutQuotes'] ?? [];
+        $finalCHeapestQuotes = [];
+        $accessorialServices = [];
+
+        if(count($multiShipmentQuotes) >= 2 && count($checkoutQuotes) >= 2){
+            
+            $isParcel = $isLTL = false;
+            foreach ($multiShipmentQuotes as $index => $shipment) {
+                if(empty($shipment)){
+                    unset($quotes['multiShipmentQuotes'][$index]);
+                }
+                foreach(self::getEnableFeaturesArr() as $key => $value){
+                    if(!isset($shipment[$key])){
+                        continue;
+                    }
+                    foreach($shipment[$key] as $locId => $ship){
+                        if(isset($ship['code']) && substr($ship['code'], 0, 9) == 'parcel_12'){
+                            $isParcel = true;
+                        } elseif(isset($ship['code']) && (strpos($ship['code'], 'ltl') != false)){
+                            $isLTL = true;
+                        }
+                        $shipmentQuotes[] = $ship;
+
+                    }
+                }
+            }
+
+            $ThresholdSettings = optional(WeightThresholdSettings::where('store_id', $storeId)->first())->toArray() ?? [];
+            if (isset($ThresholdSettings['parcel_rates']) && $ThresholdSettings['parcel_rates'] == 2) {
+                if($isParcel && $isLTL){
+                    return $shipmentQuotes;
+                } else {
+                    return $quotes;
+                } 
+            } elseif (isset($ThresholdSettings['parcel_rates']) && $ThresholdSettings['parcel_rates'] == 1) {
+                if(!$isParcel && $isLTL){
+                    return $quotes;
+                }
+            }
+
+            foreach ($multiShipmentQuotes as $shipment) {
+                $simpleQuotes[] = isset($shipment['simple']) ? $shipment['simple'] : [];
+            }
+
+            // Extract unique indexes
+            $indexes = [];
+            foreach ($simpleQuotes as $item) {
+                foreach (array_keys($item) as $index) {
+                    $indexes[$index] = true;
+                }
+            }
+            $shipments = array_keys($indexes);
+        
+            foreach($shipments as $shipNumber){
+                $data[$shipNumber] = array_map(function ($item) use ($shipNumber) {
+                    return isset($item[$shipNumber]) ? $item[$shipNumber] : [];
+                }, $simpleQuotes);
+            }
+            
+            foreach ($data as $index => $items) {
+                $data[$index] = array_values(array_filter(array_unique($items, SORT_REGULAR)));
+            }
+            
+            $finalCHeapestQuotes = self::findCheapestQuotes($data, $quotes);
+            $simpleCheckoutQuotes = $finalCHeapestQuotes['checkoutQuote'] ?? [];
+            $newQuotes['checkoutQuotes'][] = $simpleCheckoutQuotes;
+            unset($finalCHeapestQuotes['checkoutQuote']);
+            $newQuotes['multiShipmentQuotes'][] = $finalCHeapestQuotes;
+
+            return $newQuotes;
+        }
+
+        return $quotes;
+    }
+
+    public static function checkIsLtlSmall($quotes)
+    {
+        $isSmallRate = $isLtlRate = false;
+        foreach($quotes as $origin => $quote){
+            $isSmallRate = isset($quote['code']) ? ($isSmallRate || substr($quote['code'], 0, 9) == 'parcel_12') : false;
+            $isLtlRate = isset($quote['code']) ? ($isLtlRate || strpos($quote['code'], 'ltl') != false) : false;
+        }
+        return ['isLtl' => $isLtlRate && !$isSmallRate, 'IsLtlSmall' => $isLtlRate && $isSmallRate, 'isSmall' => $isSmallRate];
+    }
+
+    public static function findCheapestQuotes($data, $quotes)
+    {
+        // Calculate min rate for each index
+        $minRates = $cheapestQuotes = [];
+        $totalRates = 0;
+        $code = '';
+
+        foreach ($data as $index => $items) {
+            $minRate = null;
+            foreach ($items as $item) {
+                if ($minRate === null || $item['rate'] < $minRate) {
+                    $minRate = $item['rate'];
+                    $cheapestQuotes[$index] = $item;
+                    $code = $item['code'] ?? 'Multi';
+                }
+            }
+            $minRates[$index] = $minRate;
+        }
+    
+        foreach($minRates as $rate){
+            $totalRates += $rate ?? 0;
+        }
+        $checkShipType = self::checkIsLtlSmall($cheapestQuotes);
+
+        $checkoutQuote['code'] = $checkShipType['IsLtlSmall'] ? "Multi" : $code;
+        $checkoutQuote['rate'] = $totalRates;
+        $checkoutQuote['title'] = $checkShipType['isLtl'] || $checkShipType['IsLtlSmall'] ? Functions::$ltlMultiTitle : Functions::$smallMultiTitle;
+
+
+        return ['simple' => $cheapestQuotes, 'checkoutQuote' => $checkoutQuote];
+    }
+
+    public static function getHazmatItemBoxes($isSbsEnable, $quoteSettings, $items, $hazmatBoxes)
+    {
+        $totalHazmatBoxes = 1;
+        $totalWeight = 0;
+        if(!$isSbsEnable){
+            $packageType = $quoteSettings['packageRatingMethod'] ?? 1;
+            if($packageType === 1){
+                $itemsQuantity = collect($items)->sum('piecesOfLineItem') ?? 0;
+                $totalHazmatBoxes = $itemsQuantity;
+                
+            } else if($packageType === 2){
+                $itemWithOutDim = collect($items)->map(function ($item) {
+                    if(empty((int) $item['lineItemLength']) && empty((int) $item['lineItemWidth']) && empty((int) $item['lineItemHeight'])){
+                        return $item['lineItemWeight'] * $item['piecesOfLineItem'] ?? 0;
+                    }
+                }) ?? 0;
+                $totalItemWeightWithOutDim = collect($itemWithOutDim)->sum();
+                $totalBoxesWithOutDim = (int) ceil($totalItemWeightWithOutDim/150);
+
+                $itemWithDim = collect($items)->map(function ($item) {
+                    if(!empty((int) $item['lineItemLength']) && !empty((int) $item['lineItemWidth']) && !empty((int) $item['lineItemHeight'])){
+                        return $item['piecesOfLineItem'] ?? 0;
+                    }
+                }) ?? 0;
+                $totalItemsWithDim = collect($itemWithDim)->sum();
+
+                $totalHazmatBoxes = $totalBoxesWithOutDim + $totalItemsWithDim;
+                
+            } else if($packageType === 3){
+                $weight = collect($items)->map(function ($item) {
+                    return $item['lineItemWeight'] * $item['piecesOfLineItem'] ?? 0;
+                }) ?? 0;
+                $totalWeight = collect($weight)->sum();
+                $totalHazmatBoxes = (int) ceil($totalWeight/150);
+            }
+        } else {
+            $totalHazmatBoxes = $hazmatBoxes;
+        }
+
+        return $totalHazmatBoxes;
+    }
+
+    public static function verifyAndCountHazmatBox($binPacked, $itemsArr)
+    {
+        foreach ($binPacked->items as $item) {
+            if(isset($itemsArr[$item->id]['isHazmatLineItem']) && $itemsArr[$item->id]['isHazmatLineItem'] == 'Y'){
+                if(isset($binPacked->bin_data->type) && $binPacked->bin_data->type == 'item'){
+                    return $binPacked->bin_data->quantity;
+                } else {
+                    return 1;
+                }   
+            }
+        }
+
+        return 0;
+    }
+    
+    public static function floatValue($number = 0)
+    {   
+        $number = (float) $number;
+        $number = number_format($number, 1, '.', '');
+        if ($number == 0) {
+            return $number;
+        }
+        $number = rtrim($number, '0'); // 50,00 --> 50 or // 50.00 --> 50.
+        $number = rtrim($number, ','); // 50,   --> 50
+        $number = rtrim($number, '.'); // 50.   --> 50
+
+        return $number;
+
+    }
+
+    public static function isEnabledLogs($storeHash = '', $storeId = '')
+    {
+        $store = Store::where('id', $storeId)->orwhere('hash', $storeHash)->select('id')->first() ?? [];
+        return EnableLog::where('store_id', $store->id)->where('log_status', 1)->exists() ?? 0;
+    }
+
+    public static function getEnabledAccessorials($key)
+    {
+        return ['isLG' => '+lg', 'isNBD' => '+nbd', 'isLAD' => '+lad', 'isID' => '+id', 'isAPD' => '+apd', 'isTMD' => '+tmd', 'isPU' => '+pu', 'isLGPU' => '+lfgp'];
     }
 }

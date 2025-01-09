@@ -174,6 +174,7 @@ class QuoteSettingsController extends Controller
                     $key = str_replace('_', ' ', $key);
 
                     if ($carrierSlug == 'ups-ship-engine') {
+                        $key = str_replace('early am', 'early', $key);
                         $key = str_replace('early A.M.', 'early', $key);
                     }
                     if ($carrierSlug == 'small-package') {

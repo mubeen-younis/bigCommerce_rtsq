@@ -12,7 +12,7 @@ use App\Helpers\Helpers;
 class BoxSizeController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the resource..
      *
      * @return \Illuminate\Http\Response
      */
@@ -24,6 +24,8 @@ class BoxSizeController extends Controller
 
             $boxes[$key] = $box;
             $boxes[$key]['availability'] = $box['is_available'] ? 'Yes' : 'No';
+            $boxes[$key]['heightWithPallet'] = $box['height'] + $box['ext_height'];
+            $boxes[$key]['weightWithPallet'] = $box['max_weight'] + $box['box_weight'];
 
         }
         return response()->json(['error' => false, 'data' => $boxes]);
@@ -72,13 +74,15 @@ class BoxSizeController extends Controller
             return response()->json(['error' => true, 'message' => $validator->errors()], 200);
         }
 
-        $data = $request->except(['store_name', 'store_hash','is_test_store']);
+        $data = $request->except(['store_name', 'store_hash','is_test_store', 'heightWithPallet', 'weightWithPallet']);
         $isPalletBox = isset($request->box_name) && $request->box_name == 'Pallet Box' ? true : false;
 
         $boxsize = BoxSize::create($data);
         $boxsize->save();
         $boxsize->is_available = $boxsize->is_available === true ? 1:0;
         $boxsize->availability = $boxsize->is_available ===1 ? 'Yes' : 'No';
+        $boxsize->heightWithPallet = $request->height + $request->ext_height;
+        $boxsize->weightWithPallet = $request->max_weight + $request->box_weight;
         return response()->json(
             [
                 'error' => false,
@@ -135,11 +139,13 @@ class BoxSizeController extends Controller
                         'message' => "The nickname has already been taken."
                     ]);
             }
-            $data = $request->except(['store_name', 'store_hash','is_test_store']);
+            $data = $request->except(['store_name', 'store_hash','is_test_store', 'heightWithPallet', 'weightWithPallet']);
 
             $boxsize = BoxSize::where('id', $request->id)->update($data);
             $box = BoxSize::find($request->id);
             $box['availability'] = $box['is_available']? 'Yes':'No';
+            $box->heightWithPallet = $request->height + $request->ext_height;
+            $box->weightWithPallet = $request->max_weight + $request->box_weight;
             return response()->json(
                 [
                     'error' => false,

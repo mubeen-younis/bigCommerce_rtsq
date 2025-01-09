@@ -13,6 +13,7 @@ use App\Models\PackagingDetail;
 use App\CustomClasses\BigCommerceFunctions;
 use App\CurlRequest;
 use Carbon\Carbon;
+use App\Models\EnableLog;
 class LogToDbController extends Controller
 {
     /**
@@ -49,6 +50,11 @@ class LogToDbController extends Controller
             return 'deleted';
         }
 
+    }
+
+    public function enableLogs(Request $request)
+    {
+        return EnableLog::enableAppLogs($request);
     }
 
     public function sendCurlRequest($url, $postData)
@@ -212,7 +218,7 @@ class LogToDbController extends Controller
     public static function getDateTime($time, $response)
     {
         $datetime = new \DateTime($time);
-        $storeTimezone = isset($response['timezone']['name']) ? $response['timezone']['name'] : ''; 
+        $storeTimezone = isset($response['timezone']['name']) ? $response['timezone']['name'] : 'UTC'; 
         $storeTime = new \DateTimeZone($storeTimezone);
         $datetime->setTimezone($storeTime);
         $formattedTime = $datetime->format('m/d/Y H:i:s');
