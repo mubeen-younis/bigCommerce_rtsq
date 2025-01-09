@@ -4103,7 +4103,7 @@ class CompileQuotes
                 $limitedAccess = !($this->alwaysResi || $this->isResi) && (
                     (isset($this->quoteSettings['offer_limited_access_delivery']) && $this->quoteSettings['offer_limited_access_delivery']));
 
-                $limitedAccess = ($this->alwaysResi || $this->isResi) ? $this->quoteSettings['always_limited_access_delivery'] = $this->quoteSettings['offer_limited_access_delivery'] = false : $limitedAccess;
+                $limitedAccess = ($this->alwaysResi || $this->isResi) ? $this->quoteSettings['offer_limited_access_delivery'] = false : $limitedAccess;
             }
             $arraySorting = [];
 
@@ -4344,8 +4344,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['offer_notify_as_option']) && $this->quoteSettings['offer_notify_as_option']);
 
                 $limitedAccess = (
-                    (isset($this->quoteSettings['offer_limited_access_delivery']) && $this->quoteSettings['offer_limited_access_delivery']) ||
-                    (isset($this->quoteSettings['always_limited_access_delivery']) && $this->quoteSettings['always_limited_access_delivery'])) ?? false;
+                    (isset($this->quoteSettings['offer_limited_access_delivery']) && $this->quoteSettings['offer_limited_access_delivery']));
             }
 
             $arraySorting = [];
