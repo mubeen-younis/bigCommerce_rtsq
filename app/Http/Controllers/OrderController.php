@@ -175,7 +175,7 @@ class OrderController extends Controller
 
     public function createOrderWidget($request, $order, $reportingFlag)
     {
-        $rateId = $order['rate_id'] ?? null;
+        $rateId = $order['full_rate_id'] ?? $order['rate_id'] ?? null;
         $cartId = $order['cart_id'] ?? null;
 
         $data = $this->getRequestDataFromDB('RequestData', $request, $rateId, $cartId, $order);
@@ -385,9 +385,10 @@ class OrderController extends Controller
         $items = $lineItem->items;
         $count = 0;
         $addedInsurance = $addHazmat = $isOriginMarkup = $isProductMarkup = false;
-        $isMulti = false;
+        $isMulti = $isLGate = false;
         $insertedIds = $insertedNames = [];
         $code = '';
+
 
         foreach ($origins as $key => $origin) {
             $item = optional($items)->$key;
@@ -465,6 +466,8 @@ class OrderController extends Controller
                 $carrierHasInsurance = $code ? $this->hasInsureCarrier($code) : false;
                 $isSurcharge = strpos($code, '+SC' ) ? 'Y' : 'n';
                 $isFlatRate = strpos($code, 'flatRateRule') === 0 ? true : false;
+                $isLGate = strpos($code, '+LG') ? true : false;
+                $autoResidentialsStatus = strpos($code, '+R') ? 'Y' : 'n';
 
                 /*Added condition if in case of multi shipment
                 The rate of shipping group will be added to warehouse rate*/
@@ -613,7 +616,7 @@ class OrderController extends Controller
 
             if (!$isSmall && !$isFlatRate) {
                 $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Pickup') : '';
-                $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Delivery') : '';
+                $liftGateStatus != 'n' || $isLGate ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Delivery') : '';
                 $liftGatePickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Pickup') : '';
                 $insideDelivery != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Inside Delivery') : '';
                 $LimitedAccessDel != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Limited Access Delivery') : '';
