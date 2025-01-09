@@ -2353,9 +2353,6 @@ class CompileQuotes
                     (isset($this->quoteSettings['offer_notify_as_option']) && $this->quoteSettings['offer_notify_as_option']);
 
                 $limitedAccess = (isset($this->quoteSettings['offer_limited_access_delivery']) && $this->quoteSettings['offer_limited_access_delivery']);
-                // Todo: remove the below 2 lines after integrate limited access feature in GTZ
-                $this->quoteSettings['offer_limited_access_delivery'] = false;
-                $this->quoteSettings['always_limited_access_delivery'] = false;
             }
             $originQuotes = [];
             $arraySorting = [];
@@ -2367,6 +2364,9 @@ class CompileQuotes
                 foreach ($quote['q'] as $key => $data) {
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) /*&& isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y' */) {
 
+                        $issetLiftgateFee = isset($data['surcharges']['liftgateFee']) && !empty($data['surcharges']['liftgateFee']);
+                        $issetLimitedFee = isset($data['surcharges']['limitedAccessDeliveryFee']) && !empty($data['surcharges']['limitedAccessDeliveryFee']);
+                        $issetNotifyFee = isset($data['surcharges']['notifyDeliveryFee']) && !empty($data['surcharges']['notifyDeliveryFee']);
         
                         // Below commit use for future.
                         //$data = $this->applyOverrideRatesRule($connectionSettings, $data);
@@ -2379,7 +2379,7 @@ class CompileQuotes
                         $days = $data['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
 
-                        $enableFeaturesArray = Functions::getEnableFeaturesArr($lgQuotes, $insideDelivery ?? false, $notifyDelivery, $limitedAccess ?? false);
+                        $enableFeaturesArray = Functions::getEnableFeaturesArr($lgQuotes && $issetLiftgateFee, $insideDelivery ?? false, $notifyDelivery && $issetNotifyFee, $limitedAccess && $issetLimitedFee ?? false);
                         foreach ($enableFeaturesArray as $index => $feature) {
                             if($feature['isEnable']){
                                 $compileNotifyDeliveryQuotes = Functions::getOriginQuotes(
@@ -2641,7 +2641,7 @@ class CompileQuotes
                     (isset($this->quoteSettings['offer_notify_as_option']) && $this->quoteSettings['offer_notify_as_option']);
 
                 $limitedAccess = 
-                    (isset($this->quoteSettings['offer_limited_access_delivery']) && $this->quoteSettings['offer_limited_access_delivery'])
+                    (isset($this->quoteSettings['offer_limited_access_delivery']) && $this->quoteSettings['offer_limited_access_delivery']);
             }
             
             $arraySorting = [];
@@ -2656,8 +2656,7 @@ class CompileQuotes
                     $isHatSrvc = isset($data['serviceType']) && strpos($data['serviceType'], 'HAT+') !== false;
                     if (isset($data['serviceType']) && isset($data['serviceDesc']) && in_array($data['serviceType'], $allConfigServices)) {
                         if ($isHatSrvc) {
-                            $data['totalNetCharge']['Amount'] = $this->calculatePrice($data);
-                            $hatShipments[$origin][$key][] = $data;
+                            $hatShipments[$origin]['hat'][$key] = $data;
                             $hatArraySorting['simple'][$key] = $data['totalNetCharge']['Amount'];
                             continue;
                         }
@@ -3299,7 +3298,7 @@ class CompileQuotes
 
                 $surcharges = $data['surcharges'] ?? [];
                 unset($data['surcharges']);
-                $data['surcharges'] = ['residentialFee' => 0, 'liftgateFee' => 0, 'notifyDeliveryFee' => 0];
+                $data['surcharges'] = ['residentialFee' => 0, 'liftgateFee' => 0, 'notifyDeliveryFee' => 0, 'limitedAccessDeliveryFee' => 0];
                 foreach ($surcharges as $surcharge) {
                     if ((isset($surcharge['Type']['Code']) && $surcharge['Type']['Code'] === 'RESI_PU_DEL') || (isset($surcharge['code']) && $surcharge['code'] == 'RESD')) {
                         $data['surcharges']['residentialFee'] = $surcharge['Factor']['Value'] ?? $surcharge['value'] ?? 0;
@@ -3312,6 +3311,9 @@ class CompileQuotes
                     }
                     if ((isset($surcharge['Type']['Code']) && $surcharge['Type']['Code'] === 'ADV_NOTF') || (isset($surcharge['code']) && $surcharge['code'] == 'NTFN')) {
                         $data['surcharges']['notifyDeliveryFee'] = $surcharge['Factor']['Value'] ?? $surcharge['value'] ?? 0;
+                    }
+                    if ((isset($surcharge['Type']['Code']) && $surcharge['Type']['Code'] === 'LIM_ACC_PU_DEL') || (isset($surcharge['code']) && $surcharge['code'] == 'LADL')) {
+                        $data['surcharges']['limitedAccessDeliveryFee'] = $surcharge['Factor']['Value'] ?? $surcharge['value'] ?? 0;
                     }
                 }
                 // Apply override rates shipping rule
@@ -5647,6 +5649,9 @@ class CompileQuotes
             if (isset($arraySorting['quickest']['simple'])) {
                 $minIndex = array_search(min($arraySorting['quickest']['simple']), $arraySorting['quickest']['simple']);
                 foreach($services[$this->originKey] as $key => $service){
+                    if(!isset($service[$minIndex])){
+                        continue;
+                    }
                     $quickest[$key] = $service[$minIndex];
                     if (isset($quickest[$key]['title'])) {
                         $quickest[$key]['title'] = $quickest[$key]['titleQuickest'];
