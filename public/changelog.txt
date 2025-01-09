@@ -1,3 +1,7 @@
+= 2.3.0 2025-01-08 =
+
+* Update - Update multi shipment resp functionality (Ticket:17432593064) [#517] (https://bitbucket.org/eniture/big-commerce/pull-requests/517)
+
 = 2.2.32 2024-12-04 =
 
 * Update - Free shipping only to Contiguous 48 for certain items (new Shipping Rule) (Ticket:15698378014) [#510] (https://bitbucket.org/eniture/big-commerce/pull-requests/510)

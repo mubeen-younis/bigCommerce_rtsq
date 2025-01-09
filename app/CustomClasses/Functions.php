@@ -794,8 +794,17 @@ class Functions
     }
 
     // Create Origin Quotes Array in case of notify before delivery enable
-    public static function getOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi, $insideDelivery = false, $laccess = false, $notifyDelivery = false, $resiPickup = false, $lgPickup = false, $storeId = null, $isSurchargeRates = false)
+    public static function getOriginQuotes($index, $serviceName, $originQuotes, $data, $origin, $count, $days, $dateAndDays, $lgQuotes = false, $carrName, $originKey, $items, $allOrigins, $quoteSettings, $isResi, $isAlwaysResi, $insideDelivery = false, $laccess = false, $notifyDelivery = false, $resiPickup = false, $lgPickup = false, $storeId = null, $isSurchargeRates = false)
     {
+        $lgQuotes = (isset($quoteSettings['alwaysLiftGateDelivery']) && $quoteSettings['alwaysLiftGateDelivery']) ? true : $lgQuotes;
+        $notifyDelivery = (isset($quoteSettings['always_quote_notify']) && $quoteSettings['always_quote_notify']) ? true : $notifyDelivery;
+        $laccess = (isset($quoteSettings['always_limited_access_delivery']) && $quoteSettings['always_limited_access_delivery']) ? true : $laccess;
+        $insideDelivery = (isset($quoteSettings['always_inside_delivery']) && $quoteSettings['always_inside_delivery']) ? true : $insideDelivery;
+
+        if (!$lgQuotes) {
+            $lgQuotes = (isset($quoteSettings['autoDetectedResidentialAddressesLfg']) && $quoteSettings['autoDetectedResidentialAddressesLfg']) && $isResi;
+        }
+
         $CompileQuotes = new CompileQuotes();
         $serviceCode = !($carrName == 'seflltl' || $carrName == 'yrcltl' || $carrName == 'upsltl' || $carrName == 'saialtl' || $carrName == 'fedexltl' || $carrName == 'tqlltl' || $carrName == 'abfltl' || $carrName == 'daylightltl' || $carrName == 'dayrossltl') && isset($data['serviceType']) ? $data['serviceType'] : '';
         $serviceCode = $data['ratquoteNumber'] ?? $data['scac'] ?? $data['CarrierSCAC'] ?? $serviceCode;
@@ -822,11 +831,11 @@ class Functions
                 $explodTitle = $explodTitle[1];
                 $titleQuickest = $quickLabelAs . ' w/' . $explodTitle;
             }
-            $originQuotes[$origin][$index]['titleQuickest'] = $titleQuickest ?? '';
+            $originQuotes[$origin][$index][$count]['titleQuickest'] = $titleQuickest ?? '';
         }
-        $originQuotes[$origin][$index]['code'] = $carrName . $serviceCode . $ndAccess;
-        $originQuotes[$origin][$index]['rate'] = $ndPrice;
-        $originQuotes[$origin][$index]['title'] = $ndTitle;
+        $originQuotes[$origin][$index][$count]['code'] = $carrName . $serviceCode . $ndAccess;
+        $originQuotes[$origin][$index][$count]['rate'] = $ndPrice;
+        $originQuotes[$origin][$index][$count]['title'] = $ndTitle;
 
         return ['originQuotes' => $originQuotes, 'ndPrice' => $ndPrice];
     }
@@ -1048,6 +1057,27 @@ class Functions
                     'isID' => $insideDelivery,
                     'isNBD' => $notifyDelivery,
                 ],
+            ],
+            'Truckload' => [
+                'isEnable' => false,
+                'index' => [],
+            ],
+            'hat' => [
+                'isEnable' => false,
+                'index' => [],
+            ],
+
+            'twoManDel' => [
+                'isEnable' => false,
+                'index' => [],
+            ],
+            'aptDel' => [
+                'isEnable' => false,
+                'index' => [],
+            ],
+            'twoManAptDel' => [
+                'isEnable' => false,
+                'index' => [],
             ],
         ];
 
@@ -1564,9 +1594,9 @@ class Functions
                     return $quotes;
                 } 
             } elseif (isset($ThresholdSettings['parcel_rates']) && $ThresholdSettings['parcel_rates'] == 1) {
-                if(!($isParcel)){
+                if(!$isParcel && $isLTL){
                     return $quotes;
-                } 
+                }
             }
 
             foreach ($multiShipmentQuotes as $shipment) {
@@ -1611,7 +1641,7 @@ class Functions
             $isSmallRate = isset($quote['code']) ? ($isSmallRate || substr($quote['code'], 0, 9) == 'parcel_12') : false;
             $isLtlRate = isset($quote['code']) ? ($isLtlRate || strpos($quote['code'], 'ltl') != false) : false;
         }
-        return ['isLtl' => $isLtlRate && !$isSmallRate, 'IsLtlSmall' => $isLtlRate && $isSmallRate];
+        return ['isLtl' => $isLtlRate && !$isSmallRate, 'IsLtlSmall' => $isLtlRate && $isSmallRate, 'isSmall' => $isSmallRate];
     }
 
     public static function findCheapestQuotes($data, $quotes)
@@ -1722,5 +1752,10 @@ class Functions
     {
         $store = Store::where('id', $storeId)->orwhere('hash', $storeHash)->select('id')->first() ?? [];
         return EnableLog::where('store_id', $store->id)->where('log_status', 1)->exists() ?? 0;
+    }
+
+    public static function getEnabledAccessorials($key)
+    {
+        return ['isLG' => '+lg', 'isNBD' => '+nbd', 'isLAD' => '+lad', 'isID' => '+id', 'isAPD' => '+apd', 'isTMD' => '+tmd', 'isPU' => '+pu', 'isLGPU' => '+lfgp'];
     }
 }
