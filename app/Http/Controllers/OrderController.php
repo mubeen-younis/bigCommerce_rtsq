@@ -11,6 +11,7 @@ use App\Constants\Constant;
 use App\Models\RequestData;
 use Illuminate\Http\Request;
 use App\Models\ShippingGroup;
+use App\Models\ShippingRule;
 use App\Models\RequestTempData;
 use App\CustomClasses\Functions;
 use Illuminate\Http\JsonResponse;
@@ -174,7 +175,7 @@ class OrderController extends Controller
 
     public function createOrderWidget($request, $order, $reportingFlag)
     {
-        $rateId = $order['rate_id'] ?? null;
+        $rateId = $order['full_rate_id'] ?? $order['rate_id'] ?? null;
         $cartId = $order['cart_id'] ?? null;
 
         $data = $this->getRequestDataFromDB('RequestData', $request, $rateId, $cartId, $order);
@@ -195,6 +196,10 @@ class OrderController extends Controller
         $index = explode('idx+', $rateId);
         if (is_string($index[0]) && $index[0] == "shippingGroup") {
             return $this->shippingGroupOrderWidget($data, $order);
+        }
+
+        if (is_string($index[0]) && $index[0] == "flatRateRule") {
+            return $this->flatRateRuleOrderWidget($data, $order);
         }
         // DBSC order widget
         if (is_string($index[0]) && strpos($index[0], 'dbsc') !== false) {
@@ -231,12 +236,13 @@ class OrderController extends Controller
         $originalItemsReq = json_decode(json_encode($lineItem->items));
         $responseFromWS = json_decode($data['quotes']);
         $shippingGroupResp = !blank($data['shipping_group_resp']) ? json_decode($data['shipping_group_resp']) : [];
+        $flatRateResp = !blank($data['flat_rate_resp']) ? json_decode($data['flat_rate_resp']) : [];
 
         $requestToWS = json_decode($data['request']);
         // TODO: Need to chenage implementation e.g new FormatItems
         $lineItem->items = $this->formateItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
 
-        $lineItem->origin = $this->formateOrigins($requestToWS->requestArr->carriers);
+        // $lineItem->origin = $this->formateOrigins($requestToWS->requestArr->carriers);
         $isMultiShipment = false;
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
         if (!blank($multiShipmentresponse)) {
@@ -379,12 +385,14 @@ class OrderController extends Controller
         $items = $lineItem->items;
         $count = 0;
         $addedInsurance = $addHazmat = $isOriginMarkup = $isProductMarkup = false;
-        $isMulti = false;
+        $isMulti = $isLGate = false;
         $insertedIds = $insertedNames = [];
         $code = '';
 
+
         foreach ($origins as $key => $origin) {
             $item = optional($items)->$key;
+            $isFlatRate = false;
             if (blank($item)) {
                 continue;
             }
@@ -457,6 +465,9 @@ class OrderController extends Controller
                 }
                 $carrierHasInsurance = $code ? $this->hasInsureCarrier($code) : false;
                 $isSurcharge = strpos($code, '+SC' ) ? 'Y' : 'n';
+                $isFlatRate = strpos($code, 'flatRateRule') === 0 ? true : false;
+                $isLGate = strpos($code, '+LG') ? true : false;
+                $autoResidentialsStatus = strpos($code, '+R') ? 'Y' : 'n';
 
                 /*Added condition if in case of multi shipment
                 The rate of shipping group will be added to warehouse rate*/
@@ -464,6 +475,7 @@ class OrderController extends Controller
                     $shippingGroupRate = $shippingGroupResp[0]->rate ?? 0;
                     $sRate = $sRate + $shippingGroupRate;
                 }
+                
                 $isMulti = true;
             }
 
@@ -517,16 +529,17 @@ class OrderController extends Controller
             } elseif (isset($sbsItems[$zip]) && !empty($sbsItems[$zip])) {
                 foreach ($sbsItems[$zip] as $sbsVariantKey => $sbsItem) {
                     $itemDetail = $this->getSbsItemDetail($sbsVariantKey, $items);
-                    if (!blank($itemDetail) && (!in_array($itemDetail->lineItemName, $insertedNames)) && (!in_array($itemDetail->id, $insertedIds))) {
+                    if (!blank($itemDetail) && (!in_array($itemDetail->lineItemName, $insertedNames)) && (!in_array($itemDetail->variant_id, $insertedIds))) {
                         $insertedNames[] = $itemDetail->lineItemName;
-                        $insertedIds[] = $itemDetail->id;
+                        $insertedIds[] = $itemDetail->variant_id;
                         $orderWidget[$zip]['items'][] = $itemDetail->originalPiecesOfLineItem . ' X ' . $itemDetail->lineItemName;
                     }
                 }
             } else {
-                if (isset($item->id) && (!in_array($item->id, $insertedIds))) {
-                    $insertedIds[] = $item->id;
-                    $orderWidget[$zip]['items'][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
+                if (isset($item->variant_id) && (!in_array($item->variant_id, $insertedIds))) {
+                    $insertedIds[] = $item->variant_id;
+                    $keyText = isset($item->isFreeShipping) ? 'freeShippingItems' : 'items';
+                    $orderWidget[$zip][$keyText][] = $item->originalPiecesOfLineItem . ' X ' . $item->lineItemName;
                 }
             }
 
@@ -601,9 +614,9 @@ class OrderController extends Controller
             $isOriginMarkup ? array_push($orderWidget[$zip]['accessories'], 'Origin Markup') : '';
             $isSurcharge != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Surcharge Included') : '';
 
-            if (!$isSmall) {
+            if (!$isSmall && !$isFlatRate) {
                 $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Residential Pickup') : '';
-                $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Delivery') : '';
+                $liftGateStatus != 'n' || $isLGate ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Delivery') : '';
                 $liftGatePickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Pickup') : '';
                 $insideDelivery != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Inside Delivery') : '';
                 $LimitedAccessDel != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Limited Access Delivery') : '';
@@ -645,7 +658,7 @@ class OrderController extends Controller
             }
         }
 
-        $fdoShipmenst = json_decode($data['fdo_shipments_data'], true) ?? [];
+        $fdoShipmenst = json_decode($data['fdo_shipments_data'] ?? '', true) ?? [];
         $sbs = '';
 
         $resp = [
@@ -697,6 +710,15 @@ class OrderController extends Controller
     public function shippingGroupOrderWidget($data, $order)
     {
         $orderWidget = ShippingGroup::shippingGroupOrderWidget($data, $order);
+        $resp = [
+            'widget' => $this->objectToArray($orderWidget)
+        ];
+        return $resp;
+    }
+
+    public function flatRateRuleOrderWidget($data, $order)
+    {
+        $orderWidget = ShippingRule::flatRateRuleOrderWidget($data, $order);
         $resp = [
             'widget' => $this->objectToArray($orderWidget)
         ];
