@@ -1894,7 +1894,7 @@ class CompileQuotes
                         } else {
                             $guaranteedPrice = [];
                         }
-                        $quote['q'] = $originQuotes = array_merge($standardPrice, $guaranteedPrice);
+                        $quote['q'] = $originQuotes[$origin] = array_merge($standardPrice, $guaranteedPrice);
                     }
                 }
             }
@@ -6141,6 +6141,7 @@ class CompileQuotes
                                 $index, $data['carrier'],
                                 $originQuotes,
                                 $data,
+                                $this->originKey,
                                 $key, $data['totalCalenderDaysInTransit'],
                                 $dateAndDays, $feature['index']['isLG'] ?? false,
                                 "tqlltl", $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings,
