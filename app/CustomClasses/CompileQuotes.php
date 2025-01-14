@@ -1111,6 +1111,7 @@ class CompileQuotes
             }
 
             $access = [];
+            $this->alwaysLG = $this->alwaysAPD = $this->alwaysTMD = $this->alwaysID = $this->alwaysNBD = $this->alwaysLAD = false;
             foreach(Functions::getEnableFeaturesArr($accessorials['isLG'] ?? false, $accessorials['isID'] ?? false, $accessorials['isNBD'] ?? false, $accessorials['isLAD'] ?? false) as $key => $value){
                 if($value['isEnable'] && in_array($key, $allRateTypes)){
                     if(!empty($value['index'])){
@@ -1254,7 +1255,7 @@ class CompileQuotes
                 foreach ($quote['q'] as $key => $data) {
 
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) && isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y') {
-                        if ($limitedAccess && isset($this->quoteSettings['limited_access_fee'])) {
+                        if (($limitedAccess || $this->alwaysLAD) && isset($this->quoteSettings['limited_access_fee'])) {
                             $data['totalNetCharge']['Amount'] += $this->quoteSettings['limited_access_fee'];
                             $data['surcharges']['limitedAccessDeliveryFee'] = (float) $this->quoteSettings['limited_access_fee'];
                         }
@@ -1404,7 +1405,7 @@ class CompileQuotes
                 }
                 foreach ($quote['q'] as $key => $data) {
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices)) {
-                        if ($limitedAccess && isset($this->quoteSettings['limited_access_fee'])) {
+                        if (($limitedAccess || $this->alwaysLAD) && isset($this->quoteSettings['limited_access_fee'])) {
                             $data['totalNetCharge']['Amount'] += $this->quoteSettings['limited_access_fee'];
                             $data['surcharges']['limitedAccessDeliveryFee'] = (float) $this->quoteSettings['limited_access_fee'];
                         }
@@ -1544,7 +1545,7 @@ class CompileQuotes
                 $allowOwnArrangement = isset($quote['allowOwnArrangement']) && $quote['allowOwnArrangement'] ?? false;
                 foreach ($quote['q'] as $key => $data) {
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices)) {
-                        if ($limitedAccess && isset($this->quoteSettings['limited_access_fee'])) {
+                        if (($limitedAccess || $this->alwaysLAD) && isset($this->quoteSettings['limited_access_fee'])) {
                             $data['totalNetCharge']['Amount'] += $this->quoteSettings['limited_access_fee'];
                             $data['surcharges']['limitedAccessDeliveryFee'] = (float) $this->quoteSettings['limited_access_fee'];
                         }
