@@ -478,23 +478,20 @@ class ShippingRule extends Model
         $shippingRule['price_to'] = $settings['priceTo'] ?? null;
         $shippingRule['quantity_from'] = $settings['quantityFrom'] ?? null;
         $shippingRule['quantity_to'] = $settings['quantityTo'] ?? null;
+        $shippingRule['products'] = $settings['filter_products'] ?? [];
+        $shippingRule['categories'] = $settings['filter_categories'] ?? [];
+        $shippingRule['brands'] = $settings['filter_brands'] ?? []; 
+        $shippingRule['apply_rule_to'] = $settings['apply_rule_to'] ?? 1;
         
 
         if($isOverrideRates){
             $shippingRule['filter_services'] = $settings['filter_services'] ?? [];
             $shippingRule['service_rates'] = $settings['service_rates'] ?? null;
-            $shippingRule['products'] = $settings['filter_products'] ?? [];
-            $shippingRule['categories'] = $settings['filter_categories'] ?? [];
-            $shippingRule['brands'] = $settings['filter_brands'] ?? []; 
-            $shippingRule['apply_rule_to'] = $settings['apply_rule_to'] ?? 1;
+            
         }
         if($isSurchargeRates){
             $shippingRule['filter_provider'] = '';
             $shippingRule['filter_name'] = '';
-            $shippingRule['products'] = $settings['filter_products'] ?? [];
-            $shippingRule['categories'] = $settings['filter_categories'] ?? [];
-            $shippingRule['brands'] = $settings['filter_brands'] ?? []; 
-            $shippingRule['apply_rule_to'] = $settings['apply_rule_to'] ?? 1;
             $shippingRule['service_rates'] = $settings['service_rates'] ?? null; 
         }
 
