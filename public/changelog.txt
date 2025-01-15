@@ -1,3 +1,7 @@
+= 2.3.2 2025-01-15 =
+
+* Update - Limited Access delivery chunk 1 (Ticket:1086980911) [#520] (https://bitbucket.org/eniture/big-commerce/pull-requests/520)
+
 = 2.3.1 2025-01-14 =
 
 * Update - Shipping Groups (extend hide methods shipping rule functionality) (Ticket:16053853503) [#518] (https://bitbucket.org/eniture/big-commerce/pull-requests/518)
