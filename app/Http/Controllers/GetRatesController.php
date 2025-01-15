@@ -875,10 +875,22 @@ class GetRatesController extends Controller
         $warehouses = isset($rule['warehouses']) ? $rule['warehouses'] : [];
         $isSameOrigin = false;
         $ruleType = !empty($rule['rule_type']) ? (int)$rule['rule_type'] : null;
+        $applyTo = !empty($rule['apply_to']) ? (int)$rule['apply_to'] : null;
+        $provider = isset($rule['filter_provider']) ? $rule['filter_provider'] : '';
         if($ruleType == 7){
             $this->applyHideDeliveryEstimatesRule($rule);
             return false;
         }
+        
+        if($ruleType == 2 && $applyTo == 2){
+            foreach($this->connectionSettings as $key => $carrier){
+                if($key == $provider){
+                    unset($this->connectionSettings[$key]);
+                }
+            }
+            return false;
+        }
+
         $isSameCountry = $destination['country'] == $filterCountry ?? false;
         $isSameState = in_array($destination['state'], $statesCode) ?? false;
         $isSamePostalCode = CountryState::isSamePostalCode($destination['zip'], $postalCodes) ?? false;

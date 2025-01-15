@@ -1560,7 +1560,7 @@ class Functions
         $finalCHeapestQuotes = [];
         $accessorialServices = [];
 
-        if(count($multiShipmentQuotes) >= 2 && count($checkoutQuotes) >= 2){
+        if(count($multiShipmentQuotes) >= 1 && count($checkoutQuotes) >= 2){
             
             $isParcel = $isLTL = false;
             foreach ($multiShipmentQuotes as $index => $shipment) {
