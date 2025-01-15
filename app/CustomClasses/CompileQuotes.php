@@ -5245,7 +5245,7 @@ class CompileQuotes
     {
         $lgCost = $lgOption || $this->alwaysLG ? 0 : $this->getLiftGateCost($data, $getCost, $isUpsLtl);
         $IDCost = $insideDel || $this->alwaysID ? 0 : $this->getInsideDeliveryCost($data);
-        $LADCost = $laccess || $this->alwaysLAD ? 0 : $data['limitedAccessDeliveryFee'] ?? $data['surcharges']['limitedAccessDeliveryFee'] ?? 0;
+        $LADCost = $laccess || $this->alwaysLAD ? 0 : $data['limitedAccessDeliveryFee'] ?? $data['surcharges']['limitedAccessDeliveryFee'] ?? $data['surcharges']['limitedAccessFee'] ?? 0;
         $ResiCost = ($this->isResi || $this->alwaysResi || $isResi) ? 0 : $data['surcharges']['residentialFee'] ?? 0;
         $TMDCost = $twoManDel || $this->alwaysTMD ? 0 : $data['surcharges']['twoManFee'] ?? 0;
         $APDCost = $appDel || $this->alwaysAPD ? 0 : $data['surcharges']['appointmentFee'] ?? 0;
