@@ -1,3 +1,7 @@
+= 2.3.1 2025-01-14 =
+
+* Update - Shipping Groups (extend hide methods shipping rule functionality) (Ticket:16053853503) [#518] (https://bitbucket.org/eniture/big-commerce/pull-requests/518)
+
 = 2.3.0 2025-01-08 =
 
 * Update - Update multi shipment resp functionality (Ticket:17432593064) [#517] (https://bitbucket.org/eniture/big-commerce/pull-requests/517)
