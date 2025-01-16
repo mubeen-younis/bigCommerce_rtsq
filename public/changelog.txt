@@ -1,3 +1,7 @@
+= 2.3.4 2025-01-16 =
+
+* Update - Introduce New Shipping Rule "Surcharge" (3rd chunk) (Ticket:2451812923) [#524] (https://bitbucket.org/eniture/big-commerce/pull-requests/524)
+
 = 2.3.3 2025-01-15 =
 
 * Update - Introduce New Shipping Rule "Surcharge" (2nd chunk) (Ticket:2451812923) [#521] (https://bitbucket.org/eniture/big-commerce/pull-requests/521)
