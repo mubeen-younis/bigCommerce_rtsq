@@ -20,7 +20,7 @@ pipelines:
                 MODE: 'command'
                 COMMAND: '/var/www/html/bigcommerce/bc/remote-script.sh'
 
-    qa-staging:
+    surcharge-rates-chunk-1:
       - step:
           caches:
             - composer
