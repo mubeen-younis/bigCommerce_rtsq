@@ -1895,7 +1895,18 @@ class CompileQuotes
                         } else {
                             $guaranteedPrice = [];
                         }
-                        $quote['q'] = $originQuotes[$origin] = array_merge($standardPrice, $guaranteedPrice);
+                        // Initialize the merged array
+                        $mergedArray = [];
+
+                        // Iterate over both arrays
+                        foreach ([$standardPrice, $guaranteedPrice] as $array) {
+                            foreach ($array as $key => $value) {
+                                // Merge arrays under the same key
+                                $mergedArray[$key] = array_merge($mergedArray[$key] ?? [], $value);
+                            }
+                        }
+
+                        $quote['q'] = $originQuotes[$origin] = $mergedArray ?? [];
                     }
                 }
             }
