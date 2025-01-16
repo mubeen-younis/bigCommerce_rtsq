@@ -3273,15 +3273,27 @@ class CompileQuotes
                 $limitedAccess = !($this->isResi || $this->alwaysResi) && (
                     (isset($this->quoteSettings['offer_limited_access_delivery']) && $this->quoteSettings['offer_limited_access_delivery']));
 
+                $this->alwaysLAD = !($this->isResi || $this->alwaysResi) && $this->alwaysLAD ?? false;
+
                 if(!$limitedAccess){
                     $this->quoteSettings['offer_limited_access_delivery'] = false;
                 }
 
-                $notifyDelivery = !($limitedAccess || $this->isResi || $this->alwaysResi) && (
+                if(!$this->alwaysLAD){
+                    $this->quoteSettings['always_limited_access_delivery'] = false;
+                }
+
+                $notifyDelivery = !($limitedAccess || $this->alwaysLAD || $this->isResi || $this->alwaysResi) && (
                     (isset($this->quoteSettings['offer_notify_as_option']) && $this->quoteSettings['offer_notify_as_option']));
-                
+
+                $this->alwaysNBD = !($limitedAccess || $this->alwaysLAD || $this->isResi || $this->alwaysResi) && $this->alwaysNBD ?? false;
+
                 if(!$notifyDelivery){
                     $this->quoteSettings['offer_notify_as_option'] = false;
+                }
+
+                if(!$this->alwaysNBD){
+                    $this->quoteSettings['always_quote_notify'] = false;
                 }
             }
             
