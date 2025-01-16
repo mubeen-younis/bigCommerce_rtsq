@@ -1569,6 +1569,8 @@ class GenerateRequestData
 
         $residentialPickup = (isset($connSettings['quote_settings']['residentialPickup']) && $connSettings['quote_settings']['residentialPickup'] && $connSettings['quote_settings']['residentialPickup'] == true) ? 'Y' : 'N';
         $notify = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']);
+        $limitedAccess = !($residential === 'Y' || $alwaysResi) && (isset($connSettings['quote_settings']['offer_limited_access_delivery']) && $connSettings['quote_settings']['offer_limited_access_delivery'] ||
+                         isset($connSettings['quote_settings']['always_limited_access_delivery']) && $connSettings['quote_settings']['always_limited_access_delivery']);
 
         $accessorial = [];
 
@@ -1580,6 +1582,9 @@ class GenerateRequestData
         }
         if ($notify) {
             $accessorial[] = 'ARN';
+        }
+        if ($limitedAccess) {
+            $accessorial[] = 'LDC';
         }
 
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
@@ -2118,6 +2123,8 @@ class GenerateRequestData
 
         $this->resiCarrier['freightQuoteLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['freightQuoteLtl'] = $alwaysResi;
+        $limitedAccess = isset($connSettings['quote_settings']['offer_limited_access_delivery']) && $connSettings['quote_settings']['offer_limited_access_delivery'] ||
+        isset($connSettings['quote_settings']['always_limited_access_delivery']) && $connSettings['quote_settings']['always_limited_access_delivery'];
 
         $accessorial = [];
         if ($liftGate == 'Y') {
@@ -2125,6 +2132,9 @@ class GenerateRequestData
         }
         if ($residential == 'Y' || $alwaysResi) {
             array_push($accessorial, 'RESDEL');
+        }
+        if ($limitedAccess) {
+            array_push($accessorial, 'DLA');
         }
 
         $quoteLTLAboveThreshold = (isset($connSettings['quote_settings']['quoteltl_and_truckload']) && $connSettings['quote_settings']['quoteltl_and_truckload']) ? '1' : '0';
@@ -3131,6 +3141,8 @@ class GenerateRequestData
 
         $this->resiCarrier['freightQuoteChrLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['freightQuoteChrLtl'] = $alwaysResi;
+        $limitedAccess = isset($connSettings['quote_settings']['offer_limited_access_delivery']) && $connSettings['quote_settings']['offer_limited_access_delivery'] ||
+        isset($connSettings['quote_settings']['always_limited_access_delivery']) && $connSettings['quote_settings']['always_limited_access_delivery'];
 
         $accessorial = [];
         if ($liftGate == 'Y') {
@@ -3138,6 +3150,9 @@ class GenerateRequestData
         }
         if ($residential == 'Y' || $alwaysResi) {
             array_push($accessorial, 'RESDEL');
+        }
+        if ($limitedAccess) {
+            array_push($accessorial, 'DLA');
         }
 
         $TLEquipmentType = (isset($connSettings['quote_settings']['tl_equipment_type']) && $connSettings['quote_settings']['tl_equipment_type'] == 1) ? 'Van' : (isset($connSettings['quote_settings']['tl_equipment_type']) && ($connSettings['quote_settings']['tl_equipment_type'] == 2) ? 'Reefer' : 'Flatbed');
