@@ -130,7 +130,7 @@ class FDOOrderController extends Controller
     {
         $storeId = $detail['store_id'];
         $order = $detail['order_detail'];
-        $rateId = $order['rate_id'] ?? null;
+        $rateId = $order['full_rate_id'] ?? $order['rate_id'] ?? null;
         $cartId = $order['cart_id'] ?? null;
 
         $data = $this->getRequestDataFromDB('RequestData', $storeId, $rateId, $cartId, $order);
@@ -208,9 +208,11 @@ class FDOOrderController extends Controller
         $count = 0;
         $addedInsurance = $addHazmat = false;
 
-        $isMulti = false;
+        $isMulti = $isLGate = $isLAD = $isID = $isNBD = $isTMD = $isAPD = false;
         $code = '';
         $orderDetails = [];
+
+
         foreach ($origins as $key => $origin) {
             $isFlatRate = false;
             $isFlatRate = strpos($rateId, 'flatraterule') === 0 ? true : false;
@@ -280,6 +282,14 @@ class FDOOrderController extends Controller
                     $shippingGroupRate = $shippingGroupResp[0]->rate ?? 0;
                     $sRate = $sRate + $shippingGroupRate;
                 }
+
+                $isLGate = strpos($code, '+LG') ? true : false;
+                $isNBD = strpos($code, '+NBD') ? true : false;
+                $isLAD = strpos($code, '+LAD') ? true : false;
+                $isID = strpos($code, '+ID') ? true : false;
+                $isTMD = strpos($code, '+TMD') ? true : false;
+                $isAPD = strpos($code, '+APD') ? true : false;
+                $autoResidentialsStatus = strpos($code, '+R') ? 'Y' : 'n';
 
                 $isMulti = true;
             }
@@ -366,15 +376,15 @@ class FDOOrderController extends Controller
             $isHAT ? array_push($orderWidget[$zip]['accessorials'], 'Hold At Terminal') : '';
             if (!$isSmall && !$isFlatRate) {
                 $residentialsPickup != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Residential Pickup') : '';
-                $liftGateStatus != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Lift Gate Delivery') : '';
+                $liftGateStatus != 'n' || $isLGate ? array_push($orderWidget[$zip]['accessorials'], 'Lift Gate Delivery') : '';
                 $liftGatePickup != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Lift Gate Pickup') : '';
-                $insideDelivery != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Inside Delivery') : '';
-                $LimitedAccessDel != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Limited Access Delivery') : '';
-                $notifyBeforeDel != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Notify before Delivery') : '';
+                $insideDelivery != 'n' || $isID ? array_push($orderWidget[$zip]['accessorials'], 'Inside Delivery') : '';
+                $LimitedAccessDel != 'n' || $isLAD ? array_push($orderWidget[$zip]['accessorials'], 'Limited Access Delivery') : '';
+                $notifyBeforeDel != 'n' || $isNBD ? array_push($orderWidget[$zip]['accessorials'], 'Notify before Delivery') : '';
                 $isTruckLoad != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Truck Load Delivery') : '';
                 $isFreightTruckLoad != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Truck Load Delivery') : '';
-                $isTwoManDel != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Two Man Delivery') : '';
-                $isAppointmentDel != 'n' ? array_push($orderWidget[$zip]['accessorials'], 'Appointment Delivery') : '';
+                $isTwoManDel != 'n' || $isTMD ? array_push($orderWidget[$zip]['accessorials'], 'Two Man Delivery') : '';
+                $isAppointmentDel != 'n' || $isAPD ? array_push($orderWidget[$zip]['accessorials'], 'Appointment Delivery') : '';
             }
             $accessorials = $this->formatAccessorials($orderWidget[$zip]['accessorials']);
             $orderWidget[$zip]['accessorials'] = $accessorials;

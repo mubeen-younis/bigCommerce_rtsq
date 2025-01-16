@@ -145,7 +145,7 @@ class QuotesResults
         return $data;
     }
 
-    public function formatCharges($charges): int
+    public function formatCharges($charges)
     {
         $amount = $charges ?? 0;
         $amount = str_replace(',', '', $amount);
@@ -169,8 +169,7 @@ class QuotesResults
 
     public function isLGQuotes($quoteSettings): bool
     {
-        $isLG = (isset($quoteSettings['alwaysLiftGateDelivery']) && $quoteSettings['alwaysLiftGateDelivery']) ||
-            (isset($quoteSettings['offerLiftGateDelivery']) && $quoteSettings['offerLiftGateDelivery']);
+        $isLG = (isset($quoteSettings['offerLiftGateDelivery']) && $quoteSettings['offerLiftGateDelivery']);
 
         return $isLG;
     }
@@ -289,7 +288,7 @@ class QuotesResults
 
         $hatQuotes = [];
 
-        foreach ($shipments as $ship) {
+        foreach ($shipments as $origin => $ship) {
             $isError = isset($ship['q']['soapBody']['soapFault']);
             if ($isError) {
                 continue;
@@ -318,7 +317,7 @@ class QuotesResults
                     $terminal['serviceDesc'] = Functions::getHATTitle($title, $address, $distance, $phoneNumber);
                     $terminal['totalNetCharge']['Amount'] = Functions::getHATPrice($charges, $quoteSettings['hold_at_terminal_price'] ?? 0);
 
-                    $hatQuotes[] = $terminal;
+                    $hatQuotes[$origin]['hat'][] = $terminal;
                 }
             }
         }
@@ -413,7 +412,7 @@ class QuotesResults
 
     public static function isTwoManDeliveryEnabled($connSettings)
     {
-        if (isset($connSettings['quote_settings']['always_two_man_delivery']) && $connSettings['quote_settings']['always_two_man_delivery'] || (isset($connSettings['quote_settings']['offer_two_man_delivery']) && $connSettings['quote_settings']['offer_two_man_delivery'])) {
+        if ((isset($connSettings['quote_settings']['offer_two_man_delivery']) && $connSettings['quote_settings']['offer_two_man_delivery'])) {
             return true;
         }
 
@@ -422,7 +421,7 @@ class QuotesResults
 
     public static function isAppointmentManDeliveryEnabled($connSettings)
     {
-        if (isset($connSettings['quote_settings']['always_appointment_delivery']) && $connSettings['quote_settings']['always_appointment_delivery'] || (isset($connSettings['quote_settings']['offer_appointment_delivery']) && $connSettings['quote_settings']['offer_appointment_delivery'])) {
+        if ((isset($connSettings['quote_settings']['offer_appointment_delivery']) && $connSettings['quote_settings']['offer_appointment_delivery'])) {
             return true;
         }
 
