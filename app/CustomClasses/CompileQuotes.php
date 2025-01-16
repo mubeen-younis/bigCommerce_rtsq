@@ -1853,10 +1853,10 @@ class CompileQuotes
                     } elseif ($ratingMethod == 6) {
                         $options = (int) $this->quoteSettings['number_of_options'];
                         $standardSort = collect($standardQuotes)->sortBy('customerRate')->toArray();
-                        $standardPrice = $this->averageOfEachService($standardSort, $options, $this->allConfigServices, $this->lgQuotes, $this->notifyDelivery, false, $standardLabel);
+                        $standardPrice = $this->averageOfEachService($connectionSettings, $standardSort, $options, $this->allConfigServices, $this->lgQuotes, $this->notifyDelivery, false, $standardLabel);
                         if (!$this->isMultiShipment){
                             $guaranteedSort = collect($guaranteedQuotes)->sortBy('customerRate')->toArray();
-                            $guaranteedPrice = $this->averageOfEachService($guaranteedSort, $options, $this->allConfigServices, $this->lgQuotes, $this->notifyDelivery, false, $guaranteedLabel);
+                            $guaranteedPrice = $this->averageOfEachService($connectionSettings, $guaranteedSort, $options, $this->allConfigServices, $this->lgQuotes, $this->notifyDelivery, false, $guaranteedLabel);
                         } else {
                             $guaranteedPrice = [];
                         }
@@ -6059,7 +6059,7 @@ class CompileQuotes
         return $averageRateService;
     }
 
-    public function averageOfEachService($quotes, $options, $allConfigServices, $lgQuotes, $notifyDelivery, $limitedAccess, $labelAs)
+    public function averageOfEachService($connectionSettings, $quotes, $options, $allConfigServices, $lgQuotes, $notifyDelivery, $limitedAccess, $labelAs)
     {
         $originQuotes = [];
         if (!empty($quotes)) {
@@ -6088,7 +6088,7 @@ class CompileQuotes
                     $isLgSurcharges = isset($data['surcharges']['liftgateFee']) && $data['surcharges']['liftgateFee'];
                     $isNbdSurcharges = isset($data['surcharges']['notifyDeliveryFee']) && $data['surcharges']['notifyDeliveryFee'];
                     $isLimitedSurcharges = isset($data['surcharges']['limitedAccessDeliveryFee']) && $data['surcharges']['limitedAccessDeliveryFee'];
-
+                    $data = $this->applySurchargeRatesRule($connectionSettings, $data);
                     $date = $data['deliveryTimestamp'] ?? null;
                     $days = $data['totalCalenderDaysInTransit'] ?? null;
                     $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
