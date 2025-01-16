@@ -2451,6 +2451,7 @@ class CompileQuotes
                                     false,
                                     false,
                                     $this->storeId,
+                                    $this->isSurchargeRates,
                                 );
 
                                 $arraySorting[$index][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
