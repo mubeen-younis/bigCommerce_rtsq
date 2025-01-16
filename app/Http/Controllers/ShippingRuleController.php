@@ -85,11 +85,13 @@ class ShippingRuleController extends Controller
                     $provider = isset($rule['filter_provider']) ? $rule['filter_provider'] : '';
                     switch ($rule['rule_type']) {
                         case 2:
-                            $is_true = $this->hideMethods($rule, $cartItems);
-                            if(!$is_true){
-                                foreach($connectionSettings as $key => $carrier){
-                                    if($key == $provider){
-                                        unset($connectionSettings[$key]);
+                            if(isset($rule['apply_to']) && $rule['apply_to'] == 1){
+                                $is_true = $this->hideMethods($rule, $cartItems);
+                                if(!$is_true){
+                                    foreach($connectionSettings as $key => $carrier){
+                                        if($key == $provider){
+                                            unset($connectionSettings[$key]);
+                                        }
                                     }
                                 }
                             }
