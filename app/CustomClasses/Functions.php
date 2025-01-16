@@ -810,6 +810,9 @@ class Functions
         $serviceCode = $data['ratquoteNumber'] ?? $data['scac'] ?? $data['CarrierSCAC'] ?? $serviceCode;
 
         $isUpsLtl = false;
+        if ($carrName === 'upsltl') {
+            $isUpsLtl = true;
+        }
         $isQuickestSer = isset($quoteSettings['quickest_service']) && $quoteSettings['quickest_service'] && $carrName === 'gtzltl';
         $quickLabelAs = isset($quoteSettings['quickest_service_label']) && !empty($quoteSettings['quickest_service_label']) ? $quoteSettings['quickest_service_label'] : $serviceName;
         $isResidential = ($isResi || $isAlwaysResi) ?? false;
@@ -1560,7 +1563,7 @@ class Functions
         $finalCHeapestQuotes = [];
         $accessorialServices = [];
 
-        if(count($multiShipmentQuotes) >= 2 && count($checkoutQuotes) >= 2){
+        if(count($multiShipmentQuotes) >= 1 && count($checkoutQuotes) >= 2){
             
             $isParcel = $isLTL = false;
             foreach ($multiShipmentQuotes as $index => $shipment) {
