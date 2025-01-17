@@ -1217,6 +1217,7 @@ class CompileQuotes
 
         foreach ($shipments as $origin => $quote) {
             $this->originKey = $origin;
+            $this->isSurchargeRates = false;
             if (isset($quote['severity'])) {
                 return $instoreLocDelQuotes = $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -1271,7 +1272,7 @@ class CompileQuotes
                         // Apply Override rates shipping rule
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         // Apply Surcharge rates shipping rule
-                        //$data = $this->applySurchargeRatesRule($connectionSettings, $data);
+                        $data = $this->applySurchargeRatesRule($connectionSettings, $data);
                         
                         $issetLiftgateFee = isset($data['surcharges']['liftgateFee']) && !empty($data['surcharges']['liftgateFee']);
                         $issetLimitedFee = isset($data['surcharges']['limitedAccessDeliveryFee']) && !empty($data['surcharges']['limitedAccessDeliveryFee']);
@@ -1300,6 +1301,7 @@ class CompileQuotes
                                     $resiPickup,
                                     $lgPickup,
                                     $this->storeId,
+                                    $this->isSurchargeRates,
                                 );
 
                                 $arraySorting[$index][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -1857,7 +1859,7 @@ class CompileQuotes
                         } else {
                             $guaranteedPrice = [];
                         }
-                        $quote['q'] = $originQuotes = array_merge($standardPrice, $guaranteedPrice);
+                        $quote['q'] = $originQuotes[$origin] = array_merge($standardPrice, $guaranteedPrice);
                     }
                 }
             }
@@ -2096,6 +2098,8 @@ class CompileQuotes
 
         foreach ($shipments as $origin => $quote) {
             $this->originKey = $origin;
+            $this->isSurchargeRates = false;
+
             $hatShipments[$origin]['hat'][] = $estesLtl->HatQuoteCompile($quote, $this->quoteSettings);
             if ((isset($quote['severity']) || !isset($quote['q']) || (isset($quote['q']) && empty($quote['q'])))) {
                 $instoreResp[$origin] = $this->getInsPicAndLocDelQuotes($quote, $allOrigins) ?? [];                
@@ -2162,7 +2166,8 @@ class CompileQuotes
                         // Apply override rates shipping rule
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         // Apply Surcharge rates shipping rule
-                        //$data = $this->applySurchargeRatesRule($connectionSettings, $data);
+                        $data = $this->applySurchargeRatesRule($connectionSettings, $data);
+
                         $price = $this->calculatePrice($data);
                         $access = $this->getAccessorialCode() . $resiPickup;
 
@@ -2206,6 +2211,7 @@ class CompileQuotes
                                 $resiPickup,
                                 false,
                                 $this->storeId,
+                                $this->isSurchargeRates,
                             );
 
                             $arraySorting['notifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -2228,6 +2234,7 @@ class CompileQuotes
                                 $resiPickup,
                                 false,
                                 $this->storeId,
+                                $this->isSurchargeRates,
                             );
 
                             $arraySorting['lgnotifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -2487,7 +2494,7 @@ class CompileQuotes
                 foreach ($quote['q'] as $key => $data) {
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) /*&& isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y' */) {
                         
-                        if($limitedAccess && isset($this->quoteSettings['limited_access_fee'])){
+                        if (($limitedAccess || $this->alwaysLAD) && isset($this->quoteSettings['limited_access_fee'])){
                             $data['totalNetCharge']['Amount'] += $this->quoteSettings['limited_access_fee'] ?? 0;
                             $data['surcharges']['limitedAccessDeliveryFee'] = (float) $this->quoteSettings['limited_access_fee'];
                         }
@@ -2591,6 +2598,8 @@ class CompileQuotes
 
         foreach ($shipments as $origin => $quote) {
             $this->originKey = $origin;
+            $this->isSurchargeRates = false;            
+
             if ((isset($quote['severity']) || (!empty($quote['InstorPickupLocalDelivery']['suppress'])) || !isset($quote['q']) || (isset($quote['q']) && empty($quote['q'])))) {
                 $instoreResp[$origin] = $this->getInsPicAndLocDelQuotes($quote, $allOrigins) ?? [];                
                 return $instoreResp;
@@ -2631,6 +2640,8 @@ class CompileQuotes
                         }
                         // Apply override rates shipping rule
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data);
+                        // Apply Surcharge rates shipping rule
+                        $data = $this->applySurchargeRatesRule($connectionSettings, $data);
 
                         if (isset($data['serviceType']) && $data['serviceType'] === 'FEDEX_FREIGHT_ECONOMY') {
                             $this->quoteSettings['label_as'] = !blank($freightEconomyLableAs) ? $freightEconomyLableAs : 'LTL Freight Economy';
@@ -2897,6 +2908,8 @@ class CompileQuotes
         $originQuotes = [];
         foreach ($shipments as $origin => $quote) {
             $this->originKey = $origin;
+            $this->isSurchargeRates = false;
+
             if ((isset($quote['severity']) || !isset($quote['q']) || (isset($quote['q']) && empty($quote['q'])))) {
                 $instoreResp[$origin] = $this->getInsPicAndLocDelQuotes($quote, $allOrigins) ?? [];                
                 return $instoreResp;
@@ -2935,6 +2948,10 @@ class CompileQuotes
                     }
                     // Apply Override rates shipping rule
                     $data = $this->applyOverrideRatesRule($connectionSettings, $data);
+                    // Apply Surcharge rates shipping rule
+                    $data = $this->applySurchargeRatesRule($connectionSettings, $data);
+
+
                     $price = $this->calculatePrice($data);
                     $access = $this->getAccessorialCode();
 
@@ -2992,6 +3009,7 @@ class CompileQuotes
                             false,
                             false,
                             $this->storeId,
+                            $this->isSurchargeRates,
                         );
 
                         $arraySorting['notifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -3013,6 +3031,7 @@ class CompileQuotes
                             false,
                             false,
                             $this->storeId,
+                            $this->isSurchargeRates,
                         );
 
                         $arraySorting['lgnotifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -3034,6 +3053,7 @@ class CompileQuotes
                             false,
                             false,
                             $this->storeId,
+                            $this->isSurchargeRates,
                         );
 
                         $arraySorting['insidenotifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -3055,6 +3075,7 @@ class CompileQuotes
                             false,
                             false,
                             $this->storeId,
+                            $this->isSurchargeRates,
                         );
 
                         $arraySorting['lginsidenotifydelivery'][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -3252,15 +3273,27 @@ class CompileQuotes
                 $limitedAccess = !($this->isResi || $this->alwaysResi) && (
                     (isset($this->quoteSettings['offer_limited_access_delivery']) && $this->quoteSettings['offer_limited_access_delivery']));
 
+                $this->alwaysLAD = !($this->isResi || $this->alwaysResi) && $this->alwaysLAD ?? false;
+
                 if(!$limitedAccess){
                     $this->quoteSettings['offer_limited_access_delivery'] = false;
                 }
 
-                $notifyDelivery = !($limitedAccess || $this->isResi || $this->alwaysResi) && (
+                if(!$this->alwaysLAD){
+                    $this->quoteSettings['always_limited_access_delivery'] = false;
+                }
+
+                $notifyDelivery = !($limitedAccess || $this->alwaysLAD || $this->isResi || $this->alwaysResi) && (
                     (isset($this->quoteSettings['offer_notify_as_option']) && $this->quoteSettings['offer_notify_as_option']));
-                
+
+                $this->alwaysNBD = !($limitedAccess || $this->alwaysLAD || $this->isResi || $this->alwaysResi) && $this->alwaysNBD ?? false;
+
                 if(!$notifyDelivery){
                     $this->quoteSettings['offer_notify_as_option'] = false;
+                }
+
+                if(!$this->alwaysNBD){
+                    $this->quoteSettings['always_quote_notify'] = false;
                 }
             }
             
@@ -3869,7 +3902,7 @@ class CompileQuotes
                         // Apply Override rates shipping rule
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         // Apply Surcharge rates shipping rule
-                        //$data = $this->applySurchargeRatesRule($connectionSettings, $data);
+                        $data = $this->applySurchargeRatesRule($connectionSettings, $data);
 
                         /*
                          * Adding Functionality of Delivery Estimate Options
@@ -3977,6 +4010,7 @@ class CompileQuotes
         /* Quotes compilation */
         foreach ($shipments as $origin => $quote) {
             $this->originKey = $origin;
+            $this->isSurchargeRates = false;
 
             if ((isset($quote['severity']) || !isset($quote['q']) || (isset($quote['q']) && empty($quote['q'])))) {
                 $instoreResp[$origin] = $this->getInsPicAndLocDelQuotes($quote, $allOrigins) ?? [];                
@@ -4009,6 +4043,9 @@ class CompileQuotes
                     if (isset($srvcType)) {                   
                         // Apply override rates shipping rule
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data);
+                        // Apply Surcharge rates shipping rule
+                        $data = $this->applySurchargeRatesRule($connectionSettings, $data);
+
                         $this->quoteSettings['label_as'] = $labelAs;
 
                         $days = $data['totalTransitTimeInDays'] ?? null;
@@ -4133,7 +4170,8 @@ class CompileQuotes
                         // Apply override rates shipping rule
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         // Apply Surcharge rates shipping rule
-                        //$data = $this->applySurchargeRatesRule($connectionSettings, $data);
+                        $data = $this->applySurchargeRatesRule($connectionSettings, $data);
+
                         $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : 'Freight';
                         /*
                          * Date 01-07-22
@@ -4214,6 +4252,7 @@ class CompileQuotes
         $labelAs = $this->quoteSettings['label_as'] ?? '';
         foreach ($shipments as $origin => $quote) {
             $this->originKey = $origin;
+            $this->isSurchargeRates = false;
 
             if ((isset($quote['InstorPickupLocalDelivery']['suppress']) || isset($quote['severity']) || !isset($quote['q']) || (isset($quote['q']) && empty($quote['q'])))) {
                 $instoreResp[$origin] = $this->getInsPicAndLocDelQuotes($quote, $allOrigins) ?? [];                
@@ -4253,6 +4292,9 @@ class CompileQuotes
                     if (isset($srvcType)) {
                         // Apply Override rates shipping rule
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data);
+                        // Apply Surcharge rates shipping rule
+                        $data = $this->applySurchargeRatesRule($connectionSettings, $data);
+                        
                         $isNbdSurcharges = isset($data['surcharges']['notifyDeliveryFee']);
 
                         $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : 'Freight';
@@ -4329,6 +4371,7 @@ class CompileQuotes
         /* Quotes compilation */
         foreach ($shipments as $origin => $quote) {
             $this->originKey = $origin;
+            $this->isSurchargeRates = false;
             if (isset($quote['severity'])) {
                 return $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -4372,7 +4415,8 @@ class CompileQuotes
                         $data['surcharges']['hazardousMaterialsFee'] = $echoLtl->getHazardousMaterialsFee($data['Accessorials'] ?? []) ?? 0;
                         // Apply override rates shipping rule
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data);
-                        $price = $this->calculatePrice($data);
+                        // Apply Surcharge rates shipping rule
+                        $data = $this->applySurchargeRatesRule($connectionSettings, $data);
 
                         $days = $data['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = $echoLtl->getShipmentDateAndDays($data);
@@ -4436,6 +4480,8 @@ class CompileQuotes
         /* Quotes compilation */
         foreach ($shipments as $origin => $quote) {
             $this->originKey = $origin;
+            $this->isSurchargeRates = false;            
+
             if (isset($quote['severity']) || (!isset($quote['q']) && isset($quote['InstorPickupLocalDelivery']))) {
                 $instoreResp[$origin] = $this->getInsPicAndLocDelQuotes($quote, $allOrigins) ?? [];                
                 return $instoreResp;
@@ -4460,6 +4506,9 @@ class CompileQuotes
                 foreach ($quotesArr as $key => $data) {
                     // Apply Override rates shipping rule
                     $data = $this->applyOverrideRatesRule($connectionSettings, $data);
+                    // Apply Surcharge rates shipping rule
+                    $data = $this->applySurchargeRatesRule($connectionSettings, $data);
+
                     $price = $this->calculatePrice($data);
                     $access = $this->getAccessorialCode();
 
@@ -4560,7 +4609,7 @@ class CompileQuotes
                         // Apply Override rates shipping rule
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         // Apply Surcharge rates shipping rule
-                        //$data = $this->applySurchargeRatesRule($connectionSettings, $data);
+                        $data = $this->applySurchargeRatesRule($connectionSettings, $data);
 
                         $dateAndDays = $fqChrQuotes->getShipmentDateAndDays($data);
 
@@ -4631,6 +4680,7 @@ class CompileQuotes
 
         foreach ($shipments as $origin => $quote) {
             $this->originKey = $origin;
+            $this->isSurchargeRates = false;
             if (isset($quote['severity'])) {
                 return $instoreLocDelQuotes = $this->getInsPicAndLocDelQuotes($quote, $allOrigins);
             }
@@ -4673,6 +4723,9 @@ class CompileQuotes
                          * */
                         // Apply Override rates shipping rule
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data);
+                        // Apply Surcharge rates shipping rule
+                        $data = $this->applySurchargeRatesRule($connectionSettings, $data);
+
                         $date = $data['deliveryDate'] ?? null;
                         $days = $data['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
@@ -4691,6 +4744,7 @@ class CompileQuotes
                                     $resiPickup,
                                     $lgPickup,
                                     $this->storeId,
+                                    $this->isSurchargeRates,
                                 );
 
                                 $arraySorting[$index][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -4958,7 +5012,7 @@ class CompileQuotes
     {
         $lgCost = $lgOption || $this->alwaysLG ? 0 : $this->getLiftGateCost($data, $getCost, $isUpsLtl);
         $IDCost = $insideDel || $this->alwaysID ? 0 : $this->getInsideDeliveryCost($data);
-        $LADCost = $laccess || $this->alwaysLAD ? 0 : $data['limitedAccessDeliveryFee'] ?? $data['surcharges']['limitedAccessDeliveryFee'] ?? 0;
+        $LADCost = $laccess || $this->alwaysLAD ? 0 : $data['limitedAccessDeliveryFee'] ?? $data['surcharges']['limitedAccessDeliveryFee'] ?? $data['surcharges']['limitedAccessFee'] ?? 0;
         $ResiCost = ($this->isResi || $this->alwaysResi || $isResi) ? 0 : $data['surcharges']['residentialFee'] ?? 0;
         $TMDCost = $twoManDel || $this->alwaysTMD ? 0 : $data['surcharges']['twoManFee'] ?? 0;
         $APDCost = $appDel || $this->alwaysAPD ? 0 : $data['surcharges']['appointmentFee'] ?? 0;
@@ -5750,6 +5804,7 @@ class CompileQuotes
                                 $index, $data['carrier'],
                                 $originQuotes,
                                 $data,
+                                $this->originKey,
                                 $key, $data['totalCalenderDaysInTransit'],
                                 $dateAndDays, $feature['index']['isLG'] ?? false,
                                 "tqlltl", $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings,
