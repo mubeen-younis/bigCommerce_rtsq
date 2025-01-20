@@ -1437,7 +1437,7 @@ class CompileQuotes
                                     $origin,
                                     $key, $data['totalTransitTimeInDays'],
                                     $dateAndDays, $feature['index']['isLG'] ?? false,
-                                    "gtzltl_new", $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings,
+                                    "gtzNew", $this->originKey, $this->items, $this->allOrigins, $this->quoteSettings,
                                     $this->isResi, $this->alwaysResi, $feature['index']['isID'] ?? false, $feature['index']['isLAD'] ?? false, $feature['index']['isNBD'] ?? false,
                                     $resiPickup,
                                     $lgPickup,
