@@ -12,6 +12,7 @@ use App\Http\Controllers\ShippingRuleController;
 
 class QuotesResults
 {
+    private $isSurchargeRates = false;
     public function __construct($suppressParcelRates = [])
     {
         $this->CompileQuotes = new CompileQuotes();
@@ -183,7 +184,6 @@ class QuotesResults
         $originQuotes = $multiShipmentQuotes = $multiShipmentQuote = [];
         $shipmentCount = 0;
         $count = 0;
-        $access2 = $access;
         $groundServiceCodes = ["ups_ground", "ups_3_day_select", "ups_standard", "ups_standard_international"];
         $carrierCode = "shipEng";
 
@@ -212,7 +212,7 @@ class QuotesResults
                     if (isset($data['severity'])) {
                         continue;
                     }
-
+                    $access2 = $access;
                     $serviceCode = $data['service_code'] ?? "";
                     //$serviceName = $this->getServiceNameByCode($serviceCode);
                     $isServiceEnabled = isset($this->quoteSettings['carrier_services'][$serviceCode]) &&
@@ -243,6 +243,10 @@ class QuotesResults
                     // Apply override rates shipping rule
                     $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
                     $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
+                    // Apply Surcharge rates shipping rule
+                    $surchargeRates = $shippingRule->surchargeRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
+                    $isSurchargeRates = isset($surchargeRates['isSurchargeRates']) && $surchargeRates['isSurchargeRates'];
+                    $data = isset($surchargeRates['data']) ? $surchargeRates['data'] : $data;
 
                     // Adding Product and Origin Markup in services if added
                     $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['shipping_amount']['amount'], $origin, $items, $allOrigins);
@@ -265,6 +269,8 @@ class QuotesResults
                             $price = $this->addHazmatAmountsInServices($price, $serviceCode, $this->quoteSettings, $groundServiceCodes, $hazmatBoxes);
                         }
                     }
+
+                    $access2 = $isSurchargeRates ? $access2 . '+SC' : $access2;
 
                     $price = $this->getServiceRate($price, $serviceCode, $this->quoteSettings);
 
