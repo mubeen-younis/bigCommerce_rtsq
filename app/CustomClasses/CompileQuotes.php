@@ -1396,7 +1396,7 @@ class CompileQuotes
                 $limitedAccess =
                     (isset($this->quoteSettings['offer_limited_access_delivery']) && $this->quoteSettings['offer_limited_access_delivery']);
             }
-            
+
             $arraySorting = [];
             $preCode = 'gtzltl';
             if (isset($quote['q'])) {
@@ -1412,7 +1412,7 @@ class CompileQuotes
 
                         $issetLiftgateFee = isset($data['surcharges']['liftgateFee']) && !empty($data['surcharges']['liftgateFee']);
                         $issetLimitedFee = isset($data['surcharges']['limitedAccessDeliveryFee']) && !empty($data['surcharges']['limitedAccessDeliveryFee']);
-                        $issetNotifyFee = isset($data['surcharges']['notifyBeforeDeliveryFee']) && !empty($data['surcharges']['notifyBeforeDeliveryFee']);
+                        $issetNotifyFee = isset($data['surcharges']['notifyDeliveryFee']) && !empty($data['surcharges']['notifyDeliveryFee']);
                         $issetInsideFee = isset($data['surcharges']['insideDeliveryFee']) && !empty($data['surcharges']['insideDeliveryFee']);
                         /*
                          * Date 01-07-22
