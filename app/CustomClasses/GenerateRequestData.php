@@ -1657,8 +1657,10 @@ class GenerateRequestData
 
         if ($carName === 'globalTranz') { // for globaltranz
             $notify = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']);
-            $limitedAccess = $connSettings['quote_settings']['offer_limited_access_delivery'] ?? false;
-            if ($residential === 'Y' || $alwaysResi) {
+            $limitedAccess = !($alwaysResi || $residential === 'Y') && (
+                isset($connSettings['quote_settings']['offer_limited_access_delivery']) && $connSettings['quote_settings']['offer_limited_access_delivery'] ||
+                isset($connSettings['quote_settings']['always_limited_access_delivery']) && $connSettings['quote_settings']['always_limited_access_delivery']);
+           if ($residential === 'Y' || $alwaysResi) {
                 $accessorial['RSD'] = 14;
             }
             if ($liftGate === 'Y') {
@@ -1862,6 +1864,8 @@ class GenerateRequestData
 
         $holdAtTerminal = (isset($connSettings['quote_settings']['hold_at_terminal']) && $connSettings['quote_settings']['hold_at_terminal'] && $connSettings['quote_settings']['hold_at_terminal'] == true) ? '1' : '0';
         $notify = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']);
+        $limitedAccess = isset($connSettings['quote_settings']['offer_limited_access_delivery']) && $connSettings['quote_settings']['offer_limited_access_delivery'] ||
+                         isset($connSettings['quote_settings']['always_limited_access_delivery']) && $connSettings['quote_settings']['always_limited_access_delivery'];
 
         $accessorial = [];
         if ($liftGate == 'Y') {
@@ -1869,6 +1873,9 @@ class GenerateRequestData
         }
         if ($notify) {
             array_push($accessorial, 'CALL_BEFORE_DELIVERY');
+        }
+        if ($limitedAccess) {
+            array_push($accessorial, 'LIMITED_ACCESS_DELIVERY');
         }
         $discount = 0;
         if (isset($connSettings['quote_settings']['account_discount']) && $connSettings['quote_settings']['account_discount'] === 2) {
@@ -2896,6 +2903,8 @@ class GenerateRequestData
         $this->resiCarrier['saiaLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['saiaLtl'] = $alwaysResi;
         $notify = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']);
+        $limitedAccess = isset($connSettings['quote_settings']['offer_limited_access_delivery']) && $connSettings['quote_settings']['offer_limited_access_delivery'] ||
+                         isset($connSettings['quote_settings']['always_limited_access_delivery']) && $connSettings['quote_settings']['always_limited_access_delivery'];
 
         $accessorial = [];
         if ($alwaysResi || $residential != 'N') {
@@ -2907,8 +2916,10 @@ class GenerateRequestData
         if ($notify) {
             array_push($accessorial, 'ArrivalNotice/Appointment');
         }
-
-        $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
+        if ($limitedAccess) {
+            array_push($accessorial, 'LimitedAccessLocation');
+        }
+       $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
 
         $apiArray = [
             'userID' => $connSettings['creds']['userID'] ?? '',
