@@ -1792,7 +1792,6 @@ class CompileQuotes
 
                 if(!$this->limitedAccess){
                     $this->quoteSettings['offer_limited_access_delivery'] = false;
-                    $this->quoteSettings['always_limited_access_delivery'] = false;
                 }
             }
             $standard = $guaranteed = [];
@@ -1932,6 +1931,7 @@ class CompileQuotes
                                     $resiPickup,
                                     false,
                                     $this->storeId,
+                                    $this->isSurchargeRates,
                                 );
 
                                 $arraySorting[$index][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -2700,6 +2700,7 @@ class CompileQuotes
                                     false,
                                     false,
                                     $this->storeId,
+                                    $this->isSurchargeRates,
                                 );
 
                                 $arraySorting[$index][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -4046,6 +4047,7 @@ class CompileQuotes
                                     false,
                                     false,
                                     $this->storeId,
+                                    $this->isSurchargeRates,
                                 );
 
                                 $arraySorting[$index][$origin] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -4298,6 +4300,7 @@ class CompileQuotes
                                     false,
                                     false,
                                     $this->storeId,
+                                    $this->isSurchargeRates,
                                 );
 
                                 $arraySorting[$index][$origin] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -4417,6 +4420,7 @@ class CompileQuotes
                                     false,
                                     false,
                                     $this->storeId,
+                                    $this->isSurchargeRates,
                                 );
     
                                 $arraySorting[$index][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -4512,6 +4516,7 @@ class CompileQuotes
                                 false,
                                 false,
                                 $this->storeId,
+                                $this->isSurchargeRates,
                             );
     
                             $arraySorting[$index][$origin] = $compileNotifyDeliveryQuotes['ndPrice'];
@@ -5801,7 +5806,8 @@ class CompileQuotes
                                 $this->isResi, $this->alwaysResi, $feature['index']['isID'] ?? false, $feature['index']['isLAD'] ?? false, $feature['index']['isNBD'] ?? false,
                                 false,
                                 false,
-                                $this->storeId, 
+                                $this->storeId,
+                                $this->isSurchargeRates, 
                             );
 
                             $arraySorting[$index][$key] = $compileNotifyDeliveryQuotes['ndPrice'];
