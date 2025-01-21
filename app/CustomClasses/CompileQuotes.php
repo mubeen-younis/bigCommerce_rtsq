@@ -1790,8 +1790,14 @@ class CompileQuotes
                 $this->limitedAccess = !($this->isResi || $this->alwaysResi) && (
                     (isset($this->quoteSettings['offer_limited_access_delivery']) && $this->quoteSettings['offer_limited_access_delivery']));
 
+                $this->alwaysLAD = $this->alwaysLAD && !($this->isResi || $this->alwaysResi);
+
                 if(!$this->limitedAccess){
                     $this->quoteSettings['offer_limited_access_delivery'] = false;
+                }
+
+                if(!$this->alwaysLAD){
+                    $this->quoteSettings['always_limited_access_delivery'] = false;
                 }
             }
             $standard = $guaranteed = [];
