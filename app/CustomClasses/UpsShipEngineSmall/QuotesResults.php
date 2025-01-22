@@ -12,6 +12,7 @@ use App\Http\Controllers\ShippingRuleController;
 
 class QuotesResults
 {
+    private $isSurchargeRates = false;
     public function __construct($suppressParcelRates = [])
     {
         $this->CompileQuotes = new CompileQuotes();
@@ -162,7 +163,7 @@ class QuotesResults
     /*
      * Returns compiled quotes of shipengine
      * */
-    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $isSbsEnable, $isMultiShipment, $items, $storeId = '', $carrierName = '', $totalHazmatBoxes)
+    public function compileQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $alwaysResi, $isSbsEnable, $isMultiShipment, $items, $storeId = '', $carrierName = '', $totalHazmatBoxes)
     {
         $shippingRule = new ShippingRuleController();
         $shipments = $this->formateQuoteBeforeCompile($shipments);
@@ -170,7 +171,7 @@ class QuotesResults
         $this->quoteSettings = $connectionSettings['ups-ship-engine']['quote_settings'] ?? '';
         $this->isSbsEnable = $isSbsEnable;
         $this->items = $items;
-        $access = $this->CompileQuotes->getAccessorialCodeSmall();
+        $access = $this->CompileQuotes->getAccessorialCodeSmall($residential || $alwaysResi);
 
         if (!$isMultiShipment) {
             $isMultiShipment = is_countable($shipments) && count($shipments) > 1;
@@ -183,7 +184,6 @@ class QuotesResults
         $originQuotes = $multiShipmentQuotes = $multiShipmentQuote = [];
         $shipmentCount = 0;
         $count = 0;
-        $access2 = $access;
         $groundServiceCodes = ["ups_ground", "ups_3_day_select", "ups_standard", "ups_standard_international"];
         $carrierCode = "shipEng";
 
@@ -196,9 +196,8 @@ class QuotesResults
                 continue;
             }
             if ((isset($quote['severity']) || (isset($quote['q']) && empty($quote['q'])) || (!isset($quote['q']) && !empty($quote['InstorPickupLocalDelivery'])))) {
-                $allQuotes = $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins);
-                $returnResp['resp'] = $allQuotes;
-                return $returnResp;
+                $instoreResp[$origin] = $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins) ?? [];                
+                return $instoreResp;
             }
 
             if ($count == 0) { //To be checked only once
@@ -213,7 +212,7 @@ class QuotesResults
                     if (isset($data['severity'])) {
                         continue;
                     }
-
+                    $access2 = $access;
                     $serviceCode = $data['service_code'] ?? "";
                     //$serviceName = $this->getServiceNameByCode($serviceCode);
                     $isServiceEnabled = isset($this->quoteSettings['carrier_services'][$serviceCode]) &&
@@ -244,6 +243,10 @@ class QuotesResults
                     // Apply override rates shipping rule
                     $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
                     $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
+                    // Apply Surcharge rates shipping rule
+                    $surchargeRates = $shippingRule->surchargeRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
+                    $isSurchargeRates = isset($surchargeRates['isSurchargeRates']) && $surchargeRates['isSurchargeRates'];
+                    $data = isset($surchargeRates['data']) ? $surchargeRates['data'] : $data;
 
                     // Adding Product and Origin Markup in services if added
                     $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['shipping_amount']['amount'], $origin, $items, $allOrigins);
@@ -267,87 +270,23 @@ class QuotesResults
                         }
                     }
 
+                    $access2 = $isSurchargeRates ? $access2 . '+SC' : $access2;
+
                     $price = $this->getServiceRate($price, $serviceCode, $this->quoteSettings);
 
                     $title = $this->getServiceTitle($data['serviceDesc'], $data, $this->quoteSettings, $residential, $isRadNotation);
                     $price = (float)str_replace(',', '', $price);
                     $shortServiceCode = $this->getShortCodesOfService($serviceCode);
-                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['code'] = 'parcel_12' . $carrierCode . $shortServiceCode . $access2;
-                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['rate'] = $price;
-                    $originQuotes[$shipmentCount]['shipment'][$key]['simple']['title'] = $title;
-
-                    $multiShipmentQuotes[$origin][$key] = $originQuotes[$shipmentCount]['shipment'][$key]['simple'];
-
+                    $originQuotes[$origin]['simple'][$key]['code'] = 'parcel_12' . $carrierCode . $shortServiceCode . $access2;
+                    $originQuotes[$origin]['simple'][$key]['rate'] = $price;
+                    $originQuotes[$origin]['simple'][$key]['title'] = $title;
                 }
             }
-            $shipmentCount++;
-        }
-
-        // Check for mukti shipment finding lowest price in each shipment and adding them for multi shipment
-        if ($isMultiShipment && count($multiShipmentQuotes) > 1) {
-            $originQuotesMulti = [];
-            $multiShipPrice = 0;
-
-
-            foreach ($originQuotes as $shipmentKey => $shipment) {
-                $netChargeArray = array_column($shipment['shipment'], 'simple');
-                $minValueFromNetChargeArr = min(array_column($netChargeArray, 'rate'));
-
-                $multiShipPrice += str_replace(',', '', $minValueFromNetChargeArr);
-                $originQuotesMulti[0]['code'] = 'Multi' . $carrierCode . $access2;
-                $originQuotesMulti[0]['rate'] = number_format($multiShipPrice, 2);
-                $originQuotesMulti[0]['title'] = $residential ? Functions::$smallMultiTitle . ' ' . Constant::RESI_LABEL : Functions::$smallMultiTitle;
+            if (isset($inStoreLdData) && $inStoreLdData) {
+                $originQuotes[$origin] = $this->CompileQuotes->inStoreLocalDeliveryQuotes($originQuotes[$origin], $inStoreLdData, $allOrigins);
             }
-
-
-            foreach ($multiShipmentQuotes as $shipmentKey => $shipment) {
-                $keys = array_column($shipment, 'rate');
-                array_multisort($keys, SORT_ASC, $shipment);
-                $multiShipmentQuote['simple'][$shipmentKey] = array_values($shipment)[0];
-            }
-
-            $resp = [
-                'checkoutQuotes' => $originQuotesMulti,
-                'multiShipmentQuotes' => $multiShipmentQuote,
-            ];
-
-            $returnResp['resp'] = $resp;
-            return $returnResp;
         }
-
-
-        // Doing For Single Shipment
-        if (!empty($originQuotes)) {
-            $originQuotes = array_column(array_values($originQuotes), 'shipment');
-            $originQuotes = reset($originQuotes);
-            $originQuotes = array_column(array_values($originQuotes), 'simple');
-            // Checkking for instore pickup
-            $resp = $originQuotes;
-            if (!$isMultiShipment && isset($inStoreLdData) && $inStoreLdData) {
-                $allQuotes = $this->CompileQuotes->inStoreLocalDeliveryQuotes($originQuotes, $inStoreLdData, $allOrigins);
-                $resp = $allQuotes;
-            }
-            unset($returnResp['isMultiShipment']);
-            $returnResp['resp'] = $resp;
-            return $returnResp;
-        }
-
-        /**
-         * get quotes if supress is enables
-         * refferce issue: https://eniture.atlassian.net/browse/QA-5458
-         */
-        if (!$isMultiShipment && isset($inStoreLdData) && $inStoreLdData) {
-            $allQuotes = $this->CompileQuotes->inStoreLocalDeliveryQuotes($quote, $inStoreLdData, $allOrigins);
-            $resp = $allQuotes;
-            $returnResp['resp'] = $resp;
-            return $returnResp;
-        }
-
-        $resp = [
-            'resp' => $return ?? [],
-            'isMultiShipment' => $isMultiShipment
-        ];
-        return $resp;
+        return $originQuotes;
     }
 
 

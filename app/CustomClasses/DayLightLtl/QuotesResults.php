@@ -18,6 +18,10 @@ class QuotesResults
             array_push($accessorial, 'Lift Gate Delivery');
         }
 
+        if ($resp['limitedAccess'] == 'Y') {
+            array_push($accessorial, 'Limited Access or Constr Site Dlvry');
+        }
+
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
 
         $apiArr = [
@@ -72,8 +76,7 @@ class QuotesResults
 
     public function isLGQuotes($quoteSettings, $isResi): bool
     {
-        $isLG = (isset($quoteSettings['alwaysLiftGateDelivery']) && $quoteSettings['alwaysLiftGateDelivery']) ||
-            (isset($quoteSettings['offerLiftGateDelivery']) && $quoteSettings['offerLiftGateDelivery']);
+        $isLG = (isset($quoteSettings['offerLiftGateDelivery']) && $quoteSettings['offerLiftGateDelivery']);
 
         if (!$isLG) {
             $isLG = $this->isRADEnabled($quoteSettings, $isResi);
