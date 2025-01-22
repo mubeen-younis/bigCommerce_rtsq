@@ -94,10 +94,18 @@ class LogToDbController extends Controller
                 'carrierName' => $carrierName ?? '',
                 'dont_auth' => '1',
             ];
+
+            if (Functions::isEnabledLogs($storeHash)) {
+                Log::info('StoreLogs postData ' . json_encode($postData));
+            }
     
             $logsData = [];
             $url = Constant::LOGS_URL;
             $logsResp = $this->sendCurlRequest($url, $postData);  
+
+            if (Functions::isEnabledLogs($storeHash)) {
+                Log::info('StoreLogs output ' . json_encode($logsResp));
+            }
 
             $storeDetails = BigCommerceFunctions::getStoreSettings($storeHash);
             $storeDetails = (new CurlRequest())->enSingleCurlRequest($storeDetails['endpoint'], $storeDetails['request'], $storeDetails['headers'], $storeDetails['method'], false);
@@ -109,6 +117,11 @@ class LogToDbController extends Controller
             if(isset($logsResp['severity']) && $logsResp['severity'] === "SUCCESS"){
                 if(isset($logsResp['data']) && !empty($logsResp['data'])){
                     foreach($logsResp['data'] as $data){
+
+                        if (Functions::isEnabledLogs($storeHash)) {
+                            Log::info('StoreLogs in progress ' . date('Y-m-d H:i:s'));
+                        }
+
                         $requestData = isset($data['request']) ? json_decode($data['request'], true) : [];
                         $packageId = isset($requestData['packaging_id']) ? $requestData['packaging_id'] : '';
                         if($prePackageId == $packageId){
@@ -210,7 +223,10 @@ class LogToDbController extends Controller
                 ], 200);
 
         } catch (\Exception $exception) {
-            Log::info('Exception to Get Logs: ' . json_encode($exception->getMessage()));
+            Log::info('Exception to Get Logs: ' . json_encode([
+                'line' => $exception->getLine(),
+                'message' => $exception->getMessage()
+            ]));
             return [];
         }
     }
