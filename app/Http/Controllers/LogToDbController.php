@@ -116,6 +116,23 @@ class LogToDbController extends Controller
             
             if(isset($logsResp['severity']) && $logsResp['severity'] === "SUCCESS"){
                 if(isset($logsResp['data']) && !empty($logsResp['data'])){
+
+                    $packageIds = $packagingDetails = [];
+                    foreach ($logsResp['data'] as $data) {
+                        $requestData = isset($data['request']) ? json_decode($data['request'], true) : [];
+                        if (!empty($requestData['packaging_id'])) {
+                            $packageIds[] = $requestData['packaging_id'];
+                        }
+                    }
+
+                    if (!empty($packageIds)) {
+                        $packagingDetails = PackagingDetail::select('is_packaging', 'packaging_uuid', 'lineitems')
+                        ->whereIn('packaging_uuid', array_filter($packageIds)) // Remove empty IDs
+                        ->where('store_id', $request['store_id'])
+                        ->get()
+                        ->toArray();
+                    }
+
                     foreach($logsResp['data'] as $data){
 
                         if (Functions::isEnabledLogs($storeHash)) {
@@ -129,9 +146,9 @@ class LogToDbController extends Controller
                         } else {
                             $count = 0;
 
-                            $respdata = optional(PackagingDetail::select('is_packaging', 'lineitems')->where('packaging_uuid', $packageId)
-                            ->where('store_id', $request['store_id'])
-                            ->first())->toArray() ?? [];
+                            $respdata = collect($packagingDetails)->filter(function ($details) use ($packageId) {
+                                return $details['packaging_uuid'] == $packageId;
+                            })->first() ?? [];
 
                             $lineitems = isset($respdata['lineitems']) ? json_decode($respdata['lineitems'], true) : [];
                             $getOriginKeys = $this->getOriginKeys($lineitems);
