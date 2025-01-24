@@ -12,6 +12,7 @@ use App\Http\Controllers\ShippingRuleController;
 
 class QuotesResults
 {
+    private $isSurchargeRates = false;
     public function __construct($suppressParcelRates = [])
     {
         $this->CompileQuotes = new CompileQuotes();
@@ -215,6 +216,10 @@ class QuotesResults
 
                     $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName);
                     $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
+                    // Apply Surcharge rates shipping rule
+                    $surchargeRates = $shippingRule->surchargeRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
+                    $isSurchargeRates = isset($surchargeRates['isSurchargeRates']) && $surchargeRates['isSurchargeRates'];
+                    $data = isset($surchargeRates['data']) ? $surchargeRates['data'] : $data;
                     $price = $data['totalNetCharge']['Amount'];
                     // check: is override rule is applied, if yes then skip to add other features fee
                     if(isset($overrideRates['isOverrideRates']) && $overrideRates['isOverrideRates']){
@@ -237,6 +242,8 @@ class QuotesResults
 
                         $price = $this->getServiceRate($price, $data['serviceType'], $this->quoteSettings);
                     }
+
+                    $access2 = $isSurchargeRates ? $access2 . '+SC' : $access2;
 
                     $title = $this->getServiceTitle($data['serviceType'], $data, $data['serviceType'], $this->quoteSettings, $residential, $showRadNotation);
                     $price = (float)str_replace(',', '', $price);
