@@ -2789,15 +2789,21 @@ class CompileQuotes
                 $lgQuotes =
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']) && !$this->alwaysLG;
 
-                $limitedAccess = !($this->alwaysResi || $this->isResi) && (
-                    (isset($this->quoteSettings['offer_limited_access_delivery']) && $this->quoteSettings['offer_limited_access_delivery']));
+                $limitedAccess = 
+                    (isset($this->quoteSettings['offer_limited_access_delivery']) && $this->quoteSettings['offer_limited_access_delivery']);
 
-                $limitedAccess = ($this->alwaysResi || $this->isResi) ? $this->quoteSettings['offer_limited_access_delivery'] = false : $limitedAccess;
+                $notifyDelivery = !($this->isResi || $this->alwaysResi) && (
+                    (isset($this->quoteSettings['offer_notify_as_option']) && $this->quoteSettings['offer_notify_as_option']));
 
-                $notifyDelivery =
-                    (isset($this->quoteSettings['offer_notify_as_option']) && $this->quoteSettings['offer_notify_as_option']);
+                if(!$notifyDelivery){
+                   $this->quoteSettings['offer_notify_as_option'] = false;
+                }
 
-                $notifyDelivery = ($this->alwaysResi || $this->isResi) ? $this->quoteSettings['offer_notify_as_option'] = false : $notifyDelivery;
+                $this->alwaysNBD = !($this->isResi || $this->alwaysResi) && $this->alwaysNBD ?? false;
+
+                if(!$this->alwaysNBD){
+                    $this->quoteSettings['always_quote_notify'] = false;
+                }
             }
             
             $arraySorting = [];
@@ -2812,6 +2818,12 @@ class CompileQuotes
                         $hatShipments[$origin]['hat'][] = $data;
                         continue;
                     }
+
+                    if (($limitedAccess || $this->alwaysLAD) && isset($this->quoteSettings['limited_access_fee'])){
+                        $data['totalNetCharge']['Amount'] += $this->quoteSettings['limited_access_fee'] ?? 0;
+                        $data['surcharges']['limitedAccessDeliveryFee'] = (float) $this->quoteSettings['limited_access_fee'];
+                    }
+
                     // Apply override rates shipping rule
                     $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                     // Apply Surcharge rates shipping rule
@@ -4730,7 +4742,7 @@ class CompileQuotes
 
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices)) {
 
-                        if($limitedAccess && isset($this->quoteSettings['limited_access_fee'])){
+                        if($limitedAccess || $this->alwaysLAD && isset($this->quoteSettings['limited_access_fee'])){
                             $data['totalNetCharge']['Amount'] += $this->quoteSettings['limited_access_fee'] ?? 0;
                             $data['surcharges']['limitedAccessDeliveryFee'] = (float) $this->quoteSettings['limited_access_fee'];
                         }
