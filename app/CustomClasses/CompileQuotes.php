@@ -5768,9 +5768,9 @@ class CompileQuotes
         $prefix = isset($this->isFQChr) && $this->isFQChr ? 'AVGfqchrltl' : $prefix;
         $prefix = isset($this->EchoLogistics) && $this->EchoLogistics ? 'AVGecholtl' : $prefix;
         $prefix = isset($this->TQL) && $this->TQL ? 'AVGTqlltl' : $prefix;
-        $prefix = isset($this->isGTZNewApi) && $this->isGTZNewApi ? 'AvgGTZNewApi' : $prefix;
+        $prefix = isset($this->isGTZNewApi) && $this->isGTZNewApi ? 'AvgGTZNewApiltl' : $prefix;
         $prefix = isset($this->isUsNewApi) && $this->isUsNewApi ? 'avgUSLtl' : $prefix;
-        $prefix = isset($this->isPriority1) && $this->isPriority1 ? 'AvgPriority1' : $prefix;
+        $prefix = isset($this->isPriority1) && $this->isPriority1 ? 'AvgPriority1ltl' : $prefix;
         $serviceName = isset($this->TQL) && $this->TQL && !empty($labelAs) ? $labelAs : $this->customLabel(Functions::$simpleLTLTitle);
 
         foreach ($ratesArray as $key => $rates) {
