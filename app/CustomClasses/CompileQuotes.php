@@ -1876,7 +1876,11 @@ class CompileQuotes
                                 $data['surcharges']['notifyDeliveryFee'] = $value['amount'] ?? 0;
                             }
                         }
-                        if (($this->lgQuotes || $this->notifyDelivery || $this->alwaysResi || $this->isResi) && !isset($data['surcharges'])) {
+                        if (($this->lgQuotes || $this->alwaysLG) && !isset($data['surcharges']['liftgateFee'])) {
+                            continue;
+                        } elseif(($this->notifyDelivery || $this->alwaysNBD) && !isset($data['surcharges']['notifyDeliveryFee'])){
+                            continue;
+                        } elseif(($this->alwaysResi || $this->isResi) && !isset($data['surcharges']['residentialFee'])){
                             continue;
                         }
                         // Apply override rates shipping rule

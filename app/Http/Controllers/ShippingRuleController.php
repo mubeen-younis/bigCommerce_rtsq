@@ -192,6 +192,9 @@ class ShippingRuleController extends Controller
                                 } else if ($providerSlug == 'purolator-small') {
                                     $serviceDesc = preg_replace('/(?<=[a-zA-Z])(?=\d)|(?<=\d)(?=[a-zA-Z])|(?<=[a-z])(?=[A-Z])/', ' ', $quote['serviceType']);
                                     $serviceDesc = str_replace('Am', 'AM' , $serviceDesc);
+                                    $serviceDesc = str_replace('U.S.10', 'US 10' , $serviceDesc);
+                                    $serviceDesc = str_replace('U.S.9', 'US 9' , $serviceDesc);
+                                    $serviceDesc = str_replace('.', '' , $serviceDesc);
 
                                     if ($serviceDesc == $rule['filter_services']){
                                         $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
@@ -201,7 +204,8 @@ class ShippingRuleController extends Controller
 
                                 } else if ($providerSlug == 'usps-small') { 
                                     $serviceType = 'USPS ' . $quote['serviceType'];
-                                    if($serviceType == $rule['filter_services']){
+                                    $filterServices = str_replace('*', '' , $rule['filter_services']);
+                                    if($serviceType == $filterServices){
                                         $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
                                         $isOverrideRates = true;
                                     }
@@ -695,6 +699,7 @@ class ShippingRuleController extends Controller
                 }
             }
         }
+        return $isProdExist;
     }
     
     public function checkLargeCartRuleApply($shippingItems, $storeId)
