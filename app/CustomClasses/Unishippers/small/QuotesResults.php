@@ -9,6 +9,7 @@ use App\Http\Controllers\ShippingRuleController;
 
 class QuotesResults
 {
+    private $isSurchargeRates = false;
     public function __construct($suppressParcelRates = [])
     {
         $this->CompileQuotes = new CompileQuotes();
@@ -85,15 +86,20 @@ class QuotesResults
                     if ($this->onylQuoteGroundServices($isHazmat, $srvcType)) {
                         continue;
                     }
-                    // Apply override rates shipping rule
-                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
-                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data; 
                     // Adding Product and Origin Markup in services if added
                     $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
                     $data['totalNetCharge']['Amount'] = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
                     
                     // Adding markup values if available
                     $data['totalNetCharge']['Amount'] = $this->addHandlingMarkupOfHazmat($data['totalNetCharge']['Amount']);
+
+                    // Apply override rates shipping rule
+                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
+                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data; 
+                    // Apply Surcharge rates shipping rule
+                    $surchargeRates = $shippingRule->surchargeRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
+                    $isSurchargeRates = isset($surchargeRates['isSurchargeRates']) && $surchargeRates['isSurchargeRates'];
+                    $data = isset($surchargeRates['data']) ? $surchargeRates['data'] : $data;
                     $price = $data['totalNetCharge']['Amount'];
                     
                     $access2 = $access;
@@ -112,6 +118,7 @@ class QuotesResults
 
                     $price = $this->getServiceRate($price, $srvcType);
 
+                    $access2 = $isSurchargeRates ? $access2 . '+SC' : $access2;
                     // Get service title
                     $title = $this->getServiceTitle($data, $srvcType, $this->quoteSettings, $residential, $showRadNotation);
                     $price = (float) str_replace(',', '', $price);
@@ -200,15 +207,21 @@ class QuotesResults
                     if ($this->onylQuoteGroundServices($isHazmat, $srvcType)) {
                         continue;
                     }
-                    // Apply override rates shipping rule
-                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
-                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data; 
                     // Adding Product and Origin Markup in services if added
                     $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
                     $data['totalNetCharge']['Amount'] = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
 
                     // Adding markup values if available
                     $data['totalNetCharge']['Amount'] = $this->addHandlingMarkupOfHazmat($data['totalNetCharge']['Amount']);
+
+                    
+                    // Apply override rates shipping rule
+                    $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
+                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data; 
+                    // Apply Surcharge rates shipping rule
+                    $surchargeRates = $shippingRule->surchargeRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
+                    $isSurchargeRates = isset($surchargeRates['isSurchargeRates']) && $surchargeRates['isSurchargeRates'];
+                    $data = isset($surchargeRates['data']) ? $surchargeRates['data'] : $data;
                     $price = $data['totalNetCharge']['Amount'];
                     
                     $access2 = $access;
@@ -226,6 +239,7 @@ class QuotesResults
                     }
 
                     $price = $this->getServiceRate($price, $srvcType);
+                    $access2 = $isSurchargeRates ? $access2 . '+SC' : $access2;
 
                     // Get service title
                     $title = $this->getServiceTitle($data, $srvcType, $this->quoteSettings, $residential, $showRadNotation);

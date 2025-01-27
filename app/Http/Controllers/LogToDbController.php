@@ -94,10 +94,18 @@ class LogToDbController extends Controller
                 'carrierName' => $carrierName ?? '',
                 'dont_auth' => '1',
             ];
+
+            if (Functions::isEnabledLogs($storeHash)) {
+                Log::info('StoreLogs postData ' . json_encode($postData));
+            }
     
-            $logsData = [];
+            $logsData = $respdata = [];
             $url = Constant::LOGS_URL;
             $logsResp = $this->sendCurlRequest($url, $postData);  
+
+            if (Functions::isEnabledLogs($storeHash)) {
+                Log::info('StoreLogs output ' . json_encode($logsResp));
+            }
 
             $storeDetails = BigCommerceFunctions::getStoreSettings($storeHash);
             $storeDetails = (new CurlRequest())->enSingleCurlRequest($storeDetails['endpoint'], $storeDetails['request'], $storeDetails['headers'], $storeDetails['method'], false);
@@ -108,17 +116,46 @@ class LogToDbController extends Controller
             
             if(isset($logsResp['severity']) && $logsResp['severity'] === "SUCCESS"){
                 if(isset($logsResp['data']) && !empty($logsResp['data'])){
+
+                    $packageIds = $packagingDetails = [];
+                    foreach ($logsResp['data'] as $data) {
+                        $requestData = isset($data['request']) ? json_decode($data['request'], true) : [];
+                        if (!empty($requestData['packaging_id'])) {
+                            $packageIds[] = $requestData['packaging_id'];
+                        }
+                    }
+
+                    if (!empty($packageIds)) {
+                        $packagingDetails = PackagingDetail::select('is_packaging', 'packaging_uuid', 'lineitems')
+                        ->whereIn('packaging_uuid', array_filter($packageIds)) // Remove empty IDs
+                        ->where('store_id', $request['store_id'])
+                        ->get()
+                        ->toArray();
+                    }
+
                     foreach($logsResp['data'] as $data){
+
+                        if (Functions::isEnabledLogs($storeHash)) {
+                            Log::info('StoreLogs in progress ' . date('Y-m-d H:i:s'));
+                        }
+
                         $requestData = isset($data['request']) ? json_decode($data['request'], true) : [];
                         $packageId = isset($requestData['packaging_id']) ? $requestData['packaging_id'] : '';
                         if($prePackageId == $packageId){
                             $count++;
                         } else {
                             $count = 0;
+
+                            $respdata = collect($packagingDetails)->filter(function ($details) use ($packageId) {
+                                return $details['packaging_uuid'] == $packageId;
+                            })->first() ?? [];
+
+                            $lineitems = isset($respdata['lineitems']) ? json_decode($respdata['lineitems'], true) : [];
+                            $getOriginKeys = $this->getOriginKeys($lineitems);
+
+                            $originKeys = $getOriginKeys['originKeys'];
+                            $locationIds = $getOriginKeys['locationIds'];
                         }
-                        $respdata = optional(PackagingDetail::select('is_packaging', 'lineitems')->where('packaging_uuid', $packageId)
-                        ->where('store_id', $request['store_id'])
-                        ->first())->toArray() ?? [];
 
                         if(isset($requestData['carrier_mode']) && $requestData['carrier_mode'] === 'pro' && empty($respdata)){
                             continue;
@@ -136,47 +173,24 @@ class LogToDbController extends Controller
                             $resp = json_encode($resp);
                         }
 
-                        $lineitems = isset($respdata['lineitems']) ? json_decode($respdata['lineitems'], true) : [];
-                        $getOriginKeys = $this->getOriginKeys($lineitems);
                         $destination = isset($lineitems['destination']) ? $lineitems['destination'] : [];
-                        $originKeys = $getOriginKeys['originKeys'];
-                        $locationIds = $getOriginKeys['locationIds'];
 
                         $logsData[$key]['location_id'] = $locationIds[$count] ?? null;
                         $logsData[$key]['packaging_id'] = $packageId;
                         $logsData[$key]['response'] = isset($data['status']) ? $data['status'] : '';
 
-                        if (!empty($originKeys) && $this->isMulti){
-                            foreach($originKeys[$locationIds[$count]] as $key1 => $code){ 
-                                if (isset($lineitems['items']) && !empty($lineitems['items'])){
-                                    foreach($lineitems['items'] as $itemIndex => $item){
-                                        if ($itemIndex == $code){
-                                            $logsData[$key]['quantity'][] = isset($item['piecesOfLineItem']) ? $item['piecesOfLineItem'] : '';
-                                            $logsData[$key]['dimension'][] = floatval($item['lineItemLength']) . ' X ' . floatval($item['lineItemWidth']) . ' X ' . floatval($item['lineItemHeight']);
-                                            $logsData[$key]['Items'][] = isset($item['lineItemName']) ? $item['lineItemName'] : '';
-                                       }
-                                    }
+                        if (!empty($originKeys)){
+                            foreach($originKeys[$locationIds[$count]] as $code){ 
+                                if (isset($lineitems['items'][$code]) && !empty($lineitems['items'][$code])){
+
+                                    $logsData[$key]['quantity'][] = isset($lineitems['items'][$code]['piecesOfLineItem']) ? $lineitems['items'][$code]['piecesOfLineItem'] : '';
+                                    $logsData[$key]['dimension'][] = floatval($lineitems['items'][$code]['lineItemLength']) . ' X ' . floatval($lineitems['items'][$code]['lineItemWidth']) . ' X ' . floatval($lineitems['items'][$code]['lineItemHeight']);
+                                    $logsData[$key]['Items'][] = isset($lineitems['items'][$code]['lineItemName']) ? $lineitems['items'][$code]['lineItemName'] : '';
                                 }
-                                if (isset($lineitems['origin']) && !empty($lineitems['origin'])){
-                                    foreach($lineitems['origin'] as $origIndex => $origin){
-                                        if ($origIndex == $code){
-                                            $logsData[$key]['sender'] = $origin['senderCity'] . ', ' . $origin['senderState'] . ' ' . $origin['senderZip'] . ' ' . $origin['senderCountryCode'];
-                                        }
-                                    }
-                                }
-                            }
-                        } else {
-                            if (isset($lineitems['items']) && !empty($lineitems['items'])){
-                                foreach($lineitems['items'] as $item){
-                                    $logsData[$key]['quantity'][] = isset($item['piecesOfLineItem']) ? $item['piecesOfLineItem'] : '';
-                                    $logsData[$key]['dimension'][] = floatval($item['lineItemLength']) . ' X ' . floatval($item['lineItemWidth']) . ' X ' . floatval($item['lineItemHeight']);
-                                    $logsData[$key]['Items'][] = isset($item['lineItemName']) ? $item['lineItemName'] : '';
-                                }
-                            }
-    
-                            if (isset($lineitems['origin']) && !empty($lineitems['origin'])){
-                                foreach($lineitems['origin'] as $origin){
-                                    $logsData[$key]['sender'] = $origin['senderCity'] . ', ' . $origin['senderState'] . ' ' . $origin['senderZip'] . ' ' . $origin['senderCountryCode'];
+
+                                if (isset($lineitems['origin'][$code]) && !empty($lineitems['origin'][$code])){
+                                    
+                                    $logsData[$key]['sender'] = $lineitems['origin'][$code]['senderCity'] . ', ' . $lineitems['origin'][$code]['senderState'] . ' ' . $lineitems['origin'][$code]['senderZip'] . ' ' . $lineitems['origin'][$code]['senderCountryCode'];
                                 }
                             }
                         }
@@ -210,7 +224,10 @@ class LogToDbController extends Controller
                 ], 200);
 
         } catch (\Exception $exception) {
-            Log::info('Exception to Get Logs: ' . json_encode($exception->getMessage()));
+            Log::info('Exception to Get Logs: ' . json_encode([
+                'line' => $exception->getLine(),
+                'message' => $exception->getMessage()
+            ]));
             return [];
         }
     }
@@ -235,21 +252,16 @@ class LogToDbController extends Controller
     {
         $originKeys = [];
         $locationIds = [];
-        $countOrigin = 0;
         $locationId = '';
 
         if(isset($lineitems['origin']) && !empty($lineitems['origin'])){
-            $countOrigin = count($lineitems['origin']) - 1;
 
             foreach($lineitems['origin'] as $key => $origin){
                 $originKeys[$origin['locationId']][] = $key;
                 if(!in_array($origin['locationId'], $locationIds)){
                     $locationIds[] = $origin['locationId'];
                 }
-                $countOrigin--;
             }
-            
-            $this->isMulti = count($locationIds) > 1 ? true : false;
         }
 
         return ['originKeys' => $originKeys, 'locationIds' => $locationIds];

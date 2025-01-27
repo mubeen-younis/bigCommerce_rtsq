@@ -1,3 +1,19 @@
+= 2.3.8 2025-01-21 =
+
+* Update - Limited Access delivery chunk 4 (Ticket:1086980911) [#528] (https://bitbucket.org/eniture/big-commerce/pull-requests/528)
+
+= 2.3.7 2025-01-21 =
+
+* Update - Limited Access delivery chunk 3 (Ticket:1086980911) [#527] (https://bitbucket.org/eniture/big-commerce/pull-requests/527)
+
+= 2.3.6 2025-01-20 =
+
+* Update - Limited Access delivery chunk 2 (Ticket:1086980911) [#526] (https://bitbucket.org/eniture/big-commerce/pull-requests/526)
+
+= 2.3.5 2025-01-20 =
+
+* Update - Introduce New Shipping Rule "Surcharge" (4th chunk) (Ticket:2451812923) [#525] (https://bitbucket.org/eniture/big-commerce/pull-requests/525)
+
 = 2.3.4 2025-01-16 =
 
 * Update - Introduce New Shipping Rule "Surcharge" (3rd chunk) (Ticket:2451812923) [#524] (https://bitbucket.org/eniture/big-commerce/pull-requests/524)

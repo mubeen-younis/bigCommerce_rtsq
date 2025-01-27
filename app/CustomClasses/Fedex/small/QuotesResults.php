@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 
 class QuotesResults
 {
+    private $isSurchargeRates = false;
     public function __construct($suppressParcelRates = [])
     {
         $this->CompileQuotes = new CompileQuotes();
@@ -294,6 +295,10 @@ class QuotesResults
                     // Apply override rates shipping rule
                     $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
                     $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
+                    // Apply Surcharge rates shipping rule
+                    $surchargeRates = $shippingRule->surchargeRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
+                    $isSurchargeRates = isset($surchargeRates['isSurchargeRates']) && $surchargeRates['isSurchargeRates'];
+                    $data = isset($surchargeRates['data']) ? $surchargeRates['data'] : $data;
 
                     // Adding Product and Origin Markup in services if added
                     $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
@@ -306,6 +311,7 @@ class QuotesResults
                     $price = $data['totalNetCharge']['Amount'];
 
                     $access2 = $access;
+                    $access2 = $isSurchargeRates ? $access2 . '+SC' : $access2;
                     // Checking hazmat and adding hazmat amounts in services
                     if ($isHazmat) {
                         if ($this->isMultiShipment) {

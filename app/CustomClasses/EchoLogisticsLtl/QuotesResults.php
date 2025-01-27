@@ -145,6 +145,23 @@ class QuotesResults
         return $nbdFee;
     }
 
+    public function getLADFee($accessorials)
+    {
+        $limitedFee = 0;
+        if (isset($accessorials) && !empty($accessorials)) {
+            $lgAccessType = 'LIMITEDACCESSFEE';
+
+            foreach ($accessorials as $acc) {
+                if (isset($acc['Type']) && $acc['Type'] == $lgAccessType) {
+                    $limitedFee = number_format($acc['Charge'], 2, '.', '');
+                    break;
+                }
+            }
+        }
+
+        return $limitedFee;
+    }
+
     public function getResiFee($accessorials)
     {
         $resiFee = 0;

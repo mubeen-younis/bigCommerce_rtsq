@@ -168,7 +168,7 @@ class Functions
 
     public static function getCarrierNameOrCode($code, $getWsCode = 0): ?string
     {
-        $carrierCodes = ['wweltl', 'rnlltl', 'xpoltl', 'fedexltl', 'gtzltl_new', 'gtzltl','unlltl', 'yrcltl', 'cltl', 'upsltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship_new', 'parcel_12uniship', 'parcel_12shipEng',
+        $carrierCodes = ['wweltl', 'rnlltl', 'xpoltl', 'fedexltl', 'gtzltl_new', 'gtzNew', 'gtzltl','unlltl', 'yrcltl', 'cltl', 'upsltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship_new', 'parcel_12uniship', 'parcel_12shipEng',
             'fqltl', 'estesltl', 'dayrossltl', 'odflltl', 'saialtl', 'parcel_12Purolator', 'abfltl', 'seflltl', 'southeastern', 'parcel_12usps', 'tqlltl', 'echoltl', 'daylightltl', 'fqchrltl', 'shipeng', 'priority1ltl', 'upslandcostapi'];
         foreach ($carrierCodes as $carrierCode) {
             if (strpos($code, $carrierCode) !== false) {
@@ -184,7 +184,7 @@ class Functions
 
     public static function getCarrierCodeWs($carrierCode): ?string
     {
-        $carrierCodesWithName = ['wweltl' => 'wweLTL', 'gtzltl_new' => 'wweLTLN','unlltl' => 'wweLTLN','rnlltl' => 'rnl', 'xpoltl' => 'xpoLogistics', 'upsltl' => 'upsLTL',
+        $carrierCodesWithName = ['wweltl' => 'wweLTL', 'gtzltl_new' => 'wweLTLN', 'gtzNew' => 'wweLTLN', 'unlltl' => 'wweLTLN','rnlltl' => 'rnl', 'xpoltl' => 'xpoLogistics', 'upsltl' => 'upsLTL',
             'fedexltl' => 'fedexLTL', 'yrcltl' => 'yrc', 'gtzltl' => 'globalTranz', 'cltl' => 'cerasis',
             'parcel_12wwe' => 'wweSmall', 'parcel_12uniship_new' => 'wweSmallN', 'parcel_12ups' => 'upsSmall', 'parcel_12fd' => 'fedexSmall', 'parcel_12uniship' => 'unishippersSmall',
             'parcel_12shipEng' => 'shipEngine', 'shipeng' => 'shipEngine', 'priority1ltl' => 'priority1',
@@ -236,7 +236,7 @@ class Functions
 
     public static function getCarrIndexBySlug($carrSlug): ?string
     {
-        $carrierIndexesArray = ['ltl-quotes' => 'wweLTL', 'ups-ltl' => 'upsLTL', 'rl-ltl' => 'rnl', 'xpo-ltl' => 'xpoLogistics',
+        $carrierIndexesArray = ['ltl-quotes' => 'wweLTL', 'unishipper-ltl' => 'wweLTLN', 'ups-ltl' => 'upsLTL', 'rl-ltl' => 'rnl', 'xpo-ltl' => 'xpoLogistics',
             'fedex-ltl' => 'fedexLTL', 'gtz-new' => 'wweLTLN', 'gtz-ltl' => 'globalTranz', 'cltl' => 'cerasis', 'ups-ship-engine' => 'shipEngine',
             'small-package' => 'wweSmall', 'unishippers-small-new' => 'wweSmallN', 'ups-small' => 'upsSmall', 'fedex-small' => 'fedexSmall', 'unishippers-small' => 'unishippersSmall',
             'freightquote-ltl' => 'freightQuote', 'freightquote-chr-ltl' => 'chr', 'purolator-small' => 'purolator', 'usps-small' => 'usps',
