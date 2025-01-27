@@ -18,10 +18,6 @@ class QuotesResults
             array_push($accessorial, 'Lift Gate Delivery');
         }
 
-        if ($resp['limitedAccess'] == 'Y') {
-            array_push($accessorial, 'Limited Access or Constr Site Dlvry');
-        }
-
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
 
         $apiArr = [

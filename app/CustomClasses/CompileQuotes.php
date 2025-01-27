@@ -1656,10 +1656,9 @@ class CompileQuotes
                 $notifyDelivery =
                     (isset($this->quoteSettings['offer_notify_as_option']) && $this->quoteSettings['offer_notify_as_option']);
 
-                $limitedAccess = !($this->isResi || $this->alwaysResi) && (
-                    (isset($this->quoteSettings['offer_limited_access_delivery']) && $this->quoteSettings['offer_limited_access_delivery']));
+                $limitedAccess =
+                    (isset($this->quoteSettings['offer_limited_access_delivery']) && $this->quoteSettings['offer_limited_access_delivery']);
 
-                $limitedAccess = ($this->alwaysResi || $this->isResi) ? $this->quoteSettings['always_limited_access_delivery'] = $this->quoteSettings['offer_limited_access_delivery'] = false : $limitedAccess;
             }
 
             $arraySorting = [];
@@ -1685,12 +1684,12 @@ class CompileQuotes
 
                             $data['surcharges']['notifyDeliveryFee'] = isset($accessorialCharge['amount']) ? (float) $accessorialCharge['amount'] : (float) $accessorialCharges['amount'] ?? 0;
                         }
-                        if(isset($accessorialCharge['description']) && $accessorialCharge['description'] == 'Secured/Limited Access Delivery' ||
-                            isset($accessorialCharges['description']) && $accessorialCharges['description'] == 'Secured/Limited Access Delivery'){
-                        
-                            $data['surcharges']['limitedAccessDeliveryFee'] = isset($accessorialCharge['amount']) ? (float)$accessorialCharge['amount'] : (float)$accessorialCharges['amount'] ?? 0;
-                        }
                     }
+                }
+
+                if (($limitedAccess || $this->alwaysLAD) && isset($this->quoteSettings['limited_access_fee'])) {
+                    $data['totalNetCharge']['Amount'] += $this->quoteSettings['limited_access_fee'];
+                    $data['surcharges']['limitedAccessDeliveryFee'] = (float) $this->quoteSettings['limited_access_fee'];
                 }
                 // Apply override rates shipping rule
                 $data = $this->applyOverrideRatesRule($connectionSettings, $data);
@@ -1789,10 +1788,9 @@ class CompileQuotes
                 $this->notifyDelivery =
                     (isset($this->quoteSettings['offer_notify_as_option']) && $this->quoteSettings['offer_notify_as_option']);
 
-                $this->limitedAccess = !($this->isResi || $this->alwaysResi) && (
-                    (isset($this->quoteSettings['offer_limited_access_delivery']) && $this->quoteSettings['offer_limited_access_delivery']));
+                $this->limitedAccess =
+                    (isset($this->quoteSettings['offer_limited_access_delivery']) && $this->quoteSettings['offer_limited_access_delivery']);
 
-                $this->alwaysLAD = $this->alwaysLAD && !($this->isResi || $this->alwaysResi);
 
                 if(!$this->limitedAccess){
                     $this->quoteSettings['offer_limited_access_delivery'] = false;
@@ -1906,10 +1904,13 @@ class CompileQuotes
                             if ($value['description'] == "Delivery Call Ahead") {
                                 $data['surcharges']['notifyDeliveryFee'] = $value['amount'] ?? 0;
                             }
-                            if ($value['description'] == "Limited Access") {
-                                $data['surcharges']['limitedAccessDeliveryFee'] = $value['amount'] ?? 0;
-                            }
                         }
+
+                        if (($this->limitedAccess || $this->alwaysLAD) && isset($this->quoteSettings['limited_access_fee'])) {
+                            $data['totalNetCharge']['Amount'] += $this->quoteSettings['limited_access_fee'];
+                            $data['surcharges']['limitedAccessDeliveryFee'] = (float) $this->quoteSettings['limited_access_fee'];
+                        }
+
                         if (($this->lgQuotes || $this->notifyDelivery || $this->limitedAccess) && !isset($data['surcharges'])) {
                             continue;
                         }
@@ -2370,6 +2371,11 @@ class CompileQuotes
                 foreach ($quote['q'] as $key => $data) {
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) /*&& isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y' */) {
 
+                        if (($limitedAccess || $this->alwaysLAD) && isset($this->quoteSettings['limited_access_fee'])) {
+                            $data['totalNetCharge']['Amount'] += $this->quoteSettings['limited_access_fee'];
+                            $data['surcharges']['limitedAccessDeliveryFee'] = (float) $this->quoteSettings['limited_access_fee'];
+                        }
+
                         $issetLiftgateFee = isset($data['surcharges']['liftgateFee']) && !empty($data['surcharges']['liftgateFee']);
                         $issetLimitedFee = isset($data['surcharges']['limitedAccessDeliveryFee']) && !empty($data['surcharges']['limitedAccessDeliveryFee']);
                         $issetNotifyFee = isset($data['surcharges']['notifyDeliveryFee']) && !empty($data['surcharges']['notifyDeliveryFee']);
@@ -2674,6 +2680,11 @@ class CompileQuotes
                             $hatShipments[$origin]['hat'][$key] = $data;
                             $hatArraySorting['simple'][$key] = $data['totalNetCharge']['Amount'];
                             continue;
+                        }
+
+                        if (($limitedAccess || $this->alwaysLAD) && isset($this->quoteSettings['limited_access_fee'])) {
+                            $data['totalNetCharge']['Amount'] += $this->quoteSettings['limited_access_fee'];
+                            $data['surcharges']['limitedAccessDeliveryFee'] = (float) $this->quoteSettings['limited_access_fee'];
                         }
                         // Apply override rates shipping rule
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data);
@@ -3289,10 +3300,8 @@ class CompileQuotes
                 $lgQuotes =
                     (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']) && !$this->alwaysLG;
 
-                $limitedAccess = !($this->isResi || $this->alwaysResi) && (
-                    (isset($this->quoteSettings['offer_limited_access_delivery']) && $this->quoteSettings['offer_limited_access_delivery']));
-
-                $this->alwaysLAD = !($this->isResi || $this->alwaysResi) && $this->alwaysLAD ?? false;
+                $limitedAccess = 
+                    (isset($this->quoteSettings['offer_limited_access_delivery']) && $this->quoteSettings['offer_limited_access_delivery']);
 
                 if(!$limitedAccess){
                     $this->quoteSettings['offer_limited_access_delivery'] = false;
@@ -3302,10 +3311,10 @@ class CompileQuotes
                     $this->quoteSettings['always_limited_access_delivery'] = false;
                 }
 
-                $notifyDelivery = !($limitedAccess || $this->alwaysLAD || $this->isResi || $this->alwaysResi) && (
+                $notifyDelivery = !($this->isResi || $this->alwaysResi) && (
                     (isset($this->quoteSettings['offer_notify_as_option']) && $this->quoteSettings['offer_notify_as_option']));
 
-                $this->alwaysNBD = !($limitedAccess || $this->alwaysLAD || $this->isResi || $this->alwaysResi) && $this->alwaysNBD ?? false;
+                $this->alwaysNBD = !($this->isResi || $this->alwaysResi) && $this->alwaysNBD ?? false;
 
                 if(!$notifyDelivery){
                     $this->quoteSettings['offer_notify_as_option'] = false;
@@ -3339,9 +3348,10 @@ class CompileQuotes
                     if ((isset($surcharge['Type']['Code']) && $surcharge['Type']['Code'] === 'ADV_NOTF') || (isset($surcharge['code']) && $surcharge['code'] == 'NTFN')) {
                         $data['surcharges']['notifyDeliveryFee'] = $surcharge['Factor']['Value'] ?? $surcharge['value'] ?? 0;
                     }
-                    if ((isset($surcharge['Type']['Code']) && $surcharge['Type']['Code'] === 'LIM_ACC_PU_DEL') || (isset($surcharge['code']) && $surcharge['code'] == 'LADL')) {
-                        $data['surcharges']['limitedAccessDeliveryFee'] = $surcharge['Factor']['Value'] ?? $surcharge['value'] ?? 0;
-                    }
+                }
+                if (($limitedAccess || $this->alwaysLAD) && isset($this->quoteSettings['limited_access_fee'])) {
+                    $data['totalNetCharge']['Amount'] += $this->quoteSettings['limited_access_fee'];
+                    $data['surcharges']['limitedAccessDeliveryFee'] = (float) $this->quoteSettings['limited_access_fee'];
                 }
                 // Apply override rates shipping rule
                 $data = $this->applyOverrideRatesRule($connectionSettings, $data);
@@ -4065,7 +4075,12 @@ class CompileQuotes
                 foreach ($quotesArr as $key => $data) {
                     $srvcType = $data['serviceType'] ?? '';
 
-                    if (isset($srvcType)) {                   
+                    if (isset($srvcType)) {
+                        if (($limitedAccess || $this->alwaysLAD) && isset($this->quoteSettings['limited_access_fee'])) {
+                            $data['totalNetCharge']['Amount'] += $this->quoteSettings['limited_access_fee'];
+                            $data['surcharges']['limitedAccessDeliveryFee'] = (float) $this->quoteSettings['limited_access_fee'];
+                        }
+
                         // Apply override rates shipping rule
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         // Apply Surcharge rates shipping rule
@@ -4316,6 +4331,11 @@ class CompileQuotes
                 foreach ($quotesArr as $key => $data) {
                     $srvcType = $data['serviceType'] ?? '';
                     if (isset($srvcType)) {
+
+                        if (($limitedAccess || $this->alwaysLAD) && isset($this->quoteSettings['limited_access_fee'])) {
+                            $data['totalNetCharge']['Amount'] += $this->quoteSettings['limited_access_fee'];
+                            $data['surcharges']['limitedAccessDeliveryFee'] = (float) $this->quoteSettings['limited_access_fee'];
+                        }
                         // Apply Override rates shipping rule
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         // Apply Surcharge rates shipping rule
@@ -4434,10 +4454,14 @@ class CompileQuotes
 
                     if (!empty($srvcType) && in_array($srvcType, $carrierServices)) {
 
+                        if (($limitedAccess || $this->alwaysLAD) && isset($this->quoteSettings['limited_access_fee'])) {
+                            $data['TotalCharge'] += $this->quoteSettings['limited_access_fee'];
+                            $data['surcharges']['limitedAccessFee'] = (float) $this->quoteSettings['limited_access_fee'];
+                        }
+
                         $data['totalNetCharge']['Amount'] = $data['TotalCharge'] ?? 0;
                         $data['surcharges']['liftgateFee'] = $echoLtl->getLGFee($data['Accessorials'] ?? []) ?? 0;
                         $data['surcharges']['notifyDeliveryFee'] = $echoLtl->getNBDFee($data['Accessorials'] ?? []) ?? 0;
-                        $data['surcharges']['limitedAccessFee'] = $echoLtl->getLADFee($data['Accessorials'] ?? []) ?? 0;
                         $data['surcharges']['residentialFee'] = $echoLtl->getResiFee($data['Accessorials'] ?? []) ?? 0;
                         $data['surcharges']['hazardousMaterialsFee'] = $echoLtl->getHazardousMaterialsFee($data['Accessorials'] ?? []) ?? 0;
                         // Apply override rates shipping rule
@@ -4532,6 +4556,11 @@ class CompileQuotes
                 $quotesArr[] = $quote['q'];
 
                 foreach ($quotesArr as $key => $data) {
+
+                    if (($limitedAccess || $this->alwaysLAD) && isset($this->quoteSettings['limited_access_fee'])) {
+                        $data['totalNetCharge']['Amount'] += $this->quoteSettings['limited_access_fee'];
+                        $data['surcharges']['limitedAccessFee'] = (float) $this->quoteSettings['limited_access_fee'];
+                    }
                     // Apply Override rates shipping rule
                     $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                     // Apply Surcharge rates shipping rule
@@ -4626,7 +4655,11 @@ class CompileQuotes
 
                 foreach ($quote['q'] as $key => $data) {
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices)) {
-                        
+                        if (($limitedAccess || $this->alwaysLAD) && isset($this->quoteSettings['limited_access_fee'])) {
+                            $data['totalNetCharge'] += $this->quoteSettings['limited_access_fee'];
+                            $data['surcharges']['limitedAccessFee'] = (float) $this->quoteSettings['limited_access_fee'];
+                        }
+
                         $charges = array(
                             'totalNetCharge' => array(
                                 'Amount' => $data['totalNetCharge'],
@@ -5820,10 +5853,13 @@ class CompileQuotes
                         if ($value['description'] == "Delivery Call Ahead") {
                             $data['surcharges']['notifyDeliveryFee'] = $value['amount'] ?? 0;
                         }
-                        if ($value['description'] == "Limited Access") {
-                            $data['surcharges']['limitedAccessDeliveryFee'] = $value['amount'] ?? 0;
-                        }
                     }
+
+                    if (($limitedAccess || $this->alwaysLAD) && isset($this->quoteSettings['limited_access_fee'])) {
+                        $data['totalNetCharge']['Amount'] += $this->quoteSettings['limited_access_fee'];
+                        $data['surcharges']['limitedAccessDeliveryFee'] = (float) $this->quoteSettings['limited_access_fee'];
+                    }
+
                     $isLgSurcharges = isset($data['surcharges']['liftgateFee']) && $data['surcharges']['liftgateFee'];
                     $isNbdSurcharges = isset($data['surcharges']['notifyDeliveryFee']) && $data['surcharges']['notifyDeliveryFee'];
                     $isLimitedSurcharges = isset($data['surcharges']['limitedAccessDeliveryFee']) && $data['surcharges']['limitedAccessDeliveryFee'];
