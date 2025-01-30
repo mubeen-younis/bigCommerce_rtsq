@@ -243,6 +243,7 @@ class QuotesResults
 
                     $title = $this->getServiceTitle($data['serviceType'], $data, $data['serviceType'], $this->quoteSettings, $residential, $showRadNotation);
                     $price = (float)str_replace(',', '', $price);
+                    $data['serviceType'] = str_replace('ExpressInternational', 'ExprIntl' , $data['serviceType']);
                     $originQuotes[$origin]['simple'][$key]['code'] = 'parcel_12' . $data['serviceType'] . $access2;
                     $originQuotes[$origin]['simple'][$key]['rate'] = $price;
                     $originQuotes[$origin]['simple'][$key]['title'] = $title;
