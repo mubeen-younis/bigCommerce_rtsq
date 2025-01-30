@@ -1921,6 +1921,8 @@ class CompileQuotes
                             continue;
                         } elseif(($this->notifyDelivery || $this->alwaysNBD) && !isset($data['surcharges']['notifyDeliveryFee'])){
                             continue;
+                        } elseif(($this->limitedAccess || $this->alwaysLAD) && !isset($data['surcharges']['limitedAccessDeliveryFee'])){
+                            continue;
                         } elseif(($this->alwaysResi || $this->isResi) && !isset($data['surcharges']['residentialFee'])){
                             continue;
                         }
