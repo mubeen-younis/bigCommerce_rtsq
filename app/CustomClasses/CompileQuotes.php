@@ -2541,14 +2541,20 @@ class CompileQuotes
                 }
                 foreach ($quote['q'] as $key => $data) {
                     if (isset($data['serviceType']) && in_array($data['serviceType'], $allConfigServices) /*&& isset($data['GuaranteedDaysToDelivery']) && $data['GuaranteedDaysToDelivery'] != 'Y' */) {
-                        
-                        if(($this->alwaysResi || $this->isResi) && !isset($data['surcharges']['residentialFee'])){
-                            continue;
-                        }
 
                         if (($limitedAccess || $this->alwaysLAD) && isset($this->quoteSettings['limited_access_fee'])){
                             $data['totalNetCharge']['Amount'] += $this->quoteSettings['limited_access_fee'] ?? 0;
                             $data['surcharges']['limitedAccessDeliveryFee'] = (float) $this->quoteSettings['limited_access_fee'];
+                        }
+
+                        if (($lgQuotes || $this->alwaysLG) && !isset($data['surcharges']['liftgateFee'])) {
+                            continue;
+                        } elseif(($notifyDelivery || $this->alwaysNBD) && !isset($data['surcharges']['notifyDeliveryFee'])){
+                            continue;
+                        } elseif(($limitedAccess || $this->alwaysLAD) && !isset($data['surcharges']['limitedAccessDeliveryFee'])){
+                            continue;
+                        } elseif(($this->alwaysResi || $this->isResi) && !isset($data['surcharges']['residentialFee'])){
+                            continue;
                         }
 
                         // Apply override rates shipping rule
