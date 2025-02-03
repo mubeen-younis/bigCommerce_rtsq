@@ -366,7 +366,6 @@ class GenerateRequestData
     function gtzLtlEnitArr($connSettings, $destination, $enitOrigin, $carName)
     {
         $api = $this->getApiInfoArrGTZLtl($connSettings, $destination, $carName);
-        $notify = (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']) ? 1 : 0;
         return [
             'licenseKey' => $connSettings['creds']['license_key'] ?? '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -375,7 +374,8 @@ class GenerateRequestData
             'version' => '1.0.0',
             'returnQuotesOnExceedWeight' => 1,
             'liftGateAsAnOption' => isset($api['accessorial']['LFTGATDEST']) ? 1 : 0,
-            'notifyAsAnOption' => $notify,
+            'notifyAsAnOption' => isset($api['accessorial']['NOTIF']) ? 1 : 0,
+            'residentialAsAnOption' => isset($api['accessorial']['RESDEL']) ? 1 : 0,
             'api' => $api,
             'getDistance' => 0,
         ];
@@ -608,6 +608,7 @@ class GenerateRequestData
 
     public function rossdayLtlEnitArr($connSettings, $destination)
     {
+        $api = $this->getApiInfoArrRossdayLtl($connSettings, $destination);
         return [
             'licenseKey' => '',
             'serverName' => Functions::getServerName($this->storeData),
@@ -615,8 +616,9 @@ class GenerateRequestData
             'quotestType' => 'ltl',
             'version' => '1.0.0',
             'returnQuotesOnExceedWeight' => 1,
-            'liftGateAsAnOption' => $connSettings['quote_settings']['offerLiftGateDelivery'] ? '1' : '0',
-            'api' => $this->getApiInfoArrRossdayLtl($connSettings, $destination),
+            'liftGateAsAnOption' => isset($api['accessorial']['TLGDEL']) ? 1 : 0,
+            'residentialAsAnOption' => isset($api['accessorial']['PRESDL']) ? 1 : 0,
+            'api' => $api,
         ];
     }
 

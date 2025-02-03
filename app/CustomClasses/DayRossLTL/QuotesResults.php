@@ -76,11 +76,12 @@ class QuotesResults
 
                     $serviceDescription = $value['q']['Description'];
                     $charges = $this->formatCharges($value['q']['TotalAmount']);
-
-                    $shipmentCharges = isset($value['quotesWithLiftgate']['soapBody']['GetRate2Response']['GetRate2Result']['ServiceLevels']['ShipmentCharges']['ShipmentCharge']) ? $value['quotesWithLiftgate']['soapBody']['GetRate2Response']['GetRate2Result']['ServiceLevels']['ShipmentCharges']['ShipmentCharge'] : [];
+                    $shipmentCharges = isset($value['quotesWithLiftgate']['soapBody']['GetRate2Response']['GetRate2Result']['ServiceLevels']['ShipmentCharges']['ShipmentCharge']) ? $value['quotesWithLiftgate']['soapBody']['GetRate2Response']['GetRate2Result']['ServiceLevels']['ShipmentCharges']['ShipmentCharge'] : $value['q']['ShipmentCharges']['ShipmentCharge'] ?? [];
+                    $totalChargesWithLG = isset($value['quotesWithLiftgate']['soapBody']['GetRate2Response']['GetRate2Result']['ServiceLevels']['TotalAmount']) ? $value['quotesWithLiftgate']['soapBody']['GetRate2Response']['GetRate2Result']['ServiceLevels']['TotalAmount'] : null;
                     foreach ($shipmentCharges as $k => $value) {
-                        if (isset($value['ChargeCode']) && $value['ChargeCode'] == 'TAIL' && isset($value['Description']) && $value['Description'] == 'TAILGATE DELIVERY') {
-                            $formattedShipments[$key]['q']['surcharges']['liftgateFee'] = $this->formatCharges($value['Amount']);
+                        if (isset($value['ChargeCode']) && $value['ChargeCode'] == 'TLGDEL' && isset($value['Description']) && $value['Description'] == 'TAILGATE DELIVERY') {
+                            $formattedShipments[$key]['q']['surcharges']['liftgateFee'] = $totalChargesWithLG - $charges;
+                            $charges += $this->formatCharges($formattedShipments[$key]['q']['surcharges']['liftgateFee']);
                             // add index liftgateSurcharge for HAT quotes
                             $formattedShipments[$key]['q']['liftgateSurcharge'] = $value['Amount'];
                         }
@@ -88,6 +89,7 @@ class QuotesResults
                         if (isset($value['ChargeCode']) && $value['ChargeCode'] == 'PRESDL' && isset($value['Description']) && $value['Description'] == 'PRIVATE RES DELIVERY') {
                             // add index residentialFee for HAT quotes
                             $formattedShipments[$key]['q']['residentialFee'] = $value['Amount'];
+                            $formattedShipments[$key]['q']['surcharges']['residentialFee'] = $this->formatCharges($value['Amount']);
                         }
                     }
 
@@ -103,8 +105,14 @@ class QuotesResults
 
                     if ($this->isLGQuotes($quoteSettings) && isset($value['quotesWithLiftgate']['TotalCharges'])) {
                         $formattedShipments[$key]['q']['surcharges']['liftgateFee'] = $value['quotesWithLiftgate']['TotalCharges'] - $value['q']['TotalCharges'];
-                        $charges = $this->formatCharges($value['quotesWithLiftgate']['TotalCharges']);
+                        $charges += $this->formatCharges($formattedShipments[$key]['q']['surcharges']['liftgateFee']);
                         unset($formattedShipments[$key]['quotesWithLiftgate']);
+                    }
+
+                    if (isset($value['quotesWithResidential']['TotalCharges'])) {
+                        $formattedShipments[$key]['q']['surcharges']['residentialFee'] = $value['quotesWithResidential']['TotalCharges'] - $value['q']['TotalCharges'];
+                        $charges += $this->formatCharges($formattedShipments[$key]['q']['surcharges']['residentialFee']);
+                        unset($formattedShipments[$key]['quotesWithResidential']);
                     }
 
                     $formattedShipments[$key]['q']['totalNetCharge']['Amount'] = $charges;

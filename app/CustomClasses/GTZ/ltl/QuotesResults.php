@@ -36,6 +36,10 @@ class QuotesResults
                             $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = $surcharge['Charge'] ?? 0;
                             unset($shipments[$shipment]['q'][$key]['Charges']);
                         }
+                        if(isset($surcharge['AccessorialID']) && $surcharge['AccessorialID'] == 14){
+                            $shipments[$shipment]['q'][$key]['surcharges']['residentialFee'] = $surcharge['Charge'] ?? 0;
+                            unset($shipments[$shipment]['q'][$key]['Charges']);
+                        }
                         if(!isset($shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'])){
                             $shipments[$shipment]['q'][$key]['surcharges']['liftgateFee'] = 0;
                         }
@@ -78,6 +82,9 @@ class QuotesResults
                         }
                         if(isset($surcharge['customerChargeCode']) && $surcharge['customerChargeCode'] === 'INDEL'){
                             $shipments[$shipment]['q'][$key]['surcharges']['insideDeliveryFee'] = $surcharge['customerPrice']['value'] ?? 0;
+                        }
+                        if(isset($surcharge['customerChargeCode']) && $surcharge['customerChargeCode'] === 'RESDEL'){
+                            $shipments[$shipment]['q'][$key]['surcharges']['residentialFee'] = $surcharge['customerPrice']['value'] ?? 0;
                         }
                     }
                 }
@@ -124,6 +131,7 @@ class QuotesResults
             unset($shipments[$shipment]['quotesWithLiftGate']);
             unset($shipments[$shipment]['quotesWithNotify']);
             unset($shipments[$shipment]['quotesWithLiftgateNotify']);
+            unset($shipments[$shipment]['quotesWithResidential']);
             unset($shipments[$shipment]['debug']);
             if(!isset($quotes['q'])){
                 continue;
@@ -145,6 +153,12 @@ class QuotesResults
                 foreach ($quotes['quotesWithNotify'] as $key => $quote){
                     $key = $quote['CarrierScac'];
                     $shipments[$shipment]['quotesWithNotify'][$key] = $quote;
+                }
+            }
+            if(isset($quotes['quotesWithResidential'])) {
+                foreach ($quotes['quotesWithResidential'] as $key => $quote){
+                    $key = $quote['CarrierScac'];
+                    $shipments[$shipment]['quotesWithResidential'][$key] = $quote;
                 }
             }
 
@@ -169,9 +183,14 @@ class QuotesResults
                     $shipments[$shipment]['q'][$key]['surcharges']['notifyDeliveryFee'] = $quotes['quotesWithNotify'][$key]['ShipmentRate'] - $quote['ShipmentRate'];
                     $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] += $shipments[$shipment]['q'][$key]['surcharges']['notifyDeliveryFee'];
                 }
+                if(isset($quotes['quotesWithResidential'][$key]['ShipmentRate'])) {
+                    $shipments[$shipment]['q'][$key]['surcharges']['residentialFee'] = $quotes['quotesWithResidential'][$key]['ShipmentRate'] - $quote['ShipmentRate'];
+                    $shipments[$shipment]['q'][$key]['totalNetCharge']['Amount'] += $shipments[$shipment]['q'][$key]['surcharges']['residentialFee'];
+                }
             }
             unset($shipments[$shipment]['quotesWithLiftGate']);
             unset($shipments[$shipment]['quotesWithNotify']);
+            unset($shipments[$shipment]['quotesWithResidential']);
             unset($shipments[$shipment]['debug']);
         }
 
