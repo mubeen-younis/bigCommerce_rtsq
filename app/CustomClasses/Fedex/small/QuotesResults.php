@@ -40,7 +40,6 @@ class QuotesResults
             $amount = $amount + $markupValue;
         }
         return number_format($amount, 2);
-
     }
 
     public function addHazmatAmountsInServices($amount, $serviceCode, $quoteSettings, $hazmatBoxes = 1)
@@ -59,7 +58,6 @@ class QuotesResults
         }
         // $amount = $this->addHandlingMarkupOfHazmat($amount, $quoteSettings['handling_fee_markup']);
         return number_format($amount, 2);
-
     }
 
     public function addHandlingMarkupOfHazmat($amount, $markupValue)
@@ -107,7 +105,7 @@ class QuotesResults
     {
         $serviceType = $this->international && $title == 'Fedex International Ground' ? 'international_ground' : $serviceType;
         $stringTrim = str_replace('_', ' ', $serviceType);
-        $serviceType = !$this->international && strpos($stringTrim, 'FEDEX ') === false ? 'FEDEX_' . $serviceType: $serviceType;
+        $serviceType = !$this->international && strpos($stringTrim, 'FEDEX ') === false ? 'FEDEX_' . $serviceType : $serviceType;
         $labelIndex =  strtolower($serviceType) . '_label';
         return !empty($quoteSettings['carrier_services'][$labelIndex]) ? $quoteSettings['carrier_services'][$labelIndex] : $title;
     }
@@ -115,15 +113,19 @@ class QuotesResults
     public function checkGroundTransit($quote, $quoteSettings)
     {
         if ($quoteSettings['ground_metric'] == 1) {
-            if (isset($quote['TransitTimeInDays']) && isset($quoteSettings['number_of_transit_days']) &&
-                $quote['TransitTimeInDays'] > $quoteSettings['number_of_transit_days']) {
+            if (
+                isset($quote['TransitTimeInDays']) && isset($quoteSettings['number_of_transit_days']) &&
+                $quote['TransitTimeInDays'] > $quoteSettings['number_of_transit_days']
+            ) {
                 //  4>3
                 return true;
             }
             // Check by calendar days
         } else {
-            if (isset($quote['CalenderDaysInTransit']) && isset($quoteSettings['number_of_transit_days']) &&
-                $quote['CalenderDaysInTransit'] > $quoteSettings['number_of_transit_days']) {
+            if (
+                isset($quote['CalenderDaysInTransit']) && isset($quoteSettings['number_of_transit_days']) &&
+                $quote['CalenderDaysInTransit'] > $quoteSettings['number_of_transit_days']
+            ) {
                 return true;
             }
         }
@@ -239,8 +241,8 @@ class QuotesResults
         $shipmentCount = 0;
         $count = 0;
         foreach ($shipments as $origin => $quote) {
-            
-            if(in_array($origin, $this->SuppressParcelRates)){
+
+            if (in_array($origin, $this->SuppressParcelRates)) {
                 continue;
             }
 
@@ -255,11 +257,11 @@ class QuotesResults
             if (isset($quote['q'])) {
                 foreach ($quote['q'] as $key => $data) {
 
-                    if(Str::contains($data['serviceType'], '_ONE_RATE')){
+                    if (Str::contains($data['serviceType'], '_ONE_RATE')) {
                         $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]['fedex']) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin]['fedex'] : 1;
-                    } elseif(Str::contains($data['serviceType'], '_AIR_SERVICE')){
+                    } elseif (Str::contains($data['serviceType'], '_AIR_SERVICE')) {
                         $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]['both']) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin]['both'] : 1;
-                    } else{
+                    } else {
                         $hazmatBoxes = isset($totalHazmatBoxes['totalHazmatBoxes'][$origin]['normal']) ? $totalHazmatBoxes['totalHazmatBoxes'][$origin]['normal'] : 1;
                     }
 
@@ -270,9 +272,11 @@ class QuotesResults
                     // Added to check one rate service check
                     $tocheckServiceName = Str::contains($data['serviceType'], '_ONE_RATE') ? "ONE_RATE_" . $serviceName : $serviceName;
                     $checkService = $this->checkServiceIsEnabled($origin, $tocheckServiceName, $allConfigServices['services']);
+
                     if (!$checkService) {
                         continue;
                     }
+
                     //  CHeck FOr Ups ground transit days
                     if ($serviceName == "GROUND" || $serviceName == "GROUND_HOME_DELIVERY") {
                         if (isset($this->quoteSettings['number_of_transit_days']) && $this->quoteSettings['number_of_transit_days'] != null && isset($this->quoteSettings['ground_metric']) && $this->quoteSettings['ground_metric'] != null) {
@@ -292,6 +296,7 @@ class QuotesResults
                     if (isset($this->quoteSettings['negotiated_rates']) && $this->quoteSettings['negotiated_rates'] == 1) {
                         $data['totalNetCharge']['Amount'] = $data['NegotiatedRates']['Amount'] ?? $data['totalNetCharge']['Amount'];
                     }
+
                     // Apply override rates shipping rule
                     $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
                     $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
@@ -307,7 +312,7 @@ class QuotesResults
                     $quoteSettings = $this->quoteSettings;
 
                     $data['totalNetCharge']['Amount'] = $this->addHandlingMarkupOfHazmat($data['totalNetCharge']['Amount'], $quoteSettings['handling_fee_markup'] ?? 0);
-                    
+
                     $price = $data['totalNetCharge']['Amount'];
 
                     $access2 = $access;
@@ -325,7 +330,7 @@ class QuotesResults
 
                     $price = $this->getServiceRate($price, $serviceName, $this->quoteSettings);
 
-                    
+
                     $data['serviceDesc'] = $this->checkAndAppendFedex($data['serviceDesc']);
                     $title = $this->getServiceTitle($data['serviceDesc'], $data, $data['serviceType'], $this->quoteSettings, $residential, $isRadNotation);
                     $price = (float)str_replace(',', '', $price);
@@ -397,10 +402,11 @@ class QuotesResults
         return $serviceName;
     }
 
-    public function toCheckInternationalQuote($quotes){
-        if(isset($quotes['q'])){
-            
-            foreach($quotes['q'] as $quote){
+    public function toCheckInternationalQuote($quotes)
+    {
+        if (isset($quotes['q'])) {
+
+            foreach ($quotes['q'] as $quote) {
                 if (isset($quote['serviceType']) && str_contains($quote['serviceType'], 'INTERNATIONAL')) {
                     $this->internationalQuotes = true;
                 }
@@ -417,7 +423,7 @@ class QuotesResults
 
             $ship = $this->formateQuoteHomeDelivery($serviceTypes);
             unset($shipments[$shipment]['homeDeliveryAppointment'], $shipments[$shipment]['homeDeliveryDateCertain'], $shipments[$shipment]['homeDeliveryEvening']);
-            $serviceTypes['fedexServices']['q'] = array_merge(isset($serviceTypes['fedexServices']['q']) ? $serviceTypes['fedexServices']['q'] : [],$ship);
+            $serviceTypes['fedexServices']['q'] = array_merge(isset($serviceTypes['fedexServices']['q']) ? $serviceTypes['fedexServices']['q'] : [], $ship);
 
             $inStoreLocal = [];
             foreach ($serviceTypes as $serviceName => $quotes) {
@@ -470,20 +476,20 @@ class QuotesResults
     {
         $ship = [];
 
-        if(isset($serviceTypes['homeDeliveryAppointment']['q']['GROUND_HOME_DELIVERY']) && !isset($serviceTypes['homeDeliveryAppointment']['severity'])){
+        if (isset($serviceTypes['homeDeliveryAppointment']['q']['GROUND_HOME_DELIVERY']) && !isset($serviceTypes['homeDeliveryAppointment']['severity'])) {
             $ship['FEDEX_APPOINTMENT_HOME_DELIVERY'] = $serviceTypes['homeDeliveryAppointment']['q']['GROUND_HOME_DELIVERY'];
         }
-        if(isset($serviceTypes['homeDeliveryDateCertain']['q']['GROUND_HOME_DELIVERY']) && !isset($serviceTypes['homeDeliveryDateCertain']['severity'])){
+        if (isset($serviceTypes['homeDeliveryDateCertain']['q']['GROUND_HOME_DELIVERY']) && !isset($serviceTypes['homeDeliveryDateCertain']['severity'])) {
             $ship['FEDEX_DATE_CERTAIN_HOME_DELIVERY'] = $serviceTypes['homeDeliveryDateCertain']['q']['GROUND_HOME_DELIVERY'];
         }
-        if(isset($serviceTypes['homeDeliveryEvening']['q']['GROUND_HOME_DELIVERY']) && !isset($serviceTypes['homeDeliveryEvening']['severity'])){
-            $ship['FEDEX_EVENING_HOME_DELIVERY'] = $serviceTypes['homeDeliveryEvening']['q']['GROUND_HOME_DELIVERY'];    
+        if (isset($serviceTypes['homeDeliveryEvening']['q']['GROUND_HOME_DELIVERY']) && !isset($serviceTypes['homeDeliveryEvening']['severity'])) {
+            $ship['FEDEX_EVENING_HOME_DELIVERY'] = $serviceTypes['homeDeliveryEvening']['q']['GROUND_HOME_DELIVERY'];
         }
-        
-        foreach($ship as $k => $q){
+
+        foreach ($ship as $k => $q) {
             $ship[$k]['serviceType'] = $k;
         }
-        
+
         return $ship;
     }
 
@@ -543,5 +549,4 @@ class QuotesResults
         $groundServices = ['FEDEX_GROUND', 'HOME_DELIVERY', 'SMART_POST'];
         return in_array($service, $groundServices);
     }
-
 }
