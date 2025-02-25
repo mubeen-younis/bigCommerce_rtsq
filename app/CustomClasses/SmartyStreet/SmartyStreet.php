@@ -2,6 +2,7 @@
 
 
 namespace App\CustomClasses\SmartyStreet;
+
 use App\Constants\Constant;
 use App\Http\Controllers\Subscription\PackageSubscriptionController;
 use App\Models\AdditionalCarrierTabSetting;
@@ -9,6 +10,7 @@ use App\Models\BinRequestLog;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Models\DestinationAddresses;
+use Illuminate\Support\Facades\Log;
 
 class SmartyStreet
 {
@@ -28,9 +30,10 @@ class SmartyStreet
      */
     private $endURL = Constant::SMARTY_URL;
 
-    public function getSmartyResponse($storeId, $address, $hits, $addressStatus, $poBox){
+    public function getSmartyResponse($storeId, $address, $hits, $addressStatus, $poBox)
+    {
         $radStatus = $this->consumeHits($storeId, $hits);
-        if(!$radStatus['status']){
+        if (!$radStatus['status']) {
             return "N";
         }
         self::$isPoBOX = $poBox ?? false;
@@ -38,21 +41,21 @@ class SmartyStreet
         $addressStatus = empty($addressStatus) ? $this->address_validated($address) : $addressStatus;
         self::$isStandAddress = $addressStatus == "n" ? false : self::$isStandAddress;
 
-        if($storeId != null){
+        if ($storeId != null) {
             $completeAddress = $this->set_address($address);
             DestinationAddresses::saveDestination($completeAddress, $storeId, $addressStatus, self::$isPoBOX);
         }
 
-        if($addressStatus == "n"){
+        if ($addressStatus == "n") {
             $addonSettings = DB::table('addon_settings')->select('addon_settings.value')
                 ->join('installed_addons', 'installed_addons.id', '=', 'addon_settings.installed_addon_id')
                 ->join('addons', 'addons.id', '=', 'installed_addons.addon_id')
                 ->where('installed_addons.store_id', $storeId)
-                ->where('addons.short_code','RAD')->first();
-            if(!empty($addonSettings)) {
+                ->where('addons.short_code', 'RAD')->first();
+            if (!empty($addonSettings)) {
                 $addonSettings = json_decode(($addonSettings->value))->unconfirmed_default ?? 1;
                 $addressStatus = ($addonSettings === 1) ? "r" : "c";
-            }else{
+            } else {
                 //default set address to residentials
                 $addressStatus = "r";
             }
@@ -62,9 +65,10 @@ class SmartyStreet
         return $addressStatus;
     }
 
-    private function consumeHits($storeId, $hits){
+    private function consumeHits($storeId, $hits)
+    {
         $PackageSubscriptionController = new PackageSubscriptionController();
-        $param = ['store_id' => $storeId, 'hits'=> $hits, 'addon_type'=>'RAD'];
+        $param = ['store_id' => $storeId, 'hits' => $hits, 'addon_type' => 'RAD'];
         $resp = $PackageSubscriptionController->consumeHits($param);
         return $resp;
     }
@@ -77,6 +81,7 @@ class SmartyStreet
         $zip = $address['zip'] ?? '';
         return $address = $street . ' ' . $city . ' ' . $state . ' ' . $zip;
     }
+
     /* Function return value behalf of address type if Commercial return 'c', or Residential return 'r' or not valid return 'n' */
 
     public function getSmartyAddress($address)
@@ -85,6 +90,7 @@ class SmartyStreet
 
         return $addressStatus;
     }
+
     private function address_validated($address)
     {
         $address = $this->set_address($address);
@@ -104,13 +110,15 @@ class SmartyStreet
 
         $request = http_build_query($addressArray);
 
-        $req = $this->endURL."?" . $request;
+        $req = $this->endURL . "?" . $request;
 
         $response = file_get_contents($req);
         $data = json_decode($response, true);
+
+        Log::info('Smarty API Response ' . json_encode($data));
         //when address valid API return Address detail array
         if (!empty($data)) {
-            if (isset( $data[0]['metadata']['rdi']) && $data[0]['metadata']['rdi'] == 'Commercial') {
+            if (isset($data[0]['metadata']['rdi']) && $data[0]['metadata']['rdi'] == 'Commercial') {
 
                 $res = 'c';     //Address is Commercial
 
@@ -122,9 +130,9 @@ class SmartyStreet
                 $res = 'n';
             }
 
-            if (isset( $data[0]['metadata']['zip_type']) && $data[0]['metadata']['zip_type'] === 'POBox') {
+            if (isset($data[0]['metadata']['zip_type']) && $data[0]['metadata']['zip_type'] === 'POBox') {
                 self::$isPoBOX = true;
-            } elseif (isset( $data[0]['metadata']['zip_type']) && $data[0]['metadata']['zip_type'] === 'Standard') {
+            } elseif (isset($data[0]['metadata']['zip_type']) && $data[0]['metadata']['zip_type'] === 'Standard') {
                 self::$isStandAddress = true;
             }
 
