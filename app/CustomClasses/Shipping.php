@@ -79,6 +79,7 @@ class Shipping
                 return [];
             }
         }
+        Log::info('Pass 2');
 
         /*Added for DBSC Carrier
         Will calculate DBSC rates
@@ -111,11 +112,11 @@ class Shipping
             $this->setFlatRateShippingRuleResponse($itemsWithFreeShipping, $originsWithFreeShipping);
             $finalQuotes = [];
             // Check for multishipment flat items
-            if(empty($originsWithoutFreeShipping) && empty($itemsWithoutFreeShipping) && count($this->flatRateShippingResponse) > 1){
-                
+            if (empty($originsWithoutFreeShipping) && empty($itemsWithoutFreeShipping) && count($this->flatRateShippingResponse) > 1) {
+
                 $rate = 0;
-                foreach($this->flatRateShippingResponse as $flatRate){
-                
+                foreach ($this->flatRateShippingResponse as $flatRate) {
+
                     $rate = $rate + $flatRate['rate'];
                     $finalResp = [
                         'code' => $flatRate['code'],
@@ -166,6 +167,7 @@ class Shipping
 
 
         if (empty($resp)) {
+            Log::info('Return 5 ' . json_encode($resp));
             return [];
         }
         $residential = $resp['residential'];
@@ -362,7 +364,7 @@ class Shipping
 
     protected function formattedFlatRateRuleResponse($finalQuotes): array
     {
-        if(count($this->flatRateShippingResponse) > 1){
+        if (count($this->flatRateShippingResponse) > 1) {
             $finalQuotes = $this->addRateId($finalQuotes);
         } else {
             $finalQuotes = $this->addRateId($this->flatRateShippingResponse);
@@ -397,17 +399,17 @@ class Shipping
 
     protected function addFlatRatesResponseInQuotes($finalQuotes, $multiShipmentQuotes, $originsWithoutFreeShipping): array
     {
-        if ($this->multiOrigins && empty($multiShipmentQuotes)){
+        if ($this->multiOrigins && empty($multiShipmentQuotes)) {
 
             $filteredParcel = collect($finalQuotes)->filter(function ($quote) {
                 return str_contains($quote['code'], 'parcel_12');
             });
 
-            if(count($filteredParcel)){
+            if (count($filteredParcel)) {
                 unset($finalQuotes);
                 $cheapest = collect($filteredParcel)->sortBy('rate')->first();
-                foreach($originsWithoutFreeShipping as $origin){
-                    if(isset($this->flatRateShippingResponse[$origin['locationId']]) && $this->flatRateShippingResponse[$origin['locationId']]['code'] == 'flatRateRule'){
+                foreach ($originsWithoutFreeShipping as $origin) {
+                    if (isset($this->flatRateShippingResponse[$origin['locationId']]) && $this->flatRateShippingResponse[$origin['locationId']]['code'] == 'flatRateRule') {
                         $cheapest['rate'] += $this->flatRateShippingResponse[$origin['locationId']]['rate'];
                     }
                     $this->flatRateShippingResponse[$origin['locationId']] = $cheapest;
@@ -417,12 +419,12 @@ class Shipping
                 $flatRate['simple'] = $this->flatRateShippingResponse;
                 $multiShipmentQuotes[] = $flatRate;
                 $rate = 0;
-                
-                foreach($this->flatRateShippingResponse as $quote){
+
+                foreach ($this->flatRateShippingResponse as $quote) {
                     $rate = $rate + $quote['rate'];
                     $sName = explode(' (Delivery', $cheapest['title'])[0] ?? '';
                     $sName = explode(' (Intransit', $cheapest['title'])[0] ?? '';
-                    $method = explode('w/',  $sName)[1] ?? '';
+                    $method = explode('w/', $sName)[1] ?? '';
                     $finalResp = [
                         'code' => 'Multi+',
                         'rate' => $rate,
@@ -433,11 +435,12 @@ class Shipping
 
             } else {
                 $resp = [];
-                foreach($originsWithoutFreeShipping as $origin){
-                    foreach($finalQuotes as $quote){
-                        $flatRate = []; $code = 'Multi+';
+                foreach ($originsWithoutFreeShipping as $origin) {
+                    foreach ($finalQuotes as $quote) {
+                        $flatRate = [];
+                        $code = 'Multi+';
 
-                        if(isset($this->flatRateShippingResponse[$origin['locationId']]) && $this->flatRateShippingResponse[$origin['locationId']]['code'] == 'flatRateRule'){
+                        if (isset($this->flatRateShippingResponse[$origin['locationId']]) && $this->flatRateShippingResponse[$origin['locationId']]['code'] == 'flatRateRule') {
                             $quote['rate'] += $this->flatRateShippingResponse[$origin['locationId']]['rate'];
                         }
 
@@ -494,12 +497,12 @@ class Shipping
                         $multiShipmentQuotes[] = $flatRate;
                         $rate = 0;
 
-                        foreach($flatRate as $rates){
-                            foreach($rates as $flatQuote){
+                        foreach ($flatRate as $rates) {
+                            foreach ($rates as $flatQuote) {
                                 $rate = $rate + $flatQuote['rate'];
                                 $sName = explode(' (Delivery', $quote['title'])[0] ?? '';
                                 $sName = explode(' (Intransit', $quote['title'])[0] ?? '';
-                                $method = explode('w/',  $sName)[1] ?? '';
+                                $method = explode('w/', $sName)[1] ?? '';
                                 $finalResp = [
                                     'code' => $code,
                                     'rate' => $rate,
@@ -513,13 +516,13 @@ class Shipping
                     break;
                 }
             }
-        } elseif ($this->multiOrigins && !empty($multiShipmentQuotes)){
+        } elseif ($this->multiOrigins && !empty($multiShipmentQuotes)) {
             $index = 0;
 
-            while(isset($multiShipmentQuotes[$index])){
-                foreach($multiShipmentQuotes[$index] as $key => $quotes){
-                    foreach($quotes as $origin => $quote){
-                        if(isset($this->flatRateShippingResponse[$origin]['rate'])){
+            while (isset($multiShipmentQuotes[$index])) {
+                foreach ($multiShipmentQuotes[$index] as $key => $quotes) {
+                    foreach ($quotes as $origin => $quote) {
+                        if (isset($this->flatRateShippingResponse[$origin]['rate'])) {
                             $multiShipmentQuotes[$index][$key][$origin]['rate'] += $this->flatRateShippingResponse[$origin]['rate'];
                         }
                     }
@@ -528,19 +531,19 @@ class Shipping
             }
 
             foreach ($finalQuotes as $key => $quote) {
-                foreach($this->flatRateShippingResponse as $flatRate){
+                foreach ($this->flatRateShippingResponse as $flatRate) {
                     $finalQuotes[$key]['rate'] = $quote['rate'] + $flatRate['rate'];
                 }
             }
         } else {
 
             foreach ($finalQuotes as $key => $quote) {
-                foreach($this->flatRateShippingResponse as $flatRate){
+                foreach ($this->flatRateShippingResponse as $flatRate) {
                     $finalQuotes[$key]['rate'] = $quote['rate'] + $flatRate['rate'];
                 }
             }
         }
-        
+
         return ['finalQuotes' => $finalQuotes, 'multiShipmentQuotes' => $multiShipmentQuotes];
     }
 
@@ -1168,10 +1171,10 @@ class Shipping
 
         if (strlen($quote['title']) >= 100) {
             $res = explode("w/", $quote['title']);
-            if($quote['code'] === 'INSP'){
+            if ($quote['code'] === 'INSP') {
                 return $res[0];
             }
-            if(strpos(strtolower($quote['code']), '+hat')){
+            if (strpos(strtolower($quote['code']), '+hat')) {
                 $res = explode(" |", $quote['title']);
                 return str_replace($res[0], Functions::$simpleLTLTitle, $quote['title']);
             }
