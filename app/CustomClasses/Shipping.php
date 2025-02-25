@@ -79,7 +79,6 @@ class Shipping
                 return [];
             }
         }
-        Log::info('Pass 2');
 
         /*Added for DBSC Carrier
         Will calculate DBSC rates

@@ -69,14 +69,11 @@ class GetRatesController extends Controller
         $isTestStore = Helpers::checkIsTestStore($storeHash);
         Helpers::setStripeAPiKey($isTestStore);
         if ($storeData == null) {
-            Log::info('Return 1 ' . json_encode($storeData));
             return [];
         }
         if (!$this->storePlanStatus($storeData['store']['id'])) {
-            Log::info('Return 2 ' . json_encode($storeData));
             return [];
         }
-        Log::info('Paass');
         // Getting cart id and store id of the store.
         $refValue = $request->base_options['request_context']['reference_values'] ?? [];
         $cartID = "";
@@ -104,16 +101,13 @@ class GetRatesController extends Controller
         }
 
         if ($this->isShippingRule($storeData, $this->formatReq)) {
-            Log::info('Return 3 ');
             return [];
         }
         // Apply Nesting items functionality
         if (!empty($this->formatReq['lineItemData']['items'])) {
             $this->itemsTobeNested($this->formatReq['lineItemData']['items'], $cartInfo['store_id']);
         }
-
-        Log::info('Passed on next');
-
+        
         $quotes = $this->shipping->collectRates($this->formatReq, $storeData, $this->connectionSettings, $cartInfo, $this->isDbscInstalled);
 
         return $quotes;
