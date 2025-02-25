@@ -76,6 +76,7 @@ class GetRatesController extends Controller
             Log::info('Return 2 ' . json_encode($storeData));
             return [];
         }
+        Log::info('Paass');
         // Getting cart id and store id of the store.
         $refValue = $request->base_options['request_context']['reference_values'] ?? [];
         $cartID = "";
