@@ -2170,7 +2170,9 @@ class GenerateRequestData
         $smarty = new SmartyStreet();
         $addressStatus = '';
         $completeAddress = $smarty->set_address($address);
+        Log::info('Complete address ' . json_encode($completeAddress));
         $isSameDestination = DestinationAddresses::isSameDestinatonAddress($completeAddress, $storeId) ?? [];
+        Log::info('is same destination ' . json_encode($isSameDestination));
         if (!empty($isSameDestination)) {
             $hits = 0;
             $addressStatus = $isSameDestination['status'] == 1 ? 'r' : ($isSameDestination['status'] == 2 ? 'c' : 'n');
