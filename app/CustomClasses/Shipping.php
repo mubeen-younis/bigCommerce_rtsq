@@ -165,6 +165,7 @@ class Shipping
 
 
         if (empty($resp)) {
+            Log::info('Return 5 ' . json_encode($resp));
             return [];
         }
         $residential = $resp['residential'];
@@ -421,7 +422,7 @@ class Shipping
                     $rate = $rate + $quote['rate'];
                     $sName = explode(' (Delivery', $cheapest['title'])[0] ?? '';
                     $sName = explode(' (Intransit', $cheapest['title'])[0] ?? '';
-                    $method = explode('w/',  $sName)[1] ?? '';
+                    $method = explode('w/', $sName)[1] ?? '';
                     $finalResp = [
                         'code' => 'Multi+',
                         'rate' => $rate,
@@ -498,7 +499,7 @@ class Shipping
                                 $rate = $rate + $flatQuote['rate'];
                                 $sName = explode(' (Delivery', $quote['title'])[0] ?? '';
                                 $sName = explode(' (Intransit', $quote['title'])[0] ?? '';
-                                $method = explode('w/',  $sName)[1] ?? '';
+                                $method = explode('w/', $sName)[1] ?? '';
                                 $finalResp = [
                                     'code' => $code,
                                     'rate' => $rate,

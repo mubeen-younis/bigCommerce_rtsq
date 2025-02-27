@@ -65,7 +65,8 @@ class GenerateRequestData
         $quoteSettings,
         $connectionSettings,
         $storeData
-    ) {
+    )
+    {
         $this->storeData = $storeData;
         $this->quoteSettings = $quoteSettings;
         $this->connectionSettings = $connectionSettings;
@@ -80,23 +81,27 @@ class GenerateRequestData
     {
         $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
         /**
-         *  Check: if RAD is installed and active, destination address is US 
+         *  Check: if RAD is installed and active, destination address is US
          *  then using Smarty Api to validate Po Box address
          **/
         if ($this->checkIsPoBoxAndRADInstalled($rad_settings) && $destination['country'] == 'US') {
             $this->checkRadStatus($this->storeData['store']['id'], $destination);
             if (Functions::isPOBoxAddress($rad_settings, SmartyStreet::$isPoBOX)) {
+                Log::info('Return 1 ' . json_encode($rad_settings));
                 return [];
             }
         }
         /**
-        *  Check: if RAD is not installed or inactive, then using keyword search to validate Po Box address
-        *  Also Check: if Address is standard then keyword search not applied.
-        **/
+         *  Check: if RAD is not installed or inactive, then using keyword search to validate Po Box address
+         *  Also Check: if Address is standard then keyword search not applied.
+         **/
         $this->destinationIsPOBox($destination);
         if (Functions::isPOBoxAddress($rad_settings, $this->isPoBOX) && !SmartyStreet::$isStandAddress) {
+            Log::info('Return 2 ' . json_encode($rad_settings));
             return [];
         }
+
+        Log::info('Pass 1');
 
         $carriersArr['carriers'] = [];
         $enitOrigin = $this->getEnitOrigin($origin);
@@ -104,7 +109,7 @@ class GenerateRequestData
 
         $shippingRule = new ShippingRuleController();
         $this->connectionSettings = $shippingRule->applyHideMethodRule($this->storeData['store']['id'], $lineItems, $this->connectionSettings);
-                
+        Log::info('Pass 2 ' . json_encode($this->connectionSettings));
         $this->storeDateTime = $this->getBCStoreDateTime();
 
         foreach ($this->connectionSettings as $key => $con1) {
@@ -527,7 +532,7 @@ class GenerateRequestData
             'api' => $this->getApiInfoArrRNLLtl($connSettings, $destination, $enitOrigin),
             'getDistance' => 0
         ];
-    
+
         return array_merge($requestArr, [
             'freeShipment' => isset($connSettings['quote_settings']['free_shipping_on_orders']) && $connSettings['quote_settings']['free_shipping_on_orders'] < $shipmentPrice
         ]);
@@ -774,8 +779,8 @@ class GenerateRequestData
                 $carriersArray = $errorManagmentResp['carriersArray'];
                 $itemsArr = $errorManagmentResp['itemsArr'];
             }
-            foreach($itemsArr as $key => $item){
-                if (isset($item['isFreeShipping']) && $item['isFreeShipping']){
+            foreach ($itemsArr as $key => $item) {
+                if (isset($item['isFreeShipping']) && $item['isFreeShipping']) {
                     foreach ($carriersArray['carriers'] as $carr => $carrier) {
                         unset($carriersArray['carriers'][$carr]['originAddress'][$key]);
                         unset($itemsArr[$key]);
@@ -836,48 +841,48 @@ class GenerateRequestData
             $shippingRule = new ShippingRuleController();
             $isLargeCartShippingRule = $shippingRule->checkLargeCartRuleApply($itemsArr, $this->storeData['store']->id) ?? [];
             // Check: Large Cart Settings Shipping Rule is apply
-            if(!empty($isLargeCartShippingRule)){
+            if (!empty($isLargeCartShippingRule)) {
 
                 if (!empty($this->origins)) {
                     // get total shipments based on cart items
                     $totalShipments = collect($this->origins)->pluck('locationId')->unique()->toArray() ?? [];
-                    foreach($totalShipments as $shipment){   
+                    foreach ($totalShipments as $shipment) {
                         $q = $shipmentWeight = $shipmentPrice = $total_weight = 0;
-                        // get total products in a shipment                 
+                        // get total products in a shipment
                         $variantKeys = collect($this->origins)->filter(function ($orig) use ($shipment) {
                             return $orig['locationId'] == $shipment;
                         })->keys()->all() ?? [];
 
-                        foreach($variantKeys as $variant_id){
+                        foreach ($variantKeys as $variant_id) {
                             // get total shipment weight and price
                             $shipmentWeight += $itemsArr[$variant_id]['lineItemWeight'] * $itemsArr[$variant_id]['piecesOfLineItem'] ?? 0;
                             $shipmentPrice += $itemsArr[$variant_id]['lineItemPrice'] * $itemsArr[$variant_id]['piecesOfLineItem'] ?? 0;
                         }
                         // calcluate total no of packages of the shipment weight
-                        $totalNoOfPackages = ceil($shipmentWeight/$isLargeCartShippingRule['max_package_weight']) ?? 0;
-                        $pricePerPackage = round($shipmentPrice/$totalNoOfPackages, 2) ?? 0;
+                        $totalNoOfPackages = ceil($shipmentWeight / $isLargeCartShippingRule['max_package_weight']) ?? 0;
+                        $pricePerPackage = round($shipmentPrice / $totalNoOfPackages, 2) ?? 0;
                         $maxWeightPackage = $isLargeCartShippingRule['max_package_weight'] ?? 0;
 
-                        
-                        // creating custom packages
-                        for($i=0; $i<$totalNoOfPackages; $i++){
 
-                            if(isset($variantKeys[$i])){
-                                $index =  $variantKeys[$i];
+                        // creating custom packages
+                        for ($i = 0; $i < $totalNoOfPackages; $i++) {
+
+                            if (isset($variantKeys[$i])) {
+                                $index = $variantKeys[$i];
                                 $item = $itemsArr[$variantKeys[$i]] ?? [];
-                                $origin = $this->origins[$variantKeys[$i]] ?? [];    
-                            }else {
-                                $index =  $variantKeys[0] . $i;
+                                $origin = $this->origins[$variantKeys[$i]] ?? [];
+                            } else {
+                                $index = $variantKeys[0] . $i;
                                 $item = $itemsArr[$variantKeys[0]] ?? [];
-                                $origin = $this->origins[$variantKeys[0]] ?? [];    
+                                $origin = $this->origins[$variantKeys[0]] ?? [];
                             }
-                            
+
                             $shipmentWeight = $shipmentWeight - $maxWeightPackage ?? 0;
-                            /** 
-                            * Check: if last package weight is less than the max per package weight 
-                            * then assign only minimum weight not max per package weight
-                            **/
-                            if($shipmentWeight < 0){
+                            /**
+                             * Check: if last package weight is less than the max per package weight
+                             * then assign only minimum weight not max per package weight
+                             **/
+                            if ($shipmentWeight < 0) {
                                 $lineItemWeight = $shipmentWeight + $maxWeightPackage;
                             } else {
                                 $lineItemWeight = $maxWeightPackage;
@@ -898,8 +903,8 @@ class GenerateRequestData
                     unset($itemsArr);
                     // update lineitems with custom packages and origins with package id
                     $itemsArr = $lineItems ?? [];
-                    foreach(Functions::$smallCarriersArray as $carrierName){
-                        if(isset($carriers[$carrierName])){
+                    foreach (Functions::$smallCarriersArray as $carrierName) {
+                        if (isset($carriers[$carrierName])) {
                             $carriers[$carrierName]['originAddress'] = $origins ?? [];
                             Log::info('Large Cart Settings Shipping Rule Applied');
                         }
@@ -1655,7 +1660,7 @@ class GenerateRequestData
         if ($carName === 'globalTranz') { // for globaltranz
             $notify = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']);
 
-           if ($residential === 'Y' || $alwaysResi) {
+            if ($residential === 'Y' || $alwaysResi) {
                 $accessorial['RSD'] = 14;
             }
             if ($liftGate === 'Y') {
@@ -2120,7 +2125,7 @@ class GenerateRequestData
         $this->resiCarrier['freightQuoteLtl'] = $residential;
         $this->resiCarrier['alwaysResi']['freightQuoteLtl'] = $alwaysResi;
         $limitedAccess = isset($connSettings['quote_settings']['offer_limited_access_delivery']) && $connSettings['quote_settings']['offer_limited_access_delivery'] ||
-        isset($connSettings['quote_settings']['always_limited_access_delivery']) && $connSettings['quote_settings']['always_limited_access_delivery'];
+            isset($connSettings['quote_settings']['always_limited_access_delivery']) && $connSettings['quote_settings']['always_limited_access_delivery'];
 
         $accessorial = [];
         if ($liftGate == 'Y') {
@@ -2165,7 +2170,9 @@ class GenerateRequestData
         $smarty = new SmartyStreet();
         $addressStatus = '';
         $completeAddress = $smarty->set_address($address);
+        Log::info('Complete address ' . json_encode($completeAddress));
         $isSameDestination = DestinationAddresses::isSameDestinatonAddress($completeAddress, $storeId) ?? [];
+        Log::info('is same destination ' . json_encode($isSameDestination));
         if (!empty($isSameDestination)) {
             $hits = 0;
             $addressStatus = $isSameDestination['status'] == 1 ? 'r' : ($isSameDestination['status'] == 2 ? 'c' : 'n');
@@ -2416,7 +2423,7 @@ class GenerateRequestData
 
         ];
         // Check: if shipEngine connection setting set then use the connection setting creds in the quotes api request
-        if(isset($connSettings['creds']['shipengine_carrier_id']) && !empty($connSettings['creds']['shipengine_carrier_id']) &&isset($connSettings['creds']['shipengine_api_key']) && !empty($connSettings['creds']['shipengine_api_key'])){
+        if (isset($connSettings['creds']['shipengine_carrier_id']) && !empty($connSettings['creds']['shipengine_carrier_id']) && isset($connSettings['creds']['shipengine_api_key']) && !empty($connSettings['creds']['shipengine_api_key'])) {
             $apiArray['shipEngineCarrierIds'] = [$connSettings['creds']['shipengine_carrier_id']];
             $apiArray['apiKey'] = $connSettings['creds']['shipengine_api_key'];
             $apiArray['myCarriersInShipengine'] = 1;
@@ -2542,7 +2549,7 @@ class GenerateRequestData
         $ratingMethod = $this->getPackagingRatingMethod($connSettings);
         $this->resiCarrier['isSbsEnable'] = $sbsEnabled && $this->storeData['enabled_addon_sbs'];
 
-        if (isset($connSettings['creds']['api_type']) &&  $connSettings['creds']['api_type'] === 'new_api') {
+        if (isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api') {
             $this->resiCarrier['isUnishipperNewApi'] = true;
             $this->resiCarrier['unishippersSmallNewApi'] = $residential;
             $this->resiCarrier['alwaysResi']['unishippersSmallNewApi'] = $alwaysResi;
@@ -2903,8 +2910,8 @@ class GenerateRequestData
         if ($notify) {
             array_push($accessorial, 'ArrivalNotice/Appointment');
         }
-        
-       $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
+
+        $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
 
         $apiArray = [
             'userID' => $connSettings['creds']['userID'] ?? '',
@@ -2966,7 +2973,7 @@ class GenerateRequestData
         if ($notify) {
             $accessorial[] = 'chkAN';
         }
-        
+
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $apiArray = [
 
@@ -3427,8 +3434,8 @@ class GenerateRequestData
         if (!$isMultishipment) {
             $resp = [];
             $orgLocIds = array_column($origins, 'locationId') ?? [];
-            $ltlItems = array_filter($itemsArr, fn ($item) => $item['freightClass'] === 'ltl') ?? [];
-            $smallItems = array_filter($itemsArr, fn ($item) => $item['freightClass'] === '') ?? [];
+            $ltlItems = array_filter($itemsArr, fn($item) => $item['freightClass'] === 'ltl') ?? [];
+            $smallItems = array_filter($itemsArr, fn($item) => $item['freightClass'] === '') ?? [];
 
             if (count($itemsArr) > 1 && count(array_unique($orgLocIds)) == 1 && !empty($ltlItems) && !empty($smallItems)) {
                 $resp['items'] = $itemsArr;
@@ -3661,7 +3668,7 @@ class GenerateRequestData
             }
         }
 
-        if($palletPkgReq && !isset($bin->bin_data->type)){
+        if ($palletPkgReq && !isset($bin->bin_data->type)) {
             $palletHeight = $bin->bin_data->stack_height + $boxHeight ?? 0;
         }
 

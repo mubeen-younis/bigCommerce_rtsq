@@ -135,7 +135,7 @@ class GetRatesController extends Controller
                 // Check: cart items greater then maximum nested items
                 if ($params['totalItems'] > $params['maxNestingItems']) {
 
-                    $totalStacks = $count = (int) ceil($params['totalItems'] / $params['maxNestingItems']);
+                    $totalStacks = $count = (int)ceil($params['totalItems'] / $params['maxNestingItems']);
                     // Check: stack type is even or maximized (0 = evenly type and 1 = maximized type)
                     if ($params['nestingStackType'] == 1) {
 
@@ -143,7 +143,8 @@ class GetRatesController extends Controller
                         $products = $this->calcNestingDimensions($products, $product, $params, $count, $stackItems, $variantId);
                     } else {
 
-                        $stackItems = (int) ceil($params['totalItems'] / $totalStacks);
+
+                        $stackItems = (int)ceil($params['totalItems'] / $totalStacks);
                         $products = $this->calcNestingDimensions($products, $product, $params, $count, $stackItems, $variantId);
                     }
                 } else {
