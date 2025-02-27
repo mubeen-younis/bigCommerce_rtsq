@@ -5261,7 +5261,6 @@ class CompileQuotes
         if (isset($this->quoteSettings['delivery_estimate_options']) && $this->quoteSettings['delivery_estimate_options'] == 2) {
             $deliveryEstimates = !blank($days) ? " (Intransit days: " . $days . ")" : "";
         } elseif (isset($this->quoteSettings['delivery_estimate_options']) && $this->quoteSettings['delivery_estimate_options'] == 3) {
-//            $deliveryEstimates = !blank($date) ? " (Delivery by " . date('M d', strtotime($date)) . ")" : "";
             $deliveryEstimates = !blank($date) ? " (Delivery by " . date('m-d-Y', strtotime($date)) . ")" : "";
         }
 
