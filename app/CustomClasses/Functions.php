@@ -152,7 +152,8 @@ class Functions
         'lglaccessinsideNotifydelivery',
     ];
 
-    public static function is3plCarrier($carrier){
+    public static function is3plCarrier($carrier)
+    {
         $carriersArray = ['ltl-quotes', 'freightquote-ltl', 'tql-ltl', 'echo-ltl', 'freightquote-chr-ltl', 'priority-one-ltl', 'gtz-ltl', 'gtz-new', 'cltl', 'unishipper-ltl'];
         return in_array($carrier, $carriersArray);
     }
@@ -170,7 +171,7 @@ class Functions
 
     public static function getCarrierNameOrCode($code, $getWsCode = 0): ?string
     {
-        $carrierCodes = ['wweltl', 'rnlltl', 'xpoltl', 'fedexltl', 'gtzltl_new', 'gtzNew', 'gtzltl','unlltl', 'yrcltl', 'cltl', 'upsltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship_new', 'parcel_12uniship', 'parcel_12shipEng',
+        $carrierCodes = ['wweltl', 'rnlltl', 'xpoltl', 'fedexltl', 'gtzltl_new', 'gtzNew', 'gtzltl', 'unlltl', 'yrcltl', 'cltl', 'upsltl', 'parcel_12wwe', 'parcel_12ups', 'parcel_12fd', 'parcel_12uniship_new', 'parcel_12uniship', 'parcel_12shipEng',
             'fqltl', 'estesltl', 'dayrossltl', 'odflltl', 'saialtl', 'parcel_12Purolator', 'abfltl', 'seflltl', 'southeastern', 'parcel_12usps', 'tqlltl', 'echoltl', 'daylightltl', 'fqchrltl', 'shipeng', 'priority1ltl', 'upslandcostapi'];
         foreach ($carrierCodes as $carrierCode) {
             if (strpos($code, $carrierCode) !== false) {
@@ -186,7 +187,7 @@ class Functions
 
     public static function getCarrierCodeWs($carrierCode): ?string
     {
-        $carrierCodesWithName = ['wweltl' => 'wweLTL', 'gtzltl_new' => 'wweLTLN', 'gtzNew' => 'wweLTLN', 'unlltl' => 'wweLTLN','rnlltl' => 'rnl', 'xpoltl' => 'xpoLogistics', 'upsltl' => 'upsLTL',
+        $carrierCodesWithName = ['wweltl' => 'wweLTL', 'gtzltl_new' => 'wweLTLN', 'gtzNew' => 'wweLTLN', 'unlltl' => 'wweLTLN', 'rnlltl' => 'rnl', 'xpoltl' => 'xpoLogistics', 'upsltl' => 'upsLTL',
             'fedexltl' => 'fedexLTL', 'yrcltl' => 'yrc', 'gtzltl' => 'globalTranz', 'cltl' => 'cerasis',
             'parcel_12wwe' => 'wweSmall', 'parcel_12uniship_new' => 'wweSmallN', 'parcel_12ups' => 'upsSmall', 'parcel_12fd' => 'fedexSmall', 'parcel_12uniship' => 'unishippersSmall',
             'parcel_12shipEng' => 'shipEngine', 'shipeng' => 'shipEngine', 'priority1ltl' => 'priority1',
@@ -619,6 +620,12 @@ class Functions
 
     public static function calProductOriginMarkupFee($cost, $shipmentKey, $items, $allOrigins)
     {
+        /*
+         * Ticket#21019942778
+         * Issue of empty rates in USPS*/
+        if (empty($cost)) {
+            return 0;
+        }
         $variantKeys = [];
         $productFeeMarkup = 0;
         $totalFeeMarkup = 0;
@@ -628,7 +635,8 @@ class Functions
 
         if (!empty($allOrigins)) {
             $variantKeys = collect($allOrigins)->filter(function ($origin) use ($shipmentKey) {
-            return $origin['locationId'] == $shipmentKey;})->keys()->all() ?? [];
+                return $origin['locationId'] == $shipmentKey;
+            })->keys()->all() ?? [];
         }
 
         // Calculate Products markup fee
@@ -769,7 +777,7 @@ class Functions
         if (!empty($items) && !empty($proKeys)) {
             foreach ($proKeys as $key => $proKey) {
                 $totalWeight = 0;
-                foreach($proKey as $variantId){
+                foreach ($proKey as $variantId) {
                     $item = Arr::get($items, $variantId);
                     if ($item['variant_id'] == $variantId) {
                         $weight = isset($item['lineItemWeight']) ? $item['lineItemWeight'] : 0;
@@ -1115,97 +1123,97 @@ class Functions
         $carrierQuoteIds = '';
 
         foreach ($quotes as $carrrierName => $quote) {
-            if($carrrierName === $carrierCode){
+            if ($carrrierName === $carrierCode) {
                 switch ($carrrierName) {
                     case "wweLTL":
                         foreach ($quote as $zipCode => $q) {
-                            if($zip == $zipCode){
+                            if ($zip == $zipCode) {
                                 foreach ($q->q as $service) {
                                     $serviceCode = isset($service->serviceType) ? $service->serviceType : ' ';
                                     $isTrue = str_contains(strtolower($rateId), strtolower($serviceCode));
-                                    if($isTrue){
+                                    if ($isTrue) {
                                         $carrierQuoteIds = $service->shipmentQuoteId ?? '';
                                     }
                                 }
                             }
                         }
-                    break;
+                        break;
                     case "wweSmall":
                         foreach ($quote as $zipCode => $q) {
-                            if($zip == $zipCode){
+                            if ($zip == $zipCode) {
                                 foreach ($q->q as $service) {
                                     $serviceCode = isset($service->serviceType) ? $service->serviceType : ' ';
                                     $isTrue = str_contains(strtolower($rateId), strtolower($serviceCode));
-                                    if($isTrue){
+                                    if ($isTrue) {
                                         $carrierQuoteIds = $service->shipmentQuoteId ?? '';
                                     }
                                 }
                             }
                         }
-                    break;
-                     // Unishipper New API
-                     case "wweSmallN":
+                        break;
+                    // Unishipper New API
+                    case "wweSmallN":
                         foreach ($quote as $zipCode => $q) {
-                            if($zip == $zipCode){
+                            if ($zip == $zipCode) {
                                 foreach ($q->q as $service) {
                                     $serviceCode = isset($service->timeInTransit->upsServiceCode) ? $service->timeInTransit->upsServiceCode : ' ';
                                     $isTrue = str_contains(strtolower($rateId), strtolower($serviceCode));
-                                    if($isTrue){
+                                    if ($isTrue) {
                                         $carrierQuoteIds = $service->offerId ?? '';
                                     }
                                 }
                             }
                         }
-                    break;
+                        break;
                     // GTZ New API
                     case "wweLTLN":
                         foreach ($quote as $zipCode => $q) {
-                            if($zip == $zipCode){
+                            if ($zip == $zipCode) {
                                 foreach ($q->q as $service) {
                                     $serviceCode = isset($service->timeInTransit->scac) ? $service->timeInTransit->scac : ' ';
                                     $isTrue = str_contains(strtolower($rateId), strtolower($serviceCode));
-                                    if($isTrue){
+                                    if ($isTrue) {
                                         $carrierQuoteIds = $service->offerId ?? '';
                                     }
                                 }
                             }
                         }
-                    break;
+                        break;
                     case "shipEngine":
                         $quoteResults = new upsShipEngineSmallQuotesResults();
                         foreach ($quote as $zipCode => $q) {
-                            if($zip == $zipCode){
+                            if ($zip == $zipCode) {
                                 foreach ($q->q as $service) {
                                     $serviceCode = isset($service->service_code) ? $service->service_code : ' ';
                                     $shortServiceCode = 'shipEng' . $quoteResults->getShortCodesOfService($serviceCode);
                                     $isTrue = str_contains(strtolower($rateId), strtolower($shortServiceCode));
-                                    if($isTrue){
+                                    if ($isTrue) {
                                         $carrierQuoteIds = $service->rate_id ?? '';
                                     }
                                 }
                             }
                         }
-                    break;
+                        break;
                     case "globalTranz":
                         foreach ($quote as $zipCode => $q) {
-                            if($zip == $zipCode){
+                            if ($zip == $zipCode) {
                                 foreach ($q->q as $service) {
                                     $serviceCode = isset($service->CarrierDetail->CarrierCode) ? $service->CarrierDetail->CarrierCode : ' ';
                                     $isTrue = str_contains(strtolower($rateId), strtolower($serviceCode));
-                                    if($isTrue){
+                                    if ($isTrue) {
                                         $carrierQuoteIds = $service->QuoteId ?? '';
                                     }
                                 }
                             }
                         }
-                    break;
+                        break;
                     case "xpoLogistics":
                         foreach ($quote as $zipCode => $q) {
-                            if($zip == $zipCode) {
+                            if ($zip == $zipCode) {
                                 $carrierQuoteIds = $q->q->quoteNumber ?? '';
                             }
                         }
-                    break;
+                        break;
                     case "rnl":
                         foreach ($quote as $zipCode => $q) {
                             $services = isset($q->q->ServiceLevels->ServiceLevel) ? $q->q->ServiceLevels->ServiceLevel : [];
@@ -1218,26 +1226,26 @@ class Functions
                                     $serviceCode = isset($service->Code) ? $service->Code : ' ';
                                     $length = strlen($serviceCode);
                                     $isTrue = str_contains(strtolower($rateId), strtolower($serviceCode));
-                                    if($isTrue){
+                                    if ($isTrue) {
                                         $carrierQuoteIds = $service->QuoteNumber ?? '';
                                     }
                                 }
                             }
                         }
-                    break;
+                        break;
                     case 'yrc':
                         foreach ($quote as $zipCode => $q) {
-                            if($zip == $zipCode) {
+                            if ($zip == $zipCode) {
                                 $carrierQuoteIds = $q->q->QuoteId ?? '';
                             }
                         }
-                    break;
+                        break;
                     case 'freightQuote':
                         foreach ($quote as $zipCode => $q) {
-                            if($zip == $zipCode){
-                                if(isset($q->q)){
+                            if ($zip == $zipCode) {
+                                if (isset($q->q)) {
                                     $quotes = $q->q ?? [];
-                                } elseif (isset($q->Truckload)){
+                                } elseif (isset($q->Truckload)) {
                                     $quotes = $q->Truckload ?? [];
                                 } else {
                                     $quotes = [];
@@ -1246,82 +1254,82 @@ class Functions
                                     $serviceCode = isset($service->serviceType) ? $service->serviceType : ' ';
                                     $length = strlen($serviceCode);
                                     $isTrue = str_contains(strtolower($rateId), strtolower($serviceCode));
-                                    if($isTrue){
+                                    if ($isTrue) {
                                         $carrierQuoteIds = $service->quoteId ?? '';
                                     }
                                 }
                             }
                         }
-                    break;
+                        break;
                     case "estes":
                         foreach ($quote as $zipCode => $q) {
-                            if($zip == $zipCode){
+                            if ($zip == $zipCode) {
                                 foreach ($q->q as $service) {
                                     $serviceCode = isset($service->ratquoteNumber) ? $service->ratquoteNumber : ' ';
                                     $length = strlen($serviceCode);
                                     $isTrue = str_contains(strtolower($rateId), strtolower($serviceCode));
-                                    if($isTrue){
+                                    if ($isTrue) {
                                         $carrierQuoteIds = $service->ratquoteNumber ?? '';
                                     }
                                 }
                             }
                         }
-                    break;
+                        break;
                     case "dayross":
                         foreach ($quote as $zipCode => $q) {
-                            if($zip == $zipCode) {
+                            if ($zip == $zipCode) {
                                 $carrierQuoteIds = $q->q->QuoteNumber ?? '';
                             }
                         }
-                    break;
+                        break;
                     case 'saia':
                         foreach ($quote as $zipCode => $q) {
-                            if($zip == $zipCode) {
+                            if ($zip == $zipCode) {
                                 $carrierQuoteIds = $q->q->quoteNumber ?? '';
                             }
                         }
-                    break;
+                        break;
                     case 'abf':
                         foreach ($quote as $zipCode => $q) {
-                            if($zip == $zipCode) {
+                            if ($zip == $zipCode) {
                                 $carrierQuoteIds = $q->q->QUOTEID ?? '';
                             }
                         }
-                    break;
+                        break;
                     case 'southeastern':
                         foreach ($quote as $zipCode => $q) {
-                            if($zip == $zipCode) {
+                            if ($zip == $zipCode) {
                                 $carrierQuoteIds = $q->q->quoteId ?? '';
                             }
                         }
-                    break;
+                        break;
                     case "tql":
                         foreach ($quote as $zipCode => $q) {
-                            if($zip == $zipCode){
+                            if ($zip == $zipCode) {
                                 foreach ($q->q as $service) {
                                     $serviceCode = isset($service->scac) ? $service->scac : ' ';
                                     $length = strlen($serviceCode);
                                     $isTrue = str_contains(strtolower($rateId), strtolower($serviceCode));
-                                    if($isTrue){
+                                    if ($isTrue) {
                                         $carrierQuoteIds = $service->quoteId ?? '';
                                     }
                                 }
                             }
                         }
-                    break;
+                        break;
                     case 'daylight':
                         foreach ($quote as $zipCode => $q) {
-                            if($zip == $zipCode) {
+                            if ($zip == $zipCode) {
                                 $carrierQuoteIds = $q->q->quoteNumber ?? '';
                             }
                         }
-                    break;
+                        break;
                     case 'chr':
                         foreach ($quote as $zipCode => $q) {
-                            if($zip == $zipCode){
-                                if(isset($q->q)){
+                            if ($zip == $zipCode) {
+                                if (isset($q->q)) {
                                     $quotes = $q->q ?? [];
-                                } elseif (isset($q->Truckload)){
+                                } elseif (isset($q->Truckload)) {
                                     $quotes = $q->Truckload ?? [];
                                 } else {
                                     $quotes = [];
@@ -1330,34 +1338,34 @@ class Functions
                                     $serviceCode = isset($service->serviceType) ? $service->serviceType : ' ';
                                     $length = strlen($serviceCode);
                                     $isTrue = str_contains(strtolower($rateId), strtolower($serviceCode));
-                                    if($isTrue){
+                                    if ($isTrue) {
                                         $carrierQuoteIds = $service->quoteId ?? '';
                                     }
                                 }
                             }
                         }
-                    break;
+                        break;
                     case 'priority1':
                         foreach ($quote as $zipCode => $q) {
-                            if($zip == $zipCode){
+                            if ($zip == $zipCode) {
                                 foreach ($q->q as $service) {
                                     $serviceCode = isset($service->carrierCode) ? $service->carrierCode : ' ';
                                     $length = strlen($serviceCode);
                                     $isTrue = str_contains(strtolower($rateId), strtolower($serviceCode));
-                                    if($isTrue){
+                                    if ($isTrue) {
                                         $carrierQuoteIds = $service->carrierQuoteNumber ?? '';
                                     }
                                 }
                             }
                         }
-                    break;
+                        break;
                     case 'UPSLandedCost':
                         foreach ($quote as $zipCode => $q) {
-                            if($zip == $zipCode) {
+                            if ($zip == $zipCode) {
                                 $carrierQuoteIds = $q->q->id ?? '';
                             }
                         }
-                    break;
+                        break;
                 }
             }
         }
@@ -1373,10 +1381,10 @@ class Functions
         $carriers = isset($requestArr['requestArr']['carriers']) ? $requestArr['requestArr']['carriers'] : [];
         $binResp = isset($requestArr['binReponse']) ? $requestArr['binReponse'] : [];
         $packingId = '';
-        if(!blank($carriers)){
+        if (!blank($carriers)) {
             $packingId = Helpers::getUuid();
-            foreach($carriers as $carrName => $carrier){
-                $carriers[$carrName]['api']['packaging_id'] =  $packingId ?? '';
+            foreach ($carriers as $carrName => $carrier) {
+                $carriers[$carrName]['api']['packaging_id'] = $packingId ?? '';
             }
             self::savePackagingDetails($binResp, $lineItems, $packingId, $storeId);
             $requestArr['requestArr']['carriers'] = $carriers;
@@ -1403,107 +1411,106 @@ class Functions
         $totalPackedItems = 0;
 
         $packagingService = $packagingDetails->ground ?? $packagingDetails->air ?? $packagingDetails->oneRate ?? $packagingDetails->simpleRate ?? $packagingDetails ?? [];
-        if(blank($packagingService)){
+        if (blank($packagingService)) {
             return [];
         }
 
-            foreach ($packagingService as $zip => $ws) {
-                if (!(isset($ws->severity) && $ws->severity == 'ERROR') && ($locationId == $zip)) {
+        foreach ($packagingService as $zip => $ws) {
+            if (!(isset($ws->severity) && $ws->severity == 'ERROR') && ($locationId == $zip)) {
 
-                    $totalBoxes = 1;
-                    if (!empty($ws)) {
+                $totalBoxes = 1;
+                if (!empty($ws)) {
 
-                            $sbsData = $ws->bins_packed ?? [];
+                    $sbsData = $ws->bins_packed ?? [];
 
-                        /* Usps carrier packaging according to boxes types */
-                        $OrderController = new OrderController();
-                        $customBoxes = $ws->binPackagingData->response->customboxes->bins_packed ?? [];
-                        if (!blank($customBoxes)) {
-                            $orderWidgetData[] = $OrderController->formatUspsPackaging($customBoxes, $zip, $lineItem);
-                        }
-                        $upmbBoxes = $ws->binPackagingData->response->upmb->bins_packed ?? [];
-                        if (!blank($upmbBoxes)) {
-                            $orderWidgetData[] = $OrderController->formatUspsPackaging($upmbBoxes, $zip, $lineItem);
-                        }
-                        $umebBoxes = $ws->binPackagingData->response->umeb->bins_packed ?? [];
-                        if (!blank($umebBoxes)) {
-                            $orderWidgetData[] = $OrderController->formatUspsPackaging($umebBoxes, $zip, $lineItem);
-                        }
-                        $uflatBoxes = $ws->binPackagingData->response->uflat->bins_packed ?? [];
-                        if (!blank($uflatBoxes)) {
-                            $orderWidgetData[] = $OrderController->formatUspsPackaging($uflatBoxes, $zip, $lineItem);
-                        }
-
-                        $itemCount = 0;
-                        foreach ($sbsData as $key => $binPacked) {
-                            $type = optional($binPacked->bin_data)->type ?? '';
-                            $quantity = 1;
-                            if ($type == 'item' || $type == 'weight_based') {
-                                $type = $binPacked->bin_data->type;
-                                $product_id = $binPacked->bin_data->id;
-                                $quantity = $binPacked->bin_data->quantity ?? 1;
-                                $itemCount++;
-                            }
-                            $count = 0;
-                            $orderWidgetData['type'] = $type;
-                            $orderWidgetData['image_complete'] = $binPacked->image_complete;
-                            $orderWidgetData['quantity'] = $quantity;
-                           // $totalPackedItems += $quantity;
-                            /*For Weight Based Products*/
-                            if ($type == 'weight_based') {
-                                $orderWidgetData['d'] = '';
-                                $orderWidgetData['w'] = '';
-                                $orderWidgetData['h'] = '';
-                                $orderWidgetData['weight'] = $binPacked->bin_data->weight ?? '';
-                            } else {
-                                $orderWidgetData['d'] = $binPacked->bin_data->d . ' x ';
-                                $orderWidgetData['w'] = $binPacked->bin_data->w . ' x ';
-                                $orderWidgetData['h'] = $binPacked->bin_data->h;
-                            }
-
-                            $orderWidgetData['nickname'] = self::getBoxName($binPacked->bin_data->id);
-                            foreach ($binPacked->items as $item) {
-                                $productid = $item->id;
-                                $sbsItems[$zip][$productid] = 1;
-
-                                $orderWidgetData['items'][$count]['product_name'] = $lineItem->items->$productid->lineItemName ?? '';
-                                $orderWidgetData['items'][$count]['w'] = $item->w;
-                                $orderWidgetData['items'][$count]['h'] = $item->h;
-                                $orderWidgetData['items'][$count]['d'] = $item->d;
-
-                                $orderWidgetData['items'][$count]['image_separated'] = $item->image_separated;
-                                $orderWidgetData['items'][$count]['image_sbs'] = $item->image_sbs;
-
-                                $orderWidget[$zip]['sbs'][$key] = $orderWidgetData;
-                                ++$count;
-
-                            }
-                            unset($orderWidgetData);
-                            if ($count) {
-                                $orderWidget[$zip]['sbs'][$key]['number_of_items'] = $count;
-                                $totalPackedItems += $count;
-                            }
-                        }
-                        $totalBoxes = isset($key) ? $key + 1 - $itemCount : 0;
+                    /* Usps carrier packaging according to boxes types */
+                    $OrderController = new OrderController();
+                    $customBoxes = $ws->binPackagingData->response->customboxes->bins_packed ?? [];
+                    if (!blank($customBoxes)) {
+                        $orderWidgetData[] = $OrderController->formatUspsPackaging($customBoxes, $zip, $lineItem);
+                    }
+                    $upmbBoxes = $ws->binPackagingData->response->upmb->bins_packed ?? [];
+                    if (!blank($upmbBoxes)) {
+                        $orderWidgetData[] = $OrderController->formatUspsPackaging($upmbBoxes, $zip, $lineItem);
+                    }
+                    $umebBoxes = $ws->binPackagingData->response->umeb->bins_packed ?? [];
+                    if (!blank($umebBoxes)) {
+                        $orderWidgetData[] = $OrderController->formatUspsPackaging($umebBoxes, $zip, $lineItem);
+                    }
+                    $uflatBoxes = $ws->binPackagingData->response->uflat->bins_packed ?? [];
+                    if (!blank($uflatBoxes)) {
+                        $orderWidgetData[] = $OrderController->formatUspsPackaging($uflatBoxes, $zip, $lineItem);
                     }
 
-                    // Pallet packaging order widget
-                    if (isset($ws->palletPackagingData) && !empty($ws->palletPackagingData) && $isLtlRate) {
-                        $palletPkgResp = (new PalletPackaging())->formatOrderWidget($responseFromWS, $lineItem);
+                    $itemCount = 0;
+                    foreach ($sbsData as $key => $binPacked) {
+                        $type = optional($binPacked->bin_data)->type ?? '';
+                        $quantity = 1;
+                        if ($type == 'item' || $type == 'weight_based') {
+                            $type = $binPacked->bin_data->type;
+                            $product_id = $binPacked->bin_data->id;
+                            $quantity = $binPacked->bin_data->quantity ?? 1;
+                            $itemCount++;
+                        }
+                        $count = 0;
+                        $orderWidgetData['type'] = $type;
+                        $orderWidgetData['image_complete'] = $binPacked->image_complete;
+                        $orderWidgetData['quantity'] = $quantity;
+                        // $totalPackedItems += $quantity;
+                        /*For Weight Based Products*/
+                        if ($type == 'weight_based') {
+                            $orderWidgetData['d'] = '';
+                            $orderWidgetData['w'] = '';
+                            $orderWidgetData['h'] = '';
+                            $orderWidgetData['weight'] = $binPacked->bin_data->weight ?? '';
+                        } else {
+                            $orderWidgetData['d'] = $binPacked->bin_data->d . ' x ';
+                            $orderWidgetData['w'] = $binPacked->bin_data->w . ' x ';
+                            $orderWidgetData['h'] = $binPacked->bin_data->h;
+                        }
 
-                        if (!empty($palletPkgResp)) {
-                            if (empty($orderWidget)) {
-                                $orderWidget = $palletPkgResp;
-                            } else {
-                                $orderWidget[$zip]['pallet'] = $palletPkgResp[$zip]['pallet'];
-                            }
+                        $orderWidgetData['nickname'] = self::getBoxName($binPacked->bin_data->id);
+                        foreach ($binPacked->items as $item) {
+                            $productid = $item->id;
+                            $sbsItems[$zip][$productid] = 1;
+
+                            $orderWidgetData['items'][$count]['product_name'] = $lineItem->items->$productid->lineItemName ?? '';
+                            $orderWidgetData['items'][$count]['w'] = $item->w;
+                            $orderWidgetData['items'][$count]['h'] = $item->h;
+                            $orderWidgetData['items'][$count]['d'] = $item->d;
+
+                            $orderWidgetData['items'][$count]['image_separated'] = $item->image_separated;
+                            $orderWidgetData['items'][$count]['image_sbs'] = $item->image_sbs;
+
+                            $orderWidget[$zip]['sbs'][$key] = $orderWidgetData;
+                            ++$count;
+
+                        }
+                        unset($orderWidgetData);
+                        if ($count) {
+                            $orderWidget[$zip]['sbs'][$key]['number_of_items'] = $count;
+                            $totalPackedItems += $count;
                         }
                     }
-                    $orderWidget[$zip]['totalPackedBoxes'] = $totalBoxes ?? 0;
-                    $orderWidget[$zip]['totalPackedItems'] = $totalPackedItems ?? 0;
+                    $totalBoxes = isset($key) ? $key + 1 - $itemCount : 0;
                 }
-            }
 
+                // Pallet packaging order widget
+                if (isset($ws->palletPackagingData) && !empty($ws->palletPackagingData) && $isLtlRate) {
+                    $palletPkgResp = (new PalletPackaging())->formatOrderWidget($responseFromWS, $lineItem);
+
+                    if (!empty($palletPkgResp)) {
+                        if (empty($orderWidget)) {
+                            $orderWidget = $palletPkgResp;
+                        } else {
+                            $orderWidget[$zip]['pallet'] = $palletPkgResp[$zip]['pallet'];
+                        }
+                    }
+                }
+                $orderWidget[$zip]['totalPackedBoxes'] = $totalBoxes ?? 0;
+                $orderWidget[$zip]['totalPackedItems'] = $totalPackedItems ?? 0;
+            }
+        }
 
 
         $resp = [
@@ -1565,21 +1572,21 @@ class Functions
         $finalCHeapestQuotes = [];
         $accessorialServices = [];
 
-        if(count($multiShipmentQuotes) >= 1 && count($checkoutQuotes) >= 2){
-            
+        if (count($multiShipmentQuotes) >= 1 && count($checkoutQuotes) >= 2) {
+
             $isParcel = $isLTL = false;
             foreach ($multiShipmentQuotes as $index => $shipment) {
-                if(empty($shipment)){
+                if (empty($shipment)) {
                     unset($quotes['multiShipmentQuotes'][$index]);
                 }
-                foreach(self::getEnableFeaturesArr() as $key => $value){
-                    if(!isset($shipment[$key])){
+                foreach (self::getEnableFeaturesArr() as $key => $value) {
+                    if (!isset($shipment[$key])) {
                         continue;
                     }
-                    foreach($shipment[$key] as $locId => $ship){
-                        if(isset($ship['code']) && substr($ship['code'], 0, 9) == 'parcel_12'){
+                    foreach ($shipment[$key] as $locId => $ship) {
+                        if (isset($ship['code']) && substr($ship['code'], 0, 9) == 'parcel_12') {
                             $isParcel = true;
-                        } elseif(isset($ship['code']) && (strpos($ship['code'], 'ltl') != false)){
+                        } elseif (isset($ship['code']) && (strpos($ship['code'], 'ltl') != false)) {
                             $isLTL = true;
                         }
                         $shipmentQuotes[] = $ship;
@@ -1590,13 +1597,13 @@ class Functions
 
             $ThresholdSettings = optional(WeightThresholdSettings::where('store_id', $storeId)->first())->toArray() ?? [];
             if (isset($ThresholdSettings['parcel_rates']) && $ThresholdSettings['parcel_rates'] == 2) {
-                if($isParcel && $isLTL){
+                if ($isParcel && $isLTL) {
                     return $shipmentQuotes;
                 } else {
                     return $quotes;
-                } 
+                }
             } elseif (isset($ThresholdSettings['parcel_rates']) && $ThresholdSettings['parcel_rates'] == 1) {
-                if(!$isParcel && $isLTL){
+                if (!$isParcel && $isLTL) {
                     return $quotes;
                 }
             }
@@ -1613,17 +1620,17 @@ class Functions
                 }
             }
             $shipments = array_keys($indexes);
-        
-            foreach($shipments as $shipNumber){
+
+            foreach ($shipments as $shipNumber) {
                 $data[$shipNumber] = array_map(function ($item) use ($shipNumber) {
                     return isset($item[$shipNumber]) ? $item[$shipNumber] : [];
                 }, $simpleQuotes);
             }
-            
+
             foreach ($data as $index => $items) {
                 $data[$index] = array_values(array_filter(array_unique($items, SORT_REGULAR)));
             }
-            
+
             $finalCHeapestQuotes = self::findCheapestQuotes($data, $quotes);
             $simpleCheckoutQuotes = $finalCHeapestQuotes['checkoutQuote'] ?? [];
             $newQuotes['checkoutQuotes'][] = $simpleCheckoutQuotes;
@@ -1639,7 +1646,7 @@ class Functions
     public static function checkIsLtlSmall($quotes)
     {
         $isSmallRate = $isLtlRate = false;
-        foreach($quotes as $origin => $quote){
+        foreach ($quotes as $origin => $quote) {
             $isSmallRate = isset($quote['code']) ? ($isSmallRate || substr($quote['code'], 0, 9) == 'parcel_12') : false;
             $isLtlRate = isset($quote['code']) ? ($isLtlRate || strpos($quote['code'], 'ltl') != false) : false;
         }
@@ -1664,8 +1671,8 @@ class Functions
             }
             $minRates[$index] = $minRate;
         }
-    
-        foreach($minRates as $rate){
+
+        foreach ($minRates as $rate) {
             $totalRates += $rate ?? 0;
         }
         $checkShipType = self::checkIsLtlSmall($cheapestQuotes);
@@ -1682,36 +1689,36 @@ class Functions
     {
         $totalHazmatBoxes = 1;
         $totalWeight = 0;
-        if(!$isSbsEnable){
+        if (!$isSbsEnable) {
             $packageType = $quoteSettings['packageRatingMethod'] ?? 1;
-            if($packageType === 1){
+            if ($packageType === 1) {
                 $itemsQuantity = collect($items)->sum('piecesOfLineItem') ?? 0;
                 $totalHazmatBoxes = $itemsQuantity;
-                
-            } else if($packageType === 2){
+
+            } else if ($packageType === 2) {
                 $itemWithOutDim = collect($items)->map(function ($item) {
-                    if(empty((int) $item['lineItemLength']) && empty((int) $item['lineItemWidth']) && empty((int) $item['lineItemHeight'])){
+                    if (empty((int)$item['lineItemLength']) && empty((int)$item['lineItemWidth']) && empty((int)$item['lineItemHeight'])) {
                         return $item['lineItemWeight'] * $item['piecesOfLineItem'] ?? 0;
                     }
                 }) ?? 0;
                 $totalItemWeightWithOutDim = collect($itemWithOutDim)->sum();
-                $totalBoxesWithOutDim = (int) ceil($totalItemWeightWithOutDim/150);
+                $totalBoxesWithOutDim = (int)ceil($totalItemWeightWithOutDim / 150);
 
                 $itemWithDim = collect($items)->map(function ($item) {
-                    if(!empty((int) $item['lineItemLength']) && !empty((int) $item['lineItemWidth']) && !empty((int) $item['lineItemHeight'])){
+                    if (!empty((int)$item['lineItemLength']) && !empty((int)$item['lineItemWidth']) && !empty((int)$item['lineItemHeight'])) {
                         return $item['piecesOfLineItem'] ?? 0;
                     }
                 }) ?? 0;
                 $totalItemsWithDim = collect($itemWithDim)->sum();
 
                 $totalHazmatBoxes = $totalBoxesWithOutDim + $totalItemsWithDim;
-                
-            } else if($packageType === 3){
+
+            } else if ($packageType === 3) {
                 $weight = collect($items)->map(function ($item) {
                     return $item['lineItemWeight'] * $item['piecesOfLineItem'] ?? 0;
                 }) ?? 0;
                 $totalWeight = collect($weight)->sum();
-                $totalHazmatBoxes = (int) ceil($totalWeight/150);
+                $totalHazmatBoxes = (int)ceil($totalWeight / 150);
             }
         } else {
             $totalHazmatBoxes = $hazmatBoxes;
@@ -1723,21 +1730,21 @@ class Functions
     public static function verifyAndCountHazmatBox($binPacked, $itemsArr)
     {
         foreach ($binPacked->items as $item) {
-            if(isset($itemsArr[$item->id]['isHazmatLineItem']) && $itemsArr[$item->id]['isHazmatLineItem'] == 'Y'){
-                if(isset($binPacked->bin_data->type) && $binPacked->bin_data->type == 'item'){
+            if (isset($itemsArr[$item->id]['isHazmatLineItem']) && $itemsArr[$item->id]['isHazmatLineItem'] == 'Y') {
+                if (isset($binPacked->bin_data->type) && $binPacked->bin_data->type == 'item') {
                     return $binPacked->bin_data->quantity;
                 } else {
                     return 1;
-                }   
+                }
             }
         }
 
         return 0;
     }
-    
+
     public static function floatValue($number = 0)
-    {   
-        $number = (float) $number;
+    {
+        $number = (float)$number;
         $number = number_format($number, 1, '.', '');
         if ($number == 0) {
             return $number;

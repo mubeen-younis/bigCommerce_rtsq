@@ -45,12 +45,12 @@ class QuotesResults
 
         foreach ($shipments as $origin => $quote) {
 
-            if(in_array($origin, $this->SuppressParcelRates)){
+            if (in_array($origin, $this->SuppressParcelRates)) {
                 continue;
             }
-            
+
             if ((isset($quote['severity']) || (isset($quote['q']) && empty($quote['q'])) || (!isset($quote['q']) && !empty($quote['InstorPickupLocalDelivery'])))) {
-                $instoreResp[$origin] = $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins) ?? [];                
+                $instoreResp[$origin] = $this->CompileQuotes->getInsPicAndLocDelQuotes($quote, $allOrigins) ?? [];
                 return $instoreResp;
             }
 
@@ -66,32 +66,32 @@ class QuotesResults
                     }
                     // Check for service availability
                     $srvcType = $data['serviceType'];
-                    if (!$this->isActiveService($srvcType)) {
+                    if (!$this->isActiveService($srvcType) || empty($data['totalNetCharge']['Amount'])) {
                         continue;
                     }
 
                     // Apply override rates shipping rule
                     $overrideRates = $shippingRule->overrideRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
-                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data; 
+                    $data = isset($overrideRates['data']) ? $overrideRates['data'] : $data;
 
                     // Apply Surcharge rates shipping rule
                     $surchargeRates = $shippingRule->surchargeRates($storeId, $items, $connectionSettings, $data, $carrierName, $origin, $allOrigins);
                     $isSurchargeRates = isset($surchargeRates['isSurchargeRates']) && $surchargeRates['isSurchargeRates'];
-                    $data = isset($surchargeRates['data']) ? $surchargeRates['data'] : $data;    
-                     
+                    $data = isset($surchargeRates['data']) ? $surchargeRates['data'] : $data;
+
                     // Adding Product and Origin Markup in services if added
                     $productOriginMarkupFee = Functions::calProductOriginMarkupFee($data['totalNetCharge']['Amount'], $origin, $items, $allOrigins);
                     $data['totalNetCharge']['Amount'] = $data['totalNetCharge']['Amount'] + $productOriginMarkupFee;
 
                     // Adding markup values if available
                     $price = $this->addHandlingMarkupOfHazmat($data['totalNetCharge']['Amount']);
-                    
+
                     $access2 = $access;
                     $showRadNotation = $isRadNotation;
                     $price = $this->getServiceRate($price, $srvcType);
 
                     $access2 = $isSurchargeRates ? $access2 . '+SC' : $access2;
-                    
+
                     // Get service title
                     $title = $this->getServiceTitle($data, $srvcType, $this->quoteSettings, $residential, $showRadNotation);
                     $price = (float)str_replace(',', '', $price);
@@ -218,7 +218,7 @@ class QuotesResults
         } else if (isset($data['transitDate']) && $data['transitDate'] !== '' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 3) {
             $title = $title . ' (Delivery by ' . date('m-d-Y', strtotime($data['transitDate'])) . ')';
         }
-        if($data['serviceId'] == 'Retail Ground' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2 && isset($quoteSettings['estimate_date']) && $quoteSettings['estimate_date'] != '' && $data['totalTransitTimeInDays'] == ''){
+        if ($data['serviceId'] == 'Retail Ground' && isset($quoteSettings['delivery_estimate_options']) && $quoteSettings['delivery_estimate_options'] == 2 && isset($quoteSettings['estimate_date']) && $quoteSettings['estimate_date'] != '' && $data['totalTransitTimeInDays'] == '') {
             $title = $title . ' (Intransit days: ' . $quoteSettings['estimate_date'] . ')';
         }
         return $title;
