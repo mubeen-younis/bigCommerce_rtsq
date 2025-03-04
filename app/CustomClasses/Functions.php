@@ -781,6 +781,7 @@ class Functions
 
     public static function calProductOriginMarkupFee($cost, $shipmentKey, $items, $allOrigins)
     {
+
         $variantKeys = [];
         $productFeeMarkup = 0;
         $totalFeeMarkup = 0;
@@ -795,7 +796,7 @@ class Functions
         }
 
         // Calculate Products markup fee
-        if (!empty($items) && !empty($variantKeys)) {
+        if (!empty($items) && !empty($variantKeys) && !empty($cost)) {
             foreach ($items as $item) {
                 $prodQuantity = ($item['piecesOfLineItem'] ?? 0);
                 foreach ($variantKeys as $variantId) {
@@ -834,7 +835,7 @@ class Functions
                         $symbolicHandlingFee = strpos($origin['origin_markup'], '%') ? '%' : '';
                     }
 
-                    if (strlen($originFeeMarkup) > 0) {
+                    if (strlen($originFeeMarkup) > 0 && !empty($cost)) {
                         if ($symbolicHandlingFee === '%') {
                             $percentVal = $originFeeMarkup / 100 * $cost;
                             $totalFeeMarkup += $percentVal;
@@ -1306,7 +1307,7 @@ class Functions
                             }
                         }
                         break;
-                        // Unishipper New API
+                    // Unishipper New API
                     case "wweSmallN":
                         foreach ($quote as $zipCode => $q) {
                             if ($zip == $zipCode) {
@@ -1320,7 +1321,7 @@ class Functions
                             }
                         }
                         break;
-                        // GTZ New API
+                    // GTZ New API
                     case "wweLTLN":
                         foreach ($quote as $zipCode => $q) {
                             if ($zip == $zipCode) {
@@ -1539,7 +1540,7 @@ class Functions
         if (!blank($carriers)) {
             $packingId = Helpers::getUuid();
             foreach ($carriers as $carrName => $carrier) {
-                $carriers[$carrName]['api']['packaging_id'] =  $packingId ?? '';
+                $carriers[$carrName]['api']['packaging_id'] = $packingId ?? '';
             }
             self::savePackagingDetails($binResp, $lineItems, $packingId, $storeId);
             $requestArr['requestArr']['carriers'] = $carriers;
@@ -1665,7 +1666,6 @@ class Functions
                 $orderWidget[$zip]['totalPackedItems'] = $totalPackedItems ?? 0;
             }
         }
-
 
 
         $resp = [
@@ -1850,15 +1850,15 @@ class Functions
                 $totalHazmatBoxes = $itemsQuantity;
             } else if ($packageType === 2) {
                 $itemWithOutDim = collect($items)->map(function ($item) {
-                    if (empty((int) $item['lineItemLength']) && empty((int) $item['lineItemWidth']) && empty((int) $item['lineItemHeight'])) {
+                    if (empty((int)$item['lineItemLength']) && empty((int)$item['lineItemWidth']) && empty((int)$item['lineItemHeight'])) {
                         return $item['lineItemWeight'] * $item['piecesOfLineItem'] ?? 0;
                     }
                 }) ?? 0;
                 $totalItemWeightWithOutDim = collect($itemWithOutDim)->sum();
-                $totalBoxesWithOutDim = (int) ceil($totalItemWeightWithOutDim / 150);
+                $totalBoxesWithOutDim = (int)ceil($totalItemWeightWithOutDim / 150);
 
                 $itemWithDim = collect($items)->map(function ($item) {
-                    if (!empty((int) $item['lineItemLength']) && !empty((int) $item['lineItemWidth']) && !empty((int) $item['lineItemHeight'])) {
+                    if (!empty((int)$item['lineItemLength']) && !empty((int)$item['lineItemWidth']) && !empty((int)$item['lineItemHeight'])) {
                         return $item['piecesOfLineItem'] ?? 0;
                     }
                 }) ?? 0;
@@ -1870,7 +1870,7 @@ class Functions
                     return $item['lineItemWeight'] * $item['piecesOfLineItem'] ?? 0;
                 }) ?? 0;
                 $totalWeight = collect($weight)->sum();
-                $totalHazmatBoxes = (int) ceil($totalWeight / 150);
+                $totalHazmatBoxes = (int)ceil($totalWeight / 150);
             }
         } else {
             $totalHazmatBoxes = $hazmatBoxes;
@@ -1896,7 +1896,7 @@ class Functions
 
     public static function floatValue($number = 0)
     {
-        $number = (float) $number;
+        $number = (float)$number;
         $number = number_format($number, 1, '.', '');
         if ($number == 0) {
             return $number;
