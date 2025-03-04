@@ -620,12 +620,7 @@ class Functions
 
     public static function calProductOriginMarkupFee($cost, $shipmentKey, $items, $allOrigins)
     {
-        /*
-         * Ticket#21019942778
-         * Issue of empty rates in USPS*/
-        if (empty($cost)) {
-            return 0;
-        }
+
         $variantKeys = [];
         $productFeeMarkup = 0;
         $totalFeeMarkup = 0;
@@ -640,7 +635,7 @@ class Functions
         }
 
         // Calculate Products markup fee
-        if (!empty($items) && !empty($variantKeys)) {
+        if (!empty($items) && !empty($variantKeys) && !empty($cost)) {
             foreach ($items as $item) {
                 $prodQuantity = ($item['piecesOfLineItem'] ?? 0);
                 foreach ($variantKeys as $variantId) {
@@ -679,7 +674,7 @@ class Functions
                         $symbolicHandlingFee = strpos($origin['origin_markup'], '%') ? '%' : '';
                     }
 
-                    if (strlen($originFeeMarkup) > 0) {
+                    if (strlen($originFeeMarkup) > 0 && !empty($cost)) {
                         if ($symbolicHandlingFee === '%') {
                             $percentVal = $originFeeMarkup / 100 * $cost;
                             $totalFeeMarkup += $percentVal;
