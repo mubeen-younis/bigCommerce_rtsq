@@ -274,8 +274,6 @@ class ExportImportProducts extends Controller
         $productLine[] = $product['depth'] ?? '';
         $productLine[] = $product['width'] ?? '';
         $productLine[] = $product['height'] ?? '';
-        $productLine[] = $DBProductSettings['nmfc'] ?? '';
-        $productLine[] = $DBProductSettings['product_markup'] ?? '';
 
         $quoteMethod = '';
         // Added INstore and local quoting methods
@@ -289,6 +287,7 @@ class ExportImportProducts extends Controller
 
         $productLine[] = $quoteMethod ?? '';
         $productLine[] = $DBProductSettings['freight_class'] ?? '';
+        $productLine[] = $DBProductSettings['nmfc'] ?? '';
         $productLine[] = isset($DBProductSettings['hazardous_enabled']) && $DBProductSettings['hazardous_enabled'] ? 1 : 0;
         $productLine[] = isset($DBProductSettings['insurance']) && $DBProductSettings['insurance'] ? 1 :
             $nickname = '';
@@ -331,7 +330,8 @@ class ExportImportProducts extends Controller
         $productLine[] = $boxingProperty ?? '';
         $productLine[] = isset($DBProductSettings['own_pallet']) && $DBProductSettings['own_pallet'] ? 1 : 0;
         $productLine[] = isset($DBProductSettings['pallet_vertical_rotation']) && $DBProductSettings['pallet_vertical_rotation'] ? 1 : 0;
-
+        $productLine[] = $DBProductSettings['product_markup'] ?? '';
+        
         return $productLine;
     }
 
