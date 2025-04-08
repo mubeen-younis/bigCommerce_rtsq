@@ -8,7 +8,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    origin/csv-template-sequence-nesting-changes:
+    csv-template-sequence-nesting-changes:
       - step:
           caches:
             - composer
