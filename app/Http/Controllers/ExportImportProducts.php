@@ -139,7 +139,7 @@ class ExportImportProducts extends Controller
                 $request['folderName'] = public_path() . $fileName;
                 $hash = md5($request['store_id'] . time());
                 $this->makeDirectory($request['folderName'], $mode = 0777, true, true);
-                $request['exportProductsId'] = ExportProductsModel::insertGetId(['store_id' => $request['store_id'], 'foldername' => $fileName . '.zip', 'hash' => $hash, 'request_time' => time(), 'email' => $request['email'], 'status' => 0]);
+                // $request['exportProductsId'] = ExportProductsModel::insertGetId(['store_id' => $request['store_id'], 'foldername' => $fileName . '.zip', 'hash' => $hash, 'request_time' => time(), 'email' => $request['email'], 'status' => 0]);
             }
             $folderName = $request['folderName'];
             $folderNamePath = [];
@@ -211,6 +211,7 @@ class ExportImportProducts extends Controller
                                 $DBProductSettings = $ProductSettings->getProductSetting($variant['id'], $variant['base_variant_id'], $request['store_id']);
 
                                 $productLine = $this->createDataSet($variant, $DBProductSettings, $dropShips);
+                                // dd("ddd", $productLine);
                                 fputcsv($fp, $productLine);
                             }
 
@@ -225,6 +226,7 @@ class ExportImportProducts extends Controller
             }
 
             $isupdate = ExportProductsModel::find($request['exportProductsId'])->update(['status' => 1]);
+            // dd("isupdate", $isupdate);
             $this->makeZipWithFiles($folderName);
             $this->sendEmail($request['email'], $hash);
             if (Functions::isEnabledLogs($request['store_hash'])) {
@@ -616,8 +618,6 @@ class ExportImportProducts extends Controller
             });
 
             $csvChunks = array_chunk($csvArray, $this->csvChunksLength);
-            // dd("csvChunks", $csvChunks);
-
             $request['CSV_count'] = count($csvArray);
             $request['csv_chunk_count'] = count($csvChunks) ?? 0;
 
