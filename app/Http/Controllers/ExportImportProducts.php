@@ -29,6 +29,7 @@ use App\CustomClasses\Functions;
 use App\Http\Controllers\GetRatesController as ProductSettings;
 use App\Http\Controllers\GetRatesController;
 use App\Models\CSVimportExport;
+use App\Models\NestingItemsDetail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 
@@ -166,13 +167,17 @@ class ExportImportProducts extends Controller
 
                 $ProductSettings = new ProductSettings();
                 foreach ($this->products as $key => $product) {
+
                     if ($this->fileSize < 1) {
                         $fp = $this->setCSVfileSize($folderName, $weightUnit, $dimensionsUnit);
                     }
                     // Check: if product variant id is null then the null variant id product will not add in CSV file.
                     if ($product['base_variant_id'] == null) {
+
                         $variantEndPoint = BigCommerceFunctions::$initalUrl . $request['store_hash'] . '/v3/catalog/products/' . $product['id'] . '/variants?limit=250';
+
                         $response = $this->curlRequest->enSingleCurlRequest($variantEndPoint, [], $headers, 'GET', false);
+
                         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
                             $response = json_decode($response['response'], true);
 
@@ -204,6 +209,7 @@ class ExportImportProducts extends Controller
                                 $variant['id'] = $product['id'];
                                 $variant['name'] = $product['name'];
                                 $DBProductSettings = $ProductSettings->getProductSetting($variant['id'], $variant['base_variant_id'], $request['store_id']);
+
                                 $productLine = $this->createDataSet($variant, $DBProductSettings, $dropShips);
                                 fputcsv($fp, $productLine);
                             }
@@ -253,7 +259,7 @@ class ExportImportProducts extends Controller
         $folderNamePath[] = $filename;
         $fp = fopen($filename, "w");
         if (true) {
-            $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (' . $dimensionsUnit . '), Width (' . $dimensionsUnit . '), Height (' . $dimensionsUnit . '), Quote Method, Freight Class, NMFC, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Boxing Properties, Ships Own Pallet, Pallet Vertical Rotation, Markup ';
+            $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (' . $dimensionsUnit . '), Width (' . $dimensionsUnit . '), Height (' . $dimensionsUnit . '), Quote Method, Freight Class, NMFC, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Boxing Properties, Ships Own Pallet, Pallet Vertical Rotation, Markup, Nested Dimension, Nesting %, Maximum Nested Items, Stacking Property';
             $line .= "\n";
             fputs($fp, $line);
         }
@@ -265,6 +271,22 @@ class ExportImportProducts extends Controller
 
     public function createDataSet($product, $DBProductSettings, $dropShips)
     {
+        $nested_data = NestingItemsDetail::where('product_settings_id',$DBProductSettings['product_settings_id'] )->first();
+        $nested_item_settings = $nested_data ? $nested_data->toArray() : [];
+
+        $dimensionTypeLabel = match ($nested_item_settings['dimension_type'] ?? null) {
+            0 => 'Length',
+            1 => 'Width',
+            2 => 'Height',
+            default => '',
+        };
+
+        $stackedTypeLabel = match ($nested_item_settings['stacked_type'] ?? null) {
+            0 => 'Evenly',
+            1 => 'Maximized',
+            default => '',
+        };
+
         $productLine = [];
         $productLine[] = 'P' . $product['id'];
         $productLine[] = 'V' . $product['base_variant_id'];
@@ -331,6 +353,11 @@ class ExportImportProducts extends Controller
         $productLine[] = isset($DBProductSettings['own_pallet']) && $DBProductSettings['own_pallet'] ? 1 : 0;
         $productLine[] = isset($DBProductSettings['pallet_vertical_rotation']) && $DBProductSettings['pallet_vertical_rotation'] ? 1 : 0;
         $productLine[] = $DBProductSettings['product_markup'] ?? '';
+
+        $productLine[] = $dimensionTypeLabel;
+        $productLine[] = $nested_item_settings['nesting_percentage'] ?? '';
+        $productLine[] = $nested_item_settings['max_nested_items'] ?? '';
+        $productLine[] = $stackedTypeLabel;
         
         return $productLine;
     }
@@ -495,6 +522,7 @@ class ExportImportProducts extends Controller
 
         if (isset($request['hasheaders']) && $request['hasheaders'] === "false") {
             $heading = range('A', 'ZZ');
+
         } else {
             foreach ($csv[0] as $key => $val) {
                 $heading[] = trim($val);
@@ -571,12 +599,15 @@ class ExportImportProducts extends Controller
 
             // Converting Csv TO String
             $csvArray = array_map('str_getcsv', file($path));
+
             if (count($csvArray) < 1) {
                 return false;
             }
 
             $headerRow = array_slice(range('A', 'Z'), 0, count($csvArray[0]));
+
             if ($request['firstHeader'] == "true") {
+
                 $headerRow = $csvArray[0];
                 unset($csvArray[0]);
             }
@@ -585,6 +616,8 @@ class ExportImportProducts extends Controller
             });
 
             $csvChunks = array_chunk($csvArray, $this->csvChunksLength);
+            // dd("csvChunks", $csvChunks);
+
             $request['CSV_count'] = count($csvArray);
             $request['csv_chunk_count'] = count($csvChunks) ?? 0;
 
