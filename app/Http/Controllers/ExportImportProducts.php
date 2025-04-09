@@ -259,7 +259,8 @@ class ExportImportProducts extends Controller
         $folderNamePath[] = $filename;
         $fp = fopen($filename, "w");
         if (true) {
-            $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (' . $dimensionsUnit . '), Width (' . $dimensionsUnit . '), Height (' . $dimensionsUnit . '), Quote Method, Freight Class, NMFC, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Boxing Properties, Ships Own Pallet, Pallet Vertical Rotation, Markup, Nested Dimension, Nesting %, Maximum Nested Items, Stacking Property';
+            $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (' . $dimensionsUnit . '), Width (' . $dimensionsUnit . '), Height (' . $dimensionsUnit . '), Quote Method, Freight Class, NMFC, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Boxing Properties, Ships Own Pallet, Pallet Vertical Rotation, Markup,';
+            // Nested Dimension, Nesting %, Maximum Nested Items, Stacking Property
             $line .= "\n";
             fputs($fp, $line);
         }
@@ -271,21 +272,21 @@ class ExportImportProducts extends Controller
 
     public function createDataSet($product, $DBProductSettings, $dropShips)
     {
-        $nested_data = NestingItemsDetail::where('product_settings_id',$DBProductSettings['product_settings_id'] )->first();
-        $nested_item_settings = $nested_data ? $nested_data->toArray() : [];
+        // $nested_data = NestingItemsDetail::where('product_settings_id',$DBProductSettings['product_settings_id'] )->first();
+        // $nested_item_settings = $nested_data ? $nested_data->toArray() : [];
 
-        $dimensionTypeLabel = match ($nested_item_settings['dimension_type'] ?? null) {
-            0 => 'Length',
-            1 => 'Width',
-            2 => 'Height',
-            default => '',
-        };
+        // $dimensionTypeLabel = match ($nested_item_settings['dimension_type'] ?? null) {
+        //     0 => 'Length',
+        //     1 => 'Width',
+        //     2 => 'Height',
+        //     default => '',
+        // };
 
-        $stackedTypeLabel = match ($nested_item_settings['stacked_type'] ?? null) {
-            0 => 'Evenly',
-            1 => 'Maximized',
-            default => '',
-        };
+        // $stackedTypeLabel = match ($nested_item_settings['stacked_type'] ?? null) {
+        //     0 => 'Evenly',
+        //     1 => 'Maximized',
+        //     default => '',
+        // };
 
         $productLine = [];
         $productLine[] = 'P' . $product['id'];
@@ -354,10 +355,10 @@ class ExportImportProducts extends Controller
         $productLine[] = isset($DBProductSettings['pallet_vertical_rotation']) && $DBProductSettings['pallet_vertical_rotation'] ? 1 : 0;
         $productLine[] = $DBProductSettings['product_markup'] ?? '';
 
-        $productLine[] = $dimensionTypeLabel;
-        $productLine[] = $nested_item_settings['nesting_percentage'] ?? '';
-        $productLine[] = $nested_item_settings['max_nested_items'] ?? '';
-        $productLine[] = $stackedTypeLabel;
+        // $productLine[] = $dimensionTypeLabel;
+        // $productLine[] = $nested_item_settings['nesting_percentage'] ?? '';
+        // $productLine[] = $nested_item_settings['max_nested_items'] ?? '';
+        // $productLine[] = $stackedTypeLabel;
         
         return $productLine;
     }
