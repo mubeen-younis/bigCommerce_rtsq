@@ -73,6 +73,7 @@ class ExportImportProducts extends Controller
         $request['perpage'] = 2000;
         $totalpages = $this->productSetting->importProductsGetPages($request);
 
+
         if (isset($request['onlyResponse']) && $request['onlyResponse'] === true) {
             if ($totalpages < 1) {
                 return response()->json(['error' => true,
@@ -82,6 +83,7 @@ class ExportImportProducts extends Controller
             } else {
 
                 $hash = md5($request['store_id'] . time());
+
                 $this->CsvNotifyEmail($request['email'], $hash);
 
                 return response()->json(['error' => false,
@@ -90,8 +92,8 @@ class ExportImportProducts extends Controller
                 ], 200);
             }
         } else {
-
             if ($totalpages < 1) {
+
                 return response()->json(['error' => true,
                     'data' => [],
                     'message' => 'Products not available for import template',
@@ -104,6 +106,7 @@ class ExportImportProducts extends Controller
             ExportProductsFromBCStore::dispatch($data);
 
             $CSVDownloadLink = $this->createCSVDownloadLink($request);
+
 
             if (isset($CSVDownloadLink['status']) && $CSVDownloadLink['status']) {
                 return response()->json([
@@ -211,7 +214,6 @@ class ExportImportProducts extends Controller
                                 $DBProductSettings = $ProductSettings->getProductSetting($variant['id'], $variant['base_variant_id'], $request['store_id']);
 
                                 $productLine = $this->createDataSet($variant, $DBProductSettings, $dropShips);
-                                // dd("ddd", $productLine);
                                 fputcsv($fp, $productLine);
                             }
 
@@ -226,7 +228,6 @@ class ExportImportProducts extends Controller
             }
 
             $isupdate = ExportProductsModel::find($request['exportProductsId'])->update(['status' => 1]);
-            // dd("isupdate", $isupdate);
             $this->makeZipWithFiles($folderName);
             $this->sendEmail($request['email'], $hash);
             if (Functions::isEnabledLogs($request['store_hash'])) {
@@ -261,7 +262,8 @@ class ExportImportProducts extends Controller
         $folderNamePath[] = $filename;
         $fp = fopen($filename, "w");
         if (true) {
-            $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (' . $dimensionsUnit . '), Width (' . $dimensionsUnit . '), Height (' . $dimensionsUnit . '), Quote Method, Freight Class, NMFC, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Boxing Properties, Ships Own Pallet, Pallet Vertical Rotation, Markup, Nested Dimension, Nesting %, Maximum Nested Items, Stacking Property';
+            $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (' . $dimensionsUnit . '), Width (' . $dimensionsUnit . '), Height (' . $dimensionsUnit . '), Quote Method, Freight Class, NMFC, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Boxing Properties, Ships Own Pallet, Pallet Vertical Rotation, Markup';
+            // , Nested Dimension, Nesting %, Maximum Nested Items, Stacking Property
             $line .= "\n";
             fputs($fp, $line);
         }
