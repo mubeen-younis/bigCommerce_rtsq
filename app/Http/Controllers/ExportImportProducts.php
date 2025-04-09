@@ -920,6 +920,7 @@ class ExportImportProducts extends Controller
                 }
             }
         }
+        
         if (isset($indexes['boxing_property']) && $indexes['boxing_property']) {
             $key = $indexes['boxing_property'];
             $boxingProperty = strtolower($product["$key"]);
