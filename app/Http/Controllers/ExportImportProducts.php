@@ -259,8 +259,7 @@ class ExportImportProducts extends Controller
         $folderNamePath[] = $filename;
         $fp = fopen($filename, "w");
         if (true) {
-            $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (' . $dimensionsUnit . '), Width (' . $dimensionsUnit . '), Height (' . $dimensionsUnit . '), Quote Method, Freight Class, NMFC, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Boxing Properties, Ships Own Pallet, Pallet Vertical Rotation, Markup,';
-            // Nested Dimension, Nesting %, Maximum Nested Items, Stacking Property
+            $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (' . $dimensionsUnit . '), Width (' . $dimensionsUnit . '), Height (' . $dimensionsUnit . '), Quote Method, Freight Class, NMFC, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Boxing Properties, Ships Own Pallet, Pallet Vertical Rotation, Markup, Nested Dimension, Nesting %, Maximum Nested Items, Stacking Property';
             $line .= "\n";
             fputs($fp, $line);
         }
