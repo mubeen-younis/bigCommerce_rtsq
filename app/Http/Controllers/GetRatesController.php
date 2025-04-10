@@ -494,7 +494,7 @@ class GetRatesController extends Controller
             $settings['pallet_vertical_rotation'] = $productSetting['pallet_vertical_rotation'] ?? 0;
             $settings['own_pallet'] = $productSetting['own_pallet'] ?? 0;
             $settings['product_markup'] = $productSetting['product_markup'] ?? 0;
-            // $settings['product_settings_id'] = $productSetting['id'] ?? 0;
+            $settings['product_settings_id'] = $productSetting['id'] ?? 0;
         }
         return $settings;
     }
