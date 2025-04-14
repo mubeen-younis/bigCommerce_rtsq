@@ -1156,35 +1156,27 @@ class ExportImportProducts extends Controller
 
     public function updateNestedItem($product, $indexes, $store_id, $source_product_id)
     {
-
         $nestedItemId = false;
         $inNestedItem = array_key_exists('nested_dimension', $indexes)
             && isset($indexes['nesting_percentage']) && $indexes['nesting_percentage']
             && isset($indexes['maximum_nested_items']) && $indexes['maximum_nested_items']
             && array_key_exists('stacking_property', $indexes)
             && array_key_exists('nested_item', $indexes);
-
         if ($inNestedItem) {
             $nestedItem = true;
             if (array_key_exists($indexes['nested_dimension'], $product)) {
-                $nested_dimension = $product[$indexes['nested_dimension']];
 
-                $nested_dimension_value = $product[$indexes['nested_dimension']];
-                // Normalize input (case-insensitive match)
-                switch (strtolower($nested_dimension_value)) {
-                    case 'length':
-                        $nested_dimension = 0;
-                        break;
-                    case 'width':
-                        $nested_dimension = 1;
-                        break;
-                    case 'height':
-                        $nested_dimension = 2;
-                        break;
-                    default:
-                        $nestedItem = false; // Invalid value
-                        break;
+                $dimension_value = $product[$indexes['nested_dimension']] ?? null;
+
+                if ($dimension_value === 'Length') {
+                    $product[$indexes['nested_dimension']] = 0;
+                } elseif ($dimension_value === 'Width') {
+                    $product[$indexes['nested_dimension']] = 1;
+                } elseif ($dimension_value === 'Height') {
+                    $product[$indexes['nested_dimension']] = 2;
                 }
+
+                $nested_dimension = $product[$indexes['nested_dimension']];
             } else {
                 $nestedItem = false;
             }
@@ -1199,22 +1191,15 @@ class ExportImportProducts extends Controller
                 $nestedItem = false;
             }
             if (array_key_exists($indexes['stacking_property'], $product)) {
-                $stacking_property = $product[$indexes['stacking_property']];
+                // Normalize stacking_property values
+                $stacking_value = $product[$indexes['stacking_property']] ?? null;
 
-                $stacking_property_value = $product[$indexes['stacking_property']];
-
-                // Normalize input (case-insensitive match)
-                switch (strtolower($stacking_property_value)) {
-                    case 'evenly':
-                        $stacking_property = 0;
-                        break;
-                    case 'maximized':
-                        $stacking_property = 1;
-                        break;
-                    default:
-                        $nestedItem = false; // Invalid value
-                        break;
+                if ($stacking_value === 'Evenly') {
+                    $product[$indexes['stacking_property']]  = 0;
+                } elseif ($stacking_value === 'Maximized') {
+                    $product[$indexes['stacking_property']]  = 1;
                 }
+                $stacking_property = $product[$indexes['stacking_property']];
             } else {
                 $nestedItem = false;
             }
