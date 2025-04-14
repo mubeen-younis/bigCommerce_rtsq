@@ -541,7 +541,6 @@ class ExportImportProducts extends Controller
         if (isset($request['hasheaders']) && $request['hasheaders'] === "false") {
             // $heading = range('A', 'ZZ');
             $heading = array_merge(range('A', 'Z'), range('a', 'b'));
-
         } else {
             foreach ($csv[0] as $key => $val) {
                 $heading[] = trim($val);
@@ -920,7 +919,7 @@ class ExportImportProducts extends Controller
                         ->where('variant_id', $variant_id)
                         ->where('store_id', $store_id)
                         ->update($update);
-                }catch (\Exception $e) {
+                } catch (\Exception $e) {
                     Log::error('Update Error: ' . $e->getMessage(), [
                         'source_product_id' => $source_product_id,
                         'variant_id' => $variant_id,
@@ -1169,6 +1168,22 @@ class ExportImportProducts extends Controller
             $nestedItem = true;
             if (array_key_exists($indexes['nested_dimension'], $product)) {
                 $nested_dimension = $product[$indexes['nested_dimension']];
+
+                // Normalize input (case-insensitive match)
+                switch (strtolower($nested_dimension)) {
+                    case 'length':
+                        $nested_dimension = 0;
+                        break;
+                    case 'width':
+                        $nested_dimension = 1;
+                        break;
+                    case 'height':
+                        $nested_dimension = 2;
+                        break;
+                    default:
+                        $nestedItem = false; // Invalid value
+                        break;
+                }
             } else {
                 $nestedItem = false;
             }
@@ -1184,6 +1199,19 @@ class ExportImportProducts extends Controller
             }
             if (array_key_exists($indexes['stacking_property'], $product)) {
                 $stacking_property = $product[$indexes['stacking_property']];
+
+                // Normalize input (case-insensitive match)
+                switch (strtolower($stacking_property)) {
+                    case 'evenly':
+                        $stacking_property = 0;
+                        break;
+                    case 'maximized':
+                        $stacking_property = 1;
+                        break;
+                    default:
+                        $nestedItem = false; // Invalid value
+                        break;
+                }
             } else {
                 $nestedItem = false;
             }
@@ -1236,7 +1264,7 @@ class ExportImportProducts extends Controller
                         ]);
                     }
                 } else {
-                   
+
                     try {
                         $newNestedItem = new NestingItemsDetail();
                         $newNestedItem->store_id = $store_id;
@@ -1246,14 +1274,13 @@ class ExportImportProducts extends Controller
                         $newNestedItem->max_nested_items = $maximum_nested_items;
                         $newNestedItem->stacked_type = $stacking_property;
                         $newNestedItem->is_nesting_enabled = $nested_item;
-                    
+
                         $newNestedItem->save();
                     } catch (\Exception $e) {
                         Log::error('Error while saving NestingItemsDetail: ' . $e->getMessage(), [
                             'exception' => $e,
                         ]);
                     }
-                    
                 }
 
                 if (Functions::isEnabledLogs("", $store_id)) {
