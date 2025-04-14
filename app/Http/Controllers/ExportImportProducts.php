@@ -646,8 +646,8 @@ class ExportImportProducts extends Controller
 
             foreach ($csvChunks as $chunk) {
                 // Dispatch a job for each chunk
-                ImportProductsJob::dispatch($chunk, $request, $headerRow)->delay(Carbon::now()->addSeconds($delay++));
-                // $this->importProductCsvJob($chunk, $request, $headerRow);
+                // ImportProductsJob::dispatch($chunk, $request, $headerRow)->delay(Carbon::now()->addSeconds($delay++));
+                $this->importProductCsvJob($chunk, $request, $headerRow);
             }
         } catch (\Exception $exception) {
             $this->createImportCsvStatusInDB($request, $exception);
@@ -1167,6 +1167,13 @@ class ExportImportProducts extends Controller
             $nestedItem = true;
             if (array_key_exists($indexes['nested_dimension'], $product)) {
                 $nested_dimension = $product[$indexes['nested_dimension']];
+                if ($nested_dimension === 'Length') {
+                    $nested_dimension = 0;
+                } elseif ($nested_dimension === 'Width') {
+                    $nested_dimension = 1;
+                } elseif ($nested_dimension === 'Height') {
+                    $nested_dimension = 2;
+                }
             } else {
                 $nestedItem = false;
             }
@@ -1182,6 +1189,11 @@ class ExportImportProducts extends Controller
             }
             if (array_key_exists($indexes['stacking_property'], $product)) {
                 $stacking_property = $product[$indexes['stacking_property']];
+                if ($stacking_property === 'Evenly') {
+                    $stacking_property = 0;
+                } elseif ($stacking_property === 'Maximized') {
+                    $stacking_property = 1;
+                }
             } else {
                 $nestedItem = false;
             }
