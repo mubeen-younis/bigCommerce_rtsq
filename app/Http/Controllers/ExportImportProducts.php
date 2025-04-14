@@ -1164,18 +1164,17 @@ class ExportImportProducts extends Controller
             && array_key_exists('nested_item', $indexes);
         if ($inNestedItem) {
             $nestedItem = true;
+
+
+            // Initialize variables
+            $nested_dimension = null;
+            $nesting_percentage = null;
+            $maximum_nested_items = null;
+            $stacking_property = null;
+            $nested_item = null;
+
+
             if (array_key_exists($indexes['nested_dimension'], $product)) {
-
-                $dimension_value = $product[$indexes['nested_dimension']] ?? null;
-
-                if ($dimension_value === 'Length') {
-                    $product[$indexes['nested_dimension']] = 0;
-                } elseif ($dimension_value === 'Width') {
-                    $product[$indexes['nested_dimension']] = 1;
-                } elseif ($dimension_value === 'Height') {
-                    $product[$indexes['nested_dimension']] = 2;
-                }
-
                 $nested_dimension = $product[$indexes['nested_dimension']];
             } else {
                 $nestedItem = false;
@@ -1191,14 +1190,6 @@ class ExportImportProducts extends Controller
                 $nestedItem = false;
             }
             if (array_key_exists($indexes['stacking_property'], $product)) {
-                // Normalize stacking_property values
-                $stacking_value = $product[$indexes['stacking_property']] ?? null;
-
-                if ($stacking_value === 'Evenly') {
-                    $product[$indexes['stacking_property']]  = 0;
-                } elseif ($stacking_value === 'Maximized') {
-                    $product[$indexes['stacking_property']]  = 1;
-                }
                 $stacking_property = $product[$indexes['stacking_property']];
             } else {
                 $nestedItem = false;
@@ -1220,12 +1211,34 @@ class ExportImportProducts extends Controller
             }
 
 
-            $updateNestedItem['dimension_type'] = $nested_dimension;
-            $updateNestedItem['nesting_percentage'] = $nesting_percentage;
-            $updateNestedItem['max_nested_items'] = $maximum_nested_items;
-            $updateNestedItem['stacked_type'] = $stacking_property;
-            $updateNestedItem['is_nesting_enabled'] = $nested_item;
+
             if ($nestedItem) {
+
+
+                $dimension_map = [
+                    'Length' => 0,
+                    'Width' => 1,
+                    'Height' => 2
+                ];
+                $transformed_dimension = isset($dimension_map[$nested_dimension]) ? $dimension_map[$nested_dimension] : $nested_dimension;
+
+                // Transform stacking_property
+                $stacking_map = [
+                    'Evenly' => 0,
+                    'Maximized' => 1
+                ];
+                $transformed_stacking = isset($stacking_map[$stacking_property]) ? $stacking_map[$stacking_property] : $stacking_property;
+
+
+                // Prepare data for update
+                $updateNestedItem = [
+                    'dimension_type' => $transformed_dimension,
+                    'nesting_percentage' => $nesting_percentage,
+                    'max_nested_items' => $maximum_nested_items,
+                    'stacked_type' => $transformed_stacking,
+                    'is_nesting_enabled' => $nested_item
+                ];
+
 
                 $recordExists = ProductSetting::where('source_product_id', $source_product_id)
                     ->where('store_id', $store_id)->get()->toArray();
