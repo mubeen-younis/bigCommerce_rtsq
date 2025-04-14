@@ -541,6 +541,7 @@ class ExportImportProducts extends Controller
         if (isset($request['hasheaders']) && $request['hasheaders'] === "false") {
             // $heading = range('A', 'ZZ');
             $heading = array_merge(range('A', 'Z'), range('a', 'b'));
+
         } else {
             foreach ($csv[0] as $key => $val) {
                 $heading[] = trim($val);
@@ -919,7 +920,7 @@ class ExportImportProducts extends Controller
                         ->where('variant_id', $variant_id)
                         ->where('store_id', $store_id)
                         ->update($update);
-                } catch (\Exception $e) {
+                }catch (\Exception $e) {
                     Log::error('Update Error: ' . $e->getMessage(), [
                         'source_product_id' => $source_product_id,
                         'variant_id' => $variant_id,
@@ -1164,16 +1165,6 @@ class ExportImportProducts extends Controller
             && array_key_exists('nested_item', $indexes);
         if ($inNestedItem) {
             $nestedItem = true;
-
-
-            // Initialize variables
-            $nested_dimension = null;
-            $nesting_percentage = null;
-            $maximum_nested_items = null;
-            $stacking_property = null;
-            $nested_item = null;
-
-
             if (array_key_exists($indexes['nested_dimension'], $product)) {
                 $nested_dimension = $product[$indexes['nested_dimension']];
             } else {
@@ -1211,34 +1202,12 @@ class ExportImportProducts extends Controller
             }
 
 
-
+            $updateNestedItem['dimension_type'] = $nested_dimension;
+            $updateNestedItem['nesting_percentage'] = $nesting_percentage;
+            $updateNestedItem['max_nested_items'] = $maximum_nested_items;
+            $updateNestedItem['stacked_type'] = $stacking_property;
+            $updateNestedItem['is_nesting_enabled'] = $nested_item;
             if ($nestedItem) {
-
-
-                $dimension_map = [
-                    'Length' => 0,
-                    'Width' => 1,
-                    'Height' => 2
-                ];
-                $transformed_dimension = isset($dimension_map[$nested_dimension]) ? $dimension_map[$nested_dimension] : $nested_dimension;
-
-                // Transform stacking_property
-                $stacking_map = [
-                    'Evenly' => 0,
-                    'Maximized' => 1
-                ];
-                $transformed_stacking = isset($stacking_map[$stacking_property]) ? $stacking_map[$stacking_property] : $stacking_property;
-
-
-                // Prepare data for update
-                $updateNestedItem = [
-                    'dimension_type' => $transformed_dimension,
-                    'nesting_percentage' => $nesting_percentage,
-                    'max_nested_items' => $maximum_nested_items,
-                    'stacked_type' => $transformed_stacking,
-                    'is_nesting_enabled' => $nested_item
-                ];
-
 
                 $recordExists = ProductSetting::where('source_product_id', $source_product_id)
                     ->where('store_id', $store_id)->get()->toArray();
@@ -1265,7 +1234,7 @@ class ExportImportProducts extends Controller
                         ]);
                     }
                 } else {
-
+                   
                     try {
                         $newNestedItem = new NestingItemsDetail();
                         $newNestedItem->store_id = $store_id;
@@ -1275,13 +1244,14 @@ class ExportImportProducts extends Controller
                         $newNestedItem->max_nested_items = $maximum_nested_items;
                         $newNestedItem->stacked_type = $stacking_property;
                         $newNestedItem->is_nesting_enabled = $nested_item;
-
+                    
                         $newNestedItem->save();
                     } catch (\Exception $e) {
                         Log::error('Error while saving NestingItemsDetail: ' . $e->getMessage(), [
                             'exception' => $e,
                         ]);
                     }
+                    
                 }
 
                 if (Functions::isEnabledLogs("", $store_id)) {
