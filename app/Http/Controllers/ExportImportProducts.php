@@ -1169,8 +1169,9 @@ class ExportImportProducts extends Controller
             if (array_key_exists($indexes['nested_dimension'], $product)) {
                 $nested_dimension = $product[$indexes['nested_dimension']];
 
+                $nested_dimension_value = $product[$indexes['nested_dimension']];
                 // Normalize input (case-insensitive match)
-                switch (strtolower($nested_dimension)) {
+                switch (strtolower($nested_dimension_value)) {
                     case 'length':
                         $nested_dimension = 0;
                         break;
@@ -1200,8 +1201,10 @@ class ExportImportProducts extends Controller
             if (array_key_exists($indexes['stacking_property'], $product)) {
                 $stacking_property = $product[$indexes['stacking_property']];
 
+                $stacking_property_value = $product[$indexes['stacking_property']];
+
                 // Normalize input (case-insensitive match)
-                switch (strtolower($stacking_property)) {
+                switch (strtolower($stacking_property_value)) {
                     case 'evenly':
                         $stacking_property = 0;
                         break;
