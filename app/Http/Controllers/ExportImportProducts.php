@@ -645,6 +645,7 @@ class ExportImportProducts extends Controller
             Cache::put('chunks_processed', 0, now()->addHours(2));
 
             foreach ($csvChunks as $chunk) {
+
                 // Dispatch a job for each chunk
                 ImportProductsJob::dispatch($chunk, $request, $headerRow)->delay(Carbon::now()->addSeconds($delay++));
                 // $this->importProductCsvJob($chunk, $request, $headerRow);
@@ -897,14 +898,14 @@ class ExportImportProducts extends Controller
         // END //
 
         /*Start -  For Nested Item Change*/
-        if (
-            isset($indexes['nested_dimension']) && $indexes['nested_dimension']
-            && isset($indexes['nesting_percentage']) && $indexes['nesting_percentage']
-            && isset($indexes['maximum_nested_items']) && $indexes['maximum_nested_items']
-            && isset($indexes['stacking_property']) && $indexes['stacking_property']
-        ) {
-            $dropShipId = $this->updateNestedItem($product, $indexes, $store_id, $source_product_id);
-        }
+        // if (
+        //     isset($indexes['nested_dimension']) && $indexes['nested_dimension']
+        //     && isset($indexes['nesting_percentage']) && $indexes['nesting_percentage']
+        //     && isset($indexes['maximum_nested_items']) && $indexes['maximum_nested_items']
+        //     && isset($indexes['stacking_property']) && $indexes['stacking_property']
+        // ) {
+            $dropShipId = $this->updateNestedItem($product, $indexes, $store_id, $source_product_id, $variant_id);
+        // }
         // END //
 
         if (!empty($update)) {
@@ -1155,122 +1156,154 @@ class ExportImportProducts extends Controller
 
 
 
-    public function updateNestedItem($product, $indexes, $store_id, $source_product_id)
+    public function updateNestedItem($product, $indexes, $store_id, $source_product_id, $variant_id = null)
     {
         $nestedItemId = false;
-        $inNestedItem = array_key_exists('nested_dimension', $indexes)
-            && isset($indexes['nesting_percentage']) && $indexes['nesting_percentage']
-            && isset($indexes['maximum_nested_items']) && $indexes['maximum_nested_items']
-            && array_key_exists('stacking_property', $indexes)
-            && array_key_exists('nested_item', $indexes);
-        if ($inNestedItem) {
-            $nestedItem = true;
-            if (array_key_exists($indexes['nested_dimension'], $product)) {
-                $nested_dimension = $product[$indexes['nested_dimension']];
-                if ($nested_dimension === 'Length') {
-                    $nested_dimension = 0;
-                } elseif ($nested_dimension === 'Width') {
-                    $nested_dimension = 1;
-                } elseif ($nested_dimension === 'Height') {
-                    $nested_dimension = 2;
+    
+        // Extract nested item settings from the product (CSV row)
+        if (array_key_exists($indexes['nested_dimension'], $product)) {
+            $nested_dimension = $product[$indexes['nested_dimension']];
+            if ($nested_dimension === 'Length') {
+                $nested_dimension = 0;
+            } elseif ($nested_dimension === 'Width') {
+                $nested_dimension = 1;
+            } elseif ($nested_dimension === 'Height') {
+                $nested_dimension = 2;
+            } else {
+                $nested_dimension = null; 
+            }
+        } else {
+            $nested_dimension = null;
+        }
+    
+        if (array_key_exists($indexes['nesting_percentage'], $product)) {
+            $nesting_percentage = $product[$indexes['nesting_percentage']];
+        } else {
+            $nesting_percentage = null;
+        }
+    
+        if (array_key_exists($indexes['maximum_nested_items'], $product)) {
+            $maximum_nested_items = $product[$indexes['maximum_nested_items']];
+        } else {
+            $maximum_nested_items = null;
+        }
+    
+        if (array_key_exists($indexes['stacking_property'], $product)) {
+            $stacking_property = $product[$indexes['stacking_property']];
+            if ($stacking_property === 'Evenly') {
+                $stacking_property = 0;
+            } elseif ($stacking_property === 'Maximized') {
+                $stacking_property = 1;
+            } else {
+                $stacking_property = null; 
+            }
+        } else {
+            $stacking_property = null;
+        }
+    
+        if (array_key_exists($indexes['nested_item'], $product)) {
+            $nested_item = $product[$indexes['nested_item']];
+        } else {
+            $nested_item = null;
+        }
+    
+        // Check if any nested item field is provided
+        if (
+            isset($nested_dimension) || isset($nesting_percentage) || 
+            isset($maximum_nested_items) || isset($stacking_property) || 
+            isset($nested_item)
+        ) {
+            $productSetting = ProductSetting::where('source_product_id', $source_product_id)
+                ->where('variant_id', $variant_id)
+                ->where('store_id', $store_id)
+                ->first();
+    
+            if (!$productSetting) {
+                Log::warning('No ProductSetting record found for source_product_id: ' . $source_product_id . ' and variant_id: ' . $variant_id, [
+                    'store_id' => $store_id,
+                ]);
+                return $nestedItemId;
+            }
+    
+            $productSettingId = $productSetting->id;
+    
+            $updateNestedItem = [];
+            if (isset($nested_dimension)) {
+                $updateNestedItem['dimension_type'] = $nested_dimension;
+            }
+            if (isset($nesting_percentage)) {
+                $updateNestedItem['nesting_percentage'] = $nesting_percentage;
+            }
+            if (isset($maximum_nested_items)) {
+                $updateNestedItem['max_nested_items'] = $maximum_nested_items;
+            }
+            if (isset($stacking_property)) {
+                $updateNestedItem['stacked_type'] = $stacking_property;
+            }
+            if (isset($nested_item)) {
+                $updateNestedItem['is_nesting_enabled'] = $nested_item;
+            }
+    
+            $nestedData = NestingItemsDetail::where('product_settings_id', $productSettingId)
+                ->where('store_id', $store_id)
+                ->first();
+    
+            if ($nestedData) {
+                
+                try {
+                    NestingItemsDetail::where('product_settings_id', $productSettingId)
+                        ->where('store_id', $store_id)
+                        ->update($updateNestedItem);
+                    $nestedItemId = $nestedData->id;
+                } catch (\Exception $e) {
+                    Log::error('Update Error for NestingItemsDetail: ' . $e->getMessage(), [
+                        'source_product_id' => $source_product_id,
+                        'variant_id' => $variant_id,
+                        'product_settings_id' => $productSettingId,
+                        'store_id' => $store_id,
+                        'update_data' => $updateNestedItem,
+                    ]);
                 }
             } else {
-                $nestedItem = false;
-            }
-            if (array_key_exists($indexes['nesting_percentage'], $product)) {
-                $nesting_percentage = $product[$indexes['nesting_percentage']];
-            } else {
-                $nestedItem = false;
-            }
-            if (array_key_exists($indexes['maximum_nested_items'], $product)) {
-                $maximum_nested_items = $product[$indexes['maximum_nested_items']];
-            } else {
-                $nestedItem = false;
-            }
-            if (array_key_exists($indexes['stacking_property'], $product)) {
-                $stacking_property = $product[$indexes['stacking_property']];
-                if ($stacking_property === 'Evenly') {
-                    $stacking_property = 0;
-                } elseif ($stacking_property === 'Maximized') {
-                    $stacking_property = 1;
-                }
-            } else {
-                $nestedItem = false;
-            }
-            if (array_key_exists($indexes['nested_item'], $product)) {
-                $nested_item = $product[$indexes['nested_item']];
-            } else {
-                $nestedItem = false;
-            }
-
-            if (
-                !isset($nested_dimension) || $nested_dimension === ''
-                || !isset($nesting_percentage) || $nesting_percentage === ''
-                || !isset($maximum_nested_items) || $maximum_nested_items === ''
-                || !isset($stacking_property) || $stacking_property === ''
-                || !isset($nested_item) || $nested_item === ''
-            ) {
-                $nestedItem = false;
-            }
-
-
-            $updateNestedItem['dimension_type'] = $nested_dimension;
-            $updateNestedItem['nesting_percentage'] = $nesting_percentage;
-            $updateNestedItem['max_nested_items'] = $maximum_nested_items;
-            $updateNestedItem['stacked_type'] = $stacking_property;
-            $updateNestedItem['is_nesting_enabled'] = $nested_item;
-            if ($nestedItem) {
-
-                $recordExists = ProductSetting::where('source_product_id', $source_product_id)
-                    ->where('store_id', $store_id)->get()->toArray();
-
-
-                $productSettingId = $recordExists['0']['id'];
-
-                $nestedData = NestingItemsDetail::where('product_settings_id', $productSettingId)
-                    ->where('store_id', $store_id)
-                    ->first();
-
-                if ($nestedData) {
-
-                    try {
-
-                        NestingItemsDetail::where('product_settings_id', $productSettingId)
-                            ->where('store_id', $store_id)
-                            ->update($updateNestedItem);
-                    } catch (\Exception $e) {
-                        Log::error('Update Error: ' . $e->getMessage(), [
-                            'source_product_id' => $source_product_id,
-                            'store_id' => $store_id,
-                            'update_data' => $updateNestedItem,
-                        ]);
-                    }
-                } else {
-                   
-                    try {
-                        $newNestedItem = new NestingItemsDetail();
-                        $newNestedItem->store_id = $store_id;
-                        $newNestedItem->product_settings_id = $productSettingId;
+                try {
+                    $newNestedItem = new NestingItemsDetail();
+                    $newNestedItem->store_id = $store_id;
+                    $newNestedItem->product_settings_id = $productSettingId;
+                    if (isset($nested_dimension)) {
                         $newNestedItem->dimension_type = $nested_dimension;
-                        $newNestedItem->nesting_percentage = $nesting_percentage;
-                        $newNestedItem->max_nested_items = $maximum_nested_items;
-                        $newNestedItem->stacked_type = $stacking_property;
-                        $newNestedItem->is_nesting_enabled = $nested_item;
-                    
-                        $newNestedItem->save();
-                    } catch (\Exception $e) {
-                        Log::error('Error while saving NestingItemsDetail: ' . $e->getMessage(), [
-                            'exception' => $e,
-                        ]);
                     }
-                    
+                    if (isset($nesting_percentage)) {
+                        $newNestedItem->nesting_percentage = $nesting_percentage;
+                    }
+                    if (isset($maximum_nested_items)) {
+                        $newNestedItem->max_nested_items = $maximum_nested_items;
+                    }
+                    if (isset($stacking_property)) {
+                        $newNestedItem->stacked_type = $stacking_property;
+                    }
+                    if (isset($nested_item)) {
+                        $newNestedItem->is_nesting_enabled = $nested_item;
+                    }
+                    $newNestedItem->save();
+                    $nestedItemId = $newNestedItem->id;
+                } catch (\Exception $e) {
+                    Log::error('Error while saving NestingItemsDetail: ' . $e->getMessage(), [
+                        'source_product_id' => $source_product_id,
+                        'variant_id' => $variant_id,
+                        'product_settings_id' => $productSettingId,
+                        'store_id' => $store_id,
+                        'update_data' => $updateNestedItem,
+                    ]);
                 }
-
-                if (Functions::isEnabledLogs("", $store_id)) {
-                    Log::info('Import Products Dropship: ' . $nestedItemId . " " . json_encode($newNestedItem));
-                }
+            }
+    
+            if (Functions::isEnabledLogs("", $store_id)) {
+                Log::info('Import Products NestedItem: ' . $nestedItemId . ' for source_product_id: ' . $source_product_id . ' and variant_id: ' . $variant_id, [
+                    'update_data' => $updateNestedItem,
+                ]);
             }
         }
+    
         return $nestedItemId;
     }
 
