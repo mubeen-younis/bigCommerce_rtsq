@@ -36,9 +36,9 @@ class UnishipperLtlConnectionSettings
             'speed_freight_username' => $data->username ?? '',
             'speed_freight_password' => $data->password ?? '',
             'ApiVersion' => '2.0',
-            'requestFromUnishippersLTL' => 1
+            'requestFromUnishippersLTL' => 1,
+            'isNMFCNumberEnabled' => $data->requiresNmfc ? 1 : 0,
         ];
-
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
         
