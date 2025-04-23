@@ -362,14 +362,16 @@ class ProductSettingController extends Controller
                     ->where('variant_id', $request->variant_id)
                     ->where('store_id', $request->store_id)
                     ->first();
+                    
+                    $product = $this->setVariantDimensions($product, []);
+                    
+                    $product['source_product_id'] = isset($product['id']) ? $product['id'] : null ?? null;
+                    $product['variant_id'] = isset($product['base_variant_id']) ? $product['base_variant_id'] : null ?? null;
+                    $product['settings'] = $this->setShippingMethod($product, $request['store_id']);
+                    
+                    if(!empty($DBproduct)){
+                        $product = $this->getProductIndex($product, $DBproduct);
 
-                $product = $this->setVariantDimensions($product, []);
-                $product['source_product_id'] = isset($product['id']) ? $product['id'] : null ?? null;
-                $product['variant_id'] = isset($product['base_variant_id']) ? $product['base_variant_id'] : null ?? null;
-                $product['settings'] = $this->setShippingMethod($product, $request['store_id']);
-
-                if(!empty($DBproduct)){
-                    $product = $this->getProductIndex($product, $DBproduct);
                 } else{
                     unset($product['id']);
                 }
@@ -456,8 +458,8 @@ class ProductSettingController extends Controller
         $apiProduct['shipping_group'] = isset($product['shipping_group']) ? $product['shipping_group'] : null ?? null;
         $apiProduct['shipping_class_enabled'] = isset($product['shipping_class_enabled']) ? $product['shipping_class_enabled'] : null ?? null;
         $apiProduct['shipping_class'] = isset($product['shipping_class']) ? $product['shipping_class'] : null ?? null;
-        $apiProduct['own_pallet'] = isset($product['own_pallet']) ? $product['own_pallet'] : null ?? null;
-        $apiProduct['pallet_vertical_rotation'] = isset($product['pallet_vertical_rotation']) ? $product['pallet_vertical_rotation'] : null ?? null;
+        // $apiProduct['own_pallet'] = isset($product['own_pallet']) ? $product['own_pallet'] : null ?? null;
+        // $apiProduct['pallet_vertical_rotation'] = isset($product['pallet_vertical_rotation']) ? $product['pallet_vertical_rotation'] : null ?? null;
         $apiProduct['nmfc'] = isset($product['nmfc']) ? $product['nmfc'] : null ?? null;
         $apiProduct['product_markup'] = isset($product['product_markup']) ? $product['product_markup'] : null ?? null;
         $apiProduct['ship_multiple_package'] = isset($product['ship_multiple_package']) ? $product['ship_multiple_package'] : null ?? null;
@@ -713,8 +715,8 @@ class ProductSettingController extends Controller
             $product->name = $prd['name'];
             $product->price = $prd['price'];
             $product->ship_multiple_package = isset($prd['ship_multiple_package']) && $prd['ship_multiple_package'] ? 1 : 0;
-            $product->pallet_vertical_rotation = isset($prd['pallet_vertical_rotation']) && $prd['pallet_vertical_rotation'] ? 1 : 0;
-            $product->own_pallet = isset($prd['own_pallet']) && $prd['own_pallet'] ? 1 : 0;
+            // $product->pallet_vertical_rotation = isset($prd['pallet_vertical_rotation']) && $prd['pallet_vertical_rotation'] ? 1 : 0;
+            // $product->own_pallet = isset($prd['own_pallet']) && $prd['own_pallet'] ? 1 : 0;
             $product->product_markup = isset($prd['product_markup']) && !empty($prd['product_markup']) ? $prd['product_markup'] : '';
             $product->nmfc = isset($prd['nmfc']) && !empty($prd['nmfc']) ? $prd['nmfc'] : '';
             if (isset($prd['dropship_enabled']) && $prd['dropship_enabled']) {
@@ -793,7 +795,8 @@ class ProductSettingController extends Controller
     public function getSetting($product)
     {
         $getOnly = ['freight_class', 'freightParcelEnabled',
-            'hazardous_enabled', 'freight_enabled', 'parcel_enabled', 'quote_as_instore', 'quote_as_local', 'insurance', 'allow_vertical', 'ship_own_package', 'nmfc', 'hs_code'];
+            'hazardous_enabled', 'freight_enabled', 'parcel_enabled', 'quote_as_instore', 'quote_as_local', 'insurance', 
+            'allow_vertical', 'ship_own_package', 'nmfc', 'hs_code', 'own_pallet', 'pallet_vertical_rotation'];
         $settings = new \stdClass();
         foreach ($product as $key => $prd) {
             if (in_array($key, $getOnly)) {
