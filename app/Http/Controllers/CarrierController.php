@@ -252,7 +252,9 @@ class CarrierController extends Controller
 
         $installedCarriers = Carrier::select('carriers.name', 'installed_carriers.id', 'carriers.logo', 'installed_carriers.carrier_id', 'carriers.carrier_type', 'carriers.slug', 'installed_carriers.is_enabled')
             ->join('installed_carriers', 'installed_carriers.carrier_id', '=', 'carriers.id')
-            ->where('installed_carriers.store_id', $store_id)->get();
+            ->where('carriers.status', 1)
+            ->where('installed_carriers.store_id', $store_id)
+            ->get();
 
         if ($installedCarriers->isEmpty()) {
             return response()->json(['error' => false,
@@ -421,6 +423,7 @@ class CarrierController extends Controller
                 break;
         }
     }
+
     // install all carriers on app installation
     public function carriersOnAppInstallation($carriers, $store)
     {
@@ -435,11 +438,11 @@ class CarrierController extends Controller
         $storeName = $store->name ?? $store['name'];
         $storeHash = $store->hash ?? $store['hash'];
 
-        foreach($carriers as $carrier){
+        foreach ($carriers as $carrier) {
             if (!empty($carrier) && $carrier['status'] === 1) {
-                
+
                 $installCarrier = InstalledCarrier::firstOrNew(['store_id' => $storeId, 'carrier_id' => $carrier['id']]);
-                if(!empty($installCarrier->store_id) && !empty($installCarrier->carrier_id)){
+                if (!empty($installCarrier->store_id) && !empty($installCarrier->carrier_id)) {
                     continue;
                 }
                 $installCarrier->store_id = $storeId;
@@ -448,53 +451,53 @@ class CarrierController extends Controller
                 $installCarrier->installed_at = now();
                 $installCarrier->plan_updated_at = now();
                 $installCarrier->save();
-    
+
                 if ($carrier['slug'] == 'dbsc') {
-    
+
                     $otherSettings = DbscOtherSettings::create();
                     $generalProfile = DbscShippingProfile::create(['p_nickname' => "General Profile",
                         'store_id' => $storeId, 'is_general_profile' => 1,
                         'allow_all_classes' => 1
                     ]);
-    
+
                 }
-    
+
                 $install_carrier = InstalledCarrier::find($installCarrier->id);
-    
+
                 if ($carrier['slug'] == "ltl-quotes" || $carrier['slug'] == 'unishipper-ltl' || $carrier['slug'] == "freightquote-ltl" || $carrier['slug'] == "tql-ltl" || $carrier['slug'] == "echo-ltl" || $carrier['slug'] == "freightquote-chr-ltl" || $carrier['slug'] == 'priority-one-ltl') {
-    
+
                     $services = CarrierServices::where("app_id", $carrier['id'])->pluck("speed_freight_carrierSCAC")->all();
                     $checked = $this->CheckedAllServices($installCarrier->id, $services, $storeId);
-    
+
                 } else if ($carrier['slug'] == "gtz-ltl") {
-    
+
                     $GTZ = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
                         ->where('installed_carriers.id', $install_carrier->id)
                         ->whereNull('shopify_freights.store_id')
                         ->orderBy('speed_freight_carrierName')->pluck("speed_freight_carrierSCAC")->all();
-    
+
                     $CRS = CarrierServices::join('installed_carriers', 'installed_carriers.carrier_id', '=', 'app_id')
                         ->where('installed_carriers.id', $install_carrier->id)
                         ->where('shopify_freights.store_id', 1)
                         ->orderBy('speed_freight_carrierSCAC')->pluck("speed_freight_carrierName")->all();
-    
+
                     $NEWAPI = CarrierServices::where('app_id', 1)->orderBy('speed_freight_carrierName')->pluck("speed_freight_carrierSCAC")->all();
-    
+
                     $services = array(
                         "GTZ" => $GTZ,
                         "CRS" => $CRS,
                         'NEWAPI' => $NEWAPI,
                     );
-    
+
                     $checked = $this->CheckedAllServices($installCarrier->id, $services, $storeId);
                 }
-    
+
                 $uspsSmall = 'usps-small';
                 $shipEngineSlug = 'ups-ship-engine';
                 $settings = [];
                 if ($carrier['slug'] === $uspsSmall || $carrier['slug'] === $shipEngineSlug) {
                     $con = Connection::firstOrNew(['installed_carrier_id' => $installCarrier->id]);
-    
+
                     $settings['carrier_id'] = $installCarrier->id;
                     $settings['carrierId'] = $installCarrier->id;
                     $settings['testType'] = false;
@@ -506,7 +509,7 @@ class CarrierController extends Controller
                     $settings['is_test_store'] = $isTestStore;
                     $con->value = json_encode($settings);
                     $con->installed_carrier_id = $installCarrier->id;
-    
+
                     $con->save();
                 }
             }
@@ -518,14 +521,15 @@ class CarrierController extends Controller
             'message' => 'Carriers Installed Successfully',
         ], 200);
     }
+
     // Script for existing customer to install all carriers and add-ons
     public function carriersAndAddOnsOnAppInstallation()
     {
         $stores = Store::getAllStoreDetails();
         $data = [];
 
-        if(!empty($stores)){
-            foreach($stores as $store){
+        if (!empty($stores)) {
+            foreach ($stores as $store) {
                 // install Carrier
                 $carriers = optional(Carrier::get())->toArray() ?? [];
                 $data[] = $this->carriersOnAppInstallation($carriers, $store);
