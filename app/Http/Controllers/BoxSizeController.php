@@ -8,6 +8,7 @@ use App\Models\ProductSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Helpers\Helpers;
+use Illuminate\Validation\Rule;
 
 class BoxSizeController extends Controller
 {
@@ -59,7 +60,12 @@ class BoxSizeController extends Controller
     public function store(Request $request)
     {
         $rules = [
-            'nickname' => 'required|unique:box_sizes',
+            'nickname' => [
+                'required',
+                Rule::unique('box_sizes')->where(function ($query) use ($request) {
+                    return $query->where('store_id', $request->store_id);
+                }),
+            ],
             'length' => 'required',
             'width' => 'required',
             'height' => 'required',
