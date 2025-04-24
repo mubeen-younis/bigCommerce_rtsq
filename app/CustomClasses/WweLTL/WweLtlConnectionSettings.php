@@ -49,6 +49,7 @@ class WweLtlConnectionSettings
 
             $params['speed_freight_username'] = $data->new_api_username ?? '';
             $params['speed_freight_password'] = $data->new_api_password ?? '';
+            $params['isNMFCNumberEnabled'] = $data->requiresNmfc ? 1 : 0;
 
         } else {
             unset($params['clientId'], $params['clientSecret'], $params['ApiVersion']);

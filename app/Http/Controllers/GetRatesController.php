@@ -491,11 +491,10 @@ class GetRatesController extends Controller
             $settings['ship_multiple_package'] = $productSetting['ship_multiple_package'];
             $settings['shipping_group'] = $productSetting['shipping_group'];
             $settings['shipping_class'] = ($productSetting['shipping_class'] == 0 || $productSetting['shipping_class'] == null) ? null : $productSetting['shipping_class'];
-            // $settings['pallet_vertical_rotation'] = $productSetting['pallet_vertical_rotation'] ?? 0;
-            // $settings['own_pallet'] = $productSetting['own_pallet'] ?? 0;
+            $settings['pallet_vertical_rotation'] = $productSetting['pallet_vertical_rotation'] ?? 0;
+            $settings['own_pallet'] = $productSetting['own_pallet'] ?? 0;
             $settings['product_markup'] = $productSetting['product_markup'] ?? 0;
         }
-        dd("settings2", $settings);
 
         return $settings;
     }

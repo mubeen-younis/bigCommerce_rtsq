@@ -2210,8 +2210,6 @@ class GenerateRequestData
         $sbsEnabled = $this->checkIsSBSActive($this->storeData['store']['id']);
         $ratingMethod = $this->getPackagingRatingMethod($connSettings);
 
-        $isRequiresNmfc = (isset($connSettings['creds']['requiresNmfc'])) && ($connSettings['creds']['requiresNmfc'])  ? 1 : 0;
-
 
         $this->resiCarrier['wweSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['wweSmall'] = $alwaysResi;
@@ -2233,7 +2231,6 @@ class GenerateRequestData
         if (isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api') {
             $apiArray['speed_ship_username'] = isset($connSettings['creds']['new_api_username']) ? $connSettings['creds']['new_api_username'] : '';
             $apiArray['speed_ship_password'] = isset($connSettings['creds']['new_api_password']) ? $connSettings['creds']['new_api_password'] : '';
-            $apiArray['isNMFCNumberEnabled'] = $isRequiresNmfc;
             unset(
                 $apiArray['authentication_key'],
                 $apiArray['world_wide_express_account_number'],
@@ -2556,8 +2553,6 @@ class GenerateRequestData
 
         $accessorial = ($alwaysResi ? 'Y' : $residential == 'Y') ? ['REP'] : [];
 
-        $isRequiresNmfc = (isset($connSettings['creds']['requiresNmfc'])) && ($connSettings['creds']['requiresNmfc'])  ? 1 : 0;
-
         $sbsEnabled = $this->checkIsSBSActive($this->storeData['store']['id']);
         $ratingMethod = $this->getPackagingRatingMethod($connSettings);
         $this->resiCarrier['isSbsEnable'] = $sbsEnabled && $this->storeData['enabled_addon_sbs'];
@@ -2605,7 +2600,6 @@ class GenerateRequestData
                 'prefferedCurrency' => 'USD',
                 'service' => 'ALL',
                 'accessorial' => $accessorial,
-                'isNMFCNumberEnabled' => $isRequiresNmfc,
                 'residentials_delivery' => isset($accessorial) && !blank($accessorial) ? 'yes' : 'no',
                 'packagesType' => !$sbsEnabled ? $ratingMethod : '',
             ];

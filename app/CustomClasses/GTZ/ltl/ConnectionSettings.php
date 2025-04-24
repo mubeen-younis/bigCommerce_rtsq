@@ -47,7 +47,8 @@ class ConnectionSettings extends CarriersConnectionSettings
                 'clientId' => $data['clientId'],
                 'clientSecret' => $data['clientSecret'],
                 'ApiVersion' => '2.0',
-                'requestFromGlobalTranz' => 1
+                'requestFromGlobalTranz' => 1,
+                'isNMFCNumberEnabled' => $data->requiresNmfc ? 1 : 0,
             ];
         }else{
             $params  = [
