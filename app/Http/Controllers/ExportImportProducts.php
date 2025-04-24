@@ -1252,7 +1252,7 @@ class ExportImportProducts extends Controller
             isset($nested_item)
         ) {
             $productSetting = ProductSetting::where('source_product_id', $source_product_id)
-                // ->where('variant_id', $variant_id)
+                ->where('variant_id', $variant_id)
                 ->where('store_id', $store_id)
                 ->first();
     
