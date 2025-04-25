@@ -22,7 +22,6 @@ class WweLtlConnectionSettings
 
     public function testLtlConnection($data, $storeName)
     {
-
         $response = [
             'error' => true,
             'message' => 'Something went wrong!',
@@ -54,7 +53,6 @@ class WweLtlConnectionSettings
         } else {
             unset($params['clientId'], $params['clientSecret'], $params['ApiVersion']);
         }
-
         $queryString = http_build_query($params);
 
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');

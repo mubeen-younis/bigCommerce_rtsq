@@ -1616,7 +1616,6 @@ class GenerateRequestData
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
 
         $isRequiresNmfc = (isset($connSettings['creds']['requiresNmfc'])) && ($connSettings['creds']['requiresNmfc'])  ? 1 : 0;
-
         $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
 
         /*
