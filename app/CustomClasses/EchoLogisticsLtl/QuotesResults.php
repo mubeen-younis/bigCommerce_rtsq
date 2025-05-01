@@ -115,7 +115,7 @@ class QuotesResults
         $lgFee = 0;
 
         if (isset($accessorials) && !empty($accessorials)) {
-            $lgAccessType = 'LIFTGATEDELIVERYREQUIRED';
+            $lgAccessType = 'Lift-Gate Delivery Required';
 
             foreach ($accessorials as $acc) {
                 if (isset($acc['Type']) && $acc['Type'] == $lgAccessType) {
