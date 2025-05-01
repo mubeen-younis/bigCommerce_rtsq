@@ -60,9 +60,11 @@ class GetRatesController extends Controller
 
     public function returnRates(Request $request, $count = null)
     {
+
         Log::info('Request ' . json_encode($request->all()));
         $storeHash = $request->base_options['store_id'] ?? null;
         $storeData = $this->getStoreData($storeHash);
+
         /*Setting Stripe APi key
         Bug fix of plan auto renews
         */
@@ -71,6 +73,7 @@ class GetRatesController extends Controller
         if ($storeData == null) {
             return [];
         }
+
         if (!$this->storePlanStatus($storeData['store']['id'])) {
             return [];
         }
@@ -90,6 +93,7 @@ class GetRatesController extends Controller
         $this->getCarrierSettings($storeData['installed_carriers']);
 
         $this->formatReq = $this->formatRequest($request->all(), $storeData);
+
         if (
             $this->formatReq['lineItemData']['destination']['zip'] == null ||
             $this->formatReq['lineItemData']['destination']['country'] == null ||
@@ -675,7 +679,6 @@ class GetRatesController extends Controller
                         'connection_settings.value'
                     )
                     ->where('connection_settings.installed_carrier_id', $installedCarrier->id)->first();
-
                 if ($connectionSettings !== null) {
 
 
@@ -686,6 +689,7 @@ class GetRatesController extends Controller
                         $this->connectionSettings[$connectionSettings->slug]['quote_settings'] = json_decode($quoteSettings->value, true);
                     }
                     $carrierServices = AdditionalCarrierTabSetting::where('installed_carrier_id', $installedCarrier->id)->first();
+
                     if (isset($carrierServices->value)) {
                         //$installedCarrier->carrier_id
                         $this->connectionSettings[$connectionSettings->slug]['carrier_services'] = json_decode($carrierServices->value, true);

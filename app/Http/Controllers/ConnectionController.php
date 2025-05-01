@@ -34,6 +34,7 @@ use App\CustomClasses\Priority1Ltl\ConnectionSettings as Priority1LtlConnectionS
 use App\CustomClasses\UnishipperLtl\UnishipperLtlConnectionSettings;
 use App\CustomClasses\UpsShipEngineSmall\ConnectionSettings as ShipEngineSmallConnectionSettings;
 use App\CustomClasses\UpsLandCostApi\ConnectionSettings as UpsLandCostApiConnectionSettings;
+use App\CustomClasses\KNLtl\ConnectionSettings as KNLtlConnectionSettings;
 use App\Endpoints\Endpoints;
 
 use App\Models\Connection;
@@ -86,9 +87,10 @@ class ConnectionController extends Controller
         $this->dayLightLtlTestCon = new DayLightLtlConnectionSettings();
         $this->freightQuoteChrLtlTestCon = new FreightQuoteChrConnectionSettings();
         $this->Priority1LtlTestCon = new Priority1LtlConnectionSettings();
-        $this->UnishipperLtlTestCon = new UnishipperLtlConnectionSettings(); 
+        $this->UnishipperLtlTestCon = new UnishipperLtlConnectionSettings();
         $this->ShipEngineTestCon = new ShipEngineSmallConnectionSettings();
         $this->UpsLandedCostTestCon = new UpsLandCostApiConnectionSettings();
+        $this->KNLtlTestCon = new KNLtlConnectionSettings();
         $this->curlRequest = new connCurlRequest();
     }
 
@@ -116,7 +118,6 @@ class ConnectionController extends Controller
      */
     public function store(Request $request)
     {
-
         $checkCarrierType = DB::table('carriers')->select('slug', 'stores.name', 'stores.store_domain', 'stores.hash')
             ->leftJoin('installed_carriers', 'carriers.id', 'installed_carriers.carrier_id')
             ->leftJoin('stores', 'stores.id', '=', 'installed_carriers.store_id')
@@ -125,7 +126,8 @@ class ConnectionController extends Controller
 
         if ($checkCarrierType === null) {
             return response()->json([
-                "error" => true, "data" => [],
+                "error" => true,
+                "data" => [],
                 'message' => 'Carrier Not Found'
             ]);
         }
@@ -134,8 +136,13 @@ class ConnectionController extends Controller
         $storeName = $checkCarrierType->store_domain;
         if (blank($storeName)) {
             $storeDetails = BigCommerceFunctions::getStoreSettings($checkCarrierType->hash);
-            $storeDetails = (new CurlRequest())->enSingleCurlRequest($storeDetails['endpoint'],
-                $storeDetails['request'], $storeDetails['headers'], $storeDetails['method'], false);
+            $storeDetails = (new CurlRequest())->enSingleCurlRequest(
+                $storeDetails['endpoint'],
+                $storeDetails['request'],
+                $storeDetails['headers'],
+                $storeDetails['method'],
+                false
+            );
             $response = json_decode($storeDetails['response'], true);
             $storeName = !empty($response['domain']) ? $response['domain'] : $checkCarrierType->name;
         }
@@ -221,6 +228,9 @@ class ConnectionController extends Controller
                 case "unishipper-ltl":
                     $response = $this->UnishipperLtlTestCon->testLtlConnection($request, $storeName);
                     return response()->json($response);
+                case "kn-ltl":
+                    $response = $this->KNLtlTestCon->testConnection($request, $storeName);
+                    return response()->json($response);
                 case "ups-ship-engine":
                     $response = $this->ShipEngineTestCon->testConnection($request, $storeName);
                     return response()->json($response);
@@ -229,12 +239,13 @@ class ConnectionController extends Controller
                     return response()->json($response);
                 default:
                     return response()->json([
-                        "error" => true, "data" => [],
+                        "error" => true,
+                        "data" => [],
                         'message' => 'No carrier Matches'
                     ]);
             }
         }
-        
+
         $getPalletsOutput = [];
         if ($checkCarrierType->slug === 'rl-ltl') {
             $url = Endpoints::testConnectionEndpoint();
@@ -249,13 +260,13 @@ class ConnectionController extends Controller
                 'Password' => $request['password'] ?? '',
                 'APIKey' => $request['api_key'] ?? '',
             ];
-    
+
             $getPalletsQueryString = http_build_query($getPalletsParams);
             $getPalletsOutput = $this->curlRequest->enSingleCurlRequest($url, $getPalletsQueryString, [], 'POST');
             $getPalletsOutput = json_decode($getPalletsOutput['response'], true) ?? [];
         }
 
-        if(isset($getPalletsOutput['severity']) && $getPalletsOutput['severity'] == 'success'){
+        if (isset($getPalletsOutput['severity']) && $getPalletsOutput['severity'] == 'success') {
             $request['pallets'] = isset($getPalletsOutput['pallets']) ? $getPalletsOutput['pallets'] : [] ?? [];
         } else {
             $request['pallets'] = [];
@@ -263,7 +274,8 @@ class ConnectionController extends Controller
 
         $message = 'Connection settings has been saved successfully';
         $carriersArr = ['ltl-quotes', 'small-package', 'gtz-ltl', 'unishippers-small', 'unishipper-ltl'];
-        if (!blank($request['promo_code']) &&
+        if (
+            !blank($request['promo_code']) &&
             in_array($checkCarrierType->slug, $carriersArr) &&
             ((isset($request['is_enabled']) && $request['is_enabled'] == false) || !isset($request['is_enabled']))
         ) {
@@ -361,12 +373,12 @@ class ConnectionController extends Controller
     {
         $carrConnZip = [];
         $insCarriers = json_decode($request->carriersIds);
-        foreach($insCarriers as $key => $insCarrId){
+        foreach ($insCarriers as $key => $insCarrId) {
 
             $con = Connection::where('installed_carrier_id', $insCarrId)->first();
             $carrConnZip[$key] = isset($con['value']) && !empty($con['value']) ? json_decode($con['value'])->senderZip ?? json_decode($con['value'])->billing_postal_Code ??
-                                 json_decode($con['value'])->physical_zip ?? json_decode($con['value'])->original_postal_code ??
-                                 json_decode($con['value'])->customer_zip_code ?? json_decode($con['value'])->delivery_postal_code ?? '' : '';
+                json_decode($con['value'])->physical_zip ?? json_decode($con['value'])->original_postal_code ??
+                json_decode($con['value'])->customer_zip_code ?? json_decode($con['value'])->delivery_postal_code ?? '' : '';
         }
 
         return response()->json(["error" => false, "data" => $carrConnZip]);

@@ -898,6 +898,7 @@ class Functions
             if (!empty($carriers)) {
                 foreach ($carriers as $key => $carrier) {
                     $carrierWeightThreshold = isset($carrier['api']['thresholdWeightLimit']) ? $carrier['api']['thresholdWeightLimit'] : null;
+
                     if ($carrierWeightThreshold === null) {
                         continue;
                     }
@@ -972,7 +973,6 @@ class Functions
         if (!$lgQuotes) {
             $lgQuotes = (isset($quoteSettings['autoDetectedResidentialAddressesLfg']) && $quoteSettings['autoDetectedResidentialAddressesLfg']) && $isResi;
         }
-
         $CompileQuotes = new CompileQuotes();
         $serviceCode = !($carrName == 'xpoltl' || $carrName == 'seflltl' || $carrName == 'yrcltl' || $carrName == 'upsltl' || $carrName == 'saialtl' || $carrName == 'fedexltl' || $carrName == 'tqlltl' || $carrName == 'abfltl' || $carrName == 'daylightltl' || $carrName == 'dayrossltl') && isset($data['serviceType']) ? $data['serviceType'] : '';
         $serviceCode = $data['ratquoteNumber'] ?? $data['scac'] ?? $data['CarrierSCAC'] ?? $serviceCode;
@@ -989,6 +989,7 @@ class Functions
         $ndPrice = $CompileQuotes->calculatePrice($data, $lgQuotes, false, $isUpsLtl, $insideDelivery, $laccess, false, false, $notifyDelivery, $originKey, $items, $allOrigins, $quoteSettings, $isResidential);
         $ndTitle = $CompileQuotes->getTitle($serviceName, $lgQuotes, false, $days, $quoteSettings, $dateAndDays, $insideDelivery, $laccess, false, false, false, false, $notifyDelivery, $isResi, $storeId);
 
+
         if ($isQuickestSer) {
             $explodTitle = explode('w/', $ndTitle);
             if (!isset($explodTitle[1])) {
@@ -1001,9 +1002,10 @@ class Functions
             }
             $originQuotes[$origin][$index][$count]['titleQuickest'] = $titleQuickest ?? '';
         }
-        $originQuotes[$origin][$index][$count]['code'] = $carrName . $serviceCode . $ndAccess;
+        $originQuotes[$origin][$index][$count]['code'] = $carrName . $serviceCode . $serviceCode;
         $originQuotes[$origin][$index][$count]['rate'] = $ndPrice;
         $originQuotes[$origin][$index][$count]['title'] = $ndTitle;
+
 
         return ['originQuotes' => $originQuotes, 'ndPrice' => $ndPrice];
     }
