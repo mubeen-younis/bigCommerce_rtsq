@@ -118,7 +118,6 @@ class ShippingRuleController extends Controller
 
                     $providerSlug = isset($rule['filter_provider']) ? $rule['filter_provider'] : '';
                     $carrierId = isset($connectionSettings[$providerSlug]) ? $connectionSettings[$providerSlug]['creds']['installed_carrier_id'] : null;
-
                     $settings = Connection::join('installed_carriers', 'installed_carriers.id', 'connection_settings.installed_carrier_id')
                         ->join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
                         ->select('carriers.slug', 'carriers.carrier_type', 'connection_settings.id', 'connection_settings.installed_carrier_id',

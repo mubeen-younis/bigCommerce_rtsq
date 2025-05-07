@@ -948,6 +948,7 @@ class GetRatesController extends Controller
 
     public function applyHideDeliveryEstimatesRule($rule)
     {
+        // dd("rule", $rule['filter_provider']);
 
         if (isset($rule['filter_provider']) && $rule['filter_provider'] != null && isset($this->connectionSettings[$rule['filter_provider']]['quote_settings'])) {
             $quoteSettings = $this->connectionSettings[$rule['filter_provider']]['quote_settings'];

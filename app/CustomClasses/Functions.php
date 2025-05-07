@@ -393,6 +393,7 @@ class Functions
             'purolator-small' => 'purolator',
             'usps-small' => 'usps',
             'tql-ltl' => 'tql',
+            'kn-ltl' => 'KuehneNagel',
             'yrc-ltl' => 'yrc',
             'odfl-ltl' => 'odfl4me',
             'dayross-ltl' => 'dayross',
