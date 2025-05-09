@@ -45,7 +45,7 @@ class PalletPackaging
      */
     public function getLtlCarriers()
     {
-        $ltlCarriers = ['wweLTL', 'wweLTLN', 'upsLTL', 'fedexLTL', 'globalTranz', 'cerasis', 'xpoLogistics', 'rnl', 'yrc', 'freightQuote', 'estes', 'dayross', 'odfl4me', 'saia', 'abf', 'southeastern', 'tql', 'echoLogistics', 'daylight', 'chr', 'priority1'];
+        $ltlCarriers = ['wweLTL', 'wweLTLN', 'upsLTL', 'fedexLTL', 'globalTranz', 'cerasis', 'xpoLogistics', 'rnl', 'yrc', 'freightQuote', 'estes', 'dayross', 'odfl4me', 'saia', 'abf','KuehneNagel', 'southeastern', 'tql', 'echoLogistics', 'daylight', 'chr', 'priority1'];
 
         return $ltlCarriers;
     }
@@ -163,6 +163,7 @@ class PalletPackaging
 
             // format cart items again
             $itemsResp = $this->formatPalletItems();
+
             $items = $itemsResp['items'] ?? [];
             $itemsAlone = $itemsResp['itemsAlone'] ?? [];
         }
@@ -170,6 +171,7 @@ class PalletPackaging
         $palletResponse = $resp = [];
 
         if ((count($items) && count($pallet)) || count($itemsAlone)) {
+
             try {
                 // addon hits consumption
                 $hits = count($items);
@@ -179,6 +181,7 @@ class PalletPackaging
                 // setting up 3D Bin request for packaging
                 $Bin3D = new Bin3D();
                 $palletResponse = $Bin3D->getBinResponse($this->storeId, $pallet, $items, $itemsAlone, $hits, $this->cartInfo, $isMultiShipment, true);
+
 
                 if (count($palletResponse)) {
                     foreach ($itemsAlone as $key => $itemAlone) {
@@ -218,13 +221,13 @@ class PalletPackaging
         $items = $itemsAlone = [];
         $itemsArr = $this->itemsArr ?? [];
         $origins = $this->origins ?? [];
-
         foreach ($origins as $key => $origin) {
             if (!isset($itemsArr[$key])) {
                 continue;
             }
 
             $isLtl = (isset($itemsArr[$key]['freightClass']) && $itemsArr[$key]['freightClass'] === 'ltl');
+
             // TODO:also need to handle increased weight threshold value in small products
 
             $ownPallet = isset($itemsArr[$key]['own_pallet']) && $itemsArr[$key]['own_pallet'] == 1;
@@ -256,7 +259,6 @@ class PalletPackaging
                 }
             }
         }
-
         return [
             'items' => $items,
             'itemsAlone' => $itemsAlone,
@@ -275,7 +277,6 @@ class PalletPackaging
         $items = $itemsResp['items'] ?? [];
 
         $itemsCubicVolumeArr = Functions::calculateCubicVolume($items);
-
         if (!empty($itemsCubicVolumeArr) && isset($itemsCubicVolumeArr['volume']) && isset($itemsCubicVolumeArr['weight'])) {
             $itemMinVolume = min(array_values($itemsCubicVolumeArr['volume']));
             $itemMinWeight = min(array_values($itemsCubicVolumeArr['weight']));

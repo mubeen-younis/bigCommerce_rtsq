@@ -69,6 +69,7 @@ class Bin3D
                 $sbsCompiledResponse = $this->appendNotPackedItemsBoth($responseFromSBS, $items);
             }
         } else if (count($items)) {
+
             foreach ($items as $key => $item) {
                 $binRequest[$key] = $this->generateBinRequest($bins, $item, $items, $storeId);
             }
@@ -211,6 +212,7 @@ class Bin3D
      * **/
     private function consumeHits($storeId, $hits, $addonType = 'SBS')
     {
+
         $PackageSubscriptionController = new PackageSubscriptionController();
         $param = ['store_id' => $storeId, 'hits' => $hits, 'addon_type' => $addonType];
         $resp = $PackageSubscriptionController->consumeHits($param);
@@ -259,7 +261,6 @@ class Bin3D
         $finalRequest['params'] = $params;
         $finalRequest['bins'] = $bins;
         $finalRequest['items'] = $item;
-
         return $finalRequest;
     }
 
@@ -270,6 +271,7 @@ class Bin3D
     private function binRequest($binRequest, $storeId, $hits, $cartInfo)
     {
         $requestHash = $this->get_encrypted_params(json_encode($binRequest));
+
         /*
          * Check hash if available same request in last 24 hours then no need to send request to 3dbin
          * **/
@@ -283,7 +285,9 @@ class Bin3D
         // consuming packaging Add-On hits
         if ($hits != 0) {
             $addonType = $this->isPalletPkgReq ? 'PLT' : 'SBS';
+
             $sbsStatus = $this->consumeHits($storeId, $hits, $addonType);
+
             if (!$sbsStatus['status']) {
                 return [];
             }

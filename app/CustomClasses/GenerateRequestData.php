@@ -830,10 +830,12 @@ class GenerateRequestData
 
         if ($palletPkg->isAddonEnabled()) {
             $ltlCarriers = $palletPkg->ltlCarriers ?? [];
+
             if (!empty($ltlCarriers)) {
                 foreach ($ltlCarriers as $carrName) {
                     if (isset($carriers[$carrName])) {
                         $carriersOriginAddress = $carriers[$carrName]['originAddress'];
+
                         break;
                     }
                 }

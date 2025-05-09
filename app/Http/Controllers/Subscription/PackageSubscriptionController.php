@@ -413,6 +413,7 @@ class PackageSubscriptionController extends Controller
         $data['hits'] = $request['hits'];
 
         $addonType = $request['addon_type'];
+
         if ($addonType == self::$addonTypeSBS) {
             self::$dynamicTrial = 1;
             self::$dynamicDevPlan = self::$SBSPkgDynamicDev;

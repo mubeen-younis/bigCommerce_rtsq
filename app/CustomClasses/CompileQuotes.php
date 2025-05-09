@@ -1401,6 +1401,7 @@ class CompileQuotes
 
                 foreach ($quote['q'] as $key => $data) {
                     $srvcType = $data['CarrierSCAC'] ?? '';
+                    // dd($srvcType, $carrierServices);
                     if (!empty($srvcType) && in_array($srvcType, $carrierServices)) {
                         // if (($limitedAccess || $this->alwaysLAD) && isset($this->quoteSettings['limited_access_fee'])) {
                         //     $data['TotalCharge'] += $this->quoteSettings['limited_access_fee'];

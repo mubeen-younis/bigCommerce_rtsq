@@ -681,13 +681,13 @@ class GetRatesController extends Controller
                     ->where('connection_settings.installed_carrier_id', $installedCarrier->id)->first();
                 if ($connectionSettings !== null) {
 
-
                     $this->connectionSettings[$connectionSettings->slug]['creds'] = json_decode($connectionSettings->value, true);
 
                     $quoteSettings = QuoteSetting::where('installed_carrier_id', $installedCarrier->id)->first();
                     if (isset($quoteSettings->value)) {
                         $this->connectionSettings[$connectionSettings->slug]['quote_settings'] = json_decode($quoteSettings->value, true);
                     }
+                    
                     $carrierServices = AdditionalCarrierTabSetting::where('installed_carrier_id', $installedCarrier->id)->first();
 
                     if (isset($carrierServices->value)) {
