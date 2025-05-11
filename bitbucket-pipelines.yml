@@ -20,7 +20,7 @@ pipelines:
                 MODE: 'command'
                 COMMAND: '/var/www/html/bigcommerce/bc/remote-script.sh'
 
-    csv-template-sequence-nesting-changes:
+    qa:
       - step:
           caches:
             - composer

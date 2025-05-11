@@ -656,16 +656,25 @@ class ExportImportProducts extends Controller
             $CSVimportPrdModel->file_name = $request['filename'];
             $CSVimportPrdModel->total_rows = $request['CSV_count'];
             $CSVimportPrdModel->save();
-            $request['CSVinsertedId'] = $CSVimportPrdModel->id;
 
-            // Initialize the counter and dispatch jobs
-            Cache::put('chunks_processed', 0, now()->addHours(2));
+            // aaaaa
+            $importId = $CSVimportPrdModel->id;
+            $request['CSVinsertedId'] = $importId;
+            
+            Cache::put("chunks_processed_{$importId}", 0, now()->addHours(2));
+            
+            // aaaaa
+
+            // $request['CSVinsertedId'] = $CSVimportPrdModel->id;
+
+            // // Initialize the counter and dispatch jobs
+            // Cache::put('chunks_processed', 0, now()->addHours(2));
 
             foreach ($csvChunks as $chunk) {
 
                 // Dispatch a job for each chunk
-                ImportProductsJob::dispatch($chunk, $request, $headerRow)->delay(Carbon::now()->addSeconds($delay++));
-                // $this->importProductCsvJob($chunk, $request, $headerRow);
+                // ImportProductsJob::dispatch($chunk, $request, $headerRow)->delay(Carbon::now()->addSeconds($delay++));
+                $this->importProductCsvJob($chunk, $request, $headerRow);
             }
         } catch (\Exception $exception) {
             $this->createImportCsvStatusInDB($request, $exception);
@@ -1385,13 +1394,20 @@ class ExportImportProducts extends Controller
         $retries = 0;
 
         while ($retries < $maxRetries) {
-            $lock = Cache::lock('chunks_processed_lock', 5);
+            // aaaaa
+            $importId = $request['CSVinsertedId'];
+            $processedKey = "chunks_processed_{$importId}";
+            
+            $lock = Cache::lock("chunks_processed_lock_{$importId}", 5);
+            // aaaaa
+            // $lock = Cache::lock('chunks_processed_lock', 5);
 
             if ($lock->get()) {
 
                 try {
 
-                    $processedChunks = Cache::increment('chunks_processed');
+                    $processedChunks = Cache::increment($processedKey);
+                    // $processedChunks = Cache::increment('chunks_processed');
 
                     if ($processedChunks >= $request['csv_chunk_count']) {
 
@@ -1405,7 +1421,8 @@ class ExportImportProducts extends Controller
                             Log::info('CSV Import Poducts Email Send.');
                             Log::info('ended import products process');
                         }
-                        Cache::forget('chunks_processed');
+                        Cache::forget($processedKey);
+                        // Cache::forget('chunks_processed');
                     }
 
                     break;
