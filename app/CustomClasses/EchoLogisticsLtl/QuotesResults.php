@@ -124,7 +124,7 @@ class QuotesResults
                 }
             }
     
-            // Try fallback if primary not found
+           
             foreach ($accessorials as $acc) {
                 if (isset($acc['Type']) && $acc['Type'] === $lgAccessTypeFallback) {
                    $lgFee = number_format($acc['Charge'], 2, '.', '');
