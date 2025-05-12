@@ -673,8 +673,8 @@ class ExportImportProducts extends Controller
             foreach ($csvChunks as $chunk) {
 
                 // Dispatch a job for each chunk
-                // ImportProductsJob::dispatch($chunk, $request, $headerRow)->delay(Carbon::now()->addSeconds($delay++));
-                $this->importProductCsvJob($chunk, $request, $headerRow);
+                ImportProductsJob::dispatch($chunk, $request, $headerRow)->delay(Carbon::now()->addSeconds($delay++));
+                // $this->importProductCsvJob($chunk, $request, $headerRow);
             }
         } catch (\Exception $exception) {
             $this->createImportCsvStatusInDB($request, $exception);
@@ -931,7 +931,7 @@ class ExportImportProducts extends Controller
         //     && isset($indexes['maximum_nested_items']) && $indexes['maximum_nested_items']
         //     && isset($indexes['stacking_property']) && $indexes['stacking_property']
         // ) {
-            $dropShipId = $this->updateNestedItem($product, $indexes, $store_id, $source_product_id, $variant_id);
+            // $dropShipId = $this->updateNestedItem($product, $indexes, $store_id, $source_product_id, $variant_id);
         // }
         // END //
 
@@ -991,6 +991,7 @@ class ExportImportProducts extends Controller
                 }
             }
             $update['variant_id'] = $variant_id;
+            $dropShipId = $this->updateNestedItem($product, $indexes, $store_id, $source_product_id, $variant_id);
         }
         return $update;
     }
