@@ -376,20 +376,20 @@ class PackagingRequest
     private function setPackagingResponse($response, $locId, $type = null)
     {
         if (isset($response['bins_packed']) && !blank($response['bins_packed'])) {
-            $this->setPackedItems3dBinResponse($response['bins_packed'], $locId, $type);
+            $this->setPackedItems3dBinResponse($response['bins_packed'], $locId, $type, $response);
         }
         if (isset($response['not_packed_items']) && !blank($response['not_packed_items'])) {
             $this->setUnPackedItems3dBinResponse($response['not_packed_items'], $locId, $type);
         }
     }
 
-    public function setPackedItems3dBinResponse($bins, $locId, $type = null)
+    public function setPackedItems3dBinResponse($bins, $locId, $type = null, $response)
     {
-        $bins = $this->addBoxWeightInPackedBinsWeight($bins);
+        $bins = $this->addBoxWeightInPackedBinsWeight($bins, $response);
         $this->finalBoxesForWs[$locId][$type]['bins_packed'] = !empty($this->finalBoxesForWs[$locId][$type]['bins_packed']) ? array_merge($this->finalBoxesForWs[$locId][$type]['bins_packed'], $bins) : $bins;
     }
 
-    public function addBoxWeightInPackedBinsWeight($bins)
+    public function addBoxWeightInPackedBinsWeight($bins, $response)
     {
         $formattedBins = [];
         $collectionOfBoxes = collect($this->storeBoxes);
@@ -397,14 +397,18 @@ class PackagingRequest
             $binData = $collectionOfBoxes->where('id', $bin['bin_data']['id'])->first();
             $bin['bin_data']['comulative_weight'] = !empty($binData['box_weight']) ? $bin['bin_data']['weight'] + $binData['box_weight'] : $bin['bin_data']['weight'];
             $formattedBins[] = $bin;
+            $formattedBins[0]['errors'] = $response['errors'];
+            $formattedBins[0]['status'] = $response['status'];
+            $formattedBins[0]['not_packed_items'] = $response['not_packed_items'];
+            
         }
-
         return $formattedBins;
     }
 
     public function setUnPackedItems3dBinResponse($unPackedItems, $locId, $type = null)
     {
         foreach ($unPackedItems as $item) {
+
             for ($i = 0; $i < $item['q']; $i++) {
                 $boxDetail['length'] = $item['d'] ?? '';
                 $boxDetail['width'] = $item['w'] ?? '';
@@ -417,7 +421,9 @@ class PackagingRequest
                 $itemDetail['q'] = 1;
 
                 $detail = $this->arrayFormatOf3dBinResponse($boxDetail, $itemDetail);
+
                 $this->binResArr[$locId][$type]['bins_unpacked'][] = $detail;
+
             }
         }
     }

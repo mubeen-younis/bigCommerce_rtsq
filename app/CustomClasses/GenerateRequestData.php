@@ -3027,13 +3027,15 @@ class GenerateRequestData
                 }
 
                 $itemLocId = $enitOrigin[$origin]['locationId'] ?? '';
-                $smallOrigins[$itemLocId] = $enitOrigin[$origin];
-
-                $binReqArr[$itemLocId] = $uspsSmallPkgReq->getGroupedUSPSBoxes($storeId);
-                $binRespArr = $uspsSmallPkgReq->setAndGetBinsResponse($storeId, $connSettings, $enitOrigin, $lineItems, $itemLocId);
-                $apiArray['binResponse'][$itemLocId] = $binRespArr['packedBoxes'];
-                $owdArr = $binRespArr['owdBoxes'];
             }
+
+            $smallOrigins[$itemLocId] = $enitOrigin[$origin];
+
+            $binReqArr[$itemLocId] = $uspsSmallPkgReq->getGroupedUSPSBoxes($storeId);
+            $binRespArr = $uspsSmallPkgReq->setAndGetBinsResponse($storeId, $connSettings, $enitOrigin, $lineItems, $itemLocId);
+            $apiArray['binResponse'][$itemLocId] = $binRespArr['packedBoxes'];
+            $owdArr = $binRespArr['owdBoxes'];
+
 
             $apiArray['binsReqArr'] = $binReqArr ?? [];
             $apiArray['binResponseArr'] = $owdArr ?? [];
