@@ -841,12 +841,15 @@ class GenerateRequestData
             $shippingRule = new ShippingRuleController();
             $isLargeCartShippingRule = $shippingRule->checkLargeCartRuleApply($itemsArr, $this->storeData['store']->id) ?? [];
             // Check: Large Cart Settings Shipping Rule is apply
+
             if (!empty($isLargeCartShippingRule)) {
 
                 if (!empty($this->origins)) {
                     // get total shipments based on cart items
                     $totalShipments = collect($this->origins)->pluck('locationId')->unique()->toArray() ?? [];
+
                     foreach ($totalShipments as $shipment) {
+
                         $q = $shipmentWeight = $shipmentPrice = $total_weight = 0;
                         // get total products in a shipment
                         $variantKeys = collect($this->origins)->filter(function ($orig) use ($shipment) {
@@ -858,6 +861,7 @@ class GenerateRequestData
                             $shipmentWeight += $itemsArr[$variant_id]['lineItemWeight'] * $itemsArr[$variant_id]['piecesOfLineItem'] ?? 0;
                             $shipmentPrice += $itemsArr[$variant_id]['lineItemPrice'] * $itemsArr[$variant_id]['piecesOfLineItem'] ?? 0;
                         }
+
                         // calcluate total no of packages of the shipment weight
                         $totalNoOfPackages = ceil($shipmentWeight / $isLargeCartShippingRule['max_package_weight']) ?? 0;
                         $pricePerPackage = round($shipmentPrice / $totalNoOfPackages, 2) ?? 0;
@@ -878,6 +882,7 @@ class GenerateRequestData
                             }
 
                             $shipmentWeight = $shipmentWeight - $maxWeightPackage ?? 0;
+
                             /**
                              * Check: if last package weight is less than the max per package weight
                              * then assign only minimum weight not max per package weight
@@ -900,6 +905,7 @@ class GenerateRequestData
                             $origins[$index] = $origin;
                         }
                     }
+
                     unset($itemsArr);
                     // update lineitems with custom packages and origins with package id
                     $itemsArr = $lineItems ?? [];
@@ -908,6 +914,10 @@ class GenerateRequestData
                             $carriers[$carrierName]['originAddress'] = $origins ?? [];
                             Log::info('Large Cart Settings Shipping Rule Applied');
                         }
+                        
+                        // if(isset($carriers['usps'])){
+                        //     $carriers['usps']['api']['binResponse'] = [];
+                        // }
                     }
                 }
             }
@@ -921,6 +931,7 @@ class GenerateRequestData
                 || isset($carriers['usps'])
                 || isset($carriers['shipEngine'])
                 || isset($carriers['wweSmallN']);
+
 
             if ($hasSmall && empty($isLargeCartShippingRule)) {
                 $multiplePackaging = $this->handleShipAsMultiplePackaging($carriers, $itemsArr);
@@ -1200,7 +1211,6 @@ class GenerateRequestData
 
             $itemsArr = $palletPkg->setNmfcNull($palletPkgResp, $itemsArr);
         }
-
         $requestArr = [
             'apiVersion' => '2.0',
             'platform' => 'bigcommerce',
@@ -1231,7 +1241,6 @@ class GenerateRequestData
                 $requestArr['FedexHomeDeliveryPremiumPricing'] = 1;
             }
         }
-
         return ['requestArr' => $requestArr, 'binReponse' => $binReponse, 'boxBins' => $boxBins, 'palletResponse' => $palletResp, 'palletBins' => $palletBins, 'SuppressParcelRates' => $IsSuppressParcelRates];
     }
 
@@ -3017,29 +3026,34 @@ class GenerateRequestData
         ];
 
         if ($sbsEnabled) {
-            $binReqArr = $binRespArr = $smallOrigins = $owdArr = [];
+            $binReqArr = $binRespArr = $smallOrigins = $owdArr = $itemLocId = [];
+
 
             foreach ($lineItems as $origin => $item) {
+
                 $isLtl = (isset($item['freight_enabled']) && $item['freight_enabled'] == 'Y') || (isset($item['freightClass']) && $item['freightClass'] == 'ltl');
                 $isMultiPackage = isset($item['shipMultiplePackage']) && $item['shipMultiplePackage'] ?? false;
                 if ($isLtl || $isMultiPackage) {
                     continue;
                 }
 
-                $itemLocId = $enitOrigin[$origin]['locationId'] ?? '';
             }
+            $itemLocId = $enitOrigin[$origin]['locationId'] ?? '';
 
             $smallOrigins[$itemLocId] = $enitOrigin[$origin];
 
-            $binReqArr[$itemLocId] = $uspsSmallPkgReq->getGroupedUSPSBoxes($storeId);
-            $binRespArr = $uspsSmallPkgReq->setAndGetBinsResponse($storeId, $connSettings, $enitOrigin, $lineItems, $itemLocId);
-            $apiArray['binResponse'][$itemLocId] = $binRespArr['packedBoxes'];
-            $owdArr = $binRespArr['owdBoxes'];
-
+            $shippingRule = new ShippingRuleController();
+            $isLargeCartShippingRule = $shippingRule->checkLargeCartRuleApply($lineItems, $this->storeData['store']->id) ?? [];
+            if(empty($isLargeCartShippingRule)){
+                $binReqArr[$itemLocId] = $uspsSmallPkgReq->getGroupedUSPSBoxes($storeId);
+                $binRespArr = $uspsSmallPkgReq->setAndGetBinsResponse($storeId, $connSettings, $enitOrigin, $lineItems, $itemLocId);
+            }
+            $apiArray['binResponse'][$itemLocId] = $binRespArr['packedBoxes'] ?? [];
+            $owdArr = $binRespArr['owdBoxes'] ?? [];
 
             $apiArray['binsReqArr'] = $binReqArr ?? [];
-            $apiArray['binResponseArr'] = $owdArr ?? [];
-            $apiArray['boxBins'] = $uspsSmallPkgReq->getGroupedUSPSBoxes($storeId) ?? [];
+            // $apiArray['binResponseArr'] = $owdArr ?? [];
+            // $apiArray['boxBins'] = $uspsSmallPkgReq->getGroupedUSPSBoxes($storeId) ?? [];
         }
 
         $apiArray = array_merge($apiArray, $this->getCutOffDetails($connSettings));
