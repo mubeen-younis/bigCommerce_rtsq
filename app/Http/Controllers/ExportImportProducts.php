@@ -873,13 +873,44 @@ class ExportImportProducts extends Controller
                 $update['nmfc'] = $data != '' ? round($data, 2) : '';
             }
         }
-        if (isset($indexes['product_markup']) && $indexes['product_markup']) {
-            $key = $indexes['product_markup'];
-            $data = $product["$key"];
-            if (is_numeric($data) || empty($data)) {
-                $update['product_markup'] = $data != '' ? round($data, 2) : '';
+        // if (isset($indexes['product_markup']) && $indexes['product_markup']) {
+        //     $key = $indexes['product_markup'];
+        //     $data = $product["$key"];
+        //     if (is_numeric($data) || empty($data)) {
+        //         $update['product_markup'] = $data != '' ? round($data, 2) : '';
+        //     }
+        // }
+
+         if (isset($indexes['product_markup']) && $indexes['product_markup']) {
+    $key = $indexes['product_markup'];
+    $data = trim($product[$key]);
+
+    if ($data !== '') {
+        // Check if it ends with % and extract numeric part
+        if (str_ends_with($data, '%')) {
+            $numericPart = rtrim($data, '%');
+            $numericPart = trim($numericPart);
+
+            if (is_numeric($numericPart)) {
+                // Round and append % again
+                $update['product_markup'] = round((float) $numericPart, 2) . '%';
+            } else {
+                // Invalid format like "abc%" — handle if needed
+                $update['product_markup'] = ''; // or set error
+            }
+        } else {
+            // Handle numeric values without %
+            if (is_numeric($data)) {
+                $update['product_markup'] = round((float) $data, 2);
+            } else {
+                $update['product_markup'] = ''; // or set error
             }
         }
+    } else {
+        $update['product_markup'] = '';
+    }
+}
+
         // if (isset($indexes['own_pallet']) && $indexes['own_pallet']) {
         //     $key = $indexes['own_pallet'];
         //     $data = (string)$product["$key"];
@@ -1399,7 +1430,7 @@ class ExportImportProducts extends Controller
             $importId = $request['CSVinsertedId'];
             $processedKey = "chunks_processed_{$importId}";
             
-            $lock = Cache::lock("chunks_processed_lock_{$importId}", 5);
+            $lock = Cache::lock("chunks_processed_lock_{$importId}", 10);
             // aaaaa
             // $lock = Cache::lock('chunks_processed_lock', 5);
 
