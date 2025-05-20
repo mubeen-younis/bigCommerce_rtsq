@@ -716,7 +716,7 @@ class ProductSettingController extends Controller
             $product->pallet_vertical_rotation = isset($prd['pallet_vertical_rotation']) && $prd['pallet_vertical_rotation'] ? 1 : 0;
             $product->own_pallet = isset($prd['own_pallet']) && $prd['own_pallet'] ? 1 : 0;
             $product->product_markup = isset($prd['product_markup']) && !empty($prd['product_markup']) ? $prd['product_markup'] : '';
-            $product->nmfc = isset($prd['nmfc']) && !empty($prd['nmfc']) ? $prd['nmfc'] : '';
+            $product->nmfc = isset($prd['nmfc']) && !empty($prd['nmfc']) ? $prd['nmfc'] : null;
             if (isset($prd['dropship_enabled']) && $prd['dropship_enabled']) {
                 $product->dropship_enabled = true;
                 $product->dropship_location = $prd['dropship_location'] ?? null;

@@ -78,6 +78,11 @@ class ConnectionSettings extends CarriersConnectionSettings
                 'message' => 'Test connection successful.',
                 'data' => [],
             ];
+        } elseif (isset($output['severity']) && $output['severity'] === 'ERROR') {
+            $response = [
+                'error' => true,
+                'message' => $output['Message'],
+            ];
         } else{
             $response = [
                 'error' => true,
