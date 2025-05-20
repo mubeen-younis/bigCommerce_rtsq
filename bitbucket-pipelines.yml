@@ -8,7 +8,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    csv-template-sequence-nesting-changes:
+    kuehne-nagel-carrier-integration:
       - step:
           caches:
             - composer
@@ -20,7 +20,7 @@ pipelines:
                 MODE: 'command'
                 COMMAND: '/var/www/html/bigcommerce/bc/remote-script.sh'
 
-    csv-template-sequence-nesting-changes:
+    QA:
       - step:
           caches:
             - composer
