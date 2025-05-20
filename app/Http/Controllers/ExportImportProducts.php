@@ -673,8 +673,8 @@ class ExportImportProducts extends Controller
             foreach ($csvChunks as $chunk) {
 
                 // Dispatch a job for each chunk
-                ImportProductsJob::dispatch($chunk, $request, $headerRow)->delay(Carbon::now()->addSeconds($delay++));
-                // $this->importProductCsvJob($chunk, $request, $headerRow);
+                // ImportProductsJob::dispatch($chunk, $request, $headerRow)->delay(Carbon::now()->addSeconds($delay++));
+                $this->importProductCsvJob($chunk, $request, $headerRow);
             }
         } catch (\Exception $exception) {
             $this->createImportCsvStatusInDB($request, $exception);
@@ -876,8 +876,9 @@ class ExportImportProducts extends Controller
         if (isset($indexes['product_markup']) && $indexes['product_markup']) {
             $key = $indexes['product_markup'];
             $data = $product["$key"];
+            $update['product_markup'] = $data;
             // if (is_numeric($data) || empty($data)) {
-                $update['product_markup'] = $data != '' ? round($data, 2) : '';
+            //     $update['product_markup'] = $data != '' ? round($data, 2) : '';
             // }
         }
         // if (isset($indexes['own_pallet']) && $indexes['own_pallet']) {
