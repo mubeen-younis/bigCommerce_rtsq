@@ -150,7 +150,6 @@ class OrderController extends Controller
             ->where('cart_id', $cartId)
             ->where('store_id', $request['store_id'])
             ->first())->toArray() ?? null;
-
         if (blank($data) && !blank($order['full_rate_id'])) {
             $data = optional($modelName::where('rate_id', $order['full_rate_id'])
                 ->where('cart_id', $cartId)
@@ -193,7 +192,9 @@ class OrderController extends Controller
         }
 
         $rateId = str_contains($rateId, 'idx+') ? $rateId : $order['full_rate_id'];
+
         $index = explode('idx+', $rateId);
+
         if (is_string($index[0]) && $index[0] == "shippingGroup") {
             return $this->shippingGroupOrderWidget($data, $order);
         }
@@ -849,7 +850,6 @@ class OrderController extends Controller
         $perPage = $request['perpage'] ?? 50;
         $status = $request['status'] ?? '';
         $sortProd = (isset($request['sortOrder']) && $request['sortOrder'] === "true") ? 'desc' : 'asc';
-        //dd($status);
         $search = (int)$request['search'] ?? 0;
         $headers[] = 'X-Auth-Token: ' . $store->access_token;
         $headers[] = 'Content-Type: application/json';
@@ -885,7 +885,6 @@ class OrderController extends Controller
 
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
             $response = json_decode($response['response'], true);
-            //dd($endpoint,$response);
             if (!(isset($response[0]['status']) && $search)) {
                 $orders = $search ? [$response] : $response;
 

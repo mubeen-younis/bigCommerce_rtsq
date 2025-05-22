@@ -231,7 +231,6 @@ class Shipping
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         //Sending request to WS to get Quotes
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
-        // dd("234",$requestArr, $quotes);
         /* Catering Usps carrier packaging response */
         $uspsCarrierArr = $requestArr['requestArr']['carriers']['usps'] ?? [];
         if (isset($uspsCarrierArr) && !empty($uspsCarrierArr)) {
@@ -265,10 +264,10 @@ class Shipping
         }
         $quotesFromWs = $quotes ?? [];
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $package['items'], $this->SuppressParcelRates, $store_id, $totalHazmatBoxes);
-
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];
+
         }
 
         /*Adding shipping group rates response in quotes
@@ -284,9 +283,9 @@ class Shipping
             $finalQuotes = $flatRate['finalQuotes'];
             $multiShipmentQuotes = $flatRate['multiShipmentQuotes'];
         }
-
         $finalQuotes = $this->addRateId($finalQuotes);
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
+
         $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
 
         return $resp;

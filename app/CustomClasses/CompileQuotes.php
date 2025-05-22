@@ -1004,7 +1004,6 @@ class CompileQuotes
                 }
             }
         }
-
         if (!empty($newArr) && count($newArr) == 1 && count($allOrigins) == count($newArr)) {
             $finalSingleShipQuotes = [];
             foreach ($newArr as $quotes) {
@@ -1053,8 +1052,6 @@ class CompileQuotes
 
     public function finalMultiShipmentResp($locations)
     {
-
-
         // Final array to hold the combined sums for each rate type
         $finalArray = $finalCheckoutResp = $multiShipmentArr = [];
 
@@ -1073,7 +1070,7 @@ class CompileQuotes
                 }
             }
         }
-
+unset($allRateTypes[0]);
         $accesArray = Functions::getEnabledAccessorials($rateType);
         // Now, for each rate type, check if all locations have it and sum the rates
         foreach ($allRateTypes as $rateType) {
@@ -1134,7 +1131,6 @@ class CompileQuotes
             }
 
             $code = $this->getAccessorialCode($access['isLG'] ?? false, $access['isID'] ?? false, $accessorials['isPU'] ?? false, $accessorials['isLGPU'] ?? false, $access['isLAD'] ?? false, $accessorials['isTMD'] ?? false, $accessorials['isAPD'] ?? false, $access['isNBD'] ?? false, $this->isResi ?? false, $isAlwaysResidential ?? false, $isSurchargeRates ?? false);
-
             if ($rateType == 'Truckload') {
                 $title = $title . ' w/ truckload delivery';
                 $code = '+TL';
@@ -1401,7 +1397,6 @@ class CompileQuotes
 
                 foreach ($quote['q'] as $key => $data) {
                     $srvcType = $data['CarrierSCAC'] ?? '';
-                    // dd($srvcType, $carrierServices);
                     if (!empty($srvcType) && in_array($srvcType, $carrierServices)) {
                         // if (($limitedAccess || $this->alwaysLAD) && isset($this->quoteSettings['limited_access_fee'])) {
                         //     $data['TotalCharge'] += $this->quoteSettings['limited_access_fee'];
@@ -1422,7 +1417,6 @@ class CompileQuotes
                         $days = $data['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = $knLtl->getShipmentDateAndDays($data);
                         $enableFeaturesArray = Functions::getEnableFeaturesArr($lgQuotes, $insideDelivery ?? false, $notifyDelivery ?? false, $limitedAccess ?? false);
-
                         foreach ($enableFeaturesArray as $index => $feature) {
                             if ($feature['isEnable']) {
                                 $compileNotifyDeliveryQuotes = Functions::getOriginQuotes(
@@ -5355,6 +5349,7 @@ class CompileQuotes
             $this->quoteSettings = $quoteSetting;
         }
         $serviceTitle = $this->customLabel($serviceName);
+
         $deliveryEstimateLabel = $this->getDeliveryEstimates($daysAndDate);
 
         if ($from) {
@@ -5369,7 +5364,7 @@ class CompileQuotes
 
         // Get Access Title
         $accessTitle = Functions::getAccessTitle($this->quoteSettings, $isResi, $lgOption, $insideDel, $notifyDelivery, $laccess, $twoManDel, $appDel, $this->storeId ?? $storeId);
-        
+
         $resp = $serviceTitle . $accessTitle . $deliveryEstimateLabel;
         return $resp;
     }

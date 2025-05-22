@@ -21,7 +21,6 @@ class ConnectionSettings extends CarriersConnectionSettings
         ];
         $url = $this->testConnectionUrl;
         // $url = "http:localhost/ws/index.php";
-        // dd($url);
 
         $params = array(
             'dont_auth' => '1',
@@ -43,7 +42,6 @@ class ConnectionSettings extends CarriersConnectionSettings
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
 
         $outresp = json_decode($output['response'], true);
-
         // if (isset($outresp['severity']) && $outresp['severity'] === 'ERROR') {
         //     // dd("outresp", $outresp['Message']);
         //     $response = [
@@ -58,11 +56,10 @@ class ConnectionSettings extends CarriersConnectionSettings
                 'message' => 'Test connection successful.',
                 'data' => [],
             ];
-        }elseif(isset($outresp['severity']) && $outresp['severity'] === 'ERROR') {
-            // dd("outresp", $outresp['Message']);
+        }elseif(isset($outresp['error'])) {
             $response = [
                 'error' => true,
-                'message' => $outresp['Message'],
+                'message' => $outresp['error'],
             ];
         }else{
             $response = [
