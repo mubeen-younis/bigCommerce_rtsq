@@ -673,8 +673,8 @@ class ExportImportProducts extends Controller
             foreach ($csvChunks as $chunk) {
 
                 // Dispatch a job for each chunk
-                // ImportProductsJob::dispatch($chunk, $request, $headerRow)->delay(Carbon::now()->addSeconds($delay++));
-                $this->importProductCsvJob($chunk, $request, $headerRow);
+                ImportProductsJob::dispatch($chunk, $request, $headerRow)->delay(Carbon::now()->addSeconds($delay++));
+                // $this->importProductCsvJob($chunk, $request, $headerRow);
             }
         } catch (\Exception $exception) {
             $this->createImportCsvStatusInDB($request, $exception);
