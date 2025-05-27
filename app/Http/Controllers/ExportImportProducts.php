@@ -1163,19 +1163,24 @@ class ExportImportProducts extends Controller
         // Extract nested item settings from the product (CSV row)
         if (array_key_exists($indexes['nested_dimension'], $product)) {
             $nested_dimension = $product[$indexes['nested_dimension']];
-            if ($nested_dimension === 'Length') {
+            $dimension_lower = strtolower($nested_dimension);
+        
+            if ($dimension_lower === 'length') {
                 $nested_dimension = 0;
-            } elseif ($nested_dimension === 'Width') {
+            } elseif ($dimension_lower === 'width') {
                 $nested_dimension = 1;
-            } elseif ($nested_dimension === 'Height') {
+            } elseif ($dimension_lower === 'height') {
                 $nested_dimension = 2;
             } else {
                 $nested_dimension = null;
             }
-        } else {
-            $nested_dimension = null;
         }
+<<<<<<< HEAD
 
+=======
+        
+    
+>>>>>>> 87aa98b870e4533678e82c86f56c925eac9f7922
         if (array_key_exists($indexes['nesting_percentage'], $product)) {
             $nesting_percentage = $product[$indexes['nesting_percentage']];
         } else {
@@ -1190,9 +1195,11 @@ class ExportImportProducts extends Controller
 
         if (array_key_exists($indexes['stacking_property'], $product)) {
             $stacking_property = $product[$indexes['stacking_property']];
-            if ($stacking_property === 'Evenly') {
+            $property_lower = strtolower($stacking_property);
+        
+            if ($property_lower === 'evenly') {
                 $stacking_property = 0;
-            } elseif ($stacking_property === 'Maximized') {
+            } elseif ($property_lower === 'maximized') {
                 $stacking_property = 1;
             } else {
                 $stacking_property = null;
@@ -1200,7 +1207,12 @@ class ExportImportProducts extends Controller
         } else {
             $stacking_property = null;
         }
+<<<<<<< HEAD
 
+=======
+        
+    
+>>>>>>> 87aa98b870e4533678e82c86f56c925eac9f7922
         if (array_key_exists($indexes['nested_item'], $product)) {
             $nested_item = $product[$indexes['nested_item']];
         } else {

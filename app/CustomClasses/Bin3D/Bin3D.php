@@ -137,7 +137,7 @@ class Bin3D
                 }
             }
         }
-        return $data;
+        return $data ?? [];
     }
 
     public function appendNotPackedItemsOnlyAlone($responseFromSBS)
