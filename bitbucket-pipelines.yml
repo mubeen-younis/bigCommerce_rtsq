@@ -2,45 +2,45 @@
 # Check our guides at https://confluence.atlassian.com/x/e8YWN for more examples.
 # Only use spaces to indent your .yml configuration.
 # -----
+#
 # You can specify a custom docker image from Docker Hub as your build environment.
 image: php:7.1.29
 options:
   max-time: 60
 pipelines:
   branches:
-    DEV:
+    development:
       - step:
           caches:
             - composer
           script:
             - pipe: atlassian/ssh-run:0.2.2
               variables:
-                SSH_USER: 'apx-bc-01'
-                SERVER: '44.207.204.55'
+                SSH_USER: $BC_DEV_SSH_USER
+                SERVER: $DEV_SERVER_IP
                 MODE: 'command'
-                COMMAND: '/var/www/html/bigcommerce/bc/remote-script.sh'
+                COMMAND: '$DEV_COMMAND/bigcommerce/bc/remote-script.sh'
 
-    csv-template-sequence-nesting-changes:
+    qa:
       - step:
           caches:
             - composer
           script:
             - pipe: atlassian/ssh-run:0.2.2
               variables:
-                SSH_USER: 'apx-bc-01'
-                SERVER: '52.87.17.243'
+                SSH_USER: $BC_STAGING_SSH_USER
+                SERVER: $STAGING_SERVER_IP
                 MODE: 'command'
-                COMMAND: '/var/www/html/bigcommerce/bc/remote-script.sh'
+                COMMAND: '$STAGING_COMMAND/bigcommerce/bc/remote-script.sh'
 
     master:
-
       - step:
           caches:
             - composer
           script:
             - pipe: atlassian/ssh-run:0.2.2
               variables:
-                SSH_USER: 'ec2-user'
-                SERVER: '34.197.112.152'
+                SSH_USER: $RTSQ_PRO_SSH_USER
+                SERVER: $RTSQ_PRO_SERVER_IP
                 MODE: 'command'
-                COMMAND: '/var/www/html/bigcommerce/bc/remote-script.sh'
+                COMMAND: '$RTSQ_PRO_COMMAND/bigcommerce/remote-script.sh'
