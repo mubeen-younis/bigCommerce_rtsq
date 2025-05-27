@@ -556,7 +556,6 @@ class ExportImportProducts extends Controller
         if (isset($request['hasheaders']) && $request['hasheaders'] === "false") {
             // $heading = range('A', 'ZZ');
             $heading = array_merge(range('A', 'Z'), range('a', 'b'));
-
         } else {
             foreach ($csv[0] as $key => $val) {
                 $heading[] = trim($val);
@@ -655,14 +654,21 @@ class ExportImportProducts extends Controller
             $CSVimportPrdModel->store_id = $request['store_id'];
             $CSVimportPrdModel->file_name = $request['filename'];
             $CSVimportPrdModel->total_rows = $request['CSV_count'];
+
+            // /aaaaa
+            $CSVimportPrdModel->processed_chunks = 0; // Initialize processed_chunks
+            // /aaaaa
+
             $CSVimportPrdModel->save();
 
             // aaaaa
             $importId = $CSVimportPrdModel->id;
             $request['CSVinsertedId'] = $importId;
-            
-            Cache::put("chunks_processed_{$importId}", 0, now()->addHours(2));
-            
+
+            // rrrr
+            // Cache::put("chunks_processed_{$importId}", 0, now()->addHours(2));
+            // rrrr
+
             // aaaaa
 
             // $request['CSVinsertedId'] = $CSVimportPrdModel->id;
@@ -673,8 +679,8 @@ class ExportImportProducts extends Controller
             foreach ($csvChunks as $chunk) {
 
                 // Dispatch a job for each chunk
-                ImportProductsJob::dispatch($chunk, $request, $headerRow)->delay(Carbon::now()->addSeconds($delay++));
-                // $this->importProductCsvJob($chunk, $request, $headerRow);
+                // ImportProductsJob::dispatch($chunk, $request, $headerRow)->delay(Carbon::now()->addSeconds($delay++));
+                $this->importProductCsvJob($chunk, $request, $headerRow);
             }
         } catch (\Exception $exception) {
             $this->createImportCsvStatusInDB($request, $exception);
@@ -827,7 +833,6 @@ class ExportImportProducts extends Controller
             $settings = $this->getSettings($oldSettings, $product, $indexes, $store_id);
             $shipMultiPackage = isset($settings->ship_multi_package) ? $settings->ship_multi_package : null;
             $update['settings'] = json_encode($settings);
-
         }
         if (isset($indexes['name']) && $indexes['name']) {
             $key = $indexes['name'];
@@ -932,7 +937,7 @@ class ExportImportProducts extends Controller
         //     && isset($indexes['maximum_nested_items']) && $indexes['maximum_nested_items']
         //     && isset($indexes['stacking_property']) && $indexes['stacking_property']
         // ) {
-            // $dropShipId = $this->updateNestedItem($product, $indexes, $store_id, $source_product_id, $variant_id);
+        // $dropShipId = $this->updateNestedItem($product, $indexes, $store_id, $source_product_id, $variant_id);
         // }
         // END //
 
@@ -949,7 +954,7 @@ class ExportImportProducts extends Controller
                         ->where('variant_id', $variant_id)
                         ->where('store_id', $store_id)
                         ->update($update);
-                }catch (\Exception $e) {
+                } catch (\Exception $e) {
                     Log::error('Update Error: ' . $e->getMessage(), [
                         'source_product_id' => $source_product_id,
                         'variant_id' => $variant_id,
@@ -1208,7 +1213,7 @@ class ExportImportProducts extends Controller
     public function updateNestedItem($product, $indexes, $store_id, $source_product_id, $variant_id = null)
     {
         $nestedItemId = false;
-    
+
         // Extract nested item settings from the product (CSV row)
         if (array_key_exists($indexes['nested_dimension'], $product)) {
             $nested_dimension = $product[$indexes['nested_dimension']];
@@ -1219,24 +1224,24 @@ class ExportImportProducts extends Controller
             } elseif ($nested_dimension === 'Height') {
                 $nested_dimension = 2;
             } else {
-                $nested_dimension = null; 
+                $nested_dimension = null;
             }
         } else {
             $nested_dimension = null;
         }
-    
+
         if (array_key_exists($indexes['nesting_percentage'], $product)) {
             $nesting_percentage = $product[$indexes['nesting_percentage']];
         } else {
             $nesting_percentage = null;
         }
-    
+
         if (array_key_exists($indexes['maximum_nested_items'], $product)) {
             $maximum_nested_items = $product[$indexes['maximum_nested_items']];
         } else {
             $maximum_nested_items = null;
         }
-    
+
         if (array_key_exists($indexes['stacking_property'], $product)) {
             $stacking_property = $product[$indexes['stacking_property']];
             if ($stacking_property === 'Evenly') {
@@ -1244,38 +1249,38 @@ class ExportImportProducts extends Controller
             } elseif ($stacking_property === 'Maximized') {
                 $stacking_property = 1;
             } else {
-                $stacking_property = null; 
+                $stacking_property = null;
             }
         } else {
             $stacking_property = null;
         }
-    
+
         if (array_key_exists($indexes['nested_item'], $product)) {
             $nested_item = $product[$indexes['nested_item']];
         } else {
             $nested_item = null;
         }
-    
+
         // Check if any nested item field is provided
         if (
-            isset($nested_dimension) || isset($nesting_percentage) || 
-            isset($maximum_nested_items) || isset($stacking_property) || 
+            isset($nested_dimension) || isset($nesting_percentage) ||
+            isset($maximum_nested_items) || isset($stacking_property) ||
             isset($nested_item)
         ) {
             $productSetting = ProductSetting::where('source_product_id', $source_product_id)
                 ->where('variant_id', $variant_id)
                 ->where('store_id', $store_id)
                 ->first();
-    
+
             if (!$productSetting) {
                 Log::warning('No ProductSetting record found for source_product_id: ' . $source_product_id . ' and variant_id: ' . $variant_id, [
                     'store_id' => $store_id,
                 ]);
                 return $nestedItemId;
             }
-    
+
             $productSettingId = $productSetting->id;
-    
+
             $updateNestedItem = [];
             if (isset($nested_dimension)) {
                 $updateNestedItem['dimension_type'] = $nested_dimension;
@@ -1292,13 +1297,13 @@ class ExportImportProducts extends Controller
             if (isset($nested_item)) {
                 $updateNestedItem['is_nesting_enabled'] = $nested_item;
             }
-    
+
             $nestedData = NestingItemsDetail::where('product_settings_id', $productSettingId)
                 ->where('store_id', $store_id)
                 ->first();
-    
+
             if ($nestedData) {
-                
+
                 try {
                     NestingItemsDetail::where('product_settings_id', $productSettingId)
                         ->where('store_id', $store_id)
@@ -1345,14 +1350,14 @@ class ExportImportProducts extends Controller
                     ]);
                 }
             }
-    
+
             if (Functions::isEnabledLogs("", $store_id)) {
                 Log::info('Import Products NestedItem: ' . $nestedItemId . ' for source_product_id: ' . $source_product_id . ' and variant_id: ' . $variant_id, [
                     'update_data' => $updateNestedItem,
                 ]);
             }
         }
-    
+
         return $nestedItemId;
     }
 
@@ -1392,52 +1397,83 @@ class ExportImportProducts extends Controller
             }
         }
 
-        $maxRetries = 3; // Retry 3 times if lock is not acquired
-        $retries = 0;
-
-        while ($retries < $maxRetries) {
-            // aaaaa
+        //aaaaa
+        DB::transaction(function () use ($request, $exceptionProducts) {
             $importId = $request['CSVinsertedId'];
-            $processedKey = "chunks_processed_{$importId}";
-            
-            $lock = Cache::lock("chunks_processed_lock_{$importId}", 5);
-            // aaaaa
-            // $lock = Cache::lock('chunks_processed_lock', 5);
+            $csvImport = CSVimportExport::where('id', $importId)->lockForUpdate()->first();
 
-            if ($lock->get()) {
-
-                try {
-
-                    $processedChunks = Cache::increment($processedKey);
-                    // $processedChunks = Cache::increment('chunks_processed');
-
-                    if ($processedChunks >= $request['csv_chunk_count']) {
-
-                        CSVimportExport::where('id', $request['CSVinsertedId'])->update([
-                            'error_at_rows' => json_encode($exceptionProducts),
-                            'status' => count($exceptionProducts) == $request['CSV_count'] ? 3 : (empty($exceptionProducts) ? 1 : 2),
-                        ]);
-
-                        $this->ImportNotifyEmail($request['importEmailAddress'], $exceptionProducts);
-                        if (Functions::isEnabledLogs($request['store_hash'])) {
-                            Log::info('CSV Import Poducts Email Send.');
-                            Log::info('ended import products process');
-                        }
-                        Cache::forget($processedKey);
-                        // Cache::forget('chunks_processed');
-                    }
-
-                    break;
-                } finally {
-                    $lock->release();
-                }
-                break; // Exit loop if increment was successful
-            } else {
-                // Wait briefly before retrying to acquire the lock
-                usleep(100000); // Wait for 0.1 seconds
-                $retries++;
+            if (!$csvImport) {
+                Log::error("CSVimportExport record not found for ID: $importId");
+                return;
             }
-        }
+
+            $csvImport->processed_chunks += 1;
+            $csvImport->save();
+
+            Log::info("Incremented processed_chunks to {$csvImport->processed_chunks} for import ID: $importId");
+
+            if ($csvImport->processed_chunks >= $request['csv_chunk_count']) {
+                $csvImport->error_at_rows = json_encode($exceptionProducts);
+                $csvImport->status = count($exceptionProducts) == $request['CSV_count'] ? 3 : (empty($exceptionProducts) ? 1 : 2);
+                $csvImport->save();
+
+                $this->ImportNotifyEmail($request['importEmailAddress'], $exceptionProducts);
+                if (Functions::isEnabledLogs($request['store_hash'])) {
+                    Log::info('CSV Import Products Email Sent.');
+                    Log::info('Ended import products process');
+                }
+            }
+        });
+        //aaaaa
+
+        // rrrr
+        // $maxRetries = 3; // Retry 3 times if lock is not acquired
+        // $retries = 0;
+
+        // while ($retries < $maxRetries) {
+        //     // aaaaa
+        //     $importId = $request['CSVinsertedId'];
+        //     $processedKey = "chunks_processed_{$importId}";
+
+        //     $lock = Cache::lock("chunks_processed_lock_{$importId}", 5);
+        //     // aaaaa
+        //     // $lock = Cache::lock('chunks_processed_lock', 5);
+
+        //     if ($lock->get()) {
+
+        //         try {
+
+        //             $processedChunks = Cache::increment($processedKey);
+        //             // $processedChunks = Cache::increment('chunks_processed');
+
+        //             if ($processedChunks >= $request['csv_chunk_count']) {
+
+        //                 CSVimportExport::where('id', $request['CSVinsertedId'])->update([
+        //                     'error_at_rows' => json_encode($exceptionProducts),
+        //                     'status' => count($exceptionProducts) == $request['CSV_count'] ? 3 : (empty($exceptionProducts) ? 1 : 2),
+        //                 ]);
+
+        //                 $this->ImportNotifyEmail($request['importEmailAddress'], $exceptionProducts);
+        //                 if (Functions::isEnabledLogs($request['store_hash'])) {
+        //                     Log::info('CSV Import Poducts Email Send.');
+        //                     Log::info('ended import products process');
+        //                 }
+        //                 Cache::forget($processedKey);
+        //                 // Cache::forget('chunks_processed');
+        //             }
+
+        //             break;
+        //         } finally {
+        //             $lock->release();
+        //         }
+        //         break; // Exit loop if increment was successful
+        //     } else {
+        //         // Wait briefly before retrying to acquire the lock
+        //         usleep(100000); // Wait for 0.1 seconds
+        //         $retries++;
+        //     }
+        // }
+        // rrrr
     }
 
     public function updateBCProduct($source_product_id, $variant_id, $store_id, $update, $access_token, $hash)

@@ -8,7 +8,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    csv-template-sequence-nesting-changes:
+    DEV:
       - step:
           caches:
             - composer
@@ -20,7 +20,7 @@ pipelines:
                 MODE: 'command'
                 COMMAND: '/var/www/html/bigcommerce/bc/remote-script.sh'
 
-    QA:
+    csv-template-sequence-nesting-changes:
       - step:
           caches:
             - composer
