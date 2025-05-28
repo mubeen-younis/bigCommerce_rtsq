@@ -59,10 +59,6 @@ class BoxSizeController extends Controller
     public function store(Request $request)
     {
         $rules = [
-<<<<<<< HEAD
-            // 'nickname' => 'required|unique:box_sizes',
-=======
->>>>>>> 87aa98b870e4533678e82c86f56c925eac9f7922
             'nickname' => [
                 'required',
                 Rule::unique('box_sizes')->where(function ($query) use ($request) {
