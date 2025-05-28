@@ -43,4 +43,4 @@ pipelines:
                 SSH_USER: $RTSQ_PRO_SSH_USER
                 SERVER: $RTSQ_PRO_SERVER_IP
                 MODE: 'command'
-                COMMAND: '$RTSQ_PRO_COMMAND/bigcommerce/remote-script.sh'
+                COMMAND: '$RTSQ_PRO_COMMAND/bigcommerce/bc/remote-script.sh'
