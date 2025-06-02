@@ -27,10 +27,10 @@ pipelines:
           script:
             - pipe: atlassian/ssh-run:0.2.2
               variables:
-                SSH_USER: 'apx-bc-01'
-                SERVER: '52.87.17.243'
+                SSH_USER: $BC_STAGING_SSH_USER
+                SERVER: $STAGING_SERVER_IP
                 MODE: 'command'
-                COMMAND: '/var/www/html/bigcommerce/bc/remote-script.sh'
+                COMMAND: 'cd $STAGING_COMMAND/bigcommerce/bc && git stash && git pull && php artisan optimize:clear && ./remote-script.sh'
 
     master:
 
