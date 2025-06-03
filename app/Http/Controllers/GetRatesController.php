@@ -301,6 +301,7 @@ class GetRatesController extends Controller
         if (count($data['base_options']['items'])) {
             foreach ($data['base_options']['items'] as $productKey => $product) {
                 $product_settings = $this->getProductSetting($product['product_id'], $product['variant_id'], $storeId);
+
                 $productBrandAndCategory = $this->getProductBrandAndCategory($product['product_id'], $storeHash);
                 $productBrandId = $productBrandAndCategory['brandId'] ?? '';
                 $categoriesId = $productBrandAndCategory['categories'] ?? [];
@@ -375,7 +376,6 @@ class GetRatesController extends Controller
                     'lineItemHSCode' => isset($product_settings['hs_code']) && !empty($product_settings['hs_code']) ? $product_settings['hs_code'] : '',
                     'lineItemNMFC' => isset($product_settings['nmfc']) && !empty($product_settings['nmfc']) ? $product_settings['nmfc'] : '',
                 ];
-
                 if (!$details['items'][$key]['shipMultiplePackage']) {
                     if (
                         (blank($details['items'][$key]['lineItemLength']) || $details['items'][$key]['lineItemLength'] <= 0) ||
@@ -479,7 +479,7 @@ class GetRatesController extends Controller
     public function getProductSetting($productId, $variantId, $storeId)
     {
         $settings = [];
-        $productSetting = ProductSetting::select('settings', 'id', 'dropship_enabled', 'dropship_location', 'shipping_group', 'shipping_class', 'ship_multiple_package', 'pallet_vertical_rotation', 'own_pallet', 'product_markup')
+        $productSetting = ProductSetting::select('settings', 'id', 'dropship_enabled', 'dropship_location', 'shipping_group', 'shipping_class', 'ship_multiple_package', 'product_markup')
             ->where(['source_product_id' => $productId, 'variant_id' => $variantId, 'store_id' => $storeId])
             ->first();
         if (!empty($productSetting)) {
@@ -491,9 +491,10 @@ class GetRatesController extends Controller
             $settings['ship_multiple_package'] = $productSetting['ship_multiple_package'];
             $settings['shipping_group'] = $productSetting['shipping_group'];
             $settings['shipping_class'] = ($productSetting['shipping_class'] == 0 || $productSetting['shipping_class'] == null) ? null : $productSetting['shipping_class'];
-            $settings['pallet_vertical_rotation'] = $productSetting['pallet_vertical_rotation'] ?? 0;
-            $settings['own_pallet'] = $productSetting['own_pallet'] ?? 0;
+            // $settings['pallet_vertical_rotation'] = $productSetting['pallet_vertical_rotation'] ?? 0;
+            // $settings['own_pallet'] = $productSetting['own_pallet'] ?? 0;
             $settings['product_markup'] = $productSetting['product_markup'] ?? 0;
+            $settings['product_settings_id'] = $productSetting['id'] ?? 0;
         }
 
         return $settings;

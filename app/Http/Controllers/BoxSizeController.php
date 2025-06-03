@@ -8,6 +8,7 @@ use App\Models\ProductSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Helpers\Helpers;
+use Illuminate\Validation\Rule;
 
 class BoxSizeController extends Controller
 {
@@ -20,13 +21,12 @@ class BoxSizeController extends Controller
     {
         //$boxes = BoxSize::get();
         $boxes = [];
-        foreach (BoxSize::where('store_id', $request['store_id'])->get() as $key => $box){
+        foreach (BoxSize::where('store_id', $request['store_id'])->get() as $key => $box) {
 
             $boxes[$key] = $box;
             $boxes[$key]['availability'] = $box['is_available'] ? 'Yes' : 'No';
             $boxes[$key]['heightWithPallet'] = $box['height'] + $box['ext_height'];
             $boxes[$key]['weightWithPallet'] = $box['max_weight'] + $box['box_weight'];
-
         }
         return response()->json(['error' => false, 'data' => $boxes]);
     }
@@ -34,12 +34,12 @@ class BoxSizeController extends Controller
     public function getParcelBoxSizes(Request $request)
     {
         $boxes = optional(BoxSize::where('store_id', $request['store_id'])->where('box_type', '!=', 4)->get())->toArray() ?? [];
-        if(!empty($boxes)){
+        if (!empty($boxes)) {
             return Helpers::sendJsonResponseFdo(false, '', $boxes);
         }
         return Helpers::sendJsonResponseFdo(true, 'Box Sizes not found', []);
     }
-    
+
     /**
      * Show the form for creating a new resource.
      *
@@ -59,7 +59,12 @@ class BoxSizeController extends Controller
     public function store(Request $request)
     {
         $rules = [
-            'nickname' => 'required|unique:box_sizes',
+            'nickname' => [
+                'required',
+                Rule::unique('box_sizes')->where(function ($query) use ($request) {
+                    return $query->where('store_id', $request->store_id);
+                }),
+            ],
             'length' => 'required',
             'width' => 'required',
             'height' => 'required',
@@ -74,13 +79,13 @@ class BoxSizeController extends Controller
             return response()->json(['error' => true, 'message' => $validator->errors()], 200);
         }
 
-        $data = $request->except(['store_name', 'store_hash','is_test_store', 'heightWithPallet', 'weightWithPallet']);
+        $data = $request->except(['store_name', 'store_hash', 'is_test_store', 'heightWithPallet', 'weightWithPallet']);
         $isPalletBox = isset($request->box_name) && $request->box_name == 'Pallet Box' ? true : false;
 
         $boxsize = BoxSize::create($data);
         $boxsize->save();
-        $boxsize->is_available = $boxsize->is_available === true ? 1:0;
-        $boxsize->availability = $boxsize->is_available ===1 ? 'Yes' : 'No';
+        $boxsize->is_available = $boxsize->is_available === true ? 1 : 0;
+        $boxsize->availability = $boxsize->is_available === 1 ? 'Yes' : 'No';
         $boxsize->heightWithPallet = $request->height + $request->ext_height;
         $boxsize->weightWithPallet = $request->max_weight + $request->box_weight;
         return response()->json(
@@ -88,7 +93,9 @@ class BoxSizeController extends Controller
                 'error' => false,
                 'message' => ($isPalletBox ? 'Pallet' : 'Box') . " added successfully.",
                 'data' => $boxsize,
-            ], 200);
+            ],
+            200
+        );
     }
 
     /**
@@ -133,25 +140,27 @@ class BoxSizeController extends Controller
         $isPalletBox = isset($request->box_name) && $request->box_name == 'Pallet Box' ? true : false;
 
         if ($box_size) {
-            if(BoxSize::where('nickname', $request->nickname)->where('store_id', $request->store_id)->where('id','!=',$request->id)->exists()){
+            if (BoxSize::where('nickname', $request->nickname)->where('store_id', $request->store_id)->where('id', '!=', $request->id)->exists()) {
                 return response()->json([
-                        'error' => true,
-                        'message' => "The nickname has already been taken."
-                    ]);
+                    'error' => true,
+                    'message' => "The nickname has already been taken."
+                ]);
             }
-            $data = $request->except(['store_name', 'store_hash','is_test_store', 'heightWithPallet', 'weightWithPallet']);
+            $data = $request->except(['store_name', 'store_hash', 'is_test_store', 'heightWithPallet', 'weightWithPallet']);
 
             $boxsize = BoxSize::where('id', $request->id)->update($data);
             $box = BoxSize::find($request->id);
-            $box['availability'] = $box['is_available']? 'Yes':'No';
+            $box['availability'] = $box['is_available'] ? 'Yes' : 'No';
             $box->heightWithPallet = $request->height + $request->ext_height;
             $box->weightWithPallet = $request->max_weight + $request->box_weight;
             return response()->json(
                 [
                     'error' => false,
                     'message' => ($isPalletBox ? 'Pallet' : 'Box') . " updated successfully.",
-                    'data' => $box,//BoxSize::find($request->id),
-                ], 200);
+                    'data' => $box, //BoxSize::find($request->id),
+                ],
+                200
+            );
         }
 
         return response()->json([
@@ -172,12 +181,15 @@ class BoxSizeController extends Controller
         $isPalletBox = isset($boxsize->box_name) && $boxsize->box_name == 'Pallet Box' ? true : false;
         $boxsize->delete();
 
-        return response()->json(['error' => false,
+        return response()->json([
+            'error' => false,
             'message' => ($isPalletBox ? 'Pallet' : 'Box') . " deleted successfully",
-            'data' => $id]);
+            'data' => $id
+        ]);
     }
 
-    public function getMultiplePackagingBoxes(Request $request){
+    public function getMultiplePackagingBoxes(Request $request)
+    {
         return response()->json([
             'error' => false,
             'data' => $this->multiplePackagingBoxes($request),
@@ -185,12 +197,13 @@ class BoxSizeController extends Controller
         ]);
     }
 
-    public function multiplePackagingBoxes($request){
+    public function multiplePackagingBoxes($request)
+    {
         $storeId = $request['store_id'];
-        $products = ProductSetting::select('product_settings.id','product_settings.name', 'product_settings.sku')
+        $products = ProductSetting::select('product_settings.id', 'product_settings.name', 'product_settings.sku')
             ->where('product_settings.ship_multiple_package', 1)
             ->where('product_settings.store_id', $storeId)->get()->toArray();
-        if(!empty($products)) {
+        if (!empty($products)) {
             foreach ($products as $key => $product) {
                 $multiplePackages = $this->getBoxesByProductId($product['id']);
                 $products[$key]['boxes'] = $multiplePackages ?? [];
@@ -199,27 +212,29 @@ class BoxSizeController extends Controller
         return $products ?? [];
     }
 
-    public function getBoxesByProductId($productId){
+    public function getBoxesByProductId($productId)
+    {
         return MultiplePackagingBoxes::where('product_id', $productId)
             ->where('status', 1)
             ->get()->toArray();
     }
 
-    public function addMultiplePackagingBox(Request $request){
+    public function addMultiplePackagingBox(Request $request)
+    {
         $data = $request->except(['store_name', 'store_hash', 'store_id']);
-        if(MultiplePackagingBoxes::where('id', '!=', $request->id)->where('product_id', $request->product_id)->where('nickname',$request->nickname)->exists()){
+        if (MultiplePackagingBoxes::where('id', '!=', $request->id)->where('product_id', $request->product_id)->where('nickname', $request->nickname)->exists()) {
             return response()->json([
                 'error' => true,
                 'message' => "Nickname already exists."
             ]);
         }
-        if(MultiplePackagingBoxes::create($data)){
+        if (MultiplePackagingBoxes::create($data)) {
             return response()->json([
                 'error' => false,
                 'data' => $this->multiplePackagingBoxes($request),
                 'message' => 'Box added successfully.'
             ]);
-        }else{
+        } else {
             return response()->json([
                 'error' => true,
                 'message' => "Box could not be added."
@@ -227,15 +242,16 @@ class BoxSizeController extends Controller
         }
     }
 
-    public function deleteMultiplePackagingBox(Request $request){
+    public function deleteMultiplePackagingBox(Request $request)
+    {
         $id = $request->id;
-        if(MultiplePackagingBoxes::find($id)->delete()){
+        if (MultiplePackagingBoxes::find($id)->delete()) {
             return response()->json([
                 'error' => false,
                 'data' => $this->multiplePackagingBoxes($request),
                 'message' => 'Box deleted successfully.'
             ]);
-        }else{
+        } else {
             return response()->json([
                 'error' => true,
                 'message' => "Box could not be deleted."
@@ -243,22 +259,23 @@ class BoxSizeController extends Controller
         }
     }
 
-    public function updateMultiplePackagingBox(Request $request){
+    public function updateMultiplePackagingBox(Request $request)
+    {
         $id = $request->id;
         $update = $request->except(['store_name', 'store_hash', 'store_id', 'id']);
-        if(MultiplePackagingBoxes::where('id', '!=', $request->id)->where('product_id', $request->product_id)->where('nickname',$request->nickname)->exists()){
+        if (MultiplePackagingBoxes::where('id', '!=', $request->id)->where('product_id', $request->product_id)->where('nickname', $request->nickname)->exists()) {
             return response()->json([
                 'error' => true,
                 'message' => "Nickname already exists."
             ]);
         }
-        if(MultiplePackagingBoxes::find($id)->update($update)){
+        if (MultiplePackagingBoxes::find($id)->update($update)) {
             return response()->json([
                 'error' => false,
                 'data' => $this->multiplePackagingBoxes($request),
                 'message' => 'Box updated successfully.'
             ]);
-        }else{
+        } else {
             return response()->json([
                 'error' => true,
                 'message' => "Box could not be updated."

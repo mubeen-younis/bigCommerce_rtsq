@@ -115,16 +115,22 @@ class QuotesResults
         $lgFee = 0;
 
         if (isset($accessorials) && !empty($accessorials)) {
-            $lgAccessType = 'LIFTGATEDELIVERYREQUIRED';
+            $lgAccessTypePrimary = 'LIFTGATEDELIVERYREQUIRED';
+            $lgAccessTypeFallback = 'Lift-Gate Delivery Required';
 
             foreach ($accessorials as $acc) {
-                if (isset($acc['Type']) && $acc['Type'] == $lgAccessType) {
+                if (isset($acc['Type']) && $acc['Type'] === $lgAccessTypePrimary) {
                     $lgFee = number_format($acc['Charge'], 2, '.', '');
-                    break;
+                }
+            }
+    
+           
+            foreach ($accessorials as $acc) {
+                if (isset($acc['Type']) && $acc['Type'] === $lgAccessTypeFallback) {
+                   $lgFee = number_format($acc['Charge'], 2, '.', '');
                 }
             }
         }
-
         return $lgFee;
     }
 

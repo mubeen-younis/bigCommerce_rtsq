@@ -29,6 +29,8 @@ use App\CustomClasses\Functions;
 use App\Http\Controllers\GetRatesController as ProductSettings;
 use App\Http\Controllers\GetRatesController;
 use App\Models\CSVimportExport;
+use App\Models\NestingItemsDetail;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 
@@ -63,7 +65,8 @@ class ExportImportProducts extends Controller
         // return back due to store plan expired
         $GetRatesController = new GetRatesController();
         if (!$GetRatesController->storePlanStatus($request['store_id'])) {
-            return response()->json(['error' => true,
+            return response()->json([
+                'error' => true,
                 'data' => [],
                 'message' => 'Your current plan has expired. Please renew your plan.',
             ], 200);
@@ -74,7 +77,8 @@ class ExportImportProducts extends Controller
 
         if (isset($request['onlyResponse']) && $request['onlyResponse'] === true) {
             if ($totalpages < 1) {
-                return response()->json(['error' => true,
+                return response()->json([
+                    'error' => true,
                     'data' => [],
                     'message' => 'Products not available for import template',
                 ], 200);
@@ -83,7 +87,8 @@ class ExportImportProducts extends Controller
                 $hash = md5($request['store_id'] . time());
                 $this->CsvNotifyEmail($request['email'], $hash);
 
-                return response()->json(['error' => false,
+                return response()->json([
+                    'error' => false,
                     'data' => [],
                     'message' => 'The import CSV template will be emailed to ' . $request['email'],
                 ], 200);
@@ -91,7 +96,8 @@ class ExportImportProducts extends Controller
         } else {
 
             if ($totalpages < 1) {
-                return response()->json(['error' => true,
+                return response()->json([
+                    'error' => true,
                     'data' => [],
                     'message' => 'Products not available for import template',
                 ], 200);
@@ -138,6 +144,7 @@ class ExportImportProducts extends Controller
                 $request['folderName'] = public_path() . $fileName;
                 $hash = md5($request['store_id'] . time());
                 $this->makeDirectory($request['folderName'], $mode = 0777, true, true);
+
                 $request['exportProductsId'] = ExportProductsModel::insertGetId(['store_id' => $request['store_id'], 'foldername' => $fileName . '.zip', 'hash' => $hash, 'request_time' => time(), 'email' => $request['email'], 'status' => 0]);
             }
             $folderName = $request['folderName'];
@@ -207,7 +214,6 @@ class ExportImportProducts extends Controller
                                 $productLine = $this->createDataSet($variant, $DBProductSettings, $dropShips);
                                 fputcsv($fp, $productLine);
                             }
-
                         }
                     } else {
                         $this->fileSize--;
@@ -224,7 +230,6 @@ class ExportImportProducts extends Controller
             if (Functions::isEnabledLogs($request['store_hash'])) {
                 Log::info('CSV Export Products Job Ended.');
             }
-
         } catch (\Exception $exception) {
 
             if (Functions::isEnabledLogs($request['store_hash'])) {
@@ -253,7 +258,7 @@ class ExportImportProducts extends Controller
         $folderNamePath[] = $filename;
         $fp = fopen($filename, "w");
         if (true) {
-            $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (' . $dimensionsUnit . '), Width (' . $dimensionsUnit . '), Height (' . $dimensionsUnit . '), NMFC, Markup, Quote Method, Freight Class, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Boxing Properties, Ships Own Pallet, Pallet Vertical Rotation';
+            $line = 'Product Id, Variant Id, Product Name, Product SKU, Weight (' . $weightUnit . '), Length (' . $dimensionsUnit . '), Width (' . $dimensionsUnit . '), Height (' . $dimensionsUnit . '), Quote Method, Freight Class, NMFC, Hazmat, Insurance, Dropship Nickname, Dropship ZIP Code, Dropship City, Dropship State, Dropship Country, Boxing Properties, Pallet Properties, Markup, Nested Item, Nested Dimension, Nesting %, Maximum Nested Items, Stacking Property';
             $line .= "\n";
             fputs($fp, $line);
         }
@@ -265,6 +270,7 @@ class ExportImportProducts extends Controller
 
     public function createDataSet($product, $DBProductSettings, $dropShips)
     {
+
         $productLine = [];
         $productLine[] = 'P' . $product['id'];
         $productLine[] = 'V' . $product['base_variant_id'];
@@ -274,8 +280,6 @@ class ExportImportProducts extends Controller
         $productLine[] = $product['depth'] ?? '';
         $productLine[] = $product['width'] ?? '';
         $productLine[] = $product['height'] ?? '';
-        $productLine[] = $DBProductSettings['nmfc'] ?? '';
-        $productLine[] = $DBProductSettings['product_markup'] ?? '';
 
         $quoteMethod = '';
         // Added INstore and local quoting methods
@@ -289,6 +293,7 @@ class ExportImportProducts extends Controller
 
         $productLine[] = $quoteMethod ?? '';
         $productLine[] = $DBProductSettings['freight_class'] ?? '';
+        $productLine[] = $DBProductSettings['nmfc'] ?? '';
         $productLine[] = isset($DBProductSettings['hazardous_enabled']) && $DBProductSettings['hazardous_enabled'] ? 1 : 0;
         $productLine[] = isset($DBProductSettings['insurance']) && $DBProductSettings['insurance'] ? 1 :
             $nickname = '';
@@ -317,10 +322,25 @@ class ExportImportProducts extends Controller
             $boxingProperty = '2';
         } else if (isset($DBProductSettings['ship_multiple_package']) && $DBProductSettings['ship_multiple_package']) {
             $boxingProperty = '3';
-        } else if (isset($DBProductSettings['ship_multiple_package']) && !$DBProductSettings['ship_multiple_package'] &&
+        } else if (
+            isset($DBProductSettings['ship_multiple_package']) && !$DBProductSettings['ship_multiple_package'] &&
             isset($DBProductSettings['ship_own_package']) && !$DBProductSettings['ship_own_package'] &&
-            isset($DBProductSettings['allow_vertical']) && !$DBProductSettings['allow_vertical']) {
+            isset($DBProductSettings['allow_vertical']) && !$DBProductSettings['allow_vertical']
+        ) {
             $boxingProperty = '0';
+        }
+
+        $palletProperty = '';
+        // Added Boxing Properties
+        if (isset($DBProductSettings['own_pallet']) && $DBProductSettings['own_pallet']) {
+            $palletProperty = '1';
+        } else if (isset($DBProductSettings['pallet_vertical_rotation']) && $DBProductSettings['pallet_vertical_rotation']) {
+            $palletProperty = '2';
+        } else if (
+            isset($DBProductSettings['own_pallet']) && !$DBProductSettings['own_pallet'] &&
+            isset($DBProductSettings['pallet_vertical_rotation']) && !$DBProductSettings['pallet_vertical_rotation']
+        ) {
+            $palletProperty = '0';
         }
 
         $productLine[] = $nickname ?? '';
@@ -329,8 +349,39 @@ class ExportImportProducts extends Controller
         $productLine[] = $state ?? '';
         $productLine[] = $country ?? '';
         $productLine[] = $boxingProperty ?? '';
-        $productLine[] = isset($DBProductSettings['own_pallet']) && $DBProductSettings['own_pallet'] ? 1 : 0;
-        $productLine[] = isset($DBProductSettings['pallet_vertical_rotation']) && $DBProductSettings['pallet_vertical_rotation'] ? 1 : 0;
+        $productLine[] = $palletProperty ?? '';
+        // $productLine[] = isset($DBProductSettings['pallet_vertical_rotation']) && $DBProductSettings['pallet_vertical_rotation'] ? 1 : 0;
+
+
+        $productLine[] = $DBProductSettings['product_markup'] ?? '';
+
+        if (isset($DBProductSettings['id'])) {
+            $nested_data = NestingItemsDetail::where('product_settings_id', $DBProductSettings['id'])->first();
+
+            if ($nested_data !== null) {
+
+                $nested_item_settings = $nested_data->toArray();
+
+                $dimensionTypeLabel = match ($nested_item_settings['dimension_type'] ?? null) {
+                    0 => 'Length',
+                    1 => 'Width',
+                    2 => 'Height',
+                    default => throw new Exception("Invalid dimension_type value: " . ($nested_item_settings['dimension_type'] ?? 'null')),
+                };
+
+                $stackedTypeLabel = match ($nested_item_settings['stacked_type'] ?? null) {
+                    0 => 'Evenly',
+                    1 => 'Maximized',
+                    default => throw new Exception("Invalid stacked_type value: " . ($nested_item_settings['stacked_type'] ?? 'null')),
+                };
+
+                $productLine[] = $nested_item_settings['is_nesting_enabled'] ?? '';
+                $productLine[] = $dimensionTypeLabel;
+                $productLine[] = $nested_item_settings['nesting_percentage'] ?? '';
+                $productLine[] = $nested_item_settings['max_nested_items'] ?? '';
+                $productLine[] = $stackedTypeLabel;
+            }
+        }
 
         return $productLine;
     }
@@ -367,20 +418,24 @@ class ExportImportProducts extends Controller
         if (isset($request['is_link_invisible']) && $request['is_link_invisible'] == 'true') {
             $status->is_link_invisible = 1;
             $status->save();
-            return response()->json([
-                "error" => false,
-                'message' => 'Download link has been invisible',
-                'data' => '',
-            ], 200
+            return response()->json(
+                [
+                    "error" => false,
+                    'message' => 'Download link has been invisible',
+                    'data' => '',
+                ],
+                200
             );
         }
 
         if (empty($status) || $status->status == 0 || $status->is_link_invisible == 1 || ($status->request_time <= time() - 24 * 3600)) {
-            return response()->json([
-                "error" => true,
-                'message' => 'Download link has been expired',
-                'data' => '',
-            ], 200
+            return response()->json(
+                [
+                    "error" => true,
+                    'message' => 'Download link has been expired',
+                    'data' => '',
+                ],
+                200
             );
         }
 
@@ -401,8 +456,13 @@ class ExportImportProducts extends Controller
             return '';
         }
         $storeDetails = BigCommerceFunctions::getStoreSettings($storeHash);
-        $storeDetails = (new CurlRequest())->enSingleCurlRequest($storeDetails['endpoint'],
-            $storeDetails['request'], $storeDetails['headers'], $storeDetails['method'], false);
+        $storeDetails = (new CurlRequest())->enSingleCurlRequest(
+            $storeDetails['endpoint'],
+            $storeDetails['request'],
+            $storeDetails['headers'],
+            $storeDetails['method'],
+            false
+        );
         $response = json_decode($storeDetails['response'], true);
 
         return $response;
@@ -450,7 +510,6 @@ class ExportImportProducts extends Controller
         }
         File::deleteDirectory($folderName);
         return $zipFileName;
-
     }
 
     public function downloadCsv($hash)
@@ -481,7 +540,8 @@ class ExportImportProducts extends Controller
             $path = public_path() . '/import_files/' . $hash;
             $file->move($path, $fileName);
         }
-        return response()->json(['error' => false,
+        return response()->json([
+            'error' => false,
             'data' => [],
             'filename' => $fileName,
             'message' => 'Uploaded Completed',
@@ -494,7 +554,8 @@ class ExportImportProducts extends Controller
         $csv = array_map('str_getcsv', file($path));
 
         if (isset($request['hasheaders']) && $request['hasheaders'] === "false") {
-            $heading = range('A', 'ZZ');
+            // $heading = range('A', 'ZZ');
+            $heading = array_merge(range('A', 'Z'), range('a', 'b'));
         } else {
             foreach ($csv[0] as $key => $val) {
                 $heading[] = trim($val);
@@ -516,7 +577,8 @@ class ExportImportProducts extends Controller
             // return back due to store plan expired
             $GetRatesController = new GetRatesController();
             if (!$GetRatesController->storePlanStatus($request['store_id'])) {
-                return response()->json(['error' => true,
+                return response()->json([
+                    'error' => true,
                     'data' => [],
                     'message' => 'Your current plan has expired. Please renew your plan.',
                 ], 200);
@@ -532,12 +594,10 @@ class ExportImportProducts extends Controller
             $data['path'] = public_path('import_files/' . $request['store_hash'] . '/' . $request['filename']);
 
             $this->importProductCsvProcess($data);
-
             return response()->json([
                 'error' => false,
                 'data' => $data,
             ], 200);
-
         } catch (\Exception $exception) {
 
             $this->createImportCsvStatusInDB($request, $exception);
@@ -576,11 +636,13 @@ class ExportImportProducts extends Controller
             }
 
             $headerRow = array_slice(range('A', 'Z'), 0, count($csvArray[0]));
+
             if ($request['firstHeader'] == "true") {
                 $headerRow = $csvArray[0];
                 unset($csvArray[0]);
             }
             array_walk($csvArray, function (&$a) use ($csvArray, $headerRow) {
+
                 $a = array_combine(array_map('trim', $headerRow), array_map('trim', $a));
             });
 
@@ -592,17 +654,24 @@ class ExportImportProducts extends Controller
             $CSVimportPrdModel->store_id = $request['store_id'];
             $CSVimportPrdModel->file_name = $request['filename'];
             $CSVimportPrdModel->total_rows = $request['CSV_count'];
-            $CSVimportPrdModel->save();
-            $request['CSVinsertedId'] = $CSVimportPrdModel->id;
 
-            // Initialize the counter and dispatch jobs
-            Cache::put('chunks_processed', 0, now()->addHours(2));
+            // /aaaaa
+            $CSVimportPrdModel->processed_chunks = 0; // Initialize processed_chunks
+            // /aaaaa
+
+            $CSVimportPrdModel->save();
+
+            // aaaaa
+            $importId = $CSVimportPrdModel->id;
+            $request['CSVinsertedId'] = $importId;
+
 
             foreach ($csvChunks as $chunk) {
+
                 // Dispatch a job for each chunk
                 ImportProductsJob::dispatch($chunk, $request, $headerRow)->delay(Carbon::now()->addSeconds($delay++));
+                // $this->importProductCsvJob($chunk, $request, $headerRow);
             }
-
         } catch (\Exception $exception) {
             $this->createImportCsvStatusInDB($request, $exception);
 
@@ -612,7 +681,6 @@ class ExportImportProducts extends Controller
                 'file' => $exception->getFile(),
             ]));
         }
-
     }
 
     public function createImportCsvStatusInDB($request, $exception)
@@ -648,7 +716,6 @@ class ExportImportProducts extends Controller
             foreach ($chunk as $key => $product) {
                 try {
                     $data[] = $this->getUpdateData($product, $indexes, $store_id, $store->access_token, $request['store_hash']);
-
                 } catch (\Exception $exception) {
                     if (isset($product['Product Id']) && isset($product['Variant Id'])) {
                         $exceptionProducts[] = $this->formatError($product, $exception);
@@ -678,7 +745,6 @@ class ExportImportProducts extends Controller
             if (!empty($this->BCProductsBatches)) {
                 UpdateBCProductsJob::dispatch($this->BCProductsBatches, $request, $exceptionProducts)->delay(Carbon::now()->addSeconds($delay++));
             }
-
         } catch (\Exception $exception) {
             CSVimportExport::where('id', $request['CSVinsertedId'])->update([
                 'total_rows' => $request['CSV_count'],
@@ -695,7 +761,6 @@ class ExportImportProducts extends Controller
                 'file' => $exception->getFile(),
             ]));
         }
-
     }
 
     public function importBCProductCsvJob($batches, $request, $exceptionProducts)
@@ -744,6 +809,7 @@ class ExportImportProducts extends Controller
             $source_product_id = (int)filter_var($product["$key"], FILTER_SANITIZE_NUMBER_INT);
 
             $variant_id = (int)filter_var($product["$variant_key"], FILTER_SANITIZE_NUMBER_INT);
+
 
             if ($variant_id) {
                 $oldSettings = ProductSetting::where('source_product_id', $source_product_id)
@@ -794,6 +860,7 @@ class ExportImportProducts extends Controller
                 $update['height'] = $data != '' ? round($data, 2) : '';
             }
         }
+
         if (isset($indexes['nmfc']) && $indexes['nmfc']) {
             $key = $indexes['nmfc'];
             $data = $product["$key"];
@@ -804,25 +871,7 @@ class ExportImportProducts extends Controller
         if (isset($indexes['product_markup']) && $indexes['product_markup']) {
             $key = $indexes['product_markup'];
             $data = $product["$key"];
-            if (is_numeric($data) || empty($data)) {
-                $update['product_markup'] = $data != '' ? round($data, 2) : '';
-            }
-        }
-        if (isset($indexes['own_pallet']) && $indexes['own_pallet']) {
-            $key = $indexes['own_pallet'];
-            $data = (string)$product["$key"];
-            $data = $data != '' ? (float)$product["$key"] : '';
-            if ($data >= 0 || empty($data)) {
-                $update['own_pallet'] = (float)$product["$key"];
-            }
-        }
-        if (isset($indexes['pallet_vertical_rotation']) && $indexes['pallet_vertical_rotation']) {
-            $key = $indexes['pallet_vertical_rotation'];
-            $data = (string)$product["$key"];
-            $data = $data != '' ? (float)$product["$key"] : '';
-            if ($data >= 0 || empty($data)) {
-                $update['pallet_vertical_rotation'] = (float)$product["$key"];
-            }
+            $update['product_markup'] = $data;
         }
 
         if ($shipMultiPackage) {
@@ -834,11 +883,13 @@ class ExportImportProducts extends Controller
         }
 
         /*Start -  For Dropship CHange*/
-        if (isset($indexes['drop_ship_nickname']) && $indexes['drop_ship_nickname']
+        if (
+            isset($indexes['drop_ship_nickname']) && $indexes['drop_ship_nickname']
             && isset($indexes['drop_ship_city']) && $indexes['drop_ship_city']
             && isset($indexes['drop_ship_state']) && $indexes['drop_ship_state']
             && isset($indexes['drop_ship_zip']) && $indexes['drop_ship_zip']
-            && isset($indexes['drop_ship_country']) && $indexes['drop_ship_country']) {
+            && isset($indexes['drop_ship_country']) && $indexes['drop_ship_country']
+        ) {
             $dropShipId = $this->updateDropShip($product, $indexes, $store_id);
             if ($dropShipId != false) {
                 $update['dropship_enabled'] = true;
@@ -848,7 +899,6 @@ class ExportImportProducts extends Controller
                 $update['dropship_location'] = null;
             }
         }
-        // END //
 
         if (!empty($update)) {
 
@@ -857,34 +907,56 @@ class ExportImportProducts extends Controller
                 ->where('store_id', $store_id)->exists();
 
             if ($recordExists) {
-                ProductSetting::where('source_product_id', $source_product_id)
-                    ->where('variant_id', $variant_id)
-                    ->where('store_id', $store_id)->update($update);
+
+                try {
+                    ProductSetting::where('source_product_id', $source_product_id)
+                        ->where('variant_id', $variant_id)
+                        ->where('store_id', $store_id)
+                        ->update($update);
+                } catch (\Exception $e) {
+                    Log::error('Update Error: ' . $e->getMessage(), [
+                        'source_product_id' => $source_product_id,
+                        'variant_id' => $variant_id,
+                        'store_id' => $store_id,
+                        'update_data' => $update,
+                    ]);
+                }
             } else {
-                $settings = $this->getSettings([], $product, $indexes, $store_id);
-                $createProduct = new ProductSetting();
-                $createProduct->source_product_id = $source_product_id;
-                $createProduct->variant_id = $variant_id;
-                $createProduct->name = isset($update['name']) ? $update['name'] : '' ?? '';
-                $createProduct->sku = isset($update['sku']) ? $update['sku'] : null ?? null;
-                $createProduct->weight = isset($update['weight']) ? $update['weight'] : null ?? null;
-                $createProduct->length = isset($update['length']) ? $update['length'] : null ?? null;
-                $createProduct->width = isset($update['width']) ? $update['width'] : null ?? null;
-                $createProduct->height = isset($update['height']) ? $update['height'] : null ?? null;
-                $createProduct->nmfc = isset($update['nmfc']) ? $update['nmfc'] : null ?? null;
-                $createProduct->product_markup = isset($update['product_markup']) ? $update['product_markup'] : null ?? null;
-                $createProduct->own_pallet = isset($update['own_pallet']) ? $update['own_pallet'] : null ?? null;
-                $createProduct->pallet_vertical_rotation = isset($update['pallet_vertical_rotation']) ? $update['pallet_vertical_rotation'] : null ?? null;
-                $createProduct->settings = json_encode($settings);
-                $createProduct->ship_multiple_package = isset($update['ship_multiple_package']) ? $update['ship_multiple_package'] : '{}' ?? '{}';
-                $createProduct->store_id = $store_id;
-                $createProduct->dropship_enabled = isset($update['dropship_enabled']) ? $update['dropship_enabled'] : null ?? null;
-                $createProduct->dropship_location = isset($update['dropship_location']) ? $update['dropship_location'] : null ?? null;
-                $createProduct->brand_id = isset($update['brand_id']) && !empty($update['brand_id']) ? $update['brand_id'] : null ?? null;
-                $createProduct->categories_id = isset($update['categories']) && !empty($update['categories']) ? json_encode($update['categories']) : null ?? null;
-                $createProduct->save();
+                try {
+                    $settings = $this->getSettings([], $product, $indexes, $store_id);
+                    $createProduct = new ProductSetting();
+                    $createProduct->source_product_id = $source_product_id;
+                    $createProduct->variant_id = $variant_id;
+                    $createProduct->name = isset($update['name']) ? $update['name'] : '' ?? '';
+                    $createProduct->sku = isset($update['sku']) ? $update['sku'] : null ?? null;
+                    $createProduct->weight = isset($update['weight']) ? $update['weight'] : null ?? null;
+                    $createProduct->length = isset($update['length']) ? $update['length'] : null ?? null;
+                    $createProduct->width = isset($update['width']) ? $update['width'] : null ?? null;
+                    $createProduct->height = isset($update['height']) ? $update['height'] : null ?? null;
+                    $createProduct->nmfc = isset($update['nmfc']) ? $update['nmfc'] : null ?? null;
+                    $createProduct->product_markup = isset($update['product_markup']) ? $update['product_markup'] : null ?? null;
+                    // $createProduct->own_pallet = isset($update['own_pallet']) ? $update['own_pallet'] : null ?? null;
+                    // $createProduct->pallet_vertical_rotation = isset($update['pallet_vertical_rotation']) ? $update['pallet_vertical_rotation'] : null ?? null;
+                    $createProduct->settings = json_encode($settings);
+                    $createProduct->ship_multiple_package = isset($update['ship_multiple_package']) ? $update['ship_multiple_package'] : '{}' ?? '{}';
+                    $createProduct->store_id = $store_id;
+                    $createProduct->dropship_enabled = isset($update['dropship_enabled']) ? $update['dropship_enabled'] : null ?? null;
+                    $createProduct->dropship_location = isset($update['dropship_location']) ? $update['dropship_location'] : null ?? null;
+                    $createProduct->brand_id = isset($update['brand_id']) && !empty($update['brand_id']) ? $update['brand_id'] : null ?? null;
+                    $createProduct->categories_id = isset($update['categories']) && !empty($update['categories']) ? json_encode($update['categories']) : null ?? null;
+                    $createProduct->save();
+                } catch (\Exception $e) {
+                    Log::error('Create Error: ' . $e->getMessage(), [
+                        'source_product_id' => $source_product_id,
+                        'variant_id' => $variant_id,
+                        'store_id' => $store_id,
+                        'update_data' => $update,
+                        'settings' => $settings,
+                    ]);
+                }
             }
             $update['variant_id'] = $variant_id;
+            $dropShipId = $this->updateNestedItem($product, $indexes, $store_id, $source_product_id, $variant_id);
         }
         return $update;
     }
@@ -943,23 +1015,31 @@ class ExportImportProducts extends Controller
             }
         }
 
+
+        if (isset($indexes['pallet_property']) && $indexes['pallet_property']) {
+            $key = $indexes['pallet_property'];
+            $palletProperty = strtolower($product["$key"]);
+            if (array_key_exists($key, $product)) {
+                $settings->own_pallet = false;
+                $settings->pallet_vertical_rotation = false;
+                // $settings->ship_multi_package = false;
+                // Added Boxing Properties
+                if ($palletProperty === '1') {
+                    $settings->own_pallet = true;
+                } else if ($palletProperty === '2') {
+                    $settings->pallet_vertical_rotation = true;
+                } else if ($palletProperty === '') {
+                    $settings->own_pallet = null;
+                    $settings->pallet_vertical_rotation = null;
+                    // $settings->ship_multi_package = null;
+                }
+            }
+        }
+
         if (isset($indexes['nmfc']) && $indexes['nmfc']) {
             $key = $indexes['nmfc'];
             if (array_key_exists($key, $product)) {
                 $settings->nmfc = (string)$product["$key"];
-            }
-        }
-
-        if (isset($indexes['own_pallet']) && $indexes['own_pallet']) {
-            $key = $indexes['own_pallet'];
-            if (array_key_exists($key, $product)) {
-                $settings->own_pallet = ($product["$key"] == 1) ? true : false;
-            }
-        }
-        if (isset($indexes['pallet_vertical_rotation']) && $indexes['pallet_vertical_rotation']) {
-            $key = $indexes['pallet_vertical_rotation'];
-            if (array_key_exists($key, $product)) {
-                $settings->pallet_vertical_rotation = ($product["$key"] == 1) ? true : false;;
             }
         }
 
@@ -1074,6 +1154,163 @@ class ExportImportProducts extends Controller
         return $dropShipId;
     }
 
+
+
+    public function updateNestedItem($product, $indexes, $store_id, $source_product_id, $variant_id = null)
+    {
+        $nestedItemId = false;
+
+        // Extract nested item settings from the product (CSV row)
+        if (array_key_exists($indexes['nested_dimension'], $product)) {
+            $nested_dimension = $product[$indexes['nested_dimension']];
+            $dimension_lower = strtolower($nested_dimension);
+
+            if ($dimension_lower === 'length') {
+                $nested_dimension = 0;
+            } elseif ($dimension_lower === 'width') {
+                $nested_dimension = 1;
+            } elseif ($dimension_lower === 'height') {
+                $nested_dimension = 2;
+            } else {
+                $nested_dimension = null;
+            }
+        }
+
+        if (array_key_exists($indexes['nesting_percentage'], $product)) {
+            $nesting_percentage = $product[$indexes['nesting_percentage']];
+        } else {
+            $nesting_percentage = null;
+        }
+
+        if (array_key_exists($indexes['maximum_nested_items'], $product)) {
+            $maximum_nested_items = $product[$indexes['maximum_nested_items']];
+        } else {
+            $maximum_nested_items = null;
+        }
+
+        if (array_key_exists($indexes['stacking_property'], $product)) {
+            $stacking_property = $product[$indexes['stacking_property']];
+            $property_lower = strtolower($stacking_property);
+
+            if ($property_lower === 'evenly') {
+                $stacking_property = 0;
+            } elseif ($property_lower === 'maximized') {
+                $stacking_property = 1;
+            } else {
+                $stacking_property = null;
+            }
+        } else {
+            $stacking_property = null;
+        }
+
+        if (array_key_exists($indexes['nested_item'], $product)) {
+            $nested_item = $product[$indexes['nested_item']];
+        } else {
+            $nested_item = null;
+        }
+
+        // Check if any nested item field is provided
+        if (
+            isset($nested_dimension) || isset($nesting_percentage) ||
+            isset($maximum_nested_items) || isset($stacking_property) ||
+            isset($nested_item)
+        ) {
+            $productSetting = ProductSetting::where('source_product_id', $source_product_id)
+                ->where('variant_id', $variant_id)
+                ->where('store_id', $store_id)
+                ->first();
+
+            if (!$productSetting) {
+                Log::warning('No ProductSetting record found for source_product_id: ' . $source_product_id . ' and variant_id: ' . $variant_id, [
+                    'store_id' => $store_id,
+                ]);
+                return $nestedItemId;
+            }
+
+            $productSettingId = $productSetting->id;
+
+            $updateNestedItem = [];
+            if (isset($nested_dimension)) {
+                $updateNestedItem['dimension_type'] = $nested_dimension;
+            }
+            if (isset($nesting_percentage)) {
+                $updateNestedItem['nesting_percentage'] = $nesting_percentage;
+            }
+            if (isset($maximum_nested_items)) {
+                $updateNestedItem['max_nested_items'] = $maximum_nested_items;
+            }
+            if (isset($stacking_property)) {
+                $updateNestedItem['stacked_type'] = $stacking_property;
+            }
+            if (isset($nested_item)) {
+                $updateNestedItem['is_nesting_enabled'] = $nested_item;
+            }
+
+            $nestedData = NestingItemsDetail::where('product_settings_id', $productSettingId)
+                ->where('store_id', $store_id)
+                ->first();
+
+            if ($nestedData) {
+
+                try {
+                    NestingItemsDetail::where('product_settings_id', $productSettingId)
+                        ->where('store_id', $store_id)
+                        ->update($updateNestedItem);
+                    $nestedItemId = $nestedData->id;
+                } catch (\Exception $e) {
+                    Log::error('Update Error for NestingItemsDetail: ' . $e->getMessage(), [
+                        'source_product_id' => $source_product_id,
+                        'variant_id' => $variant_id,
+                        'product_settings_id' => $productSettingId,
+                        'store_id' => $store_id,
+                        'update_data' => $updateNestedItem,
+                    ]);
+                }
+            } else {
+                try {
+                    $newNestedItem = new NestingItemsDetail();
+                    $newNestedItem->store_id = $store_id;
+                    $newNestedItem->product_settings_id = $productSettingId;
+                    if (isset($nested_dimension)) {
+                        $newNestedItem->dimension_type = $nested_dimension;
+                    }
+                    if (isset($nesting_percentage)) {
+                        $newNestedItem->nesting_percentage = $nesting_percentage;
+                    }
+                    if (isset($maximum_nested_items)) {
+                        $newNestedItem->max_nested_items = $maximum_nested_items;
+                    }
+                    if (isset($stacking_property)) {
+                        $newNestedItem->stacked_type = $stacking_property;
+                    }
+                    if (isset($nested_item)) {
+                        $newNestedItem->is_nesting_enabled = $nested_item;
+                    }
+                    $newNestedItem->save();
+                    $nestedItemId = $newNestedItem->id;
+                } catch (\Exception $e) {
+                    Log::error('Error while saving NestingItemsDetail: ' . $e->getMessage(), [
+                        'source_product_id' => $source_product_id,
+                        'variant_id' => $variant_id,
+                        'product_settings_id' => $productSettingId,
+                        'store_id' => $store_id,
+                        'update_data' => $updateNestedItem,
+                    ]);
+                }
+            }
+
+            if (Functions::isEnabledLogs("", $store_id)) {
+                Log::info('Import Products NestedItem: ' . $nestedItemId . ' for source_product_id: ' . $source_product_id . ' and variant_id: ' . $variant_id, [
+                    'update_data' => $updateNestedItem,
+                ]);
+            }
+        }
+
+        return $nestedItemId;
+    }
+
+
+
     public function updateBCProductBatches($batches, $request, $exceptionProducts)
     {
         unset($headers);
@@ -1106,48 +1343,36 @@ class ExportImportProducts extends Controller
                     ]));
                 }
             }
-
         }
 
-        $maxRetries = 3; // Retry 3 times if lock is not acquired
-        $retries = 0;
+        //aaaaa
+        DB::transaction(function () use ($request, $exceptionProducts) {
+            $importId = $request['CSVinsertedId'];
+            $csvImport = CSVimportExport::where('id', $importId)->lockForUpdate()->first();
 
-        while ($retries < $maxRetries) {
-            $lock = Cache::lock('chunks_processed_lock', 5);
-
-            if ($lock->get()) {
-
-                try {
-
-                    $processedChunks = Cache::increment('chunks_processed');
-
-                    if ($processedChunks >= $request['csv_chunk_count']) {
-
-                        CSVimportExport::where('id', $request['CSVinsertedId'])->update([
-                            'error_at_rows' => json_encode($exceptionProducts),
-                            'status' => count($exceptionProducts) == $request['CSV_count'] ? 3 : (empty($exceptionProducts) ? 1 : 2),
-                        ]);
-
-                        $this->ImportNotifyEmail($request['importEmailAddress'], $exceptionProducts);
-                        if (Functions::isEnabledLogs($request['store_hash'])) {
-                            Log::info('CSV Import Poducts Email Send.');
-                            Log::info('ended import products process');
-                        }
-                        Cache::forget('chunks_processed');
-                    }
-
-                    break;
-
-                } finally {
-                    $lock->release();
-                }
-                break; // Exit loop if increment was successful
-            } else {
-                // Wait briefly before retrying to acquire the lock
-                usleep(100000); // Wait for 0.1 seconds
-                $retries++;
+            if (!$csvImport) {
+                Log::error("CSVimportExport record not found for ID: $importId");
+                return;
             }
-        }
+
+            $csvImport->processed_chunks += 1;
+            $csvImport->save();
+
+            Log::info("Incremented processed_chunks to {$csvImport->processed_chunks} for import ID: $importId");
+
+            if ($csvImport->processed_chunks >= $request['csv_chunk_count']) {
+                $csvImport->error_at_rows = json_encode($exceptionProducts);
+                $csvImport->status = count($exceptionProducts) == $request['CSV_count'] ? 3 : (empty($exceptionProducts) ? 1 : 2);
+                $csvImport->save();
+
+                $this->ImportNotifyEmail($request['importEmailAddress'], $exceptionProducts);
+                if (Functions::isEnabledLogs($request['store_hash'])) {
+                    Log::info('CSV Import Products Email Sent.');
+                    Log::info('Ended import products process');
+                }
+            }
+        });
+
     }
 
     public function updateBCProduct($source_product_id, $variant_id, $store_id, $update, $access_token, $hash)

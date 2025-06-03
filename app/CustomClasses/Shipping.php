@@ -251,7 +251,6 @@ class Shipping
         if (isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])) {
             $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes, false);
         }
-
         $palletBins = $requestArr['palletBins'] ?? [];
         if (isset($requestArr['palletResponse']) && !empty($requestArr['palletResponse'])) {
             $quotes = (new PalletPackaging())->addPalletResponseToQuotes($requestArr['palletResponse'], $quotes);
