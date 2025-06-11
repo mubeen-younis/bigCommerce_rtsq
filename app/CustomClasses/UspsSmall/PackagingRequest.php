@@ -94,7 +94,7 @@ class PackagingRequest
                 if (isset($boxLocId['customBoxes']['bins_packed'][0]['errors'])) {    
                     $binResponse['customBoxes-Error'] = $boxLocId['customBoxes']['bins_packed'];
                 } else{
-                $binResponse['customBoxes'] = $boxLocId['customBoxes']['bins_packed'];
+                $binResponse['customBoxes']['bins_packed'] = $boxLocId['customBoxes']['bins_packed'];
                 }
             }
 
@@ -103,7 +103,7 @@ class PackagingRequest
                 if (isset($boxLocId['UPMB']['bins_packed'][0]['errors'])) {    
                     $binResponse['UPMB-Error'] = $boxLocId['UPMB']['bins_packed'];
                 } else{
-                $binResponse['UPMB'] = $boxLocId['UPMB']['bins_packed'];
+                $binResponse['UPMB']['bins_packed'] = $boxLocId['UPMB']['bins_packed'];
                 }
             }
 
@@ -112,7 +112,7 @@ class PackagingRequest
                 if (isset($boxLocId['UMEB']['bins_packed'][0]['errors'])) {    
                     $binResponse['UMEB-Error'] = $boxLocId['UMEB']['bins_packed'];
                 } else{
-                $binResponse['UMEB'] = $boxLocId['UMEB']['bins_packed'];
+                $binResponse['UMEB']['bins_packed'] = $boxLocId['UMEB']['bins_packed'];
                 }
             }
 
@@ -121,7 +121,7 @@ class PackagingRequest
                 if (isset($boxLocId['UFLAT']['bins_packed'][0]['errors'])) {    
                     $binResponse['UFLAT-Error'] = $boxLocId['UFLAT']['bins_packed'];
                 } else{
-                $binResponse['UFLAT'] = $boxLocId['UFLAT']['bins_packed'];
+                $binResponse['UFLAT']['bins_packed'] = $boxLocId['UFLAT']['bins_packed'];
                 }
             }
 
