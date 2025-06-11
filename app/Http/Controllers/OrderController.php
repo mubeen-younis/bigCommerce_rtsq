@@ -290,21 +290,25 @@ class OrderController extends Controller
                         }
 
                         /* Usps carrier packaging according to boxes types */
-                        $customBoxes = $ws->binPackagingData->response->customboxes->bins_packed ?? [];
+                        $customBoxes = $ws->binPackagingData->response->customboxes ?? [];
                         if (!blank($customBoxes)) {
                             $orderWidgetData[] = $this->formatUspsPackaging($customBoxes, $zip, $lineItem);
+                            $orderWidget = $orderWidgetData;
                         }
-                        $upmbBoxes = $ws->binPackagingData->response->upmb->bins_packed ?? [];
+                        $upmbBoxes = $ws->binPackagingData->response->upmb ?? [];
                         if (!blank($upmbBoxes)) {
                             $orderWidgetData[] = $this->formatUspsPackaging($upmbBoxes, $zip, $lineItem);
+                            $orderWidget = $orderWidgetData;
                         }
-                        $umebBoxes = $ws->binPackagingData->response->umeb->bins_packed ?? [];
+                        $umebBoxes = $ws->binPackagingData->response->umeb ?? [];
                         if (!blank($umebBoxes)) {
                             $orderWidgetData[] = $this->formatUspsPackaging($umebBoxes, $zip, $lineItem);
+                            $orderWidget = $orderWidgetData;
                         }
-                        $uflatBoxes = $ws->binPackagingData->response->uflat->bins_packed ?? [];
+                        $uflatBoxes = $ws->binPackagingData->response->uflat ?? [];
                         if (!blank($uflatBoxes)) {
                             $orderWidgetData[] = $this->formatUspsPackaging($uflatBoxes, $zip, $lineItem);
+                            $orderWidget = $orderWidgetData;
                         }
 
                         $itemCount = 0;
@@ -358,8 +362,6 @@ class OrderController extends Controller
                             }
                         }
                         $totalBoxes = isset($key) ? $key + 1 - $itemCount : 0;
-
-
                     }
 
                     // Pallet packaging order widget
