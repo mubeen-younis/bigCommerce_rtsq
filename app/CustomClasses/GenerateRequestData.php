@@ -65,8 +65,7 @@ class GenerateRequestData
         $quoteSettings,
         $connectionSettings,
         $storeData
-    )
-    {
+    ) {
         $this->storeData = $storeData;
         $this->quoteSettings = $quoteSettings;
         $this->connectionSettings = $connectionSettings;
@@ -867,7 +866,7 @@ class GenerateRequestData
                         $pricePerPackage = round($shipmentPrice / $totalNoOfPackages, 2) ?? 0;
                         $maxWeightPackage = $isLargeCartShippingRule['max_package_weight'] ?? 0;
 
-
+                        $itemsPrice = $itemsArr[$variant_id]['lineItemPrice'];
                         // creating custom packages
                         for ($i = 0; $i < $totalNoOfPackages; $i++) {
 
@@ -899,13 +898,13 @@ class GenerateRequestData
                             $item['lineItemLength'] = '';
                             $item['shipBinAlone'] = 1;
                             $item['shipItemAlone'] = 1;
-                            $item['lineItemPrice'] = $pricePerPackage > 0 ? $pricePerPackage / 100 : 0;
+                            // $item['lineItemPrice'] = $pricePerPackage > 0 ? $pricePerPackage / 100 : 0;
+                            $item['lineItemPrice'] = $itemsPrice;
                             $total_weight += $maxWeightPackage;
                             $lineItems[$index] = $item ?? [];
                             $origins[$index] = $origin;
                         }
                     }
-
                     unset($itemsArr);
                     // update lineitems with custom packages and origins with package id
                     $itemsArr = $lineItems ?? [];
@@ -914,7 +913,7 @@ class GenerateRequestData
                             $carriers[$carrierName]['originAddress'] = $origins ?? [];
                             Log::info('Large Cart Settings Shipping Rule Applied');
                         }
-                        
+
                         // if(isset($carriers['usps'])){
                         //     $carriers['usps']['api']['binResponse'] = [];
                         // }
@@ -1948,10 +1947,8 @@ class GenerateRequestData
 
         if (isset($connSettings['creds']['api_type']) && $connSettings['creds']['api_type'] === 'new_api') {
             unset($apiArray['AccountNumber'], $apiArray['MeterNumber'], $apiArray['password'], $apiArray['key']);
-
         } else {
             unset($apiArray['clientId'], $apiArray['clientSecret'], $apiArray['requestForNewAPI']);
-
         }
 
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
@@ -3036,7 +3033,6 @@ class GenerateRequestData
                 if ($isLtl || $isMultiPackage) {
                     continue;
                 }
-
             }
             $itemLocId = $enitOrigin[$origin]['locationId'] ?? '';
 
@@ -3044,13 +3040,13 @@ class GenerateRequestData
 
             $shippingRule = new ShippingRuleController();
             $isLargeCartShippingRule = $shippingRule->checkLargeCartRuleApply($lineItems, $this->storeData['store']->id) ?? [];
-            if(empty($isLargeCartShippingRule)){
+            if (empty($isLargeCartShippingRule)) {
                 $binReqArr[$itemLocId] = $uspsSmallPkgReq->getGroupedUSPSBoxes($storeId);
                 $binRespArr = $uspsSmallPkgReq->setAndGetBinsResponse($storeId, $connSettings, $enitOrigin, $lineItems, $itemLocId);
             }
 
-            if(!empty($isLargeCartShippingRule)){
-            $apiArray['sbsPackaging'] = 0;
+            if (!empty($isLargeCartShippingRule)) {
+                $apiArray['sbsPackaging'] = 0;
             }
             $apiArray['binResponse'][$itemLocId] = $binRespArr['packedBoxes'] ?? [];
             $owdArr = $binRespArr['owdBoxes'] ?? [];
