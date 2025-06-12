@@ -3048,9 +3048,12 @@ class GenerateRequestData
                 $binReqArr[$itemLocId] = $uspsSmallPkgReq->getGroupedUSPSBoxes($storeId);
                 $binRespArr = $uspsSmallPkgReq->setAndGetBinsResponse($storeId, $connSettings, $enitOrigin, $lineItems, $itemLocId);
             }
+
+            if(!empty($isLargeCartShippingRule)){
+            $apiArray['sbsPackaging'] = 0;
+            }
             $apiArray['binResponse'][$itemLocId] = $binRespArr['packedBoxes'] ?? [];
             $owdArr = $binRespArr['owdBoxes'] ?? [];
-
             $apiArray['binsReqArr'] = $binReqArr ?? [];
             // $apiArray['binResponseArr'] = $owdArr ?? [];
             // $apiArray['boxBins'] = $uspsSmallPkgReq->getGroupedUSPSBoxes($storeId) ?? [];
