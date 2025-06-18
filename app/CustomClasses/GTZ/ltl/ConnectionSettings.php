@@ -35,6 +35,7 @@ class ConnectionSettings extends CarriersConnectionSettings
         }
         if($apiType === 'NEWAPI'){
             $url = Endpoints::wweLtlTestEndpoint();
+
             $params = [
                 'platform' => 'bigcommerce',
                 'carrier_mode' => 'test',
@@ -47,8 +48,10 @@ class ConnectionSettings extends CarriersConnectionSettings
                 'clientId' => $data['clientId'],
                 'clientSecret' => $data['clientSecret'],
                 'ApiVersion' => '2.0',
-                'requestFromGlobalTranz' => 1
+                'requestFromGlobalTranz' => 1,
+                'isNMFCNumberEnabled' => isset($data['requiresNmfc']) && $data['requiresNmfc'] ? 1 : 0,
             ];
+
         }else{
             $params  = [
                 'platform' => 'bigcommerce',
@@ -65,7 +68,6 @@ class ConnectionSettings extends CarriersConnectionSettings
                 'carrierName' => $apiType,
             ];
         }
-
         $queryString = http_build_query($params);
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
         $output = json_decode($output['response'], true);
@@ -75,6 +77,11 @@ class ConnectionSettings extends CarriersConnectionSettings
                 'error' => false,
                 'message' => 'Test connection successful.',
                 'data' => [],
+            ];
+        } elseif (isset($output['severity']) && $output['severity'] === 'ERROR') {
+            $response = [
+                'error' => true,
+                'message' => $output['Message'],
             ];
         } else{
             $response = [

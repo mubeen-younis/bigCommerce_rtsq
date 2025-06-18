@@ -1421,6 +1421,8 @@ class GenerateRequestData
         $insideDelivery = (isset($connSettings['quote_settings']['always_inside_delivery']) && $connSettings['quote_settings']['always_inside_delivery'] == true) || (isset($connSettings['quote_settings']['offer_inside_delivery']) && $connSettings['quote_settings']['offer_inside_delivery'] == true) ? 'Y' : 'N';
         $notifyDelivery = (isset($connSettings['quote_settings']['always_quote_notify']) && $connSettings['quote_settings']['always_quote_notify']) || (isset($connSettings['quote_settings']['offer_notify_as_option']) && $connSettings['quote_settings']['offer_notify_as_option']) ? 'Y' : 'N';
 
+        $isRequiresNmfc = (isset($connSettings['creds']['requiresNmfc'])) && ($connSettings['creds']['requiresNmfc'])  ? 1 : 0;
+
         $insurance = [
             'code' => '',
             'value' => ''
@@ -1434,6 +1436,7 @@ class GenerateRequestData
         }
         $weightThreshold = $connSettings['quote_settings']['weight_threshold'] ?? Functions::$defaultThresholdLimit;
         $apiArray = [
+
             'speed_freight_username' => isset($connSettings['creds']['username']) ? $connSettings['creds']['username'] : '',
             'speed_freight_password' => isset($connSettings['creds']['password']) ? $connSettings['creds']['password'] : '',
             'speed_freight_authentication_key' => isset($connSettings['creds']['authentication_key']) ? $connSettings['creds']['authentication_key'] : '',
@@ -1462,6 +1465,7 @@ class GenerateRequestData
 
             $apiArray['speed_freight_username'] = isset($connSettings['creds']['new_api_username']) ? $connSettings['creds']['new_api_username'] : '';
             $apiArray['speed_freight_password'] = isset($connSettings['creds']['new_api_password']) ? $connSettings['creds']['new_api_password'] : '';
+            $apiArray['isNMFCNumberEnabled'] = $isRequiresNmfc;
         } else {
             unset(
                 $apiArray['clientId'],
@@ -1620,6 +1624,7 @@ class GenerateRequestData
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
 
+        $isRequiresNmfc = (isset($connSettings['creds']['requiresNmfc'])) && ($connSettings['creds']['requiresNmfc'])  ? 1 : 0;
         $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
 
         /*
@@ -1749,6 +1754,7 @@ class GenerateRequestData
                 'speed_freight_lift_gate_pickup' => $liftGatePickup,
                 'speed_freight_lift_inside_delivery' => $insideDelivery,
                 'speed_freight_notify_before_delivery' => $notifyDelivery,
+                'isNMFCNumberEnabled' => $isRequiresNmfc,
                 'insureShipment' => 0,
                 'requestFromGlobalTranz' => 1,
                 'insuranceCategory' => $insurance,
@@ -1764,6 +1770,8 @@ class GenerateRequestData
     {
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||
             (isset($connSettings['quote_settings']['offerLiftGateDelivery']) && $connSettings['quote_settings']['offerLiftGateDelivery'])) ? 'Y' : 'N';
+
+        $isRequiresNmfc = (isset($connSettings['creds']['requiresNmfc'])) && ($connSettings['creds']['requiresNmfc'])  ? 1 : 0;
 
         $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
 
@@ -1824,6 +1832,7 @@ class GenerateRequestData
             'speed_freight_lift_gate_pickup' => $liftGatePickup,
             'speed_freight_lift_inside_delivery' => $insideDelivery,
             'speed_freight_notify_before_delivery' => $notifyDelivery,
+            'isNMFCNumberEnabled' => $isRequiresNmfc,
             'insureShipment' => 0,
             'requestFromUnishippersLTL' => 1,
             'insuranceCategory' => $insurance,
@@ -2208,6 +2217,7 @@ class GenerateRequestData
 
         $sbsEnabled = $this->checkIsSBSActive($this->storeData['store']['id']);
         $ratingMethod = $this->getPackagingRatingMethod($connSettings);
+
 
         $this->resiCarrier['wweSmall'] = $residential;
         $this->resiCarrier['alwaysResi']['wweSmall'] = $alwaysResi;
