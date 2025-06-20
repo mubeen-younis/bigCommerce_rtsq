@@ -21,6 +21,7 @@ class PlansController extends Controller
                 'status' => 200
             ];
         }else{
+            
             return ['error' => true,
                 'data' => [],
                 'message' => 'Store is required',
