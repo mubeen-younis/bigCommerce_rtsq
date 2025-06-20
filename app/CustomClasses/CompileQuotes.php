@@ -1081,7 +1081,8 @@ class CompileQuotes
 
     public function finalMultiShipmentResp($locations)
     {
-        dd("locations", $locations);
+
+
         // Final array to hold the combined sums for each rate type
         $finalArray = $finalCheckoutResp = $multiShipmentArr = [];
 
@@ -1100,7 +1101,7 @@ class CompileQuotes
                 }
             }
         }
-// unset($allRateTypes[0]);
+
         $accesArray = Functions::getEnabledAccessorials($rateType);
         // Now, for each rate type, check if all locations have it and sum the rates
         foreach ($allRateTypes as $rateType) {
@@ -1161,6 +1162,7 @@ class CompileQuotes
             }
 
             $code = $this->getAccessorialCode($access['isLG'] ?? false, $access['isID'] ?? false, $accessorials['isPU'] ?? false, $accessorials['isLGPU'] ?? false, $access['isLAD'] ?? false, $accessorials['isTMD'] ?? false, $accessorials['isAPD'] ?? false, $access['isNBD'] ?? false, $this->isResi ?? false, $isAlwaysResidential ?? false, $isSurchargeRates ?? false);
+
             if ($rateType == 'Truckload') {
                 $title = $title . ' w/ truckload delivery';
                 $code = '+TL';
