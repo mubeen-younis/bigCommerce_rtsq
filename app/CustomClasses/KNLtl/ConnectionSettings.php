@@ -42,6 +42,7 @@ class ConnectionSettings extends CarriersConnectionSettings
         $output = $this->curlRequest->enSingleCurlRequest($url, $queryString, [], 'POST');
 
         $outresp = json_decode($output['response'], true);
+        // dd("outresp", $outresp);
         // if (isset($outresp['severity']) && $outresp['severity'] === 'ERROR') {
         //     // dd("outresp", $outresp['Message']);
         //     $response = [
@@ -56,10 +57,10 @@ class ConnectionSettings extends CarriersConnectionSettings
                 'message' => 'Test connection successful.',
                 'data' => [],
             ];
-        }elseif(isset($outresp['error'])) {
+        }elseif(isset($outresp['severity']) && $outresp['severity'] === 'ERROR') {
             $response = [
                 'error' => true,
-                'message' => $outresp['error'],
+                'message' => $outresp['Message'],
             ];
         }else{
             $response = [
