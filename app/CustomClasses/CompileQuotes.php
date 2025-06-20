@@ -981,12 +981,22 @@ class CompileQuotes
                     break;
             }
         }
-
+ Log::info('Exception on s98 4line quotesTemp' . json_encode([
+            $quotesTemp
+                ]));
         $quotesRes = $this->handleMultiCarriersResp($quotesTemp);
+
+          Log::info('Exception on s987 line quotesRes' . json_encode([
+            $quotesRes
+                ]));
 
         if (isset($quotesRes['multiShipmentQuotes']) && !empty($quotesRes['multiShipmentQuotes']) && isset($quotesRes['checkoutQuotes']) && !empty($quotesRes['checkoutQuotes'])) {
             $quotesRes = Functions::addUpCheapestQuotes($quotesRes, $this->storeId);
         }
+
+          Log::info('Exception on 997 line quotesRes' . json_encode([
+            $quotesRes
+                ]));
 
         return $quotesRes;
     }
