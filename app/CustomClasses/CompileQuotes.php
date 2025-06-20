@@ -1100,7 +1100,7 @@ class CompileQuotes
                 }
             }
         }
-unset($allRateTypes[0]);
+// unset($allRateTypes[0]);
         $accesArray = Functions::getEnabledAccessorials($rateType);
         // Now, for each rate type, check if all locations have it and sum the rates
         foreach ($allRateTypes as $rateType) {
