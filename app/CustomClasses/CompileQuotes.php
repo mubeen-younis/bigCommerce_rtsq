@@ -1081,6 +1081,7 @@ class CompileQuotes
 
     public function finalMultiShipmentResp($locations)
     {
+        dd("locations", $locations);
         // Final array to hold the combined sums for each rate type
         $finalArray = $finalCheckoutResp = $multiShipmentArr = [];
 
