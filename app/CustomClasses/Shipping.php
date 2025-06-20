@@ -428,6 +428,7 @@ class Shipping
                         'title' => !empty($method) ? Functions::$smallMultiTitle . ' w/' . $method : Functions::$smallMultiTitle
                     ];
                 }
+                
                 $finalQuotes[] = $finalResp;
             } else {
                 $resp = [];
