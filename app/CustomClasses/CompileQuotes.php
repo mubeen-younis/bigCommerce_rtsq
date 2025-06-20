@@ -1014,6 +1014,9 @@ class CompileQuotes
                 }
             }
         }
+        Log::info('Exception on 1017 line newArr' . json_encode([
+            $newArr
+                ]));
         if (!empty($newArr) && count($newArr) == 1 && count($allOrigins) == count($newArr)) {
             $finalSingleShipQuotes = [];
             foreach ($newArr as $quotes) {
@@ -1021,6 +1024,11 @@ class CompileQuotes
                     $finalSingleShipQuotes = array_merge($finalSingleShipQuotes, $quote) ?? [];
                 }
             }
+
+             Log::info('Exception on 1028 line finalSingleShipQuotes' . json_encode([
+            $finalSingleShipQuotes
+                ]));
+
             return array_values($finalSingleShipQuotes);
         }
 
@@ -1039,10 +1047,21 @@ class CompileQuotes
                 }
             }
         }
+ Log::info('Exception on 1050 line cheapestArr' . json_encode([
+            $cheapestArr
+                ]));
 
         if (count($allOrigins) == count($cheapestArr)) {
             $finalQuotesArr = $this->finalMultiShipmentResp($cheapestArr) ?? [];
+
+            Log::info('Exception on 1054 line finalQuotesArr' . json_encode([
+            $finalQuotesArr
+                ]));
         }
+
+         Log::info('Exception on 1059 line finalQuotesArr2' . json_encode([
+            $finalQuotesArr
+                ]));
 
         return $finalQuotesArr ?? [];
 
