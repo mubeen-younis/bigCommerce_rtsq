@@ -1003,7 +1003,7 @@ class Functions
             }
             $originQuotes[$origin][$index][$count]['titleQuickest'] = $titleQuickest ?? '';
         }
-        $originQuotes[$origin][$index][$count]['code'] = $carrName . $serviceCode . $serviceCode;
+        $originQuotes[$origin][$index][$count]['code'] = $carrName . $serviceCode . $ndAccess;
         $originQuotes[$origin][$index][$count]['rate'] = $ndPrice;
         $originQuotes[$origin][$index][$count]['title'] = $ndTitle;
 
