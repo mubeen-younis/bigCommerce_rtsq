@@ -236,9 +236,9 @@ class Shipping
         if (isset($uspsCarrierArr) && !empty($uspsCarrierArr)) {
             $apiArray = $uspsCarrierArr['api'] ?? [];
             $uspsBoxBins = $apiArray['boxBins'] ?? [];
-
-            if (isset($apiArray['binResponseArr']) && !empty($apiArray['binResponseArr'])) {
-                $quotes = $this->addBinResponseToQuotes($apiArray['binResponseArr'], $quotes, true);
+            
+            if (isset($apiArray['binResponse']) && !empty($apiArray['binResponse'])) {
+                $quotes = $this->addBinResponseToQuotes($apiArray['binResponse'], $quotes, true);
             }
         }
 
@@ -251,7 +251,6 @@ class Shipping
         if (isset($requestArr['binReponse']) && !empty($requestArr['binReponse'])) {
             $quotes = $this->addBinResponseToQuotes($requestArr['binReponse'], $quotes, false);
         }
-
         $palletBins = $requestArr['palletBins'] ?? [];
         if (isset($requestArr['palletResponse']) && !empty($requestArr['palletResponse'])) {
             $quotes = (new PalletPackaging())->addPalletResponseToQuotes($requestArr['palletResponse'], $quotes);
@@ -829,7 +828,7 @@ class Shipping
         if (!blank($this->dbscRates)) {
             $finalQuotes = array_merge($finalQuotes, $this->dbscRates);
         }
-
+        
         foreach ($finalQuotes as $finalQuote) {
             $requestTempData = new RequestTempData();
             $requestTempData->request = json_encode($requestArr);

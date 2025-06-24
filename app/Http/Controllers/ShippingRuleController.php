@@ -712,8 +712,10 @@ class ShippingRuleController extends Controller
         $shipmentQuantity = 0;
         $LCSShippingRuleType = '9';
         $shipmentQuantity = collect($shippingItems)->sum('piecesOfLineItem') ?? 0;
+
         // Get Large Cart Settings Shipping Rule
         $LCSShippingRules = ShippingRule::getStoreShippingRules($storeId, $LCSShippingRuleType);
+
 
         foreach ($LCSShippingRules as $rule) {
             // Check: rule is available and meet the condition

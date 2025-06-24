@@ -289,23 +289,26 @@ class OrderController extends Controller
                         } else {
                             $sbsData = $ws->binPackagingData->response->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->oneRate->bins_packed ?? [];
                         }
-
                         /* Usps carrier packaging according to boxes types */
-                        $customBoxes = $ws->binPackagingData->response->customboxes->bins_packed ?? [];
-                        if (!blank($customBoxes)) {
+                        $customBoxes = $ws->binPackagingData->response->customboxes ?? [];
+                        if (!blank($customBoxes) && ($order['shipping_name'] == 'USPS Ground Advantage')) {
                             $orderWidgetData[] = $this->formatUspsPackaging($customBoxes, $zip, $lineItem);
+                            $orderWidget = $orderWidgetData[0];
                         }
-                        $upmbBoxes = $ws->binPackagingData->response->upmb->bins_packed ?? [];
-                        if (!blank($upmbBoxes)) {
+                        $upmbBoxes = $ws->binPackagingData->response->upmb ?? [];
+                        if (!blank($upmbBoxes) && ($order['shipping_name'] == 'USPS Priority Mail')) {
                             $orderWidgetData[] = $this->formatUspsPackaging($upmbBoxes, $zip, $lineItem);
+                            $orderWidget = $orderWidgetData[0];
                         }
-                        $umebBoxes = $ws->binPackagingData->response->umeb->bins_packed ?? [];
-                        if (!blank($umebBoxes)) {
+                        $umebBoxes = $ws->binPackagingData->response->umeb ?? [];
+                        if (!blank($umebBoxes) && ($order['shipping_name'] == 'USPS Priority Mail Express')) {
                             $orderWidgetData[] = $this->formatUspsPackaging($umebBoxes, $zip, $lineItem);
+                            $orderWidget = $orderWidgetData[0];
                         }
-                        $uflatBoxes = $ws->binPackagingData->response->uflat->bins_packed ?? [];
-                        if (!blank($uflatBoxes)) {
+                        $uflatBoxes = $ws->binPackagingData->response->uflat ?? [];
+                        if (!blank($uflatBoxes) && ($order['shipping_name'] == 'USPS Priority Mail Flat Rate')) {
                             $orderWidgetData[] = $this->formatUspsPackaging($uflatBoxes, $zip, $lineItem);
+                            $orderWidget = $orderWidgetData[0];
                         }
 
                         $itemCount = 0;
@@ -359,8 +362,6 @@ class OrderController extends Controller
                             }
                         }
                         $totalBoxes = isset($key) ? $key + 1 - $itemCount : 0;
-
-
                     }
 
                     // Pallet packaging order widget
