@@ -287,7 +287,6 @@ class Shipping
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
 
         $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
-
         return $resp;
     }
 

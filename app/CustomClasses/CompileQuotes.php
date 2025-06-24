@@ -1438,7 +1438,7 @@ class CompileQuotes
                         $data['surcharges']['liftgateFee'] = $knLtl->getLGFee($data['AccessorialResults'] ?? []) ?? 0;
 
                         // $data['surcharges']['notifyDeliveryFee'] = $knLtl->getNBDFee($data['Accessorials'] ?? []) ?? 0;
-                        $data['surcharges']['residentialFee'] = $knLtl->getResiFee($data['Accessorials'] ?? []) ?? 0;
+                        $data['surcharges']['residentialFee'] = $knLtl->getResiFee($data['AccessorialResults'] ?? []) ?? 0;
                         // $data['surcharges']['hazardousMaterialsFee'] = $knLtl->getHazardousMaterialsFee($data['Accessorials'] ?? []) ?? 0;
                         // Apply override rates shipping rule
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data);

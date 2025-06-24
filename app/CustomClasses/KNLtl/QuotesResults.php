@@ -165,11 +165,11 @@ class QuotesResults
     {
         $resiFee = 0;
         if (isset($accessorials) && !empty($accessorials)) {
-            $lgAccessType = 'RESIDENTIALDELIVERYFEE';
+            $lgAccessType = 'RES';
 
             foreach ($accessorials as $acc) {
-                if (isset($acc['Type']) && $acc['Type'] == $lgAccessType) {
-                    $resiFee = number_format($acc['Charge'], 2, '.', '');
+                if (isset($acc['ServiceCode']) && $acc['ServiceCode'] == $lgAccessType) {
+                    $resiFee = number_format($acc['ChargeAmount'], 2, '.', '');
                     break;
                 }
             }
