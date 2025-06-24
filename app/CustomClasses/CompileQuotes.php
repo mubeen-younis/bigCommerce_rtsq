@@ -1222,7 +1222,6 @@ class CompileQuotes
     public function applySurchargeRatesRule($connectionSettings, $data)
     {
         $surchargeRatesData = $this->shippingRule->surchargeRates($this->storeId, $this->items, $connectionSettings, $data, $this->carrierName, $this->originKey, $this->allOrigins);
-
         if (isset($surchargeRatesData['isSurchargeRates']) && $surchargeRatesData['isSurchargeRates']) {
             $data = $surchargeRatesData['data'] ?? [];
             $this->isSurchargeRates = $surchargeRatesData['isSurchargeRates'];
@@ -1439,7 +1438,7 @@ class CompileQuotes
                         $data['surcharges']['liftgateFee'] = $knLtl->getLGFee($data['AccessorialResults'] ?? []) ?? 0;
 
                         // $data['surcharges']['notifyDeliveryFee'] = $knLtl->getNBDFee($data['Accessorials'] ?? []) ?? 0;
-                        // $data['surcharges']['residentialFee'] = $knLtl->getResiFee($data['Accessorials'] ?? []) ?? 0;
+                        $data['surcharges']['residentialFee'] = $knLtl->getResiFee($data['Accessorials'] ?? []) ?? 0;
                         // $data['surcharges']['hazardousMaterialsFee'] = $knLtl->getHazardousMaterialsFee($data['Accessorials'] ?? []) ?? 0;
                         // Apply override rates shipping rule
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data);
@@ -4386,7 +4385,6 @@ class CompileQuotes
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data);
                         // Apply Surcharge rates shipping rule
                         $data = $this->applySurchargeRatesRule($connectionSettings, $data);
-
                         $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : 'Freight';
                         /*
                          * Date 01-07-22
@@ -4428,7 +4426,6 @@ class CompileQuotes
         if (!empty($hatShipments)) {
             return $abfLtl->arrangeHATFreight($originQuotes, $hatShipments);
         }
-
         return $originQuotes;
     }
 
