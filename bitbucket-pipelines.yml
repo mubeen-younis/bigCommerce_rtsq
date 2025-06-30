@@ -21,7 +21,7 @@ pipelines:
                 MODE: 'command'
                 COMMAND: '$DEV_COMMAND/bigcommerce/bc/remote-script.sh'
 
-    kuehne-nagel-carrier-integration:
+    multiple-truckload-shipment-breaks-in-chr-fq-integration:
       - step:
           caches:
             - composer
