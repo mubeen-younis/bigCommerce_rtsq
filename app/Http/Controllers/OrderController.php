@@ -74,7 +74,7 @@ class OrderController extends Controller
             }
             $orderWidget = $this->createOrderWidget($request, $order, $reportingFlag);
             if (empty($orderWidget)) {
-               return response()->json([
+                return response()->json([
                     'error' => true,
                     'data' => [],
                     'message' => 'No Order Widget Found',
@@ -125,7 +125,6 @@ class OrderController extends Controller
                 $item->itemQuantity = $item->piecesOfLineItem;
                 $formItems[$variant_id] = $item;
             }
-
         }
         return (object)$formItems;
     }
@@ -184,7 +183,6 @@ class OrderController extends Controller
             if (!blank($data)) {
                 unset($data['id']);
                 RequestData::insert($data);
-
             } else {
                 return [];
             }
@@ -219,7 +217,7 @@ class OrderController extends Controller
         $LimitedAccessDel = strpos($rateId, '+LAD') ? 'Y' : 'n';
         $isTruckLoad = strpos($rateId, '+TL') ? 'Y' : 'n';
         $isFreightTruckLoad = strpos($rateId, '+FLGTL') ? 'Y' : 'n';
-        $isSurcharge = strpos($rateId, '+SC' ) ? 'Y' : 'n';
+        $isSurcharge = strpos($rateId, '+SC') ? 'Y' : 'n';
         $isTwoManDel = strpos($rateId, Functions::$twoManDelAccess) ? 'Y' : 'n';
         $isAppointmentDel = strpos($rateId, Functions::$appointmentDelAccess) ? 'Y' : 'n';
         $rateId = strtolower($rateId);
@@ -260,16 +258,17 @@ class OrderController extends Controller
         $isSimpleRate = strpos($rateId, 'sr_') || strpos($rateId, '+sr');
 
         // 
+        // Assuming $quotes is the object you provided
+        if (isset($responseFromWS->chr)) {
+            $chrKey = array_key_first(get_object_vars($responseFromWS->chr)); // e.g., '899'
+            $secondLevelKey = array_key_first(get_object_vars($responseFromWS->chr->$chrKey)); // e.g., 'Truckload'
+            $thirdLevelKey = array_key_first(get_object_vars($responseFromWS->chr->$chrKey->$secondLevelKey)); // e.g., 'Van'
 
-      // Assuming $quotes is the object you provided
-$chrKey = array_key_first(get_object_vars($responseFromWS->chr)); // e.g., '899'
-$secondLevelKey = array_key_first(get_object_vars($responseFromWS->chr->$chrKey)); // e.g., 'Truckload'
-$thirdLevelKey = array_key_first(get_object_vars($responseFromWS->chr->$chrKey->$secondLevelKey)); // e.g., 'Van'
-
-// Now get TLShipmentCount
-$tlShipmentCount = $responseFromWS->chr->$chrKey->$secondLevelKey->$thirdLevelKey->TLShipmentCount ?? null;
-// dd("tlShipmentCount",$tlShipmentCount);
-// Add it to response
+            // Now get TLShipmentCount
+            $tlShipmentCount = $responseFromWS->chr->$chrKey->$secondLevelKey->$thirdLevelKey->TLShipmentCount ?? null;
+        }
+        // dd("tlShipmentCount",$tlShipmentCount);
+        // Add it to response
 
 
         /*
@@ -365,7 +364,6 @@ $tlShipmentCount = $responseFromWS->chr->$chrKey->$secondLevelKey->$thirdLevelKe
 
                                 $orderWidget[$zip]['sbs'][$key] = $orderWidgetData;
                                 ++$count;
-
                             }
                             isset($binPacked->bin_data->totalBoxWeight) ? $orderWidget[$zip]['sbs'][$key]['weight'] = optional($binPacked->bin_data)->totalBoxWeight : null;
                             unset($orderWidgetData);
@@ -418,7 +416,7 @@ $tlShipmentCount = $responseFromWS->chr->$chrKey->$secondLevelKey->$thirdLevelKe
             $state = $origin->senderState ?? '';
             $senderZip = $origin->senderZip ?? '';
             $origDetails = $this->getOriginForInsAndLocal($zip);
-            $nickname = isset($origDetails['nickname']) ? $origDetails['nickname'] : ''; 
+            $nickname = isset($origDetails['nickname']) ? $origDetails['nickname'] : '';
             if (!$isMultiShipment && $isInspOrLocal) {
                 $origDetails = $this->getOriginForInsAndLocal($zip);
                 if (!blank($origDetails)) {
@@ -428,21 +426,21 @@ $tlShipmentCount = $responseFromWS->chr->$chrKey->$secondLevelKey->$thirdLevelKe
                 }
             }
             $orderWidget[$zip]['locationtype'] = $item->dropship_enabled == 'N' ? 'Warehouse' : 'Dropship';
-            if($nickname == $city . ' ' . $state . ' ' . $senderZip){
+            if ($nickname == $city . ' ' . $state . ' ' . $senderZip) {
                 $orderWidget[$zip]['address'] = $city . ' ' . $state . ' ' . $senderZip;
-            }else {
+            } else {
                 $orderWidget[$zip]['address'] = $nickname . ' - ' . $city . ' ' . $state . ' ' . $senderZip;
             }
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
             $sRate = $order['shipping_rate'] ?? null;
-            if($isTruckLoad){
-            $orderWidget[$zip]['number_of_trucks'] = $tlShipmentCount;
+            if ($isTruckLoad) {
+                $orderWidget[$zip]['number_of_trucks'] = $tlShipmentCount;
             }
 
             if ($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement) {
                 $enableFeaturesArray = Functions::getEnableFeaturesArr($isLG, $insideDelivery == 'Y', $notifyBeforeDelivery == 'Y', $LimitedAccessDel == 'Y');
                 $enableFeaturesArray = array_reverse($enableFeaturesArray);
-                foreach($enableFeaturesArray as $key => $feature){
+                foreach ($enableFeaturesArray as $key => $feature) {
                     if ($isHAT) {
                         $sRate = $multiShipmentresponse->$index->hat->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
                         $order['shipping_name'] = $multiShipmentresponse->$index->hat->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
@@ -481,7 +479,7 @@ $tlShipmentCount = $responseFromWS->chr->$chrKey->$secondLevelKey->$thirdLevelKe
                     }
                 }
                 $carrierHasInsurance = $code ? $this->hasInsureCarrier($code) : false;
-                $isSurcharge = strpos($code, '+SC' ) ? 'Y' : 'n';
+                $isSurcharge = strpos($code, '+SC') ? 'Y' : 'n';
                 $isFlatRate = strpos($code, 'flatRateRule') === 0 ? true : false;
                 $isLGate = strpos($code, '+LG') ? true : false;
                 $isNBD = strpos($code, '+NBD') ? true : false;
@@ -497,14 +495,14 @@ $tlShipmentCount = $responseFromWS->chr->$chrKey->$secondLevelKey->$thirdLevelKe
                     $shippingGroupRate = $shippingGroupResp[0]->rate ?? 0;
                     $sRate = $sRate + $shippingGroupRate;
                 }
-                
+
                 $isMulti = true;
             }
 
             /**
              * Add Quote ID
              * */
-            if (!$isSmallLtlrate && empty($multiShipmentresponse)){
+            if (!$isSmallLtlrate && empty($multiShipmentresponse)) {
                 $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($rateId, $responseFromWS, $zip);
             } elseif (!$isSmallLtlrate && $isMultiShipment) {
                 $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($code, $responseFromWS, $zip);
@@ -513,21 +511,21 @@ $tlShipmentCount = $responseFromWS->chr->$chrKey->$secondLevelKey->$thirdLevelKe
             /**
              * To show full instore-pick shipping name
              * */
-            if($isInstore) {
+            if ($isInstore) {
                 $sName = explode('|', $order['shipping_name']) ?? '';
                 $filteredArray = preg_grep('/\.\.\.,/', $sName);
                 foreach ($filteredArray as $index => $value) {
                     $sName[$index] = ' ' . $origDetails['address'] . ', ' . $origDetails['city'] . ', ' . $origDetails['state'] . ' ' . $origDetails['zip_code'] . ' ' ?? '';
-                }   
+                }
                 $order['shipping_name'] = implode('|', $sName) ?? '';
             }
 
-            if (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Delivery')){
+            if (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Delivery')) {
                 $sName = explode('(Delivery', $order['shipping_name'])[0] ?? '';
                 $sName = explode('w/', $sName)[0] ?? '';
                 $estimate = explode('(Delivery', $order['shipping_name'])[1] ?? '';
                 $sMethod = '(Delivery' . $estimate;
-            } elseif (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Intransit')){
+            } elseif (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Intransit')) {
                 $sName = explode('(Intransit', $order['shipping_name'])[0] ?? '';
                 $sName = explode('w/', $sName)[0] ?? '';
                 $estimate = explode('(Intransit', $order['shipping_name'])[1] ?? '';
@@ -685,7 +683,7 @@ $tlShipmentCount = $responseFromWS->chr->$chrKey->$secondLevelKey->$thirdLevelKe
         $resp = [
             'widget' => $this->objectToArray($orderWidget),
             'sbs' => $sbs,
-            'fdoShipments' =>$fdoShipmenst,
+            'fdoShipments' => $fdoShipmenst,
         ];
         return $resp;
     }
@@ -828,8 +826,8 @@ $tlShipmentCount = $responseFromWS->chr->$chrKey->$secondLevelKey->$thirdLevelKe
         return $resp;
     }
 
-    private function updateStaffNote($data,$toRequest)
-    {   
+    private function updateStaffNote($data, $toRequest)
+    {
         // Combine array elements into a single string with two line breaks between them
         $staffNoteContent = implode("\n\n", $data);
 
@@ -1158,7 +1156,7 @@ $tlShipmentCount = $responseFromWS->chr->$chrKey->$secondLevelKey->$thirdLevelKe
         $toRequest['order_id'] = $orderId;
         $this->accessToken = $store->access_token;
         $this->storeHash = $storeHash;
-        $this->moveQuotesTempToReq($toRequest, $request,$scope);
+        $this->moveQuotesTempToReq($toRequest, $request, $scope);
         return response()->json(true, 200);
     }
 
@@ -1261,9 +1259,9 @@ $tlShipmentCount = $responseFromWS->chr->$chrKey->$secondLevelKey->$thirdLevelKe
      * Move row from request_temp to request table after order placing
      * delete all rows from request_temp relevant to cart_id
      */
-    public function moveQuotesTempToReq($toRequest, $request,$scope)
+    public function moveQuotesTempToReq($toRequest, $request, $scope)
     {
-        $order=[];
+        $order = [];
         $headers[] = 'X-Auth-Token: ' . $this->accessToken;
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Accept: application/json';
@@ -1271,7 +1269,7 @@ $tlShipmentCount = $responseFromWS->chr->$chrKey->$secondLevelKey->$thirdLevelKe
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
             $cartId = json_decode($response['response'])->cart_id;
-            $order= json_decode($response['response'],true);
+            $order = json_decode($response['response'], true);
             $endpoint = json_decode($response['response'])->shipping_addresses->url;
             $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
             if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
@@ -1301,7 +1299,7 @@ $tlShipmentCount = $responseFromWS->chr->$chrKey->$secondLevelKey->$thirdLevelKe
 
                     if (!blank($reqData)) {
                         unset($reqData['id']);
-                        $orderId= $order['id'];
+                        $orderId = $order['id'];
                         RequestData::insert($reqData);
 
                         // Check: if order is newly created then update staff note
@@ -1315,13 +1313,13 @@ $tlShipmentCount = $responseFromWS->chr->$chrKey->$secondLevelKey->$thirdLevelKe
                                 $orderWidget = $this->createOrderWidget($toRequest, $order, $reportingFlag);
                                 $formateStaffNote = $this->formatShipment($orderWidget);
                                 $isStatus = $this->updateStaffNote($formateStaffNote, $toRequest);
-                                if($isStatus){
+                                if ($isStatus) {
                                     RequestData::where('store_id', $toRequest['store_id'])
-                                    ->Where('cart_id', $cartId)
-                                    ->Where('rate_id', $rateId)
-                                    ->update([
-                                        'order_id' => $orderId
-                                    ]);
+                                        ->Where('cart_id', $cartId)
+                                        ->Where('rate_id', $rateId)
+                                        ->update([
+                                            'order_id' => $orderId
+                                        ]);
                                 }
                             }
                         }
@@ -1349,7 +1347,7 @@ $tlShipmentCount = $responseFromWS->chr->$chrKey->$secondLevelKey->$thirdLevelKe
                 $address = isset($shipmentData['address']) ? $shipmentData['address'] : '';
                 $items = isset($shipmentData['items']) ? implode(', ', $shipmentData['items']) : '';
                 $accessories = isset($shipmentData['accessories']) ? implode(' | ', $shipmentData['accessories']) : '';
-                $items = isset($shipmentData['items']) ? implode(' | ', $shipmentData['items']) : ''; 
+                $items = isset($shipmentData['items']) ? implode(' | ', $shipmentData['items']) : '';
                 $shippingRate = isset($shipmentData['shipping_rate']) ? $shipmentData['shipping_rate'] : '';
                 $quoteId = isset($shipmentData['quoteId']) ? $shipmentData['quoteId'] : '';
                 $expectedDelivery = isset($shipmentData['shipping_method']) && !empty($shipmentData['shipping_method'])
@@ -1365,17 +1363,17 @@ $tlShipmentCount = $responseFromWS->chr->$chrKey->$secondLevelKey->$thirdLevelKe
 
                 // Add SBS details in the staff note
                 $sbs = isset($shipmentData['sbs']) ? $shipmentData['sbs'] : [];
-                if(!empty($sbs)){
-                    $boxes = array_filter($sbs, function($bin) {
+                if (!empty($sbs)) {
+                    $boxes = array_filter($sbs, function ($bin) {
                         return $bin['type'] != 'item' && $bin['type'] != 'weight_based';
                     }) ?? [];
-                    
+
                     $totalBoxes = count($boxes) > 0 ? count($boxes) : 1;
 
-                    foreach($sbs as $key => $bin){
-                        if(isset($bin['type']) && $bin['type'] == 'item' && isset($bin['quantity']) && !empty($bin['quantity'])){
+                    foreach ($sbs as $key => $bin) {
+                        if (isset($bin['type']) && $bin['type'] == 'item' && isset($bin['quantity']) && !empty($bin['quantity'])) {
                             $totalBoxes = $bin['quantity'];
-                            for ($i=1; $i <= $bin['quantity']; $i++) { 
+                            for ($i = 1; $i <= $bin['quantity']; $i++) {
                                 $weight = isset($bin['weight']) ? $bin['weight'] : 0;
                                 $sbsDetails = "Box $i of $totalBoxes : $weight lbs";
                                 $formattedString .= !empty($sbsDetails) ? ", $sbsDetails" : '';
@@ -1390,7 +1388,7 @@ $tlShipmentCount = $responseFromWS->chr->$chrKey->$secondLevelKey->$thirdLevelKe
                 }
                 // Add the formatted string to the array
                 $formattedShipments[] = $formattedString;
-            } 
+            }
 
             return $formattedShipments;
         }
