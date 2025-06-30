@@ -257,7 +257,7 @@ class OrderController extends Controller
         $isAir = strpos($rateId, '+as');
         $isSimpleRate = strpos($rateId, 'sr_') || strpos($rateId, '+sr');
 
-        // 
+        $TLShipmentCount = '';
         // Assuming $quotes is the object you provided
         if (isset($responseFromWS->chr)) {
             $chrKey = array_key_first(get_object_vars($responseFromWS->chr)); // e.g., '899'
@@ -433,7 +433,7 @@ class OrderController extends Controller
             }
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
             $sRate = $order['shipping_rate'] ?? null;
-            if ($isTruckLoad) {
+            if ($isTruckLoad && !empty($tlShipmentCount)) {
                 $orderWidget[$zip]['number_of_trucks'] = $tlShipmentCount;
             }
 
