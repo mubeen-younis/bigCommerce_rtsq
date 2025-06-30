@@ -178,7 +178,6 @@ class OrderController extends Controller
         $cartId = $order['cart_id'] ?? null;
 
         $data = $this->getRequestDataFromDB('RequestData', $request, $rateId, $cartId, $order);
-
         if (blank($data)) {
             $data = $this->getRequestDataFromDB('RequestTempData', $request, $rateId, $cartId, $order);
 
@@ -259,6 +258,19 @@ class OrderController extends Controller
         $isGround = strpos($rateId, '+gd');
         $isAir = strpos($rateId, '+as');
         $isSimpleRate = strpos($rateId, 'sr_') || strpos($rateId, '+sr');
+
+        // 
+
+      // Assuming $quotes is the object you provided
+$chrKey = array_key_first(get_object_vars($responseFromWS->chr)); // e.g., '899'
+$secondLevelKey = array_key_first(get_object_vars($responseFromWS->chr->$chrKey)); // e.g., 'Truckload'
+$thirdLevelKey = array_key_first(get_object_vars($responseFromWS->chr->$chrKey->$secondLevelKey)); // e.g., 'Van'
+
+// Now get TLShipmentCount
+$tlShipmentCount = $responseFromWS->chr->$chrKey->$secondLevelKey->$thirdLevelKey->TLShipmentCount ?? null;
+// dd("tlShipmentCount",$tlShipmentCount);
+// Add it to response
+
 
         /*
         * Shipment Packaging */
@@ -423,6 +435,9 @@ class OrderController extends Controller
             }
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
             $sRate = $order['shipping_rate'] ?? null;
+            if($isTruckLoad){
+            $orderWidget[$zip]['number_of_trucks'] = $tlShipmentCount;
+            }
 
             if ($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement) {
                 $enableFeaturesArray = Functions::getEnableFeaturesArr($isLG, $insideDelivery == 'Y', $notifyBeforeDelivery == 'Y', $LimitedAccessDel == 'Y');
@@ -667,7 +682,6 @@ class OrderController extends Controller
 
         $fdoShipmenst = json_decode($data['fdo_shipments_data'] ?? '', true) ?? [];
         $sbs = '';
-
         $resp = [
             'widget' => $this->objectToArray($orderWidget),
             'sbs' => $sbs,

@@ -825,21 +825,6 @@ class Shipping
         $boxbins,
         $multiShipmentQuotes = null
     ) {
-
-        // Getting shipment count
-        $chrKey = array_key_first($quotes['chr']); // e.g., 799
-
-        // Step 2: Get first key under the second level (e.g., 'Truckload')
-        $secondLevelKey = array_key_first($quotes['chr'][$chrKey]); // e.g., 'Truckload'
-
-        // Step 3: Get first key under the third level (e.g., 'Van')
-        $thirdLevelKey = array_key_first($quotes['chr'][$chrKey][$secondLevelKey]); // e.g., 'Van'
-
-        // Step 4: Access TLShipmentCount
-        $tlShipmentCount = $quotes['chr'][$chrKey][$secondLevelKey][$thirdLevelKey]['TLShipmentCount'] ?? null;
-        $resp['tlShipmentCount'] = $tlShipmentCount;
-
-
         if (!blank($this->dbscRates)) {
             $finalQuotes = array_merge($finalQuotes, $this->dbscRates);
         }
