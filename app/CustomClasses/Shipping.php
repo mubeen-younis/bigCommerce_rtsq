@@ -231,6 +231,14 @@ class Shipping
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         //Sending request to WS to get Quotes
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
+        
+        Log::info('>>>>>>>>>> request on line 234' . json_encode([
+            $requestArr, 
+        ]));
+
+        Log::info('>>>>>>>>>> response on line 238' . json_encode([
+            $quotes, 
+        ]));
         // dd("234", $requestArr, $quotes);
         /* Catering Usps carrier packaging response */
         $uspsCarrierArr = $requestArr['requestArr']['carriers']['usps'] ?? [];
