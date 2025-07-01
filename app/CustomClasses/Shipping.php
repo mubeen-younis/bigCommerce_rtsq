@@ -231,12 +231,20 @@ class Shipping
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         //Sending request to WS to get Quotes
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
+
+        Log::info('>>>>>>>>>>>>>>>>>>>> Request on line 235' . json_encode([
+            $requestArr
+        ]));
+
+        Log::info('>>>>>>>>>>>>>>>>>>>> Response on line 239' . json_encode([
+            $quotes
+        ]));
         /* Catering Usps carrier packaging response */
         $uspsCarrierArr = $requestArr['requestArr']['carriers']['usps'] ?? [];
         if (isset($uspsCarrierArr) && !empty($uspsCarrierArr)) {
             $apiArray = $uspsCarrierArr['api'] ?? [];
             $uspsBoxBins = $apiArray['boxBins'] ?? [];
-            
+
             if (isset($apiArray['binResponse']) && !empty($apiArray['binResponse'])) {
                 $quotes = $this->addBinResponseToQuotes($apiArray['binResponse'], $quotes, true);
             }
@@ -266,7 +274,6 @@ class Shipping
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];
-
         }
 
         /*Adding shipping group rates response in quotes
@@ -426,7 +433,7 @@ class Shipping
                         'title' => !empty($method) ? Functions::$smallMultiTitle . ' w/' . $method : Functions::$smallMultiTitle
                     ];
                 }
-                
+
                 $finalQuotes[] = $finalResp;
             } else {
                 $resp = [];
@@ -828,7 +835,7 @@ class Shipping
         if (!blank($this->dbscRates)) {
             $finalQuotes = array_merge($finalQuotes, $this->dbscRates);
         }
-        
+
         foreach ($finalQuotes as $finalQuote) {
             $requestTempData = new RequestTempData();
             $requestTempData->request = json_encode($requestArr);
