@@ -182,7 +182,6 @@ class PalletPackaging
                 $Bin3D = new Bin3D();
                 $palletResponse = $Bin3D->getBinResponse($this->storeId, $pallet, $items, $itemsAlone, $hits, $this->cartInfo, $isMultiShipment, true);
 
-
                 if (count($palletResponse)) {
                     foreach ($itemsAlone as $key => $itemAlone) {
                         foreach ($itemAlone as $alone) {

@@ -9,6 +9,7 @@ use App\Endpoints\Endpoints;
 use App\Helpers\Helpers;
 use App\Models\RequestData;
 use App\Models\RequestTempData;
+use App\CustomClasses\PalletPackaging;
 use App\Models\Store;
 use Illuminate\Http\Request;
 use App\Models\ShippingRule;
@@ -28,7 +29,6 @@ class FDOOrderController extends Controller
             $storeHash = $request->header('store-hash') ?? null;
             if (blank($storeHash) || blank($orderId)) {
                 return Helpers::sendJsonResponseFdo(true, 'Store hash and order id required');
-
             }
             $order = $this->getBCOrderByID($storeHash, $orderId);
             if (blank($order['order_detail'])) {
@@ -40,8 +40,10 @@ class FDOOrderController extends Controller
             }
             return Helpers::sendJsonResponseFdo(false, '', $orderDetail);
         } catch (\Exception $exception) {
-            return Helpers::sendJsonResponseFdo(true, 'Something went wrong', ['exception' => $exception->getMessage(),
-                'line' => $exception->getLine()]);
+            return Helpers::sendJsonResponseFdo(true, 'Something went wrong', [
+                'exception' => $exception->getMessage(),
+                'line' => $exception->getLine()
+            ]);
         }
     }
 
@@ -56,7 +58,6 @@ class FDOOrderController extends Controller
         $headers = $this->getHeaders($store->access_token);
         $bcResponse = $this->getOrderResponseFromBC($endpoint, $headers);
         return ['order_detail' => $bcResponse, 'store_id' => $store->id];
-
     }
 
     public function getHeaders($accessToken)
@@ -110,8 +111,8 @@ class FDOOrderController extends Controller
             $rateId = $order['full_rate_id'] ?? null;
         }
 
-         // Get data for draft order from DB
-         if (blank($data) && $source === "manual") {
+        // Get data for draft order from DB
+        if (blank($data) && $source === "manual") {
             $data = optional($modelName::where('rate_id', $rateId)
                 ->where('store_id', $storeId)
                 ->where('is_draft_order', 1)
@@ -141,7 +142,6 @@ class FDOOrderController extends Controller
             if (!blank($data)) {
                 unset($data['id']);
                 RequestData::insert($data);
-
             } else {
                 return [];
             }
@@ -164,6 +164,7 @@ class FDOOrderController extends Controller
         $isSmallrate = substr($rateId, 0, 9) == 'parcel_12' || substr($rateId, 0, 5) == 'multi' ? true : false;
         $isLG = strpos($rateId, '+lg');
         $isOwnArrangement = strpos($rateId, 'own_arrangement') === 0 || strpos($rateId, 'freernlltl') === 0 ? true : false;
+        $isLtlRate = $isSmallLtlrate || (substr($rateId, 0, 9) != 'parcel_12') || (strpos($rateId, 'ltl') != false);
         $lineItem = json_decode($data['lineitems'])->lineItemData;
 
         $responseFromWS = json_decode($data['quotes']);
@@ -202,7 +203,44 @@ class FDOOrderController extends Controller
         $residentialsPickup = $liftResidentialStatus['resiPickup'] ?? 'n';
         $liftGatePickup = $liftResidentialStatus['lgPickup'] ?? 'n';
         // Removed Sbs COde From Here
-        $packagingDetail = $this->getPackagingDetail($responseFromWS, $isSmallrate, $rateType);
+        $packagingDetail = $this->getPackagingDetail($responseFromWS, $isSmallrate, $rateType, $order, $lineItem);
+
+        if(!empty($packagingDetail)){
+            foreach($packagingDetail as $packing){
+                foreach($packing as $pack){
+                    foreach($pack as $detail){
+                        foreach($detail as $det){
+                            $this->uspsPacking = $det;
+                        }
+                        
+                    }
+                }
+            }
+        }
+
+        // $sbsPackaging = $packagingDetail[$zip] ?? [];
+
+        // aaaaaa
+        // foreach ($responseFromWS as $carrrierName => $WsResp) {
+        //     foreach ($WsResp as $zip => $ws) {
+        //         // $sbsPackaging = $packagingDetail[$zip] ?? [];
+        //         if (isset($ws->palletPackagingData) && !empty($ws->palletPackagingData) && $isLtlRate) {
+
+                    $palletPkgResp = (new PalletPackaging())->formatOrderWidget($responseFromWS, $lineItem);
+        //             // $palletPackaging = $palletPkgResp[$zip]['pallet'] ?? [];
+
+        //             // if (!empty($palletPkgResp)) {
+        //             //     if (empty($orderWidget)) {
+        //             //         $orderWidget = $palletPkgResp;
+        //             //     } else {
+        //             //         $orderWidget[$zip]['pallet'] = $palletPkgResp[$zip]['pallet'];
+        //             //     }
+        //             // }
+        //         }
+        //     }
+        // }
+        // aaaaaa
+
         $origins = $lineItem->origin;
         $items = $lineItem->items;
         $count = 0;
@@ -227,14 +265,13 @@ class FDOOrderController extends Controller
             $orderWidget[$zip]['address']['country'] = $origin->senderCountryCode;
             $orderWidget[$zip]['address']['postal_code'] = $senderZip;
 
-
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
             $sRate = $order['shipping_rate'];
             //print_r($multiShipmentresponse); exit;
             if ($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement) {
                 $enableFeaturesArray = Functions::getEnableFeaturesArr($isLG, $insideDelivery == 'Y', $notifyBeforeDel == 'Y', $LimitedAccessDel == 'Y');
                 $enableFeaturesArray = array_reverse($enableFeaturesArray);
-                foreach($enableFeaturesArray as $key => $feature){
+                foreach ($enableFeaturesArray as $key => $feature) {
                     if ($isHAT) {
                         $sRate = $multiShipmentresponse->$index->hat->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? 0.00;
                         $order['shipping_name'] = $multiShipmentresponse->$index->hat->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? '';
@@ -307,18 +344,18 @@ class FDOOrderController extends Controller
             /**
              * Add Quote ID
              * */
-            if (!$isSmallLtlrate && empty($multiShipmentresponse)){
+            if (!$isSmallLtlrate && empty($multiShipmentresponse)) {
                 $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($rateId, $responseFromWS, $zip);
             } elseif (!$isSmallLtlrate && $isMultiShipment) {
                 $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($code, $responseFromWS, $zip);
             }
 
-            if (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Delivery')){
+            if (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Delivery')) {
                 $sName = explode('(Delivery', $order['shipping_name'])[0] ?? '';
                 $sName = explode('w/', $sName)[0] ?? '';
                 $estimate = explode('(Delivery', $order['shipping_name'])[1] ?? '';
                 $sMethod = '(Delivery' . $estimate;
-            } elseif (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Intransit')){
+            } elseif (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Intransit')) {
                 $sName = explode('(Intransit', $order['shipping_name'])[0] ?? '';
                 $sName = explode('w/', $sName)[0] ?? '';
                 $estimate = explode('(Intransit', $order['shipping_name'])[1] ?? '';
@@ -389,7 +426,21 @@ class FDOOrderController extends Controller
             $accessorials = $this->formatAccessorials($orderWidget[$zip]['accessorials']);
             $orderWidget[$zip]['accessorials'] = $accessorials;
 
-            $orderWidget[$zip]['packing_detail'] = $packagingDetail[$zip] ?? [];
+            $sbsPackaging = $packagingDetail[$zip] ?? [];
+            $palletPackaging = $palletPkgResp[$zip]['pallet'] ?? [];
+            if (!empty($sbsPackaging)) {
+                $orderWidget[$zip]['packing_detail'] = $sbsPackaging ?? [];
+            } 
+            if (!empty($palletPackaging)) {
+                $orderWidget[$zip]['packing_detail'] = $palletPackaging ?? [];
+            }
+            if(!empty($this->uspsPacking)){
+               $orderWidget[$zip]['packing_detail'] = $this->uspsPacking ?? [];
+            }
+
+            // $orderWidget[$zip]['packing_detail'] = $packagingDetail[$zip] ?? [];
+
+
             $orderWidget[$zip]['items'][] = $item;
             $typeOfShip = $orderWidget[$zip]['ship_type'] == 'Warehouse' ? 'w' : 'd';
             $locType = $typeOfShip . $zip;
@@ -444,7 +495,6 @@ class FDOOrderController extends Controller
                     $formattedItems[$item['id']] = $item;
                     $formattedItems[$item['id']]['quantity'] = $item['piecesOfLineItem'];
                 }
-
             }
             $orderDetails[$locId]['ship_details']['items'] = array_values($formattedItems);
         }
@@ -520,14 +570,13 @@ class FDOOrderController extends Controller
         return $formAccess;
     }
 
-    public function getPackagingDetail($responseFromWS, $isSmallrate, $rateType)
+    public function getPackagingDetail($responseFromWS, $isSmallrate, $rateType, $order, $lineItem)
     {
         $packagingDetail = [];
         foreach ($responseFromWS as $carrierName => $WsResp) {
             foreach ($WsResp as $zip => $ws) {
 
                 if (!(isset($ws->severity) && $ws->severity == 'ERROR')) {
-
                     $totalBoxes = 1;
                     if (isset($ws->binPackagingData) && !empty($ws->binPackagingData) && $isSmallrate) {
                         if ($rateType == "ground") {
@@ -539,6 +588,33 @@ class FDOOrderController extends Controller
                         } else {
                             $sbsData = $ws->binPackagingData->response->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->oneRate->bins_packed ?? [];
                         }
+                        // aaaaaa
+
+                          /* Usps carrier packaging according to boxes types */
+                        $customBoxes = $ws->binPackagingData->response->customboxes ?? [];
+                        if (!blank($customBoxes) && ($order['shipping_name'] == 'USPS Ground Advantage')) {
+                            $orderWidgetData[] = $this->formatUspsPackaging($customBoxes, $zip, $lineItem);
+                            $packagingDetail = $orderWidgetData;
+                            // $orderWidget[$zip]['packing_detail'] = $orderWidgetData;
+                        }
+                        $upmbBoxes = $ws->binPackagingData->response->upmb ?? [];
+                        if (!blank($upmbBoxes) && ($order['shipping_name'] == 'USPS Priority Mail')) {
+                            $orderWidgetData[] = $this->formatUspsPackaging($upmbBoxes, $zip, $lineItem);
+                            $orderWidget = $orderWidgetData[0];
+                        }
+                        $umebBoxes = $ws->binPackagingData->response->umeb ?? [];
+                        if (!blank($umebBoxes) && ($order['shipping_name'] == 'USPS Priority Mail Express')) {
+                            $orderWidgetData[] = $this->formatUspsPackaging($umebBoxes, $zip, $lineItem);
+                            $orderWidget = $orderWidgetData[0];
+                        }
+                        $uflatBoxes = $ws->binPackagingData->response->uflat ?? [];
+                        if (!blank($uflatBoxes) && ($order['shipping_name'] == 'USPS Priority Mail Flat Rate')) {
+                            $orderWidgetData[] = $this->formatUspsPackaging($uflatBoxes, $zip, $lineItem);
+                            $orderWidget = $orderWidgetData[0];
+                        }
+
+                        // aaaaaa
+
                         $itemCount = 0;
                         foreach ($sbsData as $key => $binPacked) {
                             $type = optional($binPacked->bin_data)->type ?? '';
@@ -574,7 +650,6 @@ class FDOOrderController extends Controller
                                 $packagingDetail[$zip]['all_boxes_rtsq'][$key] = $orderWidgetData;
                                 $packagingDetail[$zip]['all_boxes_rtsq'][$key] = $orderWidgetData;
                                 ++$count;
-
                             }
                             unset($orderWidgetData);
                             if ($count) {
@@ -583,13 +658,68 @@ class FDOOrderController extends Controller
                             }
                         }
                         $totalBoxes = isset($key) ? $key + 1 - $itemCount : 0;
-
-
                     }
                 }
             }
         }
         return $packagingDetail;
+    }
+
+    public function formatUspsPackaging($binPackagingData, $zip, $lineItem): array
+    {
+        $sbsData = $binPackagingData ?? [];
+        $itemCount = 0;
+        $orderWidget = [];
+
+        foreach ($sbsData as $key => $binPacked) {
+            $type = optional($binPacked->bin_data)->type ?? '';
+            $quantity = 1;
+            if ($type == 'item' || $type == 'weight_based') {
+                $type = $binPacked->bin_data->type;
+                $product_id = $binPacked->bin_data->id;
+                $quantity = $binPacked->bin_data->quantity ?? 1;
+                $itemCount++;
+            }
+            $count = 0;
+            $orderWidgetData['type'] = $type;
+            $orderWidgetData['image_complete'] = $binPacked->image_complete;
+            $orderWidgetData['quantity'] = $quantity;
+            /*For Weight Based Products*/
+            if ($type == 'weight_based') {
+                $orderWidgetData['d'] = '';
+                $orderWidgetData['w'] = '';
+                $orderWidgetData['h'] = '';
+                $orderWidgetData['weight'] = $binPacked->bin_data->weight ?? '';
+            } else {
+                $orderWidgetData['d'] = $binPacked->bin_data->d . ' x ';
+                $orderWidgetData['w'] = $binPacked->bin_data->w . ' x ';
+                $orderWidgetData['h'] = $binPacked->bin_data->h;
+            }
+
+            $orderWidgetData['nickname'] = Functions::getBoxName($binPacked->bin_data->id, '', '', '');
+            foreach ($binPacked->items as $item) {
+                $productid = $item->id;
+                $sbsItems[$zip][$productid] = 1;
+
+                $orderWidgetData['items'][$count]['product_name'] = $lineItem->items->$productid->lineItemName ?? '';
+                $orderWidgetData['items'][$count]['w'] = $item->w;
+                $orderWidgetData['items'][$count]['h'] = $item->h;
+                $orderWidgetData['items'][$count]['d'] = $item->d;
+
+                $orderWidgetData['items'][$count]['image_separated'] = $item->image_separated;
+                $orderWidgetData['items'][$count]['image_sbs'] = $item->image_sbs;
+
+                $orderWidget[$zip]['sbs'][$key] = $orderWidgetData;
+                ++$count;
+            }
+
+            unset($orderWidgetData);
+            if ($count) {
+                $orderWidget[$zip]['sbs'][$key]['number_of_items'] = $count;
+            }
+        }
+
+        return $orderWidget;
     }
 
     public function save($detail, $request)
@@ -600,15 +730,15 @@ class FDOOrderController extends Controller
         $cartId = $order['cart_id'] ?? null;
         $orderId = $request['order_id'] ?? null;
         unset($request['order_id']);
-        $newShipment[] = $request->all() ?? []; 
+        $newShipment[] = $request->all() ?? [];
 
-        $data = $this->getRequestDataFromDB('RequestData', $storeId, $rateId, $cartId, $order);        
+        $data = $this->getRequestDataFromDB('RequestData', $storeId, $rateId, $cartId, $order);
         if (!blank($data)) {
             $data = RequestData::where('id', $data['id'])
-            ->where('store_id', $storeId)
-            ->first();
+                ->where('store_id', $storeId)
+                ->first();
 
-            $oldShipments = json_decode($data->fdo_shipments_data, true) ?? []; 
+            $oldShipments = json_decode($data->fdo_shipments_data, true) ?? [];
             $shipmentsData = array_merge($oldShipments, $newShipment);
             $data->fdo_shipments_data = json_encode($shipmentsData);
             $data->order_id = $orderId;
@@ -625,7 +755,6 @@ class FDOOrderController extends Controller
             $storeHash = $request->header('store-hash') ?? null;
             if (blank($storeHash) || blank($orderId)) {
                 return Helpers::sendJsonResponseFdo(true, 'Store hash and order id required');
-
             }
             $order = $this->getBCOrderByID($storeHash, $orderId);
             if (blank($order['order_detail'])) {
@@ -640,5 +769,4 @@ class FDOOrderController extends Controller
             return Helpers::sendJsonResponseFdo(true, 'Exception on saving shipments', ['exception' => $exception->getMessage()]);
         }
     }
-
 }

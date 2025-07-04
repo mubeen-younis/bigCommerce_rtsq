@@ -95,14 +95,12 @@ class Shipping
         } catch (\Exception $exception) {
             Functions::log('DBSC rates exception ', $exception);
         }
-
         // Items that is not associated with Flat rate Shipping Rule and no need to get rates from Ws
         $itemsWithFreeShipping = collect($request['lineItemData']['items'])->where('isFreeShipping', true)->all();
         // Items that is not associated with Shipping Group and need to get rates from Ws
         $itemsWithoutFreeShipping = collect($request['lineItemData']['items'])->where('isFreeShipping', false)->all();
-
+        
         $originsWithoutFreeShipping = $this->getOriginsAccShipGroup($itemsWithoutFreeShipping, $origins);
-
         // Items that is associated with Free Shipping
         $originsWithFreeShipping = $this->getOriginsAccShipGroup($itemsWithFreeShipping, $origins);
 
@@ -111,7 +109,6 @@ class Shipping
             $finalQuotes = [];
             // Check for multishipment flat items
             if (empty($originsWithoutFreeShipping) && empty($itemsWithoutFreeShipping) && count($this->flatRateShippingResponse) > 1) {
-
                 $rate = 0;
                 foreach ($this->flatRateShippingResponse as $flatRate) {
 
@@ -231,7 +228,6 @@ class Shipping
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         //Sending request to WS to get Quotes
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
-
         Log::info('>>>>>>>>>>>>>>>>>>>> Request on line 235' . json_encode([
             $requestArr
         ]));
