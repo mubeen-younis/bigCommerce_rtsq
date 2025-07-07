@@ -9,7 +9,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    development:
+    pallet-packaging-fdo-flat-rate-multishipment-tickets:
       - step:
           caches:
             - composer
@@ -19,7 +19,7 @@ pipelines:
                 SSH_USER: $BC_DEV_SSH_USER
                 SERVER: $DEV_SERVER_IP
                 MODE: 'command'
-                COMMAND: '$DEV_COMMAND/bigcommerce/bc/remote-script.sh'
+                COMMAND: '$DEV_COMMAND/bigcommerce/bc && git stash && git fetch && git checkout pallet-packaging-fdo-flat-rate-multishipment-tickets && git pull && php artisan optimize:clear && ./remote-script.sh'
 
     pallet-packaging-fdo-flat-rate-multishipment-tickets:
       - step:
