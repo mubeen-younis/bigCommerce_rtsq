@@ -21,7 +21,7 @@ pipelines:
                 MODE: 'command'
                 COMMAND: '$DEV_COMMAND/bigcommerce/bc && git stash && git fetch && git checkout pallet-packaging-fdo-flat-rate-multishipment-tickets && git pull && php artisan optimize:clear && ./remote-script.sh'
 
-    pallet-packaging-fdo-flat-rate-multishipment-tickets:
+    qa:
       - step:
           caches:
             - composer
@@ -31,7 +31,7 @@ pipelines:
                 SSH_USER: $BC_STAGING_SSH_USER
                 SERVER: $STAGING_SERVER_IP
                 MODE: 'command'
-                COMMAND: 'cd $STAGING_COMMAND/bigcommerce/bc && git stash && git fetch && git checkout pallet-packaging-fdo-flat-rate-multishipment-tickets && git pull && php artisan optimize:clear && ./remote-script.sh'
+                COMMAND: 'cd $STAGING_COMMAND/bigcommerce/bc && git stash && git fetch && git checkout && git pull && php artisan optimize:clear && ./remote-script.sh'
 
     master:
       - step:
