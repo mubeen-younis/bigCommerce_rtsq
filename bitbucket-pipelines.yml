@@ -19,7 +19,7 @@ pipelines:
                 SSH_USER: $BC_DEV_SSH_USER
                 SERVER: $DEV_SERVER_IP
                 MODE: 'command'
-                COMMAND: '$DEV_COMMAND/bigcommerce/bc && git stash && git fetch && git checkout pallet-packaging-fdo-flat-rate-multishipment-tickets && git pull && php artisan optimize:clear && ./remote-script.sh'
+                COMMAND: 'cd $DEV_COMMAND/bigcommerce/bc && git stash && git fetch && git checkout pallet-packaging-fdo-flat-rate-multishipment-tickets && git pull && php artisan optimize:clear && ./remote-script.sh'
 
     multiple-truckload-shipment-breaks-in-chr-fq-integration:
       - step:
