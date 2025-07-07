@@ -3272,9 +3272,9 @@ class GenerateRequestData
         if ($residential == 'Y' || $alwaysResi) {
             array_push($accessorial, 'RESDEL');
         }
-
         $TLEquipmentType = (isset($connSettings['quote_settings']['tl_equipment_type']) && $connSettings['quote_settings']['tl_equipment_type'] == 1) ? 'Van' : (isset($connSettings['quote_settings']['tl_equipment_type']) && ($connSettings['quote_settings']['tl_equipment_type'] == 2) ? 'Reefer' : 'Flatbed');
         $quoteLTLAboveThreshold = (isset($connSettings['quote_settings']['quoteltl_and_truckload']) && $connSettings['quote_settings']['quoteltl_and_truckload']) ? '1' : '0';
+        $quoteLTLAboveCubicVolumeThreshold = (isset($connSettings['quote_settings']['quoteltl_and_cubic_truckload']) && $connSettings['quote_settings']['quoteltl_and_cubic_truckload']) ? '1' : '0';
         $TLWeightThreshold = $connSettings['quote_settings']['truckload_weight_threshold'] ?? '0';
         $TLWeightBreak = $connSettings['quote_settings']['truckload_weight_break'] ?? '0';
         $TLCubicVolumeThreshold = $connSettings['quote_settings']['truckload_cubic_volume_threshold'] ?? '0';
@@ -3294,7 +3294,7 @@ class GenerateRequestData
 
             'accessorial' => $accessorial,
             'quoteLTLAboveThreshold' => $quoteLTLAboveThreshold,
-            'quoteLTLAboveVolumeThreshold' => '0',
+            'quoteLTLAboveVolumeThreshold' => $quoteLTLAboveCubicVolumeThreshold,
             'TLWeightThreshold' => $TLWeightThreshold,
             'TLVolumeThreshold' => $TLCubicVolumeThreshold,
             'TLWeightThresholdBreak' => $TLWeightBreak,
