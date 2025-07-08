@@ -764,6 +764,12 @@ class PalletPackaging
                                 $quantity = $palletPacked->bin_data->quantity ?? 1;
                                 $itemCount++;
                             }
+
+                            $isOwnBoxing = $type == 'item' ? 1 : 0;
+                            if ($isOwnBoxing == 0) {
+                                $palletPacked->bin_data->weight = $palletPacked->bin_data->totalBoxWeight - $palletPacked->bin_data->weight;
+                            }
+
                             $selected_bin_data = collect($palletPacked->bin_data)->only([
                                 'w',
                                 'h',
@@ -775,11 +781,12 @@ class PalletPackaging
                                 'name',
                                 'totalBoxWeight'
                             ]);
+                           
                             $count = 0;
                             $orderWidgetData['type'] = $type;
                             $orderWidgetData['image_complete'] = $palletPacked->image_complete;
                             $orderWidgetData['bin_data'] = $selected_bin_data;
-                            $orderWidgetData['own_packaging'] = $type == 'item' ? 1 : 0;
+                            $orderWidgetData['own_packaging'] = $isOwnBoxing;
                             $orderWidgetData['quantity'] = $quantity;
 
                             // setting pallet dimensions
