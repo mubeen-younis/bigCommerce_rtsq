@@ -755,7 +755,6 @@ class PalletPackaging
                             if (!isset($palletPacked->bin_data) || empty($palletPacked->bin_data)) {
                                 continue;
                             }
-
                             $type = optional($palletPacked->bin_data)->type ?? '';
                             $quantity = 1;
 
@@ -765,11 +764,21 @@ class PalletPackaging
                                 $quantity = $palletPacked->bin_data->quantity ?? 1;
                                 $itemCount++;
                             }
-
+                            $selected_bin_data = collect($palletPacked->bin_data)->only([
+                                'w',
+                                'h',
+                                'd',
+                                'id',
+                                'weight',
+                                'used_weight',
+                                'boxname',
+                                'name',
+                                'totalBoxWeight'
+                            ]);
                             $count = 0;
-
                             $orderWidgetData['type'] = $type;
                             $orderWidgetData['image_complete'] = $palletPacked->image_complete;
+                            $orderWidgetData['bin_data'] = $selected_bin_data;
                             $orderWidgetData['own_packaging'] = $type == 'item' ? 1 : 0;
                             $orderWidgetData['quantity'] = $quantity;
 
