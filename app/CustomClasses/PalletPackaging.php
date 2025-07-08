@@ -790,9 +790,9 @@ class PalletPackaging
                             $orderWidgetData['quantity'] = $quantity;
 
                             // setting pallet dimensions
-                            $orderWidgetData['d'] = $palletPacked->bin_data->d . ' x ';
-                            $orderWidgetData['w'] = $palletPacked->bin_data->w . ' x ';
-                            $orderWidgetData['h'] = isset($palletPacked->bin_data->stack_height) ? $palletPacked->bin_data->stack_height : $palletPacked->bin_data->h;
+                            // $orderWidgetData['d'] = $palletPacked->bin_data->d . ' x ';
+                            // $orderWidgetData['w'] = $palletPacked->bin_data->w . ' x ';
+                            // $orderWidgetData['h'] = isset($palletPacked->bin_data->stack_height) ? $palletPacked->bin_data->stack_height : $palletPacked->bin_data->h;
 
                             // setting pallet name
                             $orderWidgetData['nickname'] = $this->getBoxName($palletPacked->bin_data->id);
