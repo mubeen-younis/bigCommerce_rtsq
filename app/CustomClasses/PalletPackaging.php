@@ -45,7 +45,7 @@ class PalletPackaging
      */
     public function getLtlCarriers()
     {
-        $ltlCarriers = ['wweLTL', 'wweLTLN', 'upsLTL', 'fedexLTL', 'globalTranz', 'cerasis', 'xpoLogistics', 'rnl', 'yrc', 'freightQuote', 'estes', 'dayross', 'odfl4me', 'saia', 'abf','KuehneNagel', 'southeastern', 'tql', 'echoLogistics', 'daylight', 'chr', 'priority1'];
+        $ltlCarriers = ['wweLTL', 'wweLTLN', 'upsLTL', 'fedexLTL', 'globalTranz', 'cerasis', 'xpoLogistics', 'rnl', 'yrc', 'freightQuote', 'estes', 'dayross', 'odfl4me', 'saia', 'abf', 'KuehneNagel', 'southeastern', 'tql', 'echoLogistics', 'daylight', 'chr', 'priority1'];
 
         return $ltlCarriers;
     }
@@ -203,7 +203,7 @@ class PalletPackaging
                     // Final reponse
                     $resp = $this->getFinalResponse($commodityResp, $palletResponse, $pallet);
                 }
-            } catch (\Throwable$th) {
+            } catch (\Throwable $th) {
                 Log::info('No repsonse from 3D Bin ' . $th->getMessage());
                 $resp = [];
             }
@@ -282,7 +282,7 @@ class PalletPackaging
         }
 
         foreach ($pallets as $pallet) {
-            if(!empty($itemsResp['itemsAlone'])){
+            if (!empty($itemsResp['itemsAlone'])) {
                 continue;
             }
 
@@ -380,11 +380,11 @@ class PalletPackaging
         $newOrigins = $newitemsArr = [];
         $packedItemsOrgIds = [];
         foreach ($palletResponse as $locationId => $bins) {
-            
+
             $totalHazmatBoxes = $counting = 0;
             foreach ($bins->bins_packed as $key => $binPacked) {
                 $binPacked->image_complete = Functions::replace3DBinUrl($binPacked->image_complete);
-                
+
                 if (!empty($binPacked->items)) {
                     foreach ($binPacked->items as $item) {
                         $item->image_separated = Functions::replace3DBinUrl($item->image_separated);
@@ -702,7 +702,7 @@ class PalletPackaging
                 foreach ($q['q'] as $key => $value) {
                     $quotesWithFee[$carName][$locId]['q'][$key]['customerRate'] = $value['customerRate'] + $palletFee[$locId];
                 }
-            } elseif ($carName == 'wweLTLN') {                
+            } elseif ($carName == 'wweLTLN') {
                 foreach ($q['q'] as $key => $value) {
                     $quotesWithFee[$carName][$locId]['q'][$key]['totalOfferPrice']['value'] = $value['totalOfferPrice']['value'] + $palletFee[$locId];
                 }
@@ -745,7 +745,7 @@ class PalletPackaging
                 if (!(isset($ws->severity) && $ws->severity == 'ERROR')) {
                     $totalBoxes = 1;
 
-                    if (isset($ws->palletPackagingData->response->bins_packed)){
+                    if (isset($ws->palletPackagingData->response->bins_packed)) {
 
                         $palletData = $ws->palletPackagingData->response->bins_packed ?? [];
                         $itemCount = 0;
@@ -770,6 +770,7 @@ class PalletPackaging
 
                             $orderWidgetData['type'] = $type;
                             $orderWidgetData['image_complete'] = $palletPacked->image_complete;
+                            $orderWidgetData['own_packaging'] = $type == 'item' ? 1 : 0;
                             $orderWidgetData['quantity'] = $quantity;
 
                             // setting pallet dimensions
@@ -784,7 +785,8 @@ class PalletPackaging
                             foreach ($palletPacked->items as $item) {
                                 $productid = $item->id;
                                 $palletItems[$zip][$productid] = 1;
-
+                                $orderWidgetData['items'][$count]['id'] = $lineItem->items->$productid->id;
+                                $orderWidgetData['items'][$count]['wg'] = $lineItem->items->$productid->lineItemWeight;
                                 $orderWidgetData['items'][$count]['product_name'] = $lineItem->items->$productid->lineItemName ?? '';
                                 $orderWidgetData['items'][$count]['w'] = $item->w;
                                 $orderWidgetData['items'][$count]['h'] = $item->h;
@@ -805,7 +807,7 @@ class PalletPackaging
                         }
 
                         $totalBoxes = isset($key) ? $key + 1 - $itemCount : 0;
-                    // Todo: need to remove the else section in future
+                        // Todo: need to remove the else section in future
                     } else {
 
                         $palletData = $ws->palletPackagingData->response->pallets_packed ?? [];
@@ -866,7 +868,7 @@ class PalletPackaging
                             }
                         }
 
-                        $totalBoxes = isset($key) ? $key + 1 - $itemCount : 0; 
+                        $totalBoxes = isset($key) ? $key + 1 - $itemCount : 0;
                     }
                 }
             }
@@ -881,17 +883,18 @@ class PalletPackaging
         return $nickname->nickname ?? null;
     }
 
-    public function setNmfcNull($palletPkgResp, $itemsArr){
-        
-        if(isset($palletPkgResp['palletResponse']) && !empty($palletPkgResp['palletResponse'])){
-            foreach($palletPkgResp['palletResponse'] as $pallets){
-                if(isset($pallets->pallets_packed) && !empty($pallets->pallets_packed)){
-                    foreach($pallets->pallets_packed as $palletPacked){
-                        if(isset($palletPacked->items) && count($palletPacked->items) > 1){
-                            foreach($palletPacked->items as $palletPkgItem){
-                                foreach($itemsArr as $key => $packedItem){
-                                    if($packedItem['variant_id'] == $palletPkgItem->id){
-                                        if(isset($packedItem['lineItemNMFC'])){
+    public function setNmfcNull($palletPkgResp, $itemsArr)
+    {
+
+        if (isset($palletPkgResp['palletResponse']) && !empty($palletPkgResp['palletResponse'])) {
+            foreach ($palletPkgResp['palletResponse'] as $pallets) {
+                if (isset($pallets->pallets_packed) && !empty($pallets->pallets_packed)) {
+                    foreach ($pallets->pallets_packed as $palletPacked) {
+                        if (isset($palletPacked->items) && count($palletPacked->items) > 1) {
+                            foreach ($palletPacked->items as $palletPkgItem) {
+                                foreach ($itemsArr as $key => $packedItem) {
+                                    if ($packedItem['variant_id'] == $palletPkgItem->id) {
+                                        if (isset($packedItem['lineItemNMFC'])) {
                                             $itemsArr[$key]['lineItemNMFC'] = null;
                                         }
                                     }

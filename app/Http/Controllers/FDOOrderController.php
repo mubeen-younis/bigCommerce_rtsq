@@ -432,14 +432,13 @@ class FDOOrderController extends Controller
                 $orderWidget[$zip]['packing_detail'] = $sbsPackaging ?? [];
             } 
             if (!empty($palletPackaging)) {
-                $orderWidget[$zip]['packing_detail'] = $palletPackaging ?? [];
+                $orderWidget[$zip]['packing_detail']['all_boxes_rtsq'] = $palletPackaging ?? [];
             }
             if(!empty($this->uspsPacking)){
                $orderWidget[$zip]['packing_detail'] = $this->uspsPacking ?? [];
             }
 
             // $orderWidget[$zip]['packing_detail'] = $packagingDetail[$zip] ?? [];
-
 
             $orderWidget[$zip]['items'][] = $item;
             $typeOfShip = $orderWidget[$zip]['ship_type'] == 'Warehouse' ? 'w' : 'd';
