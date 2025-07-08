@@ -435,7 +435,9 @@ class OrderController extends Controller
             $sRate = $order['shipping_rate'] ?? null;
             if ($isTruckLoad && !empty($tlShipmentCount)) {
                 $orderWidget[$zip]['number_of_trucks'] = $tlShipmentCount;
+                $orderWidget[$zip]['rate_per_truckload'] = $sRate / $tlShipmentCount;
             }
+            // dd("sRate",$sRate ,$isTruckLoad, $tlShipmentCount, $orderWidget);
 
             if ($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement) {
                 $enableFeaturesArray = Functions::getEnableFeaturesArr($isLG, $insideDelivery == 'Y', $notifyBeforeDelivery == 'Y', $LimitedAccessDel == 'Y');
@@ -640,8 +642,10 @@ class OrderController extends Controller
                 $liftGatePickup != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Lift Gate Pickup') : '';
                 $insideDelivery != 'n' || $isID ? array_push($orderWidget[$zip]['accessories'], 'Inside Delivery') : '';
                 $LimitedAccessDel != 'n' || $isLAD ? array_push($orderWidget[$zip]['accessories'], 'Limited Access Delivery') : '';
-                $isTruckLoad != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Truck Load Delivery') : '';
-                $isFreightTruckLoad != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Truck Load Delivery') : '';
+                if (!isset($responseFromWS->chr)) {
+                    $isTruckLoad != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Truck Load Delivery') : '';
+                    $isFreightTruckLoad != 'n' ? array_push($orderWidget[$zip]['accessories'], 'Truck Load Delivery') : '';
+                }
                 $isTwoManDel != 'n' || $isTMD ? array_push($orderWidget[$zip]['accessories'], 'Two Man Delivery') : '';
                 $isAppointmentDel != 'n' || $isAPD ? array_push($orderWidget[$zip]['accessories'], 'Appointment Delivery') : '';
                 $notifyBeforeDelivery != 'n' || $isNBD ? array_push($orderWidget[$zip]['accessories'], 'Notify Before Delivery') : '';
@@ -677,7 +681,7 @@ class OrderController extends Controller
                 $orderWidget[$key]['items'] = $items;
             }
         }
-
+        // dd("orderWidget", $orderWidget);
         $fdoShipmenst = json_decode($data['fdo_shipments_data'] ?? '', true) ?? [];
         $sbs = '';
         $resp = [

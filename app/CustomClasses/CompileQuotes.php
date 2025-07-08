@@ -5138,7 +5138,6 @@ class CompileQuotes
                         $data = $this->applySurchargeRatesRule($connectionSettings, $data);
 
                         $dateAndDays = $fqChrQuotes->getShipmentDateAndDays($data);
-
                         $enableFeaturesArray = Functions::getEnableFeaturesArr($lgQuotes, $insideDelivery ?? false, $notifyDelivery ?? false, $limitedAccess);
                         foreach ($enableFeaturesArray as $index => $feature) {
                             if ($feature['isEnable']) {
