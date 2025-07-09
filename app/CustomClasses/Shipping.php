@@ -831,7 +831,6 @@ class Shipping
         if (!blank($this->dbscRates)) {
             $finalQuotes = array_merge($finalQuotes, $this->dbscRates);
         }
-
         foreach ($finalQuotes as $finalQuote) {
             $requestTempData = new RequestTempData();
             $requestTempData->request = json_encode($requestArr);

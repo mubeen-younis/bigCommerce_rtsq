@@ -51,7 +51,6 @@ class QuotesResults
                     $date = $data['deliveryTimestamp'] ?? null;
                     $days = $data['totalTransitTimeInDays'] ?? null;
                     $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
-                    
                     $title = $this->getTruckLoadTitle($data['serviceDesc'], $quoteSettings, $data['totalTransitTimeInDays'], $dateAndDays, $data['serviceType']);
                     $arraySorting['Truckload'][$key] = $price;
                     $originQuotes[$origin]['Truckload'][$key]['code'] = 'fqchrltl' . $data['serviceType'] . '+TL' . $access;
@@ -81,8 +80,8 @@ class QuotesResults
         if(($this->quoteSettings['method'] == 1 || $this->quoteSettings['method'] == 3 || $this->quoteSettings['method'] == 2)){
             if($serviceType === 'Flatbed'){
                 return $this->quoteSettings['truck_label_as'] ?? 'Flatbed Truckload Service';
-            } else if($serviceType === 'Refrigerated'){
-                return $this->quoteSettings['truck_label_as'] ?? 'Refrigerated Truckload Service';
+            } else if($serviceType === 'Reefer'){
+                $serviceName = 'Refrigerated Truckload Service';
             } else if($serviceType === 'Van'){
                 return $this->quoteSettings['truck_label_as'] ?? 'Truckload Service';
             } else {
