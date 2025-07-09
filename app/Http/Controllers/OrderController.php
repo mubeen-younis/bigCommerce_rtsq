@@ -435,7 +435,7 @@ class OrderController extends Controller
             $sRate = $order['shipping_rate'] ?? null;
             if ($isTruckLoad && !empty($tlShipmentCount)) {
                 $orderWidget[$zip]['number_of_trucks'] = $tlShipmentCount;
-                $orderWidget[$zip]['rate_per_truckload'] = $sRate / $tlShipmentCount;
+                $orderWidget[$zip]['rate_per_truckload'] = '$' . $sRate / $tlShipmentCount;
             }
             // dd("sRate",$sRate ,$isTruckLoad, $tlShipmentCount, $orderWidget);
 
