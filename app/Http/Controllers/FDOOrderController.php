@@ -13,6 +13,7 @@ use App\CustomClasses\PalletPackaging;
 use App\Models\Store;
 use Illuminate\Http\Request;
 use App\Models\ShippingRule;
+use Illuminate\Support\Facades\Log;
 
 class FDOOrderController extends Controller
 {
@@ -72,8 +73,14 @@ class FDOOrderController extends Controller
     {
         $resp = [];
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
+        Log::info('11111111111111111111 Response on line 76' . json_encode([
+            $response
+        ]));
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
             $resp = json_decode($response['response'], true);
+            Log::info('22222222222222222 Response on line 81' . json_encode([
+            $response
+        ]));
             $endpoint = json_decode($response['response'])->shipping_addresses->url;
             $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
             if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
