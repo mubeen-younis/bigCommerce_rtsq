@@ -9,7 +9,7 @@ options:
   max-time: 60
 pipelines:
   branches:
-    development:
+    adding_lineItemPalletFlag_index_in_request:
       - step:
           caches:
             - composer
@@ -19,9 +19,9 @@ pipelines:
                 SSH_USER: $BC_DEV_SSH_USER
                 SERVER: $DEV_SERVER_IP
                 MODE: 'command'
-                COMMAND: '$DEV_COMMAND/bigcommerce/bc/remote-script.sh'
+                COMMAND: 'cd $DEV_COMMAND/bigcommerce/bc && git stash && git checkout adding_lineItemPalletFlag_index_in_request && git pull && php artisan optimize:clear && ./remote-script.sh'
 
-    kuehne-nagel-carrier-integration:
+    qa:
       - step:
           caches:
             - composer
@@ -31,7 +31,7 @@ pipelines:
                 SSH_USER: $BC_STAGING_SSH_USER
                 SERVER: $STAGING_SERVER_IP
                 MODE: 'command'
-                COMMAND: 'cd $STAGING_COMMAND/bigcommerce/bc && git stash && git checkout kuehne-nagel-carrier-integration && git pull && php artisan optimize:clear && ./remote-script.sh'
+                COMMAND: 'cd $STAGING_COMMAND/bigcommerce/bc && git stash && git checkout && git pull && php artisan optimize:clear && ./remote-script.sh'
 
     master:
       - step:

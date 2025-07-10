@@ -3790,12 +3790,13 @@ class GenerateRequestData
         if ($palletPkgReq && !isset($bin->bin_data->type)) {
             $palletHeight = $bin->bin_data->stack_height + $boxHeight ?? 0;
         }
-
+// dd("item", $item);
         $item['lineItemLength'] = $bin->bin_data->d ?? 0;
         $item['lineItemWidth'] = $bin->bin_data->w ?? 0;
         $item['lineItemHeight'] = $palletPkgReq && !isset($bin->bin_data->type) ? $palletHeight : $bin->bin_data->h ?? 0;
         $item['lineItemPrice'] = $price; //$item['lineItemPrice']*$quantityPacked;
         $item['lineItemWeight'] = $bin->bin_data->weight + $boxWeight;
+        $item['lineItemPalletFlag'] = (isset($item['own_pallet']) && $item['own_pallet'] == 1) ? 1 : 0;
 
         //$item['piecesOfLineItem'] = 1 ?? 0;
         $item['shipItemAlone'] = 1;
