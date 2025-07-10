@@ -19,7 +19,7 @@ pipelines:
                 SSH_USER: $BC_DEV_SSH_USER
                 SERVER: $DEV_SERVER_IP
                 MODE: 'command'
-                COMMAND: 'cd $DEV_COMMAND/bigcommerce/bc && git stash && git checkout adding_lineItemPalletFlag_index_in_request && git pull && php artisan optimize:clear && ./remote-script.sh'
+                COMMAND: 'cd $DEV_COMMAND/bigcommerce/bc && git stash && git checkout adding_lineItemPalletFlag_index_in_request && git pull && php artisan optimize:clear && ./remote-script.sh' 
 
     qa:
       - step:
