@@ -63,8 +63,15 @@ class OrderController extends Controller
 
     public function getOrderWidget(Request $request, $reportingFlag = false)
     {
+        Log::info('owowowowowow Request on line 66' . json_encode([
+            $request['order_id']
+        ]));
+        
         try {
             $order = $this->getBCOrderByID($request);
+            Log::info('owowowowowow order on line 72' . json_encode([
+            $order
+        ]));
             if (empty($order)) {
                 return response()->json([
                     'error' => true,
