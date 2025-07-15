@@ -1329,7 +1329,7 @@ class CompileQuotes
             // If all locations have this rate type, add the total rate to the final array
         }
         // if ($allHaveRateType) {
-            $finalArray['code'] = 'freight';
+            $finalArray['code'] = 'freightttt';
             $finalArray['rate'] = $totalRate;
             $finalArray['title'] = $title;
             $finalCheckoutResp['checkoutQuotes'][] = $finalArray;
