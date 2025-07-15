@@ -66,12 +66,12 @@ class OrderController extends Controller
         Log::info('owowowowowow Request on line 66' . json_encode([
             $request['order_id']
         ]));
-        
+
         try {
             $order = $this->getBCOrderByID($request);
             Log::info('owowowowowow order on line 72' . json_encode([
-            $order
-        ]));
+                $order
+            ]));
             if (empty($order)) {
                 return response()->json([
                     'error' => true,
@@ -269,7 +269,15 @@ class OrderController extends Controller
         if (isset($responseFromWS->chr)) {
             $chrKey = array_key_first(get_object_vars($responseFromWS->chr)); // e.g., '899'
             $secondLevelKey = array_key_first(get_object_vars($responseFromWS->chr->$chrKey)); // e.g., 'Truckload'
-            $thirdLevelKey = array_key_first(get_object_vars($responseFromWS->chr->$chrKey->$secondLevelKey)); // e.g., 'Van'
+            $thirdLevelValue = $responseFromWS->chr->$chrKey->$secondLevelKey;
+
+            if (is_object($thirdLevelValue)) {
+                $thirdLevelKey = array_key_first(get_object_vars($thirdLevelValue));
+            } elseif (is_array($thirdLevelValue)) {
+                $thirdLevelKey = array_key_first($thirdLevelValue); // handles arrays too
+            } else {
+                $thirdLevelKey = null;
+            }
 
             // Now get TLShipmentCount
             $tlShipmentCount = $responseFromWS->chr->$chrKey->$secondLevelKey->$thirdLevelKey->TLShipmentCount ?? null;
