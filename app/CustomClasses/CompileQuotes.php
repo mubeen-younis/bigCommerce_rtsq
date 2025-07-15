@@ -1080,7 +1080,8 @@ class CompileQuotes
     public function finalMultiShipmentResp($locations)
     {
 
-
+        $isTruckload = false;
+        $isSimple = false;
         // Final array to hold the combined sums for each rate type
         $finalArray = $finalCheckoutResp = $multiShipmentArr = [];
 
@@ -1109,6 +1110,15 @@ class CompileQuotes
 
             // Loop through each location to check if it has this rate type
             foreach ($locations as $locationId => $types) {
+
+                if (isset($types['Truckload'])) {
+                    $isTruckload = true;
+                }
+
+                if (isset($types['simple'])) {
+                    $isSimple = true;
+                }
+
                 // If the location does not have the current rate type, skip this type
                 if (!isset($types[$rateType])) {
                     $allHaveRateType = false;
@@ -1182,10 +1192,156 @@ class CompileQuotes
                 $multiShipmentArr['multiShipmentQuotes'][] = $arr;
             }
         }
+        // dd("aassaaaa", $locations, $types, $isTruckload, $isSimple);
+        if ($isTruckload == true && $isSimple == true) {
+            $TLAndLTLRes = $this->finalTLAndLTLShipmentResp($locations);
+            return $TLAndLTLRes;
+        }
 
         // return the final array
         return array_merge($finalCheckoutResp, $multiShipmentArr);
     }
+
+
+    // -----------------------------
+
+    public function finalTLAndLTLShipmentResp($locations)
+    {
+        // Final array to hold the combined sums for each rate type
+        $finalArray = $finalCheckoutResp = $multiShipmentArr = [];
+
+        // First, find all rate types across all locations
+        $allRateTypes = [];
+
+        $isLTL = $isSmall = $this->alwaysLG = false;
+        $hatLabel = '';
+
+        // Loop through each location and gather all rate types
+        foreach ($locations as $locationId => $types) {
+            foreach ($types as $rateType => $rateData) {
+                // Add the rate type to the allRateTypes array if it's not already added
+                if (!in_array($rateType, $allRateTypes)) {
+                    $allRateTypes[] = $rateType;
+                }
+            }
+        }
+
+        $accesArray = Functions::getEnabledAccessorials($rateType);
+        // Now, for each rate type, check if all locations have it and sum the rates
+
+        $debugData = [];
+        foreach ($allRateTypes as $rateType) {
+            $allHaveRateType = true; // Flag to check if all locations have this rate type
+            $totalRate = 0;
+            $accessorials = [];
+
+            // Loop through each location to check if it has this rate type
+            foreach ($locations as $locationId => $types) {
+                // dd("dump", $locations, $types, $allRateTypes);
+
+                // If the location does not have the current rate type, skip this type
+                if (!isset($types[$rateType])) {
+                    continue; // Exit early if one location is missing this rate type
+                }
+
+                // Add the rate to the total if the location has the rate type
+                // $totalRate += $types[$rateType]['rate'];
+
+                $allRates[] = [
+                    'rateType' => $rateType,
+                    'locationId' => $locationId,
+                    'hasRateType' => isset($types[$rateType]),
+                    'rateValue' => $types[$rateType]['rate'] ?? null,
+                    'totalRate' => $totalRate,
+                ];
+
+                foreach ($allRates as $item) {
+                    if ($item['hasRateType'] && isset($item['rateValue'])) {
+                        $totalRate += $item['rateValue'];
+                    }
+                }
+
+                $debugData[] = [
+                    'rateType' => $rateType,
+                    'locationId' => $locationId,
+                    'hasRateType' => isset($types[$rateType]),
+                    'rateValue' => $types[$rateType]['rate'] ?? null,
+                    'totalRate' => $totalRate,
+                ];
+
+
+                foreach ($accesArray as $key => $value) {
+                    if (strpos(strtolower($types[$rateType]['code']), $value)) {
+                        $accessorials[$key] = true;
+                    }
+                }
+
+                $arr[$rateType][$locationId] = $types[$rateType];
+
+                $IsLtlSmall = Functions::checkIsLtlSmall($types);
+
+                // To check that LTL shipment exist
+                if (isset($IsLtlSmall['isLtl']) && $IsLtlSmall['isLtl']) {
+                    $isLTL = true;
+                }
+                // // To check that Parcel shipment exist
+                if (isset($IsLtlSmall['isSmall']) && $IsLtlSmall['isSmall']) {
+                    $isSmall = true;
+                }
+
+                if ($rateType == 'hat') {
+                    $hatLabel = $types[$rateType]['title'] ?? '';
+                }
+            }
+
+            if ($isLTL || ($isLTL && $isSmall)) {
+                $title = $this->getTitle(Functions::$ltlMultiTitle, $accessorials['isLG'] ?? false, true, '', [], [], $accessorials['isID'] ?? false, $accessorials['isLAD'] ?? false, false, $accessorials['isTMD'] ?? false, $accessorials['isAPD'] ?? false, false, $accessorials['isNBD'] ?? false, $this->isResi);
+            } else {
+                $title = $this->getTitle(Functions::$smallMultiTitle, false, true, '', [], [], $accessorials['isID'] ?? false, $accessorials['isLAD'] ?? false, false, $accessorials['isTMD'] ?? false, $accessorials['isAPD'] ?? false, false, $accessorials['isNBD'] ?? false, $this->isResi);
+            }
+
+            $access = [];
+            $this->alwaysLG = $this->alwaysAPD = $this->alwaysTMD = $this->alwaysID = $this->alwaysNBD = $this->alwaysLAD = false;
+            foreach (Functions::getEnableFeaturesArr($accessorials['isLG'] ?? false, $accessorials['isID'] ?? false, $accessorials['isNBD'] ?? false, $accessorials['isLAD'] ?? false) as $key => $value) {
+                if ($value['isEnable'] && in_array($key, $allRateTypes)) {
+                    if (!empty($value['index'])) {
+                        foreach ($value['index'] as $index => $v) {
+                            $access[$index] = true;
+                        }
+                    }
+                }
+            }
+
+            $code = $this->getAccessorialCode($access['isLG'] ?? false, $access['isID'] ?? false, $accessorials['isPU'] ?? false, $accessorials['isLGPU'] ?? false, $access['isLAD'] ?? false, $accessorials['isTMD'] ?? false, $accessorials['isAPD'] ?? false, $access['isNBD'] ?? false, $this->isResi ?? false, $isAlwaysResidential ?? false, $isSurchargeRates ?? false);
+
+            if ($rateType == 'Truckload') {
+                $title = $title . ' w/ truckload delivery';
+                $code = '+TL';
+            }
+
+            if ($rateType == 'hat') {
+                $hatLabel = explode('|', $hatLabel);
+                unset($hatLabel[0]);
+                $title = Functions::$ltlMultiTitle . ' |' . implode('|', $hatLabel);
+                $code = '+hat';
+            }
+
+            // If all locations have this rate type, add the total rate to the final array
+        }
+        // if ($allHaveRateType) {
+            $finalArray['code'] = 'freight';
+            $finalArray['rate'] = $totalRate;
+            $finalArray['title'] = $title;
+            $finalCheckoutResp['checkoutQuotes'][] = $finalArray;
+            $multiShipmentArr['multiShipmentQuotes'][] = $arr;
+        // }
+        // dd("arr", $arr, $finalArray);
+        // return the final array
+        return array_merge($finalCheckoutResp, $multiShipmentArr);
+    }
+
+    // -------------------------------
+
 
     private function filterShipmentsWithError($quotes)
     {

@@ -1,46 +1,42 @@
-# This is a sample build configuration for PHP.
-# Check our guides at https://confluence.atlassian.com/x/e8YWN for more examples.
-# Only use spaces to indent your .yml configuration.
-# -----
-#
-# You can specify a custom docker image from Docker Hub as your build environment.
-image: php:7.1.29
-options:
-  max-time: 60
+image: amazon/aws-cli:2.15.59
+
 pipelines:
   branches:
-    dev:
-      - step:
-          caches:
-            - composer
-          script:
-            - pipe: atlassian/ssh-run:0.2.2
-              variables:
-                SSH_USER: $BC_DEV_SSH_USER
-                SERVER: $DEV_SERVER_IP
-                MODE: 'command'
-                COMMAND: 'cd $DEV_COMMAND/bigcommerce/bc && git stash && git fetch && git checkout && git pull && php artisan optimize:clear && ./remote-script.sh'
-
-    pallet-packaging-fdo-flat-rate-multishipment-tickets:
-      - step:
-          caches:
-            - composer
-          script:
-            - pipe: atlassian/ssh-run:0.2.2
-              variables:
-                SSH_USER: $BC_STAGING_SSH_USER
-                SERVER: $STAGING_SERVER_IP
-                MODE: 'command'
-                COMMAND: 'cd $STAGING_COMMAND/bigcommerce/bc && git stash && git fetch && git checkout pallet-packaging-fdo-flat-rate-multishipment-tickets && git pull && php artisan optimize:clear && ./remote-script.sh'
-
     master:
       - step:
-          caches:
-            - composer
+          name: Deploy from Main Branch
           script:
-            - pipe: atlassian/ssh-run:0.2.2
-              variables:
-                SSH_USER: $RTSQ_PRO_SSH_USER
-                SERVER: $RTSQ_PRO_SERVER_IP
-                MODE: 'command'
-                COMMAND: '$RTSQ_PRO_COMMAND/bigcommerce/bc/remote-script.sh' 
+            - export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+            - export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+            - export AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION
+            - export TAG_NAME=$SP_BC_RTSQ_PRO_SERVER_TAG_NAME
+            - export COMMAND="sudo -u ec2-user ${RTSQ_PRO_COMMAND}/bigcommerce/bc/remote-script.sh"
+            - chmod +x ./bb-scripts/run-ssm-command.sh
+            - ./bb-scripts/run-ssm-command.sh
+            
+    development:
+      - step:
+          name: Deploy from Dev Branch
+          script:
+            - export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+            - export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+            - export AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION
+            - export TAG_NAME=$DEV_SERVER_TAG_NAME
+            - export COMMAND='["sudo -u bc-sprt-01 bash -c \"cd '"${DEV_COMMAND}"'/bigcommerce/bc && git stash && git fetch && git checkout adding_lineItemPalletFlag_index_in_request && git pull && php artisan optimize:clear && ./remote-script.sh\""]'
+            - chmod +x ./bb-scripts/run-ssm-command.sh
+            - ./bb-scripts/run-ssm-command.sh
+            
+    staging:
+      - step:
+          name: pallet-packaging-fdo-flat-rate-multishipment-tickets
+          script:
+            - export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+            - export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+            - export AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION
+            - export TAG_NAME=$STAGING_SERVER_TAG_NAME
+            - export COMMAND='["sudo -u apx-bc-01 bash -c \"cd '"${STAGING_COMMAND}"'/bigcommerce/bc && git stash && git checkout pallet-packaging-fdo-flat-rate-multishipment-tickets && git pull && php artisan optimize:clear && ./remote-script.sh\""]'
+            - chmod +x ./bb-scripts/run-ssm-command.sh
+            - ./bb-scripts/run-ssm-command.sh
+            
+            
+            
