@@ -1331,7 +1331,7 @@ class CompileQuotes
         // if ($allHaveRateType) {
             $finalArray['code'] = $carrName. '+TL' . $code;
             $finalArray['rate'] = $totalRate;
-            $finalArray['title'] = 'Freiht';
+            $finalArray['title'] = 'Freight';
             $finalCheckoutResp['checkoutQuotes'][] = $finalArray;
             $multiShipmentArr['multiShipmentQuotes'][] = $arr;
         // }
