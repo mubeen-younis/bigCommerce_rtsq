@@ -287,6 +287,9 @@ class Shipping
             $multiShipmentQuotes = $flatRate['multiShipmentQuotes'];
         }
         $finalQuotes = $this->addRateId($finalQuotes);
+        Log::info('////////////// finalQuotes on line 290' . json_encode([
+            $finalQuotes
+        ]));
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
 
         $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
