@@ -1195,6 +1195,9 @@ class CompileQuotes
         // dd("aassaaaa", $locations, $types, $isTruckload, $isSimple);
         if ($isTruckload == true && $isSimple == true) {
             $TLAndLTLRes = $this->finalTLAndLTLShipmentResp($locations, 'fqchrltl');
+            Log::info('>>>>>>>>>>>>>>>>>>>>LTLTLTLTLT TLAndLTLRes on line 1198' . json_encode([
+            $TLAndLTLRes
+        ]));
             return $TLAndLTLRes;
         }
 
@@ -1334,6 +1337,9 @@ class CompileQuotes
             $finalArray['title'] = 'Freight';
             $finalCheckoutResp['checkoutQuotes'][] = $finalArray;
             $multiShipmentArr['multiShipmentQuotes'][] = $arr;
+        Log::info('//////////////11111 rateId on line 185' . json_encode([
+            $finalArray
+        ]));
         // }
         // return the final array
         return array_merge($finalCheckoutResp, $multiShipmentArr);

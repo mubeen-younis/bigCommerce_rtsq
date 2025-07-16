@@ -533,7 +533,6 @@ class PalletPackaging
     public function addPalletResponseToQuotes($palletResponse = [], $quotes = [])
     {
         $palletFee = [];
-
         foreach ($quotes as $carrName => $quote) {
             $carriers = $this->ltlCarriers ?? [];
             if (in_array($carrName, $carriers)) {
