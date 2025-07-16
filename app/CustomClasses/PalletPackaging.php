@@ -177,7 +177,6 @@ class PalletPackaging
                 $hits = count($items);
                 // check for multishipment request
                 $isMultiShipment = $this->isMultiShipment($carriers);
-
                 // setting up 3D Bin request for packaging
                 $Bin3D = new Bin3D();
                 $palletResponse = $Bin3D->getBinResponse($this->storeId, $pallet, $items, $itemsAlone, $hits, $this->cartInfo, $isMultiShipment, true);
@@ -745,7 +744,7 @@ class PalletPackaging
                 if (!(isset($ws->severity) && $ws->severity == 'ERROR')) {
                     $totalBoxes = 1;
 
-                    if (isset($ws->palletPackagingData->response->bins_packed)) {
+                    if (isset($ws->palletPackagingData->response->bins_packed)){
 
                         $palletData = $ws->palletPackagingData->response->bins_packed ?? [];
                         $itemCount = 0;
@@ -755,6 +754,7 @@ class PalletPackaging
                             if (!isset($palletPacked->bin_data) || empty($palletPacked->bin_data)) {
                                 continue;
                             }
+
                             $type = optional($palletPacked->bin_data)->type ?? '';
                             $quantity = 1;
 
@@ -765,34 +765,16 @@ class PalletPackaging
                                 $itemCount++;
                             }
 
-                            $isOwnBoxing = $type == 'item' ? 1 : 0;
-                            if ($isOwnBoxing == 0) {
-                                $palletPacked->bin_data->weight = $palletPacked->bin_data->totalBoxWeight - $palletPacked->bin_data->weight;
-                            }
-
-                            $selected_bin_data = collect($palletPacked->bin_data)->only([
-                                'w',
-                                'h',
-                                'd',
-                                'id',
-                                'weight',
-                                'used_weight',
-                                'boxname',
-                                'name',
-                                'totalBoxWeight'
-                            ]);
-                           
                             $count = 0;
+
                             $orderWidgetData['type'] = $type;
                             $orderWidgetData['image_complete'] = $palletPacked->image_complete;
-                            $orderWidgetData['bin_data'] = $selected_bin_data;
-                            $orderWidgetData['own_packaging'] = $isOwnBoxing;
                             $orderWidgetData['quantity'] = $quantity;
 
                             // setting pallet dimensions
-                            // $orderWidgetData['d'] = $palletPacked->bin_data->d . ' x ';
-                            // $orderWidgetData['w'] = $palletPacked->bin_data->w . ' x ';
-                            // $orderWidgetData['h'] = isset($palletPacked->bin_data->stack_height) ? $palletPacked->bin_data->stack_height : $palletPacked->bin_data->h;
+                            $orderWidgetData['d'] = $palletPacked->bin_data->d . ' x ';
+                            $orderWidgetData['w'] = $palletPacked->bin_data->w . ' x ';
+                            $orderWidgetData['h'] = isset($palletPacked->bin_data->stack_height) ? $palletPacked->bin_data->stack_height : $palletPacked->bin_data->h;
 
                             // setting pallet name
                             $orderWidgetData['nickname'] = $this->getBoxName($palletPacked->bin_data->id);
@@ -801,8 +783,7 @@ class PalletPackaging
                             foreach ($palletPacked->items as $item) {
                                 $productid = $item->id;
                                 $palletItems[$zip][$productid] = 1;
-                                $orderWidgetData['items'][$count]['id'] = $lineItem->items->$productid->id;
-                                $orderWidgetData['items'][$count]['wg'] = $lineItem->items->$productid->lineItemWeight;
+
                                 $orderWidgetData['items'][$count]['product_name'] = $lineItem->items->$productid->lineItemName ?? '';
                                 $orderWidgetData['items'][$count]['w'] = $item->w;
                                 $orderWidgetData['items'][$count]['h'] = $item->h;
@@ -823,7 +804,7 @@ class PalletPackaging
                         }
 
                         $totalBoxes = isset($key) ? $key + 1 - $itemCount : 0;
-                        // Todo: need to remove the else section in future
+                    // Todo: need to remove the else section in future
                     } else {
 
                         $palletData = $ws->palletPackagingData->response->pallets_packed ?? [];
@@ -884,7 +865,7 @@ class PalletPackaging
                             }
                         }
 
-                        $totalBoxes = isset($key) ? $key + 1 - $itemCount : 0;
+                        $totalBoxes = isset($key) ? $key + 1 - $itemCount : 0; 
                     }
                 }
             }

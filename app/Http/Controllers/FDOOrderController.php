@@ -10,6 +10,7 @@ use App\Helpers\Helpers;
 use App\Models\RequestData;
 use App\Models\RequestTempData;
 use App\CustomClasses\PalletPackaging;
+use App\Models\BoxSize;
 use App\Models\Store;
 use Illuminate\Http\Request;
 use App\Models\ShippingRule;
@@ -519,7 +520,6 @@ class FDOOrderController extends Controller
                                 $quantity = $palletPacked->bin_data->quantity ?? 1;
                                 $itemCount++;
                             }
-
                             $isOwnBoxing = $type == 'item' ? 1 : 0;
                             if ($isOwnBoxing == 0) {
                                 $palletPacked->bin_data->weight = $palletPacked->bin_data->totalBoxWeight - $palletPacked->bin_data->weight;
@@ -648,6 +648,11 @@ class FDOOrderController extends Controller
         return $orderWidget;
     }
 
+    private function getBoxName($palletId)
+    {
+        $nickname = BoxSize::getBoxNicknameAndFee($palletId);
+        return $nickname->nickname ?? null;
+    }
 
     public function formatOrderDetailItems($orderDetails): array
     {
@@ -780,7 +785,6 @@ class FDOOrderController extends Controller
                         }
 
                         // aaaaaa
-
                         $itemCount = 0;
                         foreach ($sbsData as $key => $binPacked) {
                             $type = optional($binPacked->bin_data)->type ?? '';
