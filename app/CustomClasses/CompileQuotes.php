@@ -1330,7 +1330,7 @@ class CompileQuotes
         }
         // dd("title", $title);
         // if ($allHaveRateType) {
-            $finalArray['code'] = 'freightttt';
+            $finalArray['code'] = 'freight';
             $finalArray['rate'] = $totalRate;
             $finalArray['title'] = "";
             $finalCheckoutResp['checkoutQuotes'][] = $finalArray;
