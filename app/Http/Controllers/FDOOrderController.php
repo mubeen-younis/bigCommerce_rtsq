@@ -233,7 +233,7 @@ class FDOOrderController extends Controller
         //         // $sbsPackaging = $packagingDetail[$zip] ?? [];
         //         if (isset($ws->palletPackagingData) && !empty($ws->palletPackagingData) && $isLtlRate) {
 
-                    $palletPkgResp = (new PalletPackaging())->formatOrderWidget($responseFromWS, $lineItem);
+                    $palletPkgResp = $this->formatOrderWidget($responseFromWS, $lineItem);
         //             // $palletPackaging = $palletPkgResp[$zip]['pallet'] ?? [];
 
         //             // if (!empty($palletPkgResp)) {
@@ -486,6 +486,166 @@ class FDOOrderController extends Controller
             }
         }
         return $this->formatOrderDetailItems($orderDetails);
+    }
+
+
+     public function formatOrderWidget($responseFromWS, $lineItem)
+    {
+        $palletItems = [];
+        $orderWidget = $orderWidgetData = [];
+
+        // quotes response from WS side
+        foreach ($responseFromWS as $carrrierName => $WsResp) {
+            foreach ($WsResp as $zip => $ws) {
+                if (!(isset($ws->severity) && $ws->severity == 'ERROR')) {
+                    $totalBoxes = 1;
+
+                    if (isset($ws->palletPackagingData->response->bins_packed)) {
+
+                        $palletData = $ws->palletPackagingData->response->bins_packed ?? [];
+                        $itemCount = 0;
+
+                        // loop pallet packaging packed items
+                        foreach ($palletData as $key => $palletPacked) {
+                            if (!isset($palletPacked->bin_data) || empty($palletPacked->bin_data)) {
+                                continue;
+                            }
+                            $type = optional($palletPacked->bin_data)->type ?? '';
+                            $quantity = 1;
+
+                            if ($type == 'item') {
+                                $type = $palletPacked->bin_data->type;
+                                $product_id = $palletPacked->bin_data->id;
+                                $quantity = $palletPacked->bin_data->quantity ?? 1;
+                                $itemCount++;
+                            }
+
+                            $isOwnBoxing = $type == 'item' ? 1 : 0;
+                            if ($isOwnBoxing == 0) {
+                                $palletPacked->bin_data->weight = $palletPacked->bin_data->totalBoxWeight - $palletPacked->bin_data->weight;
+                            }
+
+                            $selected_bin_data = collect($palletPacked->bin_data)->only([
+                                'w',
+                                'h',
+                                'd',
+                                'id',
+                                'weight',
+                                'used_weight',
+                                'boxname',
+                                'name',
+                                'totalBoxWeight'
+                            ]);
+                           
+                            $count = 0;
+                            $orderWidgetData['type'] = $type;
+                            $orderWidgetData['image_complete'] = $palletPacked->image_complete;
+                            $orderWidgetData['bin_data'] = $selected_bin_data;
+                            $orderWidgetData['own_packaging'] = $isOwnBoxing;
+                            $orderWidgetData['quantity'] = $quantity;
+
+                            // setting pallet dimensions
+                            // $orderWidgetData['d'] = $palletPacked->bin_data->d . ' x ';
+                            // $orderWidgetData['w'] = $palletPacked->bin_data->w . ' x ';
+                            // $orderWidgetData['h'] = isset($palletPacked->bin_data->stack_height) ? $palletPacked->bin_data->stack_height : $palletPacked->bin_data->h;
+
+                            // setting pallet name
+                            $orderWidgetData['nickname'] = $this->getBoxName($palletPacked->bin_data->id);
+
+                            // formatting items packed in pallet
+                            foreach ($palletPacked->items as $item) {
+                                $productid = $item->id;
+                                $palletItems[$zip][$productid] = 1;
+                                $orderWidgetData['items'][$count]['id'] = $lineItem->items->$productid->id;
+                                $orderWidgetData['items'][$count]['wg'] = $lineItem->items->$productid->lineItemWeight;
+                                $orderWidgetData['items'][$count]['product_name'] = $lineItem->items->$productid->lineItemName ?? '';
+                                $orderWidgetData['items'][$count]['w'] = $item->w;
+                                $orderWidgetData['items'][$count]['h'] = $item->h;
+                                $orderWidgetData['items'][$count]['d'] = $item->d;
+
+                                $orderWidgetData['items'][$count]['image_separated'] = $item->image_separated;
+                                $orderWidgetData['items'][$count]['image_sbs'] = $item->image_sbs;
+
+                                $orderWidget[$zip]['pallet'][$key] = $orderWidgetData;
+                                ++$count;
+                            }
+
+                            unset($orderWidgetData);
+
+                            if ($count) {
+                                $orderWidget[$zip]['pallet'][$key]['number_of_items'] = $count;
+                            }
+                        }
+
+                        $totalBoxes = isset($key) ? $key + 1 - $itemCount : 0;
+                        // Todo: need to remove the else section in future
+                    } else {
+
+                        $palletData = $ws->palletPackagingData->response->pallets_packed ?? [];
+
+                        $itemCount = 0;
+
+                        // loop pallet packaging packed items
+                        foreach ($palletData as $key => $palletPacked) {
+                            if (!isset($palletPacked->pallet_data) || empty($palletPacked->pallet_data)) {
+                                continue;
+                            }
+
+                            $type = optional($palletPacked->pallet_data)->type ?? '';
+                            $quantity = 1;
+
+                            if ($type == 'item') {
+                                $type = $palletPacked->pallet_data->type;
+                                $product_id = $palletPacked->pallet_data->id;
+                                $quantity = $palletPacked->pallet_data->quantity ?? 1;
+                                $itemCount++;
+                            }
+
+                            $count = 0;
+
+                            $orderWidgetData['type'] = $type;
+                            $orderWidgetData['image_complete'] = $palletPacked->image_complete;
+                            $orderWidgetData['quantity'] = $quantity;
+
+                            // setting pallet dimensions
+                            $orderWidgetData['d'] = $palletPacked->pallet_data->d . ' x ';
+                            $orderWidgetData['w'] = $palletPacked->pallet_data->w . ' x ';
+                            $orderWidgetData['h'] = $palletPacked->pallet_data->h;
+
+                            // setting pallet name
+                            $orderWidgetData['nickname'] = $this->getBoxName($palletPacked->pallet_data->id);
+
+                            // formatting items packed in pallet
+                            foreach ($palletPacked->items as $item) {
+                                $productid = $item->id;
+                                $palletItems[$zip][$productid] = 1;
+
+                                $orderWidgetData['items'][$count]['product_name'] = $lineItem->items->$productid->lineItemName ?? '';
+                                $orderWidgetData['items'][$count]['w'] = $item->w;
+                                $orderWidgetData['items'][$count]['h'] = $item->h;
+                                $orderWidgetData['items'][$count]['d'] = $item->d;
+
+                                $orderWidgetData['items'][$count]['image_separated'] = $item->image_separated;
+                                $orderWidgetData['items'][$count]['image_sbs'] = $item->image_sbs;
+
+                                $orderWidget[$zip]['pallet'][$key] = $orderWidgetData;
+                                ++$count;
+                            }
+
+                            unset($orderWidgetData);
+
+                            if ($count) {
+                                $orderWidget[$zip]['pallet'][$key]['number_of_items'] = $count;
+                            }
+                        }
+
+                        $totalBoxes = isset($key) ? $key + 1 - $itemCount : 0;
+                    }
+                }
+            }
+        }
+
+        return $orderWidget;
     }
 
 

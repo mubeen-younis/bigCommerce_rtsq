@@ -264,7 +264,7 @@ class OrderController extends Controller
         $isAir = strpos($rateId, '+as');
         $isSimpleRate = strpos($rateId, 'sr_') || strpos($rateId, '+sr');
 
-        $TLShipmentCount = '';
+        $tlShipmentCount = '';
         // Assuming $quotes is the object you provided
         if (isset($responseFromWS->chr)) {
             $chrKey = array_key_first(get_object_vars($responseFromWS->chr)); // e.g., '899'
@@ -278,9 +278,9 @@ class OrderController extends Controller
             } else {
                 $thirdLevelKey = null;
             }
-
-            // Now get TLShipmentCount
-            $tlShipmentCount = $responseFromWS->chr->$chrKey->$secondLevelKey->$thirdLevelKey->TLShipmentCount ?? null;
+            if ($multiShipmentresponse == null) {
+                $tlShipmentCount = $responseFromWS->chr->$chrKey->$secondLevelKey->$thirdLevelKey->TLShipmentCount ?? null;
+            }
         }
         // dd("tlShipmentCount",$tlShipmentCount);
         // Add it to response
@@ -448,9 +448,9 @@ class OrderController extends Controller
             }
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
             $sRate = $order['shipping_rate'] ?? null;
-            if ($isTruckLoad && !empty($tlShipmentCount)) {
+            if ($isTruckLoad && !empty($tlShipmentCount && $multiShipmentresponse == null)) {
                 $orderWidget[$zip]['number_of_trucks'] = $tlShipmentCount;
-                $orderWidget[$zip]['rate_per_truckload'] = '$' . $sRate / $tlShipmentCount;
+                $orderWidget[$zip]['rate_per_truckload'] = '$' . number_format((float)$sRate / $tlShipmentCount, 2,);
             }
             // dd("sRate",$sRate ,$isTruckLoad, $tlShipmentCount, $orderWidget);
 
@@ -474,6 +474,8 @@ class OrderController extends Controller
                         $code = $multiShipmentresponse->$index->Truckload->$zip->code ?? $multiShipmentresponse->$index->liftgate->$zip->code ?? '';
                         break;
                     } else if ($isTruckLoad == 'Y') {
+                        $tlShipmentCount = $responseFromWS->chr->$zip->$secondLevelKey->$thirdLevelKey->TLShipmentCount ?? null;
+                        // dd("cccc", $multiShipmentresponse->$index->Truckload);
                         $sRate = $multiShipmentresponse->$index->Truckload->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? 0.00;
                         $order['shipping_name'] = $multiShipmentresponse->$index->Truckload->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? '';
                         $code = $multiShipmentresponse->$index->Truckload->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? $multiShipmentresponse->$index->liftgate->$zip->code ?? '';
@@ -556,6 +558,11 @@ class OrderController extends Controller
             $sName = str_replace('mi away', 'Mi Away', $sName);
             $orderWidget[$zip]['shipping_method'] = $sName . $sMethod;
             $orderWidget[$zip]['shipping_rate'] = '$' . number_format((float)$sRate, 2,);
+
+            if ($isTruckLoad && !empty($tlShipmentCount)) {
+                $orderWidget[$zip]['number_of_trucks'] = $tlShipmentCount;
+                $orderWidget[$zip]['rate_per_truckload'] = '$' . number_format((float)$sRate / $tlShipmentCount, 2,);
+            }
             // TODO : Need to change originalPiecesOfLineItem -> itemQuantity
             if (isset($item->shipMultiplePackage) && $item->shipMultiplePackage) {
                 if ((!in_array($item->lineItemName, $insertedNames))) {
