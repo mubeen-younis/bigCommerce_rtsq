@@ -1194,7 +1194,7 @@ class CompileQuotes
         }
         // dd("aassaaaa", $locations, $types, $isTruckload, $isSimple);
         if ($isTruckload == true && $isSimple == true) {
-            $TLAndLTLRes = $this->finalTLAndLTLShipmentResp($locations);
+            $TLAndLTLRes = $this->finalTLAndLTLShipmentResp($locations, 'fqchrltl');
             return $TLAndLTLRes;
         }
 
@@ -1205,7 +1205,7 @@ class CompileQuotes
 
     // -----------------------------
 
-    public function finalTLAndLTLShipmentResp($locations)
+    public function finalTLAndLTLShipmentResp($locations, $carrName)
     {
         // Final array to hold the combined sums for each rate type
         $finalArray = $finalCheckoutResp = $multiShipmentArr = [];
@@ -1328,15 +1328,13 @@ class CompileQuotes
 
             // If all locations have this rate type, add the total rate to the final array
         }
-        // dd("title", $title);
         // if ($allHaveRateType) {
-            $finalArray['code'] = 'freight';
+            $finalArray['code'] = $carrName. '+TL' . $code;
             $finalArray['rate'] = $totalRate;
-            $finalArray['title'] = $title;
+            $finalArray['title'] = 'Freiht';
             $finalCheckoutResp['checkoutQuotes'][] = $finalArray;
             $multiShipmentArr['multiShipmentQuotes'][] = $arr;
         // }
-        // dd("arr", $arr, $finalArray);
         // return the final array
         return array_merge($finalCheckoutResp, $multiShipmentArr);
     }
@@ -5331,7 +5329,6 @@ class CompileQuotes
                     }
                 }
             }
-
             $compiledQuotes = $this->getCompiledQuotes($originQuotes, $arraySorting, $lgQuotes);
             if ($compiledTLquotes !== null && !empty($compiledTLquotes)) {
                 $compiledQuotes = array_merge($compiledQuotes, $compiledTLquotes);
