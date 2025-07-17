@@ -1195,7 +1195,6 @@ class CompileQuotes
                 $finalCheckoutResp['checkoutQuotes'][] = $finalArray;
                 $multiShipmentArr['multiShipmentQuotes'][] = $arr;
             }
-            dd("finalArray", $finalArray);
         }
         // dd("aassaaaa", $locations, $types, $isTruckload, $isSimple);
         if ($isTruckload == true && $isSimple == true) {

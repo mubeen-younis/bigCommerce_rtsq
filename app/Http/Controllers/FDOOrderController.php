@@ -143,7 +143,6 @@ class FDOOrderController extends Controller
         $cartId = $order['cart_id'] ?? null;
 
         $data = $this->getRequestDataFromDB('RequestData', $storeId, $rateId, $cartId, $order);
-
         if (blank($data)) {
             $data = $this->getRequestDataFromDB('RequestTempData', $storeId, $rateId, $cartId, $order);
 
@@ -529,6 +528,9 @@ class FDOOrderController extends Controller
                                 $palletPacked->bin_data->weight = $palletPacked->bin_data->totalBoxWeight - $palletPacked->bin_data->weight;
                             }
                             // mmmmm
+
+                            $getBoxDetails = $this->getBoxName($palletPacked->bin_data->id);
+
                             $selected_bin_data = collect($palletPacked->bin_data)->only([
                                 'w',
                                 'h',
@@ -545,6 +547,8 @@ class FDOOrderController extends Controller
                             $orderWidgetData['type'] = $type;
                             $orderWidgetData['image_complete'] = $palletPacked->image_complete;
                             $orderWidgetData['bin_data'] = $selected_bin_data;
+                            $orderWidgetData['bin_data']['max_weight'] = $getBoxDetails->max_weight;
+                            $orderWidgetData['bin_data']['max_height'] = $getBoxDetails->height;
                             $orderWidgetData['own_packaging'] = $isOwnBoxing;
                             $orderWidgetData['quantity'] = $quantity;
 
@@ -553,8 +557,8 @@ class FDOOrderController extends Controller
                             // $orderWidgetData['w'] = $palletPacked->bin_data->w . ' x ';
                             // $orderWidgetData['h'] = isset($palletPacked->bin_data->stack_height) ? $palletPacked->bin_data->stack_height : $palletPacked->bin_data->h;
 
-                            // setting pallet name
-                            $orderWidgetData['nickname'] = $this->getBoxName($palletPacked->bin_data->id);
+                            // setting pallet name zzzzz
+                            $orderWidgetData['nickname'] = $getBoxDetails->nickname ?? null;
 
                             // formatting items packed in pallet
                             foreach ($palletPacked->items as $item) {
@@ -650,11 +654,10 @@ class FDOOrderController extends Controller
 
         return $orderWidget;
     }
-
     private function getBoxName($palletId)
     {
         $nickname = BoxSize::getBoxNicknameAndFee($palletId);
-        return $nickname->nickname ?? null;
+        return $nickname ?? null;
     }
 
     public function formatOrderDetailItems($orderDetails): array

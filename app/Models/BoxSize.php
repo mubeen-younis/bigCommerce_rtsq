@@ -13,7 +13,7 @@ class BoxSize extends Model
     public static function getBoxNicknameAndFee($boxId)
     {
         return optional(DB::table('box_sizes')->where('id', $boxId)
-            ->select('nickname','box_fee')->first());
+            ->select('nickname','box_fee','max_weight','height','ext_height','box_weight')->first());
     }
 
     public static function getBoxDetail($boxId)
