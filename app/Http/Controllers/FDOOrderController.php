@@ -442,7 +442,12 @@ class FDOOrderController extends Controller
                 $orderWidget[$zip]['packing_detail']['all_boxes_rtsq'] = $palletPackaging ?? [];
             }
             if (!empty($this->uspsPacking)) {
-                $orderWidget[$zip]['packing_detail']['all_boxes_rtsq'] = $this->uspsPacking ?? [];
+                $orderWidget[$zip]['packing_detail'] =
+                    [
+                        'all_boxes_rtsq' => [
+                            $this->uspsPacking ?? []
+                        ]
+                    ];
             }
 
             // $orderWidget[$zip]['packing_detail'] = $packagingDetail[$zip] ?? [];
