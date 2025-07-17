@@ -1322,7 +1322,7 @@ class CompileQuotes
             $code = $this->getAccessorialCode($access['isLG'] ?? false, $access['isID'] ?? false, $accessorials['isPU'] ?? false, $accessorials['isLGPU'] ?? false, $access['isLAD'] ?? false, $accessorials['isTMD'] ?? false, $accessorials['isAPD'] ?? false, $access['isNBD'] ?? false, $this->isResi ?? false, $isAlwaysResidential ?? false, $isSurchargeRates ?? false);
 
             if ($rateType == 'Truckload') {
-                $title = $title . ' w/ truckload delivery';
+                $title = $title;
                 $code = '+TL';
             }
 
