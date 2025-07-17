@@ -1188,7 +1188,7 @@ class CompileQuotes
                 $finalArray['code'] = 'Multi' . $code;
                 if(!empty($itemsWithFreeShipping && $originsWithFreeShipping))
                 {
-                    $finalArray['code'] = 'flatRateRuleidx' . '+Multi' . $code;
+                    $finalArray['code'] = 'Multi' . '+flatRateRule' . $code;
                 }
                 $finalArray['rate'] = $totalRate;
                 $finalArray['title'] = $title;
