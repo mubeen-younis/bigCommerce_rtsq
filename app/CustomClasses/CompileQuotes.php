@@ -1052,7 +1052,7 @@ class CompileQuotes
             $cheapestArr
         ]));
         if ((count($allOrigins) == count($cheapestArr)) || !empty($itemsWithFreeShipping && $originsWithFreeShipping)) {
-            $finalQuotesArr = $this->finalMultiShipmentResp($cheapestArr) ?? [];
+            $finalQuotesArr = $this->finalMultiShipmentResp($cheapestArr, $itemsWithFreeShipping, $originsWithFreeShipping) ?? [];
 
             Log::info('Exception on 1054 line finalQuotesArr' . json_encode([
                 $finalQuotesArr
@@ -1077,7 +1077,7 @@ class CompileQuotes
         }
     }
 
-    public function finalMultiShipmentResp($locations)
+    public function finalMultiShipmentResp($locations, $itemsWithFreeShipping, $originsWithFreeShipping)
     {
 
         $isTruckload = false;
@@ -1186,11 +1186,16 @@ class CompileQuotes
             // If all locations have this rate type, add the total rate to the final array
             if ($allHaveRateType) {
                 $finalArray['code'] = 'Multi' . $code;
+                if(!empty($itemsWithFreeShipping && $originsWithFreeShipping))
+                {
+                    $finalArray['code'] = 'flatRateRule' . '+Multi' . $code;
+                }
                 $finalArray['rate'] = $totalRate;
                 $finalArray['title'] = $title;
                 $finalCheckoutResp['checkoutQuotes'][] = $finalArray;
                 $multiShipmentArr['multiShipmentQuotes'][] = $arr;
             }
+            dd("finalArray", $finalArray);
         }
         // dd("aassaaaa", $locations, $types, $isTruckload, $isSimple);
         if ($isTruckload == true && $isSimple == true) {
