@@ -80,8 +80,8 @@ class FDOOrderController extends Controller
         if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
             $resp = json_decode($response['response'], true);
             Log::info('22222222222222222 Response on line 81' . json_encode([
-            $response
-        ]));
+                $response
+            ]));
             $endpoint = json_decode($response['response'])->shipping_addresses->url;
             $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', true);
             if (isset($response['status']) && $response['status'] == true && isset($response['response'])) {
@@ -213,14 +213,13 @@ class FDOOrderController extends Controller
         // Removed Sbs COde From Here
         $packagingDetail = $this->getPackagingDetail($responseFromWS, $isSmallrate, $rateType, $order, $lineItem);
 
-        if(!empty($packagingDetail)){
-            foreach($packagingDetail as $packing){
-                foreach($packing as $pack){
-                    foreach($pack as $detail){
-                        foreach($detail as $det){
+        if (!empty($packagingDetail)) {
+            foreach ($packagingDetail as $packing) {
+                foreach ($packing as $pack) {
+                    foreach ($pack as $detail) {
+                        foreach ($detail as $det) {
                             $this->uspsPacking = $det;
                         }
-                        
                     }
                 }
             }
@@ -234,7 +233,7 @@ class FDOOrderController extends Controller
         //         // $sbsPackaging = $packagingDetail[$zip] ?? [];
         //         if (isset($ws->palletPackagingData) && !empty($ws->palletPackagingData) && $isLtlRate) {
 
-                    $palletPkgResp = $this->formatOrderWidget($responseFromWS, $lineItem);
+        $palletPkgResp = $this->formatOrderWidget($responseFromWS, $lineItem);
         //             // $palletPackaging = $palletPkgResp[$zip]['pallet'] ?? [];
 
         //             // if (!empty($palletPkgResp)) {
@@ -438,12 +437,12 @@ class FDOOrderController extends Controller
             $palletPackaging = $palletPkgResp[$zip]['pallet'] ?? [];
             if (!empty($sbsPackaging)) {
                 $orderWidget[$zip]['packing_detail'] = $sbsPackaging ?? [];
-            } 
+            }
             if (!empty($palletPackaging)) {
                 $orderWidget[$zip]['packing_detail']['all_boxes_rtsq'] = $palletPackaging ?? [];
             }
-            if(!empty($this->uspsPacking)){
-               $orderWidget[$zip]['packing_detail'] = $this->uspsPacking ?? [];
+            if (!empty($this->uspsPacking)) {
+                $orderWidget[$zip]['packing_detail']['all_boxes_rtsq'] = $this->uspsPacking ?? [];
             }
 
             // $orderWidget[$zip]['packing_detail'] = $packagingDetail[$zip] ?? [];
@@ -490,7 +489,7 @@ class FDOOrderController extends Controller
     }
 
 
-     public function formatOrderWidget($responseFromWS, $lineItem)
+    public function formatOrderWidget($responseFromWS, $lineItem)
     {
         $palletItems = [];
         $orderWidget = $orderWidgetData = [];
@@ -524,7 +523,7 @@ class FDOOrderController extends Controller
                             if ($isOwnBoxing == 0) {
                                 $palletPacked->bin_data->weight = $palletPacked->bin_data->totalBoxWeight - $palletPacked->bin_data->weight;
                             }
-
+                            // mmmmm
                             $selected_bin_data = collect($palletPacked->bin_data)->only([
                                 'w',
                                 'h',
@@ -536,7 +535,7 @@ class FDOOrderController extends Controller
                                 'name',
                                 'totalBoxWeight'
                             ]);
-                           
+
                             $count = 0;
                             $orderWidgetData['type'] = $type;
                             $orderWidgetData['image_complete'] = $palletPacked->image_complete;
@@ -602,7 +601,6 @@ class FDOOrderController extends Controller
                             }
 
                             $count = 0;
-
                             $orderWidgetData['type'] = $type;
                             $orderWidgetData['image_complete'] = $palletPacked->image_complete;
                             $orderWidgetData['quantity'] = $quantity;
@@ -761,7 +759,7 @@ class FDOOrderController extends Controller
                         }
                         // aaaaaa
 
-                          /* Usps carrier packaging according to boxes types */
+                        /* Usps carrier packaging according to boxes types */
                         $customBoxes = $ws->binPackagingData->response->customboxes ?? [];
                         if (!blank($customBoxes) && ($order['shipping_name'] == 'USPS Ground Advantage')) {
                             $orderWidgetData[] = $this->formatUspsPackaging($customBoxes, $zip, $lineItem);
@@ -784,7 +782,6 @@ class FDOOrderController extends Controller
                             $orderWidget = $orderWidgetData[0];
                         }
 
-                        // aaaaaa
                         $itemCount = 0;
                         foreach ($sbsData as $key => $binPacked) {
                             $type = optional($binPacked->bin_data)->type ?? '';
@@ -850,21 +847,35 @@ class FDOOrderController extends Controller
                 $quantity = $binPacked->bin_data->quantity ?? 1;
                 $itemCount++;
             }
+
+            $selected_bin_data = collect($binPacked->bin_data)->only([
+                'd',
+                'w',
+                'h',
+                // 'id',
+                'weight',
+                'used_weight',
+                // 'boxname',
+                // 'name',
+                // 'totalBoxWeight'
+            ]);
+
             $count = 0;
             $orderWidgetData['type'] = $type;
             $orderWidgetData['image_complete'] = $binPacked->image_complete;
+            $orderWidgetData['bin_data'] = $selected_bin_data;
             $orderWidgetData['quantity'] = $quantity;
             /*For Weight Based Products*/
-            if ($type == 'weight_based') {
-                $orderWidgetData['d'] = '';
-                $orderWidgetData['w'] = '';
-                $orderWidgetData['h'] = '';
-                $orderWidgetData['weight'] = $binPacked->bin_data->weight ?? '';
-            } else {
-                $orderWidgetData['d'] = $binPacked->bin_data->d . ' x ';
-                $orderWidgetData['w'] = $binPacked->bin_data->w . ' x ';
-                $orderWidgetData['h'] = $binPacked->bin_data->h;
-            }
+            // if ($type == 'weight_based') {
+            //     $orderWidgetData['d'] = '';
+            //     $orderWidgetData['w'] = '';
+            //     $orderWidgetData['h'] = '';
+            //     $orderWidgetData['weight'] = $binPacked->bin_data->weight ?? '';
+            // } else {
+            //     $orderWidgetData['d'] = $binPacked->bin_data->d . ' x ';
+            //     $orderWidgetData['w'] = $binPacked->bin_data->w . ' x ';
+            //     $orderWidgetData['h'] = $binPacked->bin_data->h;
+            // }
 
             $orderWidgetData['nickname'] = Functions::getBoxName($binPacked->bin_data->id, '', '', '');
             foreach ($binPacked->items as $item) {

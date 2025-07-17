@@ -181,6 +181,7 @@ class OrderController extends Controller
     public function createOrderWidget($request, $order, $reportingFlag)
     {
         $rateId = $order['full_rate_id'] ?? $order['rate_id'] ?? null;
+        // dd("rateId", $rateId);
         Log::info('////////////// rateId on line 185' . json_encode([
             $rateId
         ]));
@@ -285,7 +286,6 @@ class OrderController extends Controller
                 $tlShipmentCount = $responseFromWS->chr->$chrKey->$secondLevelKey->$thirdLevelKey->TLShipmentCount ?? null;
             }
         }
-        // dd("tlShipmentCount",$tlShipmentCount);
         // Add it to response
 
 
@@ -455,7 +455,6 @@ class OrderController extends Controller
                 $orderWidget[$zip]['number_of_trucks'] = $tlShipmentCount;
                 $orderWidget[$zip]['rate_per_truckload'] = '$' . number_format((float)$sRate / $tlShipmentCount, 2,);
             }
-            // dd("sRate",$sRate ,$isTruckLoad, $tlShipmentCount, $orderWidget);
 
             if ($multiShipmentresponse != null && !empty($multiShipmentresponse) && !$isOwnArrangement) {
                 $enableFeaturesArray = Functions::getEnableFeaturesArr($isLG, $insideDelivery == 'Y', $notifyBeforeDelivery == 'Y', $LimitedAccessDel == 'Y');
@@ -478,7 +477,6 @@ class OrderController extends Controller
                         break;
                     } else if ($isTruckLoad == 'Y') {
                         $tlShipmentCount = $responseFromWS->chr->$zip->$secondLevelKey->$thirdLevelKey->TLShipmentCount ?? null;
-                        // dd("cccc", $multiShipmentresponse->$index->Truckload);
                         $sRate = $multiShipmentresponse->$index->Truckload->$zip->rate ?? $multiShipmentresponse->$index->simple->$zip->rate ?? $multiShipmentresponse->$index->liftgate->$zip->rate ?? 0.00;
                         $order['shipping_name'] = $multiShipmentresponse->$index->Truckload->$zip->title ?? $multiShipmentresponse->$index->simple->$zip->title ?? $multiShipmentresponse->$index->liftgate->$zip->title ?? '';
                         $code = $multiShipmentresponse->$index->Truckload->$zip->code ?? $multiShipmentresponse->$index->simple->$zip->code ?? $multiShipmentresponse->$index->liftgate->$zip->code ?? '';
@@ -706,7 +704,6 @@ class OrderController extends Controller
                 $orderWidget[$key]['items'] = $items;
             }
         }
-        // dd("orderWidget", $orderWidget);
         $fdoShipmenst = json_decode($data['fdo_shipments_data'] ?? '', true) ?? [];
         $sbs = '';
         $resp = [
