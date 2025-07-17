@@ -149,7 +149,6 @@ class OrderController extends Controller
 
     public function getRequestDataFromDB($tableName, $request, $rateId, $cartId, $order)
     {
-
         $modelName = $tableName === 'RequestData' ? new RequestData() : new RequestTempData();
         $source = $order['order_source'] ?? "www";
         $data = optional($modelName::where('rate_id', $rateId)
@@ -181,6 +180,7 @@ class OrderController extends Controller
     public function createOrderWidget($request, $order, $reportingFlag)
     {
         $rateId = $order['full_rate_id'] ?? $order['rate_id'] ?? null;
+        // $rateId = 'fqchrltl+TL+LG+LADidx+01752675122';
         // dd("rateId", $rateId);
         Log::info('////////////// rateId on line 185' . json_encode([
             $rateId
@@ -198,18 +198,63 @@ class OrderController extends Controller
                 return [];
             }
         }
-
         $rateId = str_contains($rateId, 'idx+') ? $rateId : $order['full_rate_id'];
-
+        // $rateId = "flatRateRuleidx+Multi+LGidx+11752751172";
         $index = explode('idx+', $rateId);
 
         if (is_string($index[0]) && $index[0] == "shippingGroup") {
             return $this->shippingGroupOrderWidget($data, $order);
         }
 
+        // ---------------------------------
+
         if (is_string($index[0]) && $index[0] == "flatRateRule") {
-            return $this->flatRateRuleOrderWidget($data, $order);
+
+            $lineItemOrigin = json_decode($data['lineitems'])->lineItemData;
+            $lineItem = json_decode($data['lineitems'])->lineItemData->items;
+            $origins = $lineItemOrigin->origin;
+            $flatRateResp = !blank($data['flat_rate_resp']) ? json_decode($data['flat_rate_resp']) : [];
+            foreach ($origins as $key => $origin) {
+                foreach ($flatRateResp as $k => $flatRes) {
+                    if ($origin->locationId == $k) {
+                        $flatRateOrigin[$key] = $origin;
+
+                        $lineItemArray = (array) $lineItem;
+
+                        // Unset the matching item
+                        unset($lineItemArray[$key]);
+
+                        // Optional: convert back to object if needed later
+                        $lineItem = ($lineItemArray);
+                    } else {
+                        $nonFlatOrigin[] = $origin;
+                    }
+                }
+            }
+
+            // dd("data", $data,"lineItem", $lineItem);
+
+            $flatRateWidget = $this->flatRateRuleOrderWidget($data, $order, $flatRateOrigin);
+
+            if (empty($lineItem)) {
+                $resp = [
+                    'widget' => $this->objectToArray($flatRateWidget)
+                ];
+
+                return $resp;
+            }
+            // dd("return", $flatRateWidget);
+            // Step 1: Decode original lineitems to array
+            $lineitems = json_decode($data['lineitems'], true);
+
+            // Step 2: Replace the 'items' key with your modified $lineItem
+            $lineitems['lineItemData']['items'] = $lineItem; // cast in case it's object
+
+            // Step 3: Encode it back to JSON
+            $data['lineitems'] = json_encode($lineitems);
         }
+
+        // ---------------------------------
         // DBSC order widget
         if (is_string($index[0]) && strpos($index[0], 'dbsc') !== false) {
             return $this->dbscOrderWidget($data, $order);
@@ -704,13 +749,28 @@ class OrderController extends Controller
                 $orderWidget[$key]['items'] = $items;
             }
         }
+// ----------------------------------
+        if (!empty($flatRateWidget)) {
+            foreach ($flatRateWidget as $zip => $flatRateData) {
+                if (!isset($orderWidget[$zip])) {
+                    // If the origin doesn't exist in orderWidget, initialize it
+                    $orderWidget[$zip] = [];
+                }
+                // Merge flatRateWidget data into orderWidget for this origin
+                $orderWidget[$zip] = array_merge($orderWidget[$zip], $flatRateData);
+            }
+        }
+// -------------------------------------
+
         $fdoShipmenst = json_decode($data['fdo_shipments_data'] ?? '', true) ?? [];
         $sbs = '';
+        // dd("flatRateWidget", $orderWidget);
         $resp = [
             'widget' => $this->objectToArray($orderWidget),
             'sbs' => $sbs,
             'fdoShipments' => $fdoShipmenst,
         ];
+        // return [$resp, $flatRateWidget ?? ""];
         return $resp;
     }
 
@@ -761,13 +821,16 @@ class OrderController extends Controller
         return $resp;
     }
 
-    public function flatRateRuleOrderWidget($data, $order)
+    public function flatRateRuleOrderWidget($data, $order, $flatRateOrigin)
     {
-        $orderWidget = ShippingRule::flatRateRuleOrderWidget($data, $order);
-        $resp = [
-            'widget' => $this->objectToArray($orderWidget)
-        ];
-        return $resp;
+        // -------------------------------------
+        $orderWidget = ShippingRule::flatRateRuleOrderWidget($data, $order, $flatRateOrigin);
+        // dd("orderWidgetccc", $orderWidget);
+        // $resp = [
+        //     'widget' => $this->objectToArray($orderWidget)
+        // ];
+        return $orderWidget;
+        // -------------------------------------
     }
 
     public function dbscOrderWidget($data, $order)
@@ -1363,7 +1426,6 @@ class OrderController extends Controller
 
     private function formatShipment($data)
     {
-
         if (isset($data['widget']) && is_array($data['widget']) && count($data['widget']) > 0) {
             $formattedShipments = [];
 

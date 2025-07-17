@@ -622,11 +622,14 @@ class ShippingRule extends Model
         return $noOfQuantity * $rate;
     }
 
-    public static function flatRateRuleOrderWidget($data, $order)
+    public static function flatRateRuleOrderWidget($data, $order, $flatRateOrigin)
     {
+        $flatRateOrigin = (object) $flatRateOrigin;
         $lineItem = json_decode($data['lineitems'])->lineItemData;
-        $origins = $lineItem->origin;
+        $origins = $flatRateOrigin;
+        // $origins = $lineItem->origin;
         $items = $lineItem->items;
+        
         $count = 0;
         $insertedIds = $insertedNames = [];
         $flatRateResp = !blank($data['flat_rate_resp']) ? json_decode($data['flat_rate_resp']) : [];
