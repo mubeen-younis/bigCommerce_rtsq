@@ -528,34 +528,29 @@ class FDOOrderController extends Controller
                                 $palletPacked->bin_data->weight = $palletPacked->bin_data->totalBoxWeight - $palletPacked->bin_data->weight;
                             }
                             // mmmmm
-
                             $getBoxDetails = $this->getBoxName($palletPacked->bin_data->id);
-
-                            $selected_bin_data = collect($palletPacked->bin_data)->only([
-                                'w',
-                                'h',
-                                'd',
-                                'id',
-                                'weight',
-                                'used_weight',
-                                'boxname',
-                                'name',
-                                'totalBoxWeight'
-                            ]);
 
                             $count = 0;
                             $orderWidgetData['type'] = $type;
                             $orderWidgetData['image_complete'] = $palletPacked->image_complete;
-                            $orderWidgetData['bin_data'] = $selected_bin_data;
+                            $orderWidgetData['bin_data']['w'] = $palletPacked->bin_data->w;
+                            $orderWidgetData['bin_data']['h'] = isset($palletPacked->bin_data->stack_height) ? $palletPacked->bin_data->stack_height : $palletPacked->bin_data->h;
+                            $orderWidgetData['bin_data']['d'] = $palletPacked->bin_data->d;
+                            $orderWidgetData['bin_data']['id'] = $palletPacked->bin_data->id;
+                            $orderWidgetData['bin_data']['weight'] = $palletPacked->bin_data->weight;
+                            $orderWidgetData['bin_data']['used_weight'] = $palletPacked->bin_data->used_weight;
+                            $orderWidgetData['bin_data']['boxname'] = $palletPacked->bin_data->boxname;
+                            $orderWidgetData['bin_data']['name'] = $palletPacked->bin_data->name;
+                            $orderWidgetData['bin_data']['totalBoxWeight'] = $palletPacked->bin_data->totalBoxWeight;
                             $orderWidgetData['bin_data']['max_weight'] = $getBoxDetails->max_weight;
                             $orderWidgetData['bin_data']['max_height'] = $getBoxDetails->height;
                             $orderWidgetData['own_packaging'] = $isOwnBoxing;
                             $orderWidgetData['quantity'] = $quantity;
 
                             // setting pallet dimensions
-                            // $orderWidgetData['d'] = $palletPacked->bin_data->d . ' x ';
+                            // $orderWidgetData['dsssss'] = $palletPacked->bin_data->d . ' x ';
                             // $orderWidgetData['w'] = $palletPacked->bin_data->w . ' x ';
-                            // $orderWidgetData['h'] = isset($palletPacked->bin_data->stack_height) ? $palletPacked->bin_data->stack_height : $palletPacked->bin_data->h;
+                            // $orderWidgetData['hqqqqq'] = isset($palletPacked->bin_data->stack_height) ? $palletPacked->bin_data->stack_height : $palletPacked->bin_data->h;
 
                             // setting pallet name zzzzz
                             $orderWidgetData['nickname'] = $getBoxDetails->nickname ?? null;

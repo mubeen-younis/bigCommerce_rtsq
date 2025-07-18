@@ -60,7 +60,6 @@ class GetRatesController extends Controller
 
     public function returnRates(Request $request, $count = null)
     {
-
         Log::info('Request ' . json_encode($request->all()));
         $storeHash = $request->base_options['store_id'] ?? null;
         $storeData = $this->getStoreData($storeHash);
@@ -85,7 +84,6 @@ class GetRatesController extends Controller
                 $cartID = $value['value'] ?? "";
             }
         }
-
         $cartInfo['is_draft_order'] = !empty($cartID) ? false : true;
         $cartInfo['cartId'] = !empty($cartID) ? $cartID : "draft_" . time() . "_" . $storeData['store']['id'];
         $cartInfo['store_id'] = $storeData['installed_carriers'][0]['store_id'] ?? 0;
