@@ -529,6 +529,7 @@ class FDOOrderController extends Controller
                             }
                             // mmmmm
                             $getBoxDetails = $this->getBoxName($palletPacked->bin_data->id);
+                            
 
                             $count = 0;
                             $orderWidgetData['type'] = $type;
@@ -544,6 +545,7 @@ class FDOOrderController extends Controller
                             $orderWidgetData['bin_data']['totalBoxWeight'] = $palletPacked->bin_data->totalBoxWeight;
                             $orderWidgetData['bin_data']['max_weight'] = $getBoxDetails->max_weight;
                             $orderWidgetData['bin_data']['max_height'] = $getBoxDetails->height;
+                            $orderWidgetData['bin_data']['pallet_height'] = $getBoxDetails->ext_height;
                             $orderWidgetData['own_packaging'] = $isOwnBoxing;
                             $orderWidgetData['quantity'] = $quantity;
 
