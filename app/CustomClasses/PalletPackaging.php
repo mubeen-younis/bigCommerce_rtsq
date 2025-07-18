@@ -158,7 +158,7 @@ class PalletPackaging
         if (empty($pallet) && count($palletResp['itemsAlone'])) {
             // set all cart items as their own pallet
             foreach ($this->itemsArr as $key => $value) {
-                $this->itemsArr[$key]['own_pallet'] = 1;
+                // $this->itemsArr[$key]['own_pallet'] = 1;
             }
 
             // format cart items again
