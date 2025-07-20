@@ -158,7 +158,7 @@ class PalletPackaging
         if (empty($pallet) && count($palletResp['itemsAlone'])) {
             // set all cart items as their own pallet
             foreach ($this->itemsArr as $key => $value) {
-                // $this->itemsArr[$key]['own_pallet'] = 1;
+                $this->itemsArr[$key]['own_pallet'] = 1;
             }
 
             // format cart items again
@@ -180,7 +180,6 @@ class PalletPackaging
                 // setting up 3D Bin request for packaging
                 $Bin3D = new Bin3D();
                 $palletResponse = $Bin3D->getBinResponse($this->storeId, $pallet, $items, $itemsAlone, $hits, $this->cartInfo, $isMultiShipment, true);
-
                 if (count($palletResponse)) {
                     foreach ($itemsAlone as $key => $itemAlone) {
                         foreach ($itemAlone as $alone) {
