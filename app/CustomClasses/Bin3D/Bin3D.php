@@ -44,9 +44,12 @@ class Bin3D
 
         //loop for each bin request
         // -----aaaa------
-        if (count($items) && count($bins)) {
+        // dd("itemsAlone", $items, $bins, $itemsAlone, count($items));
+        if (count($items) && count($itemsAlone)) {
             foreach ($items as $key => $item) {
                 $binRequest[$key] = $this->generateBinRequest($bins, $item, [], $storeId);
+                            dd("cbinRequestss".$binRequest);
+
             }
             $responseFromSBS = $this->binRequest($binRequest, $storeId, $hits, $cartInfo);
 
@@ -70,12 +73,12 @@ class Bin3D
                 $sbsCompiledResponse = $this->appendNotPackedItemsBoth($responseFromSBS, $items);
             }
         } else if (count($items)) {
-
             foreach ($items as $key => $item) {
                 $binRequest[$key] = $this->generateBinRequest($bins, $item, $items, $storeId);
             }
-
+            
             $responseFromSBS = $this->binRequest($binRequest, $storeId, $hits, $cartInfo);
+            // dd("responseFromSBS", $responseFromSBS);
             $sbsCompiledResponse = $this->appendNotPackedItems($responseFromSBS, $items);
         } else if (count($itemsAlone)) {
             $responseFromSBS = $this->generateShipAloneBinResponse($itemsAlone);
@@ -228,6 +231,7 @@ class Bin3D
      */
     private function generateBinRequest($bins, $item, $items = [], $storeId)
     {
+        // dd("bins", $bins, $item);
         $store = Store::getStoreDetailsFromStoreId($storeId);  
         //bins_utilization or bin_number
         $installedAddonId = Functions::getSBSInstalledAddon($store);
