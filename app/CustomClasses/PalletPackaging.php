@@ -272,18 +272,18 @@ class PalletPackaging
         $pallets = $this->getPalletsFromDB();
         $palletBins = [];
         $items = $itemsResp['items'] ?? [];
-
+        
         $itemsCubicVolumeArr = Functions::calculateCubicVolume($items);
         if (!empty($itemsCubicVolumeArr) && isset($itemsCubicVolumeArr['volume']) && isset($itemsCubicVolumeArr['weight'])) {
             $itemMinVolume = min(array_values($itemsCubicVolumeArr['volume']));
             $itemMinWeight = min(array_values($itemsCubicVolumeArr['weight']));
         }
-
         foreach ($pallets as $pallet) {
-            if (!empty($itemsResp['itemsAlone'])) {
+            // ----------aaa------
+            foreach($itemsResp as $item){
+            if (!empty($item['itemsAlone'])) {
                 continue;
             }
-
             if (!empty($itemsCubicVolumeArr) && isset($itemMinVolume) && isset($itemMinWeight)) {
                 $dimensions = array($pallet['width'], $pallet['height'], $pallet['length']);
                 $maxWeight = $pallet['max_weight'] == 0 ? Functions::$defaultMaxWeightSmall : $pallet['max_weight'];
@@ -306,12 +306,12 @@ class PalletPackaging
                 'box_height' => $pallet['ext_height'],
             );
         }
+        }
 
         /*
             when product volume is exceeds then boxbins volume and no box selected and items array have products then products will be mark ship as own packaging.
         */
         if (empty($palletBins) && !empty($items)) {
-
             foreach ($items as $origin => $itemsArray) {
                 foreach ($itemsArray as $key => $item) {
                     $itemsAlone[$origin][] = $item;
