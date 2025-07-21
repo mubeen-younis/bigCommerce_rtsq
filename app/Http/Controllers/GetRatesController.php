@@ -315,7 +315,7 @@ class GetRatesController extends Controller
                 $ltlCheck = $product_settings['freight_enabled'] ?? false;
                 $shipBinAlone = (isset($product_settings['ship_multiple_package']) && $product_settings['ship_multiple_package'])
                     || (isset($product_settings['ship_own_package']) && $product_settings['ship_own_package']) ? 1 : 0;
-
+                $shipOwnPackage = (isset($product_settings['ship_own_package']) && $product_settings['ship_own_package']) ? 1 : 0;
                 $key = $product['variant_id'] ?? $product['product_id'];
                 /*Added this block of code for catering an it 56yuk  g5 E
                  ship_own_package0YUJHZQA\  578em with diff product rules*/
@@ -377,7 +377,9 @@ class GetRatesController extends Controller
                     'product_markup' => isset($product_settings['product_markup']) && !empty($product_settings['product_markup']) ? $product_settings['product_markup'] : '',
                     'lineItemHSCode' => isset($product_settings['hs_code']) && !empty($product_settings['hs_code']) ? $product_settings['hs_code'] : '',
                     'lineItemNMFC' => isset($product_settings['nmfc']) && !empty($product_settings['nmfc']) ? $product_settings['nmfc'] : '',
+                    'ship_own_package' => $shipOwnPackage
                 ];
+                // dd("qwqwq88", $product_settings['own_pallet'], $details['items']);
                 if (!$details['items'][$key]['shipMultiplePackage']) {
                     if (
                         (blank($details['items'][$key]['lineItemLength']) || $details['items'][$key]['lineItemLength'] <= 0) ||

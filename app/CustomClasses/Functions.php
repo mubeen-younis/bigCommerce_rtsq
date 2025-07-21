@@ -1275,7 +1275,7 @@ class Functions
         return $sName;
     }
 
-    public static function getQuoteId($rateId, $quotes, $zip = null)
+    public static function getQuoteId($rateId, $quotes, $zip = null, $shippingName)
     {
 
         $carrierCode = self::getCarrierNameOrCode($rateId, 1);
@@ -1487,12 +1487,14 @@ class Functions
                         foreach ($quote as $zipCode => $q) {
                             if ($zip == $zipCode) {
 
+                                $serviceName = explode(' (', $shippingName)[0];
+
                                 $quotes = [];
 
-                                if (isset($q->q)) {
+                                if (isset($q->q) && $serviceName != 'Truckload Service' ) {
                                     $quotes = $q->q ?? [];
                                 } 
-                                if (isset($q->Truckload)) {
+                                if (isset($q->Truckload) && $serviceName == 'Truckload Service') {
                                     $quotes = $q->Truckload ?? [];
                                 }
                                     

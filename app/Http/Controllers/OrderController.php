@@ -495,7 +495,6 @@ class OrderController extends Controller
             }
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
             $sRate = $order['shipping_rate'] ?? null;
-            // dd("multiShipmentresponsessww", $isTruckLoad, $tlShipmentCount, $multiShipmentresponse);
             if ($isTruckLoad == 'Y' && !empty($tlShipmentCount && $multiShipmentresponse == null)) {
                 $orderWidget[$zip]['number_of_trucks'] = $tlShipmentCount;
                 $orderWidget[$zip]['rate_per_truckload'] = '$' . number_format((float)$sRate / $tlShipmentCount, 2,);
@@ -563,14 +562,13 @@ class OrderController extends Controller
 
                 $isMulti = true;
             }
-
             /**
              * Add Quote ID
              * */
             if (!$isSmallLtlrate && empty($multiShipmentresponse)) {
-                $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($rateId, $responseFromWS, $zip);
+                $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($rateId, $responseFromWS, $zip, $order['shipping_name']);
             } elseif (!$isSmallLtlrate && $isMultiShipment) {
-                $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($code, $responseFromWS, $zip);
+                $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($code, $responseFromWS, $zip, $order['shipping_name']);
             }
 
             /**
