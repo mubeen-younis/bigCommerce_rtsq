@@ -229,11 +229,11 @@ class Shipping
         //Sending request to WS to get Quotes
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
         // dd("231", $requestArr, $quotes);
-        Log::info('>>>>>>>>>>>>>>>>>>>> Request on line 235' . json_encode([
+        Log::info('reqreq>>>>>>>>>>>>>>>>>>>> Request on line 235' . json_encode([
             $requestArr
         ]));
 
-        Log::info('>>>>>>>>>>>>>>>>>>>> Response on line 239' . json_encode([
+        Log::info('resres>>>>>>>>>>>>>>>>>>>> Response on line 239' . json_encode([
             $quotes
         ]));
         /* Catering Usps carrier packaging response */
@@ -268,6 +268,9 @@ class Shipping
         }
         $quotesFromWs = $quotes ?? [];
         $finalQuotes = $this->compileQuotes->newGetQuotesResults($quotes, $connectionSettings, $package['origin'], $this->isHazmat, $smalLtlHazmat, $hazmatAllItems, $residential, $freeRNL, $destination, $package['items'], $this->SuppressParcelRates, $store_id, $totalHazmatBoxes);
+        Log::info('fffqqqq>>>>>>>>>>>>>>>>>>>> finalQuotes on line 271' . json_encode([
+            $finalQuotes
+        ]));
         if (!empty($finalQuotes['multiShipmentQuotes'])) {
             $multiShipmentQuotes = $finalQuotes['multiShipmentQuotes'];
             $finalQuotes = $finalQuotes['checkoutQuotes'];
@@ -291,6 +294,10 @@ class Shipping
             $finalQuotes
         ]));
         $resp = $this->generateQuoteFormatResponse($finalQuotes);
+
+         Log::info('resppppp>>>>>>>>>>>>>>>>>>>> resp on line 298' . json_encode([
+            $finalQuotes
+        ]));
 
         $this->orderWidgetSave($request, $requestArr, $quotes, $finalQuotes, $resp, $cartInfo, $boxbins, $multiShipmentQuotes);
         return $resp;
