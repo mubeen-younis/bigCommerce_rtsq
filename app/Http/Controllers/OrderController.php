@@ -181,7 +181,6 @@ class OrderController extends Controller
     {
         $rateId = $order['full_rate_id'] ?? $order['rate_id'] ?? null;
         // $rateId = 'fqchrltl+TL+LG+LADidx+01752675122';
-        // dd("rateId", $rateId);
         Log::info('////////////// rateId on line 185' . json_encode([
             $rateId
         ]));
@@ -232,8 +231,6 @@ class OrderController extends Controller
                 }
             }
 
-            // dd("data", $data,"lineItem", $lineItem);
-
             $flatRateWidget = $this->flatRateRuleOrderWidget($data, $order, $flatRateOrigin);
 
             if (empty($lineItem)) {
@@ -243,7 +240,6 @@ class OrderController extends Controller
 
                 return $resp;
             }
-            // dd("return", $flatRateWidget);
             // Step 1: Decode original lineitems to array
             $lineitems = json_decode($data['lineitems'], true);
 
@@ -318,8 +314,12 @@ class OrderController extends Controller
         if (isset($responseFromWS->chr)) {
             $chrKey = array_key_first(get_object_vars($responseFromWS->chr)); // e.g., '899'
             $secondLevelKey = array_key_first(get_object_vars($responseFromWS->chr->$chrKey)); // e.g., 'Truckload'
+            if ($secondLevelKey != 'Truckload') {
+                if (isset($responseFromWS->chr->$chrKey->Truckload)) {
+                    $secondLevelKey = 'Truckload';
+                }
+            }
             $thirdLevelValue = $responseFromWS->chr->$chrKey->$secondLevelKey;
-
             if (is_object($thirdLevelValue)) {
                 $thirdLevelKey = array_key_first(get_object_vars($thirdLevelValue));
             } elseif (is_array($thirdLevelValue)) {
@@ -496,6 +496,7 @@ class OrderController extends Controller
             }
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
             $sRate = $order['shipping_rate'] ?? null;
+            // dd("multiShipmentresponse", $multiShipmentresponse, $isTruckLoad, $tlShipmentCount);
             if ($isTruckLoad && !empty($tlShipmentCount && $multiShipmentresponse == null)) {
                 $orderWidget[$zip]['number_of_trucks'] = $tlShipmentCount;
                 $orderWidget[$zip]['rate_per_truckload'] = '$' . number_format((float)$sRate / $tlShipmentCount, 2,);
@@ -749,7 +750,7 @@ class OrderController extends Controller
                 $orderWidget[$key]['items'] = $items;
             }
         }
-// ----------------------------------
+        // ----------------------------------
         if (!empty($flatRateWidget)) {
             foreach ($flatRateWidget as $zip => $flatRateData) {
                 if (!isset($orderWidget[$zip])) {
@@ -760,11 +761,10 @@ class OrderController extends Controller
                 $orderWidget[$zip] = array_merge($orderWidget[$zip], $flatRateData);
             }
         }
-// -------------------------------------
+        // -------------------------------------
 
         $fdoShipmenst = json_decode($data['fdo_shipments_data'] ?? '', true) ?? [];
         $sbs = '';
-        // dd("flatRateWidget", $orderWidget);
         $resp = [
             'widget' => $this->objectToArray($orderWidget),
             'sbs' => $sbs,
@@ -825,7 +825,6 @@ class OrderController extends Controller
     {
         // -------------------------------------
         $orderWidget = ShippingRule::flatRateRuleOrderWidget($data, $order, $flatRateOrigin);
-        // dd("orderWidgetccc", $orderWidget);
         // $resp = [
         //     'widget' => $this->objectToArray($orderWidget)
         // ];
