@@ -509,8 +509,16 @@ class FDOOrderController extends Controller
                         $palletData = $ws->palletPackagingData->response->bins_packed ?? [];
                         $itemCount = 0;
 
+                        Log::info('fffffffffdddddddddoooooooo palletData on line 512' . json_encode([
+                                $palletData
+                            ]));
                         // loop pallet packaging packed items
                         foreach ($palletData as $key => $palletPacked) {
+                            
+                            Log::info('fffffffffdddddddddoooooooo palletPacked on line 518' . json_encode([
+                                $palletPacked
+                            ]));
+
                             if (!isset($palletPacked->bin_data) || empty($palletPacked->bin_data)) {
                                 continue;
                             }
