@@ -211,8 +211,8 @@ class FDOOrderController extends Controller
         $liftGatePickup = $liftResidentialStatus['lgPickup'] ?? 'n';
         // Removed Sbs COde From Here
         $packagingDetail = $this->getPackagingDetail($responseFromWS, $isSmallrate, $rateType, $order, $lineItem);
-
-        if (!empty($packagingDetail)) {
+// dd("packagingDetail", $packagingDetail, $responseFromWS->usps);
+        if (!empty($packagingDetail && isset($responseFromWS->usps))) {
             foreach ($packagingDetail as $packing) {
                 foreach ($packing as $pack) {
                     foreach ($pack as $detail) {
