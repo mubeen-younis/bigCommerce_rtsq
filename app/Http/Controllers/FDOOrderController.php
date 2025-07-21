@@ -351,9 +351,9 @@ class FDOOrderController extends Controller
              * Add Quote ID
              * */
             if (!$isSmallLtlrate && empty($multiShipmentresponse)) {
-                $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($rateId, $responseFromWS, $zip);
+                $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($rateId, $responseFromWS, $zip, $order['shipping_name']);
             } elseif (!$isSmallLtlrate && $isMultiShipment) {
-                $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($code, $responseFromWS, $zip);
+                $orderWidget[$zip]['quoteId'] = Functions::getQuoteId($code, $responseFromWS, $zip, $order['shipping_name']);
             }
 
             if (isset($order['shipping_name']) && strpos($order['shipping_name'], '(Delivery')) {
