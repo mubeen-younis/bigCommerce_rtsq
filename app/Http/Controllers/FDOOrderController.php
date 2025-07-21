@@ -529,7 +529,10 @@ class FDOOrderController extends Controller
                             }
                             // mmmmm
                             $getBoxDetails = $this->getBoxName($palletPacked->bin_data->id);
-                            
+
+                            Log::info('fffffffffdddddddddoooooooo getBoxDetails on line 533' . json_encode([
+                                $getBoxDetails
+                            ]));
 
                             $count = 0;
                             $orderWidgetData['type'] = $type;
@@ -540,7 +543,7 @@ class FDOOrderController extends Controller
                             $orderWidgetData['bin_data']['id'] = $palletPacked->bin_data->id;
                             $orderWidgetData['bin_data']['weight'] = $palletPacked->bin_data->weight;
                             $orderWidgetData['bin_data']['used_weight'] = $palletPacked->bin_data->used_weight;
-                            $orderWidgetData['bin_data']['boxname'] = $palletPacked->bin_data->boxname;
+                            $orderWidgetData['bin_data']['boxname'] = $palletPacked->bin_data->boxname ?? "";
                             $orderWidgetData['bin_data']['name'] = $palletPacked->bin_data->name;
                             $orderWidgetData['bin_data']['totalBoxWeight'] = $palletPacked->bin_data->totalBoxWeight;
                             $orderWidgetData['bin_data']['max_weight'] = $getBoxDetails->max_weight;
