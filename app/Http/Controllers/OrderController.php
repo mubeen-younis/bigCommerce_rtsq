@@ -314,11 +314,10 @@ class OrderController extends Controller
         if (isset($responseFromWS->chr)) {
             $chrKey = array_key_first(get_object_vars($responseFromWS->chr)); // e.g., '899'
             $secondLevelKey = array_key_first(get_object_vars($responseFromWS->chr->$chrKey)); // e.g., 'Truckload'
-            if ($secondLevelKey != 'Truckload') {
                 if (isset($responseFromWS->chr->$chrKey->Truckload)) {
                     $secondLevelKey = 'Truckload';
                 }
-            }
+            
             $thirdLevelValue = $responseFromWS->chr->$chrKey->$secondLevelKey;
             if (is_object($thirdLevelValue)) {
                 $thirdLevelKey = array_key_first(get_object_vars($thirdLevelValue));
@@ -496,8 +495,8 @@ class OrderController extends Controller
             }
             $orderWidget[$zip]['totalBoxes'] = $totalBoxes ?? 0;
             $sRate = $order['shipping_rate'] ?? null;
-            // dd("multiShipmentresponse", $multiShipmentresponse, $isTruckLoad, $tlShipmentCount);
-            if ($isTruckLoad && !empty($tlShipmentCount && $multiShipmentresponse == null)) {
+            // dd("multiShipmentresponsessww", $isTruckLoad, $tlShipmentCount, $multiShipmentresponse);
+            if ($isTruckLoad == 'Y' && !empty($tlShipmentCount && $multiShipmentresponse == null)) {
                 $orderWidget[$zip]['number_of_trucks'] = $tlShipmentCount;
                 $orderWidget[$zip]['rate_per_truckload'] = '$' . number_format((float)$sRate / $tlShipmentCount, 2,);
             }
@@ -606,7 +605,7 @@ class OrderController extends Controller
             $orderWidget[$zip]['shipping_method'] = $sName . $sMethod;
             $orderWidget[$zip]['shipping_rate'] = '$' . number_format((float)$sRate, 2,);
 
-            if ($isTruckLoad && !empty($tlShipmentCount)) {
+            if ($isTruckLoad == 'Y' && !empty($tlShipmentCount)) {
                 $orderWidget[$zip]['number_of_trucks'] = $tlShipmentCount;
                 $orderWidget[$zip]['rate_per_truckload'] = '$' . number_format((float)$sRate / $tlShipmentCount, 2,);
             }

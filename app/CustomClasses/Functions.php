@@ -1486,13 +1486,16 @@ class Functions
                     case 'chr':
                         foreach ($quote as $zipCode => $q) {
                             if ($zip == $zipCode) {
+
+                                $quotes = [];
+
                                 if (isset($q->q)) {
                                     $quotes = $q->q ?? [];
-                                } elseif (isset($q->Truckload)) {
+                                } 
+                                if (isset($q->Truckload)) {
                                     $quotes = $q->Truckload ?? [];
-                                } else {
-                                    $quotes = [];
                                 }
+                                    
                                 foreach ($quotes as $service) {
                                     $serviceCode = isset($service->serviceType) ? $service->serviceType : ' ';
                                     $length = strlen($serviceCode);
