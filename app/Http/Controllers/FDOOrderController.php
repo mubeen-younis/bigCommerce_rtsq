@@ -224,29 +224,8 @@ class FDOOrderController extends Controller
             }
         }
 
-        // $sbsPackaging = $packagingDetail[$zip] ?? [];
-
-        // aaaaaa
-        // foreach ($responseFromWS as $carrrierName => $WsResp) {
-        //     foreach ($WsResp as $zip => $ws) {
-        //         // $sbsPackaging = $packagingDetail[$zip] ?? [];
-        //         if (isset($ws->palletPackagingData) && !empty($ws->palletPackagingData) && $isLtlRate) {
-
         $palletPkgResp = $this->formatOrderWidget($responseFromWS, $lineItem);
-        //             // $palletPackaging = $palletPkgResp[$zip]['pallet'] ?? [];
-
-        //             // if (!empty($palletPkgResp)) {
-        //             //     if (empty($orderWidget)) {
-        //             //         $orderWidget = $palletPkgResp;
-        //             //     } else {
-        //             //         $orderWidget[$zip]['pallet'] = $palletPkgResp[$zip]['pallet'];
-        //             //     }
-        //             // }
-        //         }
-        //     }
-        // }
-        // aaaaaa
-
+       
         $origins = $lineItem->origin;
         $items = $lineItem->items;
         $count = 0;
@@ -449,8 +428,6 @@ class FDOOrderController extends Controller
                     ];
             }
 
-            // $orderWidget[$zip]['packing_detail'] = $packagingDetail[$zip] ?? [];
-
             $orderWidget[$zip]['items'][] = $item;
             $typeOfShip = $orderWidget[$zip]['ship_type'] == 'Warehouse' ? 'w' : 'd';
             $locType = $typeOfShip . $zip;
@@ -560,12 +537,7 @@ class FDOOrderController extends Controller
                             $orderWidgetData['own_packaging'] = $isOwnBoxing;
                             $orderWidgetData['quantity'] = $quantity;
 
-                            // setting pallet dimensions
-                            // $orderWidgetData['dsssss'] = $palletPacked->bin_data->d . ' x ';
-                            // $orderWidgetData['w'] = $palletPacked->bin_data->w . ' x ';
-                            // $orderWidgetData['hqqqqq'] = isset($palletPacked->bin_data->stack_height) ? $palletPacked->bin_data->stack_height : $palletPacked->bin_data->h;
-
-                            // setting pallet name zzzzz
+                            // setting pallet name
                             $orderWidgetData['nickname'] = $getBoxDetails->nickname ?? null;
 
                             // formatting items packed in pallet

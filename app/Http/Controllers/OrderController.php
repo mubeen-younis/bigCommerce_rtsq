@@ -180,7 +180,6 @@ class OrderController extends Controller
     public function createOrderWidget($request, $order, $reportingFlag)
     {
         $rateId = $order['full_rate_id'] ?? $order['rate_id'] ?? null;
-        // $rateId = 'fqchrltl+TL+LG+LADidx+01752675122';
         Log::info('////////////// rateId on line 185' . json_encode([
             $rateId
         ]));
@@ -205,7 +204,7 @@ class OrderController extends Controller
             return $this->shippingGroupOrderWidget($data, $order);
         }
 
-        // ---------------------------------
+        // --------------- Flat rate multishipment ------------------
 
         if (is_string($index[0]) && $index[0] == "flatRateRule") {
 
@@ -220,10 +219,8 @@ class OrderController extends Controller
 
                         $lineItemArray = (array) $lineItem;
 
-                        // Unset the matching item
                         unset($lineItemArray[$key]);
 
-                        // Optional: convert back to object if needed later
                         $lineItem = ($lineItemArray);
                     } else {
                         $nonFlatOrigin[] = $origin;
@@ -240,13 +237,10 @@ class OrderController extends Controller
 
                 return $resp;
             }
-            // Step 1: Decode original lineitems to array
             $lineitems = json_decode($data['lineitems'], true);
 
-            // Step 2: Replace the 'items' key with your modified $lineItem
-            $lineitems['lineItemData']['items'] = $lineItem; // cast in case it's object
+            $lineitems['lineItemData']['items'] = $lineItem;
 
-            // Step 3: Encode it back to JSON
             $data['lineitems'] = json_encode($lineitems);
         }
 
@@ -292,7 +286,6 @@ class OrderController extends Controller
         // TODO: Need to chenage implementation e.g new FormatItems
         $lineItem->items = $this->formateItems($lineItem->items, $requestToWS->requestArr->commdityDetails);
 
-        // $lineItem->origin = $this->formateOrigins($requestToWS->requestArr->carriers);
         $isMultiShipment = false;
         $multiShipmentresponse = $data['multiShipmentresponse'] === '{}' ? null : json_decode($data['multiShipmentresponse']);
         if (!blank($multiShipmentresponse)) {
@@ -747,14 +740,12 @@ class OrderController extends Controller
                 $orderWidget[$key]['items'] = $items;
             }
         }
-        // ----------------------------------
+        // -------------flat rate multishipment---------------------
         if (!empty($flatRateWidget)) {
             foreach ($flatRateWidget as $zip => $flatRateData) {
                 if (!isset($orderWidget[$zip])) {
-                    // If the origin doesn't exist in orderWidget, initialize it
                     $orderWidget[$zip] = [];
                 }
-                // Merge flatRateWidget data into orderWidget for this origin
                 $orderWidget[$zip] = array_merge($orderWidget[$zip], $flatRateData);
             }
         }
@@ -767,7 +758,6 @@ class OrderController extends Controller
             'sbs' => $sbs,
             'fdoShipments' => $fdoShipmenst,
         ];
-        // return [$resp, $flatRateWidget ?? ""];
         return $resp;
     }
 
@@ -820,13 +810,9 @@ class OrderController extends Controller
 
     public function flatRateRuleOrderWidget($data, $order, $flatRateOrigin)
     {
-        // -------------------------------------
         $orderWidget = ShippingRule::flatRateRuleOrderWidget($data, $order, $flatRateOrigin);
-        // $resp = [
-        //     'widget' => $this->objectToArray($orderWidget)
-        // ];
+
         return $orderWidget;
-        // -------------------------------------
     }
 
     public function dbscOrderWidget($data, $order)
