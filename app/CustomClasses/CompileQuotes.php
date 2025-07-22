@@ -730,7 +730,6 @@ class CompileQuotes
         if ($quotes == null) {
             return [];
         }
-
         $quotesRes = [];
         $quotesTemp = [];
         $quotes = $this->filterShipmentsWithError($quotes);
@@ -1079,7 +1078,6 @@ class CompileQuotes
 
     public function finalMultiShipmentResp($locations, $itemsWithFreeShipping, $originsWithFreeShipping)
     {
-
         $isTruckload = false;
         $isSimple = false;
         // Final array to hold the combined sums for each rate type
@@ -1196,8 +1194,7 @@ class CompileQuotes
                 $multiShipmentArr['multiShipmentQuotes'][] = $arr;
             }
         }
-        // dd("aassaaaa", $locations, $types, $isTruckload, $isSimple);
-        if ($isTruckload == true && $isSimple == true) {
+        if ($isTruckload == true && $isSimple == true && !($this->quoteSettings['quoteltl_and_truckload']) && !($this->quoteSettings['quoteltl_and_cubic_truckload'])) {
             $TLAndLTLRes = $this->finalTLAndLTLShipmentResp($locations, 'fqchrltl');
             Log::info('>>>>>>>>>>>>>>>>>>>>LTLTLTLTLT TLAndLTLRes on line 1198' . json_encode([
             $TLAndLTLRes
