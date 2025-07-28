@@ -26,7 +26,7 @@ pipelines:
             - chmod +x ./bb-scripts/run-ssm-command.sh
             - ./bb-scripts/run-ssm-command.sh
             
-    pallet-packaging-fdo-flat-rate-multishipment-tickets:
+    specific_box_for_a_specific_product_feature:
       - step:
           name: Deploy from Staging Branch
           script:
@@ -34,7 +34,7 @@ pipelines:
             - export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
             - export AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION
             - export TAG_NAME=$STAGING_SERVER_TAG_NAME
-            - export COMMAND='["sudo -u apx-bc-01 bash -c \"cd '"${STAGING_COMMAND}"'/bigcommerce/bc && git stash && git fetch && git checkout pallet-packaging-fdo-flat-rate-multishipment-tickets && git pull && php artisan optimize:clear && ./remote-script.sh\""]'
+            - export COMMAND='["sudo -u apx-bc-01 bash -c \"cd '"${STAGING_COMMAND}"'/bigcommerce/bc && git stash && git fetch && git checkout specific_box_for_a_specific_product_feature && git pull && php artisan optimize:clear && ./remote-script.sh\""]'
             - chmod +x ./bb-scripts/run-ssm-command.sh
             - ./bb-scripts/run-ssm-command.sh
             

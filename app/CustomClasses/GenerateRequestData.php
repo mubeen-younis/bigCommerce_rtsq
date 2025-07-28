@@ -1110,7 +1110,6 @@ class GenerateRequestData
                     if (isset($itemsArrSimpleRate) && !empty($itemsArrSimpleRate)) {
                         $itemsArr = $itemsArr + $itemsArrSimpleRate;
                     }
-
                     $sbsResponse['binResponse'] = $binReponse;
                 } else {
                     $simpleItems = $itemsArr;
@@ -3584,6 +3583,7 @@ class GenerateRequestData
                     continue;
                 }
 
+
                 /*Added COndition after not requiring dimesnions*/
                 if ($weightBasedItem) {
                     $itemsAlone[$origin['locationId']][] = [
@@ -3621,10 +3621,58 @@ class GenerateRequestData
                         "q" => $itemsArr[$key]['piecesOfLineItem'] ?? 0,
                         "vr" => $itemsArr[$key]['vertical_rotation'] ?? 0 //vertical 0 or 1
                     ];
+                    // ------aaaa----------
+                    $smallBoxes = DB::table('box_sizes')->where('store_id', $storeId)
+                        ->where('box_type', 1)->get();
+
+                    foreach ($smallBoxes as $box) {
+                        if (isset($items) && !empty($items)) {
+                            $index = count($items[$origin['locationId']]) - 1; // Get the last pushed item index
+
+                            if ($box->availability_type == 2 && $box->apply_rule_to !== null && $box->box_associated_to !== null) {
+                                if ($box->apply_rule_to == 3) {
+                                    $associated = json_decode($box->box_associated_to, true);
+                                    foreach ($associated as $product) {
+                                        // dd("associated", $associated, $box, $smallBoxes);
+                                        if ($product['value'] == $itemsArr[$key]['product_id']) {
+                                            $items[$origin['locationId']][$index]['availability_type'] = $box->availability_type;
+                                            $items[$origin['locationId']][$index]['apply_rule_to'] = $box->apply_rule_to;
+                                            $items[$origin['locationId']][$index]['box_associated_to'] = $box->box_associated_to;
+                                            if (!($box->is_available)) {
+                                                unset($items[$origin['locationId']][$index]);
+                                            }
+                                        }
+                                    }
+                                }
+                                if ($box->apply_rule_to == 2) {
+                                    $associated = json_decode($box->box_associated_to, true);
+                                    foreach ($associated as $brandId) {
+                                        if ($brandId == $itemsArr[$key]['brand_id']) {
+                                            $items[$origin['locationId']][$index]['availability_type'] = $box->availability_type;
+                                            $items[$origin['locationId']][$index]['apply_rule_to'] = $box->apply_rule_to;
+                                            $items[$origin['locationId']][$index]['box_associated_to'] = $box->box_associated_to;
+                                        }
+                                    }
+                                }
+
+                                if ($box->apply_rule_to == 1) {
+                                    $associated = json_decode($box->box_associated_to, true);
+                                    foreach ($associated as $categoryId) {
+                                        if ($categoryId == $itemsArr[$key]['categories_id']) {
+                                            $items[$origin['locationId']][$index]['availability_type'] = $box->availability_type;
+                                            $items[$origin['locationId']][$index]['apply_rule_to'] = $box->apply_rule_to;
+                                            $items[$origin['locationId']][$index]['box_associated_to'] = $box->box_associated_to;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    // ------aaaa--------
+
                 }
             }
         }
-
         if (!empty($itemsAlone)) {
             $this->oneRate = false;
             $this->simpleRate = false;
@@ -3649,13 +3697,13 @@ class GenerateRequestData
                 break;
         }
 
-        $itemsCubicVolumeArr = Functions::calculateCubicVolume($items);
+
+        $itemsCubicVolumeArr = Functions::calculateCubicVolume($items ?? []);
 
         if (!empty($itemsCubicVolumeArr) && isset($itemsCubicVolumeArr['volume']) && isset($itemsCubicVolumeArr['weight'])) {
             $itemMinVolume = min(array_values($itemsCubicVolumeArr['volume']));
             $itemMinWeight = min(array_values($itemsCubicVolumeArr['weight']));
         }
-
         foreach ($boxes as $box) {
             if (!empty($itemsCubicVolumeArr) && isset($itemMinVolume) && isset($itemMinWeight)) {
                 $dimensions = array($box->width, $box->height, $box->length);
@@ -3668,25 +3716,103 @@ class GenerateRequestData
                 }
             }
 
-            $boxBins[$box->id] = array(
-                'nickname' => $box->nickname,
-                'name' => $box->box_name,
-                'w' => $box->width,
-                'h' => $box->height,
-                'd' => $box->length,
-                'id' => $box->id,
-                'max_wg' => $box->max_weight,
-                'box_weight' => $box->box_weight,
-                'box_height' => $box->height,
-                /*Start- Added in case of Customer removes external dimesnions and bin request log issue
-                NO use of it in3dbin Request
-                Just adding in array For Request Hash*/
-                'ext_width' => $box->ext_width ?? 0,
-                'ext_length' => $box->ext_length ?? 0,
-                'ext_height' => $box->ext_height ?? 0
-                /*END*/
-            );
+
+            // Filter boxes based on availability_type and box_associated_to
+            if ($box->availability_type == 2 && !empty($box->box_associated_to)) {
+                $associated = json_decode($box->box_associated_to, true);
+                foreach ($itemsArr as $locationId => $item) {
+                    // foreach ($itemList as $item) {
+                    $isMatch = false;
+                    if ($box->apply_rule_to == 3) { // Product
+                        foreach ($associated as $assoc) {
+                            if ($assoc['value'] == $item['product_id']) {
+                                $isMatch = true;
+                                break;
+                            }
+                        }
+                    } elseif ($box->apply_rule_to == 2) { // Brand
+                        foreach ($associated as $assoc) {
+                            if ($assoc == $item['brand_id']) {
+                                $isMatch = true;
+                                break;
+                            }
+                        }
+                        // Fetch product brand from item or database and compare
+                        // Example: $itemBrand = getBrandFromProduct($item['variant_id']);
+                        // $isMatch = in_array($itemBrand, array_column($associated, 'value'));
+                    } elseif ($box->apply_rule_to == 1) { // Category
+                        foreach ($associated as $assoc) {
+                            if ($assoc == $item['categories_id']) {
+                                $isMatch = true;
+                                break;
+                            }
+                        }
+                        // Fetch product category from item or database and compare
+                        // Example: $itemCategory = getCategoryFromProduct($item['variant_id']);
+                        // $isMatch = in_array($itemCategory, array_column($associated, 'value'));
+                    }
+
+                    if ($isMatch) {
+                        $boxBins[$box->id] = [
+                            'nickname' => $box->nickname,
+                            'name' => $box->box_name,
+                            'w' => $box->width,
+                            'h' => $box->height,
+                            'd' => $box->length,
+                            'id' => $box->id,
+                            'max_wg' => $box->max_weight,
+                            'box_weight' => $box->box_weight,
+                            'box_height' => $box->height,
+                            'ext_width' => $box->ext_width ?? 0,
+                            'ext_length' => $box->ext_length ?? 0,
+                            'ext_height' => $box->ext_height ?? 0,
+                            'availability_type' => $box->availability_type,
+                            'apply_rule_to' => $box->apply_rule_to,
+                            'box_associated_to' => $box->box_associated_to
+                        ];
+                    }
+                    // }
+                }
+            } elseif ($box->availability_type == 1) { // Universal box
+                $boxBins[$box->id] = [
+                    'nickname' => $box->nickname,
+                    'name' => $box->box_name,
+                    'w' => $box->width,
+                    'h' => $box->height,
+                    'd' => $box->length,
+                    'id' => $box->id,
+                    'max_wg' => $box->max_weight,
+                    'box_weight' => $box->box_weight,
+                    'box_height' => $box->height,
+                    'ext_width' => $box->ext_width ?? 0,
+                    'ext_length' => $box->ext_length ?? 0,
+                    'ext_height' => $box->ext_height ?? 0,
+                    'availability_type' => $box->availability_type,
+                    'apply_rule_to' => $box->apply_rule_to,
+                    'box_associated_to' => $box->box_associated_to
+                ];
+            }
+
+            // $boxBins[$box->id] = array(
+            //     'nickname' => $box->nickname,
+            //     'name' => $box->box_name,
+            //     'w' => $box->width,
+            //     'h' => $box->height,
+            //     'd' => $box->length,
+            //     'id' => $box->id,
+            //     'max_wg' => $box->max_weight,
+            //     'box_weight' => $box->box_weight,
+            //     'box_height' => $box->height,
+            //     /*Start- Added in case of Customer removes external dimesnions and bin request log issue
+            //     NO use of it in3dbin Request
+            //     Just adding in array For Request Hash*/
+            //     'ext_width' => $box->ext_width ?? 0,
+            //     'ext_length' => $box->ext_length ?? 0,
+            //     'ext_height' => $box->ext_height ?? 0
+            //     /*END*/
+            // );
         }
+
         /*
             when product volume is exceeds then boxbins volume and no box selected and items array have products then products will be mark ship as own packaging.
         */
@@ -3700,10 +3826,11 @@ class GenerateRequestData
             }
         }
 
-        $hits = count($items);
-        if ((count($items) && count($boxBins)) || count($itemsAlone)) {
+        $hits = count($items ?? []);
+        if ((count($items ?? []) && count($boxBins)) || count($itemsAlone)) {
             $Bin3D = new Bin3D();
             $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment, false);
+            // dd("binResponse", $binResponse);
 
             if (count($binResponse)) {
                 foreach ($itemsAlone as $key => $itemAlone) {

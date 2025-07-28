@@ -160,7 +160,6 @@ class Shipping
         $destination = $request['lineItemData']['destination'] ?? [];
         $resp = $generateReqData->generateEnitureArray($originAddress, $destination, $package['items']);
 
-
         if (empty($resp)) {
             Log::info('Return 5 ' . json_encode($resp));
             return [];
@@ -207,6 +206,7 @@ class Shipping
 
         // Genearting final request Array
         $requestArr = $generateReqData->generateRequestArray($request, $carriersArray, $package['items'], $cartInfo, $carriersErrorSettings);
+        // dd("requestArr", $requestArr);
         $totalHazmatBoxes = isset($requestArr['requestArr']['hazmatBoxes']) ? $requestArr['requestArr']['hazmatBoxes'] : [];
         unset($requestArr['requestArr']['hazmatBoxes']);
         // Added customization for eniture packaging disabled stores
@@ -228,6 +228,7 @@ class Shipping
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         //Sending request to WS to get Quotes
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
+        // dd("231",$requestArr, $quotes);
         Log::info('reqreq>>>>>>>>>>>>>>>>>>>> Request on line 235' . json_encode([
             $requestArr
         ]));
