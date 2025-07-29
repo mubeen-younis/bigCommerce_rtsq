@@ -3582,8 +3582,6 @@ class GenerateRequestData
                 if ($this->fedexType == 'simple-rate' && $multiplePkgItem) {
                     continue;
                 }
-
-
                 /*Added COndition after not requiring dimesnions*/
                 if ($weightBasedItem) {
                     $itemsAlone[$origin['locationId']][] = [
@@ -3624,7 +3622,6 @@ class GenerateRequestData
                     // ------aaaa----------
                     $smallBoxes = DB::table('box_sizes')->where('store_id', $storeId)
                         ->where('box_type', 1)->get();
-
                     foreach ($smallBoxes as $box) {
                         if (isset($items) && !empty($items)) {
                             $index = count($items[$origin['locationId']]) - 1; // Get the last pushed item index
@@ -3831,7 +3828,6 @@ class GenerateRequestData
             $Bin3D = new Bin3D();
             $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment, false);
             // dd("binResponse", $binResponse);
-
             if (count($binResponse)) {
                 foreach ($itemsAlone as $key => $itemAlone) {
                     foreach ($itemAlone as $alone) {

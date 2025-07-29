@@ -59,7 +59,6 @@ class Bin3D
                 $flattenedSpecific = array_merge(...$specicResponse);
                 $responseFromSBS[$key] = array_merge($responseFromSBS, $flattenedSpecific);
             }
-
             if ($isMultishipment) {
                 $items = $items + $itemsAlone;
                 $responseFromSBSAlone = $this->generateShipAloneBinResponse($itemsAlone);
@@ -152,37 +151,38 @@ class Bin3D
                     $data[$key] = json_decode($SBSResp[$key])->response;
                     $resp = json_decode($SBSResp[$key]);
                     $not_packed_items = $resp->response->not_packed_items;
-                    $not_packed_items = (array)$not_packed_items;
-                    if (isset($items[$key])) {
-                        foreach ($items[$key] as $itemKey => $item) {
-                            $not_packed_items[count($not_packed_items)] = $item;
-                        }
-                    }
-
-                    if (count($not_packed_items)) {
-                        foreach ($not_packed_items as $not_packed_item) {
-                            $not_packed_item = (array)$not_packed_item;
-                            array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
-                        }
+                }
+                $not_packed_items = (array)$not_packed_items;
+                if (isset($items)) {
+                    foreach ($items as $itemKey => $item) {
+                        $not_packed_items = $item;
+                        // dd("not_packed_items",$items, $not_packed_items, $itemKey);
                     }
                 }
-            } else{
-                   $data[$key] = json_decode($SBSResp)->response;
-                    $resp = json_decode($SBSResp);
-                    $not_packed_items = $resp->response->not_packed_items;
-                    $not_packed_items = (array)$not_packed_items;
-                    if (isset($items[$key])) {
-                        foreach ($items[$key] as $itemKey => $item) {
-                            $not_packed_items[count($not_packed_items)] = $item;
-                        }
-                    }
 
-                    if (count($not_packed_items)) {
-                        foreach ($not_packed_items as $not_packed_item) {
-                            $not_packed_item = (array)$not_packed_item;
-                            array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
-                        }
+                if (count($not_packed_items)) {
+                    foreach ($not_packed_items as $not_packed_item) {
+                        $not_packed_item = (array)$not_packed_item;
+                        array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
                     }
+                }
+            } else {
+                $data[$key] = json_decode($SBSResp)->response;
+                $resp = json_decode($SBSResp);
+                $not_packed_items = $resp->response->not_packed_items;
+                $not_packed_items = (array)$not_packed_items;
+                if (isset($items[$key])) {
+                    foreach ($items[$key] as $itemKey => $item) {
+                        $not_packed_items[count($not_packed_items)] = $item;
+                    }
+                }
+
+                if (count($not_packed_items)) {
+                    foreach ($not_packed_items as $not_packed_item) {
+                        $not_packed_item = (array)$not_packed_item;
+                        array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
+                    }
+                }
             }
         }
         return $data ?? [];
