@@ -3743,6 +3743,14 @@ class GenerateRequestData
             }
         }
 
+        Log::info('items iiiiiiiiiiiiiiiiiiiiiiiiiiii 11111 items on line 3747' . json_encode([
+            $items
+        ]));
+
+         Log::info('items bbbbbbbbbbbbbbbbbbbbbbbbbbb 11111 smallBoxes on line 3752' . json_encode([
+            $smallBoxes
+        ]));
+
         if (!empty($itemsAlone)) {
             $this->oneRate = false;
             $this->simpleRate = false;
@@ -3895,6 +3903,20 @@ class GenerateRequestData
                 }
             }
         }
+
+
+         Log::info('items iiiiiiiiiiiiiiiiiiiiiiiiiiii 22222 items on line 3909' . json_encode([
+            $items
+        ]));
+
+         Log::info('items bbbbbbbbbbbbbbbbbbbbbbbbbbb 22222 boxes on line 3913' . json_encode([
+            $boxes
+        ]));
+
+        Log::info('items binbinbinbinbinbin boxBins on line 3916' . json_encode([
+            $boxBins
+        ]));
+
 
         $hits = count($items ?? []);
         if ((count($items ?? []) && count($boxBins)) || count($itemsAlone)) {
