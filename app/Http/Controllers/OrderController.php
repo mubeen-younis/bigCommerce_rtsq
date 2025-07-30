@@ -21,6 +21,7 @@ use App\CustomClasses\PalletPackaging;
 use App\Models\DBSC\DbscShippingProfile;
 use App\Models\WeightThresholdSettings;
 use App\Http\Controllers\GetRatesController;
+use stdClass;
 
 class OrderController extends Controller
 {
@@ -307,10 +308,10 @@ class OrderController extends Controller
         if (isset($responseFromWS->chr)) {
             $chrKey = array_key_first(get_object_vars($responseFromWS->chr)); // e.g., '899'
             $secondLevelKey = array_key_first(get_object_vars($responseFromWS->chr->$chrKey)); // e.g., 'Truckload'
-                if (isset($responseFromWS->chr->$chrKey->Truckload)) {
-                    $secondLevelKey = 'Truckload';
-                }
-            
+            if (isset($responseFromWS->chr->$chrKey->Truckload)) {
+                $secondLevelKey = 'Truckload';
+            }
+
             $thirdLevelValue = $responseFromWS->chr->$chrKey->$secondLevelKey;
             if (is_object($thirdLevelValue)) {
                 $thirdLevelKey = array_key_first(get_object_vars($thirdLevelValue));
@@ -323,14 +324,13 @@ class OrderController extends Controller
                 $tlShipmentCount = $responseFromWS->chr->$chrKey->$secondLevelKey->$thirdLevelKey->TLShipmentCount ?? null;
             }
         }
-        // Add it to response
 
-
-        /*
-        * Shipment Packaging */
-        $sbsItems = [];
         foreach ($responseFromWS as $carrrierName => $WsResp) {
+            
+            $WsResp = $this->handleSpecificBoxResponse($WsResp);
+
             foreach ($WsResp as $zip => $ws) {
+
                 if (!(isset($ws->severity) && $ws->severity == 'ERROR')) {
 
                     $liftResidentialStatus = $this->getLiftResidentialStatus($requestToWS, $isSmallrate, $isSmallLtlrate, $rateId);
@@ -340,7 +340,6 @@ class OrderController extends Controller
                     $autoResidentialsStatus = $liftResidentialStatus['resi'] ?? 'n';
                     $residentialsPickup = $liftResidentialStatus['resiPickup'] ?? 'n';
                     $liftGatePickup = $liftResidentialStatus['lgPickup'] ?? 'n';
-
                     $totalBoxes = 1;
                     if (isset($ws->binPackagingData) && !empty($ws->binPackagingData) && ($isSmallrate)) {
                         if ($isGround) {
@@ -353,7 +352,7 @@ class OrderController extends Controller
                             $sbsData = $ws->binPackagingData->response->simpleRate->bins_packed ??
                                 $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->bins_packed ?? [];
                         } else {
-                            $sbsData = $ws->binPackagingData->response->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->oneRate->bins_packed ?? [];
+                            $sbsData = $ws->binPackagingData->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->oneRate->bins_packed ?? [];
                         }
                         /* Usps carrier packaging according to boxes types */
                         $customBoxes = $ws->binPackagingData->response->customboxes ?? [];
@@ -379,6 +378,7 @@ class OrderController extends Controller
 
                         $itemCount = 0;
                         foreach ($sbsData as $key => $binPacked) {
+                            // dd("sbsData", $sbsData, $key, $binPacked);
                             $type = optional($binPacked->bin_data)->type ?? '';
                             $quantity = 1;
                             if ($type == 'item' || $type == 'weight_based') {
@@ -413,10 +413,8 @@ class OrderController extends Controller
                                 $orderWidgetData['items'][$count]['h'] = $item->h;
                                 $orderWidgetData['items'][$count]['d'] = $item->d;
                                 $orderWidgetData['items'][$count]['wg'] = $item->wg;
-
                                 $orderWidgetData['items'][$count]['image_separated'] = $item->image_separated;
                                 $orderWidgetData['items'][$count]['image_sbs'] = $item->image_sbs;
-
                                 $orderWidget[$zip]['sbs'][$key] = $orderWidgetData;
                                 ++$count;
                             }
@@ -428,7 +426,6 @@ class OrderController extends Controller
                         }
                         $totalBoxes = isset($key) ? $key + 1 - $itemCount : 0;
                     }
-
                     // Pallet packaging order widget
                     if (isset($ws->palletPackagingData) && !empty($ws->palletPackagingData) && $isLtlRate) {
                         $palletPkgResp = (new PalletPackaging())->formatOrderWidget($responseFromWS, $lineItem);
@@ -750,7 +747,6 @@ class OrderController extends Controller
             }
         }
         // -------------------------------------
-
         $fdoShipmenst = json_decode($data['fdo_shipments_data'] ?? '', true) ?? [];
         $sbs = '';
         $resp = [
@@ -1618,5 +1614,72 @@ class OrderController extends Controller
         ];
 
         return $data;
+    }
+
+    public function handleSpecificBoxResponse($WsResp)
+    {
+        $WsResp = (object) $WsResp;
+
+        $finalResult = [];
+        $binPackagingDataList = [];
+        $zipKey = null;
+
+        foreach ($WsResp as $key => $val) {
+            // Step 1: Detect the zip key
+            if (is_numeric($key) && is_object($val) && isset($val->q) && isset($val->debug)) {
+                $zipKey = $key;
+                $finalResult[$zipKey] = (object)[
+                    'q' => $val->q,
+                    'debug' => $val->debug,
+                    'binPackagingData' => [] // placeholder for final list
+                ];
+            }
+
+            // Step 2: Collect binPackagingData from numeric keys
+            if (is_numeric($key) && is_object($val) && isset($val->binPackagingData)) {
+                $binPackagingDataList[] = $val->binPackagingData;
+            }
+        }
+
+        // Step 3: Merge all binPackagingData into one object
+        $mergedResponse = null;
+
+        foreach ($binPackagingDataList as $index => $binItem) {
+            if (!isset($binItem->response)) continue;
+
+            $response = $binItem->response;
+
+            if ($mergedResponse === null) {
+                // Initialize the object
+                $mergedResponse = new stdClass();
+                $mergedResponse->id = $response->id;
+                $mergedResponse->total_cost = $response->total_cost;
+                $mergedResponse->total_utilization = $response->total_utilization;
+                $mergedResponse->bins_packed = $response->bins_packed;
+            } else {
+                // Merge data
+                $mergedResponse->total_cost += $response->total_cost;
+                $mergedResponse->total_utilization += $response->total_utilization;
+                $mergedResponse->bins_packed = array_merge(
+                    $mergedResponse->bins_packed,
+                    $response->bins_packed
+                );
+            }
+        }
+
+        // Step 4: Remove individual binPackagingData keys
+        if ($zipKey !== null && isset($WsResp->$zipKey)) {
+            foreach ($WsResp->$zipKey as $key => $val) {
+                if (str_starts_with($key, "binPackagingData")) {
+                    unset($WsResp->$zipKey->$key);
+                }
+            }
+
+            // Step 5: Add merged binPackagingData only if it exists
+            if ($mergedResponse !== null) {
+                $WsResp->$zipKey->binPackagingData = $mergedResponse;
+            }
+        }
+        return $WsResp;
     }
 }
