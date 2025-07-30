@@ -3695,11 +3695,15 @@ class GenerateRequestData
                     $items[$originId][$index]['acceptable_bins'] = array_values(array_unique($value['acceptable_bins']));
                 }
                 if(!isset($items[$originId][$index]['acceptable_bins']) && empty($universalBoxes)){
+                    if(!empty($itemsAlone)){
                     foreach($itemsAlone as $key => $alone){
                         $itemsAlone[$key][] = $value;
                         // dd("alonebb", $itemsAlone[$key]);
 
                     }
+                } else{
+                    $itemsAlone[$originId][$index] = $value;
+                }
                     unset($items[$originId][$index]);
                 }
             }
