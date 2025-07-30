@@ -3621,7 +3621,7 @@ class GenerateRequestData
                     ];
                     // ------aaaa----------
                     $smallBoxes = DB::table('box_sizes')->where('store_id', $storeId)
-                        ->where('box_type', 1)->get();
+                        ->where('is_available', 1)->where('box_type', 1)->get();
                     foreach ($smallBoxes as $box) {
                         if (isset($items) && !empty($items)) {
                             $index = count($items[$origin['locationId']]) - 1; // Get the last pushed item index
@@ -3633,12 +3633,12 @@ class GenerateRequestData
                                         // dd("associated", $associated, $box, $smallBoxes);
                                         if ($product['value'] == $itemsArr[$key]['product_id']) {
                                             $items[$origin['locationId']][$index]['acceptable_bins'][] = $box->id;
-                                            $items[$origin['locationId']][$index]['availability_type'] = $box->availability_type;
-                                            $items[$origin['locationId']][$index]['apply_rule_to'] = $box->apply_rule_to;
-                                            $items[$origin['locationId']][$index]['box_associated_to'] = $box->box_associated_to;
-                                            if (!($box->is_available)) {
-                                                unset($items[$origin['locationId']][$index]);
-                                            }
+                                            // $items[$origin['locationId']][$index]['availability_type'] = $box->availability_type;
+                                            // $items[$origin['locationId']][$index]['apply_rule_to'] = $box->apply_rule_to;
+                                            // $items[$origin['locationId']][$index]['box_associated_to'] = $box->box_associated_to;
+                                            // if (!($box->is_available)) {
+                                            //     unset($items[$origin['locationId']][$index]);
+                                            // }
                                         }
                                     }
                                 }
@@ -3647,9 +3647,9 @@ class GenerateRequestData
                                     foreach ($associated as $brandId) {
                                         if ($brandId == $itemsArr[$key]['brand_id']) {
                                             $items[$origin['locationId']][$index]['acceptable_bins'][] = $box->id;
-                                            $items[$origin['locationId']][$index]['availability_type'] = $box->availability_type;
-                                            $items[$origin['locationId']][$index]['apply_rule_to'] = $box->apply_rule_to;
-                                            $items[$origin['locationId']][$index]['box_associated_to'] = $box->box_associated_to;
+                                            // $items[$origin['locationId']][$index]['availability_type'] = $box->availability_type;
+                                            // $items[$origin['locationId']][$index]['apply_rule_to'] = $box->apply_rule_to;
+                                            // $items[$origin['locationId']][$index]['box_associated_to'] = $box->box_associated_to;
                                         }
                                     }
                                 }
@@ -3659,9 +3659,9 @@ class GenerateRequestData
                                     foreach ($associated as $categoryId) {
                                         if ($categoryId == $itemsArr[$key]['categories_id']) {
                                             $items[$origin['locationId']][$index]['acceptable_bins'][] = $box->id;
-                                            $items[$origin['locationId']][$index]['availability_type'] = $box->availability_type;
-                                            $items[$origin['locationId']][$index]['apply_rule_to'] = $box->apply_rule_to;
-                                            $items[$origin['locationId']][$index]['box_associated_to'] = $box->box_associated_to;
+                                        //     $items[$origin['locationId']][$index]['availability_type'] = $box->availability_type;
+                                        //     $items[$origin['locationId']][$index]['apply_rule_to'] = $box->apply_rule_to;
+                                        //     $items[$origin['locationId']][$index]['box_associated_to'] = $box->box_associated_to;
                                         }
                                     }
                                 }
@@ -3670,53 +3670,7 @@ class GenerateRequestData
                     }
 
                     $isAssignedToBox = false;
-
-                    foreach ($smallBoxes as $box) {
-                        if ($box->availability_type == 2 && $box->apply_rule_to !== null && $box->box_associated_to !== null) {
-
-                            $associated = json_decode($box->box_associated_to, true);
-
-                            // Apply rule to product
-                            if ($box->apply_rule_to == 3) {
-                                foreach ($associated as $product) {
-                                    if ($product['value'] == $itemsArr[$key]['product_id']) {
-                                        $items[$origin['locationId']][$index]['acceptable_bins'][] = $box->id;
-                                        $items[$origin['locationId']][$index]['availability_type'] = $box->availability_type;
-                                        $items[$origin['locationId']][$index]['apply_rule_to'] = $box->apply_rule_to;
-                                        $items[$origin['locationId']][$index]['box_associated_to'] = $box->box_associated_to;
-                                        $isAssignedToBox = true;
-                                        if (!($box->is_available)) {
-                                            unset($items[$origin['locationId']][$index]);
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Apply rule to brand
-                            if ($box->apply_rule_to == 2) {
-                                foreach ($associated as $brandId) {
-                                    if ($brandId == $itemsArr[$key]['brand_id']) {
-                                        $items[$origin['locationId']][$index]['availability_type'] = $box->availability_type;
-                                        $items[$origin['locationId']][$index]['apply_rule_to'] = $box->apply_rule_to;
-                                        $items[$origin['locationId']][$index]['box_associated_to'] = $box->box_associated_to;
-                                        $isAssignedToBox = true;
-                                    }
-                                }
-                            }
-
-                            // Apply rule to category
-                            if ($box->apply_rule_to == 1) {
-                                foreach ($associated as $categoryId) {
-                                    if ($categoryId == $itemsArr[$key]['categories_id']) {
-                                        $items[$origin['locationId']][$index]['availability_type'] = $box->availability_type;
-                                        $items[$origin['locationId']][$index]['apply_rule_to'] = $box->apply_rule_to;
-                                        $items[$origin['locationId']][$index]['box_associated_to'] = $box->box_associated_to;
-                                        $isAssignedToBox = true;
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    $universalBoxes = [];
 
                     if (!$isAssignedToBox) {
                         foreach ($smallBoxes as $box) {
@@ -3728,21 +3682,28 @@ class GenerateRequestData
                                 if (!in_array($box->id, $items[$origin['locationId']][$index]['acceptable_bins'] ?? [])) {
                                     $items[$origin['locationId']][$index]['acceptable_bins'][] = $box->id;
                                 }
+                                $universalBoxes[] = $box;
                             }
                         }
                     }
                 }
             }
         }
-
         foreach ($items as $originId => $itemGroup) {
             foreach ($itemGroup as $index => $value) {
                 if (isset($value['acceptable_bins'])) {
                     $items[$originId][$index]['acceptable_bins'] = array_values(array_unique($value['acceptable_bins']));
                 }
+                if(!isset($items[$originId][$index]['acceptable_bins']) && empty($universalBoxes)){
+                    foreach($itemsAlone as $key => $alone){
+                        $itemsAlone[$key][] = $value;
+                        // dd("alonebb", $itemsAlone[$key]);
+
+                    }
+                    unset($items[$originId][$index]);
+                }
             }
         }
-
         Log::info('items iiiiiiiiiiiiiiiiiiiiiiiiiiii 11111 items on line 3747' . json_encode([
             $items
         ]));
@@ -3750,7 +3711,7 @@ class GenerateRequestData
          Log::info('items bbbbbbbbbbbbbbbbbbbbbbbbbbb 11111 smallBoxes on line 3752' . json_encode([
             $smallBoxes
         ]));
-
+// dd("itemsAlone", $itemsAlone,$items);
         if (!empty($itemsAlone)) {
             $this->oneRate = false;
             $this->simpleRate = false;
@@ -3904,7 +3865,6 @@ class GenerateRequestData
             }
         }
 
-
          Log::info('items iiiiiiiiiiiiiiiiiiiiiiiiiiii 22222 items on line 3909' . json_encode([
             $items
         ]));
@@ -3922,7 +3882,6 @@ class GenerateRequestData
         if ((count($items ?? []) && count($boxBins)) || count($itemsAlone)) {
             $Bin3D = new Bin3D();
             $binResponse = $Bin3D->getBinResponse($storeId, $boxBins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment, false);
-            // dd("binResponse", $binResponse);
             if (count($binResponse)) {
                 foreach ($itemsAlone as $key => $itemAlone) {
                     foreach ($itemAlone as $alone) {

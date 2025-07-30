@@ -45,6 +45,7 @@ class Bin3D
         if (count($items) && count($itemsAlone)) {
             foreach ($items as $key => $item) {
                 $binRequest[$key] = $this->generateBinRequest($bins, $item, [], $storeId, $hits, $cartInfo, $key);
+                // dd("binRequest", $binRequest);
                 // if (isset($binRequest[$key]['specificResponse'])) {
                 //     $specicResponse = $binRequest[$key]['specificResponse'];
                 //     unset($binRequest[$key]['specificResponse']);
