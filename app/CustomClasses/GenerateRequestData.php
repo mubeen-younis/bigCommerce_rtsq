@@ -3632,6 +3632,7 @@ class GenerateRequestData
                                     foreach ($associated as $product) {
                                         // dd("associated", $associated, $box, $smallBoxes);
                                         if ($product['value'] == $itemsArr[$key]['product_id']) {
+                                            $items[$origin['locationId']][$index]['acceptable_bins'][] = $box->id;
                                             $items[$origin['locationId']][$index]['availability_type'] = $box->availability_type;
                                             $items[$origin['locationId']][$index]['apply_rule_to'] = $box->apply_rule_to;
                                             $items[$origin['locationId']][$index]['box_associated_to'] = $box->box_associated_to;
@@ -3645,6 +3646,7 @@ class GenerateRequestData
                                     $associated = json_decode($box->box_associated_to, true);
                                     foreach ($associated as $brandId) {
                                         if ($brandId == $itemsArr[$key]['brand_id']) {
+                                            $items[$origin['locationId']][$index]['acceptable_bins'][] = $box->id;
                                             $items[$origin['locationId']][$index]['availability_type'] = $box->availability_type;
                                             $items[$origin['locationId']][$index]['apply_rule_to'] = $box->apply_rule_to;
                                             $items[$origin['locationId']][$index]['box_associated_to'] = $box->box_associated_to;
@@ -3656,6 +3658,7 @@ class GenerateRequestData
                                     $associated = json_decode($box->box_associated_to, true);
                                     foreach ($associated as $categoryId) {
                                         if ($categoryId == $itemsArr[$key]['categories_id']) {
+                                            $items[$origin['locationId']][$index]['acceptable_bins'][] = $box->id;
                                             $items[$origin['locationId']][$index]['availability_type'] = $box->availability_type;
                                             $items[$origin['locationId']][$index]['apply_rule_to'] = $box->apply_rule_to;
                                             $items[$origin['locationId']][$index]['box_associated_to'] = $box->box_associated_to;
@@ -3665,11 +3668,81 @@ class GenerateRequestData
                             }
                         }
                     }
-                    // ------aaaa--------
 
+                    $isAssignedToBox = false;
+
+                    foreach ($smallBoxes as $box) {
+                        if ($box->availability_type == 2 && $box->apply_rule_to !== null && $box->box_associated_to !== null) {
+
+                            $associated = json_decode($box->box_associated_to, true);
+
+                            // Apply rule to product
+                            if ($box->apply_rule_to == 3) {
+                                foreach ($associated as $product) {
+                                    if ($product['value'] == $itemsArr[$key]['product_id']) {
+                                        $items[$origin['locationId']][$index]['acceptable_bins'][] = $box->id;
+                                        $items[$origin['locationId']][$index]['availability_type'] = $box->availability_type;
+                                        $items[$origin['locationId']][$index]['apply_rule_to'] = $box->apply_rule_to;
+                                        $items[$origin['locationId']][$index]['box_associated_to'] = $box->box_associated_to;
+                                        $isAssignedToBox = true;
+                                        if (!($box->is_available)) {
+                                            unset($items[$origin['locationId']][$index]);
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Apply rule to brand
+                            if ($box->apply_rule_to == 2) {
+                                foreach ($associated as $brandId) {
+                                    if ($brandId == $itemsArr[$key]['brand_id']) {
+                                        $items[$origin['locationId']][$index]['availability_type'] = $box->availability_type;
+                                        $items[$origin['locationId']][$index]['apply_rule_to'] = $box->apply_rule_to;
+                                        $items[$origin['locationId']][$index]['box_associated_to'] = $box->box_associated_to;
+                                        $isAssignedToBox = true;
+                                    }
+                                }
+                            }
+
+                            // Apply rule to category
+                            if ($box->apply_rule_to == 1) {
+                                foreach ($associated as $categoryId) {
+                                    if ($categoryId == $itemsArr[$key]['categories_id']) {
+                                        $items[$origin['locationId']][$index]['availability_type'] = $box->availability_type;
+                                        $items[$origin['locationId']][$index]['apply_rule_to'] = $box->apply_rule_to;
+                                        $items[$origin['locationId']][$index]['box_associated_to'] = $box->box_associated_to;
+                                        $isAssignedToBox = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (!$isAssignedToBox) {
+                        foreach ($smallBoxes as $box) {
+                            if (
+                                $box->availability_type == 1 &&
+                                $box->apply_rule_to === null &&
+                                $box->box_associated_to === null
+                            ) {
+                                if (!in_array($box->id, $items[$origin['locationId']][$index]['acceptable_bins'] ?? [])) {
+                                    $items[$origin['locationId']][$index]['acceptable_bins'][] = $box->id;
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
+
+        foreach ($items as $originId => $itemGroup) {
+            foreach ($itemGroup as $index => $value) {
+                if (isset($value['acceptable_bins'])) {
+                    $items[$originId][$index]['acceptable_bins'] = array_values(array_unique($value['acceptable_bins']));
+                }
+            }
+        }
+
         if (!empty($itemsAlone)) {
             $this->oneRate = false;
             $this->simpleRate = false;

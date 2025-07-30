@@ -327,7 +327,7 @@ class OrderController extends Controller
 
         foreach ($responseFromWS as $carrrierName => $WsResp) {
             
-            $WsResp = $this->handleSpecificBoxResponse($WsResp);
+            // $WsResp = $this->handleSpecificBoxResponse($WsResp);
 
             foreach ($WsResp as $zip => $ws) {
 
@@ -352,7 +352,7 @@ class OrderController extends Controller
                             $sbsData = $ws->binPackagingData->response->simpleRate->bins_packed ??
                                 $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->bins_packed ?? [];
                         } else {
-                            $sbsData = $ws->binPackagingData->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->oneRate->bins_packed ?? [];
+                            $sbsData = $ws->binPackagingData->response->bins_packed ?? $ws->binPackagingData->response->ground->bins_packed ?? $ws->binPackagingData->response->air->bins_packed ?? $ws->binPackagingData->response->oneRate->bins_packed ?? [];
                         }
                         /* Usps carrier packaging according to boxes types */
                         $customBoxes = $ws->binPackagingData->response->customboxes ?? [];

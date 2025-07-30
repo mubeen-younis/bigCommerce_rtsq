@@ -45,20 +45,20 @@ class Bin3D
         if (count($items) && count($itemsAlone)) {
             foreach ($items as $key => $item) {
                 $binRequest[$key] = $this->generateBinRequest($bins, $item, [], $storeId, $hits, $cartInfo, $key);
-                if (isset($binRequest[$key]['specificResponse'])) {
-                    $specicResponse = $binRequest[$key]['specificResponse'];
-                    unset($binRequest[$key]['specificResponse']);
-                }
+                // if (isset($binRequest[$key]['specificResponse'])) {
+                //     $specicResponse = $binRequest[$key]['specificResponse'];
+                //     unset($binRequest[$key]['specificResponse']);
+                // }
             }
             $responseFromSBS = $this->binRequest($binRequest, $storeId, $hits, $cartInfo);
 
-            if (isset($specicResponse) && !empty($specicResponse)) {
-                if (empty($binRequest[$key]['items'])) {
-                    $responseFromSBS = [];
-                }
-                $flattenedSpecific = array_merge(...$specicResponse);
-                $responseFromSBS[$key] = array_merge($responseFromSBS, $flattenedSpecific);
-            }
+            // if (isset($specicResponse) && !empty($specicResponse)) {
+            //     if (empty($binRequest[$key]['items'])) {
+            //         $responseFromSBS = [];
+            //     }
+            //     $flattenedSpecific = array_merge(...$specicResponse);
+            //     $responseFromSBS[$key] = array_merge($responseFromSBS, $flattenedSpecific);
+            // }
             if ($isMultishipment) {
                 $items = $items + $itemsAlone;
                 $responseFromSBSAlone = $this->generateShipAloneBinResponse($itemsAlone);
@@ -84,22 +84,22 @@ class Bin3D
                 // dd("itemdd", $items, $key, $item);
                 // foreach ($item as $singleItem) {
                 $binRequest[$key] = $this->generateBinRequest($bins, $item, $items, $storeId, $hits, $cartInfo, $key);
-                if (isset($binRequest[$key]['specificResponse'])) {
-                    $specicResponse = $binRequest[$key]['specificResponse'];
-                    unset($binRequest[$key]['specificResponse']);
-                }
+                // if (isset($binRequest[$key]['specificResponse'])) {
+                //     $specicResponse = $binRequest[$key]['specificResponse'];
+                //     unset($binRequest[$key]['specificResponse']);
+                // }
                 // }
             }
             $responseFromSBS = $this->binRequest($binRequest, $storeId, $hits, $cartInfo);
             // dd("responseFromSBS", $responseFromSBS);
 
-            if (isset($specicResponse) && !empty($specicResponse)) {
-                if (empty($binRequest[$key]['items'])) {
-                    $responseFromSBS = [];
-                }
-                $flattenedSpecific = array_merge(...$specicResponse);
-                $responseFromSBS[$key] = array_merge($responseFromSBS, $flattenedSpecific);
-            }
+            // if (isset($specicResponse) && !empty($specicResponse)) {
+            //     if (empty($binRequest[$key]['items'])) {
+            //         $responseFromSBS = [];
+            //     }
+            //     $flattenedSpecific = array_merge(...$specicResponse);
+            //     $responseFromSBS[$key] = array_merge($responseFromSBS, $flattenedSpecific);
+            // }
             $sbsCompiledResponse = $this->appendNotPackedItems($responseFromSBS, $items, $specicResponse ?? []);
         } else if (count($itemsAlone)) {
             $responseFromSBS = $this->generateShipAloneBinResponse($itemsAlone);
@@ -143,50 +143,75 @@ class Bin3D
         return $data;
     }
 
-    public function appendNotPackedItemsBoth($responseFromSBS, $items = [], $specicResponse)
+
+     public function appendNotPackedItemsBoth($responseFromSBS, $items = [])
     {
         foreach ($responseFromSBS as $key => $SBSResp) {
-            if (isset($specicResponse) && !empty($specicResponse)) {
-                foreach ($SBSResp as $key => $response) {
-                    $data[$key] = json_decode($SBSResp[$key])->response;
-                    $resp = json_decode($SBSResp[$key]);
-                    $not_packed_items = $resp->response->not_packed_items;
+            $data[$key] = json_decode($SBSResp)->response;
+            $resp = json_decode($SBSResp);
+            $not_packed_items = $resp->response->not_packed_items;
+            $not_packed_items = (array)$not_packed_items;
+            if (isset($items[$key])) {
+                foreach ($items[$key] as $itemKey => $item) {
+                    $not_packed_items[count($not_packed_items)] = $item;
                 }
-                $not_packed_items = (array)$not_packed_items;
-                if (isset($items)) {
-                    foreach ($items as $itemKey => $item) {
-                        $not_packed_items = $item;
-                        // dd("not_packed_items",$items, $not_packed_items, $itemKey);
-                    }
-                }
-
-                if (count($not_packed_items)) {
-                    foreach ($not_packed_items as $not_packed_item) {
-                        $not_packed_item = (array)$not_packed_item;
-                        array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
-                    }
-                }
-            } else {
-                $data[$key] = json_decode($SBSResp)->response;
-                $resp = json_decode($SBSResp);
-                $not_packed_items = $resp->response->not_packed_items;
-                $not_packed_items = (array)$not_packed_items;
-                if (isset($items[$key])) {
-                    foreach ($items[$key] as $itemKey => $item) {
-                        $not_packed_items[count($not_packed_items)] = $item;
-                    }
-                }
-
-                if (count($not_packed_items)) {
-                    foreach ($not_packed_items as $not_packed_item) {
-                        $not_packed_item = (array)$not_packed_item;
-                        array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
-                    }
+            }
+            
+            if (count($not_packed_items)) {
+                foreach ($not_packed_items as $not_packed_item) {
+                    $not_packed_item = (array)$not_packed_item;
+                    array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
                 }
             }
         }
         return $data ?? [];
     }
+
+
+    // public function appendNotPackedItemsBoth($responseFromSBS, $items = [], $specicResponse)
+    // {
+    //     foreach ($responseFromSBS as $key => $SBSResp) {
+    //         if (isset($specicResponse) && !empty($specicResponse)) {
+    //             foreach ($SBSResp as $key => $response) {
+    //                 $data[$key] = json_decode($SBSResp[$key])->response;
+    //                 $resp = json_decode($SBSResp[$key]);
+    //                 $not_packed_items = $resp->response->not_packed_items;
+    //             }
+    //             $not_packed_items = (array)$not_packed_items;
+    //             if (isset($items)) {
+    //                 foreach ($items as $itemKey => $item) {
+    //                     $not_packed_items = $item;
+    //                     // dd("not_packed_items",$items, $not_packed_items, $itemKey);
+    //                 }
+    //             }
+
+    //             if (count($not_packed_items)) {
+    //                 foreach ($not_packed_items as $not_packed_item) {
+    //                     $not_packed_item = (array)$not_packed_item;
+    //                     array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
+    //                 }
+    //             }
+    //         } else {
+    //             $data[$key] = json_decode($SBSResp)->response;
+    //             $resp = json_decode($SBSResp);
+    //             $not_packed_items = $resp->response->not_packed_items;
+    //             $not_packed_items = (array)$not_packed_items;
+    //             if (isset($items[$key])) {
+    //                 foreach ($items[$key] as $itemKey => $item) {
+    //                     $not_packed_items[count($not_packed_items)] = $item;
+    //                 }
+    //             }
+
+    //             if (count($not_packed_items)) {
+    //                 foreach ($not_packed_items as $not_packed_item) {
+    //                     $not_packed_item = (array)$not_packed_item;
+    //                     array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     return $data ?? [];
+    // }
 
     public function appendNotPackedItemsOnlyAlone($responseFromSBS)
     {
@@ -209,67 +234,100 @@ class Bin3D
         return $data;
     }
 
-    public function appendNotPackedItems($responseFromSBS, $items = [], $specicResponse)
+      public function appendNotPackedItems($responseFromSBS, $items = [])
     {
         $data = [];
         foreach ($responseFromSBS as $key => $SBSResp) {
-            if (isset($specicResponse) && !empty($specicResponse)) {
-                foreach ($SBSResp as $key => $res) {
-                    $response = json_decode($SBSResp[$key])->response;
-                    if (isset($response->bins_packed)) {
-                        $response = $this->AddBoxNicknameAndFee($response);
-                    }
+            $response = json_decode($SBSResp)->response;
+            if (isset($response->bins_packed)) {
+                $response = $this->AddBoxNicknameAndFee($response);
+            }
 
-                    // Pallet packed items
-                    if (isset($response->pallets_packed)) {
-                        $response = $this->AddBoxNicknameAndFee($response);
-                    }
-                    $data[$key] = $response;
-                    $resp = json_decode($SBSResp[$key]);
-                    $not_packed_items = $resp->response->not_packed_items;
-                    if (count($not_packed_items)) {
-                        foreach ($not_packed_items as $not_packed_item) {
-                            $notPackedQuantity = optional($not_packed_item)->q ?? 0;
-                            if ($notPackedQuantity != 0) {
-                                for ($i = 1; $i <= $notPackedQuantity; $i++) {
-                                    $not_packed_item = (array)$not_packed_item;
-                                    $not_packed_item['q'] = 1;
-                                    array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
-                                }
-                            }
+            // Pallet packed items
+            if (isset($response->pallets_packed)) {
+                $response = $this->AddBoxNicknameAndFee($response);
+            }
+            $data[$key] = $response;
+            $resp = json_decode($SBSResp);
+            $not_packed_items = $resp->response->not_packed_items;
+            if (count($not_packed_items)) {
+                foreach ($not_packed_items as $not_packed_item) {
+                    $notPackedQuantity = optional($not_packed_item)->q ?? 0;
+                    if ($notPackedQuantity != 0) {
+                        for ($i = 1; $i <= $notPackedQuantity; $i++) {
+                            $not_packed_item = (array)$not_packed_item;
+                            $not_packed_item['q'] = 1;
+                            array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
                         }
                     }
-                }
-            } else {
 
-                $response = json_decode($SBSResp)->response;
-                if (isset($response->bins_packed)) {
-                    $response = $this->AddBoxNicknameAndFee($response);
-                }
-
-                // Pallet packed items
-                if (isset($response->pallets_packed)) {
-                    $response = $this->AddBoxNicknameAndFee($response);
-                }
-                $data[$key] = $response;
-                $resp = json_decode($SBSResp);
-                $not_packed_items = $resp->response->not_packed_items;
-                if (count($not_packed_items)) {
-                    foreach ($not_packed_items as $not_packed_item) {
-                        $notPackedQuantity = optional($not_packed_item)->q ?? 0;
-                        if ($notPackedQuantity != 0) {
-                            for ($i = 1; $i <= $notPackedQuantity; $i++) {
-                                $not_packed_item = (array)$not_packed_item;
-                                $not_packed_item['q'] = 1;
-                                array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
-                            }
-                        }
-                    }
                 }
             }
         }
         return $data;
     }
+
+    // public function appendNotPackedItems($responseFromSBS, $items = [], $specicResponse)
+    // {
+    //     $data = [];
+    //     foreach ($responseFromSBS as $key => $SBSResp) {
+    //         if (isset($specicResponse) && !empty($specicResponse)) {
+    //             foreach ($SBSResp as $key => $res) {
+    //                 $response = json_decode($SBSResp[$key])->response;
+    //                 if (isset($response->bins_packed)) {
+    //                     $response = $this->AddBoxNicknameAndFee($response);
+    //                 }
+
+    //                 // Pallet packed items
+    //                 if (isset($response->pallets_packed)) {
+    //                     $response = $this->AddBoxNicknameAndFee($response);
+    //                 }
+    //                 $data[$key] = $response;
+    //                 $resp = json_decode($SBSResp[$key]);
+    //                 $not_packed_items = $resp->response->not_packed_items;
+    //                 if (count($not_packed_items)) {
+    //                     foreach ($not_packed_items as $not_packed_item) {
+    //                         $notPackedQuantity = optional($not_packed_item)->q ?? 0;
+    //                         if ($notPackedQuantity != 0) {
+    //                             for ($i = 1; $i <= $notPackedQuantity; $i++) {
+    //                                 $not_packed_item = (array)$not_packed_item;
+    //                                 $not_packed_item['q'] = 1;
+    //                                 array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
+    //                             }
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //         } else {
+
+    //             $response = json_decode($SBSResp)->response;
+    //             if (isset($response->bins_packed)) {
+    //                 $response = $this->AddBoxNicknameAndFee($response);
+    //             }
+
+    //             // Pallet packed items
+    //             if (isset($response->pallets_packed)) {
+    //                 $response = $this->AddBoxNicknameAndFee($response);
+    //             }
+    //             $data[$key] = $response;
+    //             $resp = json_decode($SBSResp);
+    //             $not_packed_items = $resp->response->not_packed_items;
+    //             if (count($not_packed_items)) {
+    //                 foreach ($not_packed_items as $not_packed_item) {
+    //                     $notPackedQuantity = optional($not_packed_item)->q ?? 0;
+    //                     if ($notPackedQuantity != 0) {
+    //                         for ($i = 1; $i <= $notPackedQuantity; $i++) {
+    //                             $not_packed_item = (array)$not_packed_item;
+    //                             $not_packed_item['q'] = 1;
+    //                             array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     return $data;
+    // }
 
     public function AddBoxNicknameAndFee($packedResponse)
     {
@@ -296,140 +354,179 @@ class Bin3D
         return $resp;
     }
 
+     private function generateBinRequest($bins, $item, $items = [], $storeId)
+    {
+        $store = Store::getStoreDetailsFromStoreId($storeId);  
+        //bins_utilization or bin_number
+        $installedAddonId = Functions::getSBSInstalledAddon($store);
+        $getSBSAddonSettings = AddonSettings::where('installed_addon_id', $installedAddonId)->first();
+        $optimizationMode = isset($getSBSAddonSettings->bins_pack_mode) && $getSBSAddonSettings->bins_pack_mode == 1 ? "bins_number" : "bins_utilization" ?? "bins_utilization";
+        $params = [
+            'images_background_color' => '255,255,255',
+            'images_bin_border_color' => '59,59,59',
+            'images_bin_fill_color' => '230,230,230',
+            'images_item_border_color' => '214,79,79',
+            'images_item_fill_color' => '177,14,14',
+            'images_item_back_border_color' => '215,103,103',
+            'images_sbs_last_item_fill_color' => '99,93,93',
+            'images_sbs_last_item_border_color' => '145,133,133',
+            'images_width' => '100',
+            'images_height' => '100',
+            'images_source' => 'file',
+            'images_sbs' => '1',
+            'stats' => '1',
+            'item_coordinates' => '1',
+            'images_complete' => '1',
+            'images_separated' => '1'
+        ];
+
+        if (!$this->isPalletPkgReq) {
+            $params['optimization_mode'] = $optimizationMode;
+        } else {
+            $params['optimization_mode'] = 'bins_number';
+        }
+        $finalRequest['username'] = $this->userName;
+        $finalRequest['api_key'] = $this->apiKey;
+        $finalRequest['params'] = $params;
+        $finalRequest['bins'] = $bins;
+        $finalRequest['items'] = $item;
+        return $finalRequest;
+    }
+
     /*
     * Generate formated request for bin
      * $bins -> available boxes in db for any store
      * $items -> items with dimensions to be packed in boxes
      */
-    private function generateBinRequest($bins, $item, $items = [], $storeId, $hits, $cartInfo, $key)
-    {
-        $restrictedItems = [];
-        $generalItems = [];
-        $restrictedBins = [];
-        $generalBins = [];
-        foreach ($item as $i) {
-            $this->$key = $key;
-            if (isset($i['box_associated_to'])) {
-                $i['box_associated_to'] = is_string($i['box_associated_to']) ? json_decode($i['box_associated_to'], true) : $i['box_associated_to'];
-            }
-            if (isset($i['availability_type']) && $i['availability_type'] == 2 && isset($i['box_associated_to']) && !empty($i['box_associated_to'])) {
-                $restrictedItems[] = $i;
-            } else {
-                $generalItems[] = $i;
-            }
-        }
+    // private function generateBinRequest($bins, $item, $items = [], $storeId, $hits, $cartInfo, $key)
+    // {
+    //     $restrictedItems = [];
+    //     $generalItems = [];
+    //     $restrictedBins = [];
+    //     $generalBins = [];
+    //     foreach ($item as $i) {
+    //         $this->$key = $key;
+    //         if (isset($i['box_associated_to'])) {
+    //             $i['box_associated_to'] = is_string($i['box_associated_to']) ? json_decode($i['box_associated_to'], true) : $i['box_associated_to'];
+    //         }
+    //         if (isset($i['availability_type']) && $i['availability_type'] == 2 && isset($i['box_associated_to']) && !empty($i['box_associated_to'])) {
+    //             $restrictedItems[] = $i;
+    //         } else {
+    //             $generalItems[] = $i;
+    //         }
+    //     }
 
-        foreach ($bins as $binId => $bin) {
-            $bin['box_associated_to'] = is_string($bin['box_associated_to']) ? json_decode($bin['box_associated_to'], true) : $bin['box_associated_to'];
+    //     foreach ($bins as $binId => $bin) {
+    //         $bin['box_associated_to'] = is_string($bin['box_associated_to']) ? json_decode($bin['box_associated_to'], true) : $bin['box_associated_to'];
 
-            if ($bin['availability_type'] == 2 && !empty($bin['box_associated_to'])) {
-                $restrictedBins[$binId] = $bin;
-            } else {
-                $generalBins[$binId] = $bin;
-            }
-        }
-        // Prepare matched restricted bins
-        if (!empty($restrictedItems)) {
-            $responseFromSBS = []; // Collect all individual responses
-            foreach ($restrictedItems as $key => $rItem) {
-                $matchedRestrictedBins = [];
+    //         if ($bin['availability_type'] == 2 && !empty($bin['box_associated_to'])) {
+    //             $restrictedBins[$binId] = $bin;
+    //         } else {
+    //             $generalBins[$binId] = $bin;
+    //         }
+    //     }
+    //     // Prepare matched restricted bins
+    //     if (!empty($restrictedItems)) {
+    //         $responseFromSBS = []; // Collect all individual responses
+    //         foreach ($restrictedItems as $key => $rItem) {
+    //             $matchedRestrictedBins = [];
 
-                foreach ($restrictedBins as $binId => $bin) {
-                    if ($rItem['apply_rule_to'] == $bin['apply_rule_to']) {
-                        $rValues = collect($rItem['box_associated_to'])->map(function ($val) {
-                            return is_array($val) ? ($val['value'] ?? null) : $val;
-                        })->filter()->toArray();
+    //             foreach ($restrictedBins as $binId => $bin) {
+    //                 if ($rItem['apply_rule_to'] == $bin['apply_rule_to']) {
+    //                     $rValues = collect($rItem['box_associated_to'])->map(function ($val) {
+    //                         return is_array($val) ? ($val['value'] ?? null) : $val;
+    //                     })->filter()->toArray();
 
-                        $bValues = collect($bin['box_associated_to'])->map(function ($val) {
-                            return is_array($val) ? ($val['value'] ?? null) : $val;
-                        })->filter()->toArray();
+    //                     $bValues = collect($bin['box_associated_to'])->map(function ($val) {
+    //                         return is_array($val) ? ($val['value'] ?? null) : $val;
+    //                     })->filter()->toArray();
 
-                        if (array_intersect($rValues, $bValues)) {
-                            $matchedRestrictedBins[$binId] = $bin;
-                        }
-                    }
-                }
+    //                     if (array_intersect($rValues, $bValues)) {
+    //                         $matchedRestrictedBins[$binId] = $bin;
+    //                     }
+    //                 }
+    //             }
 
-                $specificRequest = [
-                    'username' => $this->userName,
-                    'api_key' => $this->apiKey,
-                    'params' => [
-                        'images_background_color' => '255,255,255',
-                        'images_bin_border_color' => '59,59,59',
-                        'images_bin_fill_color' => '230,230,230',
-                        'images_item_border_color' => '214,79,79',
-                        'images_item_fill_color' => '177,14,14',
-                        'images_item_back_border_color' => '215,103,103',
-                        'images_sbs_last_item_fill_color' => '99,93,93',
-                        'images_sbs_last_item_border_color' => '145,133,133',
-                        'images_width' => '100',
-                        'images_height' => '100',
-                        'images_source' => 'file',
-                        'images_sbs' => '1',
-                        'stats' => '1',
-                        'item_coordinates' => '1',
-                        'images_complete' => '1',
-                        'images_separated' => '1',
-                        'optimization_mode' => $this->isPalletPkgReq ? 'bins_number' : (
-                            isset($getSBSAddonSettings->bins_pack_mode) && $getSBSAddonSettings->bins_pack_mode == 1
-                            ? "bins_number"
-                            : "bins_utilization"
-                        )
-                    ],
-                ];
+    //             $specificRequest = [
+    //                 'username' => $this->userName,
+    //                 'api_key' => $this->apiKey,
+    //                 'params' => [
+    //                     'images_background_color' => '255,255,255',
+    //                     'images_bin_border_color' => '59,59,59',
+    //                     'images_bin_fill_color' => '230,230,230',
+    //                     'images_item_border_color' => '214,79,79',
+    //                     'images_item_fill_color' => '177,14,14',
+    //                     'images_item_back_border_color' => '215,103,103',
+    //                     'images_sbs_last_item_fill_color' => '99,93,93',
+    //                     'images_sbs_last_item_border_color' => '145,133,133',
+    //                     'images_width' => '100',
+    //                     'images_height' => '100',
+    //                     'images_source' => 'file',
+    //                     'images_sbs' => '1',
+    //                     'stats' => '1',
+    //                     'item_coordinates' => '1',
+    //                     'images_complete' => '1',
+    //                     'images_separated' => '1',
+    //                     'optimization_mode' => $this->isPalletPkgReq ? 'bins_number' : (
+    //                         isset($getSBSAddonSettings->bins_pack_mode) && $getSBSAddonSettings->bins_pack_mode == 1
+    //                         ? "bins_number"
+    //                         : "bins_utilization"
+    //                     )
+    //                 ],
+    //             ];
 
-                $specificRequest['bins'] = $matchedRestrictedBins;
-                $specificRequest['items'] = [$rItem];
-                // Pass single-item specific request, not cumulative
-                $specificResponseFromSBS[] = $this->binRequest([$key => $specificRequest], $storeId, $hits, $cartInfo);
-            }
-        }
+    //             $specificRequest['bins'] = $matchedRestrictedBins;
+    //             $specificRequest['items'] = [$rItem];
+    //             // Pass single-item specific request, not cumulative
+    //             $specificResponseFromSBS[] = $this->binRequest([$key => $specificRequest], $storeId, $hits, $cartInfo);
+    //         }
+    //     }
 
-        // dd("specificResponseFromSBS", $specificResponseFromSBS);
+    //     // dd("specificResponseFromSBS", $specificResponseFromSBS);
 
-        $finalRequest = [
-            'username' => $this->userName,
-            'api_key' => $this->apiKey,
-            'params' => [
-                'images_background_color' => '255,255,255',
-                'images_bin_border_color' => '59,59,59',
-                'images_bin_fill_color' => '230,230,230',
-                'images_item_border_color' => '214,79,79',
-                'images_item_fill_color' => '177,14,14',
-                'images_item_back_border_color' => '215,103,103',
-                'images_sbs_last_item_fill_color' => '99,93,93',
-                'images_sbs_last_item_border_color' => '145,133,133',
-                'images_width' => '100',
-                'images_height' => '100',
-                'images_source' => 'file',
-                'images_sbs' => '1',
-                'stats' => '1',
-                'item_coordinates' => '1',
-                'images_complete' => '1',
-                'images_separated' => '1',
-                'optimization_mode' => $this->isPalletPkgReq ? 'bins_number' : (
-                    isset($getSBSAddonSettings->bins_pack_mode) && $getSBSAddonSettings->bins_pack_mode == 1
-                    ? "bins_number"
-                    : "bins_utilization"
-                )
-            ],
-        ];
+    //     $finalRequest = [
+    //         'username' => $this->userName,
+    //         'api_key' => $this->apiKey,
+    //         'params' => [
+    //             'images_background_color' => '255,255,255',
+    //             'images_bin_border_color' => '59,59,59',
+    //             'images_bin_fill_color' => '230,230,230',
+    //             'images_item_border_color' => '214,79,79',
+    //             'images_item_fill_color' => '177,14,14',
+    //             'images_item_back_border_color' => '215,103,103',
+    //             'images_sbs_last_item_fill_color' => '99,93,93',
+    //             'images_sbs_last_item_border_color' => '145,133,133',
+    //             'images_width' => '100',
+    //             'images_height' => '100',
+    //             'images_source' => 'file',
+    //             'images_sbs' => '1',
+    //             'stats' => '1',
+    //             'item_coordinates' => '1',
+    //             'images_complete' => '1',
+    //             'images_separated' => '1',
+    //             'optimization_mode' => $this->isPalletPkgReq ? 'bins_number' : (
+    //                 isset($getSBSAddonSettings->bins_pack_mode) && $getSBSAddonSettings->bins_pack_mode == 1
+    //                 ? "bins_number"
+    //                 : "bins_utilization"
+    //             )
+    //         ],
+    //     ];
 
-        // Handle restricted items separately
-        // if (!empty($restrictedItems)) {
-        //     $finalRequest['bins'] = $matchedRestrictedBins;
-        //     $finalRequest['items'] = $restrictedItems;
-        //     $finalRequest['specificResponse'] = $specificResponseFromSBS;
-        // } else {
-        $finalRequest['bins'] = $generalBins;
-        $finalRequest['items'] = $generalItems;
-        if (!empty($restrictedItems)) {
-            $finalRequest['specificResponse'] = $specificResponseFromSBS;
-        }
-        // }
-        // dd("finalRequest", $finalRequest);
-        return $finalRequest;
-    }
+    //     // Handle restricted items separately
+    //     // if (!empty($restrictedItems)) {
+    //     //     $finalRequest['bins'] = $matchedRestrictedBins;
+    //     //     $finalRequest['items'] = $restrictedItems;
+    //     //     $finalRequest['specificResponse'] = $specificResponseFromSBS;
+    //     // } else {
+    //     $finalRequest['bins'] = $generalBins;
+    //     $finalRequest['items'] = $generalItems;
+    //     if (!empty($restrictedItems)) {
+    //         $finalRequest['specificResponse'] = $specificResponseFromSBS;
+    //     }
+    //     // }
+    //     // dd("finalRequest", $finalRequest);
+    //     return $finalRequest;
+    // }
 
 
     /*
