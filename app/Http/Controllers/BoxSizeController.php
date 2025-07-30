@@ -172,7 +172,11 @@ class BoxSizeController extends Controller
                 $data['box_associated_to'] = json_encode($data['filter_categories']);
                 unset($data['filter_categories']);
             }
-// dd("data", $data);
+
+            if($data['availability_type'] == 1){
+                $data['box_associated_to'] = null;
+                $data['apply_rule_to'] = null;
+            }
 
             $boxsize = BoxSize::where('id', $request->id)->update($data);
             $box = BoxSize::find($request->id);
