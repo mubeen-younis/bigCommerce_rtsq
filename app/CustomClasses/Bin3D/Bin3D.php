@@ -40,6 +40,11 @@ class Bin3D
 
     public function getBinResponse($storeId, $bins, $items, $itemsAlone, $hits, $cartInfo, $isMultishipment, $palletPkgReq = false)
     {
+        Log::info('itemsiiiiiiiiiiiiiii Request on line 43' . json_encode([
+            $items
+        ]));
+
+
         $this->isPalletPkgReq = $palletPkgReq;
 
         if (count($items) && count($itemsAlone)) {
@@ -85,6 +90,9 @@ class Bin3D
                 // dd("itemdd", $items, $key, $item);
                 // foreach ($item as $singleItem) {
                 $binRequest[$key] = $this->generateBinRequest($bins, $item, $items, $storeId, $hits, $cartInfo, $key);
+                Log::info('binbinbinbin binRequest on line 93' . json_encode([
+            $binRequest
+        ]));
                 // if (isset($binRequest[$key]['specificResponse'])) {
                 //     $specicResponse = $binRequest[$key]['specificResponse'];
                 //     unset($binRequest[$key]['specificResponse']);
@@ -145,7 +153,7 @@ class Bin3D
     }
 
 
-     public function appendNotPackedItemsBoth($responseFromSBS, $items = [])
+    public function appendNotPackedItemsBoth($responseFromSBS, $items = [])
     {
         foreach ($responseFromSBS as $key => $SBSResp) {
             $data[$key] = json_decode($SBSResp)->response;
@@ -157,7 +165,7 @@ class Bin3D
                     $not_packed_items[count($not_packed_items)] = $item;
                 }
             }
-            
+
             if (count($not_packed_items)) {
                 foreach ($not_packed_items as $not_packed_item) {
                     $not_packed_item = (array)$not_packed_item;
@@ -235,7 +243,7 @@ class Bin3D
         return $data;
     }
 
-      public function appendNotPackedItems($responseFromSBS, $items = [])
+    public function appendNotPackedItems($responseFromSBS, $items = [])
     {
         $data = [];
         foreach ($responseFromSBS as $key => $SBSResp) {
@@ -261,7 +269,6 @@ class Bin3D
                             array_push($data[$key]->bins_packed, $this->createItemOwnPackage($not_packed_item));
                         }
                     }
-
                 }
             }
         }
@@ -355,9 +362,9 @@ class Bin3D
         return $resp;
     }
 
-     private function generateBinRequest($bins, $item, $items = [], $storeId)
+    private function generateBinRequest($bins, $item, $items = [], $storeId)
     {
-        $store = Store::getStoreDetailsFromStoreId($storeId);  
+        $store = Store::getStoreDetailsFromStoreId($storeId);
         //bins_utilization or bin_number
         $installedAddonId = Functions::getSBSInstalledAddon($store);
         $getSBSAddonSettings = AddonSettings::where('installed_addon_id', $installedAddonId)->first();
