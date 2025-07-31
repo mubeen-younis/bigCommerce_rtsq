@@ -3620,6 +3620,7 @@ class GenerateRequestData
                         "vr" => $itemsArr[$key]['vertical_rotation'] ?? 0 //vertical 0 or 1
                     ];
                     // ------aaaa----------
+                    $isAssignedToBox = false;
                     $smallBoxes = DB::table('box_sizes')->where('store_id', $storeId)
                         ->where('is_available', 1)->where('box_type', 1)->get();
                     foreach ($smallBoxes as $box) {
@@ -3633,6 +3634,7 @@ class GenerateRequestData
                                         // dd("associated", $associated, $box, $smallBoxes);
                                         if ($product['value'] == $itemsArr[$key]['product_id']) {
                                             $items[$origin['locationId']][$index]['acceptable_bins'][] = $box->id;
+                                            $isAssignedToBox = true;
                                             // $items[$origin['locationId']][$index]['availability_type'] = $box->availability_type;
                                             // $items[$origin['locationId']][$index]['apply_rule_to'] = $box->apply_rule_to;
                                             // $items[$origin['locationId']][$index]['box_associated_to'] = $box->box_associated_to;
@@ -3647,6 +3649,7 @@ class GenerateRequestData
                                     foreach ($associated as $brandId) {
                                         if ($brandId == $itemsArr[$key]['brand_id']) {
                                             $items[$origin['locationId']][$index]['acceptable_bins'][] = $box->id;
+                                            $isAssignedToBox = true;
                                             // $items[$origin['locationId']][$index]['availability_type'] = $box->availability_type;
                                             // $items[$origin['locationId']][$index]['apply_rule_to'] = $box->apply_rule_to;
                                             // $items[$origin['locationId']][$index]['box_associated_to'] = $box->box_associated_to;
@@ -3659,6 +3662,7 @@ class GenerateRequestData
                                     foreach ($associated as $categoryId) {
                                         if ($categoryId == $itemsArr[$key]['categories_id']) {
                                             $items[$origin['locationId']][$index]['acceptable_bins'][] = $box->id;
+                                            $isAssignedToBox = true;
                                         //     $items[$origin['locationId']][$index]['availability_type'] = $box->availability_type;
                                         //     $items[$origin['locationId']][$index]['apply_rule_to'] = $box->apply_rule_to;
                                         //     $items[$origin['locationId']][$index]['box_associated_to'] = $box->box_associated_to;
@@ -3668,11 +3672,12 @@ class GenerateRequestData
                             }
                         }
                     }
-
-                    $isAssignedToBox = false;
+// dd("items", $items);
+                    // $isAssignedToBox = false;
                     $universalBoxes = [];
 
                     if (!$isAssignedToBox) {
+                        // dd("ssdsde",$items);
                         foreach ($smallBoxes as $box) {
                             if (
                                 $box->availability_type == 1 &&

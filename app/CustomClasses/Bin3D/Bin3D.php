@@ -46,7 +46,6 @@ class Bin3D
 
 
         $this->isPalletPkgReq = $palletPkgReq;
-
         if (count($items) && count($itemsAlone)) {
             foreach ($items as $key => $item) {
                 $binRequest[$key] = $this->generateBinRequest($bins, $item, [], $storeId, $hits, $cartInfo, $key);
