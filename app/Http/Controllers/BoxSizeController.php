@@ -80,18 +80,18 @@ class BoxSizeController extends Controller
         }
 
         $data = $request->except(['store_name', 'store_hash', 'is_test_store', 'heightWithPallet', 'weightWithPallet']);
-           if(isset($data['filter_products'])){
-                $data['box_associated_to'] = json_encode($data['filter_products']);
-                unset($data['filter_products']);
-            }
-            if(isset($data['filter_brands'])){
-                $data['box_associated_to'] = json_encode($data['filter_brands']);
-                unset($data['filter_brands']);
-            }
-            if(isset($data['filter_categories'])){
-                $data['box_associated_to'] = json_encode($data['filter_categories']);
-                unset($data['filter_categories']);
-            }
+        if (isset($data['filter_products'])) {
+            $data['box_associated_to'] = json_encode($data['filter_products']);
+            unset($data['filter_products']);
+        }
+        if (isset($data['filter_brands'])) {
+            $data['box_associated_to'] = json_encode($data['filter_brands']);
+            unset($data['filter_brands']);
+        }
+        if (isset($data['filter_categories'])) {
+            $data['box_associated_to'] = json_encode($data['filter_categories']);
+            unset($data['filter_categories']);
+        }
         $isPalletBox = isset($request->box_name) && $request->box_name == 'Pallet Box' ? true : false;
 
         $boxsize = BoxSize::create($data);
@@ -159,22 +159,25 @@ class BoxSizeController extends Controller
                 ]);
             }
             $data = $request->except(['store_name', 'store_hash', 'is_test_store', 'heightWithPallet', 'weightWithPallet']);
-            if(isset($data['filter_products'])){
-                $data['box_associated_to'] = json_encode($data['filter_products']);
-                unset($data['filter_products']);
-            }
-            if(isset($data['filter_brands'])){
-                $data['box_associated_to'] = json_encode($data['filter_brands']);
-                unset($data['filter_brands']);
-            }
-            if(isset($data['filter_categories'])){
-                $data['box_associated_to'] = json_encode($data['filter_categories']);
-                unset($data['filter_categories']);
-            }
 
-            if($data['availability_type'] == 1){
-                $data['box_associated_to'] = null;
-                $data['apply_rule_to'] = null;
+            if ($data['box_type'] != 4) {
+                if (isset($data['filter_products'])) {
+                    $data['box_associated_to'] = json_encode($data['filter_products']);
+                    unset($data['filter_products']);
+                }
+                if (isset($data['filter_brands'])) {
+                    $data['box_associated_to'] = json_encode($data['filter_brands']);
+                    unset($data['filter_brands']);
+                }
+                if (isset($data['filter_categories'])) {
+                    $data['box_associated_to'] = json_encode($data['filter_categories']);
+                    unset($data['filter_categories']);
+                }
+
+                if ($data['availability_type'] == 1) {
+                    $data['box_associated_to'] = null;
+                    $data['apply_rule_to'] = null;
+                }
             }
 
             $boxsize = BoxSize::where('id', $request->id)->update($data);
