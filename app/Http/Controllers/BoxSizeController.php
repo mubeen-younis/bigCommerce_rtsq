@@ -174,6 +174,7 @@ class BoxSizeController extends Controller
 
             if($data['availability_type'] == 1){
                 $data['box_associated_to'] = null;
+                $data['apply_rule_to'] = null;
             }
 
             $boxsize = BoxSize::where('id', $request->id)->update($data);
