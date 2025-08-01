@@ -56,7 +56,7 @@ class Bin3D
                 // }
             }
             $responseFromSBS = $this->binRequest($binRequest, $storeId, $hits, $cartInfo);
-
+// dd("responseFromSBS", $responseFromSBS);
             // if (isset($specicResponse) && !empty($specicResponse)) {
             //     if (empty($binRequest[$key]['items'])) {
             //         $responseFromSBS = [];
@@ -92,11 +92,8 @@ class Bin3D
                 Log::info('binbinbinbin binRequest on line 93' . json_encode([
             $binRequest
         ]));
-                // if (isset($binRequest[$key]['specificResponse'])) {
-                //     $specicResponse = $binRequest[$key]['specificResponse'];
-                //     unset($binRequest[$key]['specificResponse']);
-                // }
-                // }
+
+        // dd("binRequest",$binRequest);
             }
             $responseFromSBS = $this->binRequest($binRequest, $storeId, $hits, $cartInfo);
             // dd("responseFromSBS", $responseFromSBS);
