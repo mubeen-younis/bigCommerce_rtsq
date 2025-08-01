@@ -106,6 +106,7 @@ class Bin3D
             //     $responseFromSBS[$key] = array_merge($responseFromSBS, $flattenedSpecific);
             // }
             $sbsCompiledResponse = $this->appendNotPackedItems($responseFromSBS, $items, $specicResponse ?? []);
+            // dd("sbsCompiledResponse", $sbsCompiledResponse);
         } else if (count($itemsAlone)) {
             $responseFromSBS = $this->generateShipAloneBinResponse($itemsAlone);
             $sbsCompiledResponse = $this->appendNotPackedItemsOnlyAlone($responseFromSBS);
