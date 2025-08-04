@@ -3671,7 +3671,6 @@ class GenerateRequestData
                         foreach ($smallBoxes as $box) {
                             if (
                                 isset($box->availability_type) &&
-                                !isset($box->apply_rule_to) &&
                                 !isset($box->box_associated_to) &&
                                 $box->availability_type == 1
                             ) {
