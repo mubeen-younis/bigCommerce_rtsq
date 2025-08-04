@@ -174,7 +174,7 @@ class BoxSizeController extends Controller
                     unset($data['filter_categories']);
                 }
 
-                if ($data['availability_type'] == 1) {
+                if (isset($data['availability_type']) && $data['availability_type'] == 1) {
                     $data['box_associated_to'] = null;
                     $data['apply_rule_to'] = null;
                 }

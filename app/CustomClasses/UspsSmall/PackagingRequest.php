@@ -228,11 +228,11 @@ class PackagingRequest
             return [];
         }
 
-        foreach ($items as $key => $item) {
-            if ($item['acceptable_bins'] == 0) {
-                unset($items[$key]);
-            }
-        }
+        // foreach ($items as $key => $item) {
+        //     if ($item['acceptable_bins'] == 0) {
+        //         unset($items[$key]);
+        //     }
+        // }
 
         $request['items'] = $items;
         return ['endpoint' => $endPoint, 'request' => 'query=' . json_encode($request), 'headers' => []];
@@ -320,69 +320,69 @@ class PackagingRequest
 
     public function getItemDetailForPackaging($item, $specifiedBoxes)
     {
-        $isAssignedToBox = false;
+        // $isAssignedToBox = false;
 
-        foreach ($specifiedBoxes as $key => $box) {
-            $box = (object) $box;
+        // foreach ($specifiedBoxes as $key => $box) {
+        //     $box = (object) $box;
 
-            if (
-                isset($box->availability_type) &&
-                $box->availability_type == 2 &&
-                $box->apply_rule_to !== null &&
-                $box->box_associated_to !== null
-            ) {
-                $associated = json_decode($box->box_associated_to, true);
+        //     if (
+        //         isset($box->availability_type) &&
+        //         $box->availability_type == 2 &&
+        //         $box->apply_rule_to !== null &&
+        //         $box->box_associated_to !== null
+        //     ) {
+        //         $associated = json_decode($box->box_associated_to, true);
 
-                if ($box->apply_rule_to == 3) {
-                    foreach ($associated as $product) {
-                        if ($product['value'] == $item['product_id']) {
-                            $item['acceptable_bins'][] = $box->id;
-                            $isAssignedToBox = true;
-                        }
-                    }
-                }
+        //         if ($box->apply_rule_to == 3) {
+        //             foreach ($associated as $product) {
+        //                 if ($product['value'] == $item['product_id']) {
+        //                     $item['acceptable_bins'][] = $box->id;
+        //                     $isAssignedToBox = true;
+        //                 }
+        //             }
+        //         }
 
-                if ($box->apply_rule_to == 2) {
-                    foreach ($associated as $brandId) {
-                        if (
-                            isset($item['brand_id']) &&
-                            $item['brand_id'] == $brandId
-                        ) {
-                            $item['acceptable_bins'][] = $box->id;
-                            $isAssignedToBox = true;
-                        }
-                    }
-                }
+        //         if ($box->apply_rule_to == 2) {
+        //             foreach ($associated as $brandId) {
+        //                 if (
+        //                     isset($item['brand_id']) &&
+        //                     $item['brand_id'] == $brandId
+        //                 ) {
+        //                     $item['acceptable_bins'][] = $box->id;
+        //                     $isAssignedToBox = true;
+        //                 }
+        //             }
+        //         }
 
-                if ($box->apply_rule_to == 1) {
-                    foreach ($associated as $categoryId) {
-                        if (
-                            isset($item['categories_id']) &&
-                            is_array($item['categories_id']) &&
-                            in_array($categoryId, $item['categories_id'])
-                        ) {
-                            $item['acceptable_bins'][] = $box->id;
-                            $isAssignedToBox = true;
-                        }
-                    }
-                }
-            }
-        }
+        //         if ($box->apply_rule_to == 1) {
+        //             foreach ($associated as $categoryId) {
+        //                 if (
+        //                     isset($item['categories_id']) &&
+        //                     is_array($item['categories_id']) &&
+        //                     in_array($categoryId, $item['categories_id'])
+        //                 ) {
+        //                     $item['acceptable_bins'][] = $box->id;
+        //                     $isAssignedToBox = true;
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
-        if (!$isAssignedToBox) {
-            foreach ($specifiedBoxes as $box) {
-                $box = (object) $box;
+        // if (!$isAssignedToBox) {
+        //     foreach ($specifiedBoxes as $box) {
+        //         $box = (object) $box;
 
-                if (
-                    isset($box->availability_type) &&
-                    $box->availability_type == 1 &&
-                    empty($box->apply_rule_to) &&
-                    empty($box->box_associated_to)
-                ) {
-                    $item['acceptable_bins'][] = $box->id;
-                }
-            }
-        }
+        //         if (
+        //             isset($box->availability_type) &&
+        //             $box->availability_type == 1 &&
+        //             empty($box->apply_rule_to) &&
+        //             empty($box->box_associated_to)
+        //         ) {
+        //             $item['acceptable_bins'][] = $box->id;
+        //         }
+        //     }
+        // }
 
         $sbsItem['id'] = $item['variant_id'] ?? '';
         $sbsItem['wg'] = $item['lineItemWeight'] ?? '';
@@ -391,7 +391,7 @@ class PackagingRequest
         $sbsItem['w'] = $item['lineItemWidth'] ?? '';
         $sbsItem['q'] = $item['originalPiecesOfLineItem'] ?? '';
         $sbsItem['vr'] = $item['allow_vertically'] ?? 0;
-        $sbsItem['acceptable_bins'] = $item['acceptable_bins'] ?? 0;
+        // $sbsItem['acceptable_bins'] = $item['acceptable_bins'] ?? 0;
 
         return $sbsItem;
     }
