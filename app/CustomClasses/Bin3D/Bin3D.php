@@ -49,7 +49,6 @@ class Bin3D
         if (count($items) && count($itemsAlone)) {
             foreach ($items as $key => $item) {
                 $binRequest[$key] = $this->generateBinRequest($bins, $item, [], $storeId, $hits, $cartInfo, $key);
-                // dd("binRequest", $binRequest);
             }
             $responseFromSBS = $this->binRequest($binRequest, $storeId, $hits, $cartInfo);
             if ($isMultishipment) {
