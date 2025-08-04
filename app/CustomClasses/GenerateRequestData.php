@@ -3626,8 +3626,8 @@ class GenerateRequestData
                         if (isset($items) && !empty($items)) {
                             $index = count($items[$origin['locationId']]) - 1; // Get the last pushed item index
 
-                            if ($box->availability_type == 2 && $box->apply_rule_to !== null && $box->box_associated_to !== null) {
-                                if ($box->apply_rule_to == 3) {
+                            if (isset($box->availability_type) && isset($box->apply_rule_to) && isset($box->box_associated_to) && $box->availability_type == 2 && $box->apply_rule_to !== null && $box->box_associated_to !== null) {
+                                if (isset($box->apply_rule_to) && $box->apply_rule_to == 3) {
                                     $associated = json_decode($box->box_associated_to, true);
                                     foreach ($associated as $product) {
                                         if ($product['value'] == $itemsArr[$key]['product_id']) {
@@ -3636,7 +3636,7 @@ class GenerateRequestData
                                         }
                                     }
                                 }
-                                if ($box->apply_rule_to == 2) {
+                                if (isset($box->apply_rule_to) && $box->apply_rule_to == 2) {
                                     $associated = json_decode($box->box_associated_to, true);
                                     foreach ($associated as $brandId) {
                                         if (
@@ -3649,7 +3649,7 @@ class GenerateRequestData
                                     }
                                 }
 
-                                if ($box->apply_rule_to == 1) {
+                                if (isset($box->apply_rule_to) && $box->apply_rule_to == 1) {
                                     $associated = json_decode($box->box_associated_to, true);
                                     foreach ($associated as $categoryId) {
                                         if (
@@ -3671,6 +3671,9 @@ class GenerateRequestData
                     if (!$isAssignedToBox) {
                         foreach ($smallBoxes as $box) {
                             if (
+                                isset($box->availability_type) &&
+                                isset($box->apply_rule_to) &&
+                                isset($box->box_associated_to) &&
                                 $box->availability_type == 1 &&
                                 $box->apply_rule_to === null &&
                                 $box->box_associated_to === null
