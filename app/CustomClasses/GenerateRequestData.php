@@ -3632,6 +3632,7 @@ class GenerateRequestData
                                     foreach ($associated as $product) {
                                         if ($product['value'] == $itemsArr[$key]['product_id']) {
                                             $items[$origin['locationId']][$index]['acceptable_bins'][] = $box->id;
+                                            // dd("itemaa", $items);
                                             $isAssignedToBox = true;
                                         }
                                     }
@@ -3665,21 +3666,21 @@ class GenerateRequestData
                             }
                         }
                     }
-
                     $universalBoxes = [];
 
                     if (!$isAssignedToBox) {
                         foreach ($smallBoxes as $box) {
                             if (
                                 isset($box->availability_type) &&
-                                isset($box->apply_rule_to) &&
-                                isset($box->box_associated_to) &&
+                                !isset($box->apply_rule_to) &&
+                                !isset($box->box_associated_to) &&
                                 $box->availability_type == 1 &&
                                 $box->apply_rule_to === null &&
                                 $box->box_associated_to === null
                             ) {
                                 if (!in_array($box->id, $items[$origin['locationId']][$index]['acceptable_bins'] ?? [])) {
                                     $items[$origin['locationId']][$index]['acceptable_bins'][] = $box->id;
+                                    dd("itembb", $items);
                                 }
                                 $universalBoxes[] = $box;
                             }
