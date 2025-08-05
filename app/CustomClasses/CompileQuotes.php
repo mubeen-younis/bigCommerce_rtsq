@@ -988,6 +988,7 @@ class CompileQuotes
         Log::info('Exception on s98 4line quotesTemp' . json_encode([
             $quotesTemp
         ]));
+        // dd("quotesTemp",$quotesTemp, $items);
         $quotesRes = $this->handleMultiCarriersResp($quotesTemp, $items);
 
         Log::info('Exception on s987 line quotesRes' . json_encode([

@@ -45,7 +45,7 @@ class PalletPackaging
      */
     public function getLtlCarriers()
     {
-        $ltlCarriers = ['wweLTL', 'wweLTLN', 'upsLTL', 'fedexLTL', 'globalTranz', 'cerasis', 'xpoLogistics', 'rnl', 'yrc', 'freightQuote', 'estes', 'dayross', 'odfl4me', 'saia', 'abf', 'KuehneNagel', 'southeastern', 'tql', 'echoLogistics', 'daylight', 'chr', 'priority1'];
+        $ltlCarriers = ['wweLTL', 'wweLTLN', 'upsLTL', 'fedexLTL', 'globalTranz', 'cerasis', 'xpoLogistics', 'rnl', 'yrc', 'freightQuote', 'estes', 'centralTransport', 'dayross', 'odfl4me', 'saia', 'abf', 'KuehneNagel', 'southeastern', 'tql', 'echoLogistics', 'daylight', 'chr', 'priority1'];
 
         return $ltlCarriers;
     }
