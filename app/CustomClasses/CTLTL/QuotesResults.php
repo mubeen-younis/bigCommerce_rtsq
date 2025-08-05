@@ -1,7 +1,7 @@
 <?php
 
 
-namespace App\CustomClasses\EstesLTL;
+namespace App\CustomClasses\CTLTL;
 
 
 use App\Constants\Constant;
@@ -88,7 +88,6 @@ class QuotesResults
         $hatShipments = [];
         if(isset($shipments['holdAtTerminalResponse']) && !empty($shipments['holdAtTerminalResponse'])){
             foreach($shipments['holdAtTerminalResponse'] as $shipment => $quotes){
-
                 foreach ($quotes as $key => $quote) {
                     $isStandardService = isset($quote['ratserviceLevel']) && isset($quote['ratserviceLevel']['rattext']) && $quote['ratserviceLevel']['rattext'] == 'LTL Standard Transit';
                 
@@ -99,7 +98,7 @@ class QuotesResults
                     $hatResp[] = $quote;
                     $srvcTitle = $quoteSettings['label_as'] ?? Functions::$simpleLTLTitle ?? $quote['ratserviceLevel']['rattext'] ?? '';
                     $terminalInfo = $shipments['holdAtTerminalResponse']['terminalInfo'];
-                    $hatCompiledQuotes = $this->formatHATQuotes($hatResp, $srvcTitle, $quoteSettings, $terminalInfo);  
+                    $hatCompiledQuotes = $this->formatHATQuotes($hatResp, $srvcTitle, $quoteSettings, $terminalInfo); 
                     if (!empty($hatCompiledQuotes)) {
                         $hatShipments = $hatCompiledQuotes;
                     }
