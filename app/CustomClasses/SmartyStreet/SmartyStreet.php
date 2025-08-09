@@ -38,6 +38,9 @@ class SmartyStreet
         }
         self::$isPoBOX = $poBox ?? false;
         self::$isStandAddress = $poBox ? false : true;
+        // -------
+        $addressStatus=[];
+        // -------
         $addressStatus = empty($addressStatus) ? $this->address_validated($address) : $addressStatus;
         self::$isStandAddress = $addressStatus == "n" ? false : self::$isStandAddress;
 
@@ -130,17 +133,25 @@ class SmartyStreet
                 $res = 'n';
             }
 
-            if (isset($data[0]['metadata']['zip_type']) && $data[0]['metadata']['zip_type'] === 'POBox') {
+            // if (
+            //     !empty($data[0]['metadata']) && isset($data[0]['metadata']['zip_type']) && $data[0]['metadata']['zip_type'] == 'POBox'
+            //     && isset($data[0]['metadata']['record_type']) && $data[0]['metadata']['record_type'] == 'P'
+            // ) {
+            //     $this->poBoxFlag = TRUE;
+            // }
+            
+            if (
+            !empty($data[0]['metadata']) && isset($data[0]['metadata']['zip_type']) && $data[0]['metadata']['zip_type'] == 'POBox'
+            && isset($data[0]['metadata']['record_type']) && $data[0]['metadata']['record_type'] == 'P'
+            )  {
                 self::$isPoBOX = true;
             } elseif (isset($data[0]['metadata']['zip_type']) && $data[0]['metadata']['zip_type'] === 'Standard') {
                 self::$isStandAddress = true;
             }
-
         } else {
             $res = 'n';
         }
 
         return $res;
     }
-
 }
