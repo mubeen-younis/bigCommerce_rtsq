@@ -212,7 +212,7 @@ class GenerateRequestData
                     $wweLtlArr = $this->ctltlEnitArr($con1, $destination);
                     $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['centralTransport'] = $wweLtlArr;
-                    $errorManagment['estes'] = $con1['quote_settings']['error_managment'] ?? 1;
+                    $errorManagment['centralTransport'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
                 case 'freightquote-ltl':
                     $fqLtlArr = $this->freightQuoteLtlEnitArr($con1, $destination);
