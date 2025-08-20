@@ -988,7 +988,6 @@ class CompileQuotes
         Log::info('Exception on s98 4line quotesTemp' . json_encode([
             $quotesTemp
         ]));
-        // dd("quotesTemp",$quotesTemp, $items);
         $quotesRes = $this->handleMultiCarriersResp($quotesTemp, $items);
 
         Log::info('Exception on s987 line quotesRes' . json_encode([
@@ -2761,7 +2760,6 @@ public function compileCTltlQuotes($shipments, $connectionSettings, $allOrigins)
 
             // Process accessorials from Details array
             if (isset($data['Details']['DetailLine'])) {
-                // dd("data1", $data['Details']['DetailLine']);
                 $detailLines = is_array($data['Details']['DetailLine']) && isset($data['Details']['DetailLine'][0]) ? $data['Details']['DetailLine'] : [$data['Details']['DetailLine']];
                 foreach ($detailLines as $detail) {
                     if (isset($detail['IsAccessorial']) && $detail['IsAccessorial'] == 'true') {
@@ -2879,10 +2877,8 @@ public function compileCTltlQuotes($shipments, $connectionSettings, $allOrigins)
     }
 
     // if (!empty($hatShipments)) {
-    //     dd("originQuotes", $originQuotes);
     //     return $this->arrangeHATFreight($originQuotes, $hatShipments);
     // }
-    // dd("originQuotes", $originQuotes);
     return $originQuotes ?? [];
 }
 
