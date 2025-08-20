@@ -160,7 +160,6 @@ class Shipping
         $destination = $request['lineItemData']['destination'] ?? [];
         $resp = $generateReqData->generateEnitureArray($originAddress, $destination, $package['items']);
 
-
         if (empty($resp)) {
             Log::info('Return 5 ' . json_encode($resp));
             return [];
