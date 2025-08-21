@@ -133,12 +133,6 @@ class SmartyStreet
                 $res = 'n';
             }
 
-            // if (
-            //     !empty($data[0]['metadata']) && isset($data[0]['metadata']['zip_type']) && $data[0]['metadata']['zip_type'] == 'POBox'
-            //     && isset($data[0]['metadata']['record_type']) && $data[0]['metadata']['record_type'] == 'P'
-            // ) {
-            //     $this->poBoxFlag = TRUE;
-            // }
             
             if (
             !empty($data[0]['metadata']) && isset($data[0]['metadata']['zip_type']) && $data[0]['metadata']['zip_type'] == 'POBox'
