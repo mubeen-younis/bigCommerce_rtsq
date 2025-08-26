@@ -68,8 +68,7 @@ class PalletPackaging
                 unset($ltlItemsArr[$key]);
             }
         }
-
-        return $ltlItemsArr;
+        return $items;
     }
 
     /**
@@ -223,8 +222,8 @@ class PalletPackaging
                 continue;
             }
 
-            $isLtl = (isset($itemsArr[$key]['freightClass']) && $itemsArr[$key]['freightClass'] === 'ltl');
-
+            // $isLtl = (isset($itemsArr[$key]['freightClass']) && $itemsArr[$key]['freightClass'] === 'ltl');
+            $isLtl = true;
             // TODO:also need to handle increased weight threshold value in small products
 
             $ownPallet = isset($itemsArr[$key]['own_pallet']) && $itemsArr[$key]['own_pallet'] == 1;
@@ -272,7 +271,7 @@ class PalletPackaging
         $pallets = $this->getPalletsFromDB();
         $palletBins = [];
         $items = $itemsResp['items'] ?? [];
-        
+
         $itemsCubicVolumeArr = Functions::calculateCubicVolume($items);
         if (!empty($itemsCubicVolumeArr) && isset($itemsCubicVolumeArr['volume']) && isset($itemsCubicVolumeArr['weight'])) {
             $itemMinVolume = min(array_values($itemsCubicVolumeArr['volume']));
@@ -280,32 +279,32 @@ class PalletPackaging
         }
         foreach ($pallets as $pallet) {
             // ----------aaa------
-            foreach($itemsResp as $item){
-            if (!empty($item['itemsAlone'])) {
-                continue;
-            }
-            if (!empty($itemsCubicVolumeArr) && isset($itemMinVolume) && isset($itemMinWeight)) {
-                $dimensions = array($pallet['width'], $pallet['height'], $pallet['length']);
-                $maxWeight = $pallet['max_weight'] == 0 ? Functions::$defaultMaxWeightSmall : $pallet['max_weight'];
-                $palletWeight = $maxWeight - $pallet['box_weight'];
-                $palletVolume = array_product($dimensions);
-                if (($itemMinVolume > $palletVolume) || ($itemMinWeight > $palletWeight)) {
+            foreach ($itemsResp as $item) {
+                if (!empty($item['itemsAlone'])) {
                     continue;
                 }
-            }
+                if (!empty($itemsCubicVolumeArr) && isset($itemMinVolume) && isset($itemMinWeight)) {
+                    $dimensions = array($pallet['width'], $pallet['height'], $pallet['length']);
+                    $maxWeight = $pallet['max_weight'] == 0 ? Functions::$defaultMaxWeightSmall : $pallet['max_weight'];
+                    $palletWeight = $maxWeight - $pallet['box_weight'];
+                    $palletVolume = array_product($dimensions);
+                    if (($itemMinVolume > $palletVolume) || ($itemMinWeight > $palletWeight)) {
+                        continue;
+                    }
+                }
 
-            $palletBins[$pallet['id']] = array(
-                'nickname' => $pallet['nickname'],
-                'name' => $pallet['box_name'],
-                'w' => $pallet['width'],
-                'h' => $pallet['height'],
-                'd' => $pallet['length'],
-                'id' => $pallet['id'],
-                'max_wg' => $pallet['max_weight'],
-                'box_weight' => $pallet['box_weight'],
-                'box_height' => $pallet['ext_height'],
-            );
-        }
+                $palletBins[$pallet['id']] = array(
+                    'nickname' => $pallet['nickname'],
+                    'name' => $pallet['box_name'],
+                    'w' => $pallet['width'],
+                    'h' => $pallet['height'],
+                    'd' => $pallet['length'],
+                    'id' => $pallet['id'],
+                    'max_wg' => $pallet['max_weight'],
+                    'box_weight' => $pallet['box_weight'],
+                    'box_height' => $pallet['ext_height'],
+                );
+            }
         }
 
         /*
@@ -742,7 +741,7 @@ class PalletPackaging
                 if (!(isset($ws->severity) && $ws->severity == 'ERROR')) {
                     $totalBoxes = 1;
 
-                    if (isset($ws->palletPackagingData->response->bins_packed)){
+                    if (isset($ws->palletPackagingData->response->bins_packed)) {
 
                         $palletData = $ws->palletPackagingData->response->bins_packed ?? [];
                         $itemCount = 0;
@@ -802,7 +801,7 @@ class PalletPackaging
                         }
 
                         $totalBoxes = isset($key) ? $key + 1 - $itemCount : 0;
-                    // Todo: need to remove the else section in future
+                        // Todo: need to remove the else section in future
                     } else {
 
                         $palletData = $ws->palletPackagingData->response->pallets_packed ?? [];
@@ -863,7 +862,7 @@ class PalletPackaging
                             }
                         }
 
-                        $totalBoxes = isset($key) ? $key + 1 - $itemCount : 0; 
+                        $totalBoxes = isset($key) ? $key + 1 - $itemCount : 0;
                     }
                 }
             }
