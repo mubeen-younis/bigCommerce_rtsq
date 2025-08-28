@@ -38,9 +38,6 @@ class SmartyStreet
         }
         self::$isPoBOX = $poBox ?? false;
         self::$isStandAddress = $poBox ? false : true;
-        // // -------
-        // $addressStatus=[];
-        // // -------
         $addressStatus = empty($addressStatus) ? $this->address_validated($address) : $addressStatus;
         self::$isStandAddress = $addressStatus == "n" ? false : self::$isStandAddress;
 
@@ -108,7 +105,9 @@ class SmartyStreet
         $addressArray = array(
             'street' => $address,
             'auth-id' => $this->authId, //Smarty Streets Auth ID
-            'auth-token' => $this->token  //Smarty Streets Auth Token
+            'auth-token' => $this->token,  //Smarty Streets Auth Token
+            'match' => 'enhanced', // match to enhanced search
+            'license' => 'us-core-enterprise-cloud', // for new RAD plan
         );
 
         $request = http_build_query($addressArray);
@@ -117,7 +116,6 @@ class SmartyStreet
 
         $response = file_get_contents($req);
         $data = json_decode($response, true);
-
         Log::info('Smarty API Response ' . json_encode($data));
         //when address valid API return Address detail array
         if (!empty($data)) {
@@ -132,11 +130,10 @@ class SmartyStreet
 
                 $res = 'n';
             }
-
             if (
-            !empty($data[0]['metadata']) && isset($data[0]['metadata']['zip_type']) && $data[0]['metadata']['zip_type'] == 'POBox'
-            && isset($data[0]['metadata']['record_type']) && $data[0]['metadata']['record_type'] == 'P'
-            )  {
+                !empty($data[0]['metadata']) && isset($data[0]['metadata']['zip_type']) && $data[0]['metadata']['zip_type'] == 'POBox'
+                && isset($data[0]['metadata']['record_type']) && $data[0]['metadata']['record_type'] == 'P'
+            ) {
                 self::$isPoBOX = true;
             } elseif (isset($data[0]['metadata']['zip_type']) && $data[0]['metadata']['zip_type'] === 'Standard') {
                 self::$isStandAddress = true;
