@@ -21,6 +21,7 @@ use App\CustomClasses\YrcLTL\ConnectionSettings as YrcLtlConnectionSettings;
 use App\CustomClasses\TQLLtl\ConnectionSettings as TQLLtlConnectionSettings;
 use App\CustomClasses\FreightQuote\Ltl\ConnectionSettings as FreightQuoteConSett;
 use App\CustomClasses\EstesLTL\ConnectionSettings as EstesLTLConnectionSettings;
+use App\CustomClasses\CTLTL\ConnectionSettings as CTLTLConnectionSettings;
 use App\CustomClasses\DayRossLTL\ConnectionSettings as DayRossLtlConnectionSettings;
 use App\CustomClasses\OdflLTL\ConnectionSettings as OdflLTLConnectionSettings;
 use App\CustomClasses\SaiaLTL\ConnectionSettings as SaiaLTLConnectionSettings;
@@ -77,6 +78,7 @@ class ConnectionController extends Controller
         $this->tqlLtlTestCon = new TQLLtlConnectionSettings();
         $this->freightQuoteLtlTestCon = new FreightQuoteConSett();
         $this->estesLTLConL = new EstesLTLConnectionSettings();
+        $this->CTLTLCon = new CTLTLConnectionSettings();
         $this->dayRossLtlTestCon = new DayRossLtlConnectionSettings();
         $this->odflLTLConL = new OdflLTLConnectionSettings();
         $this->saiaLtlTestCon = new SaiaLTLConnectionSettings();
@@ -188,6 +190,9 @@ class ConnectionController extends Controller
                     return response()->json($response);
                 case 'estes-ltl':
                     $response = $this->estesLTLConL->testConnection($request, $storeName);
+                    return response()->json($response);
+                case 'ct-ltl':
+                    $response = $this->CTLTLCon->testConnection($request, $storeName);
                     return response()->json($response);
                 case 'dayross-ltl':
                     $response = $this->dayRossLtlTestCon->testConnection($request, $storeName);

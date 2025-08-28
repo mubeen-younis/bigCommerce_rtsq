@@ -28,6 +28,7 @@ use App\CustomClasses\DayLightLtl\QuotesResults as dayLightLtlQuotesResults;
 use App\CustomClasses\FreightQuote\ChrLtl\QuotesResults as FQChrQuotesResults;
 use App\CustomClasses\FreightQuote\Ltl\QuotesResults as FQQuotesResults;
 use App\CustomClasses\EstesLTL\QuotesResults as estesLtlQuotesResults;
+use App\CustomClasses\CTLTL\QuotesResults as cTLTLQuotesResults;
 use App\CustomClasses\UpsShipEngineSmall\QuotesResults as upsShipEngineSmallQuotesResults;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\ShippingRuleController;
@@ -882,6 +883,13 @@ class CompileQuotes
                         $quotesRes = array_merge($quotesRes, $resp);
                     }
                     break;
+                case "centralTransport":
+                    $resp = $this->compileCTltlQuotes($shipment, $connectionSettings, $allOrigins);
+                    $quotesTemp['ctLtl'] = $resp;
+                    if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
+                        $quotesRes = array_merge($quotesRes, $resp);
+                    }
+                    break;
                 case "dayross":
                     $resp = $this->compileDayRossLtlQuotes($shipment, $connectionSettings, $allOrigins, $hazmatAllItems, $residential);
                     $quotesTemp['dayross'] = $resp;
@@ -1184,8 +1192,7 @@ class CompileQuotes
             // If all locations have this rate type, add the total rate to the final array
             if ($allHaveRateType) {
                 $finalArray['code'] = 'Multi' . $code;
-                if(!empty($itemsWithFreeShipping && $originsWithFreeShipping))
-                {
+                if (!empty($itemsWithFreeShipping && $originsWithFreeShipping)) {
                     $finalArray['code'] = 'flatRateRuleidx' . '+Multi' . $code;
                 }
                 $finalArray['rate'] = $totalRate;
@@ -1197,8 +1204,8 @@ class CompileQuotes
         if ($isTruckload == true && $isSimple == true && !($this->quoteSettings['quoteltl_and_truckload']) && !($this->quoteSettings['quoteltl_and_cubic_truckload'])) {
             $TLAndLTLRes = $this->finalTLAndLTLShipmentResp($locations, 'fqchrltl');
             Log::info('>>>>>>>>>>>>>>>>>>>>LTLTLTLTLT TLAndLTLRes on line 1198' . json_encode([
-            $TLAndLTLRes
-        ]));
+                $TLAndLTLRes
+            ]));
             return $TLAndLTLRes;
         }
 
@@ -1241,7 +1248,6 @@ class CompileQuotes
 
             // Loop through each location to check if it has this rate type
             foreach ($locations as $locationId => $types) {
-                // dd("dump", $locations, $types, $allRateTypes);
 
                 // If the location does not have the current rate type, skip this type
                 if (!isset($types[$rateType])) {
@@ -1333,11 +1339,11 @@ class CompileQuotes
             // If all locations have this rate type, add the total rate to the final array
         }
         // if ($allHaveRateType) {
-            $finalArray['code'] = $carrName. '+TL' . $code;
-            $finalArray['rate'] = $totalRate;
-            $finalArray['title'] = 'Freight';
-            $finalCheckoutResp['checkoutQuotes'][] = $finalArray;
-            $multiShipmentArr['multiShipmentQuotes'][] = $arr;
+        $finalArray['code'] = $carrName . '+TL' . $code;
+        $finalArray['rate'] = $totalRate;
+        $finalArray['title'] = 'Freight';
+        $finalCheckoutResp['checkoutQuotes'][] = $finalArray;
+        $multiShipmentArr['multiShipmentQuotes'][] = $arr;
         Log::info('//////////////11111 rateId on line 185' . json_encode([
             $finalArray
         ]));
@@ -2684,6 +2690,197 @@ class CompileQuotes
 
         return $originQuotes ?? [];
     }
+
+public function compileCTltlQuotes($shipments, $connectionSettings, $allOrigins)
+{
+    $ctLtl = new cTLTLQuotesResults();
+
+    $this->isResi = $this->residential['ctLtl'] == 'Y';
+    $this->residentialDlvry = $this->residential['ctLtl'] == 'Y' ? 1 : 0;
+    $this->alwaysResi = $this->residential['alwaysResi']['ctLtl'] ?? false;
+    $this->quoteSettings = $connectionSettings['ct-ltl']['quote_settings'] ?? [];
+    $labelAs = $this->quoteSettings['label_as'] ?? '';
+    $labelAs = empty($labelAs) ? "Freight" : $labelAs;
+    $this->quoteSettingsData();
+
+    $allQuotes = $odwArr = $hazShipmentArr = $multiShipmentQuotes = [];
+    $count = 0;
+    $lgQuotes = false;
+    $hatShipments = [];
+    $originQuotes = [];
+
+    $numberOfShipments = 0;
+    foreach ($shipments as $ship) {
+        if (!isset($ship['severity'])) {
+            $numberOfShipments++;
+        }
+    }
+
+    if (!$this->isMultiShipment) {
+        $this->isMultiShipment = is_countable($shipments) && $numberOfShipments > 1;
+    }
+
+    foreach ($shipments as $origin => $quote) {
+        $this->originKey = $origin;
+        $this->isSurchargeRates = false;
+        // $hatShipments[$origin]['hat'][] = $ctLtl->HatQuoteCompile($quote, $this->quoteSettings);
+        if ((isset($quote['severity']) || !isset($quote['q']) || (isset($quote['q']) && empty($quote['q'])))) {
+            $instoreResp[$origin] = $this->getInsPicAndLocDelQuotes($quote, $allOrigins) ?? [];
+            return $instoreResp;
+        }
+
+        if ($count == 0) {
+            // To be checked only once
+            $isRad = $quote['autoResidentialsStatus'] ?? '';
+            $inStoreLdData = $quote['InstorPickupLocalDelivery'] ?? false;
+            unset($quote['InstorPickupLocalDelivery']);
+
+            $this->isAlwaysAccessorials();
+
+            $lgQuotes = (isset($this->quoteSettings['offerLiftGateDelivery']) && $this->quoteSettings['offerLiftGateDelivery']) && !$this->alwaysLG;
+            $resiPickup = isset($this->quoteSettings['residentialPickup']) && $this->quoteSettings['residentialPickup'] ? '+pu' : '';
+            $notifyDelivery = (isset($this->quoteSettings['offer_notify_as_option']) && $this->quoteSettings['offer_notify_as_option']);
+        }
+        $arraySorting = [];
+        if (isset($quote['q'])) {
+            if (isset($quote['hazardousStatus'])) {
+                $hazShipmentArr[$origin] = $quote['hazardousStatus'] == 'y' ? 'Y' : 'N';
+            }
+
+            // Map Central Transport data to Estes-like structure
+            $data = $quote['q'];
+            $data['ratquoteNumber'] = $data['QuoteNumber'] ?? '';
+            $data['ratdelivery'] = [
+                'ratdate' => $data['deliveryDate'] ?? null,
+                'totalTransitTimeInDays' => $data['totalTransitTimeInDays'] ?? null
+            ];
+            $data['totalNetCharge'] = ['Amount' => (float)($data['RateTotal'] ?? 0)];
+            $data['ratserviceLevel'] = ['rattext' => 'LTL Standard Transit']; // Assume standard service for Central Transport
+            $data['surcharges'] = [];
+
+            // Process accessorials from Details array
+            if (isset($data['Details']['DetailLine'])) {
+                $detailLines = is_array($data['Details']['DetailLine']) && isset($data['Details']['DetailLine'][0]) ? $data['Details']['DetailLine'] : [$data['Details']['DetailLine']];
+                foreach ($detailLines as $detail) {
+                    if (isset($detail['IsAccessorial']) && $detail['IsAccessorial'] == 'true') {
+                        if ($detail['ChargeTypeName'] == 'Liftgate Service - Item 757') {
+                            $data['surcharges']['liftgateFee'] = $detail['Charge'] ?? 0;
+                        } elseif ($detail['ChargeTypeName'] == 'Fuel Surcharge - Item 575') {
+                            // Fuel surcharge can be mapped if needed
+                        }
+                        // Add more mappings for other accessorials like notify or residential if provided
+                    }
+                }
+            }
+            // Check if it's a standard service
+            $isStandardService = isset($data['ratserviceLevel']['rattext']) && $data['ratserviceLevel']['rattext'] == 'LTL Standard Transit';
+
+            if (!$isStandardService) {
+                continue;
+            }
+
+            // Apply override rates shipping rule
+            $data = $this->applyOverrideRatesRule($connectionSettings, $data);
+            // Apply surcharge rates shipping rule
+            $data = $this->applySurchargeRatesRule($connectionSettings, $data);
+
+            $price = $this->calculatePrice($data);
+            $access = $this->getAccessorialCode() . $resiPickup;
+
+            // Delivery estimate options
+            $date = $data['ratdelivery']['ratdate'] ?? null;
+            $days = $data['ratdelivery']['totalTransitTimeInDays'] ?? null;
+            $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
+            $title = $this->getTitle($labelAs, false, false, $data['ratdelivery']['totalTransitTimeInDays'], [], $dateAndDays);
+            $arraySorting['simple'][$origin] = $price;
+            $originQuotes[$origin]['simple'][$origin]['code'] = 'ctltl' . $data['ratquoteNumber'] . $access;
+            $originQuotes[$origin]['simple'][$origin]['rate'] = $price;
+            $originQuotes[$origin]['simple'][$origin]['title'] = $title;
+
+            if ($lgQuotes) {
+                $lgAccess = 'ctltl' . $this->getAccessorialCode(true) . $resiPickup;
+                $lgPrice = $this->calculatePrice($data, true);
+                $lgTitle = $this->getTitle($labelAs, true, false, $data['ratdelivery']['totalTransitTimeInDays'], [], $dateAndDays);
+                $arraySorting['liftgate'][$origin] = $lgPrice;
+                $originQuotes[$origin]['liftgate'][$origin]['code'] = $data['ratquoteNumber'] . $lgAccess;
+                $originQuotes[$origin]['liftgate'][$origin]['rate'] = $lgPrice;
+                $originQuotes[$origin]['liftgate'][$origin]['title'] = $lgTitle;
+            }
+
+            // Get Notify Before Delivery Origin Quotes
+            if ($notifyDelivery) {
+                $compileNotifyDeliveryQuotes = Functions::getOriginQuotes(
+                    'notifydelivery',
+                    $labelAs,
+                    $originQuotes,
+                    $data,
+                    $origin,
+                    $origin,
+                    $data['ratdelivery']['totalTransitTimeInDays'],
+                    $dateAndDays,
+                    false,
+                    'ctltl',
+                    $this->originKey,
+                    $this->items,
+                    $this->allOrigins,
+                    $this->quoteSettings,
+                    $this->isResi,
+                    $this->alwaysResi,
+                    false,
+                    false,
+                    $notifyDelivery,
+                    $resiPickup,
+                    false,
+                    $this->storeId,
+                    $this->isSurchargeRates
+                );
+
+                $arraySorting['notifydelivery'][$origin] = $compileNotifyDeliveryQuotes['ndPrice'];
+                $originQuotes = $compileNotifyDeliveryQuotes['originQuotes'];
+            }
+
+            if ($notifyDelivery && $lgQuotes) {
+                $compileNotifyDeliveryQuotes = Functions::getOriginQuotes(
+                    'lgnotifydelivery',
+                    $labelAs,
+                    $originQuotes,
+                    $data,
+                    $origin,
+                    $origin,
+                    $data['ratdelivery']['totalTransitTimeInDays'],
+                    $dateAndDays,
+                    true,
+                    'ctltl',
+                    $this->originKey,
+                    $this->items,
+                    $this->allOrigins,
+                    $this->quoteSettings,
+                    $this->isResi,
+                    $this->alwaysResi,
+                    false,
+                    false,
+                    $notifyDelivery,
+                    $resiPickup,
+                    false,
+                    $this->storeId,
+                    $this->isSurchargeRates
+                );
+
+                $arraySorting['lgnotifydelivery'][$origin] = $compileNotifyDeliveryQuotes['ndPrice'];
+                $originQuotes = $compileNotifyDeliveryQuotes['originQuotes'];
+            }
+        }
+
+        if (isset($inStoreLdData) && !empty($inStoreLdData)) {
+            $originQuotes[$origin] = $this->inStoreLocalDeliveryQuotes($originQuotes[$origin], $inStoreLdData, $allOrigins);
+        }
+    }
+
+    // if (!empty($hatShipments)) {
+    //     return $this->arrangeHATFreight($originQuotes, $hatShipments);
+    // }
+    return $originQuotes ?? [];
+}
 
     public function compileFedexSmallQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $destination)
     {
