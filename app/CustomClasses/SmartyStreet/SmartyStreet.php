@@ -38,9 +38,9 @@ class SmartyStreet
         }
         self::$isPoBOX = $poBox ?? false;
         self::$isStandAddress = $poBox ? false : true;
-        // -------
-        $addressStatus=[];
-        // -------
+        // // -------
+        // $addressStatus=[];
+        // // -------
         $addressStatus = empty($addressStatus) ? $this->address_validated($address) : $addressStatus;
         self::$isStandAddress = $addressStatus == "n" ? false : self::$isStandAddress;
 
@@ -133,7 +133,6 @@ class SmartyStreet
                 $res = 'n';
             }
 
-            
             if (
             !empty($data[0]['metadata']) && isset($data[0]['metadata']['zip_type']) && $data[0]['metadata']['zip_type'] == 'POBox'
             && isset($data[0]['metadata']['record_type']) && $data[0]['metadata']['record_type'] == 'P'
