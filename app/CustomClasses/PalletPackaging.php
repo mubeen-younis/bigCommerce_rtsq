@@ -377,7 +377,7 @@ class PalletPackaging
         $newOrigins = $newitemsArr = [];
         $packedItemsOrgIds = [];
         foreach ($palletResponse as $locationId => $bins) {
-
+            
             $totalHazmatBoxes = $counting = 0;
             foreach ($bins->bins_packed as $key => $binPacked) {
                 $binPacked->image_complete = Functions::replace3DBinUrl($binPacked->image_complete);
@@ -386,18 +386,24 @@ class PalletPackaging
                     foreach ($binPacked->items as $item) {
                         $item->image_separated = Functions::replace3DBinUrl($item->image_separated);
                         $item->image_sbs = Functions::replace3DBinUrl($item->image_sbs);
+
+                        // $origin = $item->id;
+                        // $newkey = $origin . $key;
+                        // $newOrigins[$newkey] = $this->origins[$origin];
                     }
                     // Check which box has hazmat material and get count how much hazmat boxes
                     $totalHazmatBoxes += Functions::verifyAndCountHazmatBox($binPacked, $this->itemsArr);
                 }
 
                 $bin = $binPacked;
+
                 $counting++;
                 $origin = $bin->bin_data->variant_id;
 
                 $newkey = $origin . $key;
 
                 $GenerateRequestData = new GenerateRequestData();
+                // dd("newOrigins", $newOrigins);
                 $newOrigins[$newkey] = $this->origins[$origin];
 
                 $newitemsArr[$newkey] = $GenerateRequestData->updatCommdityDetails($this->itemsArr[$origin], $bin, $palletBins, $this->itemsArr, true);
