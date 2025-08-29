@@ -390,6 +390,9 @@ class PalletPackaging
                         $origin = $item->id;
                         $newkey = $origin . $key;
                         $newOrigins[$newkey] = $this->origins[$origin];
+
+                        $GenerateRequestData = new GenerateRequestData();
+                        $newitemsArr[$newkey] = $GenerateRequestData->updatCommdityDetails($this->itemsArr[$origin], $binPacked, $palletBins, $this->itemsArr, true);
                     }
                     // Check which box has hazmat material and get count how much hazmat boxes
                     $totalHazmatBoxes += Functions::verifyAndCountHazmatBox($binPacked, $this->itemsArr);
@@ -398,16 +401,14 @@ class PalletPackaging
                 $bin = $binPacked;
 
                 $counting++;
-                // $origin = $bin->bin_data->variant_id;
+                $origin = $bin->bin_data->variant_id;
 
-                // $newkey = $origin . $key;
+                $newkey = $origin . $key;
 
-                $GenerateRequestData = new GenerateRequestData();
-                // dd("newOrigins", $newOrigins);
+                // $GenerateRequestData = new GenerateRequestData();
                 // $newOrigins[$newkey] = $this->origins[$origin];
-
-                $newitemsArr[$newkey] = $GenerateRequestData->updatCommdityDetails($this->itemsArr[$origin], $bin, $palletBins, $this->itemsArr, true);
-
+// dd("newkey", $newkey);
+                // $newitemsArr[$newkey] = $GenerateRequestData->updatCommdityDetails($this->itemsArr[$origin], $bin, $palletBins, $this->itemsArr, true);
                 $boxWeight = $palletBins[$bin->bin_data->id]['box_weight'] ?? 0;
                 $totalBoxWeight = $bin->bin_data->weight + $boxWeight ?? 0;
                 $palletResponse[$locationId]->bins_packed[$key]->bin_data->totalBoxWeight = $totalBoxWeight;

@@ -929,6 +929,7 @@ class Shipping
                 }
             }
             foreach ($ltlOrigins as $key => $origin) {
+                // dd("cccc", $items, $ltlOrigins);
                 $id = $items[$key]['product_id'] . $items[$key]['variant_id'];
                 if (isset($items[$key]['isHazmatLineItem']) && $items[$key]['isHazmatLineItem'] == 'Y' && !in_array($id, $marketItemSmall)) {
                     $ltlHazmat = true;
