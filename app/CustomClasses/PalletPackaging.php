@@ -388,7 +388,7 @@ class PalletPackaging
                         $item->image_sbs = Functions::replace3DBinUrl($item->image_sbs);
                         
                         $origin = $item->id;
-                        $newkey = $origin . $key;
+                        $newkey = $origin . "123" . $key;
                         $newOrigins[$newkey] = $this->origins[$origin];
 
                         $GenerateRequestData = new GenerateRequestData();
