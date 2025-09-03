@@ -897,7 +897,7 @@ class CompileQuotes
                     }
                     break;
                 case 'saia':
-                    $resp = $this->compileSaiaLtlQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential);
+                    $resp = $this->compileSaiaLtlQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $destination);
                     $quotesTemp['saia'] = $resp;
                     if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
                         $quotesRes = array_merge($quotesRes, $resp);
@@ -912,7 +912,7 @@ class CompileQuotes
                     }
                     break;
                 case 'abf':
-                    $resp = $this->compileABFLtlQuotes($shipment, $connectionSettings, $allOrigins, $residential);
+                    $resp = $this->compileABFLtlQuotes($shipment, $connectionSettings, $allOrigins, $residential, $destination);
                     $quotesTemp['abf'] = $resp;
                     if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
                         $quotesRes = array_merge($quotesRes, $resp);
@@ -1366,10 +1366,10 @@ class CompileQuotes
         return $newQuotes;
     }
 
-    public function applyOverrideRatesRule($connectionSettings, $data)
+    public function applyOverrideRatesRule($connectionSettings, $data, $destination)
     {
         $this->isOverrideRates = false;
-        $overrideRatesData = $this->shippingRule->overrideRates($this->storeId, $this->items, $connectionSettings, $data, $this->carrierName, $this->originKey, $this->allOrigins);
+        $overrideRatesData = $this->shippingRule->overrideRates($this->storeId, $this->items, $connectionSettings, $data, $this->carrierName, $this->originKey, $this->allOrigins, $destination);
         if (isset($overrideRatesData['isOverrideRates']) && $overrideRatesData['isOverrideRates']) {
             $data = $overrideRatesData['data'] ?? [];
             $this->isOverrideRates = $overrideRatesData['isOverrideRates'];
@@ -1378,9 +1378,9 @@ class CompileQuotes
         return $data;
     }
 
-    public function applySurchargeRatesRule($connectionSettings, $data)
+    public function applySurchargeRatesRule($connectionSettings, $data, $destination)
     {
-        $surchargeRatesData = $this->shippingRule->surchargeRates($this->storeId, $this->items, $connectionSettings, $data, $this->carrierName, $this->originKey, $this->allOrigins);
+        $surchargeRatesData = $this->shippingRule->surchargeRates($this->storeId, $this->items, $connectionSettings, $data, $this->carrierName, $this->originKey, $this->allOrigins, $destination);
         if (isset($surchargeRatesData['isSurchargeRates']) && $surchargeRatesData['isSurchargeRates']) {
             $data = $surchargeRatesData['data'] ?? [];
             $this->isSurchargeRates = $surchargeRatesData['isSurchargeRates'];
@@ -4579,7 +4579,7 @@ class CompileQuotes
         return $resp;
     }
 
-    private function compileSaiaLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
+    private function compileSaiaLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $destination)
     {
         $saiaLtl = new saiaLtlQuotesResults();
 
@@ -4640,9 +4640,9 @@ class CompileQuotes
                         }
 
                         // Apply override rates shipping rule
-                        $data = $this->applyOverrideRatesRule($connectionSettings, $data);
+                        $data = $this->applyOverrideRatesRule($connectionSettings, $data, $destination);
                         // Apply Surcharge rates shipping rule
-                        $data = $this->applySurchargeRatesRule($connectionSettings, $data);
+                        $data = $this->applySurchargeRatesRule($connectionSettings, $data, $destination);
 
                         $this->quoteSettings['label_as'] = $labelAs;
 
@@ -4695,7 +4695,7 @@ class CompileQuotes
         return $originQuotes ?? [];
     }
 
-    private function compileABFLtlQuotes($shipments, $connectionSettings, $allOrigins, $residential)
+    private function compileABFLtlQuotes($shipments, $connectionSettings, $allOrigins, $residential, $destination)
     {
         $abfLtl = new abfLtlQuotesResults();
 
@@ -4781,9 +4781,9 @@ class CompileQuotes
                             $data['surcharges']['limitedAccessDeliveryFee'] = (float)$this->quoteSettings['limited_access_fee'];
                         }
                         // Apply override rates shipping rule
-                        $data = $this->applyOverrideRatesRule($connectionSettings, $data);
+                        $data = $this->applyOverrideRatesRule($connectionSettings, $data, $destination);
                         // Apply Surcharge rates shipping rule
-                        $data = $this->applySurchargeRatesRule($connectionSettings, $data);
+                        $data = $this->applySurchargeRatesRule($connectionSettings, $data, $destination);
                         $this->quoteSettings['label_as'] = !blank($labelAs) ? $labelAs : 'Freight';
                         /*
                          * Date 01-07-22
