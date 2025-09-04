@@ -116,6 +116,18 @@ class ShippingRuleController extends Controller
             foreach ($shippingRules as $key => $rule) {
                 if (isset($rule['available']) && $rule['available']) {
 
+
+                    $statesProvinces = CountryState::getCountryStatesProvinces($destination['country']);
+                    $settings = json_decode($rule['filter_settings'], true);
+                    $stateProvince = isset($settings['filter_state_province']) && !empty($settings['filter_state_province']) ? $settings['filter_state_province'] : [];
+                    $filterCountry = isset($settings['filter_country']) ? $settings['filter_country'] : '';
+                    $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
+                    $hasLocationFilter = ($filterCountry != '' || !empty($stateProvince));
+                    $isSameCountry = $destination['country'] == $filterCountry ?? false;
+                    $isSameState = in_array($destination['state'], $statesCode) ?? false;
+
+
+
                     $providerSlug = isset($rule['filter_provider']) ? $rule['filter_provider'] : '';
                     $carrierId = isset($connectionSettings[$providerSlug]) ? $connectionSettings[$providerSlug]['creds']['installed_carrier_id'] : null;
                     $settings = Connection::join('installed_carriers', 'installed_carriers.id', 'connection_settings.installed_carrier_id')
@@ -183,17 +195,37 @@ class ShippingRuleController extends Controller
                                 $serviceDesc = isset($quote['isInternationQuote']) && $quote['isInternationQuote'] ? str_replace('Ground', 'International Ground', $serviceDesc) : $serviceDesc;
                                 $serviceDesc = str_replace('2 Day Am', '2 Day AM', $serviceDesc);
 
-                                if ($serviceDesc == $rule['filter_services']) {
-                                    $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
-                                    $quote['NegotiatedRates']['Amount'] = $rule['service_rates'];
-                                    $quote['shipping_amount']['amount'] = $rule['service_rates'];
-                                    $isOverrideRates = true;
-                                } else if ($providerSlug == 'unishippers-small') {
-                                    $serviceTitle = $this->unishippers->getServiceTitleFromServiceType($quote['serviceType']);
-                                    if ($serviceTitle == $rule['filter_services']) {
+                                if (in_array($serviceDesc, $rule['filter_services'])) {
+                                    if ($isSameCountry || $isSameCountry && $isSameState) {
                                         $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
                                         $quote['NegotiatedRates']['Amount'] = $rule['service_rates'];
+                                        $quote['shipping_amount']['amount'] = $rule['service_rates'];
                                         $isOverrideRates = true;
+                                    }
+                                    if (!$hasLocationFilter) {
+                                        if (!$isSameCountry || !$isSameCountry && !$isSameState) {
+                                            $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                            $quote['NegotiatedRates']['Amount'] = $rule['service_rates'];
+                                            $quote['shipping_amount']['amount'] = $rule['service_rates'];
+                                            $isOverrideRates = true;
+                                        }
+                                    }
+                                } else if ($providerSlug == 'unishippers-small') {
+                                    $serviceTitle = $this->unishippers->getServiceTitleFromServiceType($quote['serviceType']);
+                                    if (in_array($serviceTitle, $rule['filter_services'])) {
+                                        if ($isSameCountry || $isSameCountry && $isSameState) {
+                                            $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                            $quote['NegotiatedRates']['Amount'] = $rule['service_rates'];
+                                            $isOverrideRates = true;
+                                        }
+
+                                        if (!$hasLocationFilter) {
+                                            if (!$isSameCountry || !$isSameCountry && !$isSameState) {
+                                                $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                                $quote['NegotiatedRates']['Amount'] = $rule['service_rates'];
+                                                $isOverrideRates = true;
+                                            }
+                                        }
                                     }
                                 } else if ($providerSlug == 'purolator-small') {
                                     $serviceDesc = preg_replace('/(?<=[a-zA-Z])(?=\d)|(?<=\d)(?=[a-zA-Z])|(?<=[a-z])(?=[A-Z])/', ' ', $quote['serviceType']);
@@ -202,16 +234,34 @@ class ShippingRuleController extends Controller
                                     $serviceDesc = str_replace('U.S.9', 'US 9', $serviceDesc);
                                     $serviceDesc = str_replace('.', '', $serviceDesc);
 
-                                    if ($serviceDesc == $rule['filter_services']) {
-                                        $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
-                                        $isOverrideRates = true;
+                                    if (in_array($serviceDesc, $rule['filter_services'])) {
+
+                                        if ($isSameCountry || $isSameCountry && $isSameState) {
+                                            $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                            $isOverrideRates = true;
+                                        }
+                                        if (!$hasLocationFilter) {
+                                            if (!$isSameCountry || !$isSameCountry && !$isSameState) {
+                                                $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                                $isOverrideRates = true;
+                                            }
+                                        }
                                     }
                                 } else if ($providerSlug == 'usps-small') {
                                     $serviceType = 'USPS ' . $quote['serviceType'];
                                     $filterServices = str_replace('*', '', $rule['filter_services']);
-                                    if ($serviceType == $filterServices) {
-                                        $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
-                                        $isOverrideRates = true;
+                                    if (in_array($serviceType, $filterServices)) {
+
+                                        if ($isSameCountry || $isSameCountry && $isSameState) {
+                                            $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                            $isOverrideRates = true;
+                                        }
+                                        if (!$hasLocationFilter) {
+                                            if (!$isSameCountry || !$isSameCountry && !$isSameState) {
+                                                $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                                                $isOverrideRates = true;
+                                            }
+                                        }
                                     }
                                 }
                             } else if ($carrierType == 1) {
@@ -345,6 +395,56 @@ class ShippingRuleController extends Controller
         return ['data' => $quote, 'isSurchargeRates' => $isSurchargeRates, 'surchargeServiceRate' => $surchargeServiceRate];
     }
 
+    // public function overrideAccessorialsfee($quote, $rule, $destination)
+    // {
+    //     $updateCount = 0;
+    //     $serviceIndex = Functions::$accessorialServices;
+    //     $statesProvinces = CountryState::getCountryStatesProvinces($destination['country']);
+    //     $settings = json_decode($rule['filter_settings'], true);
+    //     $stateProvince = isset($settings['filter_state_province']) && !empty($settings['filter_state_province']) ? $settings['filter_state_province'] : [];
+    //     $filterCountry = isset($settings['filter_country']) ? $settings['filter_country'] : '';
+    //     $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
+    //     $hasLocationFilter = ($filterCountry != '' || !empty($stateProvince));
+    //     $isSameCountry = $destination['country'] == $filterCountry ?? false;
+    //     $isSameState = in_array($destination['state'], $statesCode) ?? false;
+    //     // Update WS accessorials rate with override rates shipping rule accessorials rate
+    //     foreach ($serviceIndex as $key => $index) {
+    //         if (isset($rule['service_rates']) && $rule['service_rates'] >= 0 && $rule['filter_services'] == $key && isset($quote['surcharges'][$index])) {
+    //             if ($isSameState && $isSameCountry) {
+    //                 $quote['totalNetCharge']['Amount'] -= (float)$quote['surcharges'][$index] ?? 0;
+    //                 $quote['surcharges'][$index] = $rule['service_rates'];
+    //                 $quote['totalNetCharge']['Amount'] += (float)$rule['service_rates'] ?? 0;
+    //                 break;
+    //             }
+
+    //             if (!$isSameState && !$isSameCountry) {
+    //                 $quote['totalNetCharge']['Amount'] -= (float)$quote['surcharges'][$index] ?? 0;
+    //                 $quote['surcharges'][$index] = $rule['service_rates'];
+    //                 $quote['totalNetCharge']['Amount'] += (float)$rule['service_rates'] ?? 0;
+    //                 break;
+    //             }
+    //         }
+    //         // Update WS base price with override rate shipping rule base price
+    //         if (isset($rule['service_rates']) && $rule['service_rates'] >= 0 && $rule['filter_services'] == 'transportation') {
+    //             if ($updateCount < 1) {
+    //                 if ($hasLocationFilter) {
+    //                     if ($isSameCountry || $isSameState && $isSameCountry) {
+    //                         $quote['totalNetCharge']['Amount'] = $rule['service_rates'] ?? 0;
+    //                     }
+    //                 }
+    //                 if (!$isSameState && !$isSameCountry) {
+    //                     $quote['totalNetCharge']['Amount'] = $rule['service_rates'] ?? 0;
+    //                 }
+    //             }
+    //             // Add WS accessorials rate into override rate shipping rule base price
+    //             $quote['totalNetCharge']['Amount'] += isset($quote['surcharges'][$index]) ? (float)$quote['surcharges'][$index] : 0;
+    //         }
+    //         $updateCount++;
+    //     }
+    //     return $quote;
+    // }
+
+
     public function overrideAccessorialsfee($quote, $rule, $destination)
     {
         $updateCount = 0;
@@ -357,42 +457,75 @@ class ShippingRuleController extends Controller
         $hasLocationFilter = ($filterCountry != '' || !empty($stateProvince));
         $isSameCountry = $destination['country'] == $filterCountry ?? false;
         $isSameState = in_array($destination['state'], $statesCode) ?? false;
-        // Update WS accessorials rate with override rates shipping rule accessorials rate
-        foreach ($serviceIndex as $key => $index) {
-            if (isset($rule['service_rates']) && $rule['service_rates'] >= 0 && $rule['filter_services'] == $key && isset($quote['surcharges'][$index])) {
-                if ($isSameState && $isSameCountry) {
-                    $quote['totalNetCharge']['Amount'] -= (float)$quote['surcharges'][$index] ?? 0;
-                    $quote['surcharges'][$index] = $rule['service_rates'];
-                    $quote['totalNetCharge']['Amount'] += (float)$rule['service_rates'] ?? 0;
-                    break;
-                }
 
-                if (!$isSameState && !$isSameCountry) {
-                    $quote['totalNetCharge']['Amount'] -= (float)$quote['surcharges'][$index] ?? 0;
-                    $quote['surcharges'][$index] = $rule['service_rates'];
-                    $quote['totalNetCharge']['Amount'] += (float)$rule['service_rates'] ?? 0;
-                    break;
+        // Ensure filter_services is always an array
+        $filterServices = [];
+        if (isset($rule['filter_services'])) {
+            if (is_array($rule['filter_services'])) {
+                $filterServices = $rule['filter_services'];
+            } else {
+                $filterServices = [$rule['filter_services']];
+            }
+        }
+
+
+        // 1. Get surcharge keys for the services in $filterServices
+        $selectedSurchargeKeys = [];
+        foreach ($serviceIndex as $service => $surchargeKey) {
+            if (in_array($service, $filterServices)) {
+                $selectedSurchargeKeys[] = $surchargeKey;
+            }
+        }
+
+        // 2. Sum surcharges that do NOT match the selected keys
+        $total = 0;
+        foreach ($quote['surcharges'] as $surchargeKey => $val) {
+            if (!in_array($surchargeKey, $selectedSurchargeKeys)) {  // exclude selected
+                if (!empty($val) && $val != 0) {
+                    $total += (float) $val;
                 }
             }
-            // Update WS base price with override rate shipping rule base price
-            if (isset($rule['service_rates']) && $rule['service_rates'] >= 0 && $rule['filter_services'] == 'transportation') {
-                if ($updateCount < 1) {
-                    if ($hasLocationFilter) {
-                        if ($isSameCountry || $isSameState && $isSameCountry) {
-                            $quote['totalNetCharge']['Amount'] = $rule['service_rates'] ?? 0;
+        }
+
+        // Handle individual accessorial services
+        foreach ($serviceIndex as $key => $index) {
+            if (in_array($key, $filterServices)) {
+                if (isset($rule['service_rates']) && $rule['service_rates'] >= 0 && isset($quote['surcharges'][$index])) {
+                    if ($isSameCountry || $isSameState && $isSameCountry) {
+                        $quote['totalNetCharge']['Amount'] -= (float)$quote['surcharges'][$index] ?? 0;
+                        $quote['surcharges'][$index] = $rule['service_rates'];
+                        $quote['totalNetCharge']['Amount'] += (float)$rule['service_rates'] ?? 0;
+                    }
+                    if (!$hasLocationFilter) {
+                        if (!$isSameCountry || !$isSameState && !$isSameCountry) {
+                            $quote['totalNetCharge']['Amount'] -= (float)$quote['surcharges'][$index] ?? 0;
+                            $quote['surcharges'][$index] = $rule['service_rates'];
+                            $quote['totalNetCharge']['Amount'] += (float)$rule['service_rates'] ?? 0;
                         }
                     }
-                    if (!$isSameState && !$isSameCountry) {
-                        $quote['totalNetCharge']['Amount'] = $rule['service_rates'] ?? 0;
-                    }
                 }
-                // Add WS accessorials rate into override rate shipping rule base price
-                $quote['totalNetCharge']['Amount'] += isset($quote['surcharges'][$index]) ? (float)$quote['surcharges'][$index] : 0;
             }
-            $updateCount++;
         }
+
+
+        // Handle the base transportation service
+        if (in_array('transportation', $filterServices) && isset($rule['service_rates']) && $rule['service_rates'] >= 0) {
+            if ($hasLocationFilter) {
+                if ($isSameCountry || $isSameState && $isSameCountry) {
+                    $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                }
+            }
+            if (!$isSameCountry || !$isSameState && !$isSameCountry) {
+                $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+            }
+
+            $quote['totalNetCharge']['Amount'] = $quote['totalNetCharge']['Amount'] + $total;
+        }
+
+
         return $quote;
     }
+
 
     public function surchargeRatesAccessorialsfee($quote, $rule)
     {
