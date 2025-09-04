@@ -515,8 +515,10 @@ class ShippingRuleController extends Controller
                     $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
                 }
             }
-            if (!$isSameCountry || !$isSameState && !$isSameCountry) {
-                $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+            if (!$hasLocationFilter) {
+                if (!$isSameCountry || !$isSameState && !$isSameCountry) {
+                    $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
+                }
             }
 
             $quote['totalNetCharge']['Amount'] = $quote['totalNetCharge']['Amount'] + $total;
