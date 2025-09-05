@@ -116,7 +116,6 @@ class ShippingRuleController extends Controller
             foreach ($shippingRules as $key => $rule) {
                 if (isset($rule['available']) && $rule['available']) {
 
-                    
                     $statesProvinces = CountryState::getCountryStatesProvinces($destination['country']);
                     $settings = json_decode($rule['filter_settings'], true);
                     $stateProvince = isset($settings['filter_state_province']) && !empty($settings['filter_state_province']) ? $settings['filter_state_province'] : [];
@@ -174,7 +173,9 @@ class ShippingRuleController extends Controller
                                 $isRuletrue = $this->checkIsOverrideRuleApply($rule, $cartItems, $originKey, $allOrigins, $destination);
                                 break;
                             case 1: //Apply Cart level
-                                $isRuletrue = $this->checkIsOverrideRuleApply($rule, $cartItems, $originKey, $allOrigins, $destination);
+                                // $isRuletrue = $this->checkIsOverrideRuleApply($rule, $cartItems, $originKey, $allOrigins, $destination);
+                                $isRuletrue = $this->hideMethods($rule, $cartItems);
+                                // dd("isRuletrue", $isRuletrue);
                                 break;
                             case 2: //Apply Products level
                                 $isRuletrue = $this->checkProdExistInShipment($rule, $cartItems, $originKey, $allOrigins, $destination);
@@ -482,14 +483,15 @@ class ShippingRuleController extends Controller
 
         // 2. Sum surcharges that do NOT match the selected keys
         $total = 0;
-        foreach ($quote['surcharges'] as $surchargeKey => $val) {
-            if (!in_array($surchargeKey, $selectedSurchargeKeys)) {  // exclude selected
-                if (!empty($val) && $val != 0) {
-                    $total += (float) $val;
+        if (!empty($quote['surcharges']) && is_array($quote['surcharges'])) {
+            foreach ($quote['surcharges'] as $surchargeKey => $val) {
+                if (!in_array($surchargeKey, $selectedSurchargeKeys)) {  // exclude selected
+                    if (!empty($val) && $val != 0) {
+                        $total += (float) $val;
+                    }
                 }
             }
         }
-
         // Handle individual accessorial services
         foreach ($serviceIndex as $key => $index) {
             if (in_array($key, $filterServices)) {
@@ -542,10 +544,8 @@ class ShippingRuleController extends Controller
                     $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
                 }
             }
-
             $quote['totalNetCharge']['Amount'] = $quote['totalNetCharge']['Amount'] + $total;
         }
-
 
         return $quote;
     }

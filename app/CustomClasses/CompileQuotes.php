@@ -840,7 +840,7 @@ class CompileQuotes
                     }
                     break;
                 case "xpoLogistics":
-                    $resp = $this->compileXPOLtlQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential);
+                    $resp = $this->compileXPOLtlQuotes($shipment, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $destination);
                     $quotesTemp['xpoLTL'] = $resp;
                     if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
                         $quotesRes = array_merge($quotesRes, $resp);
@@ -3203,7 +3203,7 @@ class CompileQuotes
         return $originQuotes ?? [];
     }
 
-    public function compileXPOLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential)
+    public function compileXPOLtlQuotes($shipments, $connectionSettings, $allOrigins, $smalLtlHazmat, $hazmatAllItems, $residential, $destination)
     {
         $xpoLtl = new xpoLtlQuotesResults();
         if ($residential['xpoLtl'] == 'Y') {
@@ -3288,9 +3288,9 @@ class CompileQuotes
                     }
 
                     // Apply override rates shipping rule
-                    $data = $this->applyOverrideRatesRule($connectionSettings, $data);
+                    $data = $this->applyOverrideRatesRule($connectionSettings, $data, $destination);
                     // Apply Surcharge rates shipping rule
-                    $data = $this->applySurchargeRatesRule($connectionSettings, $data);
+                    $data = $this->applySurchargeRatesRule($connectionSettings, $data, $destination);
 
                     /*
                      * Date 01-07-22
