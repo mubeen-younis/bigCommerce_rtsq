@@ -194,7 +194,7 @@ class ShippingRuleController extends Controller
                                 $serviceDesc = isset($quote['isInternationQuote']) && $quote['isInternationQuote'] ? str_replace('Ground', 'International Ground', $serviceDesc) : $serviceDesc;
                                 $serviceDesc = str_replace('2 Day Am', '2 Day AM', $serviceDesc);
 
-                                if (in_array($serviceDesc, $rule['filter_services'])) {
+                                if (in_array($serviceDesc, (array) $rule['filter_services'])) {
 
                                     if (($isSameCountry && empty($stateProvince)) || ($isSameCountry && $isSameState && !empty($stateProvince))) {
                                         $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
@@ -213,7 +213,7 @@ class ShippingRuleController extends Controller
                                     }
                                 } else if ($providerSlug == 'unishippers-small') {
                                     $serviceTitle = $this->unishippers->getServiceTitleFromServiceType($quote['serviceType']);
-                                    if (in_array($serviceTitle, $rule['filter_services'])) {
+                                    if (in_array($serviceTitle, (array) $rule['filter_services'])) {
 
                                         if (($isSameCountry && empty($stateProvince)) || ($isSameCountry && $isSameState && !empty($stateProvince))) {
                                             $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
@@ -236,7 +236,7 @@ class ShippingRuleController extends Controller
                                     $serviceDesc = str_replace('U.S.9', 'US 9', $serviceDesc);
                                     $serviceDesc = str_replace('.', '', $serviceDesc);
 
-                                    if (in_array($serviceDesc, $rule['filter_services'])) {
+                                    if (in_array($serviceDesc, (array) $rule['filter_services'])) {
 
                                         if (($isSameCountry && empty($stateProvince)) || ($isSameCountry && $isSameState && !empty($stateProvince))) {
                                             $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
@@ -252,7 +252,7 @@ class ShippingRuleController extends Controller
                                 } else if ($providerSlug == 'usps-small') {
                                     $serviceType = 'USPS ' . $quote['serviceType'];
                                     $filterServices = str_replace('*', '', $rule['filter_services']);
-                                    if (in_array($serviceType, $filterServices)) {
+                                    if (in_array($serviceType, (array) $filterServices)) {
 
                                         if (($isSameCountry && empty($stateProvince)) || ($isSameCountry && $isSameState && !empty($stateProvince))) {
                                             $quote['totalNetCharge']['Amount'] = $rule['service_rates'];
