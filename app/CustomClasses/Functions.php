@@ -395,6 +395,7 @@ class Functions
             'usps-small' => 'usps',
             'tql-ltl' => 'tql',
             'kn-ltl' => 'KuehneNagel',
+            'ct-ltl' => 'centralTransport',
             'yrc-ltl' => 'yrc',
             'odfl-ltl' => 'odfl4me',
             'dayross-ltl' => 'dayross',
