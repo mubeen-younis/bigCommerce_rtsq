@@ -173,9 +173,7 @@ class ShippingRuleController extends Controller
                                 $isRuletrue = $this->checkIsOverrideRuleApply($rule, $cartItems, $originKey, $allOrigins, $destination);
                                 break;
                             case 1: //Apply Cart level
-                                // $isRuletrue = $this->checkIsOverrideRuleApply($rule, $cartItems, $originKey, $allOrigins, $destination);
                                 $isRuletrue = $this->hideMethods($rule, $cartItems);
-                                // dd("isRuletrue", $isRuletrue);
                                 break;
                             case 2: //Apply Products level
                                 $isRuletrue = $this->checkProdExistInShipment($rule, $cartItems, $originKey, $allOrigins, $destination);
@@ -399,55 +397,6 @@ class ShippingRuleController extends Controller
         return ['data' => $quote, 'isSurchargeRates' => $isSurchargeRates, 'surchargeServiceRate' => $surchargeServiceRate];
     }
 
-    // public function overrideAccessorialsfee($quote, $rule, $destination)
-    // {
-    //     $updateCount = 0;
-    //     $serviceIndex = Functions::$accessorialServices;
-    //     $statesProvinces = CountryState::getCountryStatesProvinces($destination['country']);
-    //     $settings = json_decode($rule['filter_settings'], true);
-    //     $stateProvince = isset($settings['filter_state_province']) && !empty($settings['filter_state_province']) ? $settings['filter_state_province'] : [];
-    //     $filterCountry = isset($settings['filter_country']) ? $settings['filter_country'] : '';
-    //     $statesCode = CountryState::getStateCode($statesProvinces, $stateProvince);
-    //     $hasLocationFilter = ($filterCountry != '' || !empty($stateProvince));
-    //     $isSameCountry = $destination['country'] == $filterCountry ?? false;
-    //     $isSameState = in_array($destination['state'], $statesCode) ?? false;
-    //     // Update WS accessorials rate with override rates shipping rule accessorials rate
-    //     foreach ($serviceIndex as $key => $index) {
-    //         if (isset($rule['service_rates']) && $rule['service_rates'] >= 0 && $rule['filter_services'] == $key && isset($quote['surcharges'][$index])) {
-    //             if ($isSameState && $isSameCountry) {
-    //                 $quote['totalNetCharge']['Amount'] -= (float)$quote['surcharges'][$index] ?? 0;
-    //                 $quote['surcharges'][$index] = $rule['service_rates'];
-    //                 $quote['totalNetCharge']['Amount'] += (float)$rule['service_rates'] ?? 0;
-    //                 break;
-    //             }
-
-    //             if (!$isSameState && !$isSameCountry) {
-    //                 $quote['totalNetCharge']['Amount'] -= (float)$quote['surcharges'][$index] ?? 0;
-    //                 $quote['surcharges'][$index] = $rule['service_rates'];
-    //                 $quote['totalNetCharge']['Amount'] += (float)$rule['service_rates'] ?? 0;
-    //                 break;
-    //             }
-    //         }
-    //         // Update WS base price with override rate shipping rule base price
-    //         if (isset($rule['service_rates']) && $rule['service_rates'] >= 0 && $rule['filter_services'] == 'transportation') {
-    //             if ($updateCount < 1) {
-    //                 if ($hasLocationFilter) {
-    //                     if ($isSameCountry || $isSameState && $isSameCountry) {
-    //                         $quote['totalNetCharge']['Amount'] = $rule['service_rates'] ?? 0;
-    //                     }
-    //                 }
-    //                 if (!$isSameState && !$isSameCountry) {
-    //                     $quote['totalNetCharge']['Amount'] = $rule['service_rates'] ?? 0;
-    //                 }
-    //             }
-    //             // Add WS accessorials rate into override rate shipping rule base price
-    //             $quote['totalNetCharge']['Amount'] += isset($quote['surcharges'][$index]) ? (float)$quote['surcharges'][$index] : 0;
-    //         }
-    //         $updateCount++;
-    //     }
-    //     return $quote;
-    // }
-
 
     public function overrideAccessorialsfee($quote, $rule, $destination)
     {
@@ -618,64 +567,6 @@ class ShippingRuleController extends Controller
 
         return true;
     }
-
-    // public function checkIsOverrideRuleApply($shippingRule, $items, $shipmentKey, $allOrigins, $destination)
-    // {
-    //     $variants = [];
-    //     $totalWeight = 0;
-    //     $totalQuantity = 0;
-    //     $totalPrice = 0;
-    //     $isFilterWeight = $isFilterPrice = $isFilterQuantity = false;
-    //     $isFilterWeightCheck = $isFilterPriceCheck = $isFilterQuantityCheck = false;
-
-    //     if (!empty($allOrigins)) {
-    //         $variants = collect($allOrigins)->filter(function ($origin) use ($shipmentKey) {
-    //             return $origin['locationId'] == $shipmentKey;
-    //         })->keys()->all() ?? [];
-    //     }
-
-    //     if (!empty($variants)) {
-    //         foreach ($variants as $variantId) {
-    //             if (isset($items[$variantId])) {
-    //                 $item = $items[$variantId];
-
-    //                 $totalWeight += $item['lineItemWeight'] * $item['piecesOfLineItem'] ?? 0;
-    //                 $totalPrice += $item['lineItemPrice'] * $item['piecesOfLineItem'] ?? 0;
-    //                 $totalQuantity += $item['piecesOfLineItem'] ?? 0;
-    //             }
-
-    //         }
-    //     }
-
-
-    //     if (isset($shippingRule['isFilterWeight']) && $shippingRule['isFilterWeight']) {
-    //         if (isset($shippingRule['weight_from']) && $totalWeight >= $shippingRule['weight_from'] && isset($shippingRule['weight_to']) && ($totalWeight < $shippingRule['weight_to'] || $shippingRule['weight_to'] === '')) {
-    //             $isFilterWeight = true;
-    //         }
-    //     } else {
-    //         $isFilterWeightCheck = true;
-    //     }
-    //     if (isset($shippingRule['isFilterPrice']) && $shippingRule['isFilterPrice']) {
-    //         if (isset($shippingRule['price_from']) && $totalPrice >= $shippingRule['price_from'] && isset($shippingRule['price_to']) && ($totalPrice < $shippingRule['price_to'] || $shippingRule['price_to'] === '')) {
-    //             $isFilterPrice = true;
-    //         }
-    //     } else {
-    //         $isFilterPriceCheck = true;
-    //     }
-    //     if (isset($shippingRule['isFilterQuantity']) && $shippingRule['isFilterQuantity']) {
-    //         if (isset($shippingRule['quantity_from']) && $totalQuantity >= $shippingRule['quantity_from'] && isset($shippingRule['quantity_to']) && ($totalQuantity < $shippingRule['quantity_to'] || $shippingRule['quantity_to'] === '')) {
-    //             $isFilterQuantity = true;
-    //         }
-    //     } else {
-    //         $isFilterQuantityCheck = true;
-    //     }
-
-    //     if (($isFilterWeight || $isFilterPrice || $isFilterQuantity) || ($isFilterWeightCheck && $isFilterPriceCheck && $isFilterQuantityCheck)) {
-    //         return false;
-    //     }
-
-    //     return true;
-    // }
 
 
     public function checkIsOverrideRuleApply($shippingRule, $items, $shipmentKey, $allOrigins, $destination)
