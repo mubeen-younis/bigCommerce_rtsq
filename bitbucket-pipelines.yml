@@ -37,6 +37,6 @@ pipelines:
             - export COMMAND='["sudo -u apx-bc-01 bash -c \"cd '"${STAGING_COMMAND}"'/bigcommerce/bc && git stash && git fetch && git checkout pallet_packaging_of_parcels_when_threshold_met && git pull && php artisan optimize:clear && ./remote-script.sh\""]'
             - chmod +x ./bb-scripts/run-ssm-command.sh
             - ./bb-scripts/run-ssm-command.sh
-            
+             
             
             
