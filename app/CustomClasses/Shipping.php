@@ -227,7 +227,7 @@ class Shipping
         $smalLtlHazmat = $this->checkIndividualHazmat($requestArr['requestArr']);
         //Sending request to WS to get Quotes
         $quotes = $this->sendCurlRequest($url, $requestArr['requestArr']);
-        dd("230", $requestArr, $quotes);
+        // dd("230", $requestArr, $quotes);
         Log::info('reqreq>>>>>>>>>>>>>>>>>>>> Request on line 235' . json_encode([
             $requestArr
         ]));
@@ -929,7 +929,6 @@ class Shipping
                 }
             }
             foreach ($ltlOrigins as $key => $origin) {
-                // dd("cccc", $items, $ltlOrigins);
                 $id = $items[$key]['product_id'] . $items[$key]['variant_id'];
                 if (isset($items[$key]['isHazmatLineItem']) && $items[$key]['isHazmatLineItem'] == 'Y' && !in_array($id, $marketItemSmall)) {
                     $ltlHazmat = true;

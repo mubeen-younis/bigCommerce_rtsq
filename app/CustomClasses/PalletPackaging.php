@@ -389,13 +389,13 @@ class PalletPackaging
                         $item->image_separated = Functions::replace3DBinUrl($item->image_separated);
                         $item->image_sbs = Functions::replace3DBinUrl($item->image_sbs);
                         
-                        $origin = $item->id;
-                        $newkey = $origin . "123" . $key;
-                        // dump("newkey", $newkey);
-                        $newOrigins[$newkey] = $this->origins[$origin];
+                        // $origin = $item->id;
+                        // $newkey = $origin . "123" . $key;
+                        // // dump("newkey", $newkey);
+                        // $newOrigins[$newkey] = $this->origins[$origin];
 
-                        $GenerateRequestData = new GenerateRequestData();
-                        $newitemsArr[$newkey] = $GenerateRequestData->updatCommdityDetails($this->itemsArr[$origin], $binPacked, $palletBins, $this->itemsArr, true);
+                        // $GenerateRequestData = new GenerateRequestData();
+                        // $newitemsArr[$newkey] = $GenerateRequestData->updatCommdityDetails($this->itemsArr[$origin], $binPacked, $palletBins, $this->itemsArr, true);
                     }
                     // Check which box has hazmat material and get count how much hazmat boxes
                     $totalHazmatBoxes += Functions::verifyAndCountHazmatBox($binPacked, $this->itemsArr);
@@ -406,15 +406,15 @@ class PalletPackaging
                 $counting++;
                 $origin = $bin->bin_data->variant_id;
 
-                $newkey = $origin . $key;
-
-                // $GenerateRequestData = new GenerateRequestData();
-                // $newOrigins[$newkey] = $this->origins[$origin];
-// dd("newkey", $newkey);
-                // $newitemsArr[$newkey] = $GenerateRequestData->updatCommdityDetails($this->itemsArr[$origin], $bin, $palletBins, $this->itemsArr, true);
+                $newkey = $origin . "123" . $key;
+                $GenerateRequestData = new GenerateRequestData();
+                $newOrigins[$newkey] = $this->origins[$origin];
+                $newitemsArr[$newkey] = $GenerateRequestData->updatCommdityDetails($this->itemsArr[$origin], $bin, $palletBins, $this->itemsArr, true);
                 $boxWeight = $palletBins[$bin->bin_data->id]['box_weight'] ?? 0;
                 $totalBoxWeight = $bin->bin_data->weight + $boxWeight ?? 0;
+                // dd("totalBoxddWeight", $palletResponse[$locationId]->bins_packed);
                 $palletResponse[$locationId]->bins_packed[$keyTop]->bin_data->totalBoxWeight = $totalBoxWeight;
+                // dd("newitemsArr", $newitemsArr);
             }
         }
 
