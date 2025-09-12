@@ -194,7 +194,6 @@ class PalletPackaging
                     // adding varaint id and pallet name to packed items
                     $GenerateRequestData = new GenerateRequestData();
                     $palletResponse = $GenerateRequestData->addPackagingID($palletResponse, $pallet);
-                    // dd("palletResponse", $palletResponse);
 
                     // updating commodity details of packed items for WS request
                     $commodityResp = $this->getUpdatedCommodityDetails($palletResponse, $pallet);
@@ -389,7 +388,7 @@ class PalletPackaging
                         $item->image_separated = Functions::replace3DBinUrl($item->image_separated);
                         $item->image_sbs = Functions::replace3DBinUrl($item->image_sbs);
                         
-                        // $origin = $item->id;
+                        $origin = $item->id;
                         // $newkey = $origin . "123" . $key;
                         // // dump("newkey", $newkey);
                         // $newOrigins[$newkey] = $this->origins[$origin];
@@ -406,15 +405,13 @@ class PalletPackaging
                 $counting++;
                 $origin = $bin->bin_data->variant_id;
 
-                $newkey = $origin . "123" . $key;
+                $newkey = $origin . "123" . $keyTop;
                 $GenerateRequestData = new GenerateRequestData();
                 $newOrigins[$newkey] = $this->origins[$origin];
                 $newitemsArr[$newkey] = $GenerateRequestData->updatCommdityDetails($this->itemsArr[$origin], $bin, $palletBins, $this->itemsArr, true);
                 $boxWeight = $palletBins[$bin->bin_data->id]['box_weight'] ?? 0;
                 $totalBoxWeight = $bin->bin_data->weight + $boxWeight ?? 0;
-                // dd("totalBoxddWeight", $palletResponse[$locationId]->bins_packed);
                 $palletResponse[$locationId]->bins_packed[$keyTop]->bin_data->totalBoxWeight = $totalBoxWeight;
-                // dd("newitemsArr", $newitemsArr);
             }
         }
 
