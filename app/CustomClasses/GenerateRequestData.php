@@ -3972,7 +3972,6 @@ class GenerateRequestData
         if ($palletPkgReq && !isset($bin->bin_data->type)) {
             $palletHeight = $bin->bin_data->stack_height + $boxHeight ?? 0;
         }
-        // dd("item", $item);
         $item['lineItemLength'] = $bin->bin_data->d ?? 0;
         $item['lineItemWidth'] = $bin->bin_data->w ?? 0;
         $item['lineItemHeight'] = $palletPkgReq && !isset($bin->bin_data->type) ? $palletHeight : $bin->bin_data->h ?? 0;

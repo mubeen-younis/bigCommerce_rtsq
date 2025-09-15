@@ -379,7 +379,6 @@ class GetRatesController extends Controller
                     'lineItemNMFC' => isset($product_settings['nmfc']) && !empty($product_settings['nmfc']) ? $product_settings['nmfc'] : '',
                     'ship_own_package' => $shipOwnPackage
                 ];
-                // dd("qwqwq88", $product_settings['own_pallet'], $details['items']);
                 if (!$details['items'][$key]['shipMultiplePackage']) {
                     if (
                         (blank($details['items'][$key]['lineItemLength']) || $details['items'][$key]['lineItemLength'] <= 0) ||
