@@ -116,7 +116,8 @@ class Functions
         'insideDelivery' => 'insideDeliveryFee',
         'residential' => 'residentialFee',
         'twoMan' => 'twoManFee',
-        'appointment' => 'appointmentFee'
+        'appointment' => 'appointmentFee',
+        // 'transportation' => 'transportation'
     ];
 
     public static $dayRossServices = [

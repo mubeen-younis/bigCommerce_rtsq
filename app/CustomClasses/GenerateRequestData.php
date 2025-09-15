@@ -83,7 +83,9 @@ class GenerateRequestData
          *  Check: if RAD is installed and active, destination address is US
          *  then using Smarty Api to validate Po Box address
          **/
+        $RadIsEnaled = false;
         if ($this->checkIsPoBoxAndRADInstalled($rad_settings) && $destination['country'] == 'US') {
+            $RadIsEnaled = true;
             $this->checkRadStatus($this->storeData['store']['id'], $destination);
             if (Functions::isPOBoxAddress($rad_settings, SmartyStreet::$isPoBOX)) {
                 Log::info('Return 1 ' . json_encode($rad_settings));
@@ -94,7 +96,9 @@ class GenerateRequestData
          *  Check: if RAD is not installed or inactive, then using keyword search to validate Po Box address
          *  Also Check: if Address is standard then keyword search not applied.
          **/
+        if(!$RadIsEnaled){
         $this->destinationIsPOBox($destination);
+        }
         if (Functions::isPOBoxAddress($rad_settings, $this->isPoBOX) && !SmartyStreet::$isStandAddress) {
             Log::info('Return 2 ' . json_encode($rad_settings));
             return [];
