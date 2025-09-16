@@ -152,7 +152,7 @@ class MainController extends BaseController
                     // Install all carriers on app installation
                     $carrierController = new CarrierController();
                     $carriers = optional(Carrier::get())->toArray() ?? [];
-                    $carrierController->carriersOnAppInstallation($carriers, $store);
+                    // $carrierController->carriersOnAppInstallation($carriers, $store);
                     // Install all Add-ons on app installation
                     $addonsController = new AddonsController();
                     $addons = optional(Addons::get())->toArray() ?? [];
