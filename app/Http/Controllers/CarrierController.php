@@ -293,40 +293,98 @@ class CarrierController extends Controller
         return response()->json($response, 200);
     }
 
+    // public function changeCarrierStatus(Request $request)
+    // {
+    //     $installedCarrier = InstalledCarrier::where('id', $request->carrier_id)->first();
+    //     if ($installedCarrier->is_enabled == false) {
+    //         $subscirption = new SubscriptionController();
+    //         $changeCount = ['store_id' => $request['store_id'], 'action' => 1];
+    //         $res = $subscirption->changeCarrierCount($changeCount);
+    //         if ($res['error']) {
+    //             return response()->json([
+    //                 'error' => true,
+    //                 'message' => $res['message'],
+    //             ], 200);
+    //         }
+    //     } else {
+    //         $subscirption = new SubscriptionController();
+    //         $changeCount = ['store_id' => $request['store_id'], 'action' => 0];
+    //         $subscirption->changeCarrierCount($changeCount);
+    //     }
+    //     $carrier = InstalledCarrier::find($request->carrier_id);
+
+    //     if ($carrier) {
+    //         $enabled = !$carrier->is_enabled;
+    //         InstalledCarrier::where('id', $request->carrier_id)->update(['is_enabled' => $enabled]);
+    //         /*Updating Carrier INstallation on FDO side and Address Validation Side*/
+    //         FDOController::updateProviderCoupon($enabled, $carrier->id, $request['store_id']);
+    //         $carrier = InstalledCarrier::find($request->carrier_id);
+    //         return response()->json(['error' => false, 'data' => $carrier, 'message' => 'Carrier Status updated'], 200);
+    //     } else {
+    //         return response()->json([
+    //             'error' => true,
+    //             'message' => 'Invalid Carrier ID',
+    //         ], 404);
+    //     }
+    // }
+
     public function changeCarrierStatus(Request $request)
-    {
-        $installedCarrier = InstalledCarrier::where('id', $request->carrier_id)->first();
-        if ($installedCarrier->is_enabled == false) {
-            $subscirption = new SubscriptionController();
+{
+    $carrier = InstalledCarrier::find($request->carrier_id);
+
+    if (!$carrier) {
+        return response()->json([
+            'error' => true,
+            'message' => 'Invalid Carrier ID',
+        ], 404);
+    }
+
+    $subscription = new SubscriptionController();
+    $status = (int) $request->status; // Possible values: 0 = disable/restore, 1 = enable, 2 = archive
+
+    switch ($status) {
+        case 1:
+            // Enable
             $changeCount = ['store_id' => $request['store_id'], 'action' => 1];
-            $res = $subscirption->changeCarrierCount($changeCount);
+            $res = $subscription->changeCarrierCount($changeCount);
+
             if ($res['error']) {
                 return response()->json([
                     'error' => true,
                     'message' => $res['message'],
                 ], 200);
             }
-        } else {
-            $subscirption = new SubscriptionController();
-            $changeCount = ['store_id' => $request['store_id'], 'action' => 0];
-            $subscirption->changeCarrierCount($changeCount);
-        }
-        $carrier = InstalledCarrier::find($request->carrier_id);
+            break;
 
-        if ($carrier) {
-            $enabled = !$carrier->is_enabled;
-            InstalledCarrier::where('id', $request->carrier_id)->update(['is_enabled' => $enabled]);
-            /*Updating Carrier INstallation on FDO side and Address Validation Side*/
-            FDOController::updateProviderCoupon($enabled, $carrier->id, $request['store_id']);
-            $carrier = InstalledCarrier::find($request->carrier_id);
-            return response()->json(['error' => false, 'data' => $carrier, 'message' => 'Carrier Status updated'], 200);
-        } else {
-            return response()->json([
-                'error' => true,
-                'message' => 'Invalid Carrier ID',
-            ], 404);
-        }
+        case 0:
+            // Disable or Restore
+            $changeCount = ['store_id' => $request['store_id'], 'action' => 0];
+            $subscription->changeCarrierCount($changeCount);
+            break;
+
+        case 2:
+            // Archive → Do not change subscription count
+            break;
     }
+
+    // Save the new status (0, 1, or 2)
+    $carrier->is_enabled = $status;
+    $carrier->save();
+
+    // Update carrier installation on other systems
+    FDOController::updateProviderCoupon(
+        $carrier->is_enabled == 1, // true only if enabled
+        $carrier->id,
+        $request['store_id']
+    );
+
+    return response()->json([
+        'error' => false,
+        'data' => $carrier,
+        'message' => 'Carrier status updated',
+    ], 200);
+}
+
 
     public function getInstalledCarrierPlanInfo(Request $request)
     {

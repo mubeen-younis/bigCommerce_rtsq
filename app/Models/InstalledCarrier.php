@@ -11,8 +11,10 @@ class InstalledCarrier extends Model
     public $timestamps = false;
     protected $fillable = [
         'store_id',
+        'carrier_id',
         'carrier_plan_id',
-        'is_enabled'
+        'is_enabled',
+        'nickname',
     ];
 
     public static function getinstalledProvidersSlug($storeId)
