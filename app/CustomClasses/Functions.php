@@ -949,7 +949,7 @@ class Functions
                     }
                 }
 
-                if ($totalWeight > $carrierWeightThreshold) {
+                if ($totalWeight >= $carrierWeightThreshold) {
                     $ThresholdSettings = optional(WeightThresholdSettings::where('store_id', $storeId)->first())->toArray() ?? [];
                     if (isset($ThresholdSettings['parcel_rates']) && $ThresholdSettings['parcel_rates'] == 2) {
                         $shipKeysWithThreshold[] = $key;
