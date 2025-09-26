@@ -852,7 +852,6 @@ class GenerateRequestData
         $palletPkgResp = $carriersOriginAddress = [];
 
 
-        // -----------------------------------
 
  $palletOrigin   = $request['lineItemData']['origin'];
 $palletItemsArr = $itemsArr;
@@ -900,9 +899,6 @@ foreach ($originProductMap as $originKey => $group) {
                     }
                 }
             }
-            // dd("threshold", $threshold, $totalItemWeight, $condition, $palletItemsArr);
-// dd("palletItemsArr", $palletItemsArr, $threshold, $totalItemWeight);
-// ----------------------------------------
 
         $palletPkg = new PalletPackaging($palletItemsArr, $this->storeData, $cartInfo);
 
