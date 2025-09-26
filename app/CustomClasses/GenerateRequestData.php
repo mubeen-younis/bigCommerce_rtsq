@@ -850,7 +850,61 @@ class GenerateRequestData
         // Pallet packaging request
         $palletResp = $palletBins = [];
         $palletPkgResp = $carriersOriginAddress = [];
-        $palletPkg = new PalletPackaging($itemsArr, $this->storeData, $cartInfo);
+
+
+        // -----------------------------------
+
+ $palletOrigin   = $request['lineItemData']['origin'];
+$palletItemsArr = $itemsArr;
+
+// get quote_settings once
+$quo_settings = [];
+foreach ($this->connectionSettings as $conn) {
+    $quo_settings = $conn['quote_settings'] ?? [];
+    break; // take first one
+}
+
+// Step 1: Map products to their origins (by position)
+$originProductMap = [];
+$origins = array_values($palletOrigin);  // ensure numeric index
+
+$i = 0;
+foreach ($palletItemsArr as $productId => $product) {
+    $originData = $origins[$i] ?? null;
+    if ($originData) {
+        // Use address as grouping key (or serialize whole origin)
+        $originKey = $originData['address'] . '_' . $originData['senderZip'];
+
+        $originProductMap[$originKey]['origin'] = $originData;
+        $originProductMap[$originKey]['products'][$productId] = $product;
+    }
+    $i++;
+}
+
+// Step 2: Check weight conditions per origin group
+foreach ($originProductMap as $originKey => $group) {
+    $totalItemWeight = 0;
+
+    foreach ($group['products'] as $pItem) {
+        $pieces = (float) ($pItem['piecesOfLineItem'] ?? 0);
+        $weight = (float) ($pItem['lineItemWeight'] ?? 0);
+        $totalItemWeight += $pieces * $weight;
+    }
+    $threshold = $quo_settings['weight_threshold'] ?? null;
+    $condition = ($threshold !== null && $totalItemWeight <= $threshold)
+              || ($threshold === null && $totalItemWeight < 150);
+              if ($condition) {
+                  // remove all products of this origin
+                  foreach ($group['products'] as $productId => $_) {
+                      unset($palletItemsArr[$productId]);
+                    }
+                }
+            }
+            // dd("threshold", $threshold, $totalItemWeight, $condition, $palletItemsArr);
+// dd("palletItemsArr", $palletItemsArr, $threshold, $totalItemWeight);
+// ----------------------------------------
+
+        $palletPkg = new PalletPackaging($palletItemsArr, $this->storeData, $cartInfo);
 
         if ($palletPkg->isAddonEnabled()) {
             $ltlCarriers = $palletPkg->ltlCarriers ?? [];
