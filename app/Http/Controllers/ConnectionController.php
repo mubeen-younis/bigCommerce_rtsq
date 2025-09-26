@@ -48,6 +48,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\CustomClasses\CurlRequest as connCurlRequest;
+use App\Http\Controllers\Subscription\SubscriptionController;
 use App\Models\InstalledCarrier;
 use Carbon\Carbon;
 
@@ -263,22 +264,42 @@ class ConnectionController extends Controller
 
             // Handle data storage when testType is false
             if (isset($request->nickname) && !empty($request->nickname) && (!isset($request->testType) || $request->testType == false)) {
-                $carrier = InstalledCarrier::updateOrCreate(
-                    [
-                        'carrier_id' => $request->carrierId,
-                        'store_id'   => $request->store_id,
-                    ],
-                    [
-                        'nickname' => $request->nickname,
-                        'is_enabled' => 1,
-                    ]
-                );
+               $subscription = new SubscriptionController();
 
-                return response()->json([
-                    "error" => false,
-                    "message" => "Carrier installed successfully",
-                    "data" => $carrier
-                ]);
+            // First, check subscription limit using changeCarrierCount
+            $changeCount = [
+                'store_id' => $request->store_id,
+                'action'   => 1,  // action 1 = enabling/installing
+                'carrier'  => $request->carrierId ?? ''
+            ];
+
+            $res = $subscription->changeCarrierCount($changeCount);
+
+            // If limit exceeded, still install but set is_enabled = 0
+            $isEnabled = 1;
+            $message = "Carrier installed successfully";
+
+            if ($res['error']) {
+                $isEnabled = 0;
+                $message = $res['message'] . " - Carrier installed but disabled";
+            }
+
+            $carrier = InstalledCarrier::updateOrCreate(
+                [
+                    'carrier_id' => $request->carrierId,
+                    'store_id'   => $request->store_id,
+                ],
+                [
+                    'nickname'   => $request->nickname,
+                    'is_enabled' => $isEnabled,
+                ]
+            );
+
+            return response()->json([
+                "error"   => false,
+                "message" => $message,
+                "data"    => $carrier
+            ]);
             }
 
             // If neither test nor storage conditions are met, return appropriate response
