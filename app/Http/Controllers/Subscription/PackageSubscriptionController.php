@@ -198,42 +198,6 @@ class PackageSubscriptionController extends Controller
             ->select('s.stripe_id as stripe_customer_id', 's.payment_method', 's.plan_id', 's.email', 's.created_at', 'p.id as payment_method_id')
             ->where('s.store_id', self::$storeId)->latest()->first();
 
-        //   ---------------------
-
-        if ($data['package'] == 0) {
-
-            $currentPackageSub = PackageSubscription::leftJoin('packages as p', 'package_subscriptions.package_id', '=', 'p.id')
-                ->where('store_id', self::$storeId)
-                ->where('addon_type', $addonType)
-                ->select(
-                    'package_subscriptions.id',
-                    'package_subscriptions.created_at',
-                    'package_subscriptions.package_id',
-                    'package_subscriptions.payment_method_id',
-                    'package_subscriptions.status',
-                    'package_subscriptions.subscription_time',
-                    'package_subscriptions.update_time',
-                    'package_subscriptions.expiry_time',
-                    'package_subscriptions.total_count',
-                    'package_subscriptions.stripe_charge_id',
-                    'package_subscriptions.charge_cost'
-                )
-                ->latest()
-                ->first();
-
-            if ($currentPackageSub) {
-                DB::table('package_subscriptions')
-                    ->where('id', $currentPackageSub->id) // ✅ use ->id not ['id']
-                    ->delete();
-            }
-
-            return [
-                'error' => false,
-                'data' => $currentPackageSub,
-                'message' => 'Package has been updated',
-            ];
-        }
-
 
         if (is_null($mainSubscription)) {
             return [
