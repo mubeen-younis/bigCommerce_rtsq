@@ -250,7 +250,7 @@ class CarrierController extends Controller
     {
         $store_id = $request->store_id;
 
-        $installedCarriers = Carrier::select('carriers.name', 'installed_carriers.id', 'carriers.logo', 'installed_carriers.carrier_id', 'carriers.carrier_type', 'carriers.slug', 'installed_carriers.is_enabled')
+        $installedCarriers = Carrier::select('carriers.name', 'installed_carriers.id', 'carriers.logo', 'installed_carriers.carrier_id', 'carriers.carrier_type', 'carriers.slug', 'installed_carriers.is_enabled', 'installed_carriers.nickname')
             ->join('installed_carriers', 'installed_carriers.carrier_id', '=', 'carriers.id')
             ->where('carriers.status', 1)
             ->where('installed_carriers.store_id', $store_id)
