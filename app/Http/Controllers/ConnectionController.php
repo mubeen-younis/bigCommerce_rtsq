@@ -264,42 +264,47 @@ class ConnectionController extends Controller
 
             // Handle data storage when testType is false
             if (isset($request->nickname) && !empty($request->nickname) && (!isset($request->testType) || $request->testType == false)) {
-               $subscription = new SubscriptionController();
+                $subscription = new SubscriptionController();
 
-            // First, check subscription limit using changeCarrierCount
-            $changeCount = [
-                'store_id' => $request->store_id,
-                'action'   => 1,  // action 1 = enabling/installing
-                'carrier'  => $request->carrierId ?? ''
-            ];
+                // First, check subscription limit using changeCarrierCount
+                $changeCount = [
+                    'store_id' => $request->store_id,
+                    'action'   => 1,  // action 1 = enabling/installing
+                    'carrier'  => $request->carrierId ?? ''
+                ];
 
-            $res = $subscription->changeCarrierCount($changeCount);
+                $res = $subscription->changeCarrierCount($changeCount);
 
-            // If limit exceeded, still install but set is_enabled = 0
-            $isEnabled = 1;
-            $message = "Carrier installed successfully";
+                // If limit exceeded, still install but set is_enabled = 0
+                $isEnabled = 1;
+                $message = "Carrier installed successfully";
 
-            if ($res['error']) {
-                $isEnabled = 0;
-                $message = $res['message'] . " - Carrier installed but disabled";
-            }
+                if ($res['error']) {
+                    $isEnabled = 0;
+                    $message = $res['message'] . " - Carrier installed but disabled";
+                }
 
-            $carrier = InstalledCarrier::updateOrCreate(
-                [
-                    'carrier_id' => $request->carrierId,
-                    'store_id'   => $request->store_id,
-                ],
-                [
-                    'nickname'   => $request->nickname,
-                    'is_enabled' => $isEnabled,
-                ]
-            );
+                $carrier = InstalledCarrier::updateOrCreate(
+                    [
+                        'carrier_id' => $request->carrierId,
+                        'store_id'   => $request->store_id,
+                    ],
+                    [
+                        'nickname'   => $request->nickname,
+                        'is_enabled' => $isEnabled,
+                    ]
+                );
 
-            return response()->json([
-                "error"   => false,
-                "message" => $message,
-                "data"    => $carrier
-            ]);
+                $con = Connection::firstOrNew(['installed_carrier_id' => $carrier->id]);
+                $con->value = json_encode($request->all());
+                $con->installed_carrier_id = $carrier->id;
+                $con->save();
+
+                return response()->json([
+                    "error"   => false,
+                    "message" => $message,
+                    "data"    => $carrier
+                ]);
             }
 
             // If neither test nor storage conditions are met, return appropriate response
