@@ -264,13 +264,23 @@ class ConnectionController extends Controller
 
             // Handle data storage when testType is false
             if (isset($request->nickname) && !empty($request->nickname) && (!isset($request->testType) || $request->testType == false)) {
+                // Ensure we have the actual carrier_id from carriers table, not installed_carrier_id
+                $actualCarrierId = $request->carrierId;
+
+                // Check if the provided ID is from installed_carriers table instead of carriers table
+                $checkIfInstalledCarrier = InstalledCarrier::find($request->carrierId);
+                if ($checkIfInstalledCarrier) {
+                    // If it's an installed_carrier_id, get the actual carrier_id
+                    $actualCarrierId = $checkIfInstalledCarrier->carrier_id;
+                }
+
                 $subscription = new SubscriptionController();
 
                 // First, check subscription limit using changeCarrierCount
                 $changeCount = [
                     'store_id' => $request->store_id,
                     'action'   => 1,  // action 1 = enabling/installing
-                    'carrier'  => $request->carrierId ?? ''
+                    'carrier'  => $actualCarrierId ?? ''
                 ];
 
                 $res = $subscription->changeCarrierCount($changeCount);
@@ -284,21 +294,20 @@ class ConnectionController extends Controller
                     $message = $res['message'] . " - Carrier installed but disabled";
                 }
 
-                $carrier = InstalledCarrier::updateOrCreate(
-                    [
-                        'carrier_id' => $request->carrierId,
-                        'store_id'   => $request->store_id,
-                    ],
-                    [
-                        'nickname'   => $request->nickname,
-                        'is_enabled' => $isEnabled,
-                    ]
-                );
+                $carrier = InstalledCarrier::create([
+                    'carrier_id' => $actualCarrierId,
+                    'store_id'   => $request->store_id,
+                    'nickname'   => $request->nickname,
+                    'is_enabled' => $isEnabled,
+                ]);
 
                 $con = Connection::firstOrNew(['installed_carrier_id' => $carrier->id]);
                 $con->value = json_encode($request->all());
                 $con->installed_carrier_id = $carrier->id;
                 $con->save();
+
+                // Include connection settings in response
+                $carrier->connection = $con;
 
                 return response()->json([
                     "error"   => false,
@@ -487,6 +496,11 @@ class ConnectionController extends Controller
                     $message = 'Connection settings has been saved but the Promo Code is not applied.';
                 }
             }
+            // Update nickname in InstalledCarrier if provided
+            if (isset($request->nickname) && !empty($request->nickname)) {
+                InstalledCarrier::where('id', $request->carrierId)->update(['nickname' => $request->nickname]);
+            }
+
             $con = Connection::firstOrNew(['installed_carrier_id' => $request->carrierId]);
             $con->value = json_encode($request->all());
             $con->installed_carrier_id = $request->carrierId;
