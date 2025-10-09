@@ -378,10 +378,13 @@ class CarrierController extends Controller
         $request['store_id']
     );
 
+    // Determine response message based on status
+    $message = $status == 1 ? 'Provider activated successfully' : 'Provider deactivated successfully';
+
     return response()->json([
         'error' => false,
         'data' => $carrier,
-        'message' => 'Carrier status updated',
+        'message' => $message,
     ], 200);
 }
 
