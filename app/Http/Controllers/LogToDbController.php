@@ -101,7 +101,6 @@ class LogToDbController extends Controller
             $logsData = $respdata = [];
             $url = Constant::LOGS_URL;
             $logsResp = $this->sendCurlRequest($url, $postData); 
-
             if (Functions::isEnabledLogs($storeHash)) {
                 Log::info('StoreLogs output ' . json_encode($logsResp));
             }
@@ -178,6 +177,7 @@ class LogToDbController extends Controller
 
                         $destination = isset($lineitems['destination']) ? $lineitems['destination'] : [];
 
+                        $logsData[$key]['log_id'] = isset($data['id']) ? $data['id'] : '';
                         $logsData[$key]['location_id'] = $locationIds[$count] ?? null;
                         $logsData[$key]['packaging_id'] = $packageId;
                         $logsData[$key]['response'] = isset($data['status']) ? $data['status'] : '';
