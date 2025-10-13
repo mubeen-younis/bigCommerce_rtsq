@@ -123,7 +123,6 @@ class LogToDbController extends Controller
                         ->select('carriers.slug', 'installed_carriers.nickname')
                         ->get()
                         ->toArray();
-
                     // Create a mapping from carrier name to nickname
                     $carrierNicknameMap = [];
                     foreach ($installedCarriers as $carrier) {
@@ -132,7 +131,6 @@ class LogToDbController extends Controller
                             $carrierNicknameMap[$carrierName] = $carrier['nickname'] ?? '';
                         }
                     }
-
                     $packageIds = $packagingDetails = [];
                     foreach ($logsResp['data'] as $data) {
                         $requestData = isset($data['request']) ? json_decode($data['request'], true) : [];
@@ -201,7 +199,6 @@ class LogToDbController extends Controller
                         $logsData[$key]['response'] = isset($data['status']) ? $data['status'] : '';
                         $logsData[$key]['carrier_name'] = $carrierName;
                         $logsData[$key]['nickname'] = isset($carrierNicknameMap[$carrierName]) ? $carrierNicknameMap[$carrierName] : '';
-
                         if (!empty($originKeys)){
                             foreach($originKeys[$locationIds[$count]] as $code){
                                 if (isset($lineitems['items'][$code]) && !empty($lineitems['items'][$code])){
