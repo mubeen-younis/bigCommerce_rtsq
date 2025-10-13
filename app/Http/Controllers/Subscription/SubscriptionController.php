@@ -945,7 +945,6 @@ class SubscriptionController extends Controller
             ->leftJoin('payment_methods as pm', 'pm.store_id', '=', 's.store_id')
             ->select('s.id as subscription_id', 's.store_id', 's.status', 's.ends_at', 's.plan_id', 's.created_at', 'cc.carrier_counts as total_remaining_carriers', 's.amount_charged', 'pl.name', 'pl.carrier_count as total_allowed_carriers', 'pm.last4', 'pm.is_default as is_default_payment_method')
             ->where('s.store_id', $storeId)->latest()->first();
-            dd("data", $data);
         if (blank($data)) {
             return null;
         }
