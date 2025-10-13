@@ -112,7 +112,7 @@ class SubscriptionController extends Controller
 
             $customerResponse = \Stripe\Customer::retrieve($request->customerId);
             $paymentMethodsResponse = $this->getStripePaymentMethods($request->customerId);
-            if(isset($paymentMethodsResponse['error']) && $paymentMethodsResponse['error']) {
+            if (isset($paymentMethodsResponse['error']) && $paymentMethodsResponse['error']) {
                 return $paymentMethodsResponse;
             }
             $paymentMethods = isset($paymentMethodsResponse['data']) ? $paymentMethodsResponse['data'] : null;
@@ -123,7 +123,6 @@ class SubscriptionController extends Controller
                 'message' => 'Successfully Save Stripe Payment Methods In DB.',
                 'data' => $customerResponse->toArray(),
             ];
-
         } catch (\Exception $e) {
             $responce = [
                 'error' => true,
@@ -255,7 +254,7 @@ class SubscriptionController extends Controller
                 'plan' => $planId,
             );
 
-            if($defaultSource != null){
+            if ($defaultSource != null) {
                 $subsArray['default_source'] = $defaultSource;
             }
 
@@ -265,7 +264,6 @@ class SubscriptionController extends Controller
                 'message' => 'Plan is subscribed successfully.',
                 'data' => $subscription,
             ];
-
         } catch (\Exception $e) {
             $responce = [
                 'error' => true,
@@ -294,7 +292,6 @@ class SubscriptionController extends Controller
                 'message' => 'Get Stripe Payment Methods From Stripe.',
                 'data' => $stripePaymentMethods,
             ];
-
         } catch (\Exception $e) {
             $responce = [
                 'error' => true,
@@ -356,13 +353,12 @@ class SubscriptionController extends Controller
             $this->updateSubscriptionInDB($updateSubResponse, $oldSubscription);
             return json_encode($updateSubResponse);
         } else {
-            return response()->json(['error' => true,
+            return response()->json([
+                'error' => true,
                 'data' => [],
                 'message' => 'Subscription not found to be update.',
             ]);
         }
-
-
     }
     //*************************************
     // This function is used to subscribe to Trial, Paid Plan, Updgrade or DownGrade plan
@@ -375,16 +371,15 @@ class SubscriptionController extends Controller
             $currentSubscriptionDetail = $this->subscriptionDetailFromDB($request['store_id']);
 
             // Expired add-on packages if store convert from sandbox to live
-            if (!empty($currentSubscriptionDetail) && $currentSubscriptionDetail->plan_id == 5 && $currentSubscriptionDetail->plan_id != $request['plan']){
-                
+            if (!empty($currentSubscriptionDetail) && $currentSubscriptionDetail->plan_id == 5 && $currentSubscriptionDetail->plan_id != $request['plan']) {
+
                 $currentPackageSub = PackageSubscription::where('store_id', $request['store_id'])->latest()->get();
-                if(count($currentPackageSub) > 0){
-                    foreach($currentPackageSub as $package){
-                        if($package['payment_method_id'] == null && $package['stripe_charge_id'] == null && $package['status']){
+                if (count($currentPackageSub) > 0) {
+                    foreach ($currentPackageSub as $package) {
+                        if ($package['payment_method_id'] == null && $package['stripe_charge_id'] == null && $package['status']) {
                             $package->update(['status' => 0]);
                         }
                     }
-
                 }
             }
 
@@ -506,10 +501,8 @@ class SubscriptionController extends Controller
                 if ($oldSubscription->status == 2 && Functions::isExpiredSubscription($oldSubscription->ends_at)) { //If the previous subscription is expired
                     // TODO: We can remove previous subscription from here, but we have it there for history records
                     $updateSubResponse = $this->createNewSubscriptionPlan($oldSubscription->stripe_id, $stripePlanId);
-
                 } else { //If the previous subscription is active
                     $updateSubResponse = $this->updateSubscriptionPlan($oldSubscription->subscription_id, $stripePlanId);
-
                 }
 
                 if ($updateSubResponse['error'] == true) {
@@ -578,7 +571,6 @@ class SubscriptionController extends Controller
                 ];
                 $status = ['products_purchased' => true];
                 $hubSpotController->createUpdateHubSpotUser($data['store_id'], $user, $status);
-
             } else {
                 //Else part will be executed in case of trial and we need to update the subscription table for a trial
                 /*This block of code will check if customer already subscribe trial plan
@@ -640,7 +632,6 @@ class SubscriptionController extends Controller
                 Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, self::$devPlan ? 4 : 3));
             } else {
                 Mail::to($data['email'])->send(new PaymentFailedByWebHookEmail($emailData, 1));
-
             }
 
             return response()->json([
@@ -648,7 +639,7 @@ class SubscriptionController extends Controller
                 'data' => $subscriptionDetail,
                 'message' => 'The plan subscribed successfully.'
             ], 200);
-        } catch (\Exception|\Throwable $exception) {
+        } catch (\Exception | \Throwable $exception) {
             Log::info('Exception on subscribing plan ' . json_encode(Functions::returnFormExceptionArray($exception)));
             return response()->json([
                 'error' => true,
@@ -737,9 +728,9 @@ class SubscriptionController extends Controller
             $token = \Stripe\Token::create(array(
                 "card" => $cardArray
             ));
-
         } catch (\Exception $e) {
-            $responce = ['error' => true,
+            $responce = [
+                'error' => true,
                 'data' => [],
                 'message' => $e->getMessage(),
             ];
@@ -748,12 +739,14 @@ class SubscriptionController extends Controller
             try {
                 $customer->source = $token->id;
                 $customer->save();
-                $responce = ['error' => false,
+                $responce = [
+                    'error' => false,
                     'data' => $customer,
                     'message' => 'Default payment method successfully changed.',
                 ];
             } catch (\Exception $e) {
-                $responce = ['error' => true,
+                $responce = [
+                    'error' => true,
                     'data' => [],
                     'message' => $e->getMessage(),
                 ];
@@ -870,7 +863,8 @@ class SubscriptionController extends Controller
         try {
 
             $responce = \Stripe\Subscription::update(
-                $subscriptionId, [
+                $subscriptionId,
+                [
                     'cancel_at_period_end' => true,
                 ]
             );
@@ -904,7 +898,7 @@ class SubscriptionController extends Controller
         $dbSub = Subscription::where('store_id', $storeId)->latest()->first();
 
         if (isset($request['cancel']) && $request['cancel'] == 1) {
-            $res = !empty($dbSub->subscription_id) ?  $this->cencelStripeSubscription($dbSub->subscription_id) : null; 
+            $res = !empty($dbSub->subscription_id) ?  $this->cencelStripeSubscription($dbSub->subscription_id) : null;
             if (isset($res['error']) && $res['error'] == false) {
                 //Because of simaltaneous execution of stripe and DB
                 Subscription::where('id', $dbSub->id)->update([
@@ -957,6 +951,9 @@ class SubscriptionController extends Controller
         // Added this block of code for the bug of carrier count issue
         // Bug of enabling carriers according to plan
         $totalEnabledCarriersCount = InstalledCarrier::where('store_id', $storeId)->where('is_enabled', 1)->count();
+                Log::info('reqreq------------------tttt------------ totalEnabledCarriersCount on line 955' . json_encode([
+            $totalEnabledCarriersCount
+        ]));
         $data->total_remaining_carriers = $data->total_allowed_carriers - $totalEnabledCarriersCount;
         ////////////////////////////
         if (!is_null($data)) {
@@ -976,7 +973,8 @@ class SubscriptionController extends Controller
         $subscriptionDetail = $this->subscriptionDetailFromDB($storeId);
 
         if (empty($subscriptionDetail)) {
-            return response()->json(['error' => false,
+            return response()->json([
+                'error' => false,
                 'data' => ['status' => 0, 'plan_id' => 0],
                 'message' => 'No active subscription is available.',
             ], 200);
@@ -995,7 +993,8 @@ class SubscriptionController extends Controller
         $subscriptionDetail['is_expired'] = Functions::isExpiredSubscription($subscriptionDetail['ends_at']);
         $subscriptionDetail['total_installed_carriers'] = $plan->carrier_count - $subscriptionDetail['total_installed_carriers'];
         $subscriptionDetail['total_installable_carriers'] = $plan->carrier_count;
-        return response()->json(['error' => false,
+        return response()->json([
+            'error' => false,
             'data' => $subscriptionDetail,
             'message' => '',
         ], 200);
@@ -1009,12 +1008,12 @@ class SubscriptionController extends Controller
         $storeId = $request['store_id'];
         //Check: If current carriers installed are more than the choosed plan then return with message
         $currentSubscriptionDetail = $this->subscriptionDetailFromDB($storeId);
-                Log::info('reqreq------------------ssss------------ currentSubscriptionDetail on line 1013' . json_encode([
+        Log::info('reqreq------------------ssss------------ currentSubscriptionDetail on line 1013' . json_encode([
             $currentSubscriptionDetail
         ]));
         if (($request['action'] == 1) && (is_null($currentSubscriptionDetail) ||
-                ($currentSubscriptionDetail->total_remaining_carriers <= 0) ||
-                ($currentSubscriptionDetail->status == 3))) {
+            ($currentSubscriptionDetail->total_remaining_carriers <= 0) ||
+            ($currentSubscriptionDetail->status == 3))) {
             $msg = 'You have reached the subscription carriers limit';
             if (is_null($currentSubscriptionDetail)) {
                 $msg = "You don't have any plan to install or enable the carrier";
@@ -1067,12 +1066,14 @@ class SubscriptionController extends Controller
         $plan = Plan::find($carrierCount->plan_id);
         if ($carrierCount->carrier_counts < $plan->carrier_count) {
             $carrierCount->increment('carrier_counts', $number);
-            return response()->json(['error' => false,
+            return response()->json([
+                'error' => false,
                 'data' => ['total_carriers_installed' => $plan->carrier_count - $carrierCount->carrier_counts],
                 'message' => 'Carrier is uninstalled successfully.',
             ], 200);
         } else {
-            return response()->json(['error' => true,
+            return response()->json([
+                'error' => true,
                 'data' => ['total_carriers_installed' => $plan->carrier_count - $carrierCount->carrier_counts],
                 'message' => 'You are allowed to install ' . $plan->carrier_count . ' carriers.',
             ]);
@@ -1140,7 +1141,7 @@ class SubscriptionController extends Controller
 
         try {
             $customer = \Stripe\Customer::retrieve($customerId);
-        } catch (\Exception|\Throwable $exception) {
+        } catch (\Exception | \Throwable $exception) {
             Log::info('Exception on getting customer ' . json_encode(Functions::returnFormExceptionArray($exception)));
             return [
                 'error' => true,
@@ -1178,7 +1179,7 @@ class SubscriptionController extends Controller
                 $dateFromStripe = Carbon::parse(gmdate("Y-m-d\TH:i:s\Z", $subscriptionPlanObj->period->end));
                 $dateFromDB = Carbon::parse($oldSubscription->ends_at);
                 $updateSubscriptionExpiry = $dateFromStripe->gt($dateFromDB);
-            } catch (\Exception|\Throwable $exception) {
+            } catch (\Exception | \Throwable $exception) {
                 Log::info('Exception in parsing date through carbon ' . json_encode(Functions::returnFormExceptionArray($exception)));
             }
 
@@ -1230,10 +1231,7 @@ class SubscriptionController extends Controller
         }
     }
 
-    public function subscriptionDeleted($paymentDetail, $planDetail)
-    {
-
-    }
+    public function subscriptionDeleted($paymentDetail, $planDetail) {}
 
     public function paymentByStripeWebHook()
     {
@@ -1262,7 +1260,8 @@ class SubscriptionController extends Controller
         }
 
 
-        return response()->json(['error' => false,
+        return response()->json([
+            'error' => false,
             'data' => [],
             'message' => $msg,
         ], 200);
@@ -1302,13 +1301,15 @@ class SubscriptionController extends Controller
             ]);
             Mail::to($email)->send(new PaymentFailedByWebHookEmail($emailData));
         } else {
-            return response()->json(['error' => true,
+            return response()->json([
+                'error' => true,
                 'data' => [],
                 'message' => 'Subscription not found to be update.',
             ]);
         }
 
-        return response()->json(['error' => false,
+        return response()->json([
+            'error' => false,
             'data' => [],
             'message' => 'Subscription Succeeded.',
         ], 200);
@@ -1323,7 +1324,6 @@ class SubscriptionController extends Controller
         $storeId = $request['store_id'] ?? null;
         if (blank($storeId)) {
             return Helpers::sendJsonResponse(true, "No store ID in request");
-
         }
         return Helpers::sendJsonResponse(false, "", SubscriptionStripePayments::getSubscriptionStripePayments($storeId));
     }
@@ -1354,12 +1354,8 @@ class SubscriptionController extends Controller
 
         if (!blank($fileUrl)) {
             return Helpers::sendJsonResponse(false, '', ['file_url' => $fileUrl]);
-
         }
 
         return Helpers::sendJsonResponse(true, $notFoundMessage);
-
-
     }
-
 }
