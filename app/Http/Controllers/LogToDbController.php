@@ -100,7 +100,7 @@ class LogToDbController extends Controller
     
             $logsData = $respdata = [];
             $url = Constant::LOGS_URL;
-            $logsResp = $this->sendCurlRequest($url, $postData);  
+            $logsResp = $this->sendCurlRequest($url, $postData); 
 
             if (Functions::isEnabledLogs($storeHash)) {
                 Log::info('StoreLogs output ' . json_encode($logsResp));
@@ -142,7 +142,7 @@ class LogToDbController extends Controller
                         $packageId = isset($requestData['packaging_id']) ? $requestData['packaging_id'] : '';
 
                         // Extract carrier name from log entry
-                        $carrierName = isset($data['carrier_name']) ? $data['carrier_name'] : '';
+                        $carrierName = isset($data['carrier']) ? $data['carrier'] : '';
 
                         if($prePackageId == $packageId){
                             $count++;
