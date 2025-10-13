@@ -14,6 +14,8 @@ use App\CustomClasses\BigCommerceFunctions;
 use App\CurlRequest;
 use Carbon\Carbon;
 use App\Models\EnableLog;
+use App\Models\InstalledCarrier;
+use App\Models\Carrier;
 class LogToDbController extends Controller
 {
     /**
@@ -115,6 +117,22 @@ class LogToDbController extends Controller
             if(isset($logsResp['severity']) && $logsResp['severity'] === "SUCCESS"){
                 if(isset($logsResp['data']) && !empty($logsResp['data'])){
 
+                    // Fetch installed carriers with nicknames for this store
+                    $installedCarriers = InstalledCarrier::join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
+                        ->where('installed_carriers.store_id', $request['store_id'])
+                        ->select('carriers.slug', 'installed_carriers.nickname')
+                        ->get()
+                        ->toArray();
+
+                    // Create a mapping from carrier name to nickname
+                    $carrierNicknameMap = [];
+                    foreach ($installedCarriers as $carrier) {
+                        $carrierName = Functions::getCarrNameBySlug($carrier['slug']);
+                        if ($carrierName) {
+                            $carrierNicknameMap[$carrierName] = $carrier['nickname'] ?? '';
+                        }
+                    }
+
                     $packageIds = $packagingDetails = [];
                     foreach ($logsResp['data'] as $data) {
                         $requestData = isset($data['request']) ? json_decode($data['request'], true) : [];
@@ -182,6 +200,7 @@ class LogToDbController extends Controller
                         $logsData[$key]['packaging_id'] = $packageId;
                         $logsData[$key]['response'] = isset($data['status']) ? $data['status'] : '';
                         $logsData[$key]['carrier_name'] = $carrierName;
+                        $logsData[$key]['nickname'] = isset($carrierNicknameMap[$carrierName]) ? $carrierNicknameMap[$carrierName] : '';
 
                         if (!empty($originKeys)){
                             foreach($originKeys[$locationIds[$count]] as $code){
