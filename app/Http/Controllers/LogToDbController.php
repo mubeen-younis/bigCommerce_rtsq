@@ -87,11 +87,10 @@ class LogToDbController extends Controller
 
             $page = $request->page ?? 1;
             $perPage = $request->perpage ?? 25;
-            $carrierName = Functions::getCarrNameBySlug($request->carrier_slug);
             $postData = [
                 'serverName' => $store['store_domain'] ?? '',
                 'lastLogs' => $request->perpage ?? 25,
-                'carrierName' => $carrierName ?? '',
+                'carrierName' => '', // Get all logs irrespective of carrier
                 'dont_auth' => '1',
             ];
 
@@ -141,6 +140,10 @@ class LogToDbController extends Controller
 
                         $requestData = isset($data['request']) ? json_decode($data['request'], true) : [];
                         $packageId = isset($requestData['packaging_id']) ? $requestData['packaging_id'] : '';
+
+                        // Extract carrier name from log entry
+                        $carrierName = isset($data['carrier_name']) ? $data['carrier_name'] : '';
+
                         if($prePackageId == $packageId){
                             $count++;
                         } else {
@@ -165,7 +168,7 @@ class LogToDbController extends Controller
                             $resp = preg_replace('/\s+/', '', $resp);
                         } else if ($carrierName === 'yrc'){
                             $resp = isset($data['response']) && !empty($data['response']) ? preg_replace('/\s+/', '', strip_tags($data['response'])) : json_encode((object) null);
-                        } else { 
+                        } else {
                             $resp = isset($data['response']) && !empty($data['response']) ? preg_replace('/\s+/', '', $data['response']) : json_encode((object) null);
                         }
                         if(!$this->isJson($resp) && $carrierName === 'FedEx Small'){
@@ -178,9 +181,10 @@ class LogToDbController extends Controller
                         $logsData[$key]['location_id'] = $locationIds[$count] ?? null;
                         $logsData[$key]['packaging_id'] = $packageId;
                         $logsData[$key]['response'] = isset($data['status']) ? $data['status'] : '';
+                        $logsData[$key]['carrier_name'] = $carrierName;
 
                         if (!empty($originKeys)){
-                            foreach($originKeys[$locationIds[$count]] as $code){ 
+                            foreach($originKeys[$locationIds[$count]] as $code){
                                 if (isset($lineitems['items'][$code]) && !empty($lineitems['items'][$code])){
 
                                     $logsData[$key]['quantity'][] = isset($lineitems['items'][$code]['piecesOfLineItem']) ? $lineitems['items'][$code]['piecesOfLineItem'] : '';
@@ -189,7 +193,7 @@ class LogToDbController extends Controller
                                 }
 
                                 if (isset($lineitems['origin'][$code]) && !empty($lineitems['origin'][$code])){
-                                    
+
                                     $logsData[$key]['sender'] = $lineitems['origin'][$code]['senderCity'] . ', ' . $lineitems['origin'][$code]['senderState'] . ' ' . $lineitems['origin'][$code]['senderZip'] . ' ' . $lineitems['origin'][$code]['senderCountryCode'];
                                 }
                             }
