@@ -951,10 +951,10 @@ class SubscriptionController extends Controller
         // Added this block of code for the bug of carrier count issue
         // Bug of enabling carriers according to plan
         $totalEnabledCarriersCount = InstalledCarrier::where('store_id', $storeId)->where('is_enabled', 1)->count();
-                Log::info('reqreq------------------tttt------------ totalEnabledCarriersCount on line 955' . json_encode([
-            $totalEnabledCarriersCount
-        ]));
         $data->total_remaining_carriers = $data->total_allowed_carriers - $totalEnabledCarriersCount;
+        Log::info('reqreq------------------dddd------------ data on line 955' . json_encode([
+            $data
+        ]));
         ////////////////////////////
         if (!is_null($data)) {
             $data->total_installed_carriers = $data->total_allowed_carriers - $data->total_remaining_carriers;
