@@ -1010,7 +1010,7 @@ class SubscriptionController extends Controller
         //Check: If current carriers installed are more than the choosed plan then return with message
         $currentSubscriptionDetail = $this->subscriptionDetailFromDB($storeId);
                 Log::info('reqreq------------------ssss------------ currentSubscriptionDetail on line 1013' . json_encode([
-            $requestArr
+            $currentSubscriptionDetail
         ]));
         if (($request['action'] == 1) && (is_null($currentSubscriptionDetail) ||
                 ($currentSubscriptionDetail->total_remaining_carriers <= 0) ||
