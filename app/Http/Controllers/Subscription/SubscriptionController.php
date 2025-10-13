@@ -945,6 +945,7 @@ class SubscriptionController extends Controller
             ->leftJoin('payment_methods as pm', 'pm.store_id', '=', 's.store_id')
             ->select('s.id as subscription_id', 's.store_id', 's.status', 's.ends_at', 's.plan_id', 's.created_at', 'cc.carrier_counts as total_remaining_carriers', 's.amount_charged', 'pl.name', 'pl.carrier_count as total_allowed_carriers', 'pm.last4', 'pm.is_default as is_default_payment_method')
             ->where('s.store_id', $storeId)->latest()->first();
+            dd("data", $data);
         if (blank($data)) {
             return null;
         }
@@ -1009,6 +1010,9 @@ class SubscriptionController extends Controller
         $storeId = $request['store_id'];
         //Check: If current carriers installed are more than the choosed plan then return with message
         $currentSubscriptionDetail = $this->subscriptionDetailFromDB($storeId);
+                Log::info('reqreq------------------ssss------------ currentSubscriptionDetail on line 1013' . json_encode([
+            $requestArr
+        ]));
         if (($request['action'] == 1) && (is_null($currentSubscriptionDetail) ||
                 ($currentSubscriptionDetail->total_remaining_carriers <= 0) ||
                 ($currentSubscriptionDetail->status == 3))) {
