@@ -342,24 +342,41 @@ class CarrierController extends Controller
     $subscription = new SubscriptionController();
     $status = (int) $request->status; // Possible values: 0 = disable/restore, 1 = enable, 2 = archive
 
+    // Check if any other installation of the same carrier_id is already enabled for this store
+    $isCarrierAlreadyEnabled = InstalledCarrier::where('store_id', $request['store_id'])
+        ->where('carrier_id', $carrier->carrier_id)
+        ->where('id', '!=', $carrier->id) // Exclude current installation record
+        ->where('is_enabled', 1)
+        ->exists();
+
     switch ($status) {
         case 1:
-            // Enable
-            $changeCount = ['store_id' => $request['store_id'], 'action' => 1];
-            $res = $subscription->changeCarrierCount($changeCount);
+            // Enable - skip count logic if the same carrier (carrier_id) is already enabled elsewhere
+            if (!$isCarrierAlreadyEnabled) {
+                $changeCount = ['store_id' => $request['store_id'], 'action' => 1];
+                $res = $subscription->changeCarrierCount($changeCount);
 
-            if ($res['error']) {
-                return response()->json([
-                    'error' => true,
-                    'message' => $res['message'],
-                ], 200);
+                if ($res['error']) {
+                    return response()->json([
+                        'error' => true,
+                        'message' => $res['message'],
+                    ], 200);
+                }
             }
             break;
 
         case 0:
-            // Disable or Restore
-            $changeCount = ['store_id' => $request['store_id'], 'action' => 0];
-            $subscription->changeCarrierCount($changeCount);
+            // Disable or Restore - only decrement if no other installation of this carrier remains enabled
+            $willOtherInstallationRemainEnabled = InstalledCarrier::where('store_id', $request['store_id'])
+                ->where('carrier_id', $carrier->carrier_id)
+                ->where('id', '!=', $carrier->id)
+                ->where('is_enabled', 1)
+                ->exists();
+
+            if (!$willOtherInstallationRemainEnabled && $carrier->is_enabled == 1) {
+                $changeCount = ['store_id' => $request['store_id'], 'action' => 0];
+                $subscription->changeCarrierCount($changeCount);
+            }
             break;
 
         case 2:

@@ -953,7 +953,11 @@ class SubscriptionController extends Controller
         }
         // Added this block of code for the bug of carrier count issue
         // Bug of enabling carriers according to plan
-        $totalEnabledCarriersCount = InstalledCarrier::where('store_id', $storeId)->where('is_enabled', 1)->count();
+        // Count unique carrier_id values (not total installation records) to handle multiple installations of same carrier
+        $totalEnabledCarriersCount = InstalledCarrier::where('store_id', $storeId)
+            ->where('is_enabled', 1)
+            ->distinct('carrier_id')
+            ->count('carrier_id');
          Log::info('reqreq------------------totalEnabledCarriersCount------------ data on line 957' . json_encode([
             $totalEnabledCarriersCount
         ]));
