@@ -323,7 +323,7 @@ class ConnectionController extends Controller
             ]);
         }
 
-        if (!isset($request->is_installing) && $request->is_installing != 1) {
+        if (isset($request->is_installing) && $request->is_installing != 1) {
             $installCarrier = new InstalledCarrier();
             // if (!isset($request->is_installing) && $request->is_installing != 1) {
             $checkCarrierType = DB::table('carriers')->select('slug', 'stores.name', 'stores.store_domain', 'stores.hash')
