@@ -787,7 +787,7 @@ class CompileQuotes
                     }
                     break;
                 case "upsLTL":
-                    $resp = $this->compileUpsLtlQuotes($shipment, $connectionSettings, $allOrigins);
+                    $resp = $this->compileUpsLtlQuotes($shipment, $connectionSettings, $allOrigins, $destination);
                     $quotesTemp['upsLTL'] = $resp;
                     if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
                         $quotesRes = array_merge($quotesRes, $resp);
@@ -884,7 +884,7 @@ class CompileQuotes
                     }
                     break;
                 case "centralTransport":
-                    $resp = $this->compileCTltlQuotes($shipment, $connectionSettings, $allOrigins);
+                    $resp = $this->compileCTltlQuotes($shipment, $connectionSettings, $allOrigins, $destination);
                     $quotesTemp['ctLtl'] = $resp;
                     if ((!empty($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (isset($resp['multiShipmentQuotes']) && !empty($resp['checkoutQuotes'])) || (!isset($resp['multiShipmentQuotes']) && !empty($resp))) {
                         $quotesRes = array_merge($quotesRes, $resp);
@@ -2691,7 +2691,7 @@ class CompileQuotes
         return $originQuotes ?? [];
     }
 
-public function compileCTltlQuotes($shipments, $connectionSettings, $allOrigins)
+public function compileCTltlQuotes($shipments, $connectionSettings, $allOrigins, $destination)
 {
     $ctLtl = new cTLTLQuotesResults();
 
@@ -2780,9 +2780,9 @@ public function compileCTltlQuotes($shipments, $connectionSettings, $allOrigins)
             }
 
             // Apply override rates shipping rule
-            $data = $this->applyOverrideRatesRule($connectionSettings, $data);
+            $data = $this->applyOverrideRatesRule($connectionSettings, $data, $destination);
             // Apply surcharge rates shipping rule
-            $data = $this->applySurchargeRatesRule($connectionSettings, $data);
+            $data = $this->applySurchargeRatesRule($connectionSettings, $data, $destination);
 
             $price = $this->calculatePrice($data);
             $access = $this->getAccessorialCode() . $resiPickup;
@@ -3948,7 +3948,7 @@ public function compileCTltlQuotes($shipments, $connectionSettings, $allOrigins)
         return $originQuotes;
     }
 
-    private function compileUpsLtlQuotes($shipments, $connectionSettings, $allOrigins)
+    private function compileUpsLtlQuotes($shipments, $connectionSettings, $allOrigins, $destination)
     {
         if ($this->residential['upsLtl'] == 'Y') {
             $this->isResi = true;
@@ -4049,9 +4049,9 @@ public function compileCTltlQuotes($shipments, $connectionSettings, $allOrigins)
                     $data['surcharges']['limitedAccessDeliveryFee'] = (float)$this->quoteSettings['limited_access_fee'];
                 }
                 // Apply override rates shipping rule
-                $data = $this->applyOverrideRatesRule($connectionSettings, $data);
+                $data = $this->applyOverrideRatesRule($connectionSettings, $data, $destination);
                 // Apply Surcharge rates shipping rule
-                $data = $this->applySurchargeRatesRule($connectionSettings, $data);
+                $data = $this->applySurchargeRatesRule($connectionSettings, $data, $destination);
                 $price = $this->calculatePrice($data);
                 $access = $this->getAccessorialCode();
 

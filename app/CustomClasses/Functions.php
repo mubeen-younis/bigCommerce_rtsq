@@ -331,8 +331,8 @@ class Functions
     public static function getCarrNameBySlug($carrSlug): ?string
     {
         $carrierCodesWithName = [
-            'ltl-quotes' => 'WWE LTL',
-            'ltl-quotes-new' => 'WWE LTL New API',
+            'ltl-quotes' => 'WWE LTL New API',
+            'ltl-quotes-new' => 'WWE LTL',
             'ups-ltl' => 'ups',
             'rl-ltl' => 'rnl',
             'xpo-ltl' => 'xpoLogistics',

@@ -127,6 +127,7 @@ class LogToDbController extends Controller
                     $carrierNicknameMap = [];
                     foreach ($installedCarriers as $carrier) {
                         $carrierName = Functions::getCarrNameBySlug($carrier['slug']);
+                        // dd("installedCarriers", $installedCarriers);
                         if ($carrierName) {
                             $carrierNicknameMap[$carrierName] = $carrier['nickname'] ?? '';
                         }
