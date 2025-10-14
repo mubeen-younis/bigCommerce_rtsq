@@ -103,6 +103,7 @@ class LogToDbController extends Controller
             $logsData = $respdata = [];
             $url = Constant::LOGS_URL;
             $logsResp = $this->sendCurlRequest($url, $postData); 
+            // dd("logsResp", $logsResp);
             if (Functions::isEnabledLogs($storeHash)) {
                 Log::info('StoreLogs output ' . json_encode($logsResp));
             }
@@ -117,19 +118,36 @@ class LogToDbController extends Controller
             if(isset($logsResp['severity']) && $logsResp['severity'] === "SUCCESS"){
                 if(isset($logsResp['data']) && !empty($logsResp['data'])){
 
-                    // Fetch installed carriers with nicknames for this store
+                    // Fetch installed carriers with nicknames and connection settings for this store
                     $installedCarriers = InstalledCarrier::join('carriers', 'carriers.id', 'installed_carriers.carrier_id')
+                        ->leftJoin('connection_settings', 'connection_settings.installed_carrier_id', 'installed_carriers.id')
                         ->where('installed_carriers.store_id', $request['store_id'])
-                        ->select('carriers.slug', 'installed_carriers.nickname')
+                        ->select('carriers.slug', 'installed_carriers.nickname', 'connection_settings.value as connection_value')
                         ->get()
                         ->toArray();
+// dd("installedCarriers", $installedCarriers);
                     // Create a mapping from carrier name to nickname
                     $carrierNicknameMap = [];
                     foreach ($installedCarriers as $carrier) {
-                        $carrierName = Functions::getCarrNameBySlug($carrier['slug']);
-                        // dd("installedCarriers", $installedCarriers);
-                        if ($carrierName) {
-                            $carrierNicknameMap[$carrierName] = $carrier['nickname'] ?? '';
+                        // For gtz-ltl, we need to determine which API type based on connection_settings
+                        if ($carrier['slug'] === 'gtz-ltl' && !empty($carrier['connection_value'])) {
+                            $connectionData = json_decode($carrier['connection_value'], true);
+                            $apiType = $connectionData['api_type'] ?? '';
+
+                            // Map the api_type to the carrier name used in logs
+                            if ($apiType === 'CRS') {
+                                $carrierNicknameMap['cerasis'] = $carrier['nickname'] ?? '';
+                            } elseif ($apiType === 'NEWAPI') {
+                                $carrierNicknameMap['GlobalTranz New API'] = $carrier['nickname'] ?? '';
+                            } elseif ($apiType === 'GTZ') {
+                                $carrierNicknameMap['globalTranz'] = $carrier['nickname'] ?? '';
+                            }
+                        } else {
+                            // For non-gtz carriers, use the standard mapping
+                            $carrierName = Functions::getCarrNameBySlug($carrier['slug']);
+                            if ($carrierName && !is_array($carrierName)) {
+                                $carrierNicknameMap[$carrierName] = $carrier['nickname'] ?? '';
+                            }
                         }
                     }
                     $packageIds = $packagingDetails = [];

@@ -328,7 +328,7 @@ class Functions
         return $carrierCodesWithName[$carrierCode] ?? null;
     }
 
-    public static function getCarrNameBySlug($carrSlug): ?string
+    public static function getCarrNameBySlug($carrSlug)
     {
         $carrierCodesWithName = [
             'ltl-quotes' => 'WWE LTL New API',
@@ -337,9 +337,8 @@ class Functions
             'rl-ltl' => 'rnl',
             'xpo-ltl' => 'xpoLogistics',
             'fedex-ltl' => 'fedex',
-            'gtz-new' => 'GlobalTranz New API',
-            'gtz-ltl' => 'GlobalTranz New API',
-            'cltl' => 'cerasis',
+            'gtz-ltl' => ['cerasis', 'GlobalTranz New API', 'globalTranz'],
+            'ct-ltl' => 'centralTransport',
             'ups-ship-engine' => 'ShipEngine',
             'small-package' => 'WWE SmPkg',
             'small-package-new' => 'WWE Small New API',
