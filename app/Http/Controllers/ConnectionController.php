@@ -264,15 +264,9 @@ class ConnectionController extends Controller
 
             // Handle data storage when testType is false
             if (isset($request->nickname) && !empty($request->nickname) && (!isset($request->testType) || $request->testType == false)) {
-                // Ensure we have the actual carrier_id from carriers table, not installed_carrier_id
+                // During installation (is_installing = 1), carrierId is from carriers table
+                // We should use it directly without checking installed_carriers
                 $actualCarrierId = $request->carrierId;
-
-                // Check if the provided ID is from installed_carriers table instead of carriers table
-                $checkIfInstalledCarrier = InstalledCarrier::find($request->carrierId);
-                if ($checkIfInstalledCarrier) {
-                    // If it's an installed_carrier_id, get the actual carrier_id
-                    $actualCarrierId = $checkIfInstalledCarrier->carrier_id;
-                }
 
                 $subscription = new SubscriptionController();
 
