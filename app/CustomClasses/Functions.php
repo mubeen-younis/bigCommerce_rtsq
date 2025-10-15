@@ -340,7 +340,7 @@ class Functions
             'gtz-ltl' => ['cerasis', 'GlobalTranz New API', 'globalTranz'],
             'ct-ltl' => 'centralTransport',
             'ups-ship-engine' => 'shipEngine',
-            'small-package' => 'WWE SmPkg',
+            'small-package' => 'WWE Small New API',
             'small-package-new' => 'WWE Small New API',
             'unishippers-small' => ['unisheppers', 'Unishippers Small New API'],
             'ups-small' => 'UPS Small',

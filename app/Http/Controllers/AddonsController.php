@@ -244,9 +244,9 @@ class AddonsController extends Controller
                     // If not found, create a new record
                     $installAddon = InstalledAddon::create([
                         // Set attributes for the new record
-                        'store_id' => $storeId, 
-                        'addon_id' => $addon['id'], 
-                        'is_enabled' => false,
+                        'store_id' => $storeId,
+                        'addon_id' => $addon['id'],
+                        'is_enabled' => true,
                     ]);
                 }
             }
