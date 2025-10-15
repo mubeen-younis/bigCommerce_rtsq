@@ -103,7 +103,6 @@ class LogToDbController extends Controller
             $logsData = $respdata = [];
             $url = Constant::LOGS_URL;
             $logsResp = $this->sendCurlRequest($url, $postData); 
-            // dd("logsResp", $logsResp);
             if (Functions::isEnabledLogs($storeHash)) {
                 Log::info('StoreLogs output ' . json_encode($logsResp));
             }
@@ -125,7 +124,6 @@ class LogToDbController extends Controller
                         ->select('carriers.slug', 'installed_carriers.nickname', 'connection_settings.value as connection_value')
                         ->get()
                         ->toArray();
-// dd("installedCarriers", $installedCarriers);
                     // Create a mapping from carrier name to nickname
                     $carrierNicknameMap = [];
                     foreach ($installedCarriers as $carrier) {
@@ -141,6 +139,28 @@ class LogToDbController extends Controller
                                 $carrierNicknameMap['GlobalTranz New API'] = $carrier['nickname'] ?? '';
                             } elseif ($apiType === 'GTZ') {
                                 $carrierNicknameMap['globalTranz'] = $carrier['nickname'] ?? '';
+                            }
+                        } elseif ($carrier['slug'] === 'unishippers-small' && !empty($carrier['connection_value'])) {
+                            // For unishippers-small, we need to determine which API type based on connection_settings
+                            $connectionData = json_decode($carrier['connection_value'], true);
+                            $apiType = $connectionData['api_type'] ?? '';
+
+                            // Map the api_type to the carrier name used in logs
+                            if ($apiType === 'new_api') {
+                                $carrierNicknameMap['Unishippers Small New API'] = $carrier['nickname'] ?? '';
+                            } else {
+                                $carrierNicknameMap['unisheppers'] = $carrier['nickname'] ?? '';
+                            }
+                        } elseif ($carrier['slug'] === 'fedex-small' && !empty($carrier['connection_value'])) {
+                            // For fedex-small, we need to determine which API type based on connection_settings
+                            $connectionData = json_decode($carrier['connection_value'], true);
+                            $apiType = $connectionData['api_type'] ?? '';
+
+                            // Map the api_type to the carrier name used in logs
+                            if ($apiType === 'new_api') {
+                                $carrierNicknameMap['FedEx Small New API'] = $carrier['nickname'] ?? '';
+                            } else {
+                                $carrierNicknameMap['FedEx Small'] = $carrier['nickname'] ?? '';
                             }
                         } else {
                             // For non-gtz carriers, use the standard mapping

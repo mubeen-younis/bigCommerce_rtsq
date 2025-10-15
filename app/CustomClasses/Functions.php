@@ -339,13 +339,12 @@ class Functions
             'fedex-ltl' => 'fedex',
             'gtz-ltl' => ['cerasis', 'GlobalTranz New API', 'globalTranz'],
             'ct-ltl' => 'centralTransport',
-            'ups-ship-engine' => 'ShipEngine',
+            'ups-ship-engine' => 'shipEngine',
             'small-package' => 'WWE SmPkg',
             'small-package-new' => 'WWE Small New API',
-            'unishippers-small-new' => 'Unishippers Small New API',
+            'unishippers-small' => ['unisheppers', 'Unishippers Small New API'],
             'ups-small' => 'UPS Small',
-            'fedex-small' => 'FedEx Small',
-            'unishippers-small' => 'unisheppers',
+            'fedex-small' => ['FedEx Small', 'FedEx Small New API'],
             'freightquote-ltl' => 'b2b',
             'freightquote-chr-ltl' => 'b2b',
             'purolator-small' => 'purolator',
@@ -364,8 +363,8 @@ class Functions
             'fedex-ltl-new' => 'FedEx LTL New API',
             'southeastern-ltl' => 'southeastern',
             'unishipper-ltl' => 'Unishippers LTL New API',
-            'ups-land-cost-small' => 'UPSLandedCost',
-            'fedex-small-new' => 'FedEx Small New API'
+            'ups-land-cost-small' => 'UPSLandedCost'
+
         ];
 
         return $carrierCodesWithName[$carrSlug] ?? null;
@@ -1493,13 +1492,13 @@ class Functions
 
                                 $quotes = [];
 
-                                if (isset($q->q) && $serviceName != 'Truckload Service' ) {
+                                if (isset($q->q) && $serviceName != 'Truckload Service') {
                                     $quotes = $q->q ?? [];
-                                } 
+                                }
                                 if (isset($q->Truckload) && $serviceName == 'Truckload Service') {
                                     $quotes = $q->Truckload ?? [];
                                 }
-                                    
+
                                 foreach ($quotes as $service) {
                                     $serviceCode = isset($service->serviceType) ? $service->serviceType : ' ';
                                     $length = strlen($serviceCode);
@@ -1545,7 +1544,11 @@ class Functions
         }
 
         $carriers = isset($requestArr['requestArr']['carriers']) ? $requestArr['requestArr']['carriers'] : [];
-        $binResp = isset($requestArr['binReponse']) ? $requestArr['binReponse'] : [];
+        $binResp = !empty($requestArr['binReponse'])
+            ? $requestArr['binReponse']
+            : (!empty($requestArr['palletResponse'])
+                ? $requestArr['palletResponse']
+                : []);
         $packingId = '';
         if (!blank($carriers)) {
             $packingId = Helpers::getUuid();

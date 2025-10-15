@@ -72,7 +72,7 @@ class GetRatesController extends Controller
         if ($storeData == null) {
             return [];
         }
-
+        
         if (!$this->storePlanStatus($storeData['store']['id'])) {
             return [];
         }

@@ -1766,7 +1766,7 @@ class CompileQuotes
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data, $destination);
 
                         // Apply Surcharge rates shipping rule
-                        $data = $this->applySurchargeRatesRule($connectionSettings, $data);
+                        $data = $this->applySurchargeRatesRule($connectionSettings, $data, $destination);
                         $date = $data['EstimatedDeliveryDate'] ?? null;
                         $days = $data['totalTransitTimeInDays'] ?? null;
                         $dateAndDays = ['deliveryDate' => $date, 'totalTransitTimeInDays' => $days];
