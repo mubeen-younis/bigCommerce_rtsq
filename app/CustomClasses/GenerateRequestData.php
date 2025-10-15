@@ -96,8 +96,8 @@ class GenerateRequestData
          *  Check: if RAD is not installed or inactive, then using keyword search to validate Po Box address
          *  Also Check: if Address is standard then keyword search not applied.
          **/
-        if(!$RadIsEnaled){
-        $this->destinationIsPOBox($destination);
+        if (!$RadIsEnaled) {
+            $this->destinationIsPOBox($destination);
         }
         if (Functions::isPOBoxAddress($rad_settings, $this->isPoBOX) && !SmartyStreet::$isStandAddress) {
             Log::info('Return 2 ' . json_encode($rad_settings));
@@ -212,7 +212,7 @@ class GenerateRequestData
                     $carriersArr['carriers']['estes'] = $wweLtlArr;
                     $errorManagment['estes'] = $con1['quote_settings']['error_managment'] ?? 1;
                     break;
-                     case 'ct-ltl':
+                case 'ct-ltl':
                     $wweLtlArr = $this->ctltlEnitArr($con1, $destination);
                     $wweLtlArr['originAddress'] = $enitOrigin;
                     $carriersArr['carriers']['centralTransport'] = $wweLtlArr;
@@ -580,7 +580,7 @@ class GenerateRequestData
         ];
     }
 
-      public function ctltlEnitArr($connSettings, $destination)
+    public function ctltlEnitArr($connSettings, $destination)
     {
         return [
             'licenseKey' => '',
@@ -850,11 +850,64 @@ class GenerateRequestData
         // Pallet packaging request
         $palletResp = $palletBins = [];
         $palletPkgResp = $carriersOriginAddress = [];
-        $palletPkg = new PalletPackaging($itemsArr, $this->storeData, $cartInfo);
+
+
+
+        $palletOrigin   = $request['lineItemData']['origin'];
+        $palletItemsArr = $itemsArr;
+
+        // get quote_settings once
+        $quo_settings = [];
+        foreach ($this->connectionSettings as $conn) {
+            $quo_settings = $conn['quote_settings'] ?? [];
+            break; // take first one
+        }
+
+        // Step 1: Map products to their origins (by position)
+        $originProductMap = [];
+        $origins = array_values($palletOrigin);  // ensure numeric index
+
+        $i = 0;
+        foreach ($palletItemsArr as $productId => $product) {
+            $originData = $origins[$i] ?? null;
+            if ($originData) {
+                // Use address as grouping key (or serialize whole origin)
+                $originKey = $originData['address'] . '_' . $originData['senderZip'];
+
+                $originProductMap[$originKey]['origin'] = $originData;
+                $originProductMap[$originKey]['products'][$productId] = $product;
+            }
+            $i++;
+        }
+
+        // Step 2: Check weight conditions per origin group
+        foreach ($originProductMap as $originKey => $group) {
+            $totalItemWeight = 0;
+            $freightEnabled = false;
+            foreach ($group['products'] as $pItem) {
+                $pieces = (float) ($pItem['piecesOfLineItem'] ?? 0);
+                $weight = (float) ($pItem['lineItemWeight'] ?? 0);
+                $totalItemWeight += $pieces * $weight;
+                if ($pItem['freight_enabled'] == 'Y') {
+                    $freightEnabled = true;
+                }
+            }
+            $threshold = $quo_settings['weight_threshold'] ?? null;
+            $condition = ($threshold !== null && $totalItemWeight <= $threshold && !$freightEnabled)
+                || ($threshold === null && $totalItemWeight < 150 && !$freightEnabled);
+            if ($condition) {
+                // remove all products of this origin
+                foreach ($group['products'] as $productId => $_) {
+                    unset($palletItemsArr[$productId]);
+                }
+            }
+        }
+
+        $palletPkg = new PalletPackaging($palletItemsArr, $this->storeData, $cartInfo);
 
         if ($palletPkg->isAddonEnabled()) {
             $ltlCarriers = $palletPkg->ltlCarriers ?? [];
-            
+
             if (!empty($ltlCarriers)) {
                 foreach ($ltlCarriers as $carrName) {
                     if (isset($carriers[$carrName])) {
@@ -1603,7 +1656,7 @@ class GenerateRequestData
         return array_merge($apiArray, $this->getCutOffDetails($connSettings));
     }
 
-     public function getApiInfoCtLtl($connSettings, $destination)
+    public function getApiInfoCtLtl($connSettings, $destination)
     {
 
         $liftGate = ((isset($connSettings['quote_settings']['alwaysLiftGateDelivery']) && $connSettings['quote_settings']['alwaysLiftGateDelivery']) ||

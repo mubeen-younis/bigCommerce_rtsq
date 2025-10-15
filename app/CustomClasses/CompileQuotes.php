@@ -4838,7 +4838,6 @@ public function compileCTltlQuotes($shipments, $connectionSettings, $allOrigins,
 
                         // Apply override rates shipping rule
                         $data = $this->applyOverrideRatesRule($connectionSettings, $data, $destination);
-                        // dd("data", $data);
                         // Apply Surcharge rates shipping rule
                         $data = $this->applySurchargeRatesRule($connectionSettings, $data, $destination);
 
@@ -4889,7 +4888,6 @@ public function compileCTltlQuotes($shipments, $connectionSettings, $allOrigins,
 
             $count++;
         }
-// dd("originQuotes", $originQuotes);
         return $originQuotes ?? [];
     }
 
