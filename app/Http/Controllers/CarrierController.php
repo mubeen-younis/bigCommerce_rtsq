@@ -29,7 +29,7 @@ class CarrierController extends Controller
     {
         $response = [
             'error' => false,
-            'carriers' => Carrier::get(),
+            'carriers' => Carrier::where('status', 1)->get(),
         ];
 
         return response()->json($response, 200);
