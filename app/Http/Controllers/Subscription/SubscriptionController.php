@@ -575,7 +575,7 @@ class SubscriptionController extends Controller
                 //Else part will be executed in case of trial and we need to update the subscription table for a trial
                 /*This block of code will check if customer already subscribe trial plan
                 and is allowed to subscribe trial plan*/
-                $trialDays = Carbon::now()->addDays(self::$plansData['plan_id'] == 5 ? 1825 : 14);
+                $trialDays = Carbon::now()->addDays(self::$plansData['plan_id'] == 5 ? 1825 : 15);
                 $trialSubscription = Subscription::where('store_id', $data['store_id'])->where('plan_id', self::$plansData['plan_id'])->first();
                 if (!blank($trialSubscription)) {
                     $dbTrialEndDate = $trialSubscription->ends_at;
