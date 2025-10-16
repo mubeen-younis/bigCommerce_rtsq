@@ -238,7 +238,7 @@ class LogToDbController extends Controller
                         $logsData[$key]['response'] = isset($data['status']) ? $data['status'] : '';
                         $logsData[$key]['carrier_name'] = $carrierName;
                         $logsData[$key]['nickname'] = !empty($carrierNicknameMap[$carrierName]) ? $carrierNicknameMap[$carrierName] : $carrierName;
-                        if (!empty($originKeys)){
+                        if (!empty($originKeys) && isset($locationIds[$count])){
                             foreach($originKeys[$locationIds[$count]] as $code){
                                 if (isset($lineitems['items'][$code]) && !empty($lineitems['items'][$code])){
 
