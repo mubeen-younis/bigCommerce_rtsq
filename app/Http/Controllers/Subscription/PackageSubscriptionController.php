@@ -323,7 +323,7 @@ class PackageSubscriptionController extends Controller
             $packageIdToBeRenew = $getPackageToBeActivated ? $getPackageToBeActivated->package_id : null;
             if (isset($packageIdToBeRenew) && ($packageIdToBeRenew == 1 || $packageIdToBeRenew == 7 || $packageIdToBeRenew == 15)) {
                 PackageToBeCharge::where('subscription_id', $currentPackageSub->id)->update([
-                    'package_id' => null,
+                    'package_id' => null, 
                     'status' => 0,
                     'requested_date' => now(),
                 ]);
