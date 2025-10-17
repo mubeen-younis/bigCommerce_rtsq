@@ -206,7 +206,7 @@ class PackageSubscriptionController extends Controller
                 'message' => "You don't have any Real-time Shipping Quotes Plan to subscribe the Addon",
             ];
         }
-        if (isset($mainSubscription->plan_id) && $mainSubscription->plan_id == self::$mainSubTrial && ($data['package'] != self::$dynamicTrial && $data['package'] != self::$dynamicDevPlan)) {
+        if (isset($mainSubscription->plan_id) && $mainSubscription->plan_id == self::$mainSubTrial && ($data['package'] != self::$dynamicTrial && $data['package'] != self::$dynamicDevPlan && $data['package'] != self::$disableAddon)) {
             return [
                 'error' => true,
                 'data' => [],
