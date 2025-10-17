@@ -318,10 +318,21 @@ class PackageSubscriptionController extends Controller
         }
         //Customer wants to disable auto-renewal
         if (isset($data['package']) && $data['package'] == self::$disableAddon && $updateSubscription == self::$updateToBeChargeonly) {
-            PackageToBeCharge::where('subscription_id', $currentPackageSub->id)->update([
-                'status' => ($packageID != self::$dynamicTrial && $packageID != self::$disableAddon && $packageID != self::$dynamicDevPlan) ? 1 : 0,
-                'requested_date' => now(),
-            ]);
+
+            $getPackageToBeActivated = PackageToBeCharge::where('subscription_id', $currentPackageSub->id)->first();
+            $packageIdToBeRenew = $getPackageToBeActivated ? $getPackageToBeActivated->package_id : null;
+            if (isset($packageIdToBeRenew) && ($packageIdToBeRenew == 1 || $packageIdToBeRenew == 7 || $packageIdToBeRenew == 15)) {
+                PackageToBeCharge::where('subscription_id', $currentPackageSub->id)->update([
+                    'package_id' => null,
+                    'status' => 0,
+                    'requested_date' => now(),
+                ]);
+            } else {
+                PackageToBeCharge::where('subscription_id', $currentPackageSub->id)->update([
+                    'status' => ($packageID != self::$dynamicTrial && $packageID != self::$disableAddon && $packageID != self::$dynamicDevPlan) ? 1 : 0,
+                    'requested_date' => now(),
+                ]);
+            }
         }
 
         if (
