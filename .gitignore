@@ -6,7 +6,6 @@
 /storage/*.key
 /vendor
 /app/Constants/constant.php
-.env
 .env.backup
 .phpunit.result.cache
 Homestead.json
@@ -16,3 +15,4 @@ yarn-error.log
 /.idea
 /composer.lock
 /app/Helpers/
+config.bat
