@@ -63,6 +63,7 @@ class GetRatesController extends Controller
         Log::info('Request ' . json_encode($request->all()));
         $storeHash = $request->base_options['store_id'] ?? null;
         $storeData = $this->getStoreData($storeHash);
+        $storeId = $storeData['store']['id'];
 
         /*Setting Stripe APi key
         Bug fix of plan auto renews
@@ -72,7 +73,7 @@ class GetRatesController extends Controller
         if ($storeData == null) {
             return [];
         }
-        
+
         if (!$this->storePlanStatus($storeData['store']['id'])) {
             return [];
         }
@@ -102,9 +103,95 @@ class GetRatesController extends Controller
             }
         }
 
+        $connSettings = $this->connectionSettings;
         if ($this->isShippingRule($storeData, $this->formatReq)) {
+            dd("lll");
             return [];
         }
+
+        // aaaa
+
+        // $shippingRules = ShippingRule::getStoreShippingRules($storeId);
+        // $initialFormattedRequest = $this->formatReq;
+
+        // if (!empty($shippingRules)) {
+
+        //     foreach ($shippingRules as $key => $rule) {
+
+        //         $filterSettings = json_decode($rule['filter_settings'], true) ?? null;
+        //         $ruleProduct = $rule['products']['0']['value'] ?? "";
+        //         foreach ($this->formatReq['lineItemData']['items'] as $items) {
+        //             $cartProduct = $items['product_id'];
+        //         }
+        //         $restrictedBrands = isset($rule['brands']) ? $rule['brands'] : [];
+        //         if (!empty($restrictedBrands)) {
+        //             foreach ($restrictedBrands as $rpKey => $brandId) {
+        //                 $filterBrands = collect($this->formatReq['lineItemData']['items'])->where('brand_id', $brandId)->all() ?? [];
+        //             }
+        //         }
+
+        //         $restrictedCategories = isset($rule['categories']) ? $rule['categories'] : [];
+
+        //         if (!empty($restrictedCategories)) {
+        //             $categoriesIds = array_column($this->formatReq['lineItemData']['items'], 'categories_id');
+        //             $flattenedCategoriesIds = array_values(array_merge(...$categoriesIds)) ?? [];
+
+        //             $filterCategories = collect($restrictedCategories)->intersect($flattenedCategoriesIds) ?? [];
+        //             foreach ($filterCategories as $categoryId) {
+        //                 $categoriesProducts = collect($this->formatReq['lineItemData']['items'])->filter(function ($item) use ($categoryId) {
+        //                     return in_array($categoryId, $item['categories_id']);
+        //                 })->toArray() ?? [];
+        //             }
+        //         }
+
+        //         if (isset($rule['rule_type']) && $rule['rule_type'] == 2 && $rule['apply_to'] == 2) {
+
+        //             $allOrigins =  $this->formatReq['lineItemData']['origin'];
+
+        //             $formatedReq = [];
+        //             foreach ($allOrigins as $origin) {
+        //                 $originKey = $origin['locationId'];
+
+        //                 $hideShipmentRates = $this->hideShipmentRates($storeId, $this->formatReq['lineItemData']['items'], $this->connectionSettings, $originKey, $allOrigins, $this->formatReq, $rule);
+
+        //                 $formatedReq = $hideShipmentRates['formatReq'];
+        //                 $this->formatReq = $formatedReq;
+
+        //                 // all filter
+        //                 $applyToAll = $filterSettings['apply_to_all'] ?? false;
+
+        //                 if (isset($applyToAll) && $applyToAll) {
+        //                     if (isset($filterSettings['apply_rule_to']) && !empty($filterSettings['apply_rule_to'])) {
+        //                         if (
+        //                             ($hideShipmentRates['isFilterWeight'] == false && $hideShipmentRates['isFilterWeightCheck'] == false) ||
+        //                             ($hideShipmentRates['isFilterQuantity'] == false && $hideShipmentRates['isFilterQuantityCheck'] == false) ||
+        //                             ($hideShipmentRates['isFilterPrice'] == false && $hideShipmentRates['isFilterPriceCheck'] == false) ||
+        //                             (!empty($ruleProduct) && !empty($cartProduct) && ((int)$ruleProduct !== (int)$cartProduct)) ||
+        //                             (empty($filterBrands)) ||
+        //                             (empty($categoriesProducts))
+        //                         ) {
+        //                             $this->formatReq = $initialFormattedRequest;
+        //                             $this->connectionSettings = $connSettings;
+        //                         }
+        //                     } else {
+        //                         if (
+        //                             ($hideShipmentRates['isFilterWeight'] == false && $hideShipmentRates['isFilterWeightCheck'] == false) ||
+        //                             ($hideShipmentRates['isFilterQuantity'] == false && $hideShipmentRates['isFilterQuantityCheck'] == false) ||
+        //                             ($hideShipmentRates['isFilterPrice'] == false && $hideShipmentRates['isFilterPriceCheck'] == false)
+        //                         ) {
+        //                             $this->formatReq = $initialFormattedRequest;
+        //                         }
+        //                     }
+        //                 }
+        //                 // all filter
+        //             }
+        //         }
+        //     }
+        // }
+        // aaaa
+
+
+
         // Apply Nesting items functionality
         if (!empty($this->formatReq['lineItemData']['items'])) {
             $this->itemsTobeNested($this->formatReq['lineItemData']['items'], $cartInfo['store_id']);
@@ -687,7 +774,7 @@ class GetRatesController extends Controller
                     if (isset($quoteSettings->value)) {
                         $this->connectionSettings[$connectionSettings->slug]['quote_settings'] = json_decode($quoteSettings->value, true);
                     }
-                    
+
                     $carrierServices = AdditionalCarrierTabSetting::where('installed_carrier_id', $installedCarrier->id)->first();
 
                     if (isset($carrierServices->value)) {

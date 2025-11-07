@@ -515,7 +515,6 @@ class ProductSettingController extends Controller
         } else {
             $endpoint = BigCommerceFunctions::$initalUrl . $request['store_hash'] . "/v3/catalog/products?direction=" . $sortProd . "&sort=name" . "&limit=" . $perPage . "&page=" . $page;
         }
-
         $response = $this->curlRequest->enSingleCurlRequest($endpoint, [], $headers, 'GET', false);
 
         $resp = $products = [];

@@ -64,11 +64,13 @@ class GenerateRequestData
     public function _init(
         $quoteSettings,
         $connectionSettings,
-        $storeData
+        $storeData,
+        $destination
     ) {
         $this->storeData = $storeData;
         $this->quoteSettings = $quoteSettings;
         $this->connectionSettings = $connectionSettings;
+        $this->destination = $destination;
         $this->simpleRate = false;
     }
 
@@ -111,7 +113,7 @@ class GenerateRequestData
         $errorManagment = [];
 
         $shippingRule = new ShippingRuleController();
-        $this->connectionSettings = $shippingRule->applyHideMethodRule($this->storeData['store']['id'], $lineItems, $this->connectionSettings);
+        $this->connectionSettings = $shippingRule->applyHideMethodRule($this->storeData['store']['id'], $lineItems, $this->connectionSettings, $this->destination);
         Log::info('Pass 2 ' . json_encode($this->connectionSettings));
         $this->storeDateTime = $this->getBCStoreDateTime();
 

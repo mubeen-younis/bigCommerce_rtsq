@@ -176,6 +176,9 @@ class ShippingRule extends Model
                         "filter_products" => $shippingRuleData['filter_products'] ?? [], 
 			            "filter_brands" => $shippingRuleData['filter_brands'] ?? [],
                         "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
+                        "filter_country" => $shippingRuleData['filter_country'] ?? '',
+                        "filter_state_province" => $shippingRuleData['filter_state_province'] ?? '',
+                        "isLocationFilter" => $shippingRuleData['isLocationFilter'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
@@ -233,6 +236,9 @@ class ShippingRule extends Model
                         "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
                         "filter_country" => $shippingRuleData['filter_country'] ?? '',
                         "filter_state_province" => $shippingRuleData['filter_state_province'] ?? '',
+                        "filter_max_shipping_rate" => $shippingRuleData['filter_max_shipping_rate'] ?? '',
+                        "isFilterMaxShippingRate" => $shippingRuleData['isFilterMaxShippingRate'] ?? '',
+                        "isLocationFilter" => $shippingRuleData['isLocationFilter'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
@@ -263,6 +269,9 @@ class ShippingRule extends Model
 			            "filter_brands" => $shippingRuleData['filter_brands'] ?? [],
                         "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
                         "service_rates" => $shippingRuleData['service_rates'] ?? '',
+                        "filter_country" => $shippingRuleData['filter_country'] ?? '',
+                        "filter_state_province" => $shippingRuleData['filter_state_province'] ?? '',
+                        "isLocationFilter" => $shippingRuleData['isLocationFilter'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;

@@ -64,10 +64,11 @@ class Shipping
     public function collectRates($request, $storeData, $connectionSettings, $cartInfo, $isDbscInstalled = false)
     {
         $quoteSettings = $multiShipmentQuotes = [];
+        $destination = $request['lineItemData']['destination'];
         $generateReqData = new GenerateRequestData();
         //   init is a function to call it explixitlitly rather constructor
 
-        $generateReqData->_init($quoteSettings, $connectionSettings, $storeData);
+        $generateReqData->_init($quoteSettings, $connectionSettings, $storeData, $destination);
         $origins = $request['lineItemData']['origin'];
         // Check if any of the item in the cart has selected quote as instore or local delivery
         $this->showOnlyLocAndInstoreQuote = $this->showOnlyLocAndInstoreQuote($request['lineItemData']['items']);
@@ -83,7 +84,7 @@ class Shipping
         Will calculate DBSC rates
         And also Order widget Details*/
         $store_id = $storeData['store']['id'];
-        $destination = $request['lineItemData']['destination'];
+        // $destination = $request['lineItemData']['destination'];
         $items = $request['lineItemData']['items'];
 
         try {
