@@ -78,7 +78,7 @@ class GenerateRequestData
      * function that generates Wwe array
      * @return array
      */
-    public function generateEnitureArray($origin, $destination, $lineItems)
+    public function generateEnitureArray($origin, $destination, $lineItems, $formData, $storeData)
     {
         $rad_settings = Functions::getRADsettings($this->storeData['store']['id']);
         /**
@@ -113,7 +113,7 @@ class GenerateRequestData
         $errorManagment = [];
 
         $shippingRule = new ShippingRuleController();
-        $this->connectionSettings = $shippingRule->applyHideMethodRule($this->storeData['store']['id'], $lineItems, $this->connectionSettings, $this->destination);
+        $this->connectionSettings = $shippingRule->applyHideMethodRule($this->storeData['store']['id'], $lineItems, $this->connectionSettings, $this->destination, $formData, $storeData);
         Log::info('Pass 2 ' . json_encode($this->connectionSettings));
         $this->storeDateTime = $this->getBCStoreDateTime();
 

@@ -23,13 +23,13 @@ class ShippingRule extends Model
      */
     public static function getStoreShippingRules($storeId, $ruleType = ''): array
     {
-        if(!empty($ruleType)){
+        if (!empty($ruleType)) {
             $rules = optional(self::where(['store_id' => $storeId, 'rule_type' => $ruleType])->get())->toArray() ?? [];
         } else {
             $rules = optional(self::where('store_id', $storeId)->get())->toArray() ?? [];
         }
 
-        foreach($rules as $key => $rule){
+        foreach ($rules as $key => $rule) {
             $rules[$key] = self::shippingRuleMappingByRuleType($rule);
         }
         return $rules;
@@ -80,7 +80,6 @@ class ShippingRule extends Model
                 $response[0]['title'] = $title[0] ?? "Shipping";
             } else {
                 $response[0]['title'] = "Shipping";
-
             }
         }
         $response[0]['rate'] = $rate;
@@ -148,14 +147,14 @@ class ShippingRule extends Model
 
         $ruleType = isset($shippingRuleData['rule_type']) && !empty($shippingRuleData['rule_type']) ? $shippingRuleData['rule_type'] : null;
 
-        if($ruleType != null){
+        if ($ruleType != null) {
             switch ($ruleType) {
                 case 1:
                     $shippingRule->filter_name = $shippingRuleData['filter_country'] ?? '';
                     $settings = [
                         "filter_categories" => $shippingRuleData['filter_categories'] ?? [],
-                        "filter_products" => $shippingRuleData['filter_products'] ?? [], 
-			            "filter_brands" => $shippingRuleData['filter_brands'] ?? [],
+                        "filter_products" => $shippingRuleData['filter_products'] ?? [],
+                        "filter_brands" => $shippingRuleData['filter_brands'] ?? [],
                         "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
@@ -163,9 +162,9 @@ class ShippingRule extends Model
                 case 2:
                     $shippingRule->filter_name = $shippingRuleData['filter_provider'] ?? '';
                     $settings = [
-                        "isFilterWeight" => $shippingRuleData['isFilterWeight'] ?? false, 
-			            "isFilterPrice" => $shippingRuleData['isFilterPrice'] ?? false,
-			            "isFilterQuantity" => $shippingRuleData['isFilterQuantity'] ?? false,
+                        "isFilterWeight" => $shippingRuleData['isFilterWeight'] ?? false,
+                        "isFilterPrice" => $shippingRuleData['isFilterPrice'] ?? false,
+                        "isFilterQuantity" => $shippingRuleData['isFilterQuantity'] ?? false,
                         "weightFrom" => $shippingRuleData['weight_from'] ?? '',
                         "weightTo" => $shippingRuleData['weight_to'] ?? '',
                         "priceFrom" => $shippingRuleData['price_from'] ?? '',
@@ -173,12 +172,16 @@ class ShippingRule extends Model
                         "quantityFrom" => $shippingRuleData['quantity_from'] ?? '',
                         "quantityTo" => $shippingRuleData['quantity_to'] ?? '',
                         "filter_categories" => $shippingRuleData['filter_categories'] ?? [],
-                        "filter_products" => $shippingRuleData['filter_products'] ?? [], 
-			            "filter_brands" => $shippingRuleData['filter_brands'] ?? [],
+                        "filter_products" => $shippingRuleData['filter_products'] ?? [],
+                        "filter_brands" => $shippingRuleData['filter_brands'] ?? [],
                         "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
                         "filter_country" => $shippingRuleData['filter_country'] ?? '',
                         "filter_state_province" => $shippingRuleData['filter_state_province'] ?? '',
                         "isLocationFilter" => $shippingRuleData['isLocationFilter'] ?? '',
+                        "isFilterCategory" => $shippingRuleData['isFilterCategory'] ?? '',
+                        "isFilterBrand" => $shippingRuleData['isFilterBrand'] ?? '',
+                        "isFilterProduct" => $shippingRuleData['isFilterProduct'] ?? '',
+                        "is_all_filter_applied" => $shippingRuleData['is_all_filter_applied'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
@@ -186,10 +189,10 @@ class ShippingRule extends Model
                     $shippingRule->filter_name = $shippingRuleData['filter_country'] ?? '';
                     $settings = [
                         "filter_categories" => $shippingRuleData['filter_categories'] ?? [],
-                        "filter_products" => $shippingRuleData['filter_products'] ?? [], 
-			            "filter_brands" => $shippingRuleData['filter_brands'] ?? [],
+                        "filter_products" => $shippingRuleData['filter_products'] ?? [],
+                        "filter_brands" => $shippingRuleData['filter_brands'] ?? [],
                         "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
-			            "filter_state_province" => $shippingRuleData['filter_state_province'] ?? '', 
+                        "filter_state_province" => $shippingRuleData['filter_state_province'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
@@ -197,10 +200,10 @@ class ShippingRule extends Model
                     $shippingRule->filter_name = $shippingRuleData['filter_country'] ?? '';
                     $settings = [
                         "filter_categories" => $shippingRuleData['filter_categories'] ?? [],
-                        "filter_products" => $shippingRuleData['filter_products'] ?? [], 
-			            "filter_brands" => $shippingRuleData['filter_brands'] ?? [],
+                        "filter_products" => $shippingRuleData['filter_products'] ?? [],
+                        "filter_brands" => $shippingRuleData['filter_brands'] ?? [],
                         "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
-			            "filter_state_province" => $shippingRuleData['filter_state_province'] ?? '',
+                        "filter_state_province" => $shippingRuleData['filter_state_province'] ?? '',
                         "filter_postal_code" => $shippingRuleData['filter_postal_code'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
@@ -209,19 +212,19 @@ class ShippingRule extends Model
                     $shippingRule->filter_name = $shippingRuleData['filter_country'] ?? '';
                     $settings = [
                         "filter_categories" => $shippingRuleData['filter_categories'] ?? [],
-                        "filter_products" => $shippingRuleData['filter_products'] ?? [], 
-			            "filter_brands" => $shippingRuleData['filter_brands'] ?? [],
+                        "filter_products" => $shippingRuleData['filter_products'] ?? [],
+                        "filter_brands" => $shippingRuleData['filter_brands'] ?? [],
                         "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
                         "warehouses" => $shippingRuleData['warehouses'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
-                    break;        
+                    break;
                 case 6:
                     $shippingRule->filter_name = $shippingRuleData['filter_provider'] ?? '';
                     $settings = [
-                        "isFilterWeight" => $shippingRuleData['isFilterWeight'] ?? false, 
-			            "isFilterPrice" => $shippingRuleData['isFilterPrice'] ?? false,
-			            "isFilterQuantity" => $shippingRuleData['isFilterQuantity'] ?? false,
+                        "isFilterWeight" => $shippingRuleData['isFilterWeight'] ?? false,
+                        "isFilterPrice" => $shippingRuleData['isFilterPrice'] ?? false,
+                        "isFilterQuantity" => $shippingRuleData['isFilterQuantity'] ?? false,
                         "weightFrom" => $shippingRuleData['weight_from'] ?? '',
                         "weightTo" => $shippingRuleData['weight_to'] ?? '',
                         "priceFrom" => $shippingRuleData['price_from'] ?? '',
@@ -231,33 +234,37 @@ class ShippingRule extends Model
                         "filter_services" => $shippingRuleData['filter_services'] ?? [],
                         "service_rates" => $shippingRuleData['service_rates'] ?? '',
                         "filter_categories" => $shippingRuleData['filter_categories'] ?? [],
-                        "filter_products" => $shippingRuleData['filter_products'] ?? [], 
-			            "filter_brands" => $shippingRuleData['filter_brands'] ?? [],
+                        "filter_products" => $shippingRuleData['filter_products'] ?? [],
+                        "filter_brands" => $shippingRuleData['filter_brands'] ?? [],
                         "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
                         "filter_country" => $shippingRuleData['filter_country'] ?? '',
                         "filter_state_province" => $shippingRuleData['filter_state_province'] ?? '',
                         "filter_max_shipping_rate" => $shippingRuleData['filter_max_shipping_rate'] ?? '',
                         "isFilterMaxShippingRate" => $shippingRuleData['isFilterMaxShippingRate'] ?? '',
                         "isLocationFilter" => $shippingRuleData['isLocationFilter'] ?? '',
+                        "isFilterCategory" => $shippingRuleData['isFilterCategory'] ?? '',
+                        "isFilterBrand" => $shippingRuleData['isFilterBrand'] ?? '',
+                        "isFilterProduct" => $shippingRuleData['isFilterProduct'] ?? '',
+                        "is_all_filter_applied" => $shippingRuleData['is_all_filter_applied'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
                 case 7:
                     $shippingRule->filter_name = $shippingRuleData['filter_provider'] ?? '';
                     $settings = [
-                       "filter_categories" => $shippingRuleData['filter_categories'] ?? '',
-                       "filter_products" => $shippingRuleData['filter_products'] ?? '', 
-                       "filter_brands" => $shippingRuleData['filter_brands'] ?? '',
-                       "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
+                        "filter_categories" => $shippingRuleData['filter_categories'] ?? '',
+                        "filter_products" => $shippingRuleData['filter_products'] ?? '',
+                        "filter_brands" => $shippingRuleData['filter_brands'] ?? '',
+                        "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
                 case 8:
                     $shippingRule->filter_name = $shippingRuleData['filter_provider'] ?? '';
                     $settings = [
-                        "isFilterWeight" => $shippingRuleData['isFilterWeight'] ?? false, 
-			            "isFilterPrice" => $shippingRuleData['isFilterPrice'] ?? false,
-			            "isFilterQuantity" => $shippingRuleData['isFilterQuantity'] ?? false,
+                        "isFilterWeight" => $shippingRuleData['isFilterWeight'] ?? false,
+                        "isFilterPrice" => $shippingRuleData['isFilterPrice'] ?? false,
+                        "isFilterQuantity" => $shippingRuleData['isFilterQuantity'] ?? false,
                         "weightFrom" => $shippingRuleData['weight_from'] ?? '',
                         "weightTo" => $shippingRuleData['weight_to'] ?? '',
                         "priceFrom" => $shippingRuleData['price_from'] ?? '',
@@ -265,20 +272,24 @@ class ShippingRule extends Model
                         "quantityFrom" => $shippingRuleData['quantity_from'] ?? '',
                         "quantityTo" => $shippingRuleData['quantity_to'] ?? '',
                         "filter_categories" => $shippingRuleData['filter_categories'] ?? [],
-                        "filter_products" => $shippingRuleData['filter_products'] ?? [], 
-			            "filter_brands" => $shippingRuleData['filter_brands'] ?? [],
+                        "filter_products" => $shippingRuleData['filter_products'] ?? [],
+                        "filter_brands" => $shippingRuleData['filter_brands'] ?? [],
                         "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
                         "service_rates" => $shippingRuleData['service_rates'] ?? '',
                         "filter_country" => $shippingRuleData['filter_country'] ?? '',
                         "filter_state_province" => $shippingRuleData['filter_state_province'] ?? '',
                         "isLocationFilter" => $shippingRuleData['isLocationFilter'] ?? '',
+                        "isFilterCategory" => $shippingRuleData['isFilterCategory'] ?? '',
+                        "isFilterBrand" => $shippingRuleData['isFilterBrand'] ?? '',
+                        "isFilterProduct" => $shippingRuleData['isFilterProduct'] ?? '',
+                        "is_all_filter_applied" => $shippingRuleData['is_all_filter_applied'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
                 case 9:
                     $settings = [
-                        "max_items" => $shippingRuleData['max_items'] ?? null, 
-			            "max_package_weight" => $shippingRuleData['max_package_weight'] ?? null,
+                        "max_items" => $shippingRuleData['max_items'] ?? null,
+                        "max_package_weight" => $shippingRuleData['max_package_weight'] ?? null,
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
@@ -286,16 +297,15 @@ class ShippingRule extends Model
                     $shippingRule->filter_name = $shippingRuleData['filter_country'] ?? '';
                     $settings = [
                         "filter_categories" => $shippingRuleData['filter_categories'] ?? [],
-                        "filter_products" => $shippingRuleData['filter_products'] ?? [], 
-			            "filter_brands" => $shippingRuleData['filter_brands'] ?? [],
+                        "filter_products" => $shippingRuleData['filter_products'] ?? [],
+                        "filter_brands" => $shippingRuleData['filter_brands'] ?? [],
                         "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
-			            "filter_state_province" => $shippingRuleData['filter_state_province'] ?? '',
+                        "filter_state_province" => $shippingRuleData['filter_state_province'] ?? '',
                         "filter_flat_shipping_rate" => $shippingRuleData['filter_flat_shipping_rate'] ?? '',
-                        "isFilterFlatPrice" => $shippingRuleData['isFilterFlatPrice'] ?? '', 
+                        "isFilterFlatPrice" => $shippingRuleData['isFilterFlatPrice'] ?? '',
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
-                    
             }
 
             $shippingRule->rule_name = $shippingRuleData['rule_name'] ?? '';
@@ -307,9 +317,9 @@ class ShippingRule extends Model
         }
 
         /**
-        * Note: This is important step to update params according to rule type 
-        * using this function shippingRuleMappingByRuleType()
-        */
+         * Note: This is important step to update params according to rule type 
+         * using this function shippingRuleMappingByRuleType()
+         */
         $shippingRule = self::shippingRuleMappingByRuleType($shippingRule);
 
         return [
@@ -335,7 +345,7 @@ class ShippingRule extends Model
             }
             $message = 'updated successfully.';
             $save = 0;
-        } 
+        }
         $shippingRule->available = !$shippingRuleData['available'] ?? false;
         $shippingRule->save();
 
@@ -399,8 +409,8 @@ class ShippingRule extends Model
     }
 
     /**
-    * params mapping according to rule type
-    */
+     * params mapping according to rule type
+     */
     public static function shippingRuleMappingByRuleType($shippingRule)
     {
         $ruleType = isset($shippingRule['rule_type']) && !empty($shippingRule['rule_type']) ? $shippingRule['rule_type'] : null;
@@ -437,8 +447,8 @@ class ShippingRule extends Model
                 break;
             default:
                 break;
-        } 
-        
+        }
+
         return $shippingRule ?? [];
     }
 
@@ -491,19 +501,50 @@ class ShippingRule extends Model
         $shippingRule['quantity_to'] = $settings['quantityTo'] ?? null;
         $shippingRule['products'] = $settings['filter_products'] ?? [];
         $shippingRule['categories'] = $settings['filter_categories'] ?? [];
-        $shippingRule['brands'] = $settings['filter_brands'] ?? []; 
+        $shippingRule['brands'] = $settings['filter_brands'] ?? [];
         $shippingRule['apply_rule_to'] = $settings['apply_rule_to'] ?? 1;
-        
+        $shippingRule['filter_country'] = $settings['filter_country'] ?? 1;
+        $shippingRule['filter_state_province'] = $settings['filter_state_province'] ?? 1;
+        $shippingRule['isLocationFilter'] = $settings['isLocationFilter'] ?? 1;
+        $shippingRule['isFilterCategory'] = $settings['isFilterCategory'] ?? 1;
+        $shippingRule['isFilterBrand'] = $settings['isFilterBrand'] ?? 1;
+        $shippingRule['isFilterProduct'] = $settings['isFilterProduct'] ?? 1;
+        $shippingRule['is_all_filter_applied'] = $settings['is_all_filter_applied'] ?? 1;
 
-        if($isOverrideRates){
+
+        if ($isOverrideRates) {
             $shippingRule['filter_services'] = $settings['filter_services'] ?? [];
             $shippingRule['service_rates'] = $settings['service_rates'] ?? null;
-            
+            $shippingRule['products'] = $settings['filter_products'] ?? [];
+            $shippingRule['categories'] = $settings['filter_categories'] ?? [];
+            $shippingRule['brands'] = $settings['filter_brands'] ?? [];
+            $shippingRule['filter_country'] = $settings['filter_country'] ?? 1;
+            $shippingRule['filter_state_province'] = $settings['filter_state_province'] ?? 1;
+            $shippingRule['isLocationFilter'] = $settings['isLocationFilter'] ?? 1;
+            $shippingRule['isFilterMaxShippingRate'] = $settings['isFilterMaxShippingRate'] ?? 1;
+            $shippingRule['isFilterCategory'] = $settings['isFilterCategory'] ?? 1;
+            $shippingRule['isFilterBrand'] = $settings['isFilterBrand'] ?? 1;
+            $shippingRule['isFilterProduct'] = $settings['isFilterProduct'] ?? 1;
+            $shippingRule['is_all_filter_applied'] = $settings['is_all_filter_applied'] ?? 1;
+
+            $shippingRule['weight_from'] = $settings['weightFrom'] ?? null;
+            $shippingRule['weight_to'] = $settings['weightTo'] ?? null;
+            $shippingRule['price_from'] = $settings['priceFrom'] ?? null;
+            $shippingRule['price_to'] = $settings['priceTo'] ?? null;
+            $shippingRule['quantity_from'] = $settings['quantityFrom'] ?? null;
+            $shippingRule['quantity_to'] = $settings['quantityTo'] ?? null;
         }
-        if($isSurchargeRates){
+        if ($isSurchargeRates) {
             $shippingRule['filter_provider'] = '';
             $shippingRule['filter_name'] = '';
-            $shippingRule['service_rates'] = $settings['service_rates'] ?? null; 
+            $shippingRule['service_rates'] = $settings['service_rates'] ?? null;
+            $shippingRule['filter_country'] = $settings['filter_country'] ?? 1;
+            $shippingRule['filter_state_province'] = $settings['filter_state_province'] ?? 1;
+            $shippingRule['isLocationFilter'] = $settings['isLocationFilter'] ?? 1;
+            $shippingRule['isFilterCategory'] = $settings['isFilterCategory'] ?? 1;
+            $shippingRule['isFilterBrand'] = $settings['isFilterBrand'] ?? 1;
+            $shippingRule['isFilterProduct'] = $settings['isFilterProduct'] ?? 1;
+            $shippingRule['is_all_filter_applied'] = $settings['is_all_filter_applied'] ?? 1;
         }
 
         return $shippingRule;
@@ -577,7 +618,7 @@ class ShippingRule extends Model
         if (blank($flatRateitems)) {
             return [];
         }
-        
+
         $groupItemsByFlatRateRule = [];
         foreach ($flatRateitems as $item) {
             $key = $item['variant_id'];
@@ -588,11 +629,11 @@ class ShippingRule extends Model
         foreach ($groupItemsByFlatRateRule as $flatRateRuleId => $rules) {
             $rate = 0;
             $title = $filterItems = [];
-            foreach($rules as $rule){
+            foreach ($rules as $rule) {
                 $ruleDetail = self::getFlatRateRuleDetail($rule['flatRateUuid']);
                 $ruleDetailSettings = json_decode($ruleDetail['filter_settings'], true) ?? [];
 
-                if (in_array($rule['product_id'], $filterItems) && !($ruleDetailSettings['isFilterFlatPrice'])){
+                if (in_array($rule['product_id'], $filterItems) && !($ruleDetailSettings['isFilterFlatPrice'])) {
                     continue;
                 }
                 $filterItems[] = $rule['product_id'];
@@ -610,7 +651,6 @@ class ShippingRule extends Model
                         $response[$flatRateRuleId]['title'] = $title[0] ?? "Shipping";
                     } else {
                         $response[$flatRateRuleId]['title'] = "Shipping";
-        
                     }
                 }
             }
@@ -640,7 +680,7 @@ class ShippingRule extends Model
         $origins = $flatRateOrigin;
         // $origins = $lineItem->origin;
         $items = $lineItem->items;
-        
+
         $count = 0;
         $insertedIds = $insertedNames = [];
         $flatRateResp = !blank($data['flat_rate_resp']) ? json_decode($data['flat_rate_resp']) : [];

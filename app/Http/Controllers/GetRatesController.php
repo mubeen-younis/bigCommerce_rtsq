@@ -105,7 +105,6 @@ class GetRatesController extends Controller
 
         $connSettings = $this->connectionSettings;
         if ($this->isShippingRule($storeData, $this->formatReq)) {
-            dd("lll");
             return [];
         }
 
