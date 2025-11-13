@@ -256,6 +256,10 @@ class ShippingRule extends Model
                         "filter_products" => $shippingRuleData['filter_products'] ?? '',
                         "filter_brands" => $shippingRuleData['filter_brands'] ?? '',
                         "apply_rule_to" => $shippingRuleData['apply_rule_to'] ?? '',
+                        "isFilterCategory" => $shippingRuleData['isFilterCategory'] ?? '',
+                        "isFilterBrand" => $shippingRuleData['isFilterBrand'] ?? '',
+                        "isFilterProduct" => $shippingRuleData['isFilterProduct'] ?? '',
+
                     ];
                     $shippingRule->filter_settings = json_encode($settings) ?? '';
                     break;
