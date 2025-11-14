@@ -319,6 +319,7 @@ class ShippingRule extends Model
                         "filter_state_province" => $shippingRuleData['filter_state_province'] ?? '',
                         "filter_flat_shipping_rate" => $shippingRuleData['filter_flat_shipping_rate'] ?? '',
                         "isFilterFlatPrice" => $shippingRuleData['isFilterFlatPrice'] ?? '',
+                        "isLocationFilter" => $shippingRuleData['isLocationFilter'] ?? '',
                         "isFilterCategory" => $shippingRuleData['isFilterCategory'] ?? '',
                         "isFilterBrand" => $shippingRuleData['isFilterBrand'] ?? '',
                         "isFilterProduct" => $shippingRuleData['isFilterProduct'] ?? '',
